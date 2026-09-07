@@ -610,6 +610,25 @@ export const SolarTimeClock = () => {
   const [birthDate, setBirthDate] = useState<string>("2000-01-01T00:00");
   const [birthLat, setBirthLat] = useState<number>(35.6895);
   const [birthLon, setBirthLon] = useState<number>(139.6917);
+  /*
+    **この 3 つが「利用者の値」かどうか。**
+
+    入っていないときの初期値（2000-01-01・東京）は、画面では「仮の値で
+    計算した結果です」と断って出している。ところが下の自動保存が、
+    断りごと tactical_config_v1 へ**書き込んでいた。**一度書かれると、
+    他の画面（物件検索・シミュレータ・暦・/profile・/account）はそれを
+    「登録済みの生年月日・出生地」として読む。切り替えを 1 つ触るだけで
+    **架空の生年月日がサイト全体の登録内容になる。**
+
+    api/municipalities-wealth で同じことが起きて #1033 で直した
+    （応答の metadata に架空の値を入れ、頁がそれを保存していた）。
+    こちらは画面側の同じ穴。
+
+    保存されている値を読んだとき、利用者が欄を直したとき、旧 wealth_*
+    から引き継いだときに真になる。真になるまで**書かない**。
+  */
+  const [birthDateOwned, setBirthDateOwned] = useState(false);
+  const [birthPlaceOwned, setBirthPlaceOwned] = useState(false);
 
   // Bio-Sync State
   const [hrv, setHrv] = useState(30);
@@ -947,9 +966,18 @@ export const SolarTimeClock = () => {
           if (v !== undefined) set(v);
         };
         const birth = settingString(data, "birth_date");
-        if (birth) setBirthDate(birth);
-        applyNum("birth_lat", setBirthLat);
-        applyNum("birth_lon", setBirthLon);
+        if (birth) {
+          setBirthDate(birth);
+          setBirthDateOwned(true);
+        }
+        applyNum("birth_lat", (v) => {
+          setBirthLat(v);
+          setBirthPlaceOwned(true);
+        });
+        applyNum("birth_lon", (v) => {
+          setBirthLon(v);
+          setBirthPlaceOwned(true);
+        });
         applyNum("base_lat", setLat);
         applyNum("base_lon", setLon);
         applyStr("void_zodiac_override", setVoidZodiacOverride);
@@ -1005,14 +1033,17 @@ export const SolarTimeClock = () => {
 
       if (wBirthDate) {
         setBirthDate(wBirthDate);
+        setBirthDateOwned(true);
         isLoaded = true;
       }
       if (wBirthLat) {
         setBirthLat(Number(wBirthLat));
+        setBirthPlaceOwned(true);
         isLoaded = true;
       }
       if (wBirthLon) {
         setBirthLon(Number(wBirthLon));
+        setBirthPlaceOwned(true);
         isLoaded = true;
       }
       if (wBaseLat) {
@@ -1068,9 +1099,12 @@ export const SolarTimeClock = () => {
           direction_filter_mode: directionFilterMode,
           base_lat: lat,
           base_lon: lon,
-          birth_date: birthDate,
-          birth_lat: birthLat,
-          birth_lon: birthLon,
+          /* 利用者の値だけ書く。初期値（2000-01-01・東京）を書くと、
+             他の画面がそれを登録内容として読む（上の註） */
+          ...(birthDateOwned ? { birth_date: birthDate } : {}),
+          ...(birthPlaceOwned
+            ? { birth_lat: birthLat, birth_lon: birthLon }
+            : {}),
         };
 
         // Save to localStorage
@@ -1104,6 +1138,8 @@ export const SolarTimeClock = () => {
     birthDate,
     birthLat,
     birthLon,
+    birthDateOwned,
+    birthPlaceOwned,
     configLoaded,
   ]);
 
@@ -3931,11 +3967,21 @@ export const SolarTimeClock = () => {
             {/* Hardware Init & Anchor Config */}
             <PersonalProfileConfig
               birthDate={birthDate}
-              setBirthDate={setBirthDate}
+              /* 欄を直した時点で「利用者の値」になる（上の註） */
+              setBirthDate={(v) => {
+                setBirthDate(v);
+                setBirthDateOwned(true);
+              }}
               birthLat={birthLat}
-              setBirthLat={setBirthLat}
+              setBirthLat={(v) => {
+                setBirthLat(v);
+                setBirthPlaceOwned(true);
+              }}
               birthLon={birthLon}
-              setBirthLon={setBirthLon}
+              setBirthLon={(v) => {
+                setBirthLon(v);
+                setBirthPlaceOwned(true);
+              }}
               baseLat={lat}
               setBaseLat={setLat}
               baseLon={lon}
