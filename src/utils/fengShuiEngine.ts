@@ -81,6 +81,14 @@ export function guaGroup(gua: Gua): "東四命" | "西四命" {
  * 出典は八宅の標準的な表。**この表が正しいことは、東四命／西四命の
  * 吉方位が決まった 4 方位になる、という性質で検算できる**
  * （__tests__/fengShuiEngine.test.ts）。写し間違えるとそこが落ちる。
+ *
+ * **ただしその検算は凶の中の取り違えを捕まえない。**遊星は本命卦と方位の
+ * 卦の三爻のどこが違うかで決まる（変わらない＝伏位、上だけ＝生気、
+ * 下と中＝天医、全部＝延年、中だけ＝絶命、中と上＝五鬼、下と上＝六殺、
+ * 下だけ＝禍害）。2026-09-07 まで 震・兌・艮・離の 4 卦で 五鬼／禍害、
+ * 六殺／禍害 が入れ替わって写されていて（8 か所）、凶の集合は合って
+ * いるので上の検算を素通りしていた。検査は三爻の規則から表を組み直して
+ * 全 64 か所を突き合わせる。
  */
 const YOUXING_TABLE: Record<Gua, Record<CompassDirection, YouXing>> = {
   // 坎（北）
@@ -113,8 +121,8 @@ const YOUXING_TABLE: Record<Gua, Record<CompassDirection, YouXing>> = {
     E: "伏位",
     W: "絶命",
     NW: "五鬼",
-    SW: "六殺",
-    NE: "禍害",
+    SW: "禍害",
+    NE: "六殺",
   },
   // 巽（南東）
   4: {
@@ -145,9 +153,9 @@ const YOUXING_TABLE: Record<Gua, Record<CompassDirection, YouXing>> = {
     NE: "延年",
     W: "伏位",
     E: "絶命",
-    N: "五鬼",
+    N: "禍害",
     SE: "六殺",
-    S: "禍害",
+    S: "五鬼",
   },
   // 艮（北東）
   8: {
@@ -156,9 +164,9 @@ const YOUXING_TABLE: Record<Gua, Record<CompassDirection, YouXing>> = {
     W: "延年",
     NE: "伏位",
     SE: "絶命",
-    S: "五鬼",
+    S: "禍害",
     E: "六殺",
-    N: "禍害",
+    N: "五鬼",
   },
   // 離（南）
   9: {
@@ -168,8 +176,8 @@ const YOUXING_TABLE: Record<Gua, Record<CompassDirection, YouXing>> = {
     S: "伏位",
     NW: "絶命",
     W: "五鬼",
-    NE: "六殺",
-    SW: "禍害",
+    NE: "禍害",
+    SW: "六殺",
   },
 };
 
