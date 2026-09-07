@@ -85,6 +85,27 @@ describe("userSettings", () => {
     expect(settings.birth_date).toBe("1990-05-15");
   });
 
+  it("端末だけの項目を書いても _savedAt は進めない（クラウドを取り込めなくなる）", async () => {
+    // 目的地や八宅の性別は同期しない項目。以前はこれで _savedAt が進み、
+    // 別の端末で保存した出発地がクラウドにあっても「端末のほうが新しい」と
+    // 見なして永久に取り込まなかった
+    writeLocalSettings({ base_lat: 35.1 });
+    const before = JSON.parse(localStorage.getItem("tactical_config_v1")!)
+      ._savedAt as string;
+    await new Promise((r) => setTimeout(r, 5));
+    writeLocalSettings({ feng_shui_sex: "male" });
+    const after = JSON.parse(localStorage.getItem("tactical_config_v1")!)
+      ._savedAt as string;
+    expect(after).toBe(before);
+
+    // 同期する項目を書けば進む
+    await new Promise((r) => setTimeout(r, 5));
+    writeLocalSettings({ base_lon: 136.9 });
+    const later = JSON.parse(localStorage.getItem("tactical_config_v1")!)
+      ._savedAt as string;
+    expect(later > before).toBe(true);
+  });
+
   it("keeps the local copy when it is newer than the cloud", async () => {
     vi.stubGlobal(
       "fetch",
