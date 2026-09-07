@@ -1,16 +1,40 @@
 import { NextResponse } from "next/server";
+import { createClient } from "@/utils/supabase/server";
 import { toResponseMessage } from "@/lib/errorMessage";
 import { embed } from "ai";
 import { google } from "@ai-sdk/google";
 import prisma from "@/lib/prisma";
 
+/*
+  ログイン必須。この口は埋め込み（text-embedding-004）を毎回呼ぶ課金 API で、
+  middleware は /api を素通しにしている。同じ階層の summarize / categorize /
+  chat-knowledge / bbs-analyze は全部 auth.getUser() で閉じているのに、
+  ここだけ誰でも叩けた。画面からの呼び出しは無い（grep で 0 件）。
+  値も型と長さを見る。埋め込みは入力の長さぶん課金される。
+*/
+const MAX_QUERY_CHARS = 500;
+
 export async function POST(req: Request) {
   try {
+    const supabase = await createClient();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    if (!user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
     const { query } = await req.json();
 
-    if (!query) {
+    if (typeof query !== "string" || query.trim() === "") {
       return NextResponse.json(
         { error: "Query is required" },
+        { status: 400 }
+      );
+    }
+    if (query.length > MAX_QUERY_CHARS) {
+      return NextResponse.json(
+        { error: `Query must be ${MAX_QUERY_CHARS} characters or fewer` },
         { status: 400 }
       );
     }
