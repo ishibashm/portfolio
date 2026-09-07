@@ -18,6 +18,22 @@ import {
 
 export type ProfileStepKey = "birth_date" | "birth_place" | "base";
 
+/**
+ * 場所の**表示用の地名**を置く鍵。
+ *
+ * 座標だけだと、次に開いたとき自分が何を入れたのか読めない（同じ理由で
+ * 目的地は最初から `dest_label` を持っている）。
+ *
+ * **`SYNCED_FIELDS` に入れない。**クラウドへ送る個人情報を増やさない
+ * ための線引きで、`saveSettings` は同期する項目だけを POST するので、
+ * ここに書いた地名は端末から出ていかない。座標は今までどおり同期する
+ * ので、別の端末では座標だけで出る。
+ */
+export const PLACE_LABEL_KEYS = {
+  birth_place: "birth_label",
+  base: "base_label",
+} as const;
+
 export interface ProfileStep {
   key: ProfileStepKey;
   /** 画面に出す名前。 */
@@ -63,17 +79,28 @@ export function formatCoords(lat: number, lon: number): string {
   return `${ns} ${Math.abs(lat).toFixed(3)} / ${ew} ${Math.abs(lon).toFixed(3)}`;
 }
 
-/** 座標が両方そろっているときだけ、その表示を返す。 */
+/**
+ * 座標が両方そろっているときだけ、その表示を返す。
+ *
+ * 地名を覚えていれば「地名（座標）」にする。**座標は省かない。**
+ * 判定に使われるのは座標のほうで、地名は表示用でしかないので、
+ * 取り違えたまま気付けないのが困る（目的地と同じ扱い）。
+ *
+ * 地名は**端末にだけ**残る（`SYNCED_FIELDS` に入れていないので、
+ * `saveSettings` の同期には乗らない）。別の端末では座標だけになる。
+ */
 function pointValue(
   settings: Settings,
   latKey: string,
   lonKey: string,
+  labelKey: string,
 ): string | undefined {
   const lat = settingNumber(settings, latKey);
   const lon = settingNumber(settings, lonKey);
-  return lat !== undefined && lon !== undefined
-    ? formatCoords(lat, lon)
-    : undefined;
+  if (lat === undefined || lon === undefined) return undefined;
+  const coords = formatCoords(lat, lon);
+  const label = settingString(settings, labelKey);
+  return label ? `${label}（${coords}）` : coords;
 }
 
 export function profileSteps(settings: Settings): ProfileStep[] {
@@ -91,7 +118,7 @@ export function profileSteps(settings: Settings): ProfileStep[] {
       key: "base",
       label: "いま住んでいる場所",
       done: hasPoint(settings, "base_lat", "base_lon"),
-      value: pointValue(settings, "base_lat", "base_lon"),
+      value: pointValue(settings, "base_lat", "base_lon", "base_label"),
       need: "どちらの方位に動くのかが決まりません。物件検索の並びにも使います。",
       required: true,
     },
@@ -99,7 +126,7 @@ export function profileSteps(settings: Settings): ProfileStep[] {
       key: "birth_place",
       label: "出生地",
       done: hasPoint(settings, "birth_lat", "birth_lon"),
-      value: pointValue(settings, "birth_lat", "birth_lon"),
+      value: pointValue(settings, "birth_lat", "birth_lon", "birth_label"),
       need: "八宅（本命卦）と出生時の盤が出せません。無くても方位の判定は動きます。",
       required: false,
     },
