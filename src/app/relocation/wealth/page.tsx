@@ -325,7 +325,19 @@ export default function RegionalWealthPage() {
       localStorage.setItem("wealth_baseLon", currentBaseLon);
 
       const partialConfig = {
-        birth_date: currentBirthDate,
+        /*
+          **空の生年月日を書かない。**この頁の state は空文字から始まり、
+          読み込みは localStorage しか見ない。ログイン中の利用者が別の
+          端末から来てこの頁を先に開くと（クラウドには生年月日があるが
+          端末には無い状態）、GPS や日付の変更で保存が走った時点で
+          `birth_date: ""` をクラウドへ送り、**登録済みの生年月日を
+          消していた。**
+
+          座標は元から `? : undefined` で空を落としている。生年月日
+          だけが素通りしていた。物件検索の同じ関数は「変えた項目だけ」
+          を送るので、この穴が無い。
+        */
+        ...(currentBirthDate ? { birth_date: currentBirthDate } : {}),
         birth_lat: currentBirthLat ? parseFloat(currentBirthLat) : undefined,
         birth_lon: currentBirthLon ? parseFloat(currentBirthLon) : undefined,
         base_lat: currentBaseLat ? parseFloat(currentBaseLat) : undefined,
