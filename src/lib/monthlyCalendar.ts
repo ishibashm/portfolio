@@ -3,6 +3,7 @@ import {
   AstroEngine,
   DOYOU_MABI,
   getCurrentZodiac,
+  getUpcomingDoyouPeriod,
 } from "@/utils/ephemerisEngine";
 import {
   kigakuMonthRange,
@@ -100,8 +101,7 @@ export function buildMonthlyCalendar(
   const { start, end, centerStar } = kigakuMonthRange(year, month);
 
   const days: CalendarDay[] = [];
-  let doyouStart: string | null = null;
-  let doyouEnd: string | null = null;
+  let firstDoyouDay: number | null = null;
 
   for (let d = 1; d <= daysInMonth(year, month); d++) {
     const date = noonJst(year, month, d);
@@ -109,10 +109,7 @@ export function buildMonthlyCalendar(
     const doyou = doyouStateOf(date, zodiac.dayZodiac);
     const iso = toJapanDateString(date);
 
-    if (doyou.inDoyou) {
-      if (!doyouStart) doyouStart = iso;
-      doyouEnd = iso;
-    }
+    if (doyou.inDoyou && firstDoyouDay === null) firstDoyouDay = d;
 
     days.push({
       date: iso,
@@ -158,8 +155,27 @@ export function buildMonthlyCalendar(
     days,
     recommended,
     starDirections,
-    doyou: doyouStart && doyouEnd ? { start: doyouStart, end: doyouEnd } : null,
+    doyou: doyouPeriodOf(year, month, firstDoyouDay),
   };
+}
+
+/**
+ * その月に掛かる土用の**本当の**始まりと終わり。
+ *
+ * 以前は月内の日を回しながら最初と最後の土用の日を拾っていたので、期間が
+ * 暦月で切れていた。土用は 4 つとも月をまたぐ（冬土用は 1/17 頃〜2/3）ので
+ * 常に短く出て、/calendar/2026-01 は「1/18〜1/31」、/calendar/2026-02 は
+ * 「2/1〜2/3」と書いていた。ephemerisEngine の getUpcomingDoyouPeriod は
+ * 月の外まで走査して期間を返すので、月内の最初の土用の日から引く。
+ */
+function doyouPeriodOf(
+  year: number,
+  month: number,
+  firstDoyouDay: number | null,
+): { start: string; end: string } | null {
+  if (firstDoyouDay === null) return null;
+  const period = getUpcomingDoyouPeriod(noonJst(year, month, firstDoyouDay));
+  return period ? { start: period.start, end: period.end } : null;
 }
 
 /**
