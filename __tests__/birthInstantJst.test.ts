@@ -87,6 +87,8 @@ describe("読み方を 1 か所に寄せた（写しを増やさない）", () =
     "src/app/api/municipalities-wealth/route.ts",
     "src/app/api/rentals/arbitrage/route.ts",
     "src/app/api/rentals/arbitrage/timeline/route.ts",
+    "src/app/api/relocation/history/route.ts",
+    "src/app/api/relocation/export/route.ts",
   ];
 
   it("生年月日を読む API は parseJapanDateTime を使う", () => {
@@ -103,8 +105,13 @@ describe("読み方を 1 か所に寄せた（写しを増やさない）", () =
        足しているならそれは写し。 */
     for (const rel of ROUTES) {
       const src = readFileSync(path.join(process.cwd(), rel), "utf8");
-      expect(src, rel).not.toContain("+09:00");
-      expect(src, rel).not.toMatch(/new Date\(birthDateStr\)/);
+      /* コメントは外して見る。**経緯を書くのは歓迎したい**ので、
+         「なぜ寄せたか」を書いた文章まで禁じてしまわないようにする */
+      const code = src
+        .replace(/\/\*[\s\S]*?\*\//g, "")
+        .replace(/^\s*\/\/.*$/gm, "");
+      expect(code, rel).not.toContain("+09:00");
+      expect(code, rel).not.toMatch(/new Date\(birthDateStr\)/);
     }
   });
 });

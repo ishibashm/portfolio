@@ -27,6 +27,7 @@ import { gradeVerdict, judgeDay } from "@/utils/auspiciousDays";
 import { JUDGMENT_ENGINE_VERSION } from "@/utils/engineVersion";
 import { DEFAULT_TENCHUSATSU_MODE } from "@/utils/tenchusatsuPolicy";
 import { bearingBetween } from "@/utils/directionGeo";
+import { parseJapanDateTime } from "@/utils/japanDate";
 
 const CONFIG_FILE_PATH = path.join(process.cwd(), "local_tactical_config.json");
 
@@ -60,17 +61,11 @@ export async function GET(request: Request) {
     const directionFilterModeStr = searchParams.get("directionFilterMode");
     const actionIntentStr = searchParams.get("actionIntent");
 
-    const parseSafeDate = (dateStr: string | null | undefined): Date => {
-      if (!dateStr) return new Date();
-      if (
-        dateStr.includes("T") &&
-        !dateStr.endsWith("Z") &&
-        !/[+-]\d{2}:?\d{2}$/.test(dateStr)
-      ) {
-        return new Date(dateStr + "+09:00");
-      }
-      return new Date(dateStr);
-    };
+    /* 無ければ「いま」。読み方（時差の指定が無い文字列は日本時間）は
+       `japanDate` の parseJapanDateTime に寄せた。同じものが API に 6 つ
+       写されていて、api/nba だけが素の `new Date` になっていた。 */
+    const parseSafeDate = (dateStr: string | null | undefined): Date =>
+      dateStr ? parseJapanDateTime(dateStr) : new Date();
 
     // 1. Resolve active config
     //
@@ -388,12 +383,20 @@ export async function POST(req: Request) {
       try {
         const config = JSON.parse(await fs.readFile(CONFIG_FILE_PATH, "utf-8"));
         if (config.birth_date)
-          birthDate = new Date(
-            config.birth_date.includes("T")
-              ? config.birth_date +
-                  (/[+-Z]/.test(config.birth_date.slice(-6)) ? "" : "+09:00")
-              : config.birth_date + "T12:00:00+09:00",
-          );
+          /*
+            時刻つきの読み方は parseJapanDateTime に寄せた（自分で
+            `+09:00` を足していた 6 本のうちの 1 つ）。
+
+            **日付だけのときに正午へ置くのは、この分岐の元からの
+            決め事。**同じファイルの GET 側は日付だけを UTC の 0 時
+            （＝日本時間の 9 時）として読んでおり、そこは食い違って
+            いる。どちらも本命星・天中殺という**日単位**の関数にしか
+            渡らないので答えは同じになるが、時柱を出す所に渡すなら
+            先にどちらかへ揃えること。
+          */
+          birthDate = config.birth_date.includes("T")
+            ? parseJapanDateTime(config.birth_date)
+            : parseJapanDateTime(`${config.birth_date}T12:00:00`);
         if (config.use_classical_board !== undefined)
           useClassical = config.use_classical_board;
         if (config.direction_filter_mode !== undefined)
