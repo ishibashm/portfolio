@@ -11,7 +11,7 @@ import {
 } from "lucide-react";
 import { getClassicalYearStar } from "@/utils/ephemerisEngine";
 import { buildTenChiJinVerdict } from "@/utils/tenChiJinVerdict";
-import { todayInJapan } from "@/utils/japanDate";
+import { parseJapanDateTime, todayInJapan } from "@/utils/japanDate";
 import { directionLabelName } from "@/lib/directionLabels";
 import { bearingBetween } from "@/utils/directionGeo";
 
@@ -20,7 +20,12 @@ function parseSafeDate(
   fallback: Date = new Date(),
 ): Date {
   if (!dateStr) return fallback;
-  const d = new Date(dateStr);
+  /* **日本時間として読む。**素の `new Date("1990-01-02T05:30")` は
+     端末のタイムゾーンで読まれる。日本より西の端末では前の日になり、
+     節月の境目に生まれた人は本命星が変わる。サーバ側（/api/nba・
+     /api/relocation/nba-evaluate）は日本時間として読むので、揃えないと
+     同じ人の画面とサーバで答えが割れる。 */
+  const d = parseJapanDateTime(dateStr);
   if (d instanceof Date && !isNaN(d.getTime())) {
     return d;
   }
