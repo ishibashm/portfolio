@@ -109,6 +109,40 @@ jobs:
             echo "FAIL=1" >> "$GITHUB_ENV"
           fi
 
+      - name: Check noindex pages that the sitemap never covers
+        run: |
+          set -uo pipefail
+          BASE="https://cloud-palette.com"
+          echo "## 索引しない頁（sitemap に無いので上の検査が見ていない）" \
+            | tee -a "$GITHUB_STEP_SUMMARY"
+          # 上の「sitemap の URL 健全性」は sitemap に載っている URL しか
+          # 見ない。**索引しない頁はそこに載らないので、壊れても誰も
+          # 気付かない。**登録・ログイン・マイページは利用者が実際に使う
+          # 入口なので、生きていることだけは毎晩見る。
+          #
+          # next-sitemap.config.js の NOT_A_PAGE と同じ顔ぶれ。あちらに
+          # 頁を足したら、ここにも足すこと。
+          for path in /login /profile /account; do
+            code=$(curl -s -o /dev/null -w "%{http_code}" -A "cloud-palette-site-audit" "$BASE$path")
+            echo "$code $path" | tee -a "$GITHUB_STEP_SUMMARY"
+            if [ "$code" != "200" ]; then
+              echo "::error::$path が $code" | tee -a "$GITHUB_STEP_SUMMARY"
+              echo "FAIL=1" >> "$GITHUB_ENV"
+            fi
+            sleep 0.3
+          done
+          # **noindex のままであることも見る。**索引しない約束でサイト
+          # マップから外してあるので、robots メタが消えると「載っていない
+          # のに索引される」状態になり、指示が食い違う。
+          for path in /login /profile /account; do
+            BODY=$(curl -s --compressed -A "cloud-palette-site-audit" "$BASE$path")
+            if [[ "$BODY" != *"noindex"* ]]; then
+              echo "::error::$path に noindex が無い" | tee -a "$GITHUB_STEP_SUMMARY"
+              echo "FAIL=1" >> "$GITHUB_ENV"
+            fi
+            sleep 0.3
+          done
+
       - name: Check structured data on core pages
         run: |
           set -uo pipefail
