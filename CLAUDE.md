@@ -128,6 +128,20 @@ grep -rn "22.5) % 360) / 45" src/      # 45度等分のコピーが増えてい�
 **`db push` で揃えない。**スキーマに無い表・列を消すので、後者のずれがあると
 知らない列ごと消える。適用は一方向で戻らない（6 節）。
 
+**スキーマに表を足したら、必ず `prisma/sql` に足すだけの DDL を置いて
+`db-apply-sql` で当てる。**run-seed（`db push`）を使わなくなった後に足した表は
+当て漏れる。`MarketDailySummary` がそれで、スクリプトは毎晩
+`relation "MarketDailySummary" does not exist` と **console.warn だけして
+成功扱い**で通り、家賃指数は導入日から 1 日も積まれていなかった
+（#1102。2026-09-07 にログを読んで判明）。**続行する catch の警告は
+`::warning::` で Summary に出す。**25 本のジョブのログには誰も気付かない。
+
+突き合わせ方は `db-apply-sql` の dry-run。Before の一覧に本番の表が全部出る
+ので、schema.prisma の `model`（`@@map` があればその名）と比べる。#1102 の
+時点でスキーマ側の漏れは 1 つだけ、本番側には StockTarget・companies・
+financial_* の 5 表が**スキーマに無いまま**残っている（`db push` を回すと
+消える側）。
+
 ### dry-run の通過を根拠にしない
 
 `db-apply-sql` も `blog-import` も、**dry-run は書き込まないので列の不整合を
@@ -241,6 +255,29 @@ grep -rn "\.fromDate(" src/   # コメント（baziEngine の旧実装の記録�
 ```bash
 grep -rn "Math.floor(jd" src/   # 日の指標。日本時間の正午を通しているか見る
 ```
+
+**生年月日の文字列も同じ罠**（#1092〜#1099。2026-09-07）。`new Date("1990-01-02T05:30")`
+は時差の指定が無いので**実行環境のタイムゾーン**で読まれる。本番（UTC）では
+日本時間のつもりの時刻が 9 時間ずれ、**立春の前後 9 時間に生まれた人は
+本命星が 1 つ変わる**（1985-02-04T05:00 で古典 7 と 6 に割れた）。時刻を
+入れた人は時柱が必ずずれる。ホームの入力欄は datetime-local なので実際に届く。
+
+同じ規則が API に 6 つ写されていて、`api/nba` だけが素の `new Date` だった
+（同じ人がホームとシミュレータで違う本命星を見ていた）。読み方は
+`utils/japanDate` の **`parseJapanDateTime` ただ 1 つ**。画面側も同じ
+（日本より西の端末で前日になる）。読む側（`getFullYear()` など）も
+`getZonedDateTimeFields(d, 9)` で揃えないと元に戻る（#1093）。
+**日付だけ（`YYYY-MM-DD`）の扱いは変えていない**（UTC の 0 時＝日本時間の
+9 時。日本時間の 0 時に変えると時刻未入力の人の時柱が巳から子へ動く）。
+
+```bash
+grep -rn "new Date(birthDate" src/     # 0 件を保つ。見張りは birthInstantJst / clientBirthParseJst
+```
+
+**サーバで描く頁の `toLocaleDateString("ja-JP")` は `timeZone` 必須**（#1107）。
+省くと実行環境の日付になる。`/relocation/purchase` の「最終更新」は集計が
+23:49 UTC（翌 08:49 JST）に走るため**常に 1 日前**だった。`"use client"` で
+ない `src/app` を `serverPagesDateTimeZone.test.ts` が見張る。
 
 ### 型
 
