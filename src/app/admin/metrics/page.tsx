@@ -1360,7 +1360,9 @@ export default function AdminMetricsPage() {
                 <KpiCard
                   label="記事 PV"
                   value={s.blog.totals.pv.toLocaleString()}
-                  sub={`UV ${s.blog.totals.uv}`}
+                  // 記事ごとの UV の和。同じ人が 2 本読むと 2 になる
+                  // （記事横断の distinct ではない）ので、UV と名乗らない
+                  sub={`記事別 UV の和 ${s.blog.totals.uv}`}
                   icon={<BookOpen className="w-4 h-4" />}
                 />
                 <KpiCard
