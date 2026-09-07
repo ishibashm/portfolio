@@ -328,13 +328,33 @@ export function ProfileForm() {
                 必須
               </span>
             </span>
+            {/*
+              保存されている値は**時刻まで持つことがある。**ホームの
+              入力欄と物件検索の同行者欄は datetime-local なので、
+              "1990-01-02T05:30" のような文字列が入る。
+
+              `type="date"` にその文字列を渡すと、ブラウザは形が合わない
+              値を**空欄として描く。**登録済みなのに未入力に見えるうえ、
+              required なので保存も通らなくなる（すぐ上の「登録の進み
+              具合」は同じ値を「1990-01-02T05:30」と出しているので、
+              同じ画面の中で食い違っていた）。
+
+              日付だけを渡し、**時刻は保存されている値のまま持ち回る。**
+              ここで時刻を落とすと時柱が変わる（判定が動く）。
+            */}
             <input
               type="date"
               required
               min={MIN_BIRTH}
               max={today}
-              value={birthDate}
-              onChange={(e) => setBirthDate(e.target.value)}
+              value={birthDate.slice(0, 10)}
+              onChange={(e) =>
+                setBirthDate(
+                  e.target.value
+                    ? `${e.target.value}${birthDate.slice(10)}`
+                    : "",
+                )
+              }
               className="rounded-xl border border-stone-300 px-3 py-2.5 text-sm text-stone-800 focus:border-indigo-400 focus:outline-none"
             />
             <span className="text-[10px] leading-relaxed text-stone-500">
