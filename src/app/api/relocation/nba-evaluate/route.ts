@@ -20,6 +20,9 @@ import {
 } from "@/utils/swissEphemerisEngine";
 import { IChingClient } from "@/lib/ichingClient";
 
+/** 1 回の POST で評価する出発日の上限。 */
+const MAX_DATES = 366;
+
 export async function POST(req: Request) {
   try {
     const body = await req.json();
@@ -38,6 +41,14 @@ export async function POST(req: Request) {
         { status: 400 },
       );
     }
+    /*
+      件数の上限。1 件ごとにアスペクト・四柱・ヴェーダ・易の計算を回すので、
+      無制限だと 1 回の POST で CPU を占有できる（max-instances=2 の
+      Cloud Run では数本で止まる）。画面（時期シミュレータ）が送るのは
+      計画の出発日ぶんで、数件〜十数件。
+    */
+    const truncated = dates.length > MAX_DATES;
+    const dateList = truncated ? dates.slice(0, MAX_DATES) : dates;
 
     const parseSafeDate = (dateStr: string | null | undefined): Date => {
       if (!dateStr) return new Date();
@@ -65,7 +76,7 @@ export async function POST(req: Request) {
     const results = [];
     const today = new Date();
 
-    for (const dateStr of dates) {
+    for (const dateStr of dateList) {
       const targetDate = new Date(dateStr);
       if (isNaN(targetDate.getTime())) {
         results.push({ date: dateStr, error: "Invalid Date" });
@@ -309,7 +320,7 @@ export async function POST(req: Request) {
       });
     }
 
-    return NextResponse.json({ success: true, data: results });
+    return NextResponse.json({ success: true, data: results, truncated });
   } catch (error) {
     console.error("Failed to evaluate relocation dates:", error);
     return NextResponse.json(
