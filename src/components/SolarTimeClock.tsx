@@ -45,7 +45,11 @@ import {
   OptimizationResult,
 } from "../utils/timing-optimizer";
 import type { NBAData } from "@/types/nbaData";
-import { todayInJapan, toJapanDateString } from "@/utils/japanDate";
+import {
+  parseJapanDateTime,
+  todayInJapan,
+  toJapanDateString,
+} from "@/utils/japanDate";
 import {
   loadSettings,
   saveSettings,
@@ -98,9 +102,19 @@ export function formatCsvDetail(value: unknown): string {
   return String(value);
 }
 
+/**
+ * 生年月日時の文字列を Date にする。読めなければ fallback。
+ *
+ * **日本時間として読む。**素の `new Date("1990-01-02T05:30")` は時差の
+ * 指定が無いので**端末のタイムゾーン**で読まれる。日本より西の端末では
+ * 前の日になり、節月の境目に生まれた人は本命星が変わる（物件検索の頁が
+ * 同じ罠を踏んで直した経緯がある）。サーバ側（/api/nba・
+ * /api/relocation/nba-evaluate）は日本時間として読むので、揃えないと
+ * 同じ人の画面とサーバで答えが割れる。
+ */
 function parseSafeDate(dateStr: string | null | undefined, fallback: Date = new Date()): Date {
   if (!dateStr) return fallback;
-  const d = new Date(dateStr);
+  const d = parseJapanDateTime(dateStr);
   if (d instanceof Date && !isNaN(d.getTime())) {
     return d;
   }
@@ -1405,7 +1419,7 @@ export const SolarTimeClock = () => {
 
   const birthSolarData = React.useMemo(() => {
     if (!birthDate || !birthLon) return null;
-    const d = new Date(birthDate);
+    const d = parseJapanDateTime(birthDate);
     if (isNaN(d.getTime())) return null;
     return calculateSolarTime(d, birthLon);
   }, [birthDate, birthLon]);
@@ -1470,7 +1484,7 @@ export const SolarTimeClock = () => {
       return getHonmeiStar(birthSolarData.solarTime);
     }
     if (birthDate) {
-      const d = new Date(birthDate);
+      const d = parseJapanDateTime(birthDate);
       if (!isNaN(d.getTime())) {
         return getHonmeiStar(d);
       }
@@ -1486,7 +1500,7 @@ export const SolarTimeClock = () => {
       return getClassicalMonthStar(new Date(birthSolarData.solarTime));
     }
     if (birthDate) {
-      const d = new Date(birthDate);
+      const d = parseJapanDateTime(birthDate);
       if (!isNaN(d.getTime())) {
         return getClassicalMonthStar(d);
       }
@@ -1527,7 +1541,7 @@ export const SolarTimeClock = () => {
         classicalDayBoard: null,
       };
 
-    const bDate = new Date(birthDate);
+    const bDate = parseJapanDateTime(birthDate);
     if (isNaN(bDate.getTime()))
       return {
         board: null,
@@ -1702,7 +1716,7 @@ export const SolarTimeClock = () => {
       };
     }
 
-    const bDate = new Date(birthDate);
+    const bDate = parseJapanDateTime(birthDate);
     if (isNaN(bDate.getTime()))
       return {
         layers: null,
@@ -3629,7 +3643,7 @@ export const SolarTimeClock = () => {
 
   const basePersonalVoidZodiac = React.useMemo(() => {
     if (!birthDate) return [];
-    const d = new Date(birthDate);
+    const d = parseJapanDateTime(birthDate);
     if (isNaN(d.getTime())) return [];
     return getPersonalVoidZodiac(d);
   }, [birthDate]);

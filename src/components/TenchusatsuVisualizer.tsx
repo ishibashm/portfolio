@@ -3,6 +3,7 @@
 import React, { useMemo } from "react";
 import { calculateTenchusatsu } from "../utils/tenchusatsu";
 import { honmeiYearFor } from "../utils/honmeiYear";
+import { parseJapanDateTime } from "@/utils/japanDate";
 
 interface TenchusatsuVisualizerProps {
   birthDateStr: string;
@@ -28,7 +29,7 @@ export const TenchusatsuVisualizer: React.FC<TenchusatsuVisualizerProps> = ({
 
   const data = useMemo(() => {
     try {
-      const bDate = new Date(birthDateStr);
+      const bDate = parseJapanDateTime(birthDateStr);
       if (isNaN(bDate.getTime())) return null;
       // Calculate for a 12-year window around the current year
       return calculateTenchusatsu(bDate, currentYear);
