@@ -11,27 +11,35 @@ interface TenchusatsuVisualizerProps {
 export const TenchusatsuVisualizer: React.FC<TenchusatsuVisualizerProps> = ({
   birthDateStr,
 }) => {
+  /*
+    いまの年。**立春基準**で切る。暦年（getFullYear）で切ると 1/1〜立春の
+    5 週間は次の年の干支で「年の天中殺」を出し、同じ日に
+    /api/relocation/auspicious-days（getYearZhiExact = 立春切り）が
+    「天中殺ではない」と言う。午未の人なら 2026-01-20 に食い違う。
+
+    **判定と札で同じ値を使う。**判定だけを立春で切って、札
+    （Current Year Status (2026)）は `new Date().getFullYear()` の
+    ままだったので、1/1〜立春のあいだは**同じ枠の中で中身と札が
+    別の年を指していた**（2026-01-20 なら 2025 年の状態に「2026」の
+    札が付く）。暦年は実行環境のタイムゾーンでも変わるので、
+    本番（UTC）でさらに 1 年ずれうる。
+  */
+  const currentYear = useMemo(() => honmeiYearFor(new Date()), []);
+
   const data = useMemo(() => {
     try {
       const bDate = new Date(birthDateStr);
       if (isNaN(bDate.getTime())) return null;
       // Calculate for a 12-year window around the current year
-      //
-      // 年は**立春基準**で切る。暦年（getFullYear）で切ると 1/1〜立春の
-      // 5 週間は次の年の干支で「年の天中殺」を出し、同じ日に
-      // /api/relocation/auspicious-days（getYearZhiExact = 立春切り）が
-      // 「天中殺ではない」と言う。午未の人なら 2026-01-20 に食い違う。
-      const currentYear = honmeiYearFor(new Date());
       return calculateTenchusatsu(bDate, currentYear);
     } catch {
       // 生年月日が読めない・干支が引けない。何も出さない。
       return null;
     }
-  }, [birthDateStr]);
+  }, [birthDateStr, currentYear]);
 
   if (!data) return null;
 
-  const currentYear = new Date().getFullYear();
   const baseYear = currentYear - 3;
   /*
     **消さないこと。**未使用だが、これは「作りかけ」のしるし。
