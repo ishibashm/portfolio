@@ -98,9 +98,26 @@ export async function GET(request: Request) {
     // Ignore config read error
   }
 
-  // Default to Tokyo if still missing
-  if (isNaN(baseLat)) baseLat = 35.6895;
-  if (isNaN(baseLon)) baseLon = 139.6917;
+  /*
+    出発地は必須。以前はここで東京駅（35.6895, 139.6917）に黙って落として
+    いた。方位は出発地からの向きで決まるので、大阪の利用者が出発地を
+    まだ入れていない状態で開くと、**東京から見た方位**で全市区町村が
+    塗られる。さらに metadata.baseLat にその値を返すので、頁が「未入力
+    なら metadata から埋める」で出発地欄に写し、次の保存で
+    tactical_config_v1 と /api/user-config へ**東京駅を出発地として**
+    書いていた（上の生年月日と同じ経路）。物件検索の API と同じコードと
+    文言で断る。
+  */
+  if (isNaN(baseLat) || isNaN(baseLon)) {
+    return NextResponse.json(
+      {
+        error: "BASE_LOCATION_REQUIRED",
+        message:
+          "出発地（現在のお住まい）の座標が必要です。方位はここからの向きで決まるため、既定値では判定できません。",
+      },
+      { status: 400 },
+    );
+  }
 
   /*
     生年月日が無いときは**個人の判定を作らない**（rentals/arbitrage の
@@ -159,7 +176,7 @@ export async function GET(request: Request) {
 
   const env = getCurrentEnvironmentalFrequencies(
     targetDate,
-    isNaN(baseLon) ? 139.6917 : baseLon,
+    baseLon,
     physicalMonthMode,
   );
 

@@ -424,10 +424,12 @@ export default function RegionalWealthPage() {
       if (json.metadata) {
         setMetadata(json.metadata);
         // Sync local state if empty
-        if (!baseLat && json.metadata.baseLat)
-          setBaseLat(json.metadata.baseLat.toString());
-        if (!baseLon && json.metadata.baseLon)
-          setBaseLon(json.metadata.baseLon.toString());
+        /*
+          出発地は写さない。API は出発地が無いと 400 で断る（以前は東京駅に
+          黙って落とし、その値がここから出発地欄に入って、次の保存で
+          クラウドの base_lat に東京駅が書かれていた）。応答に載る
+          baseLat は頁が送ったものと同じなので、写す意味も無い。
+        */
         if (!birthLat && json.metadata.birthLat)
           setBirthLat(json.metadata.birthLat.toString());
         if (!birthLon && json.metadata.birthLon)
