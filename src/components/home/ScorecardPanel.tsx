@@ -567,7 +567,9 @@ export default function ScorecardPanel({
 
                         <div className="text-[10px] text-stone-600 space-y-0.5">
                           <div>
-                            <span className="text-stone-500">30日吉日:</span>{" "}
+                            <span className="text-stone-500">
+                              30日で動ける日:
+                            </span>{" "}
                             <span className="font-mono">
                               {item.luckyDays}日
                             </span>
@@ -595,7 +597,7 @@ export default function ScorecardPanel({
                               <span className="text-stone-700 font-bold">
                                 {item.topRental.property_name}
                                 <span className="font-mono font-normal text-stone-600">
-                                  （賃料{" "}
+                                  （賃料+管理費{" "}
                                   {(item.topRental.totalRent / 10000).toFixed(
                                     1,
                                   )}
@@ -639,7 +641,7 @@ export default function ScorecardPanel({
                         ③ 時間ゲート (Time)
                       </th>
 
-                      <th className="p-3 w-20 text-center">30日吉日</th>
+                      <th className="p-3 w-20 text-center">30日で動ける日</th>
                       <th className="p-3">推奨エリア (所得)</th>
                       <th className="p-3">推奨物件 (差益)</th>
                     </tr>
@@ -790,7 +792,7 @@ export default function ScorecardPanel({
                               </div>
                             </td>
 
-                            {/* 30日吉日 */}
+                            {/* 30日で動ける日（凶でない日。SAFE は吉ではない） */}
                             <td className="p-3 text-center font-mono text-[10px] text-stone-500">
                               {item.luckyDays}日
                             </td>
@@ -840,7 +842,7 @@ export default function ScorecardPanel({
                                       {item.topRental.property_name}
                                     </span>
                                     <span className="text-[10px] text-stone-600 font-mono mt-0.5 group-hover/item:text-zinc-450">
-                                      賃料:{" "}
+                                      賃料+管理費:{" "}
                                       {(
                                         item.topRental.totalRent / 10000
                                       ).toFixed(1)}
@@ -856,7 +858,7 @@ export default function ScorecardPanel({
                                       {item.topRental.property_name}
                                     </span>
                                     <span className="text-[10px] text-stone-600 font-mono mt-0.5">
-                                      賃料:{" "}
+                                      賃料+管理費:{" "}
                                       {(
                                         item.topRental.totalRent / 10000
                                       ).toFixed(1)}
@@ -1565,7 +1567,7 @@ export default function ScorecardPanel({
                           <span>📅 直近30日の時空吉凶シミュレーション</span>
                         </h4>
                         <span className="text-[9px] text-stone-600 font-mono">
-                          吉日数: {detail.luckyDays}日
+                          動ける日（凶でない日）: {detail.luckyDays}日
                         </span>
                       </div>
 
@@ -1636,9 +1638,13 @@ export default function ScorecardPanel({
                               </div>
                               <div className="text-right flex flex-col items-end">
                                 <span className="text-stone-600 font-mono font-bold">
+                                  {/* 1 人あたりが無いときに課税所得の総額
+                                      （千円）を 1000 で割って出していた。
+                                      桁が違ううえ、総額を「一人当たり」と
+                                      名乗っていた。無いなら無いと出す */}
                                   {area.incomePerCapita
                                     ? `${(area.incomePerCapita / 10000).toFixed(1)}万円`
-                                    : `${(area.taxableIncomeThousandYen / 1000).toFixed(0)}万円`}
+                                    : "—"}
                                 </span>
                                 <span className="text-[9px] text-stone-600 font-sans mt-0.5">
                                   一人当たり平均所得

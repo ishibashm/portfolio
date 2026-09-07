@@ -180,7 +180,7 @@ export default function HomePortal({
     };
   }, [schedule, evalDate, personalVoidZodiac, honmeiStar, useClassicalBoard]);
 
-  /** 30 日で吉の日が多い方位。上位 3 つ。 */
+  /** 30 日で動ける日（凶でない日。SAFE を含む）が多い方位。上位 3 つ。 */
   const windows = React.useMemo(() => {
     if (!forecast) return [];
     return DIRS.map((d) => ({
