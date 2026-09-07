@@ -313,6 +313,111 @@ export interface RentIndexPoint {
   medianSqmRent: number;
 }
 
+/**
+ * 県ごとの「この 1 週間の動き」。県ページの見出しに使う。
+ *
+ * ## なぜこれが要るか
+ *
+ * 県ページと市区町村ページには「その地域のニュース」の欄があるが、
+ * 中身は全国 13 フィードを地名で絞ったものなので、地元発の見出しが
+ * 無い県はほぼ空になる。いちばん強い地域ニュースは**自分のデータ**で、
+ * 毎晩の集計（MarketDailySummary）と掲載の出入りから、その県で今週
+ * 何が動いたかを 1 行で言える。他所に無い数字なので、雛形の量産
+ * （#379 で 1,022 頁を noindex にした原因）にはならない。
+ *
+ * ## 数字の意味
+ *
+ * - 比較は**最新の集計日**と、その 7 日以上前でいちばん近い集計日。
+ *   毎晩必ず集計できるとは限らない（ジョブが落ちる夜がある）ので、
+ *   「ちょうど 7 日前」に固執せず、あった日を使う。どの 2 日を比べたかは
+ *   latestDate / baseDate に残す
+ * - 中央値の差は %。㎡単価は面積構成の変化に引きずられにくいので、
+ *   総家賃と両方持つ
+ * - newListings7d は first_seen_at が 7 日以内の行数。掲載の出入りの
+ *   「入り」だけを見る（「出」はパージがあるので正確に数えられない）
+ * - priceCuts7d / priceRises7d は rental_price_history（家賃が変わった
+ *   行だけを DB の仕掛けで記録する表）から。**仕掛けが当たっていない
+ *   環境では null。**0 と区別する（0 は「変化が無かった」、null は
+ *   「数えられない」）
+ */
+export interface PrefectureWeeklyMove {
+  prefecture: string;
+  latestDate: string;
+  baseDate: string;
+  /** 最新の集計日の掲載数と、base からの増減 */
+  n: number;
+  nDelta: number;
+  medianRent: number;
+  medianRentDeltaPct: number;
+  medianSqmRent: number;
+  medianSqmRentDeltaPct: number;
+  newListings7d: number;
+  priceCuts7d: number | null;
+  priceRises7d: number | null;
+}
+
+/** MarketDailySummary の 1 行（県ページの動きを出すのに読む列だけ） */
+export interface DailySummaryRow {
+  date: string;
+  n: number;
+  medianRent: number;
+  medianSqmRent: number;
+}
+
+/**
+ * 比較の基準にする日。最新の集計日から **7 日以上前**で、いちばん近い日。
+ *
+ * 集計が落ちた夜があっても「ちょうど 7 日前」に固執しない。ただし
+ * 7 日未満の日は使わない（「今週の動き」と言えなくなる）。無ければ
+ * undefined（まだ積み始めたばかり。県ページは何も出さない）。
+ */
+export function weeklyBaseRow(
+  rows: DailySummaryRow[],
+  minDays = 7,
+): { latest: DailySummaryRow; base: DailySummaryRow } | undefined {
+  if (rows.length === 0) return undefined;
+  const sorted = [...rows].sort((a, b) => (a.date < b.date ? -1 : 1));
+  const latest = sorted[sorted.length - 1];
+  const latestMs = Date.parse(`${latest.date}T00:00:00Z`);
+  const base = [...sorted]
+    .reverse()
+    .find(
+      (r) =>
+        (latestMs - Date.parse(`${r.date}T00:00:00Z`)) / 86_400_000 >= minDays,
+    );
+  return base ? { latest, base } : undefined;
+}
+
+/** 2 つの集計日から差を出す。base の値が 0 なら %は出せないので 0 にする。 */
+export function weeklyMoveFromRows(
+  prefecture: string,
+  latest: DailySummaryRow,
+  base: DailySummaryRow,
+  extras: {
+    newListings7d: number;
+    priceCuts7d: number | null;
+    priceRises7d: number | null;
+  },
+): PrefectureWeeklyMove {
+  const pct = (a: number, b: number) => (b === 0 ? 0 : ((a - b) / b) * 100);
+  return {
+    prefecture,
+    latestDate: latest.date,
+    baseDate: base.date,
+    n: latest.n,
+    nDelta: latest.n - base.n,
+    medianRent: latest.medianRent,
+    medianRentDeltaPct: Number(
+      pct(latest.medianRent, base.medianRent).toFixed(2),
+    ),
+    medianSqmRent: latest.medianSqmRent,
+    medianSqmRentDeltaPct: Number(
+      pct(latest.medianSqmRent, base.medianSqmRent).toFixed(2),
+    ),
+    ...extras,
+  };
+}
+
 export interface MarketStats {
   generatedAt: string | null;
   totalListings: number;
@@ -335,6 +440,12 @@ export interface MarketStats {
   survival: { curve: SurvivalPoint[]; medianDays: number | null; n: number };
   prefectures: PrefectureStats[];
   volatilityRanking: MunicipalityVolatility[];
+  /**
+   * 県ごとの「この 1 週間の動き」。MarketDailySummary が 7 日ぶん貯まった
+   * 県から順に入る。**省略可能**なのは、この項目を足す前に焼いた JSON を
+   * 読む側が落ちないため（表が本番に無かった期間は空のまま）。
+   */
+  weeklyMoves?: PrefectureWeeklyMove[];
 }
 
 export function buildHedonicModel(acc: OlsAccumulator): HedonicModel | null {

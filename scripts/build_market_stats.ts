@@ -18,15 +18,19 @@ import { toLogMessage } from "../src/lib/errorMessage";
 import { addressPrefixClause } from "../src/lib/jisCityAlias";
 import { TARGET_PREFECTURE_NAMES } from "../src/lib/scrapeTargets";
 import {
+  DailySummaryRow,
   MarketStats,
   MunicipalityVolatility,
   OlsAccumulator,
   PrefectureStats,
+  PrefectureWeeklyMove,
   buildHedonicModel,
   hedonicX,
   histogram,
   kaplanMeier,
   summarizeDistribution,
+  weeklyBaseRow,
+  weeklyMoveFromRows,
 } from "../src/utils/marketStats";
 
 const envPath = fs.existsSync(path.resolve(process.cwd(), ".env"))
@@ -257,6 +261,7 @@ async function main() {
       medianRent: number;
       medianSqmRent: number;
     }[] = [];
+    const weeklyMoves: PrefectureWeeklyMove[] = [];
     try {
       const natRentSummary = summarizeDistribution(nationalRents);
       const natSqmSummary = summarizeDistribution(nationalSqm);
@@ -315,6 +320,84 @@ async function main() {
         medianSqmRent: Number(r.msr),
       }));
       console.log(`家賃指数: ${rentIndexSeries.length} 日ぶん蓄積済み`);
+
+      // ---- 県ごとの「この 1 週間の動き」 ----
+      //
+      // 上で upsert したばかりの今日の行を含めて、県ごとに直近 30 日を
+      // 読み、7 日以上前の集計日と比べる。差の計算は marketStats.ts の
+      // 純関数（テストがある）。ここは行を出して流すだけ。
+      //
+      // 値下げ・値上げの件数は rental_price_history から。あの表は
+      // DB の仕掛け（トリガ）が当たっていないと空のままなので、
+      // 読めなければ null にして「数えられない」と区別する。
+      const summaryRows = await pool.query<{
+        prefecture: string;
+        date: string;
+        n: string;
+        mr: string;
+        msr: string;
+      }>(
+        `SELECT prefecture, date::text AS date, n,
+                "medianRent" AS mr, "medianSqmRent" AS msr
+           FROM "MarketDailySummary"
+          WHERE prefecture <> '全国' AND date > CURRENT_DATE - 30
+          ORDER BY prefecture, date`,
+      );
+      const byPref = new Map<string, DailySummaryRow[]>();
+      for (const r of summaryRows.rows) {
+        if (!byPref.has(r.prefecture)) byPref.set(r.prefecture, []);
+        byPref.get(r.prefecture)!.push({
+          date: r.date,
+          n: Number(r.n),
+          medianRent: Number(r.mr),
+          medianSqmRent: Number(r.msr),
+        });
+      }
+      let historyReadable = true;
+      for (const [pref, rows] of byPref) {
+        const pair = weeklyBaseRow(rows);
+        if (!pair) continue;
+        const where = addressPrefixClause(pref);
+        const fresh = await pool.query<{ n: string }>(
+          `SELECT count(*)::int AS n
+             FROM rental_properties
+            WHERE ${where.sql}
+              AND first_seen_at > now() - interval '7 days'`,
+          where.params,
+        );
+        let cuts: number | null = null;
+        let rises: number | null = null;
+        if (historyReadable) {
+          try {
+            const h = await pool.query<{ cuts: string; rises: string }>(
+              `SELECT count(*) FILTER (WHERE h.rent < h.prev_rent)::int AS cuts,
+                      count(*) FILTER (WHERE h.rent > h.prev_rent)::int AS rises
+                 FROM rental_price_history h
+                 JOIN rental_properties p ON p.id = h.property_id
+                WHERE h.observed_at > now() - interval '7 days'
+                  AND ${where.sql.replace(/address/g, "p.address")}`,
+              where.params,
+            );
+            cuts = Number(h.rows[0]?.cuts ?? 0);
+            rises = Number(h.rows[0]?.rises ?? 0);
+          } catch (e) {
+            // 1 県で読めなければ全県で読めない（表そのものが無い）。
+            // 以後は問い合わせず null のまま
+            historyReadable = false;
+            console.warn(
+              `::warning::rental_price_history が読めないので値下げ件数は出さない: ${toLogMessage(e)}`,
+            );
+          }
+        }
+        weeklyMoves.push(
+          weeklyMoveFromRows(pref, pair.latest, pair.base, {
+            newListings7d: Number(fresh.rows[0]?.n ?? 0),
+            priceCuts7d: cuts,
+            priceRises7d: rises,
+          }),
+        );
+      }
+      console.log(`今週の動き: ${weeklyMoves.length} 県ぶん`);
     } catch (e) {
       /*
         GitHub Actions の注釈として出す。ただの console.warn だと 25 本の
@@ -351,6 +434,7 @@ async function main() {
       survival: { curve, medianDays: km.medianDays, n: observations.length },
       prefectures: prefStats.sort((a, b) => b.n - a.n),
       volatilityRanking: volatility.slice(0, 20),
+      weeklyMoves,
     };
 
     const outPath = path.join(process.cwd(), "src", "data", "marketStats.json");
