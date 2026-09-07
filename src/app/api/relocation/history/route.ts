@@ -5,6 +5,7 @@ import path from "path";
 import prisma from "@/lib/prisma";
 import { denyUnlessAdmin } from "@/lib/adminApi";
 import { ratingForStatus } from "@/lib/verdictRating";
+import { aggregateMonthStatus } from "@/lib/historyMonthStatus";
 import {
   getCurrentEnvironmentalFrequencies,
   generateBoard,
@@ -283,23 +284,10 @@ export async function GET(request: Request) {
       if (precision === "YEAR") {
         finalStatus = yStatus;
       } else if (precision === "MONTH") {
-        // Aggregate Year + Month layers
-        const yScore = getRatingLabel(yStatus).score;
-        const mScore = getRatingLabel(mStatus).score;
-        const total = yScore + mScore;
-
-        if (["NOISE_GOU", "NOISE_ANKEN", "NOISE_HA"].includes(yStatus)) {
-          finalStatus = yStatus;
-        } else if (["NOISE_GOU", "NOISE_ANKEN", "NOISE_HA"].includes(mStatus)) {
-          finalStatus = mStatus;
-        } else if (total < 0) {
-          finalStatus = yScore < mScore ? yStatus : mStatus;
-        } else if (total > 0) {
-          finalStatus =
-            yStatus === "OPTIMAL" || mStatus === "OPTIMAL"
-              ? "OPTIMAL"
-              : "OPTIMAL_REGULAR";
-        }
+        // 年盤 + 月盤を 1 語に畳む。五大凶殺の集合は noiseSeverity から
+        // 引く（以前はここに 3 つだけ写していて、本命殺 + 大吉が 0 点で
+        // 「平穏」に落ちていた。lib/historyMonthStatus の註）
+        finalStatus = aggregateMonthStatus(yStatus, mStatus);
       } else {
         // DAY and HOUR precision evaluates all layers (Day precision)
         finalStatus = filteredCollision.finalVectors[direction] || "SAFE";
