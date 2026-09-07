@@ -5,6 +5,8 @@ import { fetchAllFeeds, mergeLatest } from "@/lib/fetchNews";
 import { groupFeeds } from "@/lib/newsGrouping";
 import { topicOf } from "@/lib/newsTopics";
 import { NewsCards, type NewsCardEntry } from "@/components/news/NewsCards";
+import { PrefNewsPicker } from "@/components/news/PrefNewsPicker";
+import { PREF_REGION, prefNameByCode } from "@/lib/prefContent";
 import { NEWS_LINKS } from "@/data/newsSources";
 import { SITE_NAME } from "@/lib/siteStructure";
 import { SITE_URL } from "@/lib/siteUrl";
@@ -79,6 +81,15 @@ export default async function Page() {
     カードに渡すのは素の値だけ。FeedSource をそのまま渡すと台帳の全項目が
     クライアントへ流れる。色分けの鍵は束があれば束（UR の 12 本を 1 色に）。
   */
+  /* 県の選択肢。JIS コード順（北から南）。名前は areaDirections の実データ
+     から引くので、掲載のある 47 県ぶんが出る */
+  const prefOptions = Object.keys(PREF_REGION)
+    .sort()
+    .flatMap((c) => {
+      const name = prefNameByCode(c);
+      return name ? [{ code: c, name }] : [];
+    });
+
   const cardEntries: NewsCardEntry[] = latest.map((entry) => ({
     title: entry.item.title,
     link: entry.item.link,
@@ -116,6 +127,10 @@ export default async function Page() {
         {cardEntries.length > 0 && (
           <NewsCards entries={cardEntries} sourceCount={sourceCount} />
         )}
+
+        {/* 県で絞る。URL は 1 つのまま（?pref=）、頁は静的のまま。
+            中身は開いてから端末側で /api/news/local に聞く */}
+        <PrefNewsPicker options={prefOptions} />
 
         {/* まとめた札。配信を何本にも分けている発信元は、区分ごとに
             1 枚へたたむ。フィードの本数ぶん札を並べると、他の媒体が
