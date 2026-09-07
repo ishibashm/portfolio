@@ -238,7 +238,10 @@ export default async function Page({
             今日の日付が付く。
           */}
           <p className="mt-2 text-[11px] text-slate-500">
-            集計日: {new Date(areaAsOf(area)).toLocaleDateString("ja-JP")}
+            集計日:{" "}
+            {new Date(areaAsOf(area)).toLocaleDateString("ja-JP", {
+              timeZone: "Asia/Tokyo",
+            })}
             ／ 掲載中の物件は入れ替わるため、最新の相場とは差が出ることがあります。
           </p>
           {/*

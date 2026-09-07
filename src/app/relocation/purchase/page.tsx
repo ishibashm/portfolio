@@ -144,7 +144,12 @@ export default function PurchaseAnalyticsPage() {
 
   const s = stats.source;
   const n = stats.national;
-  const generated = new Date(stats.generatedAt).toLocaleDateString("ja-JP");
+  /* この頁はサーバで描く。timeZone を省くと実行環境（本番は UTC）の
+     日付になり、集計が 23:49 UTC（翌 08:49 JST）に走るので**常に 1 日前**
+     の日付が出ていた。/relocation/yield と同じ書き方に揃える */
+  const generated = new Date(stats.generatedAt).toLocaleDateString("ja-JP", {
+    timeZone: "Asia/Tokyo",
+  });
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-rose-50/80 via-stone-50 to-amber-50/50 p-4 font-sans text-stone-800 md:p-8">
