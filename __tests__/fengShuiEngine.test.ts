@@ -131,6 +131,81 @@ describe("八宅の表（写し間違いの検算）", () => {
   it("吉の遊星はちょうど 4 種類", () => {
     expect(AUSPICIOUS_YOUXING).toHaveLength(4);
   });
+
+  /*
+    遊星は「本命卦と方位の卦で、三爻のどこが違うか」で決まる。表を
+    三爻の規則から組み直して、64 か所すべてを突き合わせる。上の
+    「吉が 4 つ」の検算は凶どうしの取り違え（五鬼と禍害、六殺と禍害）を
+    捕まえられず、震・兌・艮・離で 8 か所が入れ替わったまま通っていた。
+  */
+  it("三爻の規則から組んだ表と 64 か所すべて一致する", () => {
+    // 下・中・上の順。陽 = 1
+    const LINES: Record<Gua, [number, number, number]> = {
+      1: [0, 1, 0], // 坎
+      2: [0, 0, 0], // 坤
+      3: [1, 0, 0], // 震
+      4: [0, 1, 1], // 巽
+      6: [1, 1, 1], // 乾
+      7: [1, 1, 0], // 兌
+      8: [0, 0, 1], // 艮
+      9: [1, 0, 1], // 離
+    };
+    const DIR_GUA: Record<string, Gua> = {
+      N: 1,
+      SW: 2,
+      E: 3,
+      SE: 4,
+      NW: 6,
+      W: 7,
+      NE: 8,
+      S: 9,
+    };
+    // 変わった爻の組 → 遊星
+    const RULE: Record<string, string> = {
+      "": "伏位",
+      top: "生気",
+      "bottom,middle": "天医",
+      "bottom,middle,top": "延年",
+      middle: "絶命",
+      "middle,top": "五鬼",
+      "bottom,top": "六殺",
+      bottom: "禍害",
+    };
+    const NAMES = ["bottom", "middle", "top"] as const;
+    for (const gua of ALL_GUA) {
+      const y = findYearForGua(gua);
+      const reading = readFengShui(y.year, y.sex);
+      for (const d of reading.directions) {
+        const a = LINES[gua];
+        const b = LINES[DIR_GUA[d.direction]];
+        const changed = NAMES.filter((_, i) => a[i] !== b[i]).join(",");
+        expect(d.youxing, `卦 ${gua} ${d.direction}`).toBe(RULE[changed]);
+      }
+    }
+  });
+
+  it("入れ替わっていた 8 か所（震・兌・艮・離）", () => {
+    // 2026-09-07 まで逆だった。標準の表でも 震命は 禍害=南西・六殺=東北、
+    // 兌命は 禍害=北・五鬼=南、艮命は 五鬼=北・禍害=南、離命は 六殺=南西・
+    // 禍害=東北
+    const cases: [Gua, string, string][] = [
+      [3, "SW", "禍害"],
+      [3, "NE", "六殺"],
+      [7, "N", "禍害"],
+      [7, "S", "五鬼"],
+      [8, "N", "五鬼"],
+      [8, "S", "禍害"],
+      [9, "SW", "六殺"],
+      [9, "NE", "禍害"],
+    ];
+    for (const [gua, dir, youxing] of cases) {
+      const y = findYearForGua(gua);
+      const found = readFengShui(y.year, y.sex).directions.find(
+        (d) => d.direction === dir,
+      );
+      expect(found?.youxing, `卦 ${gua} ${dir}`).toBe(youxing);
+    }
+  });
 });
 
 describe("1 方位だけ引く", () => {
