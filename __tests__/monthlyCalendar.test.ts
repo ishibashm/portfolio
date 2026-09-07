@@ -134,3 +134,37 @@ describe("土用の間日（季ごとの表）", () => {
     expect(u.isMabi).toBe(false);
   });
 });
+
+/**
+ * 土用の期間は月をまたぐ。月内の日だけを拾うと暦月で切れて、
+ * /calendar/2026-01 は「1/17〜1/31」、/calendar/2026-02 は「2/1〜2/3」と
+ * 別の期間のように出ていた。両方の月で同じ本当の期間を返す。
+ */
+describe("土用の期間は暦月で切らない", () => {
+  it("冬土用 2026 は 1 月の頁でも 2 月の頁でも 1/17〜2/3", () => {
+    expect(buildMonthlyCalendar(2026, 1).doyou).toEqual({
+      start: "2026-01-17",
+      end: "2026-02-03",
+    });
+    expect(buildMonthlyCalendar(2026, 2).doyou).toEqual({
+      start: "2026-01-17",
+      end: "2026-02-03",
+    });
+  });
+
+  it("夏土用 2026 は 7 月の頁でも 8 月の頁でも 7/20〜8/6", () => {
+    expect(buildMonthlyCalendar(2026, 7).doyou).toEqual({
+      start: "2026-07-20",
+      end: "2026-08-06",
+    });
+    expect(buildMonthlyCalendar(2026, 8).doyou).toEqual({
+      start: "2026-07-20",
+      end: "2026-08-06",
+    });
+  });
+
+  it("土用の無い月は null", () => {
+    expect(buildMonthlyCalendar(2026, 3).doyou).toBeNull();
+    expect(buildMonthlyCalendar(2026, 9).doyou).toBeNull();
+  });
+});
