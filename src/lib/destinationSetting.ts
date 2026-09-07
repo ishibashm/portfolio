@@ -1,3 +1,4 @@
+import { formatCoords } from "@/lib/profileCompletion";
 import {
   readLocalSettings,
   writeLocalSettings,
@@ -82,6 +83,23 @@ export function writeDestination(patch: Partial<DestinationSetting>): void {
   if (Object.keys(next).length === 0) return;
   writeLocalSettings(next);
   for (const listener of listeners) listener();
+}
+
+/**
+ * 目的地を 1 行で言う。未設定なら null。
+ *
+ * /account（登録内容の頁）が目的地を出していなかったので足した。
+ * 「登録した内容を消す」の説明には目的地も入ると書いてあるのに、
+ * 一覧には出ていない、という食い違いになっていた。
+ *
+ * 地名は入力のときに拾えた場合だけ入っている。**地名があっても座標を
+ * 省かない。**判定に使われるのは座標のほうで、地名は表示用でしかない
+ * （取り違えたまま気付けないのが困る）。
+ */
+export function describeDestination(dest: DestinationSetting): string | null {
+  if (dest.lat === null || dest.lon === null) return null;
+  const coords = formatCoords(dest.lat, dest.lon);
+  return dest.label ? `${dest.label}（${coords}）` : coords;
 }
 
 /** 同期対象に紛れ込んでいないか。検査と、開発時の取り違え防止に使う。 */
