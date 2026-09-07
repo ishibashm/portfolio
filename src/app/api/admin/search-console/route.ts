@@ -47,7 +47,10 @@ export async function GET(req: Request) {
     枠を消費しないので分けなくてもよいが、応答が別物なので口を分ける。
   */
   if (params.get("topics") === "1") {
-    return topicList(Number(params.get("days") ?? 90));
+    // `?days=abc` は Number で NaN になり、Invalid Date の窓を作って
+    // 「Search Console の API エラー」として返っていた。数でなければ既定
+    const rawDays = Number(params.get("days"));
+    return topicList(Number.isFinite(rawDays) && rawDays > 0 ? rawDays : 90);
   }
 
   const probe = await probeSearchConsole();
