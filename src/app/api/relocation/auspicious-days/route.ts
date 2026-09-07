@@ -147,7 +147,10 @@ export async function GET(request: Request) {
           date: any.date,
           weekday: any.weekday,
           rokuyo: any.rokuyo,
-          tags: any.tags,
+          // 天赦日・一粒万倍日などは日の札だが、「天道」は方位ごとの札
+          // （その月の天道の方位に当たっているか）。北の判定から写すと、
+          // 天道が北の月は全日に付き、他の月は 1 日も付かない
+          tags: any.tags.filter((t) => t !== "天道"),
           blocked: any.blockedByTenchusatsu,
           tiers,
         });

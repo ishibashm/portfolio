@@ -2,6 +2,7 @@
 
 import React, { useMemo } from "react";
 import { calculateTenchusatsu } from "../utils/tenchusatsu";
+import { honmeiYearFor } from "../utils/honmeiYear";
 
 interface TenchusatsuVisualizerProps {
   birthDateStr: string;
@@ -15,7 +16,12 @@ export const TenchusatsuVisualizer: React.FC<TenchusatsuVisualizerProps> = ({
       const bDate = new Date(birthDateStr);
       if (isNaN(bDate.getTime())) return null;
       // Calculate for a 12-year window around the current year
-      const currentYear = new Date().getFullYear();
+      //
+      // 年は**立春基準**で切る。暦年（getFullYear）で切ると 1/1〜立春の
+      // 5 週間は次の年の干支で「年の天中殺」を出し、同じ日に
+      // /api/relocation/auspicious-days（getYearZhiExact = 立春切り）が
+      // 「天中殺ではない」と言う。午未の人なら 2026-01-20 に食い違う。
+      const currentYear = honmeiYearFor(new Date());
       return calculateTenchusatsu(bDate, currentYear);
     } catch {
       // 生年月日が読めない・干支が引けない。何も出さない。
