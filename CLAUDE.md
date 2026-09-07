@@ -418,7 +418,7 @@ React が面倒を見る（#962 の `NewsCards` が見本）。
 `catch (e: any)` も **0 件**（#215 で最後の 4 件が片付いた）。
 
 **残り 21 件に、手を付けてよいものは無い。**対象外 19 + 消してはいけない
-未使用 6。ここが lint の底。
+未使用 2（`setBaseSyncTimestamp`・`years`）。ここが lint の底。
 
 any の最後の 5 件の片付き方は参考になる:
 - `userSettings.Settings` → 実際の値（JSON スカラー）の union に狭めたら、
