@@ -90,3 +90,40 @@ export function normalizeBirthDateTimeLocal(dateStr: string): string {
     parts.find((p) => p.type === type)?.value ?? "";
   return `${get("year")}-${get("month")}-${get("day")}T${get("hour")}:${get("minute")}`;
 }
+
+/**
+ * 生年月日時の文字列を、**日本時間として**読む。
+ *
+ * `new Date("1990-01-02T05:30")` は時差の指定が無いので**実行環境の
+ * タイムゾーン**で読まれる。本番（Cloud Run）は UTC なので、日本時間の
+ * 5:30 のつもりで入れた値が 5:30Z＝日本時間の 14:30 になる。**9 時間
+ * 遅い別人**として判定される。
+ *
+ * 実測（TZ=UTC。生年月日時 → 本命星 / 時柱）:
+ *
+ *     1985-02-04T05:00   日本時間で読む  古典 7・丁卯
+ *                        UTC で読む      古典 6・辛未   ← 本命星が変わる
+ *     1990-01-02T05:30   日本時間で読む  癸卯
+ *                        UTC で読む      丁未          ← 時柱が変わる
+ *
+ * 立春（節年の境目）の前後 9 時間に生まれた人は**本命星が 1 つずれ**、
+ * 時刻を入れた人は**時柱が必ずずれる**。方位の吉凶はすべて本命星から
+ * 出るので、ここがずれると画面の答えが丸ごと変わる。
+ *
+ * ## 日付だけの文字列は今までどおり
+ *
+ * `YYYY-MM-DD` は `new Date` が **UTC の 0 時**として読む（時差の
+ * 指定が無い日付だけの形は UTC と決まっている）。日本時間では同じ日の
+ * 9 時にあたるので、年・月・日は日本時間で読んでも同じ日になる。
+ * ここを日本時間の 0 時に変えると、**時刻を入れていない人の時柱が
+ * 巳から子へ動く**（今まで出ていた答えが変わる）。だから触らない。
+ *
+ * 同じ規則が `api/relocation/nba-evaluate` と `api/municipalities-wealth`
+ * にそれぞれ `parseSafeDate` として写されていた。寄せ先はここ。
+ */
+export function parseJapanDateTime(dateStr: string): Date {
+  const hasTime = dateStr.includes("T");
+  const hasOffset = /(Z|[+-]\d{2}:?\d{2})$/.test(dateStr);
+  if (hasTime && !hasOffset) return new Date(`${dateStr}+09:00`);
+  return new Date(dateStr);
+}

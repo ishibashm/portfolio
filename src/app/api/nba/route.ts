@@ -24,7 +24,11 @@ import { VedicEngine } from "@/utils/vedicEngine";
 import { fetchSpaceWeather } from "@/utils/spaceWeather";
 import { fetchMacroEconomics } from "@/utils/macroEconomics";
 import { fetchMetaphysicalData } from "@/utils/metaphysicalApis";
-import { daysAgoInJapan, toJapanDateString } from "@/utils/japanDate";
+import {
+  daysAgoInJapan,
+  parseJapanDateTime,
+  toJapanDateString,
+} from "@/utils/japanDate";
 import {
   SwissEphemerisEngine,
   CelestialBody,
@@ -160,8 +164,17 @@ export async function POST(req: Request) {
 
     // Calculate detailed BaZi
     const environmentalBaziData = baziEngine.calculate(today, lon);
-    // 同じ文字列から Date を 3 回作っていたので 1 つにまとめる。
-    const birthDateObj = birthDateStr ? new Date(birthDateStr) : null;
+    /*
+      同じ文字列から Date を 3 回作っていたので 1 つにまとめる。
+
+      **日本時間として読む。**素の `new Date` は時差の指定が無い文字列を
+      実行環境のタイムゾーンで読むので、本番（UTC）では時刻つきの生年月日
+      （ホームの入力欄は datetime-local）が 9 時間遅い別人になっていた。
+      1985-02-04T05:00 は古典の本命星が 7 と 6 に割れる（立春の境目）。
+      /api/relocation/nba-evaluate は同じ入力を日本時間で読んでいたので、
+      **同じ人でもホームとシミュレータで答えが違っていた。**
+    */
+    const birthDateObj = birthDateStr ? parseJapanDateTime(birthDateStr) : null;
     const personalBaziData = birthDateObj
       ? baziEngine.calculate(birthDateObj, lon)
       : null;
@@ -245,7 +258,9 @@ export async function POST(req: Request) {
     // 空の body を POST するだけで運営者のライフパスナンバー・太陽星座・
     // 大運・紫微斗数・九星が返っていた。上の personalBazi / voidZodiac は
     // 最初から null を通していたので、ここだけが穴だった。
-    const targetBirthDate = birthDateStr ? new Date(birthDateStr) : null;
+    const targetBirthDate = birthDateStr
+      ? parseJapanDateTime(birthDateStr)
+      : null;
     const metaphysicalData = fetchMetaphysicalData(
       targetBirthDate,
       today,

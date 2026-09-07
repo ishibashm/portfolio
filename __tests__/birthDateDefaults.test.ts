@@ -117,8 +117,11 @@ describe("/api/nba", () => {
   });
 
   it("生年月日が無ければ null のまま渡す", () => {
+    /* 読み方は parseJapanDateTime に替えたが（時差の指定が無い文字列を
+       実行環境のタイムゾーンで読んでいた）、**無ければ null** は変えない。
+       ここが落ちるのは「無いときに何かで埋めた」ときだけにする。 */
     expect(src).toContain(
-      "const targetBirthDate = birthDateStr ? new Date(birthDateStr) : null;",
+      "birthDateStr\n      ? parseJapanDateTime(birthDateStr)\n      : null;",
     );
   });
 });
