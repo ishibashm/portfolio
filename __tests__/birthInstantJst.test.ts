@@ -85,6 +85,8 @@ describe("読み方を 1 か所に寄せた（写しを増やさない）", () =
     "src/app/api/nba/route.ts",
     "src/app/api/relocation/nba-evaluate/route.ts",
     "src/app/api/municipalities-wealth/route.ts",
+    "src/app/api/rentals/arbitrage/route.ts",
+    "src/app/api/rentals/arbitrage/timeline/route.ts",
   ];
 
   it("生年月日を読む API は parseJapanDateTime を使う", () => {
@@ -94,14 +96,14 @@ describe("読み方を 1 か所に寄せた（写しを増やさない）", () =
     }
   });
 
-  it("同じ規則の写し（parseSafeDate）が API に残っていない", () => {
-    /* 同じ判定が 3 本に写されていて、api/nba だけが素の `new Date` に
-       なっていた。写しがあるかぎりまた割れるので、字面で見張る。
-       画面側（SolarTimeClock・TenChiJinEvaluation）の同名関数は
-       **別の意味**（読めない値を今日に倒す入口）なのでここでは見ない。 */
+  it("時差を自分で足している写しが API に残っていない", () => {
+    /* 同じ判定が 6 本に写されていて、api/nba だけが素の `new Date` に
+       なっていた。**見張るのは名前ではなく規則のほう。**「無ければ
+       今日」を兼ねる入口は名前を残してよいが、`+09:00` を自分で
+       足しているならそれは写し。 */
     for (const rel of ROUTES) {
       const src = readFileSync(path.join(process.cwd(), rel), "utf8");
-      expect(src, rel).not.toContain("parseSafeDate");
+      expect(src, rel).not.toContain("+09:00");
       expect(src, rel).not.toMatch(/new Date\(birthDateStr\)/);
     }
   });
