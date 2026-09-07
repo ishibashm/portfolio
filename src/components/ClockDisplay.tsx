@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from "react";
 import { Solar } from "lunar-javascript";
 import { getZonedDateTimeFields } from "@/utils/solarTime";
+import { getRokuyo } from "@/utils/lunar";
 
 interface ClockDisplayProps {
   kimon: {
@@ -79,19 +80,22 @@ export function ClockDisplay({
     clock.minutes,
     clock.seconds,
   ).getLunar();
-  const ROKUYO_MAP = [
-    "大安 (Taian)",
-    "赤口 (Shakku)",
-    "先勝 (Sensho)",
-    "友引 (Tomobiki)",
-    "先負 (Sakimake)",
-    "仏滅 (Butsumetsu)",
-  ];
+  /*
+    六曜は utils/lunar の getRokuyo に任せる。ここに同じ表と式
+    （(月 + 日) % 6）の写しがあったが、lunar-javascript は閏月を**負の
+    月番号**で返す（閏5月 → -5）ので、月初の数日で添字が負になり
+    undefined を引いていた。下の startsWith / split で TypeError になり、
+    評価日に 2028-06-23〜26 などを選ぶと時期タブごと落ちる。
+    getRokuyo は絶対値を取ってこれを避けている（写しには入っていなかった）。
+  */
   const lunarMonth = lunarDate.getMonth();
   const lunarDay = lunarDate.getDay();
-  const rokuyoName = ROKUYO_MAP[(lunarMonth + lunarDay) % 6];
+  const rokuyoName = getRokuyo(targetDate);
   const yueXiang = lunarDate.getYueXiang(); // Phase name
-  const lunarDateString = `旧暦 ${lunarMonth}月${lunarDay}日`;
+  // 閏月は「閏5月」と出す。負の数をそのまま出すと「-5月」になる。
+  const lunarMonthLabel =
+    lunarMonth < 0 ? `閏${Math.abs(lunarMonth)}` : String(lunarMonth);
+  const lunarDateString = `旧暦 ${lunarMonthLabel}月${lunarDay}日`;
 
   const getRokuyoColor = (r: string) => {
     if (r.startsWith("大安")) return "text-emerald-600 font-bold";

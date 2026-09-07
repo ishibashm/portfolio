@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Loader2 } from "lucide-react";
 import { TIER_BADGE_CLASS, TIER_JP } from "@/utils/tierDisplay";
 import type { DayTier } from "@/utils/auspiciousDays";
@@ -79,8 +79,17 @@ export function TargetDateAdvice({
   const [result, setResult] = useState<TargetDateRationale | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  /*
+    遅れて返った古い応答で新しい結果を上書きしない。日付を打ち替えると
+    前の要求（91 日 × 8 方位で数秒かかる）がまだ飛んでいることがあり、
+    後から届いたほうが勝って「前の日付の助言」が見出しの下に残っていた。
+    wealth の頁と同じく、要求ごとの番号で最新だけを通す。
+  */
+  const requestSeq = useRef(0);
 
   const load = useCallback(async () => {
+    const seq = ++requestSeq.current;
+    const isLatest = () => seq === requestSeq.current;
     if (!targetDate || !birthDate || lon === null || !Number.isFinite(lon)) {
       setResult(null);
       return;
@@ -97,6 +106,7 @@ export function TargetDateAdvice({
       });
       const res = await fetch(`/api/relocation/auspicious-days?${params}`);
       const json = await res.json();
+      if (!isLatest()) return;
       if (!res.ok) {
         setError(getAuspiciousDayErrorMessage(json?.error));
         setResult(null);
@@ -105,11 +115,12 @@ export function TargetDateAdvice({
       const days: TimelineDay[] = json.days ?? [];
       setResult(adviseTargetDate(days, targetDate));
     } catch (e) {
+      if (!isLatest()) return;
       console.error("目標日の助言を取得できませんでした:", toLogMessage(e));
       setError(getAuspiciousDayErrorMessage());
       setResult(null);
     } finally {
-      setLoading(false);
+      if (isLatest()) setLoading(false);
     }
   }, [targetDate, birthDate, lon]);
 
