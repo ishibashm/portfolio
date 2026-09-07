@@ -104,6 +104,8 @@ export function PrefNewsPicker({ options }: { options: PrefOption[] }) {
           key={selected.code}
           prefCode={selected.code}
           placeName={selected.name}
+          /* ここは /news の中。自分自身へのリンクは出さない */
+          hideNewsLink
           emptyText={`${selected.name}の地名に当たる見出しは、いまありません。県ページには相場の動きがあります。`}
         />
       )}

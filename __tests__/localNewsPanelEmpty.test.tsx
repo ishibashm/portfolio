@@ -64,3 +64,44 @@ describe("LocalNewsPanel の 0 件", () => {
     expect(screen.queryByRole("status")).toBeNull();
   });
 });
+
+/**
+ * /news への導線は往復にする（CLAUDE.md 2-d）。県ページからは「その県で
+ * 絞った /news」へ、市区町村ページからはコードの先頭 2 桁の県へ。
+ * /news の中（PrefNewsPicker）では自分自身へのリンクを出さない。
+ */
+describe("LocalNewsPanel の /news への導線", () => {
+  const ONE = [
+    {
+      title: "見出し",
+      link: "https://example.com/x",
+      publishedAt: "2026-09-07T00:00:00Z",
+      source: "UR 都心",
+      scope: "pref",
+      matched: "東京都",
+    },
+  ];
+
+  it("県ページからは、その県で絞った /news へ", async () => {
+    respondWith(ONE);
+    render(<LocalNewsPanel prefCode="13" placeName="東京都" />);
+    const a = await screen.findByRole("link", { name: "不動産・建築の情報" });
+    expect(a).toHaveAttribute("href", "/news?pref=13");
+  });
+
+  it("市区町村ページからは、コードの先頭 2 桁の県へ", async () => {
+    respondWith(ONE);
+    render(<LocalNewsPanel areaCode="27100" placeName="大阪市" />);
+    const a = await screen.findByRole("link", { name: "不動産・建築の情報" });
+    expect(a).toHaveAttribute("href", "/news?pref=27");
+  });
+
+  it("/news の中では自分自身へのリンクを出さない", async () => {
+    respondWith(ONE);
+    render(<LocalNewsPanel prefCode="13" placeName="東京都" hideNewsLink />);
+    await screen.findByText("見出し");
+    expect(
+      screen.queryByRole("link", { name: "不動産・建築の情報" }),
+    ).toBeNull();
+  });
+});
