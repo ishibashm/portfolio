@@ -973,7 +973,16 @@ export const SolarTimeClock = () => {
     }
 
     // Sync from Relocation Matrix Dashboard if available
-    if (typeof window !== "undefined") {
+    //
+    // **設定（tactical_config_v1 / クラウド）が読めたときは上書きしない。**
+    // 以前は無条件に wealth_* で上書きしていたので、設定バーで生年月日を
+    // 変えると（そちらは tactical_config_v1 にしか書かない）、この部品が
+    // 再読込のたびに古い wealth_birthDate へ戻し、下の自動保存がその古い
+    // 値を tactical_config_v1 に書き戻していた。本命星・天中殺が設定バーの
+    // 表示と違う人で計算され、他の画面の値まで巻き戻っていた。
+    // wealth_* は設定が 1 つも無い端末（移住先マップだけを使っていた
+    // 旧利用者）の引き継ぎにだけ使う。
+    if (typeof window !== "undefined" && !isLoaded) {
       const wBirthDate = localStorage.getItem("wealth_birthDate");
       const wBirthLat = localStorage.getItem("wealth_birthLat");
       const wBirthLon = localStorage.getItem("wealth_birthLon");
