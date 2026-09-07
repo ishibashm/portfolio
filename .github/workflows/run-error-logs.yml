@@ -1,0 +1,120 @@
+name: Read Cloud Run error logs
+
+# 本番（Cloud Run）の実行時エラーを**読むだけ**のワークフロー。
+#
+# ## なぜ要るか
+#
+# 不具合を探す手段が、これまでコードを読むことと nightly の監査
+# （URL の生存・SEO）しか無かった。**本番で実際に落ちているもの**を
+# 見る口が無く、check-logs.yml は旧 VM（wordpress-1-vm の PM2）向けで
+# いまの Cloud Run のログは引けない。
+#
+# 直近 N 時間の severity >= ERROR（既定）を引いて、時刻・重さ・本文の
+# 先頭だけを出す。**同じ本文をまとめて件数の多い順に**も出す。1 件ずつ
+# 追うより「何が何回落ちているか」のほうが直す順番を決めやすい。
+#
+# ## 出さないもの
+#
+# httpRequest（URL・IP・UA）は出さない。エラーの本文（例外の文言・
+# スタック）だけ。利用者を特定できる項目を Actions のログに残さない。
+#
+# ## 書き込みは一切しない
+#
+# gcloud logging read だけ。deploy.yml と同じ Secret（GCP_SA_KEY）で
+# 認証する。ログの閲覧権限が無ければ最初のコマンドで止まる（その場合は
+# サービスアカウントに roles/logging.viewer を足す判断が要る）。
+
+on:
+  workflow_dispatch:
+    inputs:
+      hours:
+        description: "さかのぼる時間（時間）"
+        required: false
+        default: "24"
+      severity:
+        description: "この重さ以上を出す"
+        required: false
+        type: choice
+        options:
+          - ERROR
+          - WARNING
+        default: ERROR
+      limit:
+        description: "最大件数（新しい順）"
+        required: false
+        default: "300"
+
+env:
+  PROJECT_ID: ${{ vars.GCP_PROJECT_ID || 'blog-471319' }}
+  REGION: ${{ vars.GCP_REGION || 'asia-northeast1' }}
+  SERVICE_NAME: ${{ vars.GCP_SERVICE_NAME || 'portfolio-app' }}
+
+jobs:
+  read:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Auth with GCP
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.GCP_SA_KEY }}
+
+      - name: Set up Cloud SDK
+        uses: google-github-actions/setup-gcloud@v2
+
+      - name: Read logs
+        env:
+          HOURS: ${{ inputs.hours }}
+          SEVERITY: ${{ inputs.severity }}
+          LIMIT: ${{ inputs.limit }}
+        run: |
+          set -euo pipefail
+          since=$(date -u -d "-${HOURS} hours" +%Y-%m-%dT%H:%M:%SZ)
+          filter="resource.type=\"cloud_run_revision\""
+          filter="$filter AND resource.labels.service_name=\"${SERVICE_NAME}\""
+          filter="$filter AND resource.labels.location=\"${REGION}\""
+          filter="$filter AND severity>=${SEVERITY}"
+          filter="$filter AND timestamp>=\"${since}\""
+          echo "filter: $filter"
+
+          gcloud logging read "$filter" \
+            --project="${PROJECT_ID}" \
+            --limit="${LIMIT}" \
+            --format=json > logs.json
+
+          # 本文は textPayload か jsonPayload.message のどちらか。
+          # httpRequest は読まない（出さない）。
+          jq -r '
+            .[] | [
+              .timestamp,
+              .severity,
+              ((.textPayload // .jsonPayload.message // .jsonPayload.msg // (.jsonPayload|tostring) // "")
+                | gsub("\n"; " ") | .[0:300])
+            ] | @tsv' logs.json > rows.tsv
+
+          n=$(wc -l < rows.tsv | tr -d ' ')
+          {
+            echo "## Cloud Run のエラーログ（直近 ${HOURS} 時間・severity >= ${SEVERITY}）"
+            echo
+            echo "- service: \`${SERVICE_NAME}\` / region: \`${REGION}\`"
+            echo "- 件数: **${n}**（上限 ${LIMIT}。上限に達していたら hours を短くする）"
+            echo
+            if [ "$n" -gt 0 ]; then
+              echo "### 同じ本文の件数（多い順・上位 20）"
+              echo
+              echo '```'
+              # 本文の先頭 120 字でまとめる。数字や ID の違いで別物に
+              # 数えないよう、連続する数字を # に潰す
+              cut -f3 rows.tsv | sed -E 's/[0-9]+/#/g' | cut -c1-120 | sort | uniq -c | sort -rn | head -20
+              echo '```'
+              echo
+              echo "### 新しい順（先頭 60 件）"
+              echo
+              echo '```'
+              head -60 rows.tsv
+              echo '```'
+            else
+              echo "この範囲にエラーはありません。"
+            fi
+          } | tee -a "$GITHUB_STEP_SUMMARY"
