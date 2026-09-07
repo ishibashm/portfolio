@@ -28,3 +28,24 @@ describe("BaziEngine Zanggan element balance", () => {
     expect(result.fiveElements).toHaveProperty("水");
   });
 });
+
+/**
+ * 太陽時の時差は JST（9）を明示する。省くと経度から推測されて、
+ * 石垣（124.16）は 8、釧路（144.38）は 10 になり、太陽時が 60 分ずれる。
+ * 時柱が 1 つ隣にずれて、五行の強弱まで変わっていた。
+ */
+describe("太陽時の時差", () => {
+  it("石垣・釧路でも JST（9）で太陽時を出す", async () => {
+    const { calculateSolarTime } = await import("../src/utils/solarTime");
+    const engine = new BaziEngine();
+    const date = new Date("1990-05-15T15:30:00+09:00");
+    for (const lon of [124.16, 144.38]) {
+      const result = engine.calculate(date, lon, 1);
+      const expected = calculateSolarTime(date, lon, 9).solarTime.getTime();
+      const guessed = calculateSolarTime(date, lon).solarTime.getTime();
+      expect(result.solarTime.getTime(), String(lon)).toBe(expected);
+      // 推測だと 60 分ずれる（以前の実装はこちらだった）
+      expect(Math.abs(guessed - expected), String(lon)).toBe(60 * 60 * 1000);
+    }
+  });
+});
