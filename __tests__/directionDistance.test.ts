@@ -23,11 +23,24 @@ import {
  */
 
 describe("方位が変わる横ずれ", () => {
-  it("距離に比例する", () => {
-    // 45 度等分の半分（22.5 度）ぶん振れると隣の方位になる。
-    expect(sectorShiftMeters(1)).toBe(414);
-    expect(sectorShiftMeters(5)).toBe(2071);
-    expect(sectorShiftMeters(50)).toBe(20711);
+  it("距離に比例する（既定は伝統区分。四正の半幅 15 度）", () => {
+    // 四正（N/E/S/W）は 30 度幅なので、15 度ぶん振れると隣の方位になる。
+    expect(sectorShiftMeters(1)).toBe(268);
+    expect(sectorShiftMeters(5)).toBe(1340);
+    expect(sectorShiftMeters(50)).toBe(13397);
+  });
+
+  it("45 度等分（physical）なら半幅 22.5 度", () => {
+    expect(sectorShiftMeters(1, "physical")).toBe(414);
+    expect(sectorShiftMeters(5, "physical")).toBe(2071);
+  });
+
+  it("以前の値（45 度等分を既定にしていた）は既定の答えと違う", () => {
+    // 判定の既定は伝統区分なのに、画面は 45 度等分の数字（1km で 414m）を
+    // 出していた。四正にいる利用者には 1.5 倍ゆるい数字だった。
+    const legacy = Math.round(1 * Math.tan((22.5 * Math.PI) / 180) * 1000);
+    expect(legacy).toBe(414);
+    expect(sectorShiftMeters(1)).not.toBe(legacy);
   });
 
   it("近いほど小さい＝少しのずれで方位が変わる", () => {
@@ -40,8 +53,8 @@ describe("方位が変わる横ずれ", () => {
     expect(sectorShiftMeters(1)).toBeLessThan(500);
   });
 
-  it("閾値の 5km では、誤差では変わらない大きさになる", () => {
-    expect(sectorShiftMeters(DIRECTION_UNSTABLE_KM)).toBeGreaterThan(2000);
+  it("閾値の 5km では、誤差（数百 m）では変わらない大きさになる", () => {
+    expect(sectorShiftMeters(DIRECTION_UNSTABLE_KM)).toBeGreaterThan(1000);
   });
 
   it("0 や不正な値で壊れない", () => {
@@ -72,7 +85,8 @@ describe("画面に出す一文", () => {
   it("近いときは距離と横ずれを具体的に言う", () => {
     const note = directionUnstableNote(1);
     expect(note).toContain("1.0km");
-    expect(note).toContain("414m");
+    expect(note).toContain("268m");
+    expect(directionUnstableNote(1, "physical")).toContain("414m");
   });
 
   it("十分離れていれば何も言わない", () => {

@@ -41,11 +41,13 @@ describe("近すぎて方位が定まらない物件の注意", () => {
     expect(note).toContain("方位が隣に変わります");
   });
 
-  it("横ずれは距離に比例する（22.5 度の半区分ぶん）", () => {
-    // 0.5km で約 207m、5km で約 2071m。距離が 10 倍なら横ずれも 10 倍。
-    expect(sectorShiftMeters(0.5)).toBe(207);
-    expect(sectorShiftMeters(5)).toBe(2071);
-    expect(sectorShiftMeters(50)).toBe(20711);
+  it("横ずれは距離に比例する（伝統区分の四正、半幅 15 度ぶん）", () => {
+    // 0.5km で約 134m、5km で約 1340m。距離が 10 倍なら横ずれも 10 倍。
+    // 以前は 45 度等分（22.5 度）で 207 / 2071 と出していたが、判定の
+    // 既定は伝統区分で、四正は 30 度幅しか無い。
+    expect(sectorShiftMeters(0.5)).toBe(134);
+    expect(sectorShiftMeters(5)).toBe(1340);
+    expect(sectorShiftMeters(50)).toBe(13397);
   });
 
   it("距離が無い・おかしいときは注意を出さない", () => {
