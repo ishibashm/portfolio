@@ -30,6 +30,7 @@ import {
   partyWeights,
   summarizeTiming,
 } from "@/utils/arbitrageParty";
+import { parseJapanDateTime } from "@/utils/japanDate";
 
 /**
  * 1 物件ぶんの吉凶タイムラインを、指定範囲ぶん実際に計算して返す。
@@ -42,16 +43,14 @@ import {
  * ペイロードが数MB規模になる。詳細パネルを開いた 1 物件だけ遅延取得する。
  */
 
+/**
+ * 無ければ「いま」。読み方（時差の指定が無い文字列は日本時間）は
+ * `japanDate` の parseJapanDateTime に寄せた。同じものが API に 6 つ
+ * 写されていて、api/nba だけが素の `new Date`（実行環境のタイムゾーン）
+ * になっており、同じ人の本命星がホームとシミュレータで割れていた。
+ */
 function parseSafeDate(dateStr: string | null | undefined): Date {
-  if (!dateStr) return new Date();
-  if (
-    dateStr.includes("T") &&
-    !dateStr.endsWith("Z") &&
-    !/[+-]\d{2}:?\d{2}$/.test(dateStr)
-  ) {
-    return new Date(dateStr + "+09:00");
-  }
-  return new Date(dateStr);
+  return dateStr ? parseJapanDateTime(dateStr) : new Date();
 }
 
 /**
