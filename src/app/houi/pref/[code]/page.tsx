@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import { ContentDisclaimer } from "@/components/houi/ContentDisclaimer";
 import { LocalNewsPanel } from "@/components/news/LocalNewsPanel";
+import { PrefWeeklyMove } from "@/components/houi/PrefWeeklyMove";
 import {
   ArticleJsonLd,
   BreadcrumbJsonLd,
@@ -350,6 +351,9 @@ export default async function Page({
         <p className="mt-8 max-w-[70ch] text-[11px] leading-relaxed text-slate-500">
           相場は当サイトが収集している賃貸掲載から集計した参考値で、毎晩更新されます。市区町村によって収集の網羅度に差があり、掲載件数の少ない街の数字は振れやすい点に注意してください。
         </p>
+
+        {/* 自分のデータで書く地域ニュース。7 日ぶん貯まった県だけ出る */}
+        <PrefWeeklyMove pref={pref} />
 
         {/* 県内のニュース。市区町村ページと同じ仕組みで、県名で拾う */}
         <LocalNewsPanel prefCode={code} placeName={pref} />
