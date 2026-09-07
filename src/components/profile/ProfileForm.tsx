@@ -12,7 +12,7 @@ import {
   settingString,
 } from "@/lib/userSettings";
 import { readDestination, writeDestination } from "@/lib/destinationSetting";
-import { profileCompletion } from "@/lib/profileCompletion";
+import { PLACE_LABEL_KEYS, profileCompletion } from "@/lib/profileCompletion";
 import {
   applyPresetEdits,
   loadProfilePresets,
@@ -64,6 +64,15 @@ export function ProfileForm() {
   const [birthLon, setBirthLon] = React.useState<number | null>(null);
   const [baseLat, setBaseLat] = React.useState<number | null>(null);
   const [baseLon, setBaseLon] = React.useState<number | null>(null);
+  /*
+    出生地・現在地の**表示用の地名**。座標だけだと、次に開いたときに
+    自分が何を入れたのか読めない（目的地と同じ理由）。
+
+    **端末にだけ置く。**`SYNCED_FIELDS` に入れていないので saveSettings
+    の同期には乗らない。クラウドへ送る個人情報は増やさない。
+  */
+  const [birthLabel, setBirthLabel] = React.useState("");
+  const [baseLabel, setBaseLabel] = React.useState("");
   const [destLat, setDestLat] = React.useState<number | null>(null);
   const [destLon, setDestLon] = React.useState<number | null>(null);
   /*
@@ -123,6 +132,8 @@ export function ProfileForm() {
           setBirthLon(settingNumber(settings, "birth_lon") ?? null);
           setBaseLat(settingNumber(settings, "base_lat") ?? null);
           setBaseLon(settingNumber(settings, "base_lon") ?? null);
+          setBirthLabel(settingString(settings, "birth_label") ?? "");
+          setBaseLabel(settingString(settings, "base_label") ?? "");
         }
 
         const dest = readDestination();
@@ -200,6 +211,10 @@ export function ProfileForm() {
         birth_lon: birthLon ?? undefined,
         base_lat: baseLat ?? undefined,
         base_lon: baseLon ?? undefined,
+        /* 地名は端末だけ。saveSettings は同期する項目だけを送るので、
+           ここに載せてもクラウドへは出ていかない */
+        [PLACE_LABEL_KEYS.birth_place]: birthLabel || undefined,
+        [PLACE_LABEL_KEYS.base]: baseLabel || undefined,
       });
       setSynced(result.synced);
       setStatus("saved");
@@ -335,9 +350,11 @@ export function ProfileForm() {
             optional
             lat={birthLat}
             lon={birthLon}
-            onChange={(lat, lon) => {
+            onChange={(lat, lon, name) => {
               setBirthLat(lat);
               setBirthLon(lon);
+              /* 地名で選べたときだけ覚える。座標を手で直したら捨てる */
+              setBirthLabel(name ?? "");
             }}
             help="太陽時の計算に使います。分からなければ空のままで構いません。"
           />
@@ -360,9 +377,10 @@ export function ProfileForm() {
             variant="form"
             lat={baseLat}
             lon={baseLon}
-            onChange={(lat, lon) => {
+            onChange={(lat, lon, name) => {
               setBaseLat(lat);
               setBaseLon(lon);
+              setBaseLabel(name ?? "");
             }}
             help="いま住んでいる場所です。ここから見た方位で吉凶が決まります。"
           />

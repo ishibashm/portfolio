@@ -1,5 +1,7 @@
 import { describe, expect, it } from "vitest";
+import { SYNCED_FIELDS } from "@/lib/userSettings";
 import {
+  PLACE_LABEL_KEYS,
   formatCoords,
   isProfileReady,
   profileCompletion,
@@ -124,5 +126,45 @@ describe("座標の書式", () => {
 
   it("赤道・本初子午線は北緯・東経に倒す", () => {
     expect(formatCoords(0, 0)).toBe("北緯 0.000 / 東経 0.000");
+  });
+});
+
+describe("場所の地名（端末だけ）", () => {
+  it("地名を覚えていれば「地名（座標）」で出す", () => {
+    const steps = profileSteps({
+      base_lat: 35.6812,
+      base_lon: 139.7671,
+      base_label: "東京都新宿区",
+    });
+    expect(steps.find((s) => s.key === "base")?.value).toBe(
+      "東京都新宿区（北緯 35.681 / 東経 139.767）",
+    );
+  });
+
+  it("地名があっても座標を省かない", () => {
+    /* 判定に使われるのは座標のほう。地名だけ出すと、取り違えたまま
+       気付けない */
+    const steps = profileSteps({
+      birth_lat: 34.6937,
+      birth_lon: 135.5023,
+      birth_label: "大阪府大阪市中央区",
+    });
+    expect(steps.find((s) => s.key === "birth_place")?.value).toContain(
+      "北緯 34.694 / 東経 135.502",
+    );
+  });
+
+  it("座標が無ければ、地名だけでは出さない", () => {
+    /* 地名は表示用でしかない。座標が無ければその場所は「未入力」 */
+    const steps = profileSteps({ base_label: "東京都新宿区" });
+    const base = steps.find((s) => s.key === "base");
+    expect(base?.done).toBe(false);
+    expect(base?.value).toBeUndefined();
+  });
+
+  it("**クラウドへ送らない。**同期する項目に地名は入っていない", () => {
+    for (const key of Object.values(PLACE_LABEL_KEYS)) {
+      expect(SYNCED_FIELDS, key).not.toContain(key);
+    }
   });
 });
