@@ -366,6 +366,20 @@ export function getYearStar(date: Date): StarFrequency {
  * 太陽黄経に合わせる。節月の中ほどの日を渡せば取り違えようがない。
  */
 /**
+ * その日時の**日本時間での正午**。
+ *
+ * 「その日の盤」を 1 つに決めるための代表時刻。判定は日本時間の日で
+ * 切る（`lib/boardInstant` の `directionBoardInstant` も同じ考え方で
+ * 正午を使う）。正午にするのは、日の端に寄せると数分のずれで前日・
+ * 翌日へ倒れるため。
+ */
+function jstNoonOf(date: Date): Date {
+  const f = getZonedDateTimeFields(date, 9);
+  /* 12:00 JST = 03:00 UTC */
+  return new Date(Date.UTC(f.year, f.month - 1, f.day, 3, 0, 0));
+}
+
+/**
  * 暦（lunar-javascript）を**日本時間で**引く。
  *
  * `Solar.fromDate()` を使ってはいけない。あれは**実行環境のタイムゾーン**
@@ -602,8 +616,23 @@ export function calculateLunarPhaseCondition(
  * 夏至（L0=90°）と冬至（L0=270°）を物理的な極性反転ポイント（至点）として厳密に定義。
  */
 export function getDayStar(date: Date): StarFrequency {
-  const jd = AstroEngine.getJulianDay(date);
-  const L0 = AstroEngine.getSolarLongitude(date);
+  /*
+    **日本時間の正午で見る。**
+
+    ユリウス日は**世界時の正午**で繰り上がるので、素の date をそのまま
+    渡すと日盤が **21:00 JST** で翌日の星に変わっていた（実測。9/7 の
+    20:59 は 3、21:01 は 2 で、2 は 9/8 の値）。古典の日盤は日本時間の
+    日で変わるので、**同じ画面の 2 つの盤が別の日を指す**時間帯が毎晩
+    3 時間あった。#456 で `Solar.fromDate` を追い出したのと同じ間違いが、
+    暦ではなく軌道計算の側に残っていた。
+
+    太陽黄経（陽遁・陰遁の判定）も同じ時刻で引く。片方だけ日本時間に
+    すると、至点の日に**日の途中で位相だけ反転する**（星が昼に飛ぶ）。
+    盤は 1 日に 1 つ、というのがここの約束。
+  */
+  const anchor = jstNoonOf(date);
+  const jd = AstroEngine.getJulianDay(anchor);
+  const L0 = AstroEngine.getSolarLongitude(anchor);
 
   // 物理モデル: 夏至(L0=90)から冬至(L0=270)は太陽エネルギーが減衰する「負の位相（陰遁）」
   // 冬至(L0=270)から夏至(L0=90)はエネルギーが増幅する「正の位相（陽遁）」
