@@ -79,10 +79,18 @@ export function readLocalSettings(): Settings {
  */
 export function writeLocalSettings(patch: Settings): Settings {
   if (typeof window === "undefined") return patch;
+  /*
+    _savedAt は「クラウドと比べるための時刻」なので、**同期する項目を
+    書いたときだけ**進める。目的地（destinationSetting）や八宅の性別
+    （fengShuiSettings）は端末だけの項目で、クラウドには送らない。それで
+    _savedAt を進めると、別の端末で新しく保存した出発地がクラウドに
+    あっても「端末のほうが新しい」と見なして永久に取り込まなかった。
+  */
+  const touchesSynced = Object.keys(pickSynced(patch)).length > 0;
   const merged = {
     ...readLocalSettings(),
     ...patch,
-    [SAVED_AT]: new Date().toISOString(),
+    ...(touchesSynced ? { [SAVED_AT]: new Date().toISOString() } : {}),
   };
   try {
     localStorage.setItem(SETTINGS_KEY, JSON.stringify(merged));
