@@ -131,13 +131,18 @@ const ASTRO_STATUS_LABELS: Record<string, string> = {
   NOISE_NODE: "月交点ノイズ",
 };
 
-const getTodayString = () => {
-  const today = new Date();
-  const yyyy = today.getFullYear();
-  const mm = String(today.getMonth() + 1).padStart(2, "0");
-  const dd = String(today.getDate()).padStart(2, "0");
-  return `${yyyy}-${mm}-${dd}`;
-};
+/*
+  対象日の既定＝**日本時間の今日**。
+
+  ここは端末の時計から年月日を組み立てていた。画面は "use client" だが
+  サーバ側でも一度描かれるので、本番（Cloud Run は UTC）では日本時間の
+  0〜9 時に**前日**が入る。水和で上書きされるまでのあいだ、前日の盤で
+  判定が出ることになる。日本より西の端末でも同じことが起きる。
+
+  日付の組み立ては utils/japanDate に 1 つある。ここで書き直さない
+  （すぐ下の生年月日でも同じ罠を踏んで、同じ場所へ寄せてある）。
+*/
+const getTodayString = () => todayInJapan();
 
 /*
   生年月日を datetime-local の値にする。中身は utils/japanDate に置いた。
@@ -147,7 +152,7 @@ const getTodayString = () => {
 */
 const normalizeDateTimeLocal = normalizeBirthDateTimeLocal;
 
-import { normalizeBirthDateTimeLocal } from "@/utils/japanDate";
+import { normalizeBirthDateTimeLocal, todayInJapan } from "@/utils/japanDate";
 import dynamic from "next/dynamic";
 
 import prefecturesWithData from "@/data/prefecturesWithData.json";

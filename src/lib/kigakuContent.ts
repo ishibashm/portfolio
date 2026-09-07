@@ -245,15 +245,26 @@ export function starForBirthYear(
   return system === "classical" ? getClassicalYearStar(d) : getYearStar(d);
 }
 
+/*
+  記事を用意する年は**日本時間で**決める。
+
+  `new Date().getFullYear()` は実行環境のタイムゾーンを見る。ビルドは
+  UTC で走るので、元日の 0〜9 時（日本時間）に焼くと**前年**になり、
+  その年に必要な頁が 1 年ぶん足りないまま配られていた。
+
+  この判定は既に上の currentYearInJapan が持っている（本命星を引くのに
+  使っている）。ここで書き直さず、そちらを呼ぶ。
+*/
+
 /** 記事を用意する年。ビルド時に静的生成する対象になる。 */
 export function contentYears(): number[] {
-  const current = new Date().getFullYear();
+  const current = currentYearInJapan();
   return [current, current + 1, current + 2];
 }
 
 /** 月盤の記事を用意する年。月別は 12 倍になるので直近 2 年に絞る。 */
 export function monthContentYears(): number[] {
-  const current = new Date().getFullYear();
+  const current = currentYearInJapan();
   return [current, current + 1];
 }
 
