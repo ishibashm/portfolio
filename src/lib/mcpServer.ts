@@ -52,6 +52,7 @@ import {
   neighboursByDirection,
 } from "@/lib/areaContent";
 import { DIRECTION_LABELS, DIRECTIONS } from "@/lib/kigakuContent";
+import { toJapanDateString } from "@/utils/japanDate";
 import {
   getPrefStats,
   prefCodeByName,
@@ -286,7 +287,9 @@ export function createMcpServer(): McpServer {
       const cap = input.maxDaysPerDirection ?? 10;
       const summaries = findAuspiciousDaysAllDirections(from, to, built.base);
       return text({
-        from: from.toISOString().slice(0, 10),
+        // 走査は JST の暦日で回る。from を省いた呼び出し（＝いま）を UTC で
+        // 切ると 0〜9 時は前日を名乗る
+        from: toJapanDateString(from),
         days,
         honmeiStar: built.honmei.classical,
         voidZodiacs: built.voidZodiacs,
