@@ -84,6 +84,7 @@ import {
 import {
   parseLayerMode,
   statusForLayerMode,
+  vectorsForLayerMode,
   type LayerMode,
 } from "@/utils/directionStatus";
 
@@ -1849,13 +1850,15 @@ export const SolarTimeClock = () => {
   const physicalIndepLayers = filteredLayers.physicalIndepLayers;
   const physicalCoupledLayers = filteredLayers.physicalCoupledLayers;
 
-  const activeVectors = React.useMemo<Partial<Record<Direction, string>>>(() => {
-    let av: Partial<Record<Direction, string>> = layers?.finalVectors || {};
-    if (activeLayerMode === "year") av = layers?.yearLayer || {};
-    else if (activeLayerMode === "month") av = layers?.monthLayer || {};
-    else if (activeLayerMode === "day") av = layers?.dayLayer || {};
-    return av;
-  }, [layers, activeLayerMode]);
+  /* 時間軸の畳み方は directionStatus と共有する。以前はここに if の
+     連鎖があり、年+月 などの組み合わせを全統合に落としていた。この値は
+     目的地の方位の判定（targetDirInfo）とスコアカードに渡るので、地図・
+     ヒートマップ（statusForLayerMode）と同じ畳み方でないと同じ画面で
+     食い違う。 */
+  const activeVectors = React.useMemo<Partial<Record<Direction, string>>>(
+    () => (layers ? vectorsForLayerMode(layers, activeLayerMode) : {}),
+    [layers, activeLayerMode],
+  );
 
   // getStatusScore は home/ScorecardPanel と共用になったので
   // lib/scoreTier へ移した（判定ステータス → 0〜100 の点）。
