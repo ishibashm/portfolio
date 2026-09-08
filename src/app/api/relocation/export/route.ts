@@ -27,6 +27,7 @@ import { getGeomagneticData } from "@/utils/geomagnetism";
 import { getRokuyo } from "@/utils/lunar";
 import { parseJapanDateTime, toJapanDateString } from "@/utils/japanDate";
 import { denyUnlessAdmin } from "@/lib/adminApi";
+import { statusForLayerMode } from "@/utils/directionStatus";
 
 export const dynamic = "force-dynamic";
 
@@ -450,11 +451,9 @@ export async function GET(request: Request) {
       const dayStatuses: Record<string, string> = {};
 
       directions.forEach((dir) => {
-        let status = "SAFE";
-        if (layerMode === "year") status = tc.yearLayer[dir] || "SAFE";
-        else if (layerMode === "month") status = tc.monthLayer[dir] || "SAFE";
-        else if (layerMode === "day") status = tc.dayLayer[dir] || "SAFE";
-        else status = tc.finalVectors[dir] || "SAFE";
+        /* 時間軸の畳み方は directionStatus と共有する。以前の if の連鎖は
+           年+月 などの組み合わせを知らず、全統合に落としていた。 */
+        const status = statusForLayerMode(tc, dir, layerMode);
 
         let score = 50;
         switch (status) {
@@ -595,36 +594,21 @@ export async function GET(request: Request) {
           declination,
         },
         targetStatuses: {
-          classical: (() => {
-            const coll = intentsComparison[actionIntent].classical;
-            if (layerMode === "year")
-              return coll.yearLayer[targetDirName] || "SAFE";
-            if (layerMode === "month")
-              return coll.monthLayer[targetDirName] || "SAFE";
-            if (layerMode === "day")
-              return coll.dayLayer[targetDirName] || "SAFE";
-            return coll.finalVectors[targetDirName] || "SAFE";
-          })(),
-          physicalIndependent: (() => {
-            const coll = intentsComparison[actionIntent].physicalIndependent;
-            if (layerMode === "year")
-              return coll.yearLayer[targetDirName] || "SAFE";
-            if (layerMode === "month")
-              return coll.monthLayer[targetDirName] || "SAFE";
-            if (layerMode === "day")
-              return coll.dayLayer[targetDirName] || "SAFE";
-            return coll.finalVectors[targetDirName] || "SAFE";
-          })(),
-          physicalCoupled: (() => {
-            const coll = intentsComparison[actionIntent].physicalCoupled;
-            if (layerMode === "year")
-              return coll.yearLayer[targetDirName] || "SAFE";
-            if (layerMode === "month")
-              return coll.monthLayer[targetDirName] || "SAFE";
-            if (layerMode === "day")
-              return coll.dayLayer[targetDirName] || "SAFE";
-            return coll.finalVectors[targetDirName] || "SAFE";
-          })(),
+          classical: statusForLayerMode(
+            intentsComparison[actionIntent].classical,
+            targetDirName,
+            layerMode,
+          ),
+          physicalIndependent: statusForLayerMode(
+            intentsComparison[actionIntent].physicalIndependent,
+            targetDirName,
+            layerMode,
+          ),
+          physicalCoupled: statusForLayerMode(
+            intentsComparison[actionIntent].physicalCoupled,
+            targetDirName,
+            layerMode,
+          ),
         },
       };
     }
