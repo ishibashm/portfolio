@@ -133,6 +133,35 @@ export function normalizeZodiacTimeBasis(value: unknown): ZodiacTimeBasis {
   return value === "solar" ? "solar" : "standard";
 }
 
+/**
+ * 他の部品からの「設定が変わった」通知（`metaphysical-config-updated`）を
+ * いまの設定に**重ねる**。
+ *
+ * 通知の detail は送り手によって項目がまちまちで、物件検索の日付変更は
+ * 4 項目（targetDate・useClassicalBoard・directionFilterMode・actionIntent）
+ * しか載せない。以前はその detail で `setConfig` を**丸ごと差し替えて**
+ * いたので、日付を変えた瞬間にバーの生年月日・出生地・出発地・時支の
+ * 基準・月盤の連動が state から消えた。展開した欄は空になり、控えの
+ * 保存ボタンは押せなくなり、その後バーで何かを切り替えて保存すると
+ * `physical_month_mode` が `|| "independent"` で既定に戻って、利用者が
+ * 選んだ「連動」が黙って外れていた。
+ *
+ * undefined の項目は「変えない」として前の値を残す（送り手が
+ * `birthLat: undefined` のように穴のある detail を組むことがある）。
+ */
+export function mergeConfigUpdate(
+  prev: MetaphysicalConfig,
+  detail: Partial<MetaphysicalConfig>,
+): MetaphysicalConfig {
+  const patch: Partial<MetaphysicalConfig> = {};
+  for (const [key, value] of Object.entries(detail)) {
+    if (value !== undefined) {
+      (patch as Record<string, unknown>)[key] = value;
+    }
+  }
+  return normalizeConfig({ ...prev, ...patch });
+}
+
 function normalizeConfig(config: MetaphysicalConfig): MetaphysicalConfig {
   return {
     ...config,
@@ -296,11 +325,14 @@ export const MetaphysicalConfigBar: React.FC<MetaphysicalConfigBarProps> = ({
 
     // Listen to updates from other instances
     const handleGlobalUpdate = (event: Event) => {
-      const customEvent = event as CustomEvent<MetaphysicalConfig>;
+      const customEvent = event as CustomEvent<Partial<MetaphysicalConfig>>;
       if (customEvent.detail) {
-        const normalizedConfig = normalizeConfig(customEvent.detail);
-        setConfig(normalizedConfig);
-        if (onConfigChange) onConfigChange(normalizedConfig);
+        // 丸ごと差し替えない。detail に無い項目は今の値を残す
+        setConfig((prev) => {
+          const merged = mergeConfigUpdate(prev, customEvent.detail);
+          if (onConfigChange) onConfigChange(merged);
+          return merged;
+        });
       }
     };
 
