@@ -1207,6 +1207,12 @@ export default function RegionalWealthPage() {
                 <option value="year">Year (年盤のみ)</option>
                 <option value="month">Month (月盤のみ)</option>
                 <option value="day">Day (日盤のみ)</option>
+                {/* ホームの時間軸ボタンと同じ組み合わせ。設定は画面をまたいで
+                    共有されるので、ここに無いとホームで選んだ値が流れ込んだ
+                    ときに選択が空に見える。API は組み合わせを合成して答える。 */}
+                <option value="year_month">年+月 (年盤と月盤)</option>
+                <option value="month_day">月+日 (月盤と日盤)</option>
+                <option value="year_day">年+日 (年盤と日盤)</option>
               </select>
             </div>
             <div>

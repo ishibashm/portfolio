@@ -101,6 +101,19 @@ grep -rn "b >= 345 || b < 15" src/     # 伝統区分のコピーが増えてい
 grep -rn "22.5) % 360) / 45" src/      # 45度等分のコピーが増えていないか
 ```
 
+**時間軸（`layerMode`）を方位ごとのステータスに畳む実装も 1 つ。**
+`src/utils/directionStatus.ts` の `statusForLayerMode`（1 方位）と
+`vectorsForLayerMode`（8 方位まとめて）だけ。`layerMode === "year" ?
+yearLayer : … : finalVectors` の if の連鎖を**新しく書かない。**同じ連鎖が
+6 か所（ホームの 3 部品・municipalities-wealth・arbitrageAstro・
+relocation/export）に写されていて、どれも 年+月／月+日／年+日 を知らず
+全統合に落としていた（TacticalMagneticMap は空を返していた）。同じ画面で
+地図は合成、スコアカードは全統合、という食い違いになる（#1118〜#1121）。
+
+```bash
+grep -rn '=== "year")' src/       # 連鎖が戻っていないか（gcpBilling の Intl は無関係）
+```
+
 **判定は必ず真北で行う。**磁北は「方位磁針で測るとずれる」注意としてのみ使う
 （`DECLINATION_WARNING`、`magneticDirection`）。理由は `/houi` の記事が全国向けの
 静的ページで偏角を持てないため。判定を磁北にすると記事と全ツールが恒久的に食い違う。
