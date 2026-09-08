@@ -23,6 +23,35 @@ import { getZonedDateTimeFields } from "@/utils/solarTime";
 describe("立春をまたぐ盤", () => {
   const jst = (s: string) => new Date(s);
 
+  /*
+    先の年も分単位で固定する（2026-09-08 の精度確認で +2 年）。
+    切り替わる時刻は国立天文台の暦要項の立春と一致した。
+      2027-02-04 10:46 JST（一覧 API のテスト arbitrageAstroTendo にも記載）
+      2028-02-04 16:31 JST
+    年盤と月盤は同じ瞬間に替わる（#548 で時刻単位に揃えた決めごと）。
+    ここが動いたら、暦要項の値かエンジンのどちらかが変わっている。
+  */
+  it.each([
+    ["2027", "10:45", "10:47", 1, 9, 6, 5],
+    ["2028", "16:30", "16:32", 9, 8, 3, 2],
+  ] as const)(
+    "%s-02-04 %s→%s の間で年盤 %i→%i・月盤 %i→%i に替わる",
+    (y, before, after, y0, y1, m0, m1) => {
+      expect(getClassicalYearStar(jst(`${y}-02-04T${before}:00+09:00`))).toBe(
+        y0,
+      );
+      expect(getClassicalYearStar(jst(`${y}-02-04T${after}:00+09:00`))).toBe(
+        y1,
+      );
+      expect(getClassicalMonthStar(jst(`${y}-02-04T${before}:00+09:00`))).toBe(
+        m0,
+      );
+      expect(getClassicalMonthStar(jst(`${y}-02-04T${after}:00+09:00`))).toBe(
+        m1,
+      );
+    },
+  );
+
   it("2026-01-31 は日盤が六白金星（旧 verify_kyusei.ts の期待値）", () => {
     expect(getClassicalDayStar(jst("2026-01-31T12:00:00+09:00"))).toBe(6);
   });
