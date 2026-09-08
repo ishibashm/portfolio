@@ -154,7 +154,14 @@ export default function RegionalWealthPage() {
   const [baseLon, setBaseLon] = useState("");
   const [birthLat, setBirthLat] = useState("");
   const [birthLon, setBirthLon] = useState("");
-  const [engineType, setEngineType] = useState("physical");
+  /*
+    何も保存されていないときは古典（一般的な九星気学）で始める。ホーム・
+    設定バー・物件検索・シミュレータの既定も古典で、/houi の表も古典。
+    ここだけ独自モデルで始まると、初めて来た人にこの頁だけ違う答えが出る
+    （物件検索が同じ理由で古典に揃えた経緯がある）。保存済みの設定がある
+    人はそちらが優先される。
+  */
+  const [engineType, setEngineType] = useState("classical");
   // 吉方位の絞り込み（本命星のみ／環境要因のみ など）。共通の設定バーで決まる。
   // このページだけ受け取っておらず、変えても地図の色が動かなかった。
   const [directionFilterMode, setDirectionFilterMode] = useState("composite");
@@ -491,7 +498,7 @@ export default function RegionalWealthPage() {
       let bLon = "";
       let bsLat = "";
       let bsLon = "";
-      let engine = "physical";
+      let engine = "classical";
       let layer = "final";
       let trueNorth = false;
       let lunarPhase = true;
@@ -572,7 +579,7 @@ export default function RegionalWealthPage() {
               ? config.use_classical_board
                 ? "classical"
                 : "physical"
-              : "physical";
+              : "classical";
           const layer = config.layer_mode || "final";
           const filterMode = config.direction_filter_mode || "composite";
           const trueNorth = config.use_true_north || false;
