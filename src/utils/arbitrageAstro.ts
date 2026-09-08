@@ -24,6 +24,7 @@ import { getZonedDateTimeFields } from "@/utils/solarTime";
 import { directionBoardInstant } from "@/utils/boardInstant";
 import { toJapanDateString } from "@/utils/japanDate";
 import { getStatusScore } from "@/lib/scoreTier";
+import { vectorsForLayerMode } from "@/utils/directionStatus";
 import {
   DEFAULT_TENCHUSATSU_MODE,
   TenchusatsuMode,
@@ -176,7 +177,6 @@ export function buildDailyAstroStates(
     const d = directionBoardInstant(rawDate, 0, p.baseLon);
     const env_d = getSystemEnvironment(d, p.baseLon, p.physicalMonthMode);
 
-    let activeVectors_d: Partial<Record<Direction, string>>;
     let isDoyouHazard_d = false;
 
     const star = p.useClassical
@@ -217,10 +217,11 @@ export function buildDailyAstroStates(
       dB,
     );
 
-    if (p.layerMode === "year") activeVectors_d = vectorData.yearLayer;
-    else if (p.layerMode === "month") activeVectors_d = vectorData.monthLayer;
-    else if (p.layerMode === "day") activeVectors_d = vectorData.dayLayer;
-    else activeVectors_d = vectorData.finalVectors;
+    /* 時間軸の畳み方は directionStatus と共有する。ここに if の連鎖を
+       戻さないこと（年+月 などの組み合わせが黙って全統合に落ちる）。
+       単独の盤と全統合は盤の参照そのものが返るので、下の
+       `=== vectorData.finalVectors` はそのまま成り立つ。 */
+    const activeVectors_d = vectorsForLayerMode(vectorData, p.layerMode);
 
     /* 一度しか入れないので const。宣言をここまで下ろした。 */
     const tendoDir_d = vectorData.tendoDirection;

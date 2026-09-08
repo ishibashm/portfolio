@@ -20,6 +20,7 @@ import { getGeomagneticData } from "@/utils/geomagnetism";
 import { toLogMessage } from "@/lib/errorMessage";
 import { parseJapanDateTime } from "@/utils/japanDate";
 import { getStatusScore } from "@/lib/scoreTier";
+import { vectorsForLayerMode } from "@/utils/directionStatus";
 import {
   bearingBetween,
   directionFromBearing,
@@ -225,10 +226,12 @@ export async function GET(request: Request) {
       dB,
     );
 
-    if (layerMode === "year") activeVectors = vectorData.yearLayer;
-    else if (layerMode === "month") activeVectors = vectorData.monthLayer;
-    else if (layerMode === "day") activeVectors = vectorData.dayLayer;
-    else activeVectors = vectorData.finalVectors;
+    /* 時間軸の畳み方は directionStatus と共有する。ホームのスコアカードは
+       ここに year_month などの組み合わせを送ってくる。以前の if の連鎖は
+       それを知らず全統合に落としていたので、同じ画面の地図と食い違っていた。
+       単独の盤と全統合は盤の参照そのものが返るので、下の
+       `=== vectorData.finalVectors` はそのまま成り立つ。 */
+    activeVectors = vectorsForLayerMode(vectorData, layerMode);
 
     // 土用殺は年盤・月盤・日盤のどれにも出ず、最終だけを NOISE_GOU で
     // 上書きする。画面が「五黄殺」ではなく「土用殺」と書けるように、
