@@ -100,6 +100,56 @@ export function statusForLayerMode(
   }
 }
 
+/**
+ * 選んだ時間軸に対応する「方位ごとのステータス」をまとめて返す。
+ *
+ * `statusForLayerMode` の方位ぶん版。年・月・日の単独と全統合は、盤の
+ * オブジェクトを**そのまま**返す（呼び出し側に
+ * `activeVectors === finalVectors` で「全統合を見ているか」を判定する
+ * 所があり、複製すると土用殺の方位が消える）。組み合わせは方位ごとに
+ * `mergeStatuses` で畳んだ新しいオブジェクトを返す。
+ *
+ * これを置く前は、`layerMode === "year" ? yearLayer : … : finalVectors`
+ * の写しが 6 か所（ホームの 3 部品・municipalities-wealth・
+ * arbitrageAstro・relocation/export）にあり、**どれも組み合わせを
+ * 知らなかった。**ホームで「年+月」を選ぶと、地図とヒートマップは
+ * 合成を出すのに、同じ画面のスコアカード（API 経由）と目的地の札は
+ * 全統合、TacticalMagneticMap は空、という食い違いが出ていた。
+ */
+export function vectorsForLayerMode(
+  layers: DirectionLayers,
+  mode: string,
+): Layer {
+  switch (mode) {
+    case "year":
+      return layers.yearLayer;
+    case "month":
+      return layers.monthLayer;
+    case "day":
+      return layers.dayLayer;
+    case "year_month":
+    case "month_day":
+    case "year_day": {
+      // 含む盤に出ている方位だけを作る。含まない盤の方位まで足すと
+      // 「盤に無い方位は無い」という約束（statusForLayerMode の SAFE は
+      // 引いたときの既定であって、方位を増やすものではない）が崩れる。
+      const used =
+        mode === "year_month"
+          ? [layers.yearLayer, layers.monthLayer]
+          : mode === "month_day"
+            ? [layers.monthLayer, layers.dayLayer]
+            : [layers.yearLayer, layers.dayLayer];
+      const out: Layer = {};
+      const dirs = new Set<string>(used.flatMap((l) => Object.keys(l)));
+      for (const dir of dirs) out[dir] = statusForLayerMode(layers, dir, mode);
+      return out;
+    }
+    default:
+      // "final"（全統合）と知らない値。parseLayerMode と同じ倒し方。
+      return layers.finalVectors;
+  }
+}
+
 export const ALL_LAYER_MODES: LayerMode[] = [
   "final",
   "year",
