@@ -1892,3 +1892,58 @@ A29-19 が同じかも未確認（俯瞰だけ古い版になる可能性）。
   3 回。推測で URL を組まず、毎回「中身を出して次を決める」
 - ワークフローの `workflow_dispatch` は、**ファイルが既定ブランチに
   無いと 404**。新しいワークフローは 1 度マージしてから枝で回す
+
+---
+
+## 23. 本番のエラーログを初めて読んだ（2026-09-08）
+
+`roles/logging.viewer` を貰い、`run-error-logs.yml` が通るようになった
+（run 34224779578）。**直近 24 時間で 23 件。**
+
+    18  Error: Internal: NoFallbackError … app/houi/[year]/[star]/[month]/page.js
+     3  Memory limit of 512 MiB exceeded with 512 MiB used
+     1  Error: Internal: NoFallbackError … app/houi/area/[code]/page.js
+     1  Error: Internal: NoFallbackError … app/houi/[year]/[star]/page.js
+
+### NoFallbackError（20 件）— 片付いた。**実害は無かった**
+
+最初は「消えた URL が 500 を返している」と疑ったが、**それは誤り
+だった。**本番と同じ standalone のサーバーをローカルに立てて実測すると、
+`/houi/2025/1/3`・`/houi/2024/1/3`・`/houi/2025/1`・`/houi/area/99999`
+はいずれも**前から正しく 404** を返していた（生きている頁は 200）。
+
+原因は `dynamicParams = false`。経路の側で弾くと、Next は弾くたびに
+`NoFallbackError` を **severity=ERROR** で吐く。番号は正しいので
+利用者にも検索エンジンにも実害は無く、**ログだけの雑音**だった。
+
+同じビルドの中で `/blog/[slug]`（元から `dynamicParams = true`）が
+対照になる。同じ 404 を返して、この記録を 1 件も吐かない。
+`#1135`・`#1136` で 5 ルートすべてを `true` に揃え、修正版を同じ手順で
+ビルドし直して **6〜7 件 → 0 件**を確認した。
+
+`[month]` に集中していたのは `monthContentYears()` が `[今年, 翌年]` を
+返すためで、2025 年の月別ページ（去年は正当で索引にあった）が全部ここへ
+来る。毎年 1 月にこの分だけ増える性質のもの。
+
+**教訓は「疑いを実測に通すまで結論にしない」。**500 だと思い込んだまま
+報告していたら、無い問題を直したことになっていた。
+
+### メモリ上限（3 件）— **判断待ち。課金が増える**
+
+    Memory limit of 512 MiB exceeded with 512〜513 MiB used
+
+`deploy.yml` は `--cpu=1 --memory=512Mi --max-instances=2
+--concurrency=80`。超えた瞬間そのリクエストは落ちる（24 時間で 3 件）。
+
+考えられる手当ては 3 つ。**どれも利用者の判断が要る。**
+
+1. `--memory` を 1Gi に上げる。**課金が増える**（Cloud Run はメモリ×秒）
+2. `--concurrency` を下げる。1 インスタンスあたりの同時実行が減るので
+   ピークのメモリも下がるが、`--max-instances=2` のままだと待ちが増える
+3. 重い頁を軽くする。地図と暦エンジンが乗る画面が候補（11 節に既出）
+
+**まず 3 件がどの経路で出ているかを知りたい。**いまの
+`run-error-logs.yml` は `httpRequest` を読まない決めにしてある
+（URL・IP・UA が入るため）。`httpRequest.status` と `resource` だけなら
+個人は特定できないので、そこだけ足せば経路の当たりは付けられる。
+足すかどうかも含めて判断待ち。
