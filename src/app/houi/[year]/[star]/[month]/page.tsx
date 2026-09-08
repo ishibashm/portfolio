@@ -22,7 +22,20 @@ import { ArticleJsonLd, BreadcrumbJsonLd } from "@/components/JsonLd";
  * 対象期間を実際の切替日で明示する。
  */
 
-export const dynamicParams = false;
+/*
+  一覧に無い params も、この頁の notFound() で 404 にする。
+
+  以前は `dynamicParams = false` で経路の側に弾かせていた。**返る番号は
+  どちらも 404 で同じ**（standalone のサーバーで実測）だが、false の側は
+  弾くたびに Next が `NoFallbackError` を severity=ERROR で吐く。本番の
+  エラーログは 24 時間で 23 件のうち **20 件がこれ**で、本物の異常が
+  埋もれていた（2026-09-08 に閲覧権限を貰って判明）。
+
+  parse() が知らない年・星・月を弾き、その場で notFound() を呼ぶ。DB も暦エンジンも引かないので、
+  知らない URL を叩かれたときの仕事は false のときとほぼ変わらない。
+  同じ作りの /blog/[slug] は元から true で、この記録が 1 件も無い。
+*/
+export const dynamicParams = true;
 
 export function generateStaticParams() {
   return monthContentYears().flatMap((year) =>
