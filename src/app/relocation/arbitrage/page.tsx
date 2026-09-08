@@ -2989,6 +2989,13 @@ export default function ArbitrageScannerPage() {
                         <option value="final">
                           総合ベクトル (全レイヤー統合)
                         </option>
+                        {/* ホームの時間軸ボタンと同じ組み合わせ。設定は画面を
+                            またいで共有されるので、ここに無いとホームで選んだ
+                            値が流れ込んだときに選択が空に見える。API は
+                            組み合わせを合成して答える（#1119）。 */}
+                        <option value="year_month">年+月 (年盤と月盤)</option>
+                        <option value="month_day">月+日 (月盤と日盤)</option>
+                        <option value="year_day">年+日 (年盤と日盤)</option>
                       </select>
                     </div>
 
