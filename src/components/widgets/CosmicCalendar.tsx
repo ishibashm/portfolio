@@ -17,6 +17,12 @@ import { baziEngine } from "@/utils/baziEngine";
 import { Solar } from "lunar-javascript";
 import { getZonedDateTimeFields } from "@/utils/solarTime";
 import { parseJapanDateTime } from "@/utils/japanDate";
+import {
+  readLocalSettings,
+  saveSettings,
+  settingNumber,
+  settingString,
+} from "@/lib/userSettings";
 
 export interface DayData {
   date: Date;
@@ -279,9 +285,47 @@ const BIRTH_CONFIG_EVENT = "cosmic-birth-config";
 
 type BirthConfigKey = "wealth_birthDate" | "wealth_birthLon";
 
-function persistBirthConfig(key: BirthConfigKey, value: string) {
+/**
+ * 生年月日と出生地の経度を読む。**設定（tactical_config_v1）が正。**
+ *
+ * 以前は旧 wealth_birthDate / wealth_birthLon だけを読んでいた。設定は
+ * /profile・設定バー・ホームの簡易プロフィールが tactical_config_v1 と
+ * クラウドに書くので、そこで登録した人が /calendar を開くと
+ * 「未設定」で設定欄が開き、ここで入れ直した値は他の画面に伝わらず、
+ * 同じ人が画面ごとに違う生年月日で判定されていた。
+ *
+ * 旧キーは、設定に無いときの読み替えとしてだけ残す（ホームの手動保存が
+ * まだ書いている）。
+ */
+export function readBirthConfig(): { birthDate: string; birthLon: string } {
+  if (typeof window === "undefined") return { birthDate: "", birthLon: "" };
+  const s = readLocalSettings();
+  const birthDate =
+    settingString(s, "birth_date") ||
+    localStorage.getItem("wealth_birthDate") ||
+    "";
+  const lon = settingNumber(s, "birth_lon");
+  const birthLon =
+    lon !== undefined
+      ? String(lon)
+      : localStorage.getItem("wealth_birthLon") || "";
+  return { birthDate, birthLon };
+}
+
+/**
+ * 欄で直した値を保存する。設定（tactical_config_v1 とクラウド）へ書き、
+ * 旧キーにも書いて、同じ頁の他の暦にも知らせる。
+ * 空や数値でない値は設定には書かない（消す操作はプロフィールで行う）。
+ */
+export function persistBirthConfig(key: BirthConfigKey, value: string) {
   if (typeof window === "undefined") return;
   localStorage.setItem(key, value);
+  if (key === "wealth_birthDate" && value) {
+    void saveSettings({ birth_date: value });
+  } else if (key === "wealth_birthLon") {
+    const n = Number(value);
+    if (value !== "" && Number.isFinite(n)) void saveSettings({ birth_lon: n });
+  }
   window.dispatchEvent(
     new CustomEvent(BIRTH_CONFIG_EVENT, { detail: { key, value } }),
   );
@@ -344,18 +388,23 @@ export function CosmicCalendar({
   const [birthLon, setBirthLon] = useState<string>("139.6917");
   const [isSettingsOpen, setIsSettingsOpen] = useState<boolean>(false);
 
-  // Load from localStorage on mount
+  // Load on mount. 設定が正。旧キーは読み替え（readBirthConfig）
   useEffect(() => {
-    if (typeof window !== "undefined") {
-      const storedDate = localStorage.getItem("wealth_birthDate");
-      const storedLon = localStorage.getItem("wealth_birthLon");
-      if (storedDate) {
-        setBirthDate(storedDate);
+    const load = () => {
+      const stored = readBirthConfig();
+      if (stored.birthDate) {
+        setBirthDate(stored.birthDate);
+        setIsSettingsOpen(false);
       } else {
         setIsSettingsOpen(true); // Default open if not configured
       }
-      if (storedLon) setBirthLon(storedLon);
-    }
+      if (stored.birthLon) setBirthLon(stored.birthLon);
+    };
+    load();
+    // 同じ頁の簡易プロフィールなどで保存されたら読み直す
+    window.addEventListener("metaphysical-config-updated", load);
+    return () =>
+      window.removeEventListener("metaphysical-config-updated", load);
   }, []);
 
   // Keep sibling instances in sync when the config is edited in one of them
