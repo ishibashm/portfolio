@@ -193,7 +193,7 @@ export function SimulatorStart({
             className="w-full rounded-xl border border-stone-300 p-2.5 text-sm"
           />
           <span className="mt-1 block text-[11px] text-stone-600">
-            本命星と天中殺を出すのに使います。ここでは保存しません。プロフィールに保存済みなら自動で入ります。
+            本命星と天中殺を出すのに使います。プロフィールには保存しません（この端末の下書きにだけ残ります）。プロフィールに保存済みなら自動で入ります。
           </span>
         </label>
 
