@@ -15,7 +15,17 @@ import dynamic from "next/dynamic";
 import type { MapProperty } from "@/lib/mapProperty";
 import type { SpaceWeatherData } from "../../utils/spaceWeather";
 import type { GeomagneticData } from "../../utils/geomagnetism";
-import type { LayerMode } from "@/utils/directionStatus";
+import { vectorsForLayerMode, type LayerMode } from "@/utils/directionStatus";
+
+/** 目的地の札の見出し。TacticalMagneticMap の時間軸ボタンと同じ呼び名。 */
+const LAYER_TITLE: Partial<Record<LayerMode, string>> = {
+  year: "年盤",
+  month: "月盤",
+  day: "日盤",
+  year_month: "年+月",
+  month_day: "月+日",
+  year_day: "年+日",
+};
 import type {
   ActionIntent,
   Direction,
@@ -713,25 +723,18 @@ export default function DestinationMapPanel({
                 };
 
                 return (() => {
-                  let physVectors, classVectors;
-                  let titleSuffix = "統合（年・月・日）";
-
-                  if (activeLayerMode === "year") {
-                    physVectors = physicalLayers?.yearLayer;
-                    classVectors = classicalLayers?.yearLayer;
-                    titleSuffix = "年盤";
-                  } else if (activeLayerMode === "month") {
-                    physVectors = physicalLayers?.monthLayer;
-                    classVectors = classicalLayers?.monthLayer;
-                    titleSuffix = "月盤";
-                  } else if (activeLayerMode === "day") {
-                    physVectors = physicalLayers?.dayLayer;
-                    classVectors = classicalLayers?.dayLayer;
-                    titleSuffix = "日盤";
-                  } else {
-                    physVectors = physicalLayers?.finalVectors;
-                    classVectors = classicalLayers?.finalVectors;
-                  }
+                  /* 時間軸の畳み方は directionStatus と共有する。以前は
+                     ここに if の連鎖があり、年+月 などの組み合わせを
+                     全統合に落とし、見出しも「統合（年・月・日）」と
+                     出していた。 */
+                  const physVectors = physicalLayers
+                    ? vectorsForLayerMode(physicalLayers, activeLayerMode)
+                    : undefined;
+                  const classVectors = classicalLayers
+                    ? vectorsForLayerMode(classicalLayers, activeLayerMode)
+                    : undefined;
+                  const titleSuffix =
+                    LAYER_TITLE[activeLayerMode] ?? "統合（年・月・日）";
 
                   return (
                     <div className="flex flex-col gap-4">

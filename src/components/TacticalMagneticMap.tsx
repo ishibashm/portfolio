@@ -5,7 +5,7 @@ import dynamic from "next/dynamic";
 import { Crosshair, Download, Box } from "lucide-react";
 import { MagneticSpatialHUD } from "./MagneticSpatialHUD";
 import { downloadKML } from "../utils/kmlExport";
-import type { LayerMode } from "@/utils/directionStatus";
+import { vectorsForLayerMode, type LayerMode } from "@/utils/directionStatus";
 import type { MapProperty } from "@/lib/mapProperty";
 
 // Because Leaflet needs the window object, we must dynamically import it with ssr: false
@@ -100,14 +100,15 @@ export function TacticalMagneticMapComponent({
 
   const isPhysical = activeModel === "physical";
   const activeLayers = isPhysical ? physicalLayers : classicalLayers;
-  const activeVectors = React.useMemo(() => {
-    if (!activeLayers) return {};
-    if (activeLayerMode === "final") return activeLayers.finalVectors || {};
-    if (activeLayerMode === "year") return activeLayers.yearLayer || {};
-    if (activeLayerMode === "month") return activeLayers.monthLayer || {};
-    if (activeLayerMode === "day") return activeLayers.dayLayer || {};
-    return {};
-  }, [activeLayers, activeLayerMode]);
+  /* 時間軸の畳み方は directionStatus と共有する。以前はここに if の
+     連鎖があり、年+月 などの組み合わせでは `{}` を返していた（HUD が
+     空になる）。地図本体（MagneticMapInner）は statusForLayerMode で
+     合成していたので、同じ部品の中で地図と HUD が食い違っていた。 */
+  const activeVectors = React.useMemo(
+    () =>
+      activeLayers ? vectorsForLayerMode(activeLayers, activeLayerMode) : {},
+    [activeLayers, activeLayerMode],
+  );
 
   const borderColor = isPhysical
     ? "border-emerald-200 shadow-[0_0_15px_rgba(16,185,129,0.2)]"
