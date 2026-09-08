@@ -7,6 +7,7 @@ import {
   getClassicalDayStar,
   EIGHT_DIRECTIONS,
 } from "@/utils/ephemerisEngine";
+import { contentYears } from "@/lib/kigakuContent";
 
 /**
  * 年盤の層（yearLayer）は、同じ気学年（立春〜翌立春の前日）の中では
@@ -57,8 +58,26 @@ describe("年盤の層は、同じ気学年の中で日付に依らない", () =
 
   /* 2028 → 2030 に広げた（2026-08-31 の監査）。この不変条件は特定の年に
      依らない構造の話で、狭く取る理由が無い。1 年ぶん 9 星 × 8 方位 × 4 比較
-     で、実測の増加は 2 年ぶんで 0.3 秒。 */
-  for (const year of [2026, 2027, 2028, 2029, 2030]) {
+     で、実測の増加は 2 年ぶんで 0.3 秒。
+
+     **固定の一覧だけにしない**（2026-09-08 の監査）。/houi の年別頁が
+     出す年は `contentYears()`＝[今年, +1, +2] で、年が進むと固定の一覧の
+     外へ出る。2029 年になると記事は 2031 年ぶんを出すのに、この検査は
+     2030 で止まっていた。**いちばん新しい記事の年が黙って検査から
+     外れる**ので、実際に出している年を必ず混ぜる。過去に固定した年は
+     そのまま残す（当時の回帰を外さないため）。 */
+  const YEARS = [
+    ...new Set([2026, 2027, 2028, 2029, 2030, ...contentYears()]),
+  ].sort((a, b) => a - b);
+
+  it("記事が出している年をすべて含んでいる（検査が置いていかれない）", () => {
+    /* 上の union が壊れる（import を消す・sort で潰す等）と、この検査だけが
+       落ちる。年の一覧そのものを見張るので、固定の一覧が古くなっても
+       気付ける。 */
+    for (const y of contentYears()) expect(YEARS).toContain(y);
+  });
+
+  for (const year of YEARS) {
     it(`${year} 年（全 9 星 × 8 方位 × 年内 5 日付）`, () => {
       for (let star = 1; star <= 9; star++) {
         const dates = sampleDates(year);
