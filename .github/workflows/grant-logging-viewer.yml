@@ -16,6 +16,14 @@ name: Grant logging.viewer to deploy SA (one-off)
 
 on:
   workflow_dispatch:
+  # 手元の PC が起動せず、このセッションの資格情報では
+  # workflow_dispatch を叩けない（REST が 403）。このファイルを
+  # master に載せた push でも走るようにして 1 回だけ回す。
+  # 回ったあとは消してよい。
+  push:
+    branches: [master]
+    paths:
+      - ".github/workflows/grant-logging-viewer.yml"
 
 permissions:
   contents: read
