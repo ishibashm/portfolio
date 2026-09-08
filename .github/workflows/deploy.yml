@@ -3,6 +3,22 @@ name: Deploy to GCP Cloud Run (Free Tier)
 on:
   push:
     branches: [master]
+    # ここに挙げたものだけが変わった push では**デプロイしない。**
+    #
+    # deploy は 1 回ごとに 111 MB の層を Artifact Registry に足し、
+    # Cloud Run のリビジョンを 1 つ増やす（2026-09-08 の実測で版数 912・
+    # リビジョン 1,055）。文書だけ・ワークフローだけ・テストだけの変更で
+    # 出来上がるイメージは中身が同じなのに、保管料と版数だけが増える。
+    #
+    # **画像や content/ は除外しない。**public/ と content/ はイメージに
+    # 入って配信されるので、変えたら出し直す必要がある。
+    # src/data/*.json（夜間の巡回が更新する）も同じ。
+    paths-ignore:
+      - "docs/**"
+      - "__tests__/**"
+      - "CLAUDE.md"
+      - "README.md"
+      - ".github/**"
   # 手で起動できるようにしておく。切り戻しは Secret DATABASE_URL_OVERRIDE を
   # 消して再デプロイするだけで済むが、push でしか動かないと、そのために
   # 何かをコミットしなければならない。急いで戻したい場面で余計な手間になる。
@@ -325,7 +341,13 @@ jobs:
             --update-env-vars="$ENV_VARS_FLAG" \
             --update-labels=managed-by=github-actions,commit-sha=${{ github.sha }} \
             --cpu=1 \
-            --memory=512Mi \
+            # 512Mi では 1 日 3 回ほど上限を超えていた（2026-09-08 に
+            # 本番のログで実測）。Cloud Run は上限を超えると**インスタンス
+            # ごと強制終了**するので、そのとき処理中だったリクエストが
+            # まとめて落ち、直後はコールドスタートになる。増えるのは
+            # メモリ 0.5 GiB ぶん（$0.0000025/GiB 秒）で、インスタンスが
+            # 24 時間動き続けたと仮定しても月 $3.24 が上限。
+            --memory=1Gi \
             --max-instances=2 \
             --min-instances=0 \
             --concurrency=80 \
