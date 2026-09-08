@@ -334,6 +334,26 @@ jobs:
       - name: Deploy to Cloud Run (Free Tier Optimized)
         run: |-
           ENV_VARS_FLAG="$(python3 scripts/env_to_gcloud_flag.py env.json)"
+          # ## --memory=1Gi の理由
+          #
+          # 512Mi では 1 日 3 回ほど上限を超えていた（2026-09-08 に本番の
+          # ログで実測）。Cloud Run は上限を超えると**インスタンスごと
+          # 強制終了**するので、そのとき処理中だったリクエストがまとめて
+          # 落ち、直後はコールドスタートになる。増えるのはメモリ 0.5 GiB
+          # ぶん（$0.0000025/GiB 秒）で、インスタンスが 24 時間動き続けたと
+          # 仮定しても月 $3.24 が上限。
+          #
+          # ## コメントを継続行の途中に書かないこと
+          #
+          # 上の説明を最初は `--cpu=1 \` と `--memory=1Gi \` の**あいだ**に
+          # 置いた。`\` の次の行がコメントだとそこでコマンドが終わり、
+          # 続きの `--memory=1Gi` が単独のコマンドとして実行されて
+          # `command not found`（exit 127）になる。しかも **gcloud run deploy
+          # 自体は --cpu=1 までで成立してしまう**ので、メモリも
+          # max-instances も指定されないまま新しいリビジョンが 100% の
+          # トラフィックを受け取り、ジョブだけが赤くなった（run
+          # 34240938010）。指定しなかった項目は既存の値が引き継がれるため
+          # 画面は無事だったが、**直したはずの設定が当たっていない**。
           gcloud run deploy "${{ env.SERVICE_NAME }}" \
             --project="${{ env.PROJECT_ID }}" \
             --region="${{ env.REGION }}" \
@@ -341,12 +361,6 @@ jobs:
             --update-env-vars="$ENV_VARS_FLAG" \
             --update-labels=managed-by=github-actions,commit-sha=${{ github.sha }} \
             --cpu=1 \
-            # 512Mi では 1 日 3 回ほど上限を超えていた（2026-09-08 に
-            # 本番のログで実測）。Cloud Run は上限を超えると**インスタンス
-            # ごと強制終了**するので、そのとき処理中だったリクエストが
-            # まとめて落ち、直後はコールドスタートになる。増えるのは
-            # メモリ 0.5 GiB ぶん（$0.0000025/GiB 秒）で、インスタンスが
-            # 24 時間動き続けたと仮定しても月 $3.24 が上限。
             --memory=1Gi \
             --max-instances=2 \
             --min-instances=0 \
