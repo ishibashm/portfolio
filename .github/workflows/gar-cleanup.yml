@@ -47,6 +47,17 @@ name: Artifact Registry cleanup
 # している Cloud Run のリビジョンには、以後ロールバックできなくなる。
 
 on:
+  # 毎週。**掃除そのものは GCP 側のポリシーがやる**（apply が
+  # set-cleanup-policies を当て、以後は GCP が自動で古い版を消す）ので、
+  # ここでの定期実行は 2 つの役目しかない。
+  #
+  #   1. ポリシーが外れていないかを毎週当て直す（同じ内容なので無害）
+  #   2. 容量とリビジョン数を Summary に残し、増え方の変化に気付く
+  #
+  # 毎日ではなく毎週にしてある。実測（2026-09-08）では 7 日ぶんが
+  # 38 GB で釣り合っており、日単位で見る必要が無いため。
+  schedule:
+    - cron: "17 20 * * 0"
   workflow_dispatch:
     inputs:
       mode:
@@ -66,6 +77,12 @@ on:
         default: "20"
 
 env:
+  # schedule で起動したときは inputs が空になる。**空のまま参照すると
+  # mode が report でも apply でもない値になり、どちらのステップも
+  # 走らずに緑で終わる**（気付けない）。ここで既定に倒す。
+  MODE: ${{ inputs.mode || 'apply' }}
+  DELETE_OLDER_THAN: ${{ inputs.delete_older_than || '7d' }}
+  KEEP_VERSIONS: ${{ inputs.keep_versions || '20' }}
   PROJECT_ID: ${{ vars.GCP_PROJECT_ID || 'blog-471319' }}
   # 既定は deploy.yml と揃える（asia-northeast1）。ずれると、実際に
   # 溜まっているのと別のレジストリを掃除して「0 件でした」で緑になる。
@@ -176,7 +193,7 @@ jobs:
           PY
           cat report.md >> "$GITHUB_STEP_SUMMARY"
         env:
-          KEEP: ${{ inputs.keep_versions }}
+          KEEP: ${{ env.KEEP_VERSIONS }}
 
       - name: Inventory
         run: |
@@ -271,7 +288,7 @@ jobs:
           PY
 
       - name: Apply cleanup policy
-        if: ${{ inputs.mode == 'apply' }}
+        if: ${{ env.MODE == 'apply' }}
         run: |
           set -euo pipefail
           # GCP 標準のクリーンアップポリシー。以後は GCP 側が自動で消すので、
@@ -294,13 +311,13 @@ jobs:
               "name": "keep-recent",
               "action": {"type": "Keep"},
               "mostRecentVersions": {
-                "keepCount": ${{ inputs.keep_versions }}
+                "keepCount": ${{ env.KEEP_VERSIONS }}
               }
             },
             {
               "name": "delete-old",
               "action": {"type": "Delete"},
-              "condition": {"olderThan": "${{ inputs.delete_older_than }}"}
+              "condition": {"olderThan": "${{ env.DELETE_OLDER_THAN }}"}
             }
           ]
           EOF
@@ -313,9 +330,82 @@ jobs:
             --policy=policy.json
 
           echo "クリーンアップポリシーを適用した。" >> "$GITHUB_STEP_SUMMARY"
-          echo "以後は GCP 側が自動で古い版を消すので、このワークフローの定期実行は不要。" >> "$GITHUB_STEP_SUMMARY"
+          echo "以後は GCP 側が自動で古い版を消す。週次の schedule は、ポリシーが外れていないかの当て直しと、容量の記録のために回している。" >> "$GITHUB_STEP_SUMMARY"
 
           gcloud artifacts repositories describe "${{ env.REPOSITORY }}" \
             --project="${{ env.PROJECT_ID }}" \
             --location="${{ env.REGION }}" \
             --format="yaml(cleanupPolicies)"
+
+      - name: Prune old Cloud Run revisions
+        if: ${{ env.MODE == 'apply' }}
+        run: |
+          set -euo pipefail
+          # リビジョンは版を指すだけの入れ物で、配信していなければ課金
+          # されない。それでも整理するのは 2 つの理由から。
+          #
+          #   1. **1 サービスあたりの上限がある。**2026-09-08 の実測で
+          #      1,055 個まで来ていた。上限に当たるとデプロイが失敗する
+          #   2. 7 日より古い版はイメージ側が既に消えているので、その
+          #      リビジョンはロールバック先として使えない。残しても
+          #      一覧が読みにくくなるだけ
+          #
+          # **配信中のリビジョンには手を触れない。**traffic に載っている
+          # ものを先に取って除外する。新しい順に KEEP_REVISIONS 個も残す
+          # （イメージ側のポリシーが 20 世代を床にしているので、それより
+          # 多めに取る）。
+          KEEP_REVISIONS=60
+          # 1 回の run で扱う上限。gcloud は 1 件ずつしか扱えず遅いので、
+          # 全部を 1 回でやろうとすると timeout-minutes を超える。
+          # 週次で少しずつ減らす。
+          MAX_PER_RUN=300
+
+          gcloud run services describe "${{ env.SERVICE_NAME }}" \
+            --project="${{ env.PROJECT_ID }}" \
+            --region="${{ env.REGION }}" \
+            --format="value(status.traffic[].revisionName)" \
+            | tr ';,' '\n\n' | tr -d ' ' | grep -v '^$' > serving.txt || : > serving.txt
+          echo "配信中のリビジョン:"; cat serving.txt
+
+          gcloud run revisions list \
+            --project="${{ env.PROJECT_ID }}" \
+            --region="${{ env.REGION }}" \
+            --service="${{ env.SERVICE_NAME }}" \
+            --sort-by="~metadata.creationTimestamp" \
+            --format="value(metadata.name)" > all.txt
+
+          TOTAL="$(wc -l < all.txt | tr -d ' ')"
+          tail -n +$((KEEP_REVISIONS + 1)) all.txt > candidates.txt || : > candidates.txt
+          # 配信中を除く。serving.txt が空のとき grep -f は全部を落として
+          # しまうので、その場合は候補をそのまま使う。
+          if [ -s serving.txt ]; then
+            grep -vxF -f serving.txt candidates.txt > targets.txt || : > targets.txt
+          else
+            cp candidates.txt targets.txt
+          fi
+          head -n "$MAX_PER_RUN" targets.txt > batch.txt || : > batch.txt
+          N="$(wc -l < batch.txt | tr -d ' ')"
+
+          {
+            echo ""
+            echo "## Cloud Run のリビジョン"
+            echo ""
+            echo "- 総数: **$TOTAL**（新しい順に $KEEP_REVISIONS 個と配信中は残す）"
+            echo "- 今回の対象: **$N**（1 回の上限 $MAX_PER_RUN）"
+          } | tee -a "$GITHUB_STEP_SUMMARY"
+
+          FAILED=0
+          while read -r rev; do
+            [ -n "$rev" ] || continue
+            gcloud run revisions delete "$rev" \
+              --project="${{ env.PROJECT_ID }}" \
+              --region="${{ env.REGION }}" \
+              --quiet || FAILED=$((FAILED + 1))
+          done < batch.txt
+
+          if [ "$FAILED" -gt 0 ]; then
+            echo "::warning::$FAILED 個は扱えなかった（配信中・保護されている等）。次回に持ち越す。" \
+              | tee -a "$GITHUB_STEP_SUMMARY"
+          fi
+          echo "残り $(( $(wc -l < targets.txt | tr -d ' ') - N )) 個は次回。" \
+            | tee -a "$GITHUB_STEP_SUMMARY"
