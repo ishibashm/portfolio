@@ -51,6 +51,16 @@ ENV NEXT_TELEMETRY_DISABLED=1
 RUN --mount=type=secret,id=env,target=.env npx prisma generate
 RUN --mount=type=secret,id=env,target=.env npm run build
 
+# standalone の node_modules を外へ出す。runner 側で別の層として入れる
+# ため（理由は runner の COPY の上に書いた）。**COPY には除外指定が
+# 無い**ので、こちらで先に分けておかないと 1 枚の層に混ざる。
+#
+# next build が standalone を作らなかった場合はここで落としたい。
+# 黙って続けると runner の COPY が「そんなパスは無い」で失敗し、
+# ビルドの後半まで原因が分からなくなる。
+RUN test -d .next/standalone/node_modules \
+  && mv .next/standalone/node_modules /app/standalone-node-modules
+
 # Production image, copy all the files and run next
 FROM base AS runner
 WORKDIR /app
@@ -65,6 +75,24 @@ COPY --from=builder /app/public ./public
 
 # Automatically leverage output traces to reduce image size
 # https://nextjs.org/docs/advanced-features/output-file-tracing
+#
+# ## node_modules だけ別の層にする
+#
+# standalone を 1 行で入れると、**アプリと node_modules が 1 枚の層**に
+# なる。中身が 1 バイトでも変われば層ごと作り直しになるので、デプロイの
+# たびに丸ごと新しい層が Artifact Registry に積まれる（2026-09-08 の実測で
+# 圧縮後 111 MB／回、リポジトリ全体 37.9 GB）。
+#
+# node_modules は依存を変えたときしか動かないので、先に別の層として
+# 入れておけば、コードだけの変更では**その層が再利用される**。
+#
+# **効果は 1 割**（実測: standalone 793 MB のうち node_modules は 79 MB）。
+# 残りの 7 割は `/houi/area` の事前生成 1,022 頁（554 MB）で、そちらは
+# 層を分けても減らない。docs/improvement-backlog.md 24 節に測定を残した。
+#
+# builder 側で先に外へ出す。COPY には除外指定が無いので、standalone を
+# そのまま入れると 2 度目の COPY で結局 1 枚に混ざってしまう。
+COPY --from=builder --chown=nextjs:nodejs /app/standalone-node-modules ./node_modules
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 
