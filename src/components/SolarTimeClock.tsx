@@ -1187,9 +1187,15 @@ export const SolarTimeClock = () => {
       }
 
       const configToSave = {
-        birth_date: birthDate,
-        birth_lat: birthLat,
-        birth_lon: birthLon,
+        /* 利用者の値だけ書く。初期値（2000-01-01・東京）を書くと、他の
+           画面がそれを登録内容として読む。autoSave は #1100 で同じ守りを
+           入れたが、こちらの手動保存（プロフィールの「保存」）は素通りの
+           ままで、生年月日を入れずに体調の基準値だけ保存した人の
+           birth_date に 2000-01-01、出生地に東京駅が書かれていた */
+        ...(birthDateOwned ? { birth_date: birthDate } : {}),
+        ...(birthPlaceOwned
+          ? { birth_lat: birthLat, birth_lon: birthLon }
+          : {}),
         base_lat: lat,
         base_lon: lon,
         void_zodiac_override: voidZodiacOverride,
@@ -1223,9 +1229,13 @@ export const SolarTimeClock = () => {
 
       // Sync back to Relocation Matrix Dashboard
       if (typeof window !== "undefined") {
-        localStorage.setItem("wealth_birthDate", birthDate);
-        localStorage.setItem("wealth_birthLat", birthLat.toString());
-        localStorage.setItem("wealth_birthLon", birthLon.toString());
+        // 旧 wealth_* も同じ。相場マップは tactical_config_v1 に無いとき
+        // ここを読むので、初期値を書くと向こうで「登録済み」になる
+        if (birthDateOwned) localStorage.setItem("wealth_birthDate", birthDate);
+        if (birthPlaceOwned) {
+          localStorage.setItem("wealth_birthLat", birthLat.toString());
+          localStorage.setItem("wealth_birthLon", birthLon.toString());
+        }
         localStorage.setItem("wealth_baseLat", lat.toString());
         localStorage.setItem("wealth_baseLon", lon.toString());
       }

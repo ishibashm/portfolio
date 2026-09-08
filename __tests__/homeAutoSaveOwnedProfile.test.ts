@@ -32,6 +32,7 @@ const GUARDED = ["birth_date", "birth_lat", "birth_lon"];
 
 function autoSavePayloadProperties(
   source: string = SOURCE,
+  variableName = "partialConfig",
 ): ts.ObjectLiteralExpression {
   const path = join(process.cwd(), source);
   const sf = ts.createSourceFile(
@@ -46,7 +47,7 @@ function autoSavePayloadProperties(
     if (
       ts.isVariableDeclaration(node) &&
       ts.isIdentifier(node.name) &&
-      node.name.text === "partialConfig" &&
+      node.name.text === variableName &&
       node.initializer &&
       ts.isObjectLiteralExpression(node.initializer)
     ) {
@@ -56,7 +57,8 @@ function autoSavePayloadProperties(
   };
   visit(sf);
 
-  if (!found) throw new Error("partialConfig の object literal が見つからない");
+  if (!found)
+    throw new Error(`${variableName} の object literal が見つからない`);
   return found;
 }
 
@@ -98,6 +100,53 @@ describe("ホームの自動保存", () => {
     expect(
       src.match(/setBirthPlaceOwned\(true\)/g)?.length ?? 0,
     ).toBeGreaterThanOrEqual(3);
+  });
+});
+
+/**
+ * 手動保存（プロフィールの「保存」→ `handleSaveConfig` の `configToSave`）
+ * も同じ穴があった。#1100 で自動保存だけを守り、こちらは素通りのまま。
+ * 生年月日を入れずに体調の基準値だけ保存した人の birth_date に
+ * 2000-01-01、出生地に東京駅が書かれ、旧 wealth_birthDate にも同じ値が
+ * 入って相場マップがそれを「登録済み」として読んでいた。
+ */
+describe("ホームの手動保存", () => {
+  const literal = autoSavePayloadProperties(SOURCE, "configToSave");
+
+  it("見張りが空回りしていない（保存する項目を読めている）", () => {
+    const names = literal.properties
+      .filter(ts.isPropertyAssignment)
+      .map((p) => p.name.getText());
+    expect(names).toContain("base_lat");
+    expect(names).toContain("baseline_hrv_mean");
+  });
+
+  it("生年月日と出生地を無条件には書かない", () => {
+    const names = literal.properties
+      .filter(ts.isPropertyAssignment)
+      .map((p) => p.name.getText());
+    for (const key of GUARDED) {
+      expect(names, key).not.toContain(key);
+    }
+  });
+
+  it("利用者の値のときだけ書く（条件つきの展開になっている）", () => {
+    const spreads = literal.properties.filter(ts.isSpreadAssignment);
+    const text = spreads.map((s) => s.expression.getText()).join("\n");
+    expect(text).toContain("birthDateOwned");
+    expect(text).toContain("birthPlaceOwned");
+    for (const key of GUARDED) expect(text, key).toContain(key);
+  });
+
+  it("旧 wealth_birthDate / wealth_birthLat も無条件には書かない", () => {
+    const src = readFileSync(join(process.cwd(), SOURCE), "utf8");
+    expect(src).not.toMatch(/^\s*localStorage\.setItem\("wealth_birthDate"/m);
+    expect(src).toMatch(
+      /if \(birthDateOwned\) localStorage\.setItem\("wealth_birthDate"/,
+    );
+    expect(src).toMatch(
+      /if \(birthPlaceOwned\) \{\s*localStorage\.setItem\("wealth_birthLat"/,
+    );
   });
 });
 
