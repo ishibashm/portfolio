@@ -24,7 +24,14 @@ import { SITE_NAME } from "@/lib/siteStructure";
  * 生成されてしまう。
  */
 
-export const dynamicParams = false;
+/*
+  一覧に無い slug も、この頁の notFound() で 404 にする。返る番号は
+  `dynamicParams = false` と同じだが、false は弾くたびに Next が
+  `NoFallbackError` を severity=ERROR で吐く（#1135 で /houi の 3 ルートを
+  同じ理由で直した。本番のエラーログ 23 件のうち 20 件がそれだった）。
+  ここは本番ログに 1 件も出ていないが、同じ形で揃えておく。
+*/
+export const dynamicParams = true;
 
 export function generateStaticParams() {
   return GUIDE_PAGES.map((p) => ({ slug: p.slug }));
