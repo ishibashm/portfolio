@@ -415,6 +415,47 @@ lint の作業中に見つけたが、画面の作りや流派の判断が要る
 「今日生まれ」で命式を組んでしまう**（#205 と同じ形）。397 行のガードが
 それを止めている。ここを触るときは必ずガードごと見ること。
 
+### 出生地が未入力のまま控え（プリセット）に残すと、東京か現住地が「出生地」になる（2026-09-08 に発見・判断待ち）
+
+`ProfilePreset` は `birthLat` / `birthLon` を**必須の数値**にしている
+（`lib/profilePresetSync` の `isProfilePreset` も数値でなければ通さない）。
+出生地は任意の項目なのに、控えに入れる時点で必ず何かの座標に
+なる。**どこで保存したかで埋まる値が違う。**
+
+| 保存する場所 | 出生地が空のとき何を書くか |
+|---|---|
+| ホームの簡易プロフィール（`home/QuickProfileBar`） | **東京駅**（`FALLBACK_LAT/LON`。画面にも「未入力の項目は東京で計算します」と出る） |
+| 設定バー（`layout/MetaphysicalConfigBar` の `savePresetFromConfig`） | **現住地**（`config.birthLat ?? config.baseLat`） |
+| ホームのプロフィール設定（`PersonalProfileConfig`） | `SolarTimeClock` の state の初期値＝**東京駅** |
+| 移住先の比較（`relocation/wealth`） | 空なら **alert で止める**（書かない） |
+
+控えを呼び出すと（`handlePick` / `applyPreset` / 各頁の `handleLoadPreset`）
+その座標が `birth_lat` として設定とクラウドに書かれる。以後、物件検索と
+移住先の比較で**天体ライン（太陽・金星・木星）の加点が、東京または
+現住地で生まれた人として付く。**API 側は出生地が無ければ加点を付けない
+作りになっている（`hasBirthLocation`）ので、「分からない」を「分からない」の
+まま運べれば、加点は付かないのが正しい答え。偏角を「取れなければ 0」に
+したのと同じ考え方（CLAUDE.md 3 節）。
+
+#1114 で塞いだ「出発地が東京駅として保存される」と同じ型だが、
+こちらは**型が必須にしているせいで、書く側が何かを埋めざるを得ない。**
+直すなら型から。読む側が先で、書く側は最後（順を逆にすると
+`String(preset.birthLat)` が `"undefined"` を出す）。
+
+1. 読む側が `undefined` に耐えるようにする（`wealth/page` の
+   `String(preset.birthLat)`、`account/AccountPanel` の `formatCoords`、
+   `home/QuickProfileBar` の `handlePick`）。挙動は変わらない
+2. `ProfilePreset.birthLat/birthLon` を任意にし、`isProfilePreset` と
+   `api/profile-presets` の検証を「両方あるか、両方無いか」にする
+3. 書く側が埋めるのをやめる（`QuickProfileBar`、`MetaphysicalConfigBar`）。
+   `PersonalProfileConfig` は `SolarTimeClock` の `birthPlaceOwned`（#1100）
+   を見ないと「未入力」と「東京」を区別できないので、ここだけ別途
+
+8 ファイルほどに散るので 3 つの PR に割る。**着手前に、ホームの
+「未入力は東京で計算します」の案内をどうするか**（計算自体は東京で
+続けるのか、出生地が無い間は天体ラインを出さないのか）を決める必要が
+ある。ここが利用者の判断。
+
 ---
 
 ## 7. 検索に載らない件（インデックス）
