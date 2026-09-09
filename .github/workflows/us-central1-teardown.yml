@@ -1,0 +1,204 @@
+name: Tear down the us-central1 leftovers
+
+# **本番は asia-northeast1。us-central1 は 2026-08-08 より前の置き土産。**
+#
+# ## なぜ要るか（2026-09-09 の実測）
+#
+# 請求（9/03〜9/09 の 7 日）で Artifact Registry が ¥397 出ていた。
+# gar-cleanup は portfolio-repo × asia-northeast1 の **1 つだけ**を見て
+# いて、その 36 GB を「AR の実サイズ」として報告していた。全ロケーションを
+# 数え直したら、
+#
+#     portfolio-repo  us-central1      106.02 GB   2026-03-08 作成
+#     portfolio-repo  asia-northeast1   36.46 GB   2026-08-08 作成
+#                                      142.47 GB
+#
+# **AR の請求の 74% が、誰も使っていないリージョンの置き土産だった。**
+# クリーンアップポリシーは asia-northeast1 にしか当たっていないので、
+# us-central1 側は作成以来 1 バイトも消えていない。
+#
+# リポジトリ全体を検索して `us-central1-docker.pkg.dev` へ push / pull する
+# ワークフローは 1 本も無い（当たるのは説明のコメントと、旧 VM 用
+# check-logs.yml の ZONE: us-central1-f だけ）。
+#
+# ## 消す順番を逆にしない
+#
+# **ドメインマッピング → サービス → レジストリ。**イメージを先に消すと、
+# サービスが起動できないまま残る。逆順なら、途中で止まっても「使われて
+# いないものが少し残っている」だけで済む。
+#
+# ## 安全装置
+#
+# - `workflow_dispatch` のみ。schedule も push も無い
+# - `confirm` に **us-central1** と打たないと apply しない
+# - REGION は定数。asia-northeast1 を指したら**必ず落とす**（下の guard）
+
+on:
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: "report（数えるだけ） / apply（実際に消す）"
+        type: choice
+        options:
+          - report
+          - apply
+        default: report
+      confirm:
+        description: "apply のときだけ必要。us-central1 と入力する"
+        type: string
+        default: ""
+
+concurrency:
+  group: us-central1-teardown
+  cancel-in-progress: false
+
+env:
+  MODE: ${{ inputs.mode || 'report' }}
+  CONFIRM: ${{ inputs.confirm || '' }}
+  PROJECT_ID: ${{ vars.GCP_PROJECT_ID || 'blog-471319' }}
+  # **定数。変数から取らない。**vars が空のときに本番のリージョンへ
+  # 倒れる作りにしない（deploy.yml が以前それで別リージョンへ出した）。
+  DEAD_REGION: us-central1
+  LIVE_REGION: asia-northeast1
+  REPOSITORY: ${{ vars.GCP_REPOSITORY || 'portfolio-repo' }}
+
+jobs:
+  teardown:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Refuse if the dead region is the live one
+        run: |
+          set -euo pipefail
+          # 取り違えたら**何も消さずに落とす**。ここが最後の砦。
+          if [ "$DEAD_REGION" = "$LIVE_REGION" ]; then
+            echo "::error::DEAD_REGION と LIVE_REGION が同じ（$DEAD_REGION）。中止する。"
+            exit 1
+          fi
+          echo "消す側: $DEAD_REGION / 残す側: $LIVE_REGION"
+
+      - name: Auth with GCP
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.GCP_SA_KEY }}
+
+      - uses: google-github-actions/setup-gcloud@v2
+        with:
+          project_id: ${{ env.PROJECT_ID }}
+
+      - name: Show what is in the dead region
+        run: |
+          set -euo pipefail
+          # **消す前に必ず出す。**report で回したときはここで終わる。
+          # `|| true` で握り潰さない（#1147 でそれをやって、引数の
+          # 間違いを権限の問題と読み違えた）。
+          run_or_warn() {
+            local label="$1"; shift
+            if ! "$@" > out.txt 2> err.txt; then
+              echo "::warning::$label に失敗した: $(tr '\n' ' ' < err.txt)"
+              : > out.txt
+            fi
+            {
+              echo "### $label"
+              echo '```'
+              cat out.txt
+              echo '```'
+            } | tee -a "$GITHUB_STEP_SUMMARY"
+          }
+
+          echo "## us-central1 に残っているもの" | tee -a "$GITHUB_STEP_SUMMARY"
+
+          run_or_warn "Cloud Run サービス" \
+            gcloud run services list --project="$PROJECT_ID" \
+              --region="$DEAD_REGION" --format="table(metadata.name, status.url)"
+
+          run_or_warn "ドメインマッピング" \
+            gcloud beta run domain-mappings list --project="$PROJECT_ID" \
+              --region="$DEAD_REGION" --format="table(metadata.name, spec.routeName)"
+
+          run_or_warn "Artifact Registry" \
+            gcloud artifacts repositories list --project="$PROJECT_ID" \
+              --location="$DEAD_REGION" --format="table(name, format, sizeBytes, createTime)"
+
+      - name: Refuse to apply without the confirmation word
+        if: env.MODE == 'apply'
+        run: |
+          set -euo pipefail
+          if [ "$CONFIRM" != "us-central1" ]; then
+            echo "::error::apply には confirm に us-central1 と入力する。入力値: '$CONFIRM'"
+            exit 1
+          fi
+
+      - name: Delete domain mappings
+        if: env.MODE == 'apply'
+        run: |
+          set -euo pipefail
+          # **いちばん外側から。**マッピングが残ったままサービスを消すと、
+          # 宛先の無いマッピングになる。
+          gcloud beta run domain-mappings list --project="$PROJECT_ID" \
+            --region="$DEAD_REGION" --format="value(metadata.name)" > maps.txt 2>/dev/null || : > maps.txt
+          if [ ! -s maps.txt ]; then
+            echo "ドメインマッピングは無かった。" | tee -a "$GITHUB_STEP_SUMMARY"
+          fi
+          while read -r m; do
+            [ -n "$m" ] || continue
+            echo "削除: domain-mapping $m"
+            gcloud beta run domain-mappings delete "$m" --project="$PROJECT_ID" \
+              --region="$DEAD_REGION" --quiet
+          done < maps.txt
+
+      - name: Delete Cloud Run services
+        if: env.MODE == 'apply'
+        run: |
+          set -euo pipefail
+          gcloud run services list --project="$PROJECT_ID" \
+            --region="$DEAD_REGION" --format="value(metadata.name)" > svcs.txt 2>/dev/null || : > svcs.txt
+          if [ ! -s svcs.txt ]; then
+            echo "Cloud Run サービスは無かった。" | tee -a "$GITHUB_STEP_SUMMARY"
+          fi
+          while read -r s; do
+            [ -n "$s" ] || continue
+            echo "削除: service $s"
+            gcloud run services delete "$s" --project="$PROJECT_ID" \
+              --region="$DEAD_REGION" --quiet
+          done < svcs.txt
+
+      - name: Delete the Artifact Registry repository
+        if: env.MODE == 'apply'
+        run: |
+          set -euo pipefail
+          # **最後。**ここまでで参照する側は消えている。
+          if gcloud artifacts repositories describe "$REPOSITORY" \
+               --project="$PROJECT_ID" --location="$DEAD_REGION" >/dev/null 2>&1; then
+            echo "削除: artifacts repository $REPOSITORY ($DEAD_REGION)"
+            gcloud artifacts repositories delete "$REPOSITORY" \
+              --project="$PROJECT_ID" --location="$DEAD_REGION" --quiet
+          else
+            echo "$REPOSITORY は $DEAD_REGION に無かった。" | tee -a "$GITHUB_STEP_SUMMARY"
+          fi
+
+      - name: Show the result
+        if: env.MODE == 'apply'
+        run: |
+          set -euo pipefail
+          # **「成功したはず」で済ませない。**消えたことを一覧で示す。
+          {
+            echo "## 削除後の us-central1"
+            echo '```'
+            gcloud run services list --project="$PROJECT_ID" \
+              --region="$DEAD_REGION" --format="table(metadata.name)" 2>&1 || true
+            gcloud artifacts repositories list --project="$PROJECT_ID" \
+              --location="$DEAD_REGION" --format="table(name, sizeBytes)" 2>&1 || true
+            echo '```'
+            echo
+            echo "## 残す側（$LIVE_REGION）が無事か"
+            echo '```'
+            gcloud artifacts repositories list --project="$PROJECT_ID" \
+              --location="$LIVE_REGION" --format="table(name, sizeBytes)" 2>&1 || true
+            gcloud run services list --project="$PROJECT_ID" \
+              --region="$LIVE_REGION" --format="table(metadata.name, status.url)" 2>&1 || true
+            echo '```'
+          } | tee -a "$GITHUB_STEP_SUMMARY"
