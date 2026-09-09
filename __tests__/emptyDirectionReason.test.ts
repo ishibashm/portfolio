@@ -113,12 +113,45 @@ describe("候補の入らない方位の理由", () => {
  *      掲載が無い」に入り、名前が 1 つも出なかった
  */
 describe("150km 以内の街と、150km より先の街を取り違えない", () => {
-  it("鹿児島市の南西は 150km 以内に南九州市がある（遠いだけではない）", () => {
-    const e = emptyDirections(findArea("46201")!).find(
-      (x) => x.direction === "SW",
-    );
-    expect(e?.hasWithinRangeMunicipality).toBe(true);
-    expect(e?.nearestUnlisted.map((u) => u.city)).toContain("南九州市");
+  /* **市の名前で留めない**（2026-09-09 に落ちた）。もとは「鹿児島市の
+     南西に南九州市（27km）がある」で固定していたが、夜間の巡回で
+     南さつま市（25km）が南西に入り、**その方位が空でなくなって**
+     `find` が undefined を返した。実装は正しいのに検査だけが落ちる。
+
+     代表点は掲載の平均なので毎晩動く。**1 市 1 方位に留めると、
+     直したはずの規則ではなく、その晩の掲載を見ていることになる。**
+     規則そのものを全件に当てる形へ移した。 */
+  it("150km 以内に掲載の無い街があれば、必ず「掲載漏れ」に入る", () => {
+    const wrong: string[] = [];
+    for (const a of AREAS) {
+      for (const e of emptyDirections(a)) {
+        /* 旧実装は掲載のある市だけで遠近を数えていたので、150km 以内に
+           掲載の無い街があっても「遠いだけ」に落ちた。名前が付いていて
+           近いのに hasWithinRangeMunicipality が false なら、それが再発。 */
+        const nearest = e.nearestUnlisted[0];
+        if (!nearest) continue;
+        if (nearest.distanceKm <= 150 && !e.hasWithinRangeMunicipality) {
+          wrong.push(
+            `${a.full} ${e.direction}: ${nearest.city} ${nearest.distanceKm}km`,
+          );
+        }
+      }
+    }
+    expect(wrong).toEqual([]);
+  });
+
+  it("この検査が空回りしていない（当てはまる方位が実在する）", () => {
+    /* 上は「見つからなければ緑」なので、母数が 0 でも通る。実際に
+       150km 以内の掲載漏れが何百とあることを併せて固定する。 */
+    let hits = 0;
+    for (const a of AREAS) {
+      for (const e of emptyDirections(a)) {
+        if (e.hasWithinRangeMunicipality && e.nearestUnlisted.length > 0) {
+          hits++;
+        }
+      }
+    }
+    expect(hits).toBeGreaterThan(100);
   });
 
   it("釧路市の南は 150km 以内に街が無く、先にはある（遠いだけ）", () => {

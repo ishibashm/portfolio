@@ -109,6 +109,66 @@ jobs:
         with:
           project_id: ${{ env.PROJECT_ID }}
 
+      - name: Inventory every repository in every location
+        run: |
+          set -euo pipefail
+          # **請求と突き合わせるための棚卸し。**
+          #
+          # この下の全ステップは REPOSITORY（portfolio-repo）× REGION
+          # （asia-northeast1）の **1 つだけ**を見る。それで測った 37.9 GB を
+          # 「Artifact Registry の実サイズ」として報告していたが、
+          # 2026-09-09 の請求（9/03〜9/09 の 7 日で AR ¥397）から逆算すると
+          # **課金対象は約 113 GB** で、3 倍のひらきがあった。
+          #
+          # $0.10/GB/月 ＝ 約 ¥15/GB/月 ＝ 約 ¥0.5/GB/日。¥397 ÷ 7 日 ÷ 0.5
+          # ≒ 113 GB。1 つのリポジトリしか見ていなければ、他のリポジトリや
+          # 他のロケーション（us-central1 に残骸がある）は数に入らない。
+          #
+          # **消す前に、まず全部を数える。**--location=- で全ロケーションを
+          # 横断する（既定は 1 つだけ）。読むだけで何も消さない。
+          gcloud artifacts repositories list \
+            --project="${{ env.PROJECT_ID }}" \
+            --location=- \
+            --format="value(name, format, sizeBytes, createTime)" \
+            > repos.tsv || true
+          python3 - <<'PY' >> "$GITHUB_STEP_SUMMARY"
+          import os
+          rows = []
+          with open("repos.tsv", encoding="utf-8") as f:
+              for line in f:
+                  parts = line.rstrip("\n").split("\t")
+                  if len(parts) < 3 or not parts[0]:
+                      continue
+                  try:
+                      size = int(parts[2] or 0)
+                  except ValueError:
+                      size = 0
+                  rows.append((parts[0], parts[1], size, parts[3] if len(parts) > 3 else ""))
+          rows.sort(key=lambda r: -r[2])
+          total = sum(r[2] for r in rows)
+          print("## Artifact Registry の全リポジトリ（全ロケーション）")
+          print()
+          if not rows:
+              print("`repositories list` が 1 件も返さなかった。権限か API を確認する。")
+          else:
+              print("| リポジトリ | 形式 | サイズ | 作成 |")
+              print("| --- | --- | ---: | --- |")
+              for name, fmt, size, created in rows:
+                  print(f"| `{name}` | {fmt} | {size / 1e9:.2f} GB | {created[:10]} |")
+              print()
+              print(f"**合計 {total / 1e9:.2f} GB**（{len(rows)} リポジトリ）。")
+              print()
+              print(
+                  "$0.10/GB/月 なので月 **約 ¥"
+                  f"{total / 1e9 * 15:.0f}**（1 ドル 150 円・無料枠 0.5 GB を無視した概算）。"
+              )
+              print()
+              print(
+                  "請求書の Artifact Registry と桁が合わなければ、**まだ数えていない"
+                  "ものがある**。合っていれば、どのリポジトリを削るかがここで決まる。"
+              )
+          PY
+
       - name: Show existing cleanup policies
         run: |
           set -euo pipefail
