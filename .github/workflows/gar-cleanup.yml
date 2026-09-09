@@ -141,7 +141,11 @@ jobs:
             echo "::warning::repositories list に失敗した: $(tr '\n' ' ' < repos.err)"
             echo "[]" > repos.json
           fi
-          python3 - <<'PY' >> "$GITHUB_STEP_SUMMARY"
+          # **`tee` で標準出力にも出す。**`>>` だけだと Job Summary にしか
+          # 入らず、**ログには 1 行も残らない。**この工程を 2 回回して、
+          # 2 回とも結果を読めなかった（他のステップが tee を使っている
+          # のはこのため）。
+          python3 - <<'PY' | tee -a "$GITHUB_STEP_SUMMARY"
           import json
 
           repos = json.load(open("repos.json"))
