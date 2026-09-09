@@ -51,8 +51,32 @@ import { INDEXED_ROBOTS, NOINDEX_ROBOTS } from "@/lib/siteStructure";
 */
 export const dynamicParams = true;
 
+/*
+  **事前生成するのは、索引に載せる頁だけ。**残りは要求が来たときに作る。
+
+  以前は AREAS 全件（実測 1,156 頁）をビルド時に焼いていた。イメージの
+  実測 793 MB のうち **554 MB（7 割）がこの事前生成**で、デプロイ 1 回に
+  つき圧縮後 111 MB の層が Artifact Registry に積まれる。デプロイは
+  日 30〜70 回あるので、1 MB の削減が 1 日 30〜70 MB になる
+  （docs/improvement-backlog.md 24 節・24-b 節に実測）。
+
+  **落ちる機能は無い。**#1135 で `dynamicParams = true` にしてあるので、
+  ここが返さない code も要求時に作られる（404 にはならない）。索引に
+  載せていない頁は robots が noindex なので検索結果からは来ず、
+  描画も DB と暦エンジンを引かず areaDirections.json と静的な import
+  だけで済む。
+
+  払うのは**その頁の初回アクセスだけ**が遅くなること（インスタンス
+  ごとに 1 回）。得るのはイメージと保管料とビルド時間。
+
+  索引の判定（robots）と**同じ式**を使う。別々に書くと、文章を書いた
+  のに事前生成されない（またはその逆）という食い違いが静かに起きる。
+  __tests__/houiAreaPrerender.test.ts が両者の一致を見張る。
+*/
 export function generateStaticParams() {
-  return AREAS.map((a) => ({ code: a.code }));
+  return AREAS.filter((a) => AREA_EDITORIAL[a.code]).map((a) => ({
+    code: a.code,
+  }));
 }
 
 export async function generateMetadata({
