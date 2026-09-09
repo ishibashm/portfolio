@@ -61,6 +61,7 @@ env:
   DEAD_REGION: us-central1
   LIVE_REGION: asia-northeast1
   REPOSITORY: ${{ vars.GCP_REPOSITORY || 'portfolio-repo' }}
+  SERVICE_NAME: ${{ vars.GCP_SERVICE_NAME || 'portfolio-app' }}
 
 jobs:
   teardown:
@@ -116,7 +117,7 @@ jobs:
               --region="$DEAD_REGION" --format="table(metadata.name, status.url)"
 
           run_or_warn "ドメインマッピング" \
-            gcloud beta run domain-mappings list --project="$PROJECT_ID" \
+            gcloud run domain-mappings list --project="$PROJECT_ID" \
               --region="$DEAD_REGION" --format="table(metadata.name, spec.routeName)"
 
           run_or_warn "Artifact Registry" \
@@ -138,15 +139,24 @@ jobs:
           set -euo pipefail
           # **いちばん外側から。**マッピングが残ったままサービスを消すと、
           # 宛先の無いマッピングになる。
-          gcloud beta run domain-mappings list --project="$PROJECT_ID" \
-            --region="$DEAD_REGION" --format="value(metadata.name)" > maps.txt 2>/dev/null || : > maps.txt
+          # `gcloud beta` は runner に入っていない（1 回目の report で
+          # 「components: [beta] の導入が要る」と出て、対話できずに落ちた。
+          # ::warning:: が拾ったので気付けた）。GA の口を使う。
+          gcloud run domain-mappings list --project="$PROJECT_ID" \
+            --region="$DEAD_REGION" --format="value(metadata.name, spec.routeName)" \
+            > maps_all.txt 2>/dev/null || : > maps_all.txt
+          # **このリージョンのものを全部消さない。**宛先が SERVICE_NAME の
+          # マッピングだけに絞る。同じリージョンに別のサービスが居ること
+          # があり（利用者が knowledge-base-app に言及していた）、
+          # 一括削除は他人の資源まで巻き込む。
+          awk -v svc="$SERVICE_NAME" '$2 == svc { print $1 }' maps_all.txt > maps.txt
           if [ ! -s maps.txt ]; then
             echo "ドメインマッピングは無かった。" | tee -a "$GITHUB_STEP_SUMMARY"
           fi
           while read -r m; do
             [ -n "$m" ] || continue
             echo "削除: domain-mapping $m"
-            gcloud beta run domain-mappings delete "$m" --project="$PROJECT_ID" \
+            gcloud run domain-mappings delete --domain="$m" --project="$PROJECT_ID" \
               --region="$DEAD_REGION" --quiet
           done < maps.txt
 
@@ -154,8 +164,14 @@ jobs:
         if: env.MODE == 'apply'
         run: |
           set -euo pipefail
+          # **名指しで絞る。**リージョンに居るもの全部ではない。
+          # 1 回目の report では us-central1 の Cloud Run サービスは
+          # **0 件**だったが、将来ここに別のサービスが立ったときに
+          # 巻き込まないよう、対象を SERVICE_NAME に限る。
           gcloud run services list --project="$PROJECT_ID" \
-            --region="$DEAD_REGION" --format="value(metadata.name)" > svcs.txt 2>/dev/null || : > svcs.txt
+            --region="$DEAD_REGION" --format="value(metadata.name)" \
+            > svcs_all.txt 2>/dev/null || : > svcs_all.txt
+          grep -Fx "$SERVICE_NAME" svcs_all.txt > svcs.txt || : > svcs.txt
           if [ ! -s svcs.txt ]; then
             echo "Cloud Run サービスは無かった。" | tee -a "$GITHUB_STEP_SUMMARY"
           fi
