@@ -126,47 +126,76 @@ jobs:
           #
           # **消す前に、まず全部を数える。**--location=- で全ロケーションを
           # 横断する（既定は 1 つだけ）。読むだけで何も消さない。
-          gcloud artifacts repositories list \
+          # `--location=-` は **repositories list では使えない**（1 回目の
+          # 実測で `INVALID_ARGUMENT: Invalid project name:
+          # "projects/blog-471319/locations/-"`）。`--location` を省くと
+          # 全ロケーションを横断するので、省くのが正しい。
+          #
+          # **`|| true` で握り潰さない。**1 回目はそれで上のエラーが
+          # ログの奥に流れ、Summary には「1 件も返さなかった」とだけ出て
+          # 権限の問題に見えた。続行はするが ::warning:: で必ず表に出す。
+          if ! gcloud artifacts repositories list \
             --project="${{ env.PROJECT_ID }}" \
-            --location=- \
-            --format="value(name, format, sizeBytes, createTime)" \
-            > repos.tsv || true
+            --format="json" \
+            > repos.json 2> repos.err; then
+            echo "::warning::repositories list に失敗した: $(tr '\n' ' ' < repos.err)"
+            echo "[]" > repos.json
+          fi
           python3 - <<'PY' >> "$GITHUB_STEP_SUMMARY"
-          import os
+          import json
+
+          repos = json.load(open("repos.json"))
+
+          def size_of(r):
+              """サイズの鍵は版によって違う。**決め打ちにしない。**
+              describe は sizeBytes を --format=value で返さなかったのに
+              人向けの出力には「Repository Size: 36325.074MB」と出ていた。
+              あり得る鍵を順に見て、無ければ 0 ではなく None を返す。"""
+              for k in ("sizeBytes", "size_bytes", "sizeInBytes"):
+                  v = r.get(k)
+                  if v not in (None, ""):
+                      try:
+                          return int(v)
+                      except (TypeError, ValueError):
+                          pass
+              return None
+
           rows = []
-          with open("repos.tsv", encoding="utf-8") as f:
-              for line in f:
-                  parts = line.rstrip("\n").split("\t")
-                  if len(parts) < 3 or not parts[0]:
-                      continue
-                  try:
-                      size = int(parts[2] or 0)
-                  except ValueError:
-                      size = 0
-                  rows.append((parts[0], parts[1], size, parts[3] if len(parts) > 3 else ""))
-          rows.sort(key=lambda r: -r[2])
-          total = sum(r[2] for r in rows)
+          for r in repos:
+              name = (r.get("name") or "").split("/")
+              loc = name[3] if len(name) > 3 else "?"
+              short = name[-1] if name else "?"
+              rows.append((short, loc, r.get("format", "?"), size_of(r),
+                           (r.get("createTime") or "")[:10]))
+          rows.sort(key=lambda x: -(x[3] or 0))
+
           print("## Artifact Registry の全リポジトリ（全ロケーション）")
           print()
           if not rows:
-              print("`repositories list` が 1 件も返さなかった。権限か API を確認する。")
+              print("`repositories list` が 1 件も返さなかった。上の ::warning:: を見る。")
           else:
-              print("| リポジトリ | 形式 | サイズ | 作成 |")
-              print("| --- | --- | ---: | --- |")
-              for name, fmt, size, created in rows:
-                  print(f"| `{name}` | {fmt} | {size / 1e9:.2f} GB | {created[:10]} |")
+              print("| リポジトリ | ロケーション | 形式 | サイズ | 作成 |")
+              print("| --- | --- | --- | ---: | --- |")
+              known = 0
+              unknown = 0
+              for short, loc, fmt, size, created in rows:
+                  if size is None:
+                      unknown += 1
+                      shown = "**不明**"
+                  else:
+                      known += size
+                      shown = f"{size / 1e9:.2f} GB"
+                  print(f"| `{short}` | {loc} | {fmt} | {shown} | {created} |")
               print()
-              print(f"**合計 {total / 1e9:.2f} GB**（{len(rows)} リポジトリ）。")
+              print(f"**判明分の合計 {known / 1e9:.2f} GB**（{len(rows)} リポジトリ"
+                    + (f"、うち {unknown} 件はサイズ不明" if unknown else "") + "）。")
               print()
-              print(
-                  "$0.10/GB/月 なので月 **約 ¥"
-                  f"{total / 1e9 * 15:.0f}**（1 ドル 150 円・無料枠 0.5 GB を無視した概算）。"
-              )
+              print("$0.10/GB/月 ＝ 約 ¥15/GB/月 なので月 **約 ¥"
+                    f"{known / 1e9 * 15:.0f}**（1 ドル 150 円・無料枠 0.5 GB を無視した概算）。")
               print()
-              print(
-                  "請求書の Artifact Registry と桁が合わなければ、**まだ数えていない"
-                  "ものがある**。合っていれば、どのリポジトリを削るかがここで決まる。"
-              )
+              print("実際の請求は 2026-09-03〜09-09 の 7 日で **¥397**"
+                    "（＝月あたり約 ¥1,700、逆算で約 113 GB）。**この表の合計と"
+                    "桁が合わなければ、まだ数えていないものがある。**")
           PY
 
       - name: Show existing cleanup policies
