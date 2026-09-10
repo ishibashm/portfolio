@@ -1,0 +1,91 @@
+name: Refresh Land Listings (Nifty)
+
+# nifty の売地一覧（/tochi/）を巡回して land_listings に積む。
+#
+# **手動起動だけ。定時は置いていない。**巡回の予算と周期は利用者の判断
+# （CLAUDE.md 6 節。docs/improvement-backlog.md 25 節の「利用者に決めて
+# もらうこと」）。決まったら schedule を足し、賃貸の枠（19:17 UTC 起点で
+# 最長 6 時間）と重ならない時間帯に置く。
+#
+# 賃貸の巡回と同じホストに要求するので、同じ直列化グループに入れて
+# **夜間の巡回と重ねない。**1 ページの最低間隔は賃貸と同じ 20 秒
+# （scripts/niftyPolite.ts。短くしない）。
+
+on:
+  workflow_dispatch:
+    inputs:
+      prefectures:
+        description: "県のローマ字をカンマ区切り（例: tokyo,kanagawa）。空なら何もしない"
+        required: true
+        default: "tokyo"
+      budget_min:
+        description: "分。超えたらページ境界で止めて再開位置を残す"
+        required: false
+        default: "30"
+      max_pages:
+        description: "1 市区町村あたりの上限ページ。0 で無制限"
+        required: false
+        default: "0"
+      reset_state:
+        description: "再開位置を捨てて先頭から回す"
+        type: boolean
+        default: false
+
+concurrency:
+  group: rental-properties-write
+  cancel-in-progress: false
+
+jobs:
+  scrape:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci --legacy-peer-deps
+
+      - name: Install Playwright Chromium
+        # 上限・再試行は scripts/install-playwright-chromium.sh（巡回と共通）
+        timeout-minutes: 30
+        run: bash scripts/install-playwright-chromium.sh
+
+      - name: Create .env from Secret
+        env:
+          ENV_FILE_CONTENT: ${{ secrets.ENV_FILE }}
+          DATABASE_URL_OVERRIDE: ${{ secrets.DATABASE_URL_OVERRIDE }}
+        run: |
+          if [ -z "$ENV_FILE_CONTENT" ]; then
+            echo "::error::secrets.ENV_FILE is empty. DATABASE_URL / DIRECT_URL are required."
+            exit 1
+          fi
+          echo "$ENV_FILE_CONTENT" > .env
+          bash scripts/apply-db-override.sh
+
+      # 再開位置は .gitignore 済み（scripts/*_state*.json）。実行間の
+      # 引き継ぎはキャッシュと scraper_state 表の両方で行う（賃貸と同じ）。
+      - name: Restore resume state
+        uses: actions/cache@v4
+        with:
+          path: scripts/land_scraper_state.json
+          key: nifty-land-state-${{ github.run_id }}
+          restore-keys: |
+            nifty-land-state-
+
+      - name: Reset resume state
+        if: ${{ inputs.reset_state == true }}
+        run: rm -f scripts/land_scraper_state.json
+
+      - name: Scrape land listings
+        env:
+          LAND_PREFECTURES: ${{ inputs.prefectures }}
+          LAND_TIME_BUDGET_MIN: ${{ inputs.budget_min }}
+          LAND_MAX_PAGES: ${{ inputs.max_pages }}
+          LAND_STATE_FILE: scripts/land_scraper_state.json
+        run: npx -y tsx scripts/nifty_land_extractor.ts | tee -a "$GITHUB_STEP_SUMMARY"
