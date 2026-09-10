@@ -26,6 +26,10 @@ on:
         description: "1 市区町村あたりの上限ページ。0 で無制限"
         required: false
         default: "0"
+      geocode_budget_min:
+        description: "座標を埋めるのに使う分。0 で無制限"
+        required: false
+        default: "20"
       reset_state:
         description: "再開位置を捨てて先頭から回す"
         type: boolean
@@ -89,3 +93,13 @@ jobs:
           LAND_MAX_PAGES: ${{ inputs.max_pages }}
           LAND_STATE_FILE: scripts/land_scraper_state.json
         run: npx -y tsx scripts/nifty_land_extractor.ts | tee -a "$GITHUB_STEP_SUMMARY"
+
+      # 取り込んだ行は lat/lon が NULL のままで、**地図には 1 件も出ない。**
+      # ここまでやって初めて画面に載る（賃貸の巡回と同じ並び）。
+      #
+      # 取り込みが途中で落ちても、入った行の座標は埋めたいので always()。
+      - name: Geocode land listings
+        if: always()
+        env:
+          LAND_GEOCODE_TIME_BUDGET_MIN: ${{ inputs.geocode_budget_min }}
+        run: npx -y tsx scripts/geocode_land.ts | tee -a "$GITHUB_STEP_SUMMARY"
