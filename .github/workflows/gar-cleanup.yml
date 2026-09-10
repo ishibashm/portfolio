@@ -378,6 +378,24 @@ jobs:
               print("|---|---|")
               for f in big:
                   print(f"| {mb(sz(f)):.0f} MB | {f.get('createTime','')[:16]} |")
+
+              # **新しい順も出す。**大きい順だけだと、イメージを小さくした
+              # 変更の効果が読めない。#1152（事前生成を 1,156 → 344 頁に
+              # 絞った）の直後に回したとき、上位 10 件が全部前日のもので
+              # 「新しい層が 110 MB を下回った」ことしか分からなかった。
+              #
+              # デプロイ 1 回あたり何 MB 積まれているかがこの表の値そのもの。
+              # 変更の前後で比べる先はここ。
+              print()
+              print("新しい順に 10 件（**1 デプロイあたりの実測はここ**）:")
+              print()
+              recent = sorted(
+                  files, key=lambda f: f.get("createTime", ""), reverse=True
+              )[:10]
+              print("| サイズ | 作成 |")
+              print("|---|---|")
+              for f in recent:
+                  print(f"| {mb(sz(f)):.1f} MB | {f.get('createTime','')[:16]} |")
           PY
 
       - name: Apply cleanup policy
