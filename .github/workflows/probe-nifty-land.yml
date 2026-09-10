@@ -43,17 +43,9 @@ jobs:
         run: npm ci --legacy-peer-deps
 
       - name: Install Playwright Chromium
-        # scrape-rentals.yml と同じ。apt の待ちで固まった実績があるので上限を置く
+        # 上限・再試行は scripts/install-playwright-chromium.sh（巡回と共通）
         timeout-minutes: 30
-        run: |
-          for i in 1 2 3; do
-            if timeout 8m npx playwright install --with-deps chromium; then
-              exit 0
-            fi
-            echo "::warning::playwright install が 8 分で終わらなかった（${i} 回目）。やり直す。"
-          done
-          echo "::error::playwright install が 3 回とも失敗した。"
-          exit 1
+        run: bash scripts/install-playwright-chromium.sh
 
       - name: Probe
         env:
