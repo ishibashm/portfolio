@@ -158,6 +158,7 @@ __pycache__/
 venv/
 .venv/
 scraper_state.json
+land_scraper_state.json
 
 # Playwright
 playwright-report/
