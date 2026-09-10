@@ -2165,27 +2165,53 @@ $0.10/GB/月なので **37.9 GB ≒ 月 560 円**。3,000 円が AR 単体なら
 
 ### 進め方（着手の単位）
 
-**0. 下見（要求 2 回）。**`probe-nifty-land.yml` を手で 1 回回す。
-   `/tochi/tokyo/` の索引から市区町村のリンクを数え、20 秒待って
-   先頭 1 市区町村の一覧を 1 頁だけ開き、`Nifty.Data.Bukken` の
-   **欄の名前と値の例**を Summary に出す。DB には書かない。
-   **ここで賃貸と欄が違えば、以下の型はその結果で決める**
+**0. 下見 — 済（2026-09-10 19:49 UTC。run 34522593169、要求 2 回）。**
+   `/tochi/tokyo/` の索引に市区町村のリンクが **55 件**あり、URL の形は
+   賃貸と同じ。先頭の港区の一覧 1 頁に `Nifty.Data.Bukken` が
+   **94 件**入っていた。**同じ形で埋め込まれている。**欄は次のとおり
+   （全 94 件に全欄あり）。
+
+   | 欄 | 値の例 | 読み方 |
+   | --- | --- | --- |
+   | `id` | 64 桁の hex | 賃貸と同じ。頁をまたぐ重複除去の鍵 |
+   | `groupId` | 32 桁の hex | **同じ土地を束ねる鍵。**港区の先頭 3 件は SUUMO・ピタットハウス・アットホーム由来の同じ土地で `groupId` が一致した。賃貸で `name_key` を自前で組んでいる名寄せが、売地では相手が済ませている |
+   | `url` | `/tochi/tokyo/minatoku_ct/suumof_79174178/` **または** `https://www.pitat.com/buyDetail/…` | **外部サイトへ直接飛ぶものが混ざる。**`@unique` の鍵には使えるが、nifty の相対 URL と決め打ちして絶対化しない |
+   | `price` | `"1億5980万円"` **または** `"15,980万円"` | **出どころで書式が違う。**億・万・カンマを全部読む。賃貸の `rent`（万円の小数）とは別の parse |
+   | `landArea` | `"44.33㎡（13.40坪）（実測）"` **または** `"44.33m&sup2;"` | 同上。先頭の数値だけ取る。`&sup2;` は HTML 実体のまま来る |
+   | `plotRatio` | `"60%"` | **建ぺい率か容積率か、この 1 頁では決められない**（60% は建ぺい率らしいが、容積率も 1 つの値で来るのかが不明）。列名を付ける前に、詳細頁か別の市区町村で 2 つの値が出るかを見る |
+   | `type` / `typeName` | `"bes"` / `"土地・売地"` | 種別。売地以外が混ざったらここで弾く |
+   | `expireDate` | `"20261010000000"` | 賃貸と同じ形 |
+   | `access` / `address` / `title` | 賃貸と同じ | そのまま |
+   | `layout` / `floorArea` / `floor` / `story` / `buildAge` | `"-"` | 売地では常に空。読まない |
+   | `img` / `urlSmp` / `inquiryUrl` | 画像・スマホ用・問い合わせ | 読まない |
+
+   `rent` / `manageCost` は無い。**緯度経度も無い**ので、賃貸と同じく
+   住所から geocode する。
 
 1. `land_listings` 表（`CREATE TABLE IF NOT EXISTS` の DDL。足すだけ
-   なので 6 節の範囲で当てられる）。列は下見の結果で確定するが、
-   賃貸と揃えるべきものは決まっている
-   - `url @unique`・`first_seen_at`・`last_seen_at`・`expire_date`・
-     `source_scraper`・`lat`・`lon`・`address`・`municipality_key`
-   - 売地に固有: `price`（万円 → 円に直す）・`land_area_sqm`・
+   なので 6 節の範囲で当てられる）。下見の結果で列を決めた
+   - 賃貸と揃える: `url @unique`・`first_seen_at`・`last_seen_at`・
+     `expire_date`・`source_scraper`・`lat`・`lon`・`address`・
+     `municipality_key`・`access`
+   - 売地に固有: `group_id`（nifty の名寄せ鍵。索引を張る）・
+     `price`（円。億・万・カンマを読んで整数に）・`land_area_sqm`・
      `price_per_sqm`（計算列にせず保存時に入れる。地図と一覧で
-     並べ替えに使う）・`zoning`（用途地域。欄があれば）・
-     `building_coverage` / `floor_area_ratio`（建ぺい率・容積率。同上）
+     並べ替えに使う）・`plot_ratio_text`（**`plotRatio` は意味が
+     確定するまで文字列のまま**置く。建ぺい率と決めて数値列にすると
+     容積率だった日に全部が嘘になる）
    - **`DEFAULT` を置かない**（6 節）
 2. `scripts/nifty_land_extractor.ts`。**賃貸の抽出器の写しにしない。**
    `waitForMinimumPageInterval`・`CONTEXT_OPTIONS`・市区町村リンクの
    引き方・再開位置の保存は**共通の置き場へ出して両方から読む**
    （3 節「同じことを 2 か所に書かない」）。違うのは URL の
    `/rent/` ↔ `/tochi/`、`Bukken` の枝の型、保存先の表だけ
+   - 座標は `scripts/geocode_properties.ts` と同じ経路。あちらは
+     `rental_properties` を SQL に決め打ちしているが、**町丁目 → 座標の
+     永続キャッシュ（`geocode_towns`）は表に依らない。**売地の geocode
+     はそのキャッシュを先に引き、無い町丁目だけ国土地理院へ行く。
+     賃貸の掲載がある町丁目は既にキャッシュにあるので、国土地理院への
+     新規の要求は売地しか無い町丁目ぶんだけになる（何件かは
+     取り込んでから数える）
 3. ワークフロー `scrape-land.yml`。**賃貸の枠（最長 6 時間・
    `rental-properties-write`）には入れない。**同じ concurrency group
    にすると賃貸の後ろで待つか、賃貸を削るかのどちらかになる。
