@@ -391,6 +391,47 @@ model rental_properties {
   @@index([name_key, floor, layout, size_sqm, rent])
 }
 
+/// 売地（土地の売り出し）の掲載。出どころは nifty の /tochi/ 一覧
+/// （賃貸の巡回と同じホスト・同じ URL の形）。列の由来は
+/// prisma/sql/20260910_add_land_listings.sql と backlog 25 節。
+///
+/// rental_properties には混ぜない。賃貸の名寄せ（DISTINCT ON）と索引が
+/// 賃貸の列に合わせてあり、売地には rent も layout も無い。
+///
+/// 表は db push ではなく db-apply-sql で当てる（CLAUDE.md 3 節）。
+/// この定義と DDL は両方向に揃えること。
+model land_listings {
+  id               String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  /// nifty の url。外部サイトの絶対 URL も混ざるが、物件ごとに一意。
+  url              String    @unique
+  /// nifty が同じ土地を束ねる鍵。同じ土地が出どころ違いで複数行入る。
+  group_id         String?
+  address          String?
+  /// 円。"1億5980万円" / "15,980万円" を読んで整数にする。
+  price            BigInt?
+  /// ㎡。"44.33㎡（13.40坪）（実測）" / "44.33m&sup2;" の先頭の数値。
+  land_area_sqm    Decimal?  @db.Decimal
+  /// 円/㎡。保存時に price / land_area_sqm で入れる。
+  price_per_sqm    Int?
+  /// "60%" のような値。建ぺい率か容積率か確定するまで文字列のまま。
+  plot_ratio_text  String?
+  access           String?
+  lat              Float?
+  lon              Float?
+  /// 県＋市区町村（"東京都港区"）。取り込み時に住所から切り出す。
+  municipality_key String?
+  source_scraper   String?
+  /// nifty の掲載期限。過ぎたものは画面から外し、purge で消す。
+  expire_date      DateTime? @db.Timestamptz(6)
+  first_seen_at    DateTime? @default(now()) @db.Timestamptz(6)
+  last_seen_at     DateTime? @default(now()) @db.Timestamptz(6)
+
+  @@index([lat, lon])
+  @@index([last_seen_at])
+  @@index([group_id])
+  @@index([municipality_key])
+}
+
 // 町丁目 → 座標の永続キャッシュ。geocode_properties.ts が作成・管理する
 // （スクリプト側に CREATE TABLE IF NOT EXISTS があるためマイグレーション不要）。
 // プロセス内キャッシュだけだと実行のたびに同じ町を国土地理院へ引き直し、
