@@ -23,6 +23,12 @@ import {
   persistStateToDb,
   resumeStateKey,
 } from "./scraperResume";
+import {
+  cityAliasesFromHrefs,
+  NIFTY_CONTEXT_OPTIONS,
+  parseExpireDate,
+  waitForMinimumPageInterval,
+} from "./niftyPolite";
 
 const envPath = fs.existsSync(path.resolve(process.cwd(), ".env"))
   ? path.resolve(process.cwd(), ".env")
@@ -68,13 +74,6 @@ function checkTimeBudget(): boolean {
   }
   return false;
 }
-
-const CONTEXT_OPTIONS = {
-  userAgent:
-    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-  locale: "ja-JP",
-  timezoneId: "Asia/Tokyo",
-};
 
 /**
  * 一覧ページの `window.Nifty.Data.Bukken` のうち、ここで読む枝だけ。
@@ -146,19 +145,6 @@ function parseManagementFee(costStr: string | undefined): number {
   return isNaN(n) ? 0 : n;
 }
 
-// Nifty の掲載期限は "20260810000000" (YYYYMMDDHHMMSS) 形式。
-// 掲載が終わった物件の詳細ページは 404 になるため、これを保存して
-// 期限切れをスキャナーから外す。実測では 7 日以上再確認できていない行の
-// 半数が既に 404 だった。
-function parseExpireDate(raw: string | undefined): Date | null {
-  if (!raw) return null;
-  const m = raw.match(/^(\d{4})(\d{2})(\d{2})/);
-  if (!m) return null;
-  const [, y, mo, d] = m;
-  const date = new Date(`${y}-${mo}-${d}T23:59:59+09:00`);
-  return isNaN(date.getTime()) ? null : date;
-}
-
 // "ＪＲ東海道本線/東刈谷駅 徒歩6分" や "バス15分 徒歩5分" から徒歩の分数を取る。
 // minutes_to_station カラムは以前から存在するのに一度も埋めていなかったため、
 // 画面の駅徒歩が常に「不明」になっていた。
@@ -179,40 +165,6 @@ function isConnectionLimitError(err: unknown): boolean {
   return (
     errorCode(err) === "P2037" || toLogMessage(err).includes("too many clients")
   );
-}
-
-/**
- * **1 ページあたりの最低間隔。**取得を始めてからここまでは、次のページへ
- * 行かない。
- *
- * ## なぜ「待つ」と書くようになったか（2026-08-30 の事故）
- *
- * 以前の待機は「polite delay 2〜4 秒」だけだった。ところが**保存が
- * 1 件ずつで 15〜30 秒かかっており、それが実質のスロットルとして
- * 働いていた。**#767 で保存をまとめたら 1 ページの間隔が 34.3 秒 →
- * 6.0 秒（中央値）になり、相手への要求レートが 3〜5 倍になった。
- * 8 ジョブ並列なので全体ではさらに効く。
- *
- * その晩の巡回は、再開した大都市を抜けた直後から**ほぼ全ての市区町村で
- * 「0 件」**を返すようになった（江東区・品川区が 0 件ということはない）。
- * 8/26 の富山（間隔 14.5 秒）は 14 市町村すべてで取れていたので、
- * レートを上げたことが原因とみている。
- *
- * **速さを保存待ちの副作用に頼らない。**必要な間隔はここに数字で書く。
- * 事故前の実測（14.5〜34.3 秒）の下寄りに置いた。**短くしないこと。**
- */
-const MIN_PAGE_INTERVAL_MS = 20000;
-
-/** 取得開始から MIN_PAGE_INTERVAL_MS 経つまで待つ。既に過ぎていれば待たない。 */
-async function waitForMinimumPageInterval(startedAt: number): Promise<void> {
-  /* 一定間隔だと相手から見て機械的すぎるので、以前と同じ幅で散らす */
-  const jitter = Math.floor(Math.random() * 2000);
-  const waitMs = MIN_PAGE_INTERVAL_MS + jitter - (Date.now() - startedAt);
-  if (waitMs <= 0) return;
-  console.log(
-    `Polite delay: Waiting for ${Math.round(waitMs / 1000)} seconds...`,
-  );
-  await new Promise((res) => setTimeout(res, waitMs));
 }
 
 /**
@@ -326,7 +278,7 @@ async function scrapeArea(
   const allProperties: NiftyBukken[] = [];
   const seenIds = new Set<string>();
 
-  let context = await browser.newContext(CONTEXT_OPTIONS);
+  let context = await browser.newContext(NIFTY_CONTEXT_OPTIONS);
   let page = await context.newPage();
   await page.addInitScript(() => {
     Object.defineProperty(navigator, "webdriver", { get: () => undefined });
@@ -347,7 +299,7 @@ async function scrapeArea(
         console.log("🔄 Recreating browser page to prevent memory leak...");
         await page.close();
         await context.close();
-        context = await browser.newContext(CONTEXT_OPTIONS);
+        context = await browser.newContext(NIFTY_CONTEXT_OPTIONS);
         page = await context.newPage();
         await page.addInitScript(() => {
           Object.defineProperty(navigator, "webdriver", {
@@ -478,22 +430,10 @@ async function fetchCitiesForPrefecture(
 
       // Extract all links that end with _ct/
       const links = await page.$$eval("a", (anchors) =>
-        anchors
-          .map((a) => a.href)
-          .filter((h) => h.includes("_ct/") && !h.includes("detail_")),
+        anchors.map((a) => a.href),
       );
 
-      const uniqueUrls = Array.from(new Set(links));
-      const cities = Array.from(
-        new Set(
-          uniqueUrls
-            .map((u) => {
-              const match = u.match(/\/rent\/[^\/]+\/([a-z0-9]+)_ct\//);
-              return match ? match[1] : null;
-            })
-            .filter(Boolean) as string[],
-        ),
-      );
+      const cities = cityAliasesFromHrefs(links, "rent");
 
       console.log(`Found ${cities.length} cities in ${prefAlpha}.`);
       if (cities.length > best.length) best = cities;
@@ -686,7 +626,7 @@ async function main() {
       skipPref = false; // 目的の県に到達したので、これ以降の県はスキップしない
 
       // 都道府県の都市一覧を取得するためにページを作成
-      const context = await browser.newContext(CONTEXT_OPTIONS);
+      const context = await browser.newContext(NIFTY_CONTEXT_OPTIONS);
       const page = await context.newPage();
       await page.addInitScript(() => {
         Object.defineProperty(navigator, "webdriver", { get: () => undefined });
@@ -766,7 +706,13 @@ async function main() {
           // 目的の市に到達したばかりなら保存されているページ数から、それ以降は1ページ目から開始
           const startPage =
             pref === state.pref && city === state.city ? state.page : 1;
-          const found = await scrapeArea(browser, prisma, pref, city, startPage);
+          const found = await scrapeArea(
+            browser,
+            prisma,
+            pref,
+            city,
+            startPage,
+          );
           areasCrawled++;
           if (found.length === 0) emptyAreas++;
         } catch (error) {
