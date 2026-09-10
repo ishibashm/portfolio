@@ -1,0 +1,62 @@
+name: Probe nifty land listings
+
+# nifty の**売地**一覧（/tochi/）が賃貸（/rent/）と同じ形で物件データを
+# 埋め込んでいるかを、実物で確かめるだけ。
+#
+# 土地の売り出しデータの出どころを決めるための下見（backlog 25 節）。
+# 要求は 2 回（県の索引 → 市区町村 1 頁）、間隔は賃貸の巡回と同じ 20 秒。
+# **DB には書かない。**.env も要らない。
+#
+# 賃貸の巡回と同じホストに要求するので、巡回の直列化グループに入れる。
+# 夜間の巡回中に重なって相手への要求が増えないようにするため。
+
+on:
+  workflow_dispatch:
+    inputs:
+      prefecture:
+        description: "県のローマ字（nifty の URL に入るもの。例: tokyo）"
+        required: false
+        default: "tokyo"
+      city:
+        description: "市区町村のローマ字（空なら索引の先頭を使う）"
+        required: false
+        default: ""
+
+concurrency:
+  group: rental-properties-write
+  cancel-in-progress: false
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci --legacy-peer-deps
+
+      - name: Install Playwright Chromium
+        # scrape-rentals.yml と同じ。apt の待ちで固まった実績があるので上限を置く
+        timeout-minutes: 30
+        run: |
+          for i in 1 2 3; do
+            if timeout 8m npx playwright install --with-deps chromium; then
+              exit 0
+            fi
+            echo "::warning::playwright install が 8 分で終わらなかった（${i} 回目）。やり直す。"
+          done
+          echo "::error::playwright install が 3 回とも失敗した。"
+          exit 1
+
+      - name: Probe
+        env:
+          LAND_PROBE_PREF: ${{ inputs.prefecture }}
+          LAND_PROBE_CITY: ${{ inputs.city }}
+        run: npx tsx scripts/probe_nifty_land.ts | tee -a "$GITHUB_STEP_SUMMARY"
