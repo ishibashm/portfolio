@@ -5,7 +5,10 @@ import {
   NEARBY_SEARCH_AREA,
   NATIONWIDE_SEARCH_AREA,
   filtersForSearchArea,
+  boundsAreaKm2,
   geographyParamsForSearch,
+  MAX_AUTO_SCAN_KM2,
+  shouldPauseScan,
   normalizeStoredSearchArea,
   searchAreaForFilters,
   searchAreaFromUrl,
@@ -165,5 +168,75 @@ describe("initialViewBounds", () => {
     expect(params.radiusKm).toBe("all");
     expect(params.minLat).toBeDefined();
     expect(params.maxLon).toBeDefined();
+  });
+});
+
+describe("走査を止めるかどうかは面積で決める", () => {
+  const NATIONWIDE = filtersForSearchArea(NATIONWIDE_SEARCH_AREA);
+
+  /** 中心 35N の周りに、指定した半幅（度）の矩形を作る。 */
+  const box = (latSpan: number, lonSpan: number, zoom: number) => ({
+    minLat: 35 - latSpan,
+    maxLat: 35 + latSpan,
+    minLon: 139 - lonSpan,
+    maxLon: 139 + lonSpan,
+    zoom,
+  });
+
+  it("面積の計算が桁として合っている", () => {
+    /* 緯度 1 度 ≒ 111km。35N で経度 1 度 ≒ 91km。
+       `box` は**半幅**なので 0.5 を渡すと全幅 1 度四方＝
+       111 × 91 ≒ 10,100 km²。 */
+    const km2 = boundsAreaKm2(box(0.5, 0.5, 10));
+    expect(km2).toBeGreaterThan(8000);
+    expect(km2).toBeLessThan(12000);
+  });
+
+  it("狭ければ止めない", () => {
+    expect(shouldPauseScan(NATIONWIDE, box(0.05, 0.05, 12))).toBe(false);
+  });
+
+  it("広すぎれば止める", () => {
+    /* 関東全域くらい（1.5 度四方 ≒ 90,000 km²） */
+    expect(shouldPauseScan(NATIONWIDE, box(0.75, 0.75, 8))).toBe(true);
+  });
+
+  it("県や半径が選ばれていれば、広くても止めない", () => {
+    const wide = box(0.75, 0.75, 8);
+    expect(
+      shouldPauseScan({ prefecture: "愛知県", radiusKm: "all" }, wide),
+    ).toBe(false);
+    expect(shouldPauseScan({ prefecture: "all", radiusKm: "50" }, wide)).toBe(
+      false,
+    );
+  });
+
+  it("範囲が未確定なら止めない（初回の検索を潰さない）", () => {
+    expect(shouldPauseScan(NATIONWIDE, null)).toBe(false);
+  });
+
+  /*
+    **旧規則（zoom < 10）との差をここに固定する。**
+
+    ズームは広さの代わりにならない。同じ zoom 9 でも、写っている面積は
+    画面の縦横で何倍も違う。下の 2 つは**どちらも zoom 9** だが、
+    旧規則ではどちらも止まり、新規則では狭いほうだけ通る。
+
+    旧規則に戻すと「狭いのに止まる」が復活してこの検査が落ちる。
+  */
+  it("同じズームでも、狭ければ通り広ければ止まる（旧規則では両方止まっていた）", () => {
+    const narrowAtZoom9 = box(0.1, 0.1, 9);
+    const wideAtZoom9 = box(0.8, 0.8, 9);
+
+    expect(boundsAreaKm2(narrowAtZoom9)).toBeLessThan(MAX_AUTO_SCAN_KM2);
+    expect(boundsAreaKm2(wideAtZoom9)).toBeGreaterThan(MAX_AUTO_SCAN_KM2);
+
+    expect(shouldPauseScan(NATIONWIDE, narrowAtZoom9)).toBe(false);
+    expect(shouldPauseScan(NATIONWIDE, wideAtZoom9)).toBe(true);
+
+    /* 旧規則をここに写す。zoom だけを見ると両方とも止まっていた */
+    const oldRule = (b: { zoom: number }) => b.zoom < 10;
+    expect(oldRule(narrowAtZoom9)).toBe(true);
+    expect(oldRule(wideAtZoom9)).toBe(true);
   });
 });
