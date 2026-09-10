@@ -178,6 +178,7 @@ import {
   SEARCH_AREA_STORAGE_KEY,
   filtersForSearchArea,
   geographyParamsForSearch,
+  shouldPauseScan,
   normalizeStoredSearchArea,
   searchAreaForFilters,
   searchAreaFromUrl,
@@ -1189,13 +1190,7 @@ export default function ArbitrageScannerPage() {
     // 押したとき**で、待つと決めたのは本人なので、こちらで止めない
     // （利用者の報告：俯瞰から拡大していくと 0 件のままで、なぜ出ないのか
     // 分からない）。
-    if (
-      !force &&
-      prefecture === "all" &&
-      radiusKm === "all" &&
-      mapBounds !== null &&
-      mapBounds.zoom < 10
-    ) {
+    if (!force && shouldPauseScan({ prefecture, radiusKm }, mapBounds)) {
       setLoading(false);
       setIsTransitioningDate(false);
       return;
@@ -1545,11 +1540,10 @@ export default function ArbitrageScannerPage() {
    * 0 件なのではなく検索していない、と書くために出す。state は増やさない
    * （増やすと fetchData 側の条件と二重管理になる）。
    */
-  const scanPaused =
-    prefecture === "all" &&
-    radiusKm === "all" &&
-    mapBounds !== null &&
-    mapBounds.zoom < 10;
+  /* 打ち切りと同じ判断を 1 つの関数から引く。**条件を 2 か所に書かない**
+     （以前は同じ 4 条件が並んでいて、片方だけ変えると「理由の無い 0 件」に
+     戻る作りだった）。 */
+  const scanPaused = shouldPauseScan({ prefecture, radiusKm }, mapBounds);
 
   const isNationwideOverview =
     prefecture === "all" &&

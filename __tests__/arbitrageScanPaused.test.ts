@@ -38,14 +38,18 @@ describe("俯瞰で検索を止めているとき、その理由を出す", () =
       /const fetchData = async \(isDateChange = false, force = false\)/,
     );
     /* 打ち切りの入口に !force が無いと、押しても何も起きない */
-    expect(PAGE).toMatch(/if \(\s*!force &&\s*prefecture === "all" &&/);
+    expect(PAGE).toMatch(
+      /if \(!force && shouldPauseScan\(\{ prefecture, radiusKm \}, mapBounds\)\)/,
+    );
   });
 
   it("止めている状態を画面へ出す派生値がある", () => {
     expect(PAGE).toMatch(/const scanPaused =/);
-    /* 打ち切りと同じ 4 条件。どちらかだけ変えると食い違う */
+    /* **打ち切りと同じ関数から引く。**以前は同じ 4 条件が 2 か所に
+       並んでいて、片方だけ変えると「理由の無い 0 件」へ戻る作りだった。
+       条件そのものは `shouldPauseScan` に 1 つだけ置く。 */
     expect(PAGE).toMatch(
-      /const scanPaused =\s*prefecture === "all" &&\s*radiusKm === "all" &&\s*mapBounds !== null &&\s*mapBounds\.zoom < 10;/,
+      /const scanPaused = shouldPauseScan\(\{ prefecture, radiusKm \}, mapBounds\);/,
     );
   });
 
@@ -56,11 +60,16 @@ describe("俯瞰で検索を止めているとき、その理由を出す", () =
     expect(PAGE).toMatch(/onClick=\{\(\) => fetchData\(false, true\)\}/);
   });
 
-  it("打ち切りの条件そのものは変えていない（負荷を上げない）", () => {
-    /* 全国 45 万行の走査に落ちる組み合わせは今までどおり止める。
-       force を渡すのは利用者が明示的に押したときだけ */
+  it("広すぎる範囲は今までどおり止める（負荷を上げない）", () => {
+    /* **ズームではなく面積で切る**ようにした（2026-09-10）。ズームは
+       広さの代わりにならない——同じ zoom でも画面の縦横で写る範囲が
+       何倍も違う。重さを決めるのは写っている面積（＝走査する行数）。
+
+       上限 10,000 km² は db-explain の実測から置いた（名古屋・半径
+       50km・愛知県の 126,800 行が 880ms）。関東全域のような範囲は
+       今までどおり止めて、押した人だけが待つ。 */
     expect(PAGE).toMatch(
-      /mapBounds\.zoom < 10\s*\)\s*\{\s*setLoading\(false\)/,
+      /shouldPauseScan\([^)]*\)\)\s*\{\s*setLoading\(false\)/,
     );
     /* force を渡している呼び出し（第 2 引数がある形）は 1 か所だけ。
        fetchData(true) は日付変更の呼び出しなので数えない */

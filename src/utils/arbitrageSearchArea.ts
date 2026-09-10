@@ -178,3 +178,64 @@ export function geographyParamsForSearch(
 
   return params;
 }
+
+/**
+ * 自動で走査してよい表示範囲の広さ（km²）。
+ *
+ * ## なぜズームでなく面積か（2026-09-10）
+ *
+ * 打ち切りの条件は長く `zoom < 10` だった。**ズームは広さの代わりに
+ * ならない。**同じ zoom 8 でも、縦長の画面と横長の画面、スマホと
+ * デスクトップで写る範囲は何倍も違う。重さを決めるのは**写っている
+ * 面積（＝走査する行数）**であって、倍率ではない。
+ *
+ * ズームで切っていたせいで、俯瞰から拡大すると zoom 10 を越えるまで
+ * 「0 件」に見えていた（利用者の報告）。**地方ブロックくらいの広さは
+ * 実際には走査できる。**
+ *
+ * ## 10,000 km² の根拠（db-explain の実測、2026-09-10）
+ *
+ *     名古屋・半径 50km・愛知県   126,800 行   候補の取り出し 880 ms
+ *
+ * 半径 50km は 100km × 100km ＝ 約 10,000 km²。**その広さが実際に
+ * 880ms で返っている**ので、ここを上限に置く。
+ *
+ * いまの `zoom < 10` はおおむね 600 km² 相当なので、**16 倍まで広げる**
+ * ことになる。zoom 8〜9（都市とその周辺、小さい県ひとつ）が押さずに
+ * 出るようになる。
+ *
+ * これより広いときは今までどおり止めて、「それでも検索する」を出す。
+ * 関東全域（実測で 56 万行）のような範囲は、押した人だけが待つ。
+ */
+export const MAX_AUTO_SCAN_KM2 = 10000;
+
+/**
+ * 表示範囲のおおよその面積（km²）。
+ *
+ * 緯度 1 度は約 111km。経度 1 度は緯度で縮むので `cos` を掛ける。
+ * **正確な測地面積は要らない**——「走査してよい広さか」を決めるための
+ * 桁が合っていればよい。
+ */
+export function boundsAreaKm2(bounds: ArbitrageMapBounds): number {
+  const latKm = (bounds.maxLat - bounds.minLat) * 111;
+  const midLat = ((bounds.maxLat + bounds.minLat) / 2) * (Math.PI / 180);
+  const lonKm = (bounds.maxLon - bounds.minLon) * 111 * Math.cos(midLat);
+  return Math.abs(latKm * lonKm);
+}
+
+/**
+ * その表示範囲を、押さずに走査してよいか。
+ *
+ * 県や半径が選ばれていれば母数がそちらで絞られるので、広さに関わらず
+ * 走査してよい。止めるのは**県も半径も未指定で、かつ範囲が広すぎる**
+ * ときだけ。
+ */
+export function shouldPauseScan(
+  filters: ArbitrageSearchFilters,
+  mapBounds: ArbitrageMapBounds | null,
+): boolean {
+  if (filters.prefecture !== "all") return false;
+  if (filters.radiusKm !== "all") return false;
+  if (mapBounds === null) return false;
+  return boundsAreaKm2(mapBounds) > MAX_AUTO_SCAN_KM2;
+}
