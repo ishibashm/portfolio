@@ -84,18 +84,35 @@ describe("升目のまとめが定石どおりに働く", () => {
   });
 
   it("件数が増えても走査は 1 周（O(n²) なら現実的な時間で終わらない）", () => {
-    /* 実時間で測ると環境で揺れるので、**同じ入力を 2 倍にしたときの
-       伸び方**で見る。O(n) なら比は 2 前後、O(n²) なら 4 前後になる。
-       ここでは「4 倍より明らかに小さい」ことだけを言う */
+    /* 実時間で測ると環境で揺れるので、**同じ入力を 4 倍にしたときの
+       伸び方**で見る。O(n) なら比は 4 前後、O(n²) なら 16 前後になる。
+
+       **1 回の計測を 2 倍の入力で比べる形は CI で落ちた**（2026-09-10。
+       比 3.95 に対して上限 3.5。共有ランナーの揺れで 2 倍の差は簡単に
+       埋まる）。揺れに強くするため、
+
+         - 先に 1 回空回しして JIT を温める
+         - それぞれ 5 回測って**最小値**を取る（外れ値は上にしか出ない）
+         - 入力の差を 4 倍にして、O(n) と O(n²) の間（4 と 16）を広く空ける
+
+       上限は 10。O(n) の 4 から 2.5 倍ずれても落ちず、O(n²) の 16 は
+       確実に落とす */
     const a = grid(4000);
-    const b = grid(8000);
-    const t0 = performance.now();
+    const b = grid(16000);
     clusterByTile(a, 12);
-    const ta = performance.now() - t0;
-    const t1 = performance.now();
     clusterByTile(b, 12);
-    const tb = performance.now() - t1;
+    const minOf = (points: { lat: number; lon: number }[]) => {
+      let best = Infinity;
+      for (let i = 0; i < 5; i++) {
+        const t0 = performance.now();
+        clusterByTile(points, 12);
+        best = Math.min(best, performance.now() - t0);
+      }
+      return best;
+    };
+    const ta = minOf(a);
+    const tb = minOf(b);
     /* 0 除算を避ける。速すぎて 0ms のときは比較しない */
-    if (ta > 1) expect(tb / ta).toBeLessThan(3.5);
+    if (ta > 1) expect(tb / ta).toBeLessThan(10);
   });
 });
