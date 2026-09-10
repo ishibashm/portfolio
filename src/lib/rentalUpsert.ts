@@ -45,9 +45,9 @@ export interface RentalUpsertRow {
 }
 
 /** URL で畳む。後勝ち。順序は最初に出てきた位置を保つ。 */
-export function dedupeByUrl(rows: RentalUpsertRow[]): RentalUpsertRow[] {
+export function dedupeByUrl<T extends { url: string }>(rows: T[]): T[] {
   const index = new Map<string, number>();
-  const out: RentalUpsertRow[] = [];
+  const out: T[] = [];
   for (const row of rows) {
     const at = index.get(row.url);
     if (at === undefined) {
