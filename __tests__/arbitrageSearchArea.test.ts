@@ -102,6 +102,42 @@ describe("arbitrage search area", () => {
       maxLon: "135",
     });
   });
+
+  /*
+    **俯瞰でも範囲を送る**（2026-09-10）。
+
+    以前は `zoom >= 10` のときだけ付けていた。それが「俯瞰では物件が
+    出ない」の原因そのもので、
+
+      範囲を捨てる → API から見れば全国 45 万行の要求 → 重すぎるので
+      画面側が要求を打ち切る（scanPaused）
+
+    という循環になっていた。**重いのは俯瞰だからではなく、範囲を
+    捨てていたから。**zoom 8 の表示範囲は関東ほどの広さしかない。
+
+    「それでも検索する」（force）を押したときも範囲が付かず、実測
+    18.4 秒かけて**画面に写っていない全国の物件**が並んでいた。
+  */
+  it("俯瞰（zoom 10 未満）でも表示範囲を送る", () => {
+    const params = geographyParamsForSearch(
+      filtersForSearchArea(NATIONWIDE_SEARCH_AREA),
+      { minLat: 34, maxLat: 37, minLon: 133, maxLon: 140, zoom: 7 },
+    );
+    expect(params.minLat).toBe("34");
+    expect(params.maxLat).toBe("37");
+    expect(params.minLon).toBe("133");
+    expect(params.maxLon).toBe("140");
+  });
+
+  it("範囲そのものが無いときだけ、座標を送らない", () => {
+    /* 地図が moveend / zoomend を出す前。ここで 0 を入れると
+       「赤道付近を検索」になるので、鍵ごと落とすのが正しい。 */
+    const params = geographyParamsForSearch(
+      filtersForSearchArea(NATIONWIDE_SEARCH_AREA),
+      null,
+    );
+    expect(params).toEqual({ prefecture: "all", radiusKm: "all" });
+  });
 });
 
 describe("initialViewBounds", () => {
