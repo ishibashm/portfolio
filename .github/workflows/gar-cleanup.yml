@@ -40,7 +40,7 @@ name: Artifact Registry cleanup
 # ## mode
 #
 #   report  数えるだけ。**何も消さない。**既定
-#   apply   delete_older_than より古い版を消す（既定 7d）。ただし
+#   apply   delete_older_than より古い版を消す（既定 3d）。ただし
 #           keep_versions 世代は日数に関わらず残す（床）
 #
 # **report を先に回すこと。**削除は取り消せない。消したイメージを参照
@@ -68,9 +68,9 @@ on:
           - apply
         default: report
       delete_older_than:
-        description: "これより古い版を消す（7d / 14d / 30d）。apply のときだけ効く"
+        description: "これより古い版を消す（3d / 7d / 14d）。apply のときだけ効く"
         type: string
-        default: "7d"
+        default: "3d"
       keep_versions:
         description: "日数に関わらず必ず残す世代数（床）。apply のときだけ効く"
         type: string
@@ -81,7 +81,14 @@ env:
   # mode が report でも apply でもない値になり、どちらのステップも
   # 走らずに緑で終わる**（気付けない）。ここで既定に倒す。
   MODE: ${{ inputs.mode || 'apply' }}
-  DELETE_OLDER_THAN: ${{ inputs.delete_older_than || '7d' }}
+  # **7d → 3d**（2026-09-10）。デプロイは日 30〜70 回あるので、7 日ぶんの
+  # 定常状態が 33 GB になっていた。3 日なら約 14 GB。
+  #
+  # **ロールバックの深さは keep_versions（20 世代）が床として守る。**
+  # 日数を縮めても直近 20 版は必ず残るので、「戻せる版が無い」には
+  # ならない。3 日でも 100 版以上あり、実際のロールバックは数時間内に
+  # 起きる。それより古い版へ戻したいときは git から作り直せる。
+  DELETE_OLDER_THAN: ${{ inputs.delete_older_than || '3d' }}
   KEEP_VERSIONS: ${{ inputs.keep_versions || '20' }}
   PROJECT_ID: ${{ vars.GCP_PROJECT_ID || 'blog-471319' }}
   # 既定は deploy.yml と揃える（asia-northeast1）。ずれると、実際に
