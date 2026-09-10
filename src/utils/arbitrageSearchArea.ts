@@ -146,7 +146,30 @@ export function geographyParamsForSearch(
     radiusKm: filters.radiusKm,
   };
 
-  if (mapBounds && mapBounds.zoom >= 10) {
+  /*
+    **ズームに関わらず送る。**以前は `zoom >= 10` のときだけ付けていたが、
+    それが「俯瞰では物件が出ない」の原因そのものだった。
+
+    俯瞰（zoom < 10）でも表示範囲は**有界**で、zoom 8 なら関東くらいの
+    広さしかない。それなのに範囲を送らないので、API から見ると
+    prefecture=all・radiusKm=all・範囲なし＝**全国 45 万行**の要求になる。
+    重すぎるから画面側は要求そのものを打ち切る（scanPaused）——という
+    循環になっていた。**重いのは俯瞰だからではなく、範囲を捨てていたから。**
+
+    実害は打ち切りだけではない。「それでも検索する」（force）を押した
+    ときも範囲が付かないので、
+
+      - 実測 18.4 秒かかる（全国の名寄せ）
+      - 出てくるのは**画面に写っていない全国の物件**
+
+    という二重の外れ方をしていた。利用者の報告「いいところまで地図
+    表示していない／物件一覧に出てこない」はこれ。範囲を送れば、
+    一覧は**見えている範囲と一致する**。
+
+    範囲を足して重くなることはない。WHERE が狭くなるだけで、
+    候補の切り出し（DISTINCT ON + 窓関数）が読む行数は必ず減る。
+  */
+  if (mapBounds) {
     params.minLat = mapBounds.minLat.toString();
     params.maxLat = mapBounds.maxLat.toString();
     params.minLon = mapBounds.minLon.toString();
