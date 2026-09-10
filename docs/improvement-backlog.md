@@ -2188,23 +2188,19 @@ $0.10/GB/月なので **37.9 GB ≒ 月 560 円**。3,000 円が AR 単体なら
    `rent` / `manageCost` は無い。**緯度経度も無い**ので、賃貸と同じく
    住所から geocode する。
 
-1. `land_listings` 表（`CREATE TABLE IF NOT EXISTS` の DDL。足すだけ
-   なので 6 節の範囲で当てられる）。下見の結果で列を決めた
-   - 賃貸と揃える: `url @unique`・`first_seen_at`・`last_seen_at`・
-     `expire_date`・`source_scraper`・`lat`・`lon`・`address`・
-     `municipality_key`・`access`
-   - 売地に固有: `group_id`（nifty の名寄せ鍵。索引を張る）・
-     `price`（円。億・万・カンマを読んで整数に）・`land_area_sqm`・
-     `price_per_sqm`（計算列にせず保存時に入れる。地図と一覧で
-     並べ替えに使う）・`plot_ratio_text`（**`plotRatio` は意味が
-     確定するまで文字列のまま**置く。建ぺい率と決めて数値列にすると
-     容積率だった日に全部が嘘になる）
-   - **`DEFAULT` を置かない**（6 節）
-2. `scripts/nifty_land_extractor.ts`。**賃貸の抽出器の写しにしない。**
-   `waitForMinimumPageInterval`・`CONTEXT_OPTIONS`・市区町村リンクの
-   引き方・再開位置の保存は**共通の置き場へ出して両方から読む**
-   （3 節「同じことを 2 か所に書かない」）。違うのは URL の
-   `/rent/` ↔ `/tochi/`、`Bukken` の枝の型、保存先の表だけ
+1. **済（#1164）。**`land_listings` 表。DDL は
+   `prisma/sql/20260910_add_land_listings.sql`、`db-apply-sql` の dry-run →
+   apply で 2026-09-10 20:42 UTC に当てた（run 34527918400。ログに
+   `CREATE TABLE` と `CREATE INDEX` × 4、After の一覧に
+   `land_listings 56 kB`）。schema.prisma も同じ定義で足した。
+   `plotRatio` は `plot_ratio_text` として文字列のまま（建ぺい率か
+   容積率か未確定。数値列は意味が分かってから足す）
+2. **済（#1165〜#1167）。**相手に対する振る舞い（20 秒・名乗り・索引の
+   読み方・期限の読み方）を `scripts/niftyPolite.ts` に出して賃貸と
+   売地の両方から読む。欄の読み方と UPSERT は `src/lib/landUpsert.ts`
+   （同じ土地の 2 書式が同じ値に落ちることをテストで固定）。取り込みは
+   `scripts/nifty_land_extractor.ts`。再開位置はファイルと
+   `scraper_state` 表の両方（鍵 `nifty_land`）
    - 座標は `scripts/geocode_properties.ts` と同じ経路。あちらは
      `rental_properties` を SQL に決め打ちしているが、**町丁目 → 座標の
      永続キャッシュ（`geocode_towns`）は表に依らない。**売地の geocode
@@ -2212,16 +2208,31 @@ $0.10/GB/月なので **37.9 GB ≒ 月 560 円**。3,000 円が AR 単体なら
      賃貸の掲載がある町丁目は既にキャッシュにあるので、国土地理院への
      新規の要求は売地しか無い町丁目ぶんだけになる（何件かは
      取り込んでから数える）
-3. ワークフロー `scrape-land.yml`。**賃貸の枠（最長 6 時間・
-   `rental-properties-write`）には入れない。**同じ concurrency group
-   にすると賃貸の後ろで待つか、賃貸を削るかのどちらかになる。
-   **相手から見た要求レートは 1 系統ぶん増える**ので、
-   - 別の時間帯に置く（賃貸は 19:17 UTC 起点で最長 6 時間。売地は
-     その外、たとえば 09:00 UTC）
-   - 同じ `MIN_PAGE_INTERVAL_MS`（共通化した 1 つ）を守る
-   - まず **12 の都市圏（`everyNDays: 1` の県）だけ・`everyNDays: 3`・
-     予算は賃貸の 1/3** から始め、実測を見てから広げる
-   - **0 件で抜ける経路にも待機**（3 節。賃貸で実際に連打した）
+3. **済（#1167。ただし手動起動だけ）。**`scrape-land.yml`。schedule は
+   置いていない。**巡回の予算と周期は利用者の判断。**決まったら賃貸の
+   枠（19:17 UTC 起点で最長 6 時間）と重ならない時間帯に足す。手動で
+   回すときも `rental-properties-write` グループで夜間の巡回と重ねない。
+   0 件で抜ける経路にも待機を入れてある
+
+   **1 回だけ手で回した実測（2026-09-10 21:25 UTC。run 34531994090。
+   東京・予算 5 分・1 市区町村 1 頁）**
+
+   | 見たもの | 結果 |
+   | --- | --- |
+   | 市区町村の索引 | 55 件 |
+   | 回れた市区町村 | 14 区（港・文京・大田・世田谷・足立・千代田・中央・新宿・台東・墨田・江東・品川・目黒・渋谷） |
+   | 0 件だった区 | 0 |
+   | 書いた行 | 1,277（1 区あたり 29〜132） |
+   | 取得の間隔 | 21〜22 秒（20 秒 + 揺らぎ） |
+   | 保存の失敗 | 0 |
+   | 止まり方 | 予算で渋谷区の 2 頁目を再開位置に残して止まった |
+
+   **東京だけで 55 市区町村 × 数頁**なので、1 頁 20 秒だと東京 1 県の
+   一巡に 1 時間半〜数時間かかる。都市圏 12 県を 3 日周期で回すなら
+   1 晩 2〜3 時間の枠が要る。この数字を見て予算を決めてもらう
+3-b. **次にやること: 座標を埋める。**取り込み直後は `lat` / `lon` が
+   NULL で、地図には 1 件も出ない（賃貸と同じ）。`geocode_towns` の
+   キャッシュを先に引く小さな geocode を書く
 4. 地図の API。`/api/rentals/arbitrage` の経路に混ぜず、**bbox だけを
    受けて `land_listings` を返す軽い口**を 1 つ足す。名寄せも窓関数も
    要らない（売地は 1 件 1 URL）
