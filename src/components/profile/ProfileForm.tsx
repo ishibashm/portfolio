@@ -119,8 +119,11 @@ export function ProfileForm() {
           if (target) {
             setEditingPreset(target);
             setBirthDate(target.birthDate);
-            setBirthLat(target.birthLat);
-            setBirthLon(target.birthLon);
+            /* 出生地は任意の項目。控えに入っていなければ「未入力」の
+               まま欄へ入れる（下の設定から読む枝と同じ形）。埋めると、
+               次の保存でその座標がサイト全体の出生地になる。 */
+            setBirthLat(target.birthLat ?? null);
+            setBirthLon(target.birthLon ?? null);
             setBaseLat(target.baseLat);
             setBaseLon(target.baseLon);
           } else {
