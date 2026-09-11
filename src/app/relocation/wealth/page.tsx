@@ -690,8 +690,13 @@ export default function RegionalWealthPage() {
       const nextLayerMode = preset.layerMode ?? layerMode;
       const nextBaseLat = String(preset.baseLat);
       const nextBaseLon = String(preset.baseLon);
-      const nextBirthLat = String(preset.birthLat);
-      const nextBirthLon = String(preset.birthLon);
+      // 出生地は任意。控えに入っていなければ空欄のまま（この頁は空文字を
+      // 「未入力」として扱い、API へ送らない）。String(undefined) を通すと
+      // "undefined" という文字列が欄に入る。
+      const nextBirthLat =
+        preset.birthLat === undefined ? "" : String(preset.birthLat);
+      const nextBirthLon =
+        preset.birthLon === undefined ? "" : String(preset.birthLon);
 
       setTargetDate(nextTargetDate);
       setBirthDate(preset.birthDate);
