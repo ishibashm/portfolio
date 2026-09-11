@@ -15,8 +15,20 @@ name: Read Cloud Run error logs
 #
 # ## 出さないもの
 #
-# httpRequest（URL・IP・UA）は出さない。エラーの本文（例外の文言・
-# スタック）だけ。利用者を特定できる項目を Actions のログに残さない。
+# httpRequest のうち URL・IP・UA は出さない。利用者を特定できる項目を
+# Actions のログに残さない。
+#
+# **応答コード・メソッド・所要時間・リビジョン名は出す**（利用者の判断。
+# 2026-09-09。経路を知るための項目は聞かずに足してよい）。Cloud Run は
+# 4xx の応答をリクエストログとして severity=WARNING で、5xx を ERROR で
+# 書く。これらは本文（textPayload / jsonPayload）を持たないので、以前は
+# WARNING で引くと 300 件が全部 `null` と出て何も分からなかった
+# （2026-09-11 実測）。本文の無い行はリクエストログとして
+# `request <method> <status> <latency> rev=<revision>` の形で出し、
+# 応答コード別と時間帯別の件数も出す。
+#
+# リクエストログが多くて例外の本文が上限から溢れるときは
+# `exclude_requests` を true にする。
 #
 # ## 書き込みは一切しない
 #
@@ -43,6 +55,11 @@ on:
         description: "最大件数（新しい順）"
         required: false
         default: "300"
+      exclude_requests:
+        description: "リクエストログ（4xx/5xx の応答）を除いて、例外の本文だけ出す"
+        required: false
+        type: boolean
+        default: false
 
 env:
   PROJECT_ID: ${{ vars.GCP_PROJECT_ID || 'blog-471319' }}
@@ -68,6 +85,7 @@ jobs:
           HOURS: ${{ inputs.hours }}
           SEVERITY: ${{ inputs.severity }}
           LIMIT: ${{ inputs.limit }}
+          EXCLUDE_REQUESTS: ${{ inputs.exclude_requests }}
         run: |
           set -euo pipefail
           since=$(date -u -d "-${HOURS} hours" +%Y-%m-%dT%H:%M:%SZ)
@@ -76,6 +94,10 @@ jobs:
           filter="$filter AND resource.labels.location=\"${REGION}\""
           filter="$filter AND severity>=${SEVERITY}"
           filter="$filter AND timestamp>=\"${since}\""
+          if [ "${EXCLUDE_REQUESTS}" = "true" ]; then
+            # リクエストログの logName は run.googleapis.com%2Frequests
+            filter="$filter AND NOT logName:\"requests\""
+          fi
           echo "filter: $filter"
 
           gcloud logging read "$filter" \
@@ -83,15 +105,25 @@ jobs:
             --limit="${LIMIT}" \
             --format=json > logs.json
 
-          # 本文は textPayload か jsonPayload.message のどちらか。
-          # httpRequest は読まない（出さない）。
+          # 本文は textPayload か jsonPayload.message のどちらか。どちらも
+          # 無い行はリクエストログで、httpRequest のうち method・status・
+          # latency と resource のリビジョン名だけを出す（URL・IP・UA は
+          # 読まない）。`(.jsonPayload|tostring)` は jsonPayload が無いと
+          # 文字列の "null" を返して // が効かないので、有るときだけ通す。
           jq -r '
             .[] | [
               .timestamp,
               .severity,
-              ((.textPayload // .jsonPayload.message // .jsonPayload.msg // (.jsonPayload|tostring) // "")
+              ((.textPayload // .jsonPayload.message // .jsonPayload.msg
+                // (if .jsonPayload != null then (.jsonPayload|tostring) else null end)
+                // (if .httpRequest != null then
+                      "request \(.httpRequest.requestMethod // "-") \(.httpRequest.status // "-") \(.httpRequest.latency // "-") rev=\(.resource.labels.revision_name // "-")"
+                    else "" end))
                 | gsub("\n"; " ") | .[0:300])
             ] | @tsv' logs.json > rows.tsv
+          # 3 列目が request で始まる行だけ（応答コード別・時間帯別に数える）
+          awk -F'\t' '$3 ~ /^request /' rows.tsv > requests.tsv || true
+          nreq=$(wc -l < requests.tsv | tr -d ' ')
 
           n=$(wc -l < rows.tsv | tr -d ' ')
           {
@@ -100,6 +132,21 @@ jobs:
             echo "- service: \`${SERVICE_NAME}\` / region: \`${REGION}\`"
             echo "- 件数: **${n}**（上限 ${LIMIT}。上限に達していたら hours を短くする）"
             echo
+            if [ "$nreq" -gt 0 ]; then
+              echo "### リクエストログ ${nreq} 件の応答コード別（method status 件数。URL・IP・UA は読まない）"
+              echo
+              echo '```'
+              # 列は ts sev "request" method status latency rev
+              awk '{print $4, $5}' requests.tsv | sort | uniq -c | sort -rn | head -20
+              echo '```'
+              echo
+              echo "### 同じ時間帯（UTC の時）に固まっている応答コード（多い順・上位 20）"
+              echo
+              echo '```'
+              awk '{print substr($1,1,13) "Z", $5}' requests.tsv | sort | uniq -c | sort -rn | head -20
+              echo '```'
+              echo
+            fi
             if [ "$n" -gt 0 ]; then
               echo "### 同じ本文の件数（多い順・上位 20）"
               echo
