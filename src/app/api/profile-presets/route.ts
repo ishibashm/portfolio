@@ -3,19 +3,22 @@ import { z } from "zod";
 import type { Prisma } from "@prisma/client";
 import prisma from "@/lib/prisma";
 import { decrypt, encrypt } from "@/utils/encryption";
-import {
-  findUserConfig,
-  getAuthUser,
-  toUserId,
-} from "@/lib/userConfig";
+import { findUserConfig, getAuthUser, toUserId } from "@/lib/userConfig";
 
-const profilePresetSchema = z
+/*
+  項目の定義は検査（refine）を付けずに置く。zod は refine 付きの
+  オブジェクトに .omit() を使えない（保存用の派生で落ちる）。
+*/
+const profilePresetFields = z
   .object({
     id: z.string().min(1),
     name: z.string().min(1).max(100),
     birthDate: z.string(),
-    birthLat: z.number().finite(),
-    birthLon: z.number().finite(),
+    // 出生地は任意（現住地は必須）。入れていない控えを既定値で埋めると、
+    // サイト全体が「出生地を登録済み」として読み、天体ラインの加点が
+    // 東京または現住地で生まれた人として付く（CLAUDE.md 3 節）。
+    birthLat: z.number().finite().optional(),
+    birthLon: z.number().finite().optional(),
     baseLat: z.number().finite(),
     baseLon: z.number().finite(),
     voidZodiacOverride: z.string().optional(),
@@ -35,10 +38,24 @@ const profilePresetSchema = z
   })
   .strip();
 
-const storedProfilePresetSchema = profilePresetSchema
+/*
+  **緯度と経度は必ず揃える。**片方だけ来たら弾く。読む側が「有る」と見て
+  NaN を計算に入れるため。受け取る側と保存する側の両方に掛ける。
+*/
+const birthPlacePaired = (v: { birthLat?: number; birthLon?: number }) =>
+  (v.birthLat === undefined) === (v.birthLon === undefined);
+const BIRTH_PLACE_PAIR_MESSAGE =
+  "birthLat と birthLon は両方指定するか、両方省くこと";
+
+const profilePresetSchema = profilePresetFields.refine(birthPlacePaired, {
+  message: BIRTH_PLACE_PAIR_MESSAGE,
+});
+
+const storedProfilePresetSchema = profilePresetFields
   .omit({ geminiKey: true })
   .extend({ encryptedGeminiKey: z.string().optional() })
-  .strip();
+  .strip()
+  .refine(birthPlacePaired, { message: BIRTH_PLACE_PAIR_MESSAGE });
 
 const requestSchema = z.object({
   presets: z.array(profilePresetSchema).max(100),
@@ -62,9 +79,7 @@ function decodePresets(value: Prisma.JsonValue | null) {
     if (!parsed.success) return [];
 
     const { encryptedGeminiKey, ...safeFields } = parsed.data;
-    const geminiKey = encryptedGeminiKey
-      ? decrypt(encryptedGeminiKey)
-      : null;
+    const geminiKey = encryptedGeminiKey ? decrypt(encryptedGeminiKey) : null;
 
     return [
       {

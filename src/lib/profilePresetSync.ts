@@ -2,8 +2,26 @@ export interface ProfilePreset {
   id: string;
   name: string;
   birthDate: string;
-  birthLat: number;
-  birthLon: number;
+  /**
+   * 出生地。**任意。**入れていないなら「入れていない」まま運ぶ。
+   *
+   * 必須にしていたせいで、控えに入れる時点で書く側が何かを埋めざるを
+   * 得なかった（ホームは東京駅、設定バーは現住地）。控えを呼び出すと
+   * その座標が `birth_lat` としてクラウドに書かれ、サイト全体が
+   * 「出生地を登録済み」として読む。以後、物件検索と移住先の比較が
+   * **東京または現住地で生まれた人として天体ラインの加点を付ける。**
+   *
+   * API 側は出生地が無ければ加点を付けない作りになっている
+   * （`hasBirthLocation`）。分からないものを分からないまま運べれば、
+   * 加点が付かないのが正しい答え。偏角を「取れなければ 0」にしたのと
+   * 同じ考え方（CLAUDE.md 3 節）。
+   *
+   * **緯度と経度は必ず揃える。**片方だけの控えは作らない（`isProfilePreset`
+   * と API の zod が両方で弾く）。片方だけだと、読む側が「有る」と見て
+   * NaN を計算に入れる。
+   */
+  birthLat?: number;
+  birthLon?: number;
   baseLat: number;
   baseLon: number;
   voidZodiacOverride?: string;
@@ -80,6 +98,15 @@ function dropDeletedElsewhere(
   return localPresets.filter((p) => inCloud.has(p.id) || !known.has(p.id));
 }
 
+/** 任意の座標の組。両方が数値、または両方が無い（null は「無い」扱い）。 */
+function hasBothOrNeither(lat: unknown, lon: unknown): boolean {
+  const hasLat = typeof lat === "number" && Number.isFinite(lat);
+  const hasLon = typeof lon === "number" && Number.isFinite(lon);
+  if (hasLat && hasLon) return true;
+  const missing = (v: unknown) => v === undefined || v === null;
+  return missing(lat) && missing(lon);
+}
+
 function isProfilePreset(value: unknown): value is ProfilePreset {
   if (!value || typeof value !== "object") return false;
   const preset = value as Record<string, unknown>;
@@ -87,8 +114,9 @@ function isProfilePreset(value: unknown): value is ProfilePreset {
     typeof preset.id === "string" &&
     typeof preset.name === "string" &&
     typeof preset.birthDate === "string" &&
-    typeof preset.birthLat === "number" &&
-    typeof preset.birthLon === "number" &&
+    // 出生地は任意。**両方あるか、両方無いか**だけを通す（片方だけだと
+    // 読む側が「有る」と見て NaN を計算に入れる）。
+    hasBothOrNeither(preset.birthLat, preset.birthLon) &&
     typeof preset.baseLat === "number" &&
     typeof preset.baseLon === "number" &&
     typeof preset.createdAt === "string"
@@ -112,17 +140,25 @@ function migrateLegacyWealthPreset(value: unknown): ProfilePreset | null {
   const baseLat = num(p.baseLat);
   const baseLon = num(p.baseLon);
 
-  // 座標が読めないものは捨てる。0,0 で埋めると別の地点として計算されてしまう。
-  if (![birthLat, birthLon, baseLat, baseLon].every(Number.isFinite)) {
+  // 現住地が読めないものは捨てる。0,0 で埋めると別の地点として計算されてしまう。
+  if (![baseLat, baseLon].every(Number.isFinite)) {
     return null;
   }
+
+  /*
+    **出生地が読めなくても控えは捨てない**（2026-09-11）。出生地が任意に
+    なるまでは、片方でも読めなければ控えごと捨てていた。旧形式（wealth が
+    独自に localStorage へ書いていたもの）は緯度経度が文字列で、出生地を
+    入れずに保存された控えがある。捨てると利用者は**控えを失う**。
+    出生地だけ落として、現住地と日付は残す。
+  */
+  const hasBirthPlace = [birthLat, birthLon].every(Number.isFinite);
 
   return {
     id: p.id,
     name: p.name,
     birthDate: typeof p.birthDate === "string" ? p.birthDate : "",
-    birthLat,
-    birthLon,
+    ...(hasBirthPlace ? { birthLat, birthLon } : {}),
     baseLat,
     baseLon,
     ...(typeof p.targetDate === "string" ? { targetDate: p.targetDate } : {}),
