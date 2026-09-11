@@ -1698,6 +1698,51 @@ export default function RegionalWealthPage() {
                     </p>
                   </div>
                 </a>
+
+                {/* e-Stat の API 機能の利用規約が求めるクレジット表示。
+                    富裕度の 1 人あたり所得は e-Stat の API で取っている
+                    （import_municipalities_wealth.ts）のに、ここに無かった
+                    （backlog 26 節）。文言は規約のまま変えない。 */}
+                <a
+                  href="https://www.e-stat.go.jp/"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="block group"
+                >
+                  <div className="p-3 rounded-lg bg-gray-50 dark:bg-stone-50 border border-gray-100 dark:border-stone-200 hover:border-emerald-300 dark:hover:border-emerald-700 transition-colors">
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="text-xs font-bold text-gray-900 dark:text-stone-800">
+                        政府統計の総合窓口（e-Stat）
+                      </span>
+                      <svg
+                        className="w-3 h-3 text-stone-500 group-hover:text-emerald-500 transition-colors"
+                        xmlns="http://www.w3.org/2000/svg"
+                        width="24"
+                        height="24"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      >
+                        <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
+                        <polyline points="15 3 21 3 21 9" />
+                        <line x1="10" x2="21" y1="14" y2="3" />
+                      </svg>
+                    </div>
+                    <p className="text-[10px] text-stone-600 leading-tight">
+                      {
+                        "「富裕度」の 1 人あたり所得は、「統計でみる市区町村のすがた」（総務省）の課税対象所得と納税義務者数を加工して作成しています。出典：政府統計の総合窓口(e-Stat)（https://www.e-stat.go.jp/）"
+                      }
+                    </p>
+                    <p className="mt-1 text-[10px] text-stone-600 leading-tight">
+                      {
+                        "このサービスは、政府統計総合窓口(e-Stat)のAPI機能を使用していますが、サービスの内容は国によって保証されたものではありません。"
+                      }
+                    </p>
+                  </div>
+                </a>
               </div>
             </div>
           </div>
