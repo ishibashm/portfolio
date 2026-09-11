@@ -1,0 +1,139 @@
+name: Read arbitrage scan timings
+
+# 物件走査（/api/rentals/arbitrage）が本番で実際に何ミリ秒かかっているかを
+# **読むだけ**のワークフロー。
+#
+# ## なぜ要るか
+#
+# 走査の API は 1 回ごとに
+#
+#     arbitrage: db 880ms / compute 120ms (pref=all radius=50 rows=500/126800 …)
+#
+# を console.log している。ところがこれを**集めて見る口が無く**、速さの
+# 話はずっと db-explain の 1 点測定（名古屋 50km で 880ms）と「本番は数秒」
+# という感触で進めていた。速くする手を打つ前に、**利用者が実際に待っている
+# 分布**（中央値・9 割点・最大）を出す。「速くなるはず」で作ると、#767 の
+# ように副作用で別のものを変える（CLAUDE.md 6 節）。
+#
+# ## 出さないもの
+#
+# run-error-logs.yml と同じ。httpRequest（URL・IP・UA）は読まない。
+# 出すのは走査の所要時間と、県・半径・件数だけ。座標も生年月日も
+# ログの本文に含まれていない（route.ts の 1 行を見れば分かる）。
+#
+# ## 書き込みは一切しない
+#
+# gcloud logging read だけ。
+
+on:
+  workflow_dispatch:
+    inputs:
+      hours:
+        description: "さかのぼる時間（時間）"
+        required: false
+        default: "24"
+      limit:
+        description: "最大件数（新しい順）"
+        required: false
+        default: "2000"
+
+env:
+  PROJECT_ID: ${{ vars.GCP_PROJECT_ID || 'blog-471319' }}
+  REGION: ${{ vars.GCP_REGION || 'asia-northeast1' }}
+  SERVICE_NAME: ${{ vars.GCP_SERVICE_NAME || 'portfolio-app' }}
+
+jobs:
+  read:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Auth with GCP
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.GCP_SA_KEY }}
+
+      - name: Set up Cloud SDK
+        uses: google-github-actions/setup-gcloud@v2
+
+      - name: Read timings
+        env:
+          HOURS: ${{ inputs.hours }}
+          LIMIT: ${{ inputs.limit }}
+        run: |
+          set -euo pipefail
+          since=$(date -u -d "-${HOURS} hours" +%Y-%m-%dT%H:%M:%SZ)
+          filter="resource.type=\"cloud_run_revision\""
+          filter="$filter AND resource.labels.service_name=\"${SERVICE_NAME}\""
+          filter="$filter AND resource.labels.location=\"${REGION}\""
+          filter="$filter AND timestamp>=\"${since}\""
+          filter="$filter AND textPayload:\"arbitrage: db\""
+          echo "filter: $filter"
+
+          gcloud logging read "$filter" \
+            --project="${PROJECT_ID}" \
+            --limit="${LIMIT}" \
+            --format=json > logs.json
+
+          # 1 行 = 1 走査。db, compute, pref, radius, rows(取得/総数) を列にする。
+          jq -r '
+            .[] | (.textPayload // .jsonPayload.message // "")
+              | select(test("arbitrage: db"))' logs.json \
+          | sed -E 's/.*db ([0-9]+)ms \/ compute ([0-9]+)ms \(pref=([^ ]*) radius=([^ ]*) rows=([0-9]+)\/([0-9]+).*/\1\t\2\t\3\t\4\t\5\t\6/' \
+          | grep -P '^[0-9]+\t' > rows.tsv || true
+
+          n=$(wc -l < rows.tsv | tr -d ' ')
+
+          # 列番号を渡して 件数 / 中央値 / 9 割点 / 最大 を出す
+          stats() {
+            local col="$1"
+            sort -n -k"$col","$col" -t$'\t' rows.tsv | awk -F'\t' -v c="$col" '
+              { v[NR] = $c }
+              END {
+                if (NR == 0) { print "0\t-\t-\t-"; exit }
+                med = v[int((NR + 1) / 2)]
+                p90 = v[int(NR * 0.9) < 1 ? 1 : int(NR * 0.9)]
+                printf "%d\t%d\t%d\t%d\n", NR, med, p90, v[NR]
+              }'
+          }
+
+          {
+            echo "## 物件走査の所要時間（直近 ${HOURS} 時間・${n} 回）"
+            echo
+            echo "- service: \`${SERVICE_NAME}\` / region: \`${REGION}\`"
+            echo "- 上限 ${LIMIT}。上限に達していたら hours を短くする"
+            echo
+            if [ "$n" -gt 0 ]; then
+              echo "| 区間 | 回数 | 中央値 ms | 9 割点 ms | 最大 ms |"
+              echo "| --- | --- | --- | --- | --- |"
+              printf "| DB（候補の切り出し） | %s | %s | %s | %s |\n" $(stats 1)
+              printf "| 計算（判定・スコア） | %s | %s | %s | %s |\n" $(stats 2)
+              echo
+              echo "### 県の指定の有無で分ける（DB の中央値）"
+              echo
+              echo '```'
+              # mawk は配列の配列を持てないので、群ごとに切り出してから測る
+              for grp in all pref; do
+                if [ "$grp" = all ]; then awk -F'\t' '$3 == "all"' rows.tsv; else awk -F'\t' '$3 != "all"' rows.tsv; fi \
+                  | cut -f1 | sort -n \
+                  | awk -v g="$grp" '{ v[NR]=$1 } END { if (NR) printf "pref=%-6s n=%-5d median=%dms p90=%dms max=%dms\n", g, NR, v[int((NR+1)/2)], v[int(NR*0.9)<1?1:int(NR*0.9)], v[NR]; else printf "pref=%-6s n=0\n", g }'
+              done
+              echo '```'
+              echo
+              echo "### 取得行数 / 総件数（上限 500 に当たった回数）"
+              echo
+              echo '```'
+              awk -F'\t' '$5 >= 500 { hit++ } END { printf "上限に当たった: %d / %d 回\n", hit + 0, NR }' rows.tsv
+              awk -F'\t' '{ print $6 }' rows.tsv | sort -n | awk '{ v[NR]=$1 } END { if (NR) printf "総件数 中央値=%d  9割点=%d  最大=%d\n", v[int((NR+1)/2)], v[int(NR*0.9)<1?1:int(NR*0.9)], v[NR] }'
+              echo '```'
+              echo
+              echo "### 遅かった順（先頭 15 件）"
+              echo
+              echo '```'
+              echo -e "db_ms\tcompute_ms\tpref\tradius\trows\ttotal"
+              sort -rn -k1,1 -t$'\t' rows.tsv | head -15
+              echo '```'
+            else
+              echo "この範囲に走査のログはありません。"
+            fi
+          } | tee -a "$GITHUB_STEP_SUMMARY"
