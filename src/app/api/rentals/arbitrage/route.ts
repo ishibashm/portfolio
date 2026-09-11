@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { shouldPauseForRows } from "@/utils/arbitrageSearchArea";
 import { toResponseMessage } from "@/lib/errorMessage";
 import type { Prisma } from "@prisma/client";
 import prisma from "@/lib/prisma";
@@ -130,6 +131,8 @@ export async function GET(request: Request) {
     : 500;
   // 同一部屋の重複掲載をまとめるか。生データを見たい場合だけ false にする。
   const dedupe = searchParams.get("dedupe") !== "false";
+  /* 「それでもこの範囲で検索する」を押したとき。行数の上限で止めない。 */
+  const force = searchParams.get("force") === "true";
   const lunarPhaseModifier = searchParams.get("lunarPhaseModifier") !== "false";
   /*
     知らない値は composite（＝指定が無いときと同じ）に落とす。素通しだと
@@ -384,6 +387,46 @@ export async function GET(request: Request) {
     // 評価軸の廃止で要らなくなり、残る用途は「名寄せ後の件数」だけに
     // なったので、数えるだけのクエリに置き換えた。全国走査の実測では
     // 統計＋中央値が 2 本目として 5〜8 秒かかっていた部分。
+    const dbStartedAt = Date.now();
+
+    /*
+      **切り出しの前に、同じ条件の行数だけ数える。**
+
+      本番の実測（scan-timings.yml、2026-09-11）で、9 割点が 25 秒、最大
+      41 秒だった。遅い回はどれも WHERE に 30 万行以上が当たっていて、
+      面積や半径の規則（画面側の shouldPauseScan）をすり抜けていた
+      （都心の半径 50km は表の 4 分の 3 に当たる）。行数は索引の範囲引き
+      で軽く数えられるので、重い DISTINCT ON と窓関数を走らせる前に
+      ここで見て、多すぎれば走らせない。理由と行数を返し、画面が
+      「それでもこの範囲で検索する」を出す（force で通る）。
+
+      以前はこの count を切り出しと並列に投げていた。直列にした分だけ
+      普通の回は count の時間ぶん遅くなるが、その代わりに 25〜41 秒の
+      回が消える。差は scan-timings.yml で見る。
+    */
+    const totalCount = await prisma.rental_properties.count({
+      where: whereClause,
+    });
+    if (shouldPauseForRows(totalCount, force)) {
+      console.log(
+        `arbitrage: paused rows=${totalCount} (pref=${prefecture} radius=${radiusKm})`,
+      );
+      return NextResponse.json({
+        properties: [],
+        stats: {},
+        metadata: {
+          paused: true,
+          pausedReason: "TOO_MANY_ROWS",
+          totalCount,
+          uniqueCount: 0,
+          limit,
+          dataUpdatedAt: null,
+          staleHidden: 0,
+          maxSeenDays,
+        },
+      });
+    }
+
     const uniqueCountPromise = dedupe
       ? prisma.$queryRawUnsafe<Array<{ n: number }>>(
           uniqueCountSql(whereSql),
@@ -391,29 +434,24 @@ export async function GET(request: Request) {
         )
       : null;
 
-    const dbStartedAt = Date.now();
-    const [rawProperties, totalCount, freshness, beforeFreshnessCount] =
-      await Promise.all([
-        prisma.$queryRawUnsafe<ArbitrageRow[]>(
-          selectSql(whereSql, dedupe, params.length + 1, candidateStrategy),
-          ...params,
-          limit,
-        ),
-        prisma.rental_properties.count({
-          where: whereClause,
-        }),
-        // 定期スクレイピング（.github/workflows/scrape-rentals.yml）がいつ回ったかを
-        // 画面から確認できるようにする。絞り込み条件に依存しない全体の鮮度。
-        prisma.rental_properties.aggregate({
-          _max: { last_seen_at: true },
-        }),
-        // 鮮度で落とした件数。急に件数が減った理由が画面から分かるようにする。
-        maxSeenDays > 0
-          ? prisma.rental_properties.count({
-              where: { ...whereClause, last_seen_at: undefined },
-            })
-          : Promise.resolve(0),
-      ]);
+    const [rawProperties, freshness, beforeFreshnessCount] = await Promise.all([
+      prisma.$queryRawUnsafe<ArbitrageRow[]>(
+        selectSql(whereSql, dedupe, params.length + 1, candidateStrategy),
+        ...params,
+        limit,
+      ),
+      // 定期スクレイピング（.github/workflows/scrape-rentals.yml）がいつ回ったかを
+      // 画面から確認できるようにする。絞り込み条件に依存しない全体の鮮度。
+      prisma.rental_properties.aggregate({
+        _max: { last_seen_at: true },
+      }),
+      // 鮮度で落とした件数。急に件数が減った理由が画面から分かるようにする。
+      maxSeenDays > 0
+        ? prisma.rental_properties.count({
+            where: { ...whereClause, last_seen_at: undefined },
+          })
+        : Promise.resolve(0),
+    ]);
 
     const staleHidden =
       maxSeenDays > 0 ? Math.max(0, beforeFreshnessCount - totalCount) : 0;

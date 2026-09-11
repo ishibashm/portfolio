@@ -9,6 +9,8 @@ import {
   geographyParamsForSearch,
   MAX_AUTO_SCAN_KM2,
   shouldPauseScan,
+  shouldPauseForRows,
+  SCAN_ROW_LIMIT,
   normalizeStoredSearchArea,
   searchAreaForFilters,
   searchAreaFromUrl,
@@ -238,5 +240,35 @@ describe("走査を止めるかどうかは面積で決める", () => {
     const oldRule = (b: { zoom: number }) => b.zoom < 10;
     expect(oldRule(narrowAtZoom9)).toBe(true);
     expect(oldRule(wideAtZoom9)).toBe(true);
+  });
+});
+
+describe("走査を止めるかどうかは、面積の上に行数でも決める", () => {
+  /*
+    本番の実測（scan-timings.yml、2026-09-11、48 時間・88 回）で、面積の
+    規則が通していた radius=50 の走査が 25〜34 秒かかっていた
+    （total=334,118〜358,864 行。都心では半径 50km が表の 4 分の 3）。
+    半径や面積は行数の代わりにならないので、切り出しの前に数えた行数で
+    止める。
+  */
+  it("上限を超えたら止める。ちょうどなら通す", () => {
+    expect(shouldPauseForRows(SCAN_ROW_LIMIT + 1, false)).toBe(true);
+    expect(shouldPauseForRows(SCAN_ROW_LIMIT, false)).toBe(false);
+    expect(shouldPauseForRows(0, false)).toBe(false);
+  });
+
+  it("実測で 17 秒以上かかった行数は止まり、2 秒の側は通る", () => {
+    /* 上の註の表。127,584 行 → 17.1 秒、25,582 行 → 2.3 秒 */
+    expect(shouldPauseForRows(127584, false)).toBe(true);
+    expect(shouldPauseForRows(334118, false)).toBe(true);
+    expect(shouldPauseForRows(25582, false)).toBe(false);
+  });
+
+  it("「それでも検索する」なら行数に関わらず通す", () => {
+    expect(shouldPauseForRows(358864, true)).toBe(false);
+  });
+
+  it("行数が読めなければ止めない（数え損ねで検索を潰さない）", () => {
+    expect(shouldPauseForRows(NaN, false)).toBe(false);
   });
 });
