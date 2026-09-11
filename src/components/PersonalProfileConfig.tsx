@@ -29,6 +29,13 @@ interface PersonalProfileProps {
   setBirthLat: (v: number) => void;
   birthLon: number;
   setBirthLon: (v: number) => void;
+  /**
+   * 出生地が**利用者の値**か（SolarTimeClock の birthPlaceOwned。#1100）。
+   * birthLat / birthLon は初期値の東京駅を持っているので、この旗が無いと
+   * 「未入力」と「東京」を区別できず、控えに東京駅が書かれる。偽の
+   * あいだは控えに出生地を入れない（上書きでも元の控えの値に触らない）。
+   */
+  birthPlaceOwned?: boolean;
   baseLat: number;
   setBaseLat: (v: number) => void;
   baseLon: number;
@@ -73,6 +80,7 @@ export function PersonalProfileConfig({
   setBirthLat,
   birthLon,
   setBirthLon,
+  birthPlaceOwned = false,
   baseLat,
   setBaseLat,
   baseLon,
@@ -158,8 +166,9 @@ export function PersonalProfileConfig({
       id: `preset_${Date.now()}`,
       name,
       birthDate,
-      birthLat,
-      birthLon,
+      /* 出生地は利用者の値のときだけ。初期値（東京駅）を控えに入れると、
+         呼び出したときにクラウドへ書かれてサイト全体の出生地になる */
+      ...(birthPlaceOwned ? { birthLat, birthLon } : {}),
       baseLat,
       baseLon,
       voidZodiacOverride,
@@ -195,8 +204,9 @@ export function PersonalProfileConfig({
           ...p,
           name: updatedName,
           birthDate,
-          birthLat,
-          birthLon,
+          /* 利用者の値のときだけ差し替える。触っていなければ元の控えの
+             出生地をそのまま残す（...p） */
+          ...(birthPlaceOwned ? { birthLat, birthLon } : {}),
           baseLat,
           baseLon,
           voidZodiacOverride,
