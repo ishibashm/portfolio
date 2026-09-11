@@ -85,6 +85,11 @@ import {
  */
 interface ScanMetadata extends ScanCountsInput {
   dataUpdatedAt?: string | null;
+  /** API が行数の上限で切り出しを走らせなかったとき true。 */
+  paused?: boolean;
+  pausedReason?: string;
+  /** 条件に当たった行数（名寄せ前）。止めた札に出す。 */
+  totalCount?: number;
   timing?: { dbMs: number; computeMs: number } | null;
 }
 
@@ -1229,6 +1234,9 @@ export default function ArbitrageScannerPage() {
       if (filterMaxAge) {
         params.append("maxBuildingAge", filterMaxAge);
       }
+      /* 「それでもこの範囲で検索する」。API 側の行数の上限（SCAN_ROW_LIMIT）
+         を通す。押していないときは送らない＝上限で止まる。 */
+      if (force) params.append("force", "true");
       // 予算はここでは渡さない。cost 軸は総家賃と予算だけで決まるので画面側で
       // 計算でき、入力するたびに DB を叩き直す必要がない。
       // 候補の切り出し方。重みを変えても母集合が同じでは角度が変わらない。
@@ -1249,7 +1257,11 @@ export default function ArbitrageScannerPage() {
       if (res.ok) {
         const json = await res.json();
         if (seq !== fetchSeqRef.current) return;
-        setData(json.properties || []);
+        /* API が行数の上限で止めたとき（metadata.paused）は、前の一覧を
+           消さない。画面側の面積の規則で止めたときと同じ振る舞いにする
+           （あちらは fetch の前に return するので一覧はそのまま）。
+           理由と行数は metadata から札に出す。 */
+        if (json.metadata?.paused !== true) setData(json.properties || []);
         setMetadata(json.metadata || null);
         lastTotalCountRef.current =
           typeof json.metadata?.totalCount === "number"
@@ -1544,7 +1556,11 @@ export default function ArbitrageScannerPage() {
   /* 打ち切りと同じ判断を 1 つの関数から引く。**条件を 2 か所に書かない**
      （以前は同じ 4 条件が並んでいて、片方だけ変えると「理由の無い 0 件」に
      戻る作りだった）。 */
-  const scanPaused = shouldPauseScan({ prefecture, radiusKm }, mapBounds);
+  /* API が行数の上限で止めた応答（metadata.paused）も同じ札で出す。
+     面積は画面で、行数は API で見る。どちらで止めても口は 1 つ。 */
+  const serverPaused = metadata?.paused === true;
+  const scanPaused =
+    serverPaused || shouldPauseScan({ prefecture, radiusKm }, mapBounds);
 
   const isNationwideOverview =
     prefecture === "all" &&
@@ -4198,11 +4214,16 @@ export default function ArbitrageScannerPage() {
                 「0 件」に見えるのを止めるためのもので、判定は変えない。 */}
             {scanPaused && !loading && (
               <div className="absolute bottom-4 left-1/2 z-30 w-[min(92%,26rem)] -translate-x-1/2 rounded-2xl border border-amber-300 bg-amber-50/95 p-3 text-[11px] leading-relaxed text-amber-900 shadow-lg">
-                <p className="font-bold">この倍率では物件を検索していません</p>
+                <p className="font-bold">
+                  {serverPaused
+                    ? "この条件では物件を検索していません"
+                    : "この倍率では物件を検索していません"}
+                </p>
                 <p className="mt-1">
-                  {
-                    "日本全体を対象にすると 45 万件の照合になり、応答が返るまで数十秒かかります。"
-                  }
+                  {serverPaused &&
+                  typeof metadata?.totalCount === "number"
+                    ? `この範囲と条件には ${metadata.totalCount.toLocaleString()} 件が当たり、照合に数十秒かかります（本番の実測で 10 万件超は 17〜41 秒）。`
+                    : "日本全体を対象にすると 45 万件の照合になり、応答が返るまで数十秒かかります。"}
                 </p>
                 <p className="mt-1">
                   {
