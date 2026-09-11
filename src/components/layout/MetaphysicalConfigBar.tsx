@@ -483,8 +483,13 @@ export const MetaphysicalConfigBar: React.FC<MetaphysicalConfigBarProps> = ({
             : `preset_${Date.now()}`,
         name,
         birthDate: config.birthDate,
-        birthLat: config.birthLat ?? config.baseLat,
-        birthLon: config.birthLon ?? config.baseLon,
+        /* 出生地は入っているときだけ。以前は空なら**現住地**で埋めていて、
+           ホーム（東京駅）と別の値が「出生地」になっていた。埋めると
+           控えを呼び出したときにクラウドへ書かれ、サイト全体が登録済み
+           として読む（CLAUDE.md 3 節）。 */
+        ...(config.birthLat !== undefined && config.birthLon !== undefined
+          ? { birthLat: config.birthLat, birthLon: config.birthLon }
+          : {}),
         baseLat: config.baseLat,
         baseLon: config.baseLon,
         createdAt: new Date().toISOString(),

@@ -38,10 +38,6 @@ import {
   type ProfilePreset,
 } from "@/lib/profilePresetSync";
 
-/** 東京。設定が無いときに下のダッシュボードが使う値と揃える。 */
-const FALLBACK_LAT = 35.6895;
-const FALLBACK_LON = 139.6917;
-
 function toNumber(value: unknown): number | null {
   return typeof value === "number" && Number.isFinite(value) ? value : null;
 }
@@ -162,10 +158,15 @@ export function QuickProfileBar() {
     if (!name && !existing) return;
     if (baseLat === null || baseLon === null) return;
 
+    /* 出生地は**入っているときだけ**控えに入れる。以前は空なら東京駅で
+       埋めていた。控えを呼び出すとその座標が birth_lat としてクラウドに
+       書かれ、サイト全体が「出生地を登録済み」として読み、天体ラインの
+       加点が東京生まれとして付く（CLAUDE.md 3 節）。利用者の判断
+       （2026-09-11）:「出生地未入力の場合、天体ラインを出さない」。 */
+    const hasBirthPlace = birthLat !== null && birthLon !== null;
     const values = {
       birthDate,
-      birthLat: birthLat ?? FALLBACK_LAT,
-      birthLon: birthLon ?? FALLBACK_LON,
+      ...(hasBirthPlace ? { birthLat, birthLon } : {}),
       baseLat,
       baseLon,
     };
@@ -185,7 +186,17 @@ export function QuickProfileBar() {
             createdAt: new Date().toISOString(),
           },
         ]
-      : presets.map((p) => (p.id === selectedId ? { ...p, ...values } : p));
+      : presets.map((p) => {
+          if (p.id !== selectedId) return p;
+          const merged: ProfilePreset = { ...p, ...values };
+          /* 欄を空にして上書きしたなら、元の控えの出生地も落とす。
+             残すと「消したつもりの出生地」で加点が付き続ける */
+          if (!hasBirthPlace) {
+            delete merged.birthLat;
+            delete merged.birthLon;
+          }
+          return merged;
+        });
 
     setIsSaving(true);
     try {
@@ -363,11 +374,9 @@ export function QuickProfileBar() {
 
       <div className="flex flex-wrap items-center justify-end gap-4 mt-6 pt-5 border-t border-slate-200">
         <span className="text-xs text-slate-500">
-          未入力の項目は{" "}
-          <span className="font-mono">
-            {FALLBACK_LAT} / {FALLBACK_LON}
-          </span>{" "}
-          （東京）で計算します
+          {
+            "出生地が未入力のあいだは、天体ライン（太陽・金星・木星）の加点を付けずに判定します"
+          }
         </span>
         <button
           type="button"
