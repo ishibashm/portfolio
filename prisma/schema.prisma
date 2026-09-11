@@ -551,6 +551,34 @@ model land_price_points {
   @@index([year, use_category, price_per_sqm])
 }
 
+/// 市区町村別の住宅の統計（家賃・空き家）。e-Stat「統計でみる市区町村の
+/// すがた」の表 0000020108（Ｈ 居住）から取り込む。項目のコードは
+/// prisma/sql/20260912_add_municipality_housing_stats.sql と
+/// scripts/estatHousing.ts に書いてある。割り算（空き家率・円/㎡）は
+/// 読む側で行い、ここには元の値だけを置く。
+model municipality_housing_stats {
+  /// e-Stat の地域コード（5 桁。/houi/area/{code} と同じ JIS コード）。
+  area_code             String
+  /// 住宅・土地統計調査の調査年（2018 / 2023）。
+  data_year             Int
+  area_name             String?
+  /// H1100 総住宅数（戸）
+  total_dwellings       Int?
+  /// H110202 空き家数（戸）
+  vacant_dwellings      Int?
+  /// H4104 専用住宅の 1 畳当たり家賃（円）
+  rent_per_tatami_yen   Int?
+  /// H212020 1 住宅当たり居住室の畳数（借家）（畳）
+  tatami_per_rental     Float?
+  /// H213020 1 住宅当たり延べ面積（借家）（㎡）
+  floor_area_per_rental Float?
+  created_at            DateTime @default(now()) @db.Timestamptz(6)
+  updated_at            DateTime @default(now()) @db.Timestamptz(6)
+
+  @@id([area_code, data_year])
+  @@index([data_year])
+}
+
 /// Search Console の日次実績。prisma/sql/20260821_add_search_console_daily.sql と揃えること。
 ///
 /// その場で叩いて捨てていた実績を貯める表。Search Console の API は
