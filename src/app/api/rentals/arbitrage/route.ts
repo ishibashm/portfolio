@@ -38,6 +38,7 @@ import {
 
 import {
   buildWhereSql,
+  geoBoundingBox,
   cleanPropertyName,
   selectSql,
   uniqueCountSql,
@@ -312,32 +313,21 @@ export async function GET(request: Request) {
       };
     }
 
-    if (radiusKm > 0 && !isNaN(baseLat) && !isNaN(baseLon)) {
-      const deltaLat = radiusKm / 111.0;
-      const deltaLon =
-        radiusKm / (111.0 * Math.cos((baseLat * Math.PI) / 180.0));
-      whereClause.lat = {
-        gte: baseLat - deltaLat,
-        lte: baseLat + deltaLat,
-      };
-      whereClause.lon = {
-        gte: baseLon - deltaLon,
-        lte: baseLon + deltaLon,
-      };
-    } else if (
-      !isNaN(minLat) &&
-      !isNaN(maxLat) &&
-      !isNaN(minLon) &&
-      !isNaN(maxLon)
-    ) {
-      whereClause.lat = {
-        gte: minLat,
-        lte: maxLat,
-      };
-      whereClause.lon = {
-        gte: minLon,
-        lte: maxLon,
-      };
+    // 矩形の作り方は buildWhereSql と同じ 1 つ（geoBoundingBox）。以前は
+    // ここと buildWhereSql の両方が「半径があれば表示範囲を捨てる」形を
+    // 別々に持っていて、行数を数える count もその矩形で数えていた。
+    const box = geoBoundingBox({
+      radiusKm,
+      baseLat,
+      baseLon,
+      minLat,
+      maxLat,
+      minLon,
+      maxLon,
+    });
+    if (box) {
+      whereClause.lat = { gte: box.minLat, lte: box.maxLat };
+      whereClause.lon = { gte: box.minLon, lte: box.maxLon };
     }
 
     if (prefecture && prefecture !== "all") {

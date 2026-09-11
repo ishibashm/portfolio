@@ -2,6 +2,7 @@ import { describe, it, expect } from "vitest";
 import {
   buildWhereSql,
   candidateOrderSql,
+  geoBoundingBox,
   cleanPropertyName,
   innerSql,
   selectSql,
@@ -92,6 +93,75 @@ describe("buildWhereSql", () => {
     });
     expect(sql).toContain("lat >=");
     expect(params).toEqual([34, 36, 135, 137]);
+  });
+
+  /*
+    **半径と表示範囲の両方が来たら交差を使う**（2026-09-11）。
+
+    画面は表示範囲を「半径への追加の絞り込み」として送っている
+    （geographyParamsForSearch）が、API は半径があると表示範囲を捨てて
+    いた。東京・半径 50km では地図をどこへ動かしても 334,118 行の同じ
+    問い合わせになり（本番 25〜34 秒）、500 件の窓も半径全体の安い順
+    なので写っている範囲の物件が出なかった。
+
+    旧実装（`if (半径) … else if (表示範囲) …`）に戻すと、下の
+    「表示範囲が半径の内側」で params が半径の矩形（34.73…/35.63…）に
+    なって落ちる。
+  */
+  it("半径と表示範囲の両方があれば、交差の矩形で絞る", () => {
+    const { params } = buildWhereSql({
+      ...baseFilters,
+      radiusKm: 50,
+      baseLat: 35.1815,
+      baseLon: 136.9064,
+      // 表示範囲は半径の矩形（緯度 ±0.45、経度 ±0.55）のすぐ内側
+      minLat: 35.0,
+      maxLat: 35.3,
+      minLon: 136.7,
+      maxLon: 137.1,
+    });
+    expect(params).toEqual([35.0, 35.3, 136.7, 137.1]);
+  });
+
+  it("表示範囲が半径からはみ出す側は、半径の縁で切る", () => {
+    const box = geoBoundingBox({
+      radiusKm: 50,
+      baseLat: 35.1815,
+      baseLon: 136.9064,
+      minLat: 30, // 半径の南端より南 → 半径の縁になる
+      maxLat: 35.3, // 半径の内側 → そのまま
+      minLon: 136.7,
+      maxLon: 140, // 半径の東端より東 → 半径の縁になる
+    });
+    expect(box).not.toBeNull();
+    expect(box!.minLat).toBeCloseTo(35.1815 - 50 / 111, 6);
+    expect(box!.maxLat).toBe(35.3);
+    expect(box!.minLon).toBe(136.7);
+    expect(box!.maxLon).toBeCloseTo(
+      136.9064 + 50 / (111 * Math.cos((35.1815 * Math.PI) / 180)),
+      6,
+    );
+  });
+
+  it("交差が空でも矩形を返す（0 行に当たる。写っている範囲に半径内の物件が無い）", () => {
+    const box = geoBoundingBox({
+      radiusKm: 10,
+      baseLat: 35.1815,
+      baseLon: 136.9064,
+      minLat: 40,
+      maxLat: 41,
+      minLon: 140,
+      maxLon: 141,
+    });
+    expect(box).not.toBeNull();
+    expect(box!.minLat).toBeGreaterThan(box!.maxLat);
+    expect(box!.minLon).toBeGreaterThan(box!.maxLon);
+  });
+
+  it("半径も表示範囲も無ければ矩形は無い", () => {
+    expect(geoBoundingBox(baseFilters)).toBeNull();
+    const { params } = buildWhereSql(baseFilters);
+    expect(params).toEqual([]);
   });
 
   it("掲載期限切れを常に除外する（リンク切れを掴ませない）", () => {

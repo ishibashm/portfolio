@@ -113,6 +113,80 @@ export interface GeoFilters {
  */
 export type SqlParam = string | number | boolean | Date | null;
 
+export interface GeoBoundingBox {
+  minLat: number;
+  maxLat: number;
+  minLon: number;
+  maxLon: number;
+}
+
+/**
+ * 候補を切り出す緯度経度の矩形。**半径と地図の表示範囲の両方を効かせる。**
+ *
+ * 画面は「表示範囲は選択中の半径への追加の絞り込み」として minLat 等を
+ * 送っている（`geographyParamsForSearch`。#1156 で俯瞰でも送るようにした）。
+ * ところが API 側は `if (半径) … else if (表示範囲) …` で、半径があると
+ * 表示範囲を**捨てていた**。本番の実測（scan-timings、2026-09-11）で
+ * 東京・半径 50km の走査が地図をどこへ動かしても 334,118 行の同じ問い
+ * 合わせになり、6 回続けて 25〜34 秒かかっていたのはこれ。500 件の窓も
+ * 半径全体の安い順なので、写っている範囲の物件が一覧に出なかった。
+ *
+ * 半径の矩形と表示範囲の交差を返す。交差が空なら空の矩形をそのまま返す
+ * （min > max になり、0 行に当たる。写っている範囲に半径内の物件が無い）。
+ * 半径だけ・表示範囲だけのときは今までどおり。どちらも無ければ null。
+ *
+ * 呼ぶのは buildWhereSql（生 SQL）と route.ts の Prisma where の 2 か所。
+ * 矩形の作り方をここ 1 つにして、2 か所が食い違わないようにする。
+ */
+export function geoBoundingBox(
+  f: Pick<
+    GeoFilters,
+    | "radiusKm"
+    | "baseLat"
+    | "baseLon"
+    | "minLat"
+    | "maxLat"
+    | "minLon"
+    | "maxLon"
+  >,
+): GeoBoundingBox | null {
+  const hasRadius = f.radiusKm > 0 && !isNaN(f.baseLat) && !isNaN(f.baseLon);
+  const hasBounds =
+    !isNaN(f.minLat) &&
+    !isNaN(f.maxLat) &&
+    !isNaN(f.minLon) &&
+    !isNaN(f.maxLon);
+
+  let box: GeoBoundingBox | null = null;
+  if (hasRadius) {
+    const deltaLat = f.radiusKm / 111.0;
+    const deltaLon =
+      f.radiusKm / (111.0 * Math.cos((f.baseLat * Math.PI) / 180.0));
+    box = {
+      minLat: f.baseLat - deltaLat,
+      maxLat: f.baseLat + deltaLat,
+      minLon: f.baseLon - deltaLon,
+      maxLon: f.baseLon + deltaLon,
+    };
+  }
+  if (hasBounds) {
+    box = box
+      ? {
+          minLat: Math.max(box.minLat, f.minLat),
+          maxLat: Math.min(box.maxLat, f.maxLat),
+          minLon: Math.max(box.minLon, f.minLon),
+          maxLon: Math.min(box.maxLon, f.maxLon),
+        }
+      : {
+          minLat: f.minLat,
+          maxLat: f.maxLat,
+          minLon: f.minLon,
+          maxLon: f.maxLon,
+        };
+  }
+  return box;
+}
+
 export function buildWhereSql(f: GeoFilters): {
   sql: string;
   params: SqlParam[];
@@ -139,31 +213,15 @@ export function buildWhereSql(f: GeoFilters): {
     parts.push(`building_age <= ${ph()}`);
   }
 
-  if (f.radiusKm > 0 && !isNaN(f.baseLat) && !isNaN(f.baseLon)) {
-    const deltaLat = f.radiusKm / 111.0;
-    const deltaLon =
-      f.radiusKm / (111.0 * Math.cos((f.baseLat * Math.PI) / 180.0));
-    params.push(f.baseLat - deltaLat);
+  const box = geoBoundingBox(f);
+  if (box) {
+    params.push(box.minLat);
     parts.push(`lat >= ${ph()}`);
-    params.push(f.baseLat + deltaLat);
+    params.push(box.maxLat);
     parts.push(`lat <= ${ph()}`);
-    params.push(f.baseLon - deltaLon);
+    params.push(box.minLon);
     parts.push(`lon >= ${ph()}`);
-    params.push(f.baseLon + deltaLon);
-    parts.push(`lon <= ${ph()}`);
-  } else if (
-    !isNaN(f.minLat) &&
-    !isNaN(f.maxLat) &&
-    !isNaN(f.minLon) &&
-    !isNaN(f.maxLon)
-  ) {
-    params.push(f.minLat);
-    parts.push(`lat >= ${ph()}`);
-    params.push(f.maxLat);
-    parts.push(`lat <= ${ph()}`);
-    params.push(f.minLon);
-    parts.push(`lon >= ${ph()}`);
-    params.push(f.maxLon);
+    params.push(box.maxLon);
     parts.push(`lon <= ${ph()}`);
   }
 
