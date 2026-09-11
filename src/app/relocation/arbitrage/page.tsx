@@ -15,6 +15,7 @@ import { MetaphysicalConfigBar } from "@/components/layout/MetaphysicalConfigBar
 import { ArbitrageSidebarSection } from "@/components/relocation/ArbitrageSidebarSection";
 import { TransactionsPanel } from "@/components/relocation/TransactionsPanel";
 import { LandPriceByDirection } from "@/components/relocation/LandPriceByDirection";
+import { HousingStatsByDirection } from "@/components/relocation/HousingStatsByDirection";
 /* 方位別の段階の一覧は本命卦（立春基準の年）を引くのでエンジンを
    読む。初回の描画に要らないので、判定と同じく遅延して読む。 */
 const DirectionTierOverview = dynamic(
@@ -2800,6 +2801,15 @@ export default function ArbitrageScannerPage() {
                             同じ方位で 2 つの水準が読めるようにするため。
                             割った数字には意味が無いので比は出さない。 */}
                         <LandPriceByDirection
+                          lat={hasBaseLocation ? parseFloat(baseLat) : 0}
+                          lon={hasBaseLocation ? parseFloat(baseLon) : 0}
+                          radiusKm={radiusKm === "all" ? null : Number(radiusKm)}
+                          hasBase={hasBaseLocation}
+                        />
+                        {/* 方位別の借家の家賃と空き家率（e-Stat の市区町村の
+                            統計）。物件の在庫の代わりに、街ごとの水準を出す
+                            （backlog 26 節） */}
+                        <HousingStatsByDirection
                           lat={hasBaseLocation ? parseFloat(baseLat) : 0}
                           lon={hasBaseLocation ? parseFloat(baseLon) : 0}
                           radiusKm={radiusKm === "all" ? null : Number(radiusKm)}

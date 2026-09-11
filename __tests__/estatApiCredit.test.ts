@@ -17,7 +17,12 @@ import { describe, expect, it } from "vitest";
 export const ESTAT_API_CREDIT =
   "このサービスは、政府統計総合窓口(e-Stat)のAPI機能を使用していますが、サービスの内容は国によって保証されたものではありません。";
 
-const PAGES_USING_ESTAT_API = ["src/app/relocation/wealth/page.tsx"];
+const PAGES_USING_ESTAT_API = [
+  "src/app/relocation/wealth/page.tsx",
+  /* 方位別の家賃・空き家率の札。文言は API の meta.credit をそのまま
+     出すので、ここでは API の route を見る */
+  "src/app/api/housing-stats/by-direction/route.ts",
+];
 
 describe("e-Stat の API のクレジット表示", () => {
   for (const source of PAGES_USING_ESTAT_API) {
