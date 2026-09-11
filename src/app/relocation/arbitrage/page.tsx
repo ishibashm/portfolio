@@ -2806,17 +2806,21 @@ export default function ArbitrageScannerPage() {
                           radiusKm={radiusKm === "all" ? null : Number(radiusKm)}
                           hasBase={hasBaseLocation}
                         />
-                        {/* 方位別の借家の家賃と空き家率（e-Stat の市区町村の
-                            統計）。物件の在庫の代わりに、街ごとの水準を出す
-                            （backlog 26 節） */}
-                        <HousingStatsByDirection
-                          lat={hasBaseLocation ? parseFloat(baseLat) : 0}
-                          lon={hasBaseLocation ? parseFloat(baseLon) : 0}
-                          radiusKm={radiusKm === "all" ? null : Number(radiusKm)}
-                          hasBase={hasBaseLocation}
-                        />
                       </>
                     )}
+
+                    {/* 方位別の借家の家賃と空き家率（e-Stat の市区町村の
+                        統計）。物件の在庫の代わりに、街ごとの水準を出す
+                        （backlog 26 節）。借家の統計なので賃貸・購入の
+                        どちらの切り替えでも出す。#1199 では購入の側にしか
+                        置いておらず、賃貸を選んだ人に家賃の統計が見えて
+                        いなかった。 */}
+                    <HousingStatsByDirection
+                      lat={hasBaseLocation ? parseFloat(baseLat) : 0}
+                      lon={hasBaseLocation ? parseFloat(baseLon) : 0}
+                      radiusKm={radiusKm === "all" ? null : Number(radiusKm)}
+                      hasBase={hasBaseLocation}
+                    />
 
                     {/* Search Area Selection */}
                     <div className="space-y-1">
