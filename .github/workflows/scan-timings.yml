@@ -67,7 +67,10 @@ jobs:
           filter="$filter AND resource.labels.service_name=\"${SERVICE_NAME}\""
           filter="$filter AND resource.labels.location=\"${REGION}\""
           filter="$filter AND timestamp>=\"${since}\""
-          filter="$filter AND textPayload:\"arbitrage: db\""
+          # 走った走査（arbitrage: db）と、#1178 で行数の上限で止めた走査
+          # （arbitrage: paused）の両方を読む。止めたぶんは所要時間の分布に
+          # 入らないので、別に数える。
+          filter="$filter AND (textPayload:\"arbitrage: db\" OR textPayload:\"arbitrage: paused\")"
           echo "filter: $filter"
 
           gcloud logging read "$filter" \
@@ -84,6 +87,14 @@ jobs:
 
           n=$(wc -l < rows.tsv | tr -d ' ')
 
+          # 止めた走査: rows, pref, radius を列にする
+          jq -r '
+            .[] | (.textPayload // .jsonPayload.message // "")
+              | select(test("arbitrage: paused"))' logs.json \
+          | sed -E 's/.*paused rows=([0-9]+) \(pref=([^ ]*) radius=([^ )]*)\).*/\1\t\2\t\3/' \
+          | grep -P '^[0-9]+\t' > paused.tsv || true
+          np=$(wc -l < paused.tsv | tr -d ' ')
+
           # 列番号を渡して 件数 / 中央値 / 9 割点 / 最大 を出す
           stats() {
             local col="$1"
@@ -98,12 +109,12 @@ jobs:
           }
 
           {
-            echo "## 物件走査の所要時間（直近 ${HOURS} 時間・${n} 回）"
+            echo "## 物件走査の所要時間（直近 ${HOURS} 時間・走った ${n} 回・止めた ${np} 回）"
             echo
             echo "- service: \`${SERVICE_NAME}\` / region: \`${REGION}\`"
             echo "- 上限 ${LIMIT}。上限に達していたら hours を短くする"
             echo
-            if [ "$n" -gt 0 ]; then
+            if [ "$n" -gt 0 ] || [ "$np" -gt 0 ]; then
               echo "| 区間 | 回数 | 中央値 ms | 9 割点 ms | 最大 ms |"
               echo "| --- | --- | --- | --- | --- |"
               printf "| DB（候補の切り出し） | %s | %s | %s | %s |\n" $(stats 1)
@@ -125,6 +136,18 @@ jobs:
               echo '```'
               awk -F'\t' '$5 >= 500 { hit++ } END { printf "上限に当たった: %d / %d 回\n", hit + 0, NR }' rows.tsv
               awk -F'\t' '{ print $6 }' rows.tsv | sort -n | awk '{ v[NR]=$1 } END { if (NR) printf "総件数 中央値=%d  9割点=%d  最大=%d\n", v[int((NR+1)/2)], v[int(NR*0.9)<1?1:int(NR*0.9)], v[NR] }'
+              echo '```'
+              echo
+              echo "### 行数の上限で止めた走査（#1178。走らせていないので上の分布には入らない）"
+              echo
+              echo '```'
+              if [ "$np" -gt 0 ]; then
+                echo "止めた: ${np} 回（走った ${n} 回とは別）"
+                awk -F'\t' '{ print $1 }' paused.tsv | sort -n | awk '{ v[NR]=$1 } END { printf "当たった行数 最小=%d  中央値=%d  最大=%d\n", v[1], v[int((NR+1)/2)], v[NR] }'
+                awk -F'\t' '{ k = "pref=" $2 " radius=" $3; c[k]++ } END { for (k in c) printf "%s\t%d 回\n", k, c[k] }' paused.tsv | sort -t$'\t' -k2,2rn | head -10
+              else
+                echo "止めた走査はありません。"
+              fi
               echo '```'
               echo
               echo "### 遅かった順（先頭 15 件）"
