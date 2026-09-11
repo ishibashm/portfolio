@@ -68,6 +68,7 @@ import {
 } from "@/utils/directionFilterMode";
 import type { DayKigaku } from "@/lib/dayKigakuClient";
 import { saveWorkingDate } from "@/lib/workingDate";
+import { createLatestWinsQueue } from "@/lib/latestWinsQueue";
 import {
   expandLayoutSelections,
   matchesLayoutSelection,
@@ -1174,7 +1175,26 @@ export default function ArbitrageScannerPage() {
    */
   const fetchSeqRef = useRef(0);
 
-  const fetchData = async (isDateChange = false, force = false) => {
+  /*
+    走査は **1 本ずつ**。走っている間に来た要求は最新の 1 つだけを
+    取っておき、終わってから走らせる（lib/latestWinsQueue）。
+
+    本番の実測（scan-timings、2026-09-11）で、遅い走査は全部が 1〜2 秒差の
+    対だった。頁を開くと条件の確定（100ms）と地図の表示範囲の報告
+    （500ms）で 2 本、出発地を変えても地図が動いて 2 本、パンを続ければ
+    500ms ごとに 1 本ずつ増える。古い応答は fetchSeqRef で捨てるが、
+    **DB は捨てられたぶんも最後まで走る。**1 本ずつなら 5 秒前後の走査が、
+    重なって 25〜40 秒になっていた。
+
+    取っておいた要求は走らせる時点の runScanRef.current を呼ぶので、
+    その時点の最新の条件（表示範囲・日付）で走る。
+  */
+  const [scanQueue] = useState(() => createLatestWinsQueue());
+  const runScanRef = useRef<
+    (isDateChange: boolean, force: boolean) => Promise<void>
+  >(async () => {});
+
+  const runScan = async (isDateChange = false, force = false) => {
     if (!initialLoaded) return;
     const seq = ++fetchSeqRef.current;
     // 出発地が無いまま走らせると、方位が決まらないので順位が㎡単価だけになる。
@@ -1289,6 +1309,17 @@ export default function ArbitrageScannerPage() {
       }
     }
   };
+
+  /* 最新の render の runScan を、取っておいた要求から呼べるようにする。
+     render 中に ref へ書かない（react-hooks/refs） */
+  useEffect(() => {
+    runScanRef.current = runScan;
+  });
+
+  /* 走査を投げる口はここ 1 つ。runScan を直接呼ばない（列を飛ばすと
+     2 本同時に走る）。 */
+  const fetchData = (isDateChange = false, force = false) =>
+    scanQueue.request(() => runScanRef.current(isDateChange, force));
 
   const handleDateChange = (newDateStr: string) => {
     setTargetDate(newDateStr);

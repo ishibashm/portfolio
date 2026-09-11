@@ -34,8 +34,10 @@ const PAGE = readFileSync(
 
 describe("俯瞰で検索を止めているとき、その理由を出す", () => {
   it("fetchData は force で打ち切りを飛ばせる", () => {
+    /* 2026-09-11 から、走査の本体は runScan で、fetchData は 1 本ずつ
+       走らせる列（lib/latestWinsQueue）へ渡す口。下の describe を見ること */
     expect(PAGE).toMatch(
-      /const fetchData = async \(isDateChange = false, force = false\)/,
+      /const runScan = async \(isDateChange = false, force = false\)/,
     );
     /* 打ち切りの入口に !force が無いと、押しても何も起きない */
     expect(PAGE).toMatch(
@@ -90,6 +92,29 @@ describe("俯瞰で検索を止めているとき、その理由を出す", () =
     expect(PAGE).toMatch(/serverPaused \|\| shouldPauseScan\(/);
     expect(PAGE).toMatch(
       /if \(json\.metadata\?\.paused !== true\) setData\(json\.properties \|\| \[\]\)/,
+    );
+  });
+});
+
+describe("走査は 1 本ずつ（2026-09-11）", () => {
+  /* 本番の実測で、遅い走査は全部が 1〜2 秒差の対だった（同じ走査が
+     2 本、DB で同時に走っていた）。fetchData は列へ渡す口だけにして、
+     本体（runScan）は列からしか呼ばれない形を見張る。 */
+  it("fetchData は列に渡し、走らせる時点の runScan を呼ぶ", () => {
+    expect(PAGE).toMatch(
+      /const \[scanQueue\] = useState\(\(\) => createLatestWinsQueue\(\)\)/,
+    );
+    expect(PAGE).toMatch(
+      /const fetchData = \(isDateChange = false, force = false\) =>\s*scanQueue\.request\(\(\) => runScanRef\.current\(isDateChange, force\)\)/,
+    );
+  });
+
+  it("runScan を直接呼ぶ所が無い（列を飛ばすと 2 本同時に走る）", () => {
+    const direct = PAGE.match(/[^.\w]runScan\(/g) ?? [];
+    expect(direct).toEqual([]);
+    /* ref への代入は render 中ではなく effect の中 */
+    expect(PAGE).toMatch(
+      /useEffect\(\(\) => \{\s*runScanRef\.current = runScan;\s*\}\);/,
     );
   });
 });
