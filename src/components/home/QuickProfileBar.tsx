@@ -123,18 +123,25 @@ export function QuickProfileBar() {
     setBirthDate(preset.birthDate);
     setBaseLat(preset.baseLat);
     setBaseLon(preset.baseLon);
-    setBirthLat(preset.birthLat);
-    setBirthLon(preset.birthLon);
+    setBirthLat(preset.birthLat ?? null);
+    setBirthLon(preset.birthLon ?? null);
 
     setIsSaving(true);
     try {
-      const result = await saveSettings({
+      /* **出生地は「入っているときだけ」書く。**控えに無いものを既定値で
+         埋めると、`saveSettings` がクラウドへ同期して**サイト全体が
+         「出生地を登録済み」として読む。**以後、物件検索と移住先の比較は
+         その座標で生まれた人として天体ラインの加点を付ける。
+         入れていないなら「入れていない」まま運ぶ（CLAUDE.md 3 節）。 */
+      const patch: Settings = {
         birth_date: preset.birthDate,
         base_lat: preset.baseLat,
         base_lon: preset.baseLon,
-        birth_lat: preset.birthLat,
-        birth_lon: preset.birthLon,
-      });
+      };
+      if (preset.birthLat !== undefined) patch.birth_lat = preset.birthLat;
+      if (preset.birthLon !== undefined) patch.birth_lon = preset.birthLon;
+
+      const result = await saveSettings(patch);
       setSaved(result.synced ? "cloud" : "local");
       window.dispatchEvent(new CustomEvent("metaphysical-config-updated"));
     } finally {

@@ -73,7 +73,17 @@ function hasPoint(settings: Settings, latKey: string, lonKey: string): boolean {
  * 同じ書式が PlaceInput と PersonalProfileConfig に写されていたので、
  * ここを寄せ先にする。
  */
-export function formatCoords(lat: number, lon: number): string {
+export function formatCoords(
+  /* **無いかもしれない座標を受ける。**出生地は任意の項目で、控え
+     （`ProfilePreset`）にも「入れていない」が入りうる。呼ぶ側が
+     `?? 東京` で埋めて渡すと、画面には出るが**その値が保存に流れて
+     サイト全体の登録内容になる**（CLAUDE.md 3 節の 3 回起きた事故）。
+     埋めさせないために、ここが「未設定」を引き受ける。 */
+  lat: number | null | undefined,
+  lon: number | null | undefined,
+): string {
+  if (lat === null || lat === undefined) return "未設定";
+  if (lon === null || lon === undefined) return "未設定";
   const ns = lat >= 0 ? "北緯" : "南緯";
   const ew = lon >= 0 ? "東経" : "西経";
   return `${ns} ${Math.abs(lat).toFixed(3)} / ${ew} ${Math.abs(lon).toFixed(3)}`;
