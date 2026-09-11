@@ -27,11 +27,16 @@ dotenv.config({ path: envPath });
  *
  * ## 何を出すか
  *
- * 1. getMetaInfo で 0000020103 の cat01（項目）を全部引き、名前に
- *    「家賃」「空き家」「住宅数」「借家」を含むものを、コードと単位つきで
+ * 1. 「統計でみる市区町村のすがた」は分野ごとに表が分かれている。
+ *    1 回目（run 34648446818）で 0000020103 は「Ｃ 経済基盤」と分かり、
+ *    住宅系の項目は 0 件だった。id は分野の並び（A 人口 → B 自然環境 →
+ *    C 経済基盤 → …）で連番らしいので、0000020101〜0000020115 を
+ *    getMetaInfo で順に引いて表題を出し、住宅系の項目がある表は cat01 から
+ *    「家賃」「空き家」「住宅数」「借家」を含む項目を、コードと単位つきで
  *    並べる
- * 2. getStatsList で「住宅・土地統計調査」の市区町村別の表を探し、
- *    id・表題・調査年を並べる（0000020103 に無いときの代替）
+ * 2. getStatsList で住宅・土地統計調査（2023 年）の市区町村別の表を探し、
+ *    id・表題を並べる（1 に無いときの代替。1 回目は 2018 年の表しか
+ *    先頭に出ず、家賃は「10 区分別の借家数」＝分布で、平均ではなかった）
  *
  * ## 規約
  *
@@ -96,13 +101,30 @@ const asArray = <T>(v: T | T[] | undefined): T[] =>
 const titleOf = (t: TableInfo["TITLE"]): string =>
   typeof t === "string" ? t : (t?.$ ?? "(表題なし)");
 
-async function listHousingItems(): Promise<void> {
-  console.log(
-    `### 1. 表 ${MUNICIPAL_TABLE_ID} の項目（cat01）から住宅系を探す\n`,
-  );
+const pause = (ms: number) => new Promise((r) => setTimeout(r, ms));
+
+/** 分野の表を順に引き、表題を出す。住宅系の項目がある表は項目も出す。 */
+async function scanMunicipalTables(): Promise<void> {
+  console.log("### 1. 「統計でみる市区町村のすがた」の分野ごとの表\n");
+  for (let n = 1; n <= 15; n++) {
+    const id = `00000201${String(n).padStart(2, "0")}`;
+    try {
+      await listHousingItems(id);
+    } catch (e) {
+      console.log(
+        `  ${id}: 失敗 ${e instanceof Error ? e.message : String(e)}`,
+      );
+    }
+    await pause(300);
+  }
+}
+
+async function listHousingItems(
+  tableId: string = MUNICIPAL_TABLE_ID,
+): Promise<void> {
   const url =
     `${BASE}/getMetaInfo?appId=${encodeURIComponent(APP_ID!)}` +
-    `&statsDataId=${MUNICIPAL_TABLE_ID}`;
+    `&statsDataId=${tableId}`;
   const res = await fetch(url);
   if (!res.ok) {
     console.log(`  HTTP ${res.status}`);
@@ -117,13 +139,16 @@ async function listHousingItems(): Promise<void> {
     return;
   }
   const meta = body.GET_META_INFO?.METADATA_INF;
-  console.log(`  表題: ${titleOf(meta?.TABLE_INF?.TITLE)}`);
+  const title = titleOf(meta?.TABLE_INF?.TITLE);
   const objs = asArray(meta?.CLASS_INF?.CLASS_OBJ);
   const cat01 = objs.find((o) => o["@id"] === "cat01");
   const items = asArray(cat01?.CLASS);
-  console.log(`  cat01 の項目数: ${items.length}`);
   const hits = items.filter((c) => WORDS.some((w) => c["@name"].includes(w)));
-  console.log(`  住宅系の候補: ${hits.length} 件\n`);
+  console.log(
+    `  ${tableId}: ${title}（cat01 ${items.length} 項目、住宅系の候補 ${hits.length} 件）`,
+  );
+  /* 住宅系の無い分野は表題だけで済ませる */
+  if (hits.length === 0) return;
   for (const c of hits) {
     console.log(
       `    code=${c["@code"]}  ${c["@name"]}  単位=${c["@unit"] ?? "?"}`,
@@ -138,14 +163,17 @@ async function listHousingItems(): Promise<void> {
 
 async function searchHousingSurveyTables(): Promise<void> {
   console.log(`\n### 2. 住宅・土地統計調査の市区町村別の表を探す（代替）\n`);
+  /* 2023 年（令和 5 年）調査に絞る。平均家賃の表は「１か月当たり家賃
+     (借家)」の表題で、「10 区分別…借家数」（分布）とは別 */
   for (const word of [
-    "住宅・土地統計調査 市区町村 家賃",
-    "住宅・土地統計調査 市区町村 空き家",
+    "住宅・土地統計調査 市区町村 １か月当たり家賃",
+    "住宅・土地統計調査 市区町村 空き家率",
+    "住宅・土地統計調査 市区町村 住宅数 空き家数",
   ]) {
-    console.log(`  「${word}」`);
+    console.log(`  「${word}」（surveyYears=2023）`);
     const url =
       `${BASE}/getStatsList?appId=${encodeURIComponent(APP_ID!)}` +
-      `&searchWord=${encodeURIComponent(word)}&limit=20`;
+      `&searchWord=${encodeURIComponent(word)}&surveyYears=2023&limit=25`;
     const res = await fetch(url);
     if (!res.ok) {
       console.log(`    HTTP ${res.status}`);
@@ -173,7 +201,7 @@ async function searchHousingSurveyTables(): Promise<void> {
 async function main() {
   console.log("## 市区町村別の家賃と空き家率を e-Stat のどこで取るか\n");
   try {
-    await listHousingItems();
+    await scanMunicipalTables();
   } catch (e) {
     console.log(`  失敗: ${e instanceof Error ? e.message : String(e)}`);
   }
@@ -183,7 +211,7 @@ async function main() {
     console.log(`  失敗: ${e instanceof Error ? e.message : String(e)}`);
   }
   console.log(
-    "\n1 の候補に「1か月当たり家賃」と「空き家数」「住宅総数」があれば、" +
+    "\n1 の住宅系の表に「1か月当たり家賃」と「空き家数」「住宅総数」があれば、" +
       "富裕度と同じ表・同じ作りで取り込む。無ければ 2 の表を使う。",
   );
 }
