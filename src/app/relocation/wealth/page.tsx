@@ -1619,7 +1619,10 @@ export default function RegionalWealthPage() {
                 データインテリジェンス基盤
               </h2>
               <p className="text-xs text-stone-600 dark:text-stone-500 mb-4 leading-relaxed">
-                本システムは、占術モデルによる方位スコア（アストロカートグラフィ・九星気学）に加え、日本の最も信頼性が高い公的不動産データを統合し、各地域の「投資対効果（コスパ）」と「富裕度」をシミュレーションしています。
+                各地域の「投資対効果（コスパ）」と「富裕度」は、下記の公的データと、当サイト独自の占術モデルによる方位スコア（アストロカートグラフィ・九星気学）を組み合わせて算出しています。
+                <strong className="font-bold">
+                  {"占術モデルと算出方法は当サイトのもので、公的データの提供元はこれらに一切関与していません。"}
+                </strong>
               </p>
 
               <div className="space-y-3">
