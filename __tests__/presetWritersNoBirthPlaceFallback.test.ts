@@ -52,7 +52,62 @@ function coalescedBirthProps(source: string): string[] {
   return hits;
 }
 
+/**
+ * ホームのプロフィール設定は `??` ではなく、SolarTimeClock の state
+ * （初期値が東京駅）を**省略記法 `birthLat,` でそのまま**控えに入れて
+ * いた。こちらは object literal に birthLat / birthLon の省略記法が
+ * あれば落とす。正しい形は `...(birthPlaceOwned ? { birthLat, birthLon } : {})`
+ * で、これは spread なので拾わない。
+ */
+const OWNED_WRITER = "src/components/PersonalProfileConfig.tsx";
+
+function shorthandBirthProps(source: string): string[] {
+  const path = join(process.cwd(), source);
+  const sf = ts.createSourceFile(
+    path,
+    readFileSync(path, "utf8"),
+    ts.ScriptTarget.Latest,
+    true,
+    ts.ScriptKind.TSX,
+  );
+  const hits: string[] = [];
+  /* `...(birthPlaceOwned ? { birthLat, birthLon } : {})` の中の省略記法は
+     正しい形なので許す。条件が birthPlaceOwned で、その真の側の object
+     literal に居るものだけ */
+  const isOwnedGuarded = (node: ts.Node): boolean => {
+    const literal = node.parent;
+    const cond = literal?.parent;
+    return (
+      !!literal &&
+      ts.isObjectLiteralExpression(literal) &&
+      !!cond &&
+      ts.isConditionalExpression(cond) &&
+      cond.whenTrue === literal &&
+      cond.condition.getText(sf) === "birthPlaceOwned"
+    );
+  };
+  const visit = (node: ts.Node) => {
+    if (
+      ts.isShorthandPropertyAssignment(node) &&
+      GUARDED.has(node.name.text) &&
+      !isOwnedGuarded(node)
+    ) {
+      const { line } = sf.getLineAndCharacterOfPosition(node.getStart());
+      hits.push(`${source}:${line + 1} ${node.name.text}`);
+    }
+    ts.forEachChild(node, visit);
+  };
+  visit(sf);
+  return hits;
+}
+
 describe("控えを書く側は、入れていない出生地を既定値で埋めない", () => {
+  it(`${OWNED_WRITER} は birthLat/birthLon を省略記法で控えに入れない（birthPlaceOwned で条件付き）`, () => {
+    expect(shorthandBirthProps(OWNED_WRITER)).toEqual([]);
+    const page = readFileSync(join(process.cwd(), OWNED_WRITER), "utf8");
+    expect(page).toContain("birthPlaceOwned ? { birthLat, birthLon } : {}");
+  });
+
   for (const source of WRITERS) {
     it(`${source} に birthLat/birthLon の ?? 埋めが無い`, () => {
       expect(coalescedBirthProps(source)).toEqual([]);

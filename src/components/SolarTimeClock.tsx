@@ -3995,6 +3995,8 @@ export const SolarTimeClock = () => {
                 setBirthLon(v);
                 setBirthPlaceOwned(true);
               }}
+              /* 控えに出生地を書いてよいか（初期値の東京駅を書かない） */
+              birthPlaceOwned={birthPlaceOwned}
               baseLat={lat}
               setBaseLat={setLat}
               baseLon={lon}
