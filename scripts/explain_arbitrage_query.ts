@@ -61,6 +61,16 @@ async function explain(
   label: string,
   sql: string,
   params: SqlParam[],
+  /*
+    計画を全部出すか。既定は先頭 6 行（Limit と Sort まで）。
+
+    候補の取り出しは全部出す。先頭 6 行だけだと、その下の DISTINCT ON を
+    どう実行したかが見えない。2026-09-10 の run では半径 150km の走査が
+    Buffers: shared hit=1,652,197（52 万行に対して 165 万ページ）で、
+    名寄せの索引の並びで表全体をなめている疑いがあるが、先頭 6 行では
+    Sort の下が切れていて確かめられなかった。
+  */
+  fullPlan = false,
 ) {
   const started = Date.now();
   try {
@@ -71,7 +81,7 @@ async function explain(
     );
     const plan = r.rows.map((row) => row["QUERY PLAN"]);
     const exec = plan.find((l) => l.startsWith("Execution Time:")) ?? "";
-    const top = plan.slice(0, 6).join("\n");
+    const top = (fullPlan ? plan : plan.slice(0, 6)).join("\n");
     console.log(`\n===== ${label} =====`);
     console.log(exec || `(実測 ${Date.now() - started} ms)`);
     console.log(top);
@@ -196,6 +206,7 @@ async function main() {
       "候補の取り出し selectSql",
       selectSql(whereSql, DEDUPE, params.length + 1, "value"),
       [...params, LIMIT],
+      true,
     );
     await explain(
       pool,
