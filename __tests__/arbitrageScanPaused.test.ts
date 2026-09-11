@@ -48,8 +48,10 @@ describe("俯瞰で検索を止めているとき、その理由を出す", () =
     /* **打ち切りと同じ関数から引く。**以前は同じ 4 条件が 2 か所に
        並んでいて、片方だけ変えると「理由の無い 0 件」へ戻る作りだった。
        条件そのものは `shouldPauseScan` に 1 つだけ置く。 */
+    /* 2026-09-11 から、API 側の止め（行数の上限）も同じ派生値に合流する。
+       面積の条件そのものは今までどおり shouldPauseScan に 1 つだけ。 */
     expect(PAGE).toMatch(
-      /const scanPaused = shouldPauseScan\(\{ prefecture, radiusKm \}, mapBounds\);/,
+      /const scanPaused =\s*serverPaused \|\| shouldPauseScan\(\{ prefecture, radiusKm \}, mapBounds\);/,
     );
   });
 
@@ -75,5 +77,19 @@ describe("俯瞰で検索を止めているとき、その理由を出す", () =
        fetchData(true) は日付変更の呼び出しなので数えない */
     const forced = PAGE.match(/fetchData\([^)]*,\s*true\)/g) ?? [];
     expect(forced).toEqual(["fetchData(false, true)"]);
+  });
+
+  it("API が行数の上限で止めたときも、同じ札と同じ口で出す（2026-09-11）", () => {
+    /* 本番の実測で、面積の規則をすり抜けた radius=50 の走査が 25〜41 秒
+       かかっていた（30 万行超）。#1178 で API が行数を数えてから走らせる
+       ようにした。画面は force を送り、止めた応答（metadata.paused）を
+       面積の止めと同じ札に合流させる。前の一覧は消さない（面積で止めた
+       ときと同じ振る舞い）。 */
+    expect(PAGE).toMatch(/if \(force\) params\.append\("force", "true"\)/);
+    expect(PAGE).toMatch(/const serverPaused = metadata\?\.paused === true/);
+    expect(PAGE).toMatch(/serverPaused \|\| shouldPauseScan\(/);
+    expect(PAGE).toMatch(
+      /if \(json\.metadata\?\.paused !== true\) setData\(json\.properties \|\| \[\]\)/,
+    );
   });
 });
