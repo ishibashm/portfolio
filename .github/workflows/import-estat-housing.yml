@@ -1,0 +1,63 @@
+name: Import estat housing
+
+# 市区町村別の住宅の統計（家賃・空き家）を e-Stat から取り込む。
+#
+# 出どころは「統計でみる市区町村のすがた」Ｈ 居住（表 0000020108）。
+# 項目は探索（probe-estat-housing.yml、run 34649544727）で実物を見て
+# 決めた 5 つ（scripts/estatHousing.ts の HOUSING_ITEMS）。要求は 1 回で、
+# 市区町村ぶんを 1 度に取る。
+#
+# 住調は 5 年ごとなので定時起動は無い。次の調査（2028 年）が出たら
+# year を上げて手で回す。
+#
+# 規約: 政府統計の総合窓口の利用規約（CC BY 互換・商用可・出典と加工の
+# 明記）と API のクレジット表示（docs/improvement-backlog.md 26 節）。
+#
+# 書く表は municipality_housing_stats だけ。賃貸の巡回とは触る表が違う
+# ので、rental-properties-write の列には入れない（CLAUDE.md 3 節
+# 「待ち行列にワークフローを足すときは、触る表を見る」）。
+
+on:
+  workflow_dispatch:
+    inputs:
+      year:
+        description: "住宅・土地統計調査の調査年（2018 / 2023）"
+        required: true
+        default: "2023"
+
+concurrency:
+  group: municipality-housing-stats-write
+  cancel-in-progress: false
+
+jobs:
+  import:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci --legacy-peer-deps
+
+      - name: Create .env from Secret
+        env:
+          ENV_FILE_CONTENT: ${{ secrets.ENV_FILE }}
+          DATABASE_URL_OVERRIDE: ${{ secrets.DATABASE_URL_OVERRIDE }}
+        run: |
+          if [ -z "$ENV_FILE_CONTENT" ]; then
+            echo "::error::secrets.ENV_FILE is empty. DATABASE_URL / ESTAT_APP_ID are required."
+            exit 1
+          fi
+          echo "$ENV_FILE_CONTENT" > .env
+          bash scripts/apply-db-override.sh
+
+      - name: Import
+        env:
+          ESTAT_HOUSING_YEAR: ${{ inputs.year }}
+        run: npx tsx scripts/import_estat_housing.ts
