@@ -2493,7 +2493,7 @@ API のページを読める機会があれば全文を写す。
 | 表 | #1195（`municipality_housing_stats`） | **本番に適用済み**（dry-run 34650757307 → apply 34650818632。after の一覧に 24 kB） |
 | 取り込み | #1196（`estatHousing.ts` + テスト 5 件、`import_estat_housing.ts`）・#1197（`import-estat-housing.yml`） | **回した**（2026-09-11 23:11 UTC、run 34657021102、2023 年）。市区町村 **1,235** 件、うち 1 畳当たり家賃あり **991**、空き家率を出せる **1,235**。要求 1 回・8 秒。町村の一部は住調の対象外で 1,900 弱にはならない |
 | 口 | #1198（`lib/housingStatsDirections` + テスト 6 件、`/api/housing-stats/by-direction`）・#1200（入口のテスト 3 件） | マージ・deploy 済み |
-| 札 | #1199（`HousingStatsByDirection`。物件検索の購入モードで地価の札の隣） | マージ・deploy 済み。表が空のあいだは「統計のある市区町村がありませんでした」 |
+| 札 | #1199（`HousingStatsByDirection`。物件検索の地価の札の下。賃貸・購入のどちらでも出す。#1199 は購入の側にしか置いておらず、賃貸を選ぶと見えなかった） | マージ・deploy 済み。表が空のあいだは「統計のある市区町村がありませんでした」 |
 | 不具合 | #1193（富裕度の出典欄に API のクレジットが無かった） | マージ・deploy 済み。見張りは `estatApiCredit.test.ts` |
 
 **単位の決め。**「1 か月当たり家賃」の市区町村別の平均は e-Stat に無い
