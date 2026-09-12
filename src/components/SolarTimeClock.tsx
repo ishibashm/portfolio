@@ -3753,8 +3753,8 @@ export const SolarTimeClock = () => {
 
   if (!baseTime || !solarData)
     return (
-      <div className="min-h-screen flex items-center justify-center bg-stone-50 text-emerald-500 font-mono text-xs tracking-[0.3em] uppercase md:animate-pulse">
-        Initializing Tactical Systems...
+      <div className="min-h-screen flex items-center justify-center bg-stone-50 text-stone-500 text-sm tracking-widest">
+        読み込んでいます…
       </div>
     );
 
@@ -3774,16 +3774,16 @@ export const SolarTimeClock = () => {
           <div className="bg-white border-2 border-red-200 rounded-md p-3 md:p-4 shadow-[0_0_20px_rgba(239,68,68,0.2)] flex flex-col items-center text-center">
             <div className="flex items-center gap-2 mb-2">
               <span className="w-3 h-3 bg-red-500 rounded-full animate-ping"></span>
-              <h2 className="text-red-500 font-bold tracking-[0.2em] text-sm md:text-base uppercase">
-                Global Time Check Error
+              <h2 className="text-red-600 font-bold tracking-[0.1em] text-sm md:text-base">
+                いまは天中殺の期間です
               </h2>
             </div>
-            <p className="text-stone-600 text-xs md:text-sm font-mono leading-relaxed">
-              現在は
+            <p className="text-stone-600 text-xs md:text-sm leading-relaxed">
+              いまは
               <strong>「{isYearVoid ? "年の天中殺" : "月の天中殺"}」</strong>
-              期間です。
+              にあたります。
               <br className="hidden md:block" />
-              空間の吉凶に関わらず、時間構造にノイズが発生しているため、能動的な大きな移動・決断は推奨されません。
+              方位の吉凶とは別に、伝統的にこの期間の大きな移動や決断は避けるとされます。
             </p>
           </div>
         </div>
@@ -3794,25 +3794,26 @@ export const SolarTimeClock = () => {
           {/* このコンポーネントは頁（/relocation/dashboard。以前はトップページ）
               の中に埋め込まれており、ページの h1 は別にある。h1 を 2 つ置くと
               文書構造が壊れるので h2 にする。 */}
-          <h2 className="text-emerald-500 font-mono text-xl tracking-[0.2em] font-bold mb-2 uppercase drop-shadow-[0_0_10px_rgba(16,185,129,0.5)] flex items-center justify-center gap-3">
-            Bio-Location Simulator
+          {/* 以前は "Bio-Location Simulator" と「データサイエンス・
+              ダッシュボード」。サイトの言葉ではなく、計算の中身とも
+              合っていない（/about は「計算条件を整理する道具」）。 */}
+          <h2 className="text-stone-700 font-serif text-xl font-bold mb-2 flex items-center justify-center gap-3">
+            いまの方位と時刻
           </h2>
-          <p className="text-stone-500 text-xs sm:text-sm leading-relaxed max-w-2xl mx-auto mb-4">
-            引越し・移住・長期滞在など、人生の大きな決断において
-            <strong className="text-stone-700">「最適な移動地（方位）」</strong>
+          <p className="text-stone-500 text-xs sm:text-sm leading-relaxed max-w-[70ch] mx-auto mb-4">
+            引越しや長期の滞在で、出発地から見た
+            <strong className="text-stone-700">方位の吉凶</strong>
             と
-            <strong className="text-stone-700">
-              「最適なタイミング（時間）」
-            </strong>
-            を導き出すためのデータサイエンス・ダッシュボードです。
+            <strong className="text-stone-700">動き出す日時</strong>
+            を同じ画面で確かめるための道具です。計算条件を整理するもので、効果を保証するものではありません。
           </p>
           <button
             onClick={() => setShowHowItWorks(!showHowItWorks)}
-            className="text-[10px] text-emerald-700 hover:text-emerald-800 font-mono uppercase tracking-widest border border-emerald-200 bg-emerald-50 px-4 py-1.5 transition-colors"
+            className="text-[11px] text-emerald-700 hover:text-emerald-800 tracking-widest border border-emerald-200 bg-emerald-50 px-4 py-1.5 transition-colors"
           >
             {showHowItWorks
-              ? "[-] CLOSE ALGORITHM WORKFLOW"
-              : "[?] どのように引越し方位とタイミングを割り出しているのか（統合ワークフロー）"}
+              ? "[-] 閉じる"
+              : "[?] 方位と日時をどう決めているか（4 つの手順）"}
           </button>
         </div>
 
@@ -3823,7 +3824,7 @@ export const SolarTimeClock = () => {
               <div className="absolute top-0 left-0 w-1 h-full bg-emerald-500/50"></div>
               <h2 className="text-emerald-500 font-bold uppercase tracking-widest border-b border-stone-200 pb-2 mb-2 font-mono text-[11px] sm:text-xs flex items-center gap-2">
                 <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse"></span>
-                引越し・移住の「空間」と「時間」を統合する4つのステップ
+                方位と日時を決める 4 つの手順
               </h2>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -3832,7 +3833,7 @@ export const SolarTimeClock = () => {
                     STEP 1: 出発地とあなたの星を決める
                   </strong>
                   <p className="text-[10px] sm:text-xs">
-                    プロフィールのタブで、生年月日と現在の拠点（緯度・経度）を入力します。生年月日からあなたの「本命星」と、伝統的に大きな決断を避けるとされる「天中殺」の期間が決まります。現在地は、すべての方位を測る原点になります。
+                    プロフィールのタブで、生年月日と出発地を入れます（地名で探せます）。生年月日からあなたの「本命星」と、伝統的に大きな決断を避けるとされる「天中殺」の期間が決まります。出発地は、すべての方位を測る原点になります。
                   </p>
                 </div>
                 <div className="flex flex-col gap-2">
@@ -3840,7 +3841,7 @@ export const SolarTimeClock = () => {
                     STEP 2: 凶方位を除外する（年・月・日の重ね合わせ）
                   </strong>
                   <p className="text-[10px] sm:text-xs">
-                    目的地のタブで、現在地から見た八方位を評価します。年盤・月盤・日盤の 3 つを同時に重ね、五黄殺や本命殺などの凶方位が 1 つでも含まれる方向を赤（勧めない）として除外します。
+                    目的地のタブで、出発地から見た八方位を評価します。年盤・月盤・日盤の 3 つを同時に重ね、五黄殺や本命殺などの凶が 1 つでも含まれる方位を凶（赤）として外します。
                   </p>
                 </div>
                 <div className="flex flex-col gap-2">
@@ -3848,15 +3849,15 @@ export const SolarTimeClock = () => {
                     STEP 3: 相性の良い方位から目的地を決める
                   </strong>
                   <p className="text-[10px] sm:text-xs">
-                    凶の無い方位（青）の中から、さらに引越し先の九星とあなたの本命星が陰陽五行（木火土金水）で「相生」または「比和」の関係にある方位（緑）を探し、目的地を決めます。
+                    凶の無い方位（青）の中から、さらにその方位の星とあなたの本命星が陰陽五行（木火土金水）で「相生」または「比和」の関係にある方位（緑）を探し、目的地を決めます。
                   </p>
                 </div>
                 <div className="flex flex-col gap-2">
                   <strong className="text-stone-700 bg-white px-2 py-1 border border-stone-200 text-[10px] sm:text-[11px] font-mono">
-                    STEP 4: 最終出発日時の確定（真太陽時と吉門）
+                    STEP 4: 動き出す日時を決める（刻と天中殺）
                   </strong>
                   <p className="text-[10px] sm:text-xs">
-                    時期のタブで日ごとの一覧を開きます。目的地が決まったら「その方位が吉になる日」を探し、その日の中から天中殺の時間帯を避け、八門（生・休・開）に当たる 2 時間を「家を出る・契約印を押す」時間として選びます。
+                    タイミングのタブで、その日の 2 時間ごとの刻を見ます。天中殺の刻を避け、時盤の九星があなたの本命星と相生・比和にあたる刻を「家を出る・契約印を押す」時間として選びます。刻の境目は出発地の真太陽時で切ります。日ごとの一覧は「時期の分析」の頁へ。
                   </p>
                 </div>
               </div>
@@ -3902,9 +3903,9 @@ export const SolarTimeClock = () => {
             [
               { id: "portal", label: "ホーム" },
               { id: "profile", label: "1. プロフィール" },
-              { id: "destination", label: "2. 目的地/健康" },
+              { id: "destination", label: "2. 目的地と環境" },
               { id: "timing", label: "3. タイミング" },
-              { id: "consult", label: "4. 環境データ" },
+              { id: "consult", label: "4. 盤の内訳" },
               { id: "scorecard", label: "5. 総合スコア" },
               { id: "history", label: "6. 履歴" },
             ] as const
@@ -3969,7 +3970,7 @@ export const SolarTimeClock = () => {
                 <option value="BUSINESS">交渉・ビジネスを目的とした移動</option>
                 <option value="MIGRATION">引越し・長期移住・拠点の変更</option>
               </select>
-              <p className="text-[9px] text-stone-600 mt-3 leading-relaxed">
+              <p className="text-[10px] text-stone-600 mt-3 leading-relaxed">
                 「引越し」や「療養」など、目的に応じて方位の吉凶の重みづけ（どの層を重く見るか）が自動的に切り替わります。
               </p>
             </div>
