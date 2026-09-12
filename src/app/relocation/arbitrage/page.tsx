@@ -191,6 +191,7 @@ import {
   searchAreaForFilters,
   searchAreaFromUrl,
 } from "@/utils/arbitrageSearchArea";
+import { ActiveProfileBadge } from "@/components/profile/ActiveProfileBadge";
 
 /**
  * スキャナーで選べる都道府県と、選択時に地図を寄せる代表座標。
@@ -2451,6 +2452,9 @@ export default function ArbitrageScannerPage() {
             <p className="text-stone-600 mt-1 text-xs max-w-2xl font-normal">
               今住んでいる場所から見た方位の吉凶と、同じ地域の家賃相場からの割安度をあわせて並べます。凶方位の物件は下に送ります。
             </p>
+            {/* どのプロフィールで方位を出しているかを頭に 1 行（利用者の
+                指摘、2026-09-12。「このプロフィールでこの方位です」） */}
+            <ActiveProfileBadge purpose="方位の吉凶と物件の並び" className="mt-3" />
 
             {/* 市区町村ページ（/houi/area/*）には「この街を出発地にして
                 探す」でこちらへ来る導線があるのに、**戻る側が無い片道**
