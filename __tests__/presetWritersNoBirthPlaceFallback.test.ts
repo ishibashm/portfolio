@@ -102,10 +102,14 @@ function shorthandBirthProps(source: string): string[] {
 }
 
 describe("控えを書く側は、入れていない出生地を既定値で埋めない", () => {
-  it(`${OWNED_WRITER} は birthLat/birthLon を省略記法で控えに入れない（birthPlaceOwned で条件付き）`, () => {
+  it(`${OWNED_WRITER} は控えを書かない（切り替えは ProfilePicker、書くのは lib/activeProfile）`, () => {
+    /* 以前はここが控えの新規保存・更新を持ち、birthPlaceOwned で条件付きに
+       出生地を入れていた。2026-09-12 に保存の口を lib/activeProfile に
+       一本化し、この部品は書かなくなった。書く口が戻ってきたら落とす */
     expect(shorthandBirthProps(OWNED_WRITER)).toEqual([]);
     const page = readFileSync(join(process.cwd(), OWNED_WRITER), "utf8");
-    expect(page).toContain("birthPlaceOwned ? { birthLat, birthLon } : {}");
+    expect(page).not.toContain("saveProfilePresets(");
+    expect(page).toContain("<ProfilePicker");
   });
 
   for (const source of WRITERS) {
