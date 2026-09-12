@@ -43,6 +43,7 @@ import { todayInJapan } from "@/utils/japanDate";
 // 書き写しており、SolarTimeClock は any で受けていた。宣言が散って
 // いたため、存在しない項目名を読んでいるのに気付けなかった（#231）。
 import type { MunicipalityWealthItem } from "@/lib/municipalityWealth";
+import { ActiveProfileBadge } from "@/components/profile/ActiveProfileBadge";
 
 const LocationPickerInner = dynamic(
   () => import("@/components/LocationPickerInner"),
@@ -1042,6 +1043,9 @@ export default function RegionalWealthPage() {
               <p className="text-stone-600 mt-1 text-sm">
                 方位（磁気偏角の補正込み）と、地域ごとの所得・地価をあわせて、移住先の候補を比較します。
               </p>
+              {/* どのプロフィールで方位を出しているかを頭に 1 行（利用者の
+                  指摘、2026-09-12） */}
+              <ActiveProfileBadge purpose="方位と移住先の比較" className="mt-3" />
               <div className="flex flex-wrap gap-2 mt-2">
                 <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium bg-blue-50 dark:bg-blue-50 text-blue-700 dark:text-blue-600 border border-blue-200 dark:border-blue-800">
                   <span className="w-1.5 h-1.5 rounded-full bg-blue-500"></span>
