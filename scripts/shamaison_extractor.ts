@@ -444,7 +444,7 @@ async function main() {
       if (areasCrawled === 0) {
         /* 1 つも回らずに「完了」するのは、ほぼ再開位置の壊れ。 */
         console.warn(
-          "⚠️ 1 つも市区町村を回らずに終了した。再開位置か市区町村一覧を疑うこと。",
+          "::warning::1 つも市区町村を回らずに終了した。再開位置か市区町村一覧を疑うこと。",
         );
       } else {
         console.log(`✅ Completed. (${areasCrawled} areas)`);
