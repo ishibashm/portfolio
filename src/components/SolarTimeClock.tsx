@@ -1464,12 +1464,27 @@ export const SolarTimeClock = () => {
     }, 50);
   };
 
-  const birthSolarData = React.useMemo(() => {
-    if (!birthDate || !birthLon) return null;
+  /*
+    生年月日の瞬間。**日本時間として 1 度だけ読む。**
+
+    以前はここで `calculateSolarTime(d, birthLon)` を通し、出生地の経度差と
+    均時差ぶん（最大 ±40 分）ずらした瞬間から本命星・月命星・出生時の盤を
+    出していた。API（/api/nba・物件検索・timeline・履歴）と /houi は
+    `parseJapanDateTime` の瞬間をそのまま渡すので、**立春や節入りの前後
+    40 分に生まれた人は、この頁だけ別の本命星になっていた**（#1092〜#1099
+    で塞いだ「同じ人がホームとシミュレータで違う本命星を見ていた」と
+    同じ形。あちらはタイムゾーン、こちらは太陽時のずれ）。
+
+    真太陽時は時盤・八門のように「時刻そのもの」が要る表示にだけ使う
+    （utils/boardInstant の註）。生年月日の読み方は utils/japanDate の
+    `parseJapanDateTime` ただ 1 つ（CLAUDE.md 3 節）。
+    見張りは __tests__/honmeiStarNoSolarShift.test.ts。
+  */
+  const birthInstant = React.useMemo(() => {
+    if (!birthDate) return null;
     const d = parseJapanDateTime(birthDate);
-    if (isNaN(d.getTime())) return null;
-    return calculateSolarTime(d, birthLon);
-  }, [birthDate, birthLon]);
+    return isNaN(d.getTime()) ? null : d;
+  }, [birthDate]);
 
   const env = React.useMemo(() => {
     if (!solarData?.solarTime || isNaN(solarData.solarTime.getTime())) {
@@ -1514,46 +1529,22 @@ export const SolarTimeClock = () => {
     );
   }, [boardInstantMs, lon, physicalMonthMode, env]);
 
+  /* 出生時の盤（相談タブの「初期設定」と書き出し）。出生地が無ければ
+     出さない、という従来の条件は変えない。経度は時盤の計算にだけ効く。 */
   const birthEnv = React.useMemo(() => {
-    if (!birthSolarData || isNaN(birthSolarData.solarTime.getTime()))
-      return null;
-    return getCurrentEnvironmentalFrequencies(
-      birthSolarData.solarTime,
-      birthLon || 139.6917,
-    );
-  }, [birthSolarData, birthLon]);
+    if (!birthInstant || !birthLon) return null;
+    return getCurrentEnvironmentalFrequencies(birthInstant, birthLon);
+  }, [birthInstant, birthLon]);
 
-  const honmeiStar = React.useMemo(() => {
-    if (
-      birthSolarData?.solarTime &&
-      !isNaN(birthSolarData.solarTime.getTime())
-    ) {
-      return getHonmeiStar(birthSolarData.solarTime);
-    }
-    if (birthDate) {
-      const d = parseJapanDateTime(birthDate);
-      if (!isNaN(d.getTime())) {
-        return getHonmeiStar(d);
-      }
-    }
-    return null;
-  }, [birthDate, birthSolarData]);
+  const honmeiStar = React.useMemo(
+    () => (birthInstant ? getHonmeiStar(birthInstant) : null),
+    [birthInstant],
+  );
 
-  const getsuMeiStar = React.useMemo(() => {
-    if (
-      birthSolarData?.solarTime &&
-      !isNaN(birthSolarData.solarTime.getTime())
-    ) {
-      return getClassicalMonthStar(new Date(birthSolarData.solarTime));
-    }
-    if (birthDate) {
-      const d = parseJapanDateTime(birthDate);
-      if (!isNaN(d.getTime())) {
-        return getClassicalMonthStar(d);
-      }
-    }
-    return null;
-  }, [birthDate, birthSolarData]);
+  const getsuMeiStar = React.useMemo(
+    () => (birthInstant ? getClassicalMonthStar(birthInstant) : null),
+    [birthInstant],
+  );
 
   const {
     layers: rawLayers,
