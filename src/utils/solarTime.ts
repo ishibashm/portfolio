@@ -188,7 +188,14 @@ export function getKimonHour(solarDt: Date): {
   reading: string;
   note?: string;
 } {
-  const hour = solarDt.getHours();
+  /*
+    刻は**日本時間**で切る。`getHours()` は実行環境のタイムゾーンで
+    読むので、日本のブラウザでは JST と一致して見えないが、日本より
+    西の端末と CI（UTC）では 9 時間ずれた刻が出ていた（CLAUDE.md 3 節の
+    `Solar.fromDate` と同じ罠）。渡される solarDt は「真太陽時ぶん
+    ずらした瞬間」なので、その JST の時刻を読めば真太陽時の時刻になる。
+  */
+  const hour = getZonedDateTimeFields(solarDt, 9).hours;
 
   if (hour >= 23 || hour < 1) {
     return { name: "Rat", japanese: "子", reading: "Ne" };
@@ -257,9 +264,17 @@ export function getDailySolarSchedule(
   longitude: number,
   timezoneOffset: number = 9,
 ): KimonScheduleItem[] {
+  /*
+    日の頭と正午は**その標準時**で取る。以前は `setHours` で実行環境の
+    タイムゾーンの 0 時・12 時を使っていたので、日本のブラウザ以外
+    （日本より西の端末、CI の UTC）では 9 時間ずれた一覧になっていた。
+  */
+  const f = getZonedDateTimeFields(date, timezoneOffset);
+  const midnightMs =
+    Date.UTC(f.year, f.month - 1, f.day) - timezoneOffset * 3600000;
+
   // 1. Calculate correction at noon (representative for the day)
-  const noon = new Date(date);
-  noon.setHours(12, 0, 0, 0);
+  const noon = new Date(midnightMs + 12 * 3600000);
   const { totalCorrection } = calculateSolarTime(
     noon,
     longitude,
@@ -275,13 +290,10 @@ export function getDailySolarSchedule(
   const solarStartHours = [-1, 1, 3, 5, 7, 9, 11, 13, 15, 17, 19, 21];
 
   const schedule: KimonScheduleItem[] = []; // Initialize array
-  const baseDate = new Date(date);
-  baseDate.setHours(0, 0, 0, 0);
 
   solarStartHours.forEach((hour, i) => {
-    // Solar Start Date
-    const solarStart = new Date(baseDate);
-    solarStart.setHours(hour, 0, 0, 0);
+    // Solar Start Date（その標準時の 0 時からの時間）
+    const solarStart = new Date(midnightMs + hour * 3600000);
 
     // Standard Start = Solar Start - Correction
     const startStandard = new Date(
@@ -290,8 +302,7 @@ export function getDailySolarSchedule(
     const endStandard = new Date(startStandard.getTime() + 2 * 60 * 60 * 1000); // +2 hours
 
     // Get Name info
-    const midSolar = new Date(solarStart);
-    midSolar.setHours(midSolar.getHours() + 1); // Use getHours + 1 to handle date rollover safely
+    const midSolar = new Date(solarStart.getTime() + 3600000);
     const properties = getKimonHour(midSolar);
 
     // Calculate Hour Stem
