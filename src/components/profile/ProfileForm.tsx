@@ -13,6 +13,11 @@ import {
   type SaveResult,
 } from "@/lib/userSettings";
 import { readDestination, writeDestination } from "@/lib/destinationSetting";
+import {
+  DEFAULT_PROFILE_NAME,
+  findActiveProfile,
+  upsertActiveProfile,
+} from "@/lib/activeProfile";
 import { PLACE_LABEL_KEYS, profileCompletion } from "@/lib/profileCompletion";
 import {
   applyPresetEdits,
@@ -124,6 +129,16 @@ export function ProfileForm() {
     React.useState<ProfilePreset | null>(null);
   /* ?preset= で来たのに、その控えが見つからなかった */
   const [presetMissing, setPresetMissing] = React.useState(false);
+  /*
+    プロフィールの名前と、一覧の中での id。**保存すると一覧に入り、
+    使用中になる**（lib/activeProfile）。以前は /profile で登録しても
+    一覧には出ず、名前も付けられなかった（利用者の指摘、2026-09-12）。
+    activeId が null なら、まだ一覧に無い（保存で新しく作る）。
+  */
+  const [profileName, setProfileName] = React.useState(DEFAULT_PROFILE_NAME);
+  const [activeId, setActiveId] = React.useState<string | null>(null);
+  /* ?new=1。空の欄から新しいプロフィールを作る（家族ぶんなど） */
+  const [isNew, setIsNew] = React.useState(false);
 
   /* 開いたときに 1 度だけ読む。ログイン中はクラウドの値も取り込む */
   React.useEffect(() => {
@@ -137,15 +152,19 @@ export function ProfileForm() {
            set-state-in-effect に当たる（CLAUDE.md 4 節） */
         const params = new URLSearchParams(window.location.search);
         const presetId = params.get("preset");
+        const { presets } = await loadProfilePresets(
+          fetch,
+          window.localStorage,
+        );
+        if (!alive) return;
 
-        if (presetId) {
+        if (params.get("new") === "1") {
+          /* 新しいプロフィール。欄は空、名前も空（保存で付ける） */
+          setIsNew(true);
+          setProfileName("");
+        } else if (presetId) {
           /* 控えを直しに来た。欄には控えの値を入れる（自分の設定では
              ない）。保存も控えへ戻す */
-          const { presets } = await loadProfilePresets(
-            fetch,
-            window.localStorage,
-          );
-          if (!alive) return;
           const target = presets.find((p) => p.id === presetId);
           if (target) {
             setEditingPreset(target);
@@ -168,6 +187,19 @@ export function ProfileForm() {
           setBaseLon(settingNumber(settings, "base_lon") ?? null);
           setBirthLabel(settingString(settings, "birth_label") ?? "");
           setBaseLabel(settingString(settings, "base_label") ?? "");
+          /* いま使用中のプロフィール。一覧に無ければ既定の名前で、
+             保存のときに一覧へ入れる */
+          const active = findActiveProfile(presets, settings);
+          if (active) {
+            setProfileName(active.name);
+            setActiveId(active.id);
+            /* 端末に地名が無ければ、控えに入っている地名を使う（別の
+               端末で選んだ名前がここで読める） */
+            if (!settingString(settings, "base_label") && active.baseLabel)
+              setBaseLabel(active.baseLabel);
+            if (!settingString(settings, "birth_label") && active.birthLabel)
+              setBirthLabel(active.birthLabel);
+          }
         }
 
         const dest = readDestination();
@@ -250,9 +282,39 @@ export function ProfileForm() {
         [PLACE_LABEL_KEYS.birth_place]: birthLabel || undefined,
         [PLACE_LABEL_KEYS.base]: baseLabel || undefined,
       });
+      /* 一覧にも入れて使用中にする。設定は上で書いたので、ここでは
+         書かない（二重に POST しない）。出発地が無いときは一覧に
+         入れられない（控えの型が出発地を必須にしている）ので、設定
+         だけを書いて終える */
+      let name = profileName.trim() || DEFAULT_PROFILE_NAME;
+      if (baseLat !== null && baseLon !== null && birthDate) {
+        const hasBirthPlace = birthLat !== null && birthLon !== null;
+        const upserted = await upsertActiveProfile(
+          {
+            id: activeId ?? undefined,
+            name,
+            values: {
+              birthDate,
+              ...(hasBirthPlace ? { birthLat, birthLon } : {}),
+              baseLat,
+              baseLon,
+              ...(baseLabel ? { baseLabel } : {}),
+              ...(hasBirthPlace && birthLabel ? { birthLabel } : {}),
+            },
+          },
+          fetch,
+          window.localStorage,
+        );
+        name = upserted.profile.name;
+        setActiveId(upserted.profile.id);
+        setProfileName(name);
+        setIsNew(false);
+      }
       setSynced(result.synced);
       setStatus("saved");
-      setMessage(saveMessage(result));
+      setMessage(
+        `プロフィール「${name}」を保存し、使用中にしました。${saveMessage(result)}`,
+      );
     } catch {
       setStatus("error");
       setMessage(
@@ -338,6 +400,40 @@ export function ProfileForm() {
       )}
 
       <ProfileProgress completion={completion} />
+
+      {/* 0. プロフィールの名前 ---------------------------------------
+          保存すると、この名前で一覧（/account）に入り、使用中になる。
+          控えを直しているときは名前は /account で直す（ここでは出さない） */}
+      {!editingPreset && (
+        <fieldset className="rounded-2xl border border-stone-200 bg-white p-5">
+          <legend className="px-2 text-sm font-bold text-stone-800">
+            プロフィールの名前
+          </legend>
+          {isNew && (
+            <p className="mt-1 max-w-[70ch] text-[11px] leading-relaxed text-indigo-800">
+              {
+                "新しいプロフィールを作ります。保存すると、このプロフィールが使用中になります（前のプロフィールは一覧に残り、いつでも切り替えられます）。"
+              }
+            </p>
+          )}
+          <label className="mt-3 flex max-w-xl flex-col gap-1.5">
+            <span className="text-sm font-semibold text-stone-700">名前</span>
+            <input
+              type="text"
+              value={profileName}
+              onChange={(e) => setProfileName(e.target.value)}
+              placeholder={DEFAULT_PROFILE_NAME}
+              maxLength={100}
+              className="rounded-xl border border-stone-300 px-3 py-2.5 text-sm text-stone-800 focus:border-indigo-400 focus:outline-none"
+            />
+            <span className="text-[10px] leading-relaxed text-stone-500">
+              {
+                "家族ぶんを足したときに見分けるための名前です。空なら「自分」になります。判定には使いません。"
+              }
+            </span>
+          </label>
+        </fieldset>
+      )}
 
       {/* 1. 生まれたとき ------------------------------------------- */}
       <fieldset className="rounded-2xl border border-stone-200 bg-white p-5">
