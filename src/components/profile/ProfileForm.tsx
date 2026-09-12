@@ -355,7 +355,7 @@ export function ProfileForm() {
         <div className="rounded-2xl border border-amber-200 bg-amber-50 p-5 text-xs leading-relaxed text-amber-900">
           <p>
             <b className="text-sm">
-              保存済みプロフィール「{editingPreset.name}」を直しています。
+              プロフィール「{editingPreset.name}」を直しています。
             </b>
           </p>
           <p className="mt-1">
@@ -373,9 +373,7 @@ export function ProfileForm() {
       {presetMissing && (
         <div className="rounded-2xl border border-rose-200 bg-rose-50 p-5 text-xs leading-relaxed text-rose-800">
           <p>
-            <b className="text-sm">
-              その保存済みプロフィールが見つかりません。
-            </b>
+            <b className="text-sm">そのプロフィールが見つかりません。</b>
           </p>
           <p className="mt-1">
             {"消されたか、別のアカウントのものかもしれません。"}
@@ -619,12 +617,12 @@ export function ProfileForm() {
                 href="/account"
                 className="font-semibold text-indigo-600 underline"
               >
-                保存済みプロフィールの一覧へ戻る
+                プロフィールの一覧へ戻る
               </Link>
             </li>
             <li className="text-stone-600">
               {
-                "この控えを実際に使うには、設定バー（画面の上）の呼び出しから選んでください。"
+                "このプロフィールで判定するには、一覧で「使う」を押してください。"
               }
             </li>
           </ul>

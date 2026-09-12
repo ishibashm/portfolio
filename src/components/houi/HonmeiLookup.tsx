@@ -70,7 +70,7 @@ export function HonmeiLookup({ starNames, linkYear }: Props) {
     const next = fromConfig || stored;
     if (!next) {
       setNotice(
-        "プロフィールに生年月日が見つかりませんでした。物件スキャナーやホームの設定で保存すると、ここから呼び出せます。",
+        "プロフィールに生年月日が見つかりませんでした。「生年月日と場所を登録」で保存すると、ここから呼び出せます。",
       );
       return;
     }
