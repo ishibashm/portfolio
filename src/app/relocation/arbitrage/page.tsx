@@ -8,6 +8,7 @@ import {
   Filter,
   Search,
   RefreshCw,
+  MapPin,
 } from "lucide-react";
 import Link from "next/link";
 import { ArbitrageMap } from "@/components/ArbitrageMap";
@@ -2045,6 +2046,36 @@ export default function ArbitrageScannerPage() {
     [selectedId, safeData],
   );
 
+  /**
+   * 一覧で 1 件を選ぶ。**地図は動かさない。**
+   *
+   * 以前はここで地図の中心を選んだ物件へ寄せていた。地図が動くと
+   * moveend で表示範囲が頁へ返り、一覧が「その物件の周り」に絞り込み
+   * 直される。**押した瞬間に、読んでいた一覧が別物になっていた**
+   * （利用者の報告、2026-09-12。「物件を押すとその物件の場所に移動して
+   * 一覧が変わってしまう」）。
+   *
+   * 一覧で選ぶ = 強調して詳細を出すこと。**検索の範囲は変えない。**
+   * 地図へ寄せるのは詳細の「地図で見る」から、利用者が頼んだときだけ
+   * （SUUMO・HOME'S・Zillow と同じ切り分け）。
+   */
+  const selectProperty = useCallback((id: string) => setSelectedId(id), []);
+
+  /**
+   * 詳細の「地図で見る」。**利用者が頼んだときだけ**地図を動かす。
+   * 地図が動けば表示範囲も変わるので一覧も追うが、それは頼んだ結果。
+   * スマホは地図の面へ切り替える（動かしても見えないと意味が無い）。
+   */
+  const showOnMap = useCallback(
+    (spot: { lat: number | null; lon: number | null }) => {
+      if (spot.lat === null || spot.lon === null) return;
+      setMapFocusKind("spot");
+      setMapCenter([spot.lat, spot.lon]);
+      setMobilePane("map");
+    },
+    [],
+  );
+
   const propertiesInBounds = useMemo(() => {
     if (!mapBounds) return sortedTableData;
     return sortedTableData.filter((d) => {
@@ -2321,6 +2352,18 @@ export default function ArbitrageScannerPage() {
           <div className="text-[10px] text-stone-500 mt-0.5 break-words">
             {selectedProperty.address}
           </div>
+          {/* 地図を動かすのはここだけ。一覧で選んだだけでは動かさない
+              （動かすと表示範囲が変わって一覧が絞り込み直される） */}
+          {selectedProperty.lat !== null && selectedProperty.lon !== null && (
+            <button
+              type="button"
+              onClick={() => showOnMap(selectedProperty)}
+              className="mt-1.5 inline-flex cursor-pointer items-center gap-1 rounded-full border border-indigo-200 bg-indigo-50 px-3 py-1 text-[10px] font-bold text-indigo-700 transition-colors hover:bg-indigo-100"
+            >
+              <MapPin className="h-3 w-3" aria-hidden />
+              地図で見る
+            </button>
+          )}
         </div>
         {/* お気に入り。閉じるボタンの隣に置く。物件名のすぐ横だと、
             名前が長いときに折り返しの位置で動いて押しにくい。 */}
@@ -3886,14 +3929,7 @@ export default function ArbitrageScannerPage() {
                         topArbitrage.map((item) => (
                           <div
                             key={item.id}
-                            onClick={() => {
-                              setSelectedId(item.id);
-                              setMapFocusKind("spot");
-                              // 座標の無い行では中心を動かさない（型上 lat/lon は
-                              // nullable。null を渡すと leaflet 側で落ちる）
-                              if (item.lat !== null && item.lon !== null)
-                                setMapCenter([item.lat, item.lon]);
-                            }}
+                            onClick={() => selectProperty(item.id)}
                             className="p-2.5 rounded-xl bg-gray-50 dark:bg-white border border-gray-200/50 dark:border-stone-200 hover:border-indigo-200 cursor-pointer transition-colors shadow-2xs"
                           >
                             <div className="flex justify-between items-center">
@@ -3990,14 +4026,7 @@ export default function ArbitrageScannerPage() {
                         return (
                           <div
                             key={item.id}
-                            onClick={() => {
-                              setSelectedId(item.id);
-                              setMapFocusKind("spot");
-                              // 座標の無い行では中心を動かさない（型上 lat/lon は
-                              // nullable。null を渡すと leaflet 側で落ちる）
-                              if (item.lat !== null && item.lon !== null)
-                                setMapCenter([item.lat, item.lon]);
-                            }}
+                            onClick={() => selectProperty(item.id)}
                             className="p-3.5 rounded-2xl bg-white dark:bg-stone-50 border border-gray-200/60 dark:border-stone-200 hover:border-indigo-200 cursor-pointer transition-colors shadow-2xs relative group"
                           >
                             <div className="flex justify-between items-start gap-1 mb-1">
@@ -4135,12 +4164,7 @@ export default function ArbitrageScannerPage() {
                             return (
                               <tr
                                 key={item.id}
-                                onClick={() => {
-                                  setSelectedId(item.id);
-                                  setMapFocusKind("spot");
-                                  if (item.lat !== null && item.lon !== null)
-                                    setMapCenter([item.lat, item.lon]);
-                                }}
+                                onClick={() => selectProperty(item.id)}
                                 className="border-b border-gray-100 dark:border-stone-200 hover:bg-gray-50 dark:hover:bg-white/80 transition-colors cursor-pointer"
                               >
                                 <td className="px-2 py-3 text-center">
