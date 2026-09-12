@@ -20,6 +20,9 @@
  * 使っていない」と書いている。**計算を装った表示は出さない**方針に
  * 揃え、判定は五行の相生・相比だけにした。見張りは
  * __tests__/timePhaseNoPlaceholderGate.test.ts。
+ *
+ * 判定・表示から外したあと、`getHourlyHachimon` と `KimonScheduleItem` の
+ * `hachimon` も消した。旧実装はその見張りのテストに写してある。
  */
 
 import type { KimonScheduleItem } from "@/utils/solarTime";
@@ -182,21 +185,9 @@ export function evaluateTimePhase(
   };
 }
 
-/**
- * 八門の意味。画面に出す短い説明。
- *
- * **消す予定。**八門そのものが仮実装（上の註）なので、意味を添えて出す
- * ことがそのまま嘘になる。読み手（SolarTimeTable・HomePortal）を外して
- * から、`utils/kigaku` の `getHourlyHachimon` ごと消す。
- */
-export function getGateDescription(gateName: string): string {
-  if (gateName.includes("生")) return "新しい開始・生命力 (Start/Vitality)";
-  if (gateName.includes("休")) return "休息・回復・平和 (Rest/Peace)";
-  if (gateName.includes("開")) return "開拓・ビジネス・前進 (Open/Business)";
-  if (gateName.includes("傷")) return "挑戦・トラブル注意 (Challenge/Risk)";
-  if (gateName.includes("杜")) return "隠蔽・停滞・守り (Block/Defend)";
-  if (gateName.includes("景")) return "文書・契約・表面化 (Document/Reveal)";
-  if (gateName.includes("死")) return "停止・終わり・危険 (Stop/Danger)";
-  if (gateName.includes("驚")) return "驚き・議論・警戒 (Surprise/Argue)";
-  return "通常 (Normal)";
-}
+/*
+  `getGateDescription`（八門の意味の説明）はここにあったが消した。
+  八門そのものが仮実装だった（上の註）ので、意味を添えて出すことが
+  そのまま嘘になる。読み手（SolarTimeTable・HomePortal）を外し、
+  `utils/kigaku` の `getHourlyHachimon` と型の `hachimon` も消した。
+*/
