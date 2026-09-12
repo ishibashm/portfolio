@@ -504,6 +504,26 @@ const filterVectors = (
   return out;
 };
 
+/*
+  予報・ヒートマップの札と曜日は**日本時間**で読む。`getMonth()` /
+  `getDate()` / `getDay()` は端末のタイムゾーンで読むので、日本より西の
+  端末（時差が 9 時間より小さい所全部）では、正午 JST に固定した評価
+  時刻が前日の日付になり、日本時間の dateStr や暦と食い違う札が付く。
+  見張りは __tests__/forecastLabelsJst.test.ts。
+*/
+function jstMonthDayLabel(d: Date): string {
+  const f = getZonedDateTimeFields(d, 9);
+  return `${f.month}/${f.day}`;
+}
+function jstYearMonthLabel(d: Date): string {
+  const f = getZonedDateTimeFields(d, 9);
+  return `${f.year}-${String(f.month).padStart(2, "0")}`;
+}
+function jstWeekday(d: Date): number {
+  const f = getZonedDateTimeFields(d, 9);
+  return new Date(Date.UTC(f.year, f.month - 1, f.day)).getUTCDay();
+}
+
 export const SolarTimeClock = () => {
 
 
@@ -1529,6 +1549,19 @@ export const SolarTimeClock = () => {
     );
   }, [boardInstantMs, lon, physicalMonthMode, env]);
 
+  /*
+    画面（盤の内訳・タイミング）に出す盤。年盤・月盤・日盤・陰遁陽遁は
+    正午の盤（boardEnv。地図・スコアと同じ）、時盤と天体の黄経は現在
+    時刻（env）。以前は env をそのまま渡していたので、真太陽時に直した
+    瞬間が 0 時をまたぐ毎晩 23:25〜23:56 ごろから、この 2 つの画面だけ
+    翌日の日盤を出し、地図と食い違っていた。
+    見張りは __tests__/boardDisplayEnvAnchor.test.ts。
+  */
+  const displayEnv = React.useMemo(() => {
+    if (!env || !boardEnv) return env;
+    return { ...boardEnv, hourStar: env.hourStar, raw: env.raw };
+  }, [env, boardEnv]);
+
   /* 出生時の盤（相談タブの「初期設定」と書き出し）。出生地が無ければ
      出さない、という従来の条件は変えない。経度は時盤の計算にだけ効く。 */
   const birthEnv = React.useMemo(() => {
@@ -2188,7 +2221,9 @@ export const SolarTimeClock = () => {
 
       const dayModelData: (typeof result)[number] = {
         dateStr: toJapanDateString(testDateLocal),
-        weekday: testDateLocal.getDay(),
+        // 曜日も日本時間で。getDay() は端末のタイムゾーンで読むので、
+        // 日本より西の端末では dateStr（日本時間）と曜日が食い違う。
+        weekday: jstWeekday(testDateLocal),
         models: {
           classical: emptyScorecardDirectionCells(),
           physicalIndep: emptyScorecardDirectionCells(),
@@ -2957,7 +2992,7 @@ export const SolarTimeClock = () => {
         );
 
         data.push({
-          label: `${testDate.getMonth() + 1}/${testDate.getDate()}`,
+          label: jstMonthDayLabel(testDate),
           vectors: filteredV,
           rawVectorData: vectorData,
           tendoDir: vectorData.tendoDirection,
@@ -3049,7 +3084,7 @@ export const SolarTimeClock = () => {
           (testDate.getTime() - baseTime.getTime()) / 86400000,
         );
         data.push({
-          label: `${testDate.getFullYear()}-${String(testDate.getMonth() + 1).padStart(2, "0")}`,
+          label: jstYearMonthLabel(testDate),
           vectors: filteredV,
           rawVectorData: vectorData,
           tendoDir: vectorData.tendoDirection,
@@ -4090,7 +4125,7 @@ export const SolarTimeClock = () => {
               shieldCapacity={shieldCapacity}
               vectors={activeVectors || null}
               honmeiStar={honmeiStar}
-              envData={env}
+              envData={displayEnv}
               personalVoidZodiac={personalVoidZodiac}
               useClassical={useClassicalBoard}
               zodiacTimeBasis={zodiacTimeBasis}
@@ -4102,7 +4137,7 @@ export const SolarTimeClock = () => {
         {activeTab === "consult" && (
           <ConsultPanel
             honmeiStar={honmeiStar}
-            env={env}
+            env={displayEnv}
             birthEnv={birthEnv}
             layers={layers}
             physicalLayers={physicalLayers}
