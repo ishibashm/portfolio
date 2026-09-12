@@ -2264,11 +2264,20 @@ export const SolarTimeClock = () => {
   const scorecardHonmeiStarsForecast = React.useMemo(() => {
     if (!baseTime) return null;
     const dirs: ScorecardDirection[] = ["N", "NE", "E", "SE", "S", "SW", "W", "NW"];
-    const targetDateLocal = baseTime
-      ? new Date(baseTime.getTime() + timeOffsetDays * 86400000)
-      : new Date();
-    const testDateSolar = calculateSolarTime(targetDateLocal, lon || 139.6917);
-    const testDate = testDateSolar.solarTime;
+    /*
+      評価時刻は地図・30 日予報と同じ directionBoardInstant（その日の
+      日本時間の正午に太陽時の補正を足したもの）。以前はここだけ
+      「今この瞬間」を calculateSolarTime に通していた。forecastAnchor.test
+      が legacyForecastInstant として写している旧実装そのもので、節入りが
+      日中に来る日（2026 年なら立春・小暑・寒露・大雪）は、同じ画面の
+      地図と別の月盤で本命星ごとの表を出していた。30 日予報を直したとき
+      （#563 の系）にここが漏れていた。
+    */
+    const testDate = directionBoardInstant(
+      baseTime,
+      timeOffsetDays,
+      lon || 139.6917,
+    );
     const testEnv = getCurrentEnvironmentalFrequencies(
       testDate,
       lon || 139.6917,
@@ -2972,11 +2981,15 @@ export const SolarTimeClock = () => {
       // 15 日」を代表点にしていたため、節入り前の日に見ると、地図は前の節月
       // なのにヒートマップの先頭列は次の節月、という別々の盤を並べていた。
       // 実測（2026-08-07・立秋当日）で 8 方位中 5 方位が食い違っていた。
-      // 節月そのもので刻む。
-      const anchorBase = calculateSolarTime(
-        new Date(baseTime.getTime() + timeOffsetDays * 86400000),
+      // 節月そのもので刻む。起点は地図と同じ評価時刻（その日の日本時間の
+      // 正午に太陽時の補正を足したもの）。以前は「今この瞬間」の太陽時を
+      // 起点にしていて、節入りが日中に来る日は先頭の列だけ前の節月に
+      // 落ちていた（上の scorecardHonmeiStarsForecast と同じ漏れ）。
+      const anchorBase = directionBoardInstant(
+        baseTime,
+        timeOffsetDays,
         lon || 139.6917,
-      ).solarTime;
+      );
       for (let i = 0; i < 12; i++) {
         // 節月の平均は約 30.44 日。中ほどから進めて、その都度その節月の
         // 中ほどへ寄せ直すので、月の長短でずれない。
