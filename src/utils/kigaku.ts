@@ -68,16 +68,15 @@ export const KYUSEI = [
   },
 ];
 
-export const HACHIMON = [
-  { name: "Kyumon", japanese: "休門", meaning: "Rest", auspicious: true }, // 0
-  { name: "Seimon", japanese: "生門", meaning: "Life", auspicious: true }, // 1
-  { name: "Shomon", japanese: "傷門", meaning: "Wound", auspicious: false }, // 2
-  { name: "Tomon", japanese: "杜門", meaning: "Close", auspicious: false }, // 3
-  { name: "Keimon", japanese: "景門", meaning: "View", auspicious: true }, // 4
-  { name: "Shimon", japanese: "死門", meaning: "Death", auspicious: false }, // 5
-  { name: "Kyomon", japanese: "驚門", meaning: "Fear", auspicious: false }, // 6
-  { name: "Kaimon", japanese: "開門", meaning: "Open", auspicious: true }, // 7
-];
+/*
+  HACHIMON（八門）と getHourlyHachimon はここにあったが消した。
+  盤を組まず、月の陰陽で起点を変えて刻の順に 8 つの門を回すだけの
+  仮実装だった（ソースに "Placeholder Algorithm … Just returning a cycle
+  for visualization" とあった）。日干を変えても門が変わらない。
+  時間帯の判定（lib/timePhase）と表示から外したあと、実装ごと消した
+  （#1238〜）。旧実装は __tests__/timePhaseNoPlaceholderGate.test.ts に
+  写してある。戻すなら奇門遁甲の時盤を実際に組んでから。
+*/
 
 // --- Helper Functions ---
 
@@ -125,47 +124,6 @@ export function getHourlyKyusei(
   while (currentStar > 9) currentStar -= 9;
 
   return getKyusei(currentStar);
-}
-
-// Calculate Eight Gates (Hachimon) - Simplified "Hour Hachimon" Logic
-// Note: Verification needed for exact school. Using common "Kimon Tonkou" hourly layout based on "Evolving Hachimon".
-// However, simplified version often ties strictly to "Yang Dun / Yin Dun".
-// For now, we will return a Placeholder or a simple rotation if known.
-// User requested "Step 3" so we should try.
-//
-// Common Simple Rule (Kikoku Hachimon):
-// Winter Solstice to Summer Solstice (Yang):
-//   Kinoe/Tsuchinoe Days -> Rat Hour = Kyumon(Rest)
-//   ...
-// This requires Solar Term awareness (Yin/Yang Dun).
-// We will implement a simplified Yang/Yin toggler based on Month for now (Nov-Apr: Yang, May-Oct: Yin roughly).
-// *Ideally* use the exact Solstice dates from `solarTime.ts` if available.
-export function getHourlyHachimon(
-  dayJikkanIndex: number,
-  hourJunishiIndex: number,
-  month: number,
-): (typeof HACHIMON)[0] {
-  // Simple check for Yin/Yang Dun (Approximate: Winter Solstice ~Dec 21 to Summer Solstice ~Jun 21 is Yang)
-  // Month is 0-11? No, from Date object it is.
-  const isYangDun = month >= 11 || month <= 5; // Dec, Jan..May. (Roughly)
-
-  // This is highly school-dependent.
-  // Returning a safe placeholder logic or specifically "Kaimon" for specific auspicious hours derived from basic rules.
-  // For this implementation, we will return null or a specific pattern if we implement the full table.
-  //
-  // Let's implement a known simple cycle: "Gates move forward on Yang, backward on Yin"?
-  // Or Fixed Gates for Hours?
-  //
-  // Strategy: Ensure "Kyusei" is accurate. "Hachimon" will be marked as "Beta" or requires complex logic.
-  // We will simply ROTATE the gates based on the hour for dynamic visual,
-  // ensuring the user receives the "Time Board" feel, but warn it's a simulation.
-
-  // Placeholder Algorithm:
-  // Base Gate: Kaimon (Open) at Rat Hour for Yang Dun, Shimon (Death) for Yin Dun?
-  // Just returning a cycle for visualization.
-  const baseIndex = isYangDun ? 0 : 4;
-  const gateIndex = (baseIndex + hourJunishiIndex) % 8;
-  return HACHIMON[gateIndex];
 }
 
 // --- Board Calculation (Flying Star / Jyunko) ---
