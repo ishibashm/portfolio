@@ -1,4 +1,4 @@
-import { getHourlyKyusei, getHourlyHachimon, KYUSEI, HACHIMON } from "./kigaku";
+import { getHourlyKyusei, KYUSEI } from "./kigaku";
 import { Solar } from "lunar-javascript";
 
 /**
@@ -223,8 +223,13 @@ export interface KimonScheduleItem {
   note?: string;
   startStandard: Date;
   endStandard: Date;
-  kyusei: (typeof KYUSEI)[0]; // Added
-  hachimon: (typeof HACHIMON)[0]; // Added
+  kyusei: (typeof KYUSEI)[0];
+  /*
+    八門（hachimon）はここに無い。以前は getHourlyHachimon の値を持たせて
+    いたが、あれは盤を組まず刻の順に門を回すだけの仮実装だった（#1238）。
+    判定（lib/timePhase）と表示（SolarTimeTable・HomePortal）から外した
+    あと、型ごと消した。戻すなら奇門遁甲の時盤を実際に組んでから。
+  */
 }
 
 /**
@@ -277,10 +282,8 @@ export function getDailySolarSchedule(
     const stemIdx = getHourStemIndex(dayStemIdx, i);
     const stem = JIKKAN[stemIdx];
 
-    // Calculate Kyusei & Hachimon
-    // i corresponds to the branch index starting from Rat (0) to Boar (11)
+    // 時盤の九星。i は子(0)〜亥(11) の十二支の番号
     const kyusei = getHourlyKyusei(dayJunishiIdx, i);
-    const hachimon = getHourlyHachimon(dayStemIdx, i, date.getMonth());
 
     schedule.push({
       ...properties,
@@ -290,7 +293,6 @@ export function getDailySolarSchedule(
       startStandard,
       endStandard,
       kyusei,
-      hachimon,
     });
   });
 
