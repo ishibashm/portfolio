@@ -32,11 +32,13 @@ import {
   saveSettings,
   type Settings,
 } from "@/lib/userSettings";
+import { loadProfilePresets } from "@/lib/profilePresetSync";
 import {
-  loadProfilePresets,
-  saveProfilePresets,
-  type ProfilePreset,
-} from "@/lib/profilePresetSync";
+  DEFAULT_PROFILE_NAME,
+  findActiveProfile,
+  upsertActiveProfile,
+} from "@/lib/activeProfile";
+import { ProfilePicker } from "@/components/profile/ProfilePicker";
 
 function toNumber(value: unknown): number | null {
   return typeof value === "number" && Number.isFinite(value) ? value : null;
@@ -56,9 +58,8 @@ export function QuickProfileBar() {
     使う。**保存先は既存の 1 か所（lib/profilePresetSync）。**プロフィールの
     タブが使っているものと同じで、別に持たない。
   */
-  const [presets, setPresets] = useState<ProfilePreset[]>([]);
-  const [selectedId, setSelectedId] = useState("");
-  const [newName, setNewName] = useState("");
+  /* 控えの呼び出し・名前を付けて保存は ProfilePicker と /profile・/account に
+     一本化した（lib/activeProfile）。ここは入力欄だけを持つ。 */
 
   // 端末に入っている値を読む。クラウドとの突き合わせは下の
   // ダッシュボードが起動時にやるので、ここでは端末の値だけを見る
@@ -72,20 +73,6 @@ export function QuickProfileBar() {
     setBirthLon(toNumber(s.birth_lon));
   }, []);
 
-  useEffect(() => {
-    let alive = true;
-    loadProfilePresets(fetch, localStorage)
-      .then((r) => {
-        if (alive) setPresets(r.presets);
-      })
-      .catch(() => {
-        /* 読めなくても入力欄は使える。呼び出しの札が出ないだけ。 */
-      });
-    return () => {
-      alive = false;
-    };
-  }, []);
-
   /** いま画面に入っている 3 つを設定として書く。 */
   const persist = async () => {
     const patch: Settings = {};
@@ -97,6 +84,27 @@ export function QuickProfileBar() {
 
     const result = await saveSettings(patch);
     setSaved(result.synced ? "cloud" : "local");
+    /* 使用中のプロフィールにも同じ値を入れる（/profile と同じ経路）。
+       ここで直した値が一覧の「使用中」と食い違わないように */
+    if (birthDate && baseLat !== null && baseLon !== null) {
+      const { presets } = await loadProfilePresets(fetch, localStorage);
+      const active = findActiveProfile(presets, patch);
+      const hasBirthPlace = birthLat !== null && birthLon !== null;
+      await upsertActiveProfile(
+        {
+          id: active?.id,
+          name: active?.name ?? DEFAULT_PROFILE_NAME,
+          values: {
+            birthDate,
+            ...(hasBirthPlace ? { birthLat, birthLon } : {}),
+            baseLat,
+            baseLon,
+          },
+        },
+        fetch,
+        localStorage,
+      );
+    }
     // 同じ頁のダッシュボードと設定バーに読み直させる。
     window.dispatchEvent(new CustomEvent("metaphysical-config-updated"));
   };
@@ -105,108 +113,6 @@ export function QuickProfileBar() {
     setIsSaving(true);
     try {
       await persist();
-    } finally {
-      setIsSaving(false);
-    }
-  };
-
-  /** 保存済みを選ぶ。欄に入れて、そのまま設定にも反映する。 */
-  const handlePick = async (id: string) => {
-    setSelectedId(id);
-    const preset = presets.find((p) => p.id === id);
-    if (!preset) return;
-
-    setBirthDate(preset.birthDate);
-    setBaseLat(preset.baseLat);
-    setBaseLon(preset.baseLon);
-    setBirthLat(preset.birthLat ?? null);
-    setBirthLon(preset.birthLon ?? null);
-
-    setIsSaving(true);
-    try {
-      /* **出生地は「入っているときだけ」書く。**控えに無いものを既定値で
-         埋めると、`saveSettings` がクラウドへ同期して**サイト全体が
-         「出生地を登録済み」として読む。**以後、物件検索と移住先の比較は
-         その座標で生まれた人として天体ラインの加点を付ける。
-         入れていないなら「入れていない」まま運ぶ（CLAUDE.md 3 節）。 */
-      const patch: Settings = {
-        birth_date: preset.birthDate,
-        base_lat: preset.baseLat,
-        base_lon: preset.baseLon,
-      };
-      if (preset.birthLat !== undefined) patch.birth_lat = preset.birthLat;
-      if (preset.birthLon !== undefined) patch.birth_lon = preset.birthLon;
-
-      const result = await saveSettings(patch);
-      setSaved(result.synced ? "cloud" : "local");
-      window.dispatchEvent(new CustomEvent("metaphysical-config-updated"));
-    } finally {
-      setIsSaving(false);
-    }
-  };
-
-  /**
-   * いまの内容を保存済みに足す（名前があれば新規、選択中なら上書き）。
-   *
-   * 上書きのときは**元のプロフィールの他の項目を残す。**天中殺の上書きや
-   * 体調の基準値はプロフィールのタブで入れるもので、ここには出していない。
-   * 差し替えると、ここから保存するたびに消えてしまう。
-   */
-  const handleSavePreset = async () => {
-    const name = newName.trim();
-    const existing = presets.find((p) => p.id === selectedId);
-    if (!name && !existing) return;
-    if (baseLat === null || baseLon === null) return;
-
-    /* 出生地は**入っているときだけ**控えに入れる。以前は空なら東京駅で
-       埋めていた。控えを呼び出すとその座標が birth_lat としてクラウドに
-       書かれ、サイト全体が「出生地を登録済み」として読み、天体ラインの
-       加点が東京生まれとして付く（CLAUDE.md 3 節）。利用者の判断
-       （2026-09-11）:「出生地未入力の場合、天体ラインを出さない」。 */
-    const hasBirthPlace = birthLat !== null && birthLon !== null;
-    const values = {
-      birthDate,
-      ...(hasBirthPlace ? { birthLat, birthLon } : {}),
-      baseLat,
-      baseLon,
-    };
-
-    const next: ProfilePreset[] = name
-      ? [
-          ...presets,
-          {
-            // 連番で埋めると別の端末で作ったものと id が衝突して、
-            // 同期のときに互いを上書きする。時刻で一意にする
-            id:
-              typeof crypto !== "undefined" && crypto.randomUUID
-                ? crypto.randomUUID()
-                : `preset_${Date.now()}`,
-            name,
-            ...values,
-            createdAt: new Date().toISOString(),
-          },
-        ]
-      : presets.map((p) => {
-          if (p.id !== selectedId) return p;
-          const merged: ProfilePreset = { ...p, ...values };
-          /* 欄を空にして上書きしたなら、元の控えの出生地も落とす。
-             残すと「消したつもりの出生地」で加点が付き続ける */
-          if (!hasBirthPlace) {
-            delete merged.birthLat;
-            delete merged.birthLon;
-          }
-          return merged;
-        });
-
-    setIsSaving(true);
-    try {
-      setPresets(next);
-      // 保存は足す・上書きだけで、他所で足したものは残る。返ってきた
-      // 最新の一覧で差し替える（この部品の一覧は古いことがある）
-      const result = await saveProfilePresets(next, fetch, localStorage);
-      setPresets(result.presets);
-      await persist();
-      setNewName("");
     } finally {
       setIsSaving(false);
     }
@@ -250,56 +156,18 @@ export function QuickProfileBar() {
         </p>
       )}
 
-      {/*
-        保存済みプロフィールの呼び出しと保存。家族ぶんや、引越し前後の
-        設定を切り替えるために使う。1 つも無いうちは出さない（初めての人に
-        空の選択肢を見せない）。名前の欄はいつでも出しておく。
-      */}
-      <div className="flex flex-wrap items-end gap-3 mb-6 pb-5 border-b border-slate-200">
-        {presets.length > 0 && (
-          <label className="flex flex-col gap-1">
-            <span className="text-xs font-bold text-slate-700">
-              保存済みから選ぶ
-            </span>
-            <select
-              value={selectedId}
-              onChange={(e) => handlePick(e.target.value)}
-              className="bg-white border border-slate-300 rounded-xl px-3 py-2 text-sm text-slate-900 outline-none focus:border-rose-400 transition-colors"
-            >
-              <option value="">-- 選択 --</option>
-              {presets.map((p) => (
-                <option key={p.id} value={p.id}>
-                  {p.name}
-                </option>
-              ))}
-            </select>
-          </label>
-        )}
-        <label className="flex flex-col gap-1">
-          <span className="text-xs font-bold text-slate-700">
-            {selectedId && !newName ? "選んだものに上書き" : "名前を付けて保存"}
-          </span>
-          <input
-            value={newName}
-            onChange={(e) => setNewName(e.target.value)}
-            placeholder="例: 自分 / 家族"
-            className="bg-white border border-slate-300 rounded-xl px-3 py-2 text-sm text-slate-900 outline-none focus:border-rose-400 transition-colors"
-          />
-        </label>
-        <button
-          type="button"
-          onClick={handleSavePreset}
-          disabled={isSaving || (!newName.trim() && !selectedId)}
-          className="px-4 py-2 rounded-xl border border-slate-300 bg-white hover:bg-slate-50 disabled:opacity-40 text-sm font-bold text-slate-700 transition-colors"
-        >
-          プロフィールに保存
-        </button>
-        <p className="w-full text-xs text-slate-500 leading-relaxed">
-          {
-            "ログインしていれば他の端末からも呼び出せます。天中殺の上書きや体調の基準値は「1. プロフィール」タブで入れます（ここから保存しても消えません）。"
-          }
-        </p>
-      </div>
+      {/* 使用中のプロフィールの切り替え。作る・直す・消すは /profile と
+          /account（利用者の指摘、2026-09-12。独自の保存 UI をやめた） */}
+      <ProfilePicker
+        className="mb-6 pb-5 border-b border-slate-200"
+        onApplied={(p) => {
+          setBirthDate(p.birthDate);
+          setBaseLat(p.baseLat);
+          setBaseLon(p.baseLon);
+          setBirthLat(p.birthLat ?? null);
+          setBirthLon(p.birthLon ?? null);
+        }}
+      />
 
       {/*
         3 つ横並び。1700px の器に 1 列で積むと、入力欄が 1 本だけ横に
