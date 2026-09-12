@@ -109,6 +109,60 @@ jobs:
             echo "FAIL=1" >> "$GITHUB_ENV"
           fi
 
+      # 記事は content/blog/*.md に書くが、**本番が読むのは DB（BlogPost）。**
+      # blogStore は DB を先に見て、0 件のときだけ Markdown に落ちる。DB には
+      # 既に記事が入っているので、**master へマージしただけでは本番に出ない。**
+      # blog-import を apply で流して初めて出る。
+      #
+      # 2026-09-12 に実際に取りこぼした。記事を 2 本マージして「本番に出た」と
+      # 報告したが、/blog には出ていなかった（利用者の指摘で気付いた）。
+      # **手順の踏み忘れは「気をつける」では防げない。**ここで毎晩見る。
+      #
+      # 本番の RSS は DB 由来なので、そこに載っている slug と content/blog の
+      # slug を突き合わせれば、取り込み漏れがそのまま差として出る。
+      - name: Check merged articles are actually served (blog-import の流し忘れ)
+        run: |
+          set -uo pipefail
+          BASE="https://cloud-palette.com"
+          echo "## 記事の取り込み漏れ" | tee -a "$GITHUB_STEP_SUMMARY"
+
+          # リポジトリ側（下書きは除く）。
+          REPO=$(for f in content/blog/*.md; do
+            grep -q '^draft: true' "$f" || basename "$f" .md
+          done | sort -u)
+
+          # 本番側（RSS は lib/blogStore 経由 = DB を先に見る）。
+          LIVE=$(curl -sf --compressed "$BASE/blog/feed.xml" \
+            | grep -o '<link>[^<]*</link>' | sed 's/<[^>]*>//g' \
+            | { grep -o '/blog/[a-z0-9-]*$' || true; } | sed 's|/blog/||' | sort -u)
+
+          NR=$(echo "$REPO" | grep -c . || true)
+          NL=$(echo "$LIVE" | grep -c . || true)
+          echo "リポジトリ $NR 本 / 本番 $NL 本" | tee -a "$GITHUB_STEP_SUMMARY"
+
+          # 本番が 0 本なら RSS の取得そのものが失敗している。差を出しても
+          # 全記事が「未取り込み」に見えるだけなので、そこで止める。
+          if [ "$NL" -eq 0 ]; then
+            echo "::error::本番の feed.xml から slug を 1 つも拾えない" | tee -a "$GITHUB_STEP_SUMMARY"
+            echo "FAIL=1" >> "$GITHUB_ENV"
+          else
+            MISSING=$(comm -23 <(echo "$REPO") <(echo "$LIVE") | tr '\n' ' ')
+            if [ -n "${MISSING// /}" ]; then
+              echo "::error::マージ済みなのに本番に出ていない記事: $MISSING" | tee -a "$GITHUB_STEP_SUMMARY"
+              echo "blog-import.yml を mode=apply で流すこと（only に slug を並べる）。" | tee -a "$GITHUB_STEP_SUMMARY"
+              echo "FAIL=1" >> "$GITHUB_ENV"
+            else
+              echo "取り込み漏れなし" | tee -a "$GITHUB_STEP_SUMMARY"
+            fi
+
+            # 逆向き（本番にだけある記事）は**失敗にしない。**管理画面から
+            # 書いた記事は Markdown に無いのが正しい。実際に 1 本ある。
+            ONLY_LIVE=$(comm -13 <(echo "$REPO") <(echo "$LIVE") | tr '\n' ' ')
+            if [ -n "${ONLY_LIVE// /}" ]; then
+              echo "本番にだけある記事（管理画面で書いたもの）: $ONLY_LIVE" | tee -a "$GITHUB_STEP_SUMMARY"
+            fi
+          fi
+
       - name: Check noindex pages that the sitemap never covers
         run: |
           set -uo pipefail
