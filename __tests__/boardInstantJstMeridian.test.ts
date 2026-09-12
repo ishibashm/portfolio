@@ -1,8 +1,8 @@
 /**
  * 盤の太陽時は日本標準時（標準子午線 135 度）で出すこと。
  *
- * `calculateSolarTime` の既定は `Math.round(経度 / 15)` で、経度から
- * タイムゾーンを推測する。出生地が海外のときはそれでよいが、**日本の
+ * `calculateSolarTime` の既定は**当時** `Math.round(経度 / 15)` で、経度から
+ * タイムゾーンを推測していた（2026-09-12 に既定を 9 にした）。**日本の
  * 出発地に当てると端で 60 分ずれる。**推測が 9 になるのは経度
  * 127.5〜142.5 度のあいだだけで、その外は 8 か 10 になる。
  *
@@ -25,9 +25,20 @@ import { directionBoardInstant, forecastAnchorMs } from "@/utils/boardInstant";
 import { calculateSolarTime } from "@/utils/solarTime";
 import { getCurrentEnvironmentalFrequencies } from "@/utils/ephemerisEngine";
 
-/** 直す前の実装。tz を渡さず、経度から推測させていた。 */
+/**
+ * 直す前の実装。tz を渡さず、経度から推測させていた。
+ *
+ * 当時の `calculateSolarTime` の既定が `Math.round(経度 / 15)` だった。
+ * 既定はその後 9 に変えた（solarTimeJstClock.test.ts）ので、旧実装は
+ * 推測を**明示して**再現する。省略のままだと新実装と同じになり、
+ * この検査が空回りする。
+ */
 function legacyInstant(base: Date, lon: number): Date {
-  return calculateSolarTime(new Date(forecastAnchorMs(base)), lon).solarTime;
+  return calculateSolarTime(
+    new Date(forecastAnchorMs(base)),
+    lon,
+    Math.round(lon / 15),
+  ).solarTime;
 }
 
 /** 盤の 3 つの星だけを取り出す（時星は時刻ごとに動くので見ない）。 */
