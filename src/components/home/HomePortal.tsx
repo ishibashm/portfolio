@@ -22,11 +22,7 @@
 
 import React from "react";
 import Link from "next/link";
-import {
-  evaluateTimePhase,
-  getGateDescription,
-  isVoidTimeHour,
-} from "@/lib/timePhase";
+import { evaluateTimePhase, isVoidTimeHour } from "@/lib/timePhase";
 import { ratingForStatus } from "@/lib/verdictRating";
 import { directionLabelShort } from "@/lib/directionLabels";
 import type { KimonScheduleItem } from "@/utils/solarTime";
@@ -316,10 +312,6 @@ export default function HomePortal({
                     {hhmm(timing.current.item.startStandard)}–
                     {hhmm(timing.current.item.endStandard)}{" "}
                     {timing.current.item.japanese}の刻
-                  </div>
-                  <div className="text-[10px] text-stone-500 mt-0.5">
-                    {timing.current.item.hachimon.japanese}:{" "}
-                    {getGateDescription(timing.current.item.hachimon.japanese)}
                   </div>
                 </div>
               )}

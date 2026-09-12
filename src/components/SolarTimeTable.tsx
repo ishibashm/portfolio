@@ -10,7 +10,6 @@ import {
 import { KigakuBoard } from "./KigakuBoard";
 import {
   evaluateTimePhase as evaluateTimePhaseShared,
-  getGateDescription,
   isVoidTimeHour as isVoidTimeHourShared,
 } from "@/lib/timePhase";
 
@@ -186,8 +185,6 @@ export function SolarTimeTableComponent({
       "Stem Name",
       "Reading",
       "Nine Stars",
-      "Eight Gates",
-      "Auspicious Gate",
       "Void Time",
       "Standard Start",
       "Standard End",
@@ -207,9 +204,7 @@ export function SolarTimeTableComponent({
         item.stemName,
         item.reading,
         item.kyusei.japanese,
-        item.hachimon.japanese,
-        item.hachimon.auspicious ? "Yes" : "No",
-        isVoidTimeHour(item) ? "Yes (DANGER)" : "No",
+        isVoidTimeHour(item) ? "Yes" : "No",
         item.startStandard.toISOString(),
         item.endStandard.toISOString(),
         phase.isOptimal ? "Yes" : "No",
@@ -394,19 +389,19 @@ export function SolarTimeTableComponent({
         <div className="bg-emerald-50 border-l-2 border-emerald-500 p-2 md:p-3 shadow-inner">
           <div className="text-emerald-500 font-bold text-[10px] md:text-xs mb-1 tracking-widest uppercase flex items-center gap-2">
             <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse"></span>{" "}
-            [ ACTION WINDOW ] 実行推奨帯
+            動いてよい刻
           </div>
-          <p className="text-stone-500 text-[9px] md:text-[10px] leading-relaxed font-sans text-justify">
-            暦の上で吉が重なる時間帯です。伝統的に、重要な決断・交渉の開始・新しいことの着手・長距離移動（出発）に良いとされます。
+          <p className="text-stone-500 text-[10px] leading-relaxed font-sans text-justify">
+            時盤の九星の五行が、あなたの本命星と相生・比和にあたる刻です。伝統的に、決断や出発に向くとされます。
           </p>
         </div>
         <div className="bg-red-50 border-l-2 border-red-500 p-2 md:p-3 shadow-inner">
           <div className="text-red-500 font-bold text-[10px] md:text-xs mb-1 tracking-widest uppercase flex items-center gap-2">
             <span className="w-1.5 h-1.5 bg-red-500 rounded-full animate-pulse"></span>{" "}
-            [ VOID TIME ] 警告帯・行動凍結
+            天中殺の刻
           </div>
-          <p className="text-stone-500 text-[9px] md:text-[10px] leading-relaxed font-sans text-justify">
-            地球の磁気シールドが乱れ、ヒューマンエラーや通信障害が多発する魔の時間帯（天中殺）。大きな決断、新規の開始、および長距離の物理的移動を完全に停止し、ルーチンワークに徹してください。
+          <p className="text-stone-500 text-[10px] leading-relaxed font-sans text-justify">
+            あなたの天中殺（空亡）の十二支にあたる刻です。伝統的に、大きな決断や新しい始まり、長距離の移動は避けるとされます。体調や通信への影響を示すものではありません。
           </p>
         </div>
       </div>
@@ -414,8 +409,8 @@ export function SolarTimeTableComponent({
       <details className="mb-4 bg-white/80 border border-stone-200 text-[9px] font-mono text-stone-600 group">
         <summary className="p-2 cursor-pointer hover:bg-white/80 list-none flex items-center justify-between uppercase tracking-widest">
           <div className="flex items-center gap-2">
-            <span className="text-blue-500 blur-[0.5px]">◆</span> [ ALGORITHM ]
-            最適タイミングの分析ロジック
+            <span className="text-blue-500 blur-[0.5px]">◆</span>{" "}
+            刻の吉凶をどう決めているか
           </div>
           <span className="group-open:rotate-180 transition-transform">▼</span>
         </summary>
@@ -430,15 +425,16 @@ export function SolarTimeTableComponent({
           </div>
           <div className="p-2 border border-blue-200 rounded-xl">
             <strong className="text-blue-600 block mb-1 font-mono text-[9px]">
-              ◆ 2. 九星気学・環境方位
+              ◆ 2. 刻の切り方
             </strong>
             <p className="text-stone-500 text-justify">
-              均時差を補正した「真太陽時」でその日の境目を決め、その日・その場所の九星と八門の配置を出します。五行の相生・相剋と合わせて、あなたの本命星と相性のよい方位を判定します。
+              2
+              時間ごとの刻の境目は、出発地の経度と均時差を補正した真太陽時で切ります。その刻の九星（時盤）は日の十二支から出します。年盤・月盤・日盤は日本時間の暦日で決まり、ここでは動かしません。
             </p>
           </div>
           <div className="p-2 border border-red-200 rounded-xl">
             <strong className="text-red-600 block mb-1 font-mono text-[9px]">
-              ◆ 3. VOID TIME（天中殺）
+              ◆ 3. 天中殺の刻
             </strong>
             <p className="text-stone-500 text-justify">
               天中殺（空亡）は、四柱推命で干支の組み合わせが欠ける期間を指す考え方です。伝統的に、この期間の移動や大きな決断は避けるとされます。体調や自律神経への影響を示すものではありません。
@@ -446,10 +442,10 @@ export function SolarTimeTableComponent({
           </div>
           <div className="p-2 border border-emerald-200 rounded-xl">
             <strong className="text-emerald-600 block mb-1 font-mono text-[9px]">
-              ◆ 4. OPTIMAL TIME（吉門・相生）
+              ◆ 4. 動いてよい刻（相生・比和）
             </strong>
             <p className="text-stone-500 text-justify">
-              緑は、八門（生・休・開）が開き、かつ九星の属性とあなたの属性が「相生（または相比）」にあたる日です。九星気学で条件が最もそろう組み合わせとして扱っています。
+              緑は、時盤の九星の五行があなたの本命星と「相生」または「比和」にあたる刻です。以前は奇門遁甲の八門も条件にしていましたが、その八門は盤を組まず刻の順に門を回すだけの仮実装だったため、判定から外しました。
             </p>
           </div>
         </div>
@@ -516,30 +512,14 @@ export function SolarTimeTableComponent({
                 <div className="flex flex-row items-center gap-2 xl:gap-4 flex-1 min-w-0 text-[10px] sm:text-xs w-full">
                   {/* 九星 */}
                   <div className="flex flex-col w-1/3 xl:w-auto shrink-0">
-                    <span className="text-stone-600 text-[10px] uppercase tracking-widest leading-none mb-1">
-                      Star(周波数)
+                    <span className="text-stone-600 text-[10px] tracking-widest leading-none mb-1">
+                      時盤の九星
                     </span>
                     <span
                       className={`font-bold ${isVoid ? "text-red-800" : "text-stone-600"}`}
                     >
                       {item.kyusei.japanese}
                     </span>
-                  </div>
-                  {/* 八門 */}
-                  <div className="flex flex-col flex-1">
-                    <span className="text-stone-600 text-[10px] uppercase tracking-widest leading-none mb-1">
-                      Gate(ゲート)
-                    </span>
-                    <div className="flex items-center gap-1.5">
-                      <span
-                        className={`font-bold ${isVoid ? "text-red-800" : item.hachimon.auspicious ? "text-amber-600" : "text-stone-500"}`}
-                      >
-                        {item.hachimon.japanese}
-                      </span>
-                      <span className="text-[9px] text-stone-600 hidden sm:inline-block border-l border-stone-300 pl-1.5">
-                        {getGateDescription(item.hachimon.japanese)}
-                      </span>
-                    </div>
                   </div>
                 </div>
 
@@ -548,17 +528,17 @@ export function SolarTimeTableComponent({
                   <div className="flex-shrink-0">
                     {isVoid && (
                       <span className="bg-red-50 text-red-500 border border-red-500/80 px-2 py-0.5 font-bold text-[10px] tracking-widest md:animate-pulse shadow-md">
-                        [ NO-GO ] 凍結
+                        天中殺
                       </span>
                     )}
                     {!isVoid && isOptimal && (
                       <span className="bg-emerald-50 text-emerald-600 border border-emerald-500/80 px-2 py-0.5 font-bold text-[10px] tracking-widest drop-shadow-[0_0_8px_rgba(16,185,129,0.5)]">
-                        [ GO ] 推奨
+                        動いてよい
                       </span>
                     )}
                     {!isVoid && !isOptimal && (
-                      <span className="text-stone-600 text-[10px] font-mono tracking-widest border border-stone-200 px-2 py-0.5 bg-white/70">
-                        ROUTINE
+                      <span className="text-stone-600 text-[10px] tracking-widest border border-stone-200 px-2 py-0.5 bg-white/70">
+                        ふつう
                       </span>
                     )}
                   </div>
@@ -584,7 +564,7 @@ export function SolarTimeTableComponent({
                     {isVoid ? (
                       <div className="bg-red-50 p-2 border-l-2 border-red-200 text-justify">
                         <div className="font-mono text-red-500 uppercase tracking-widest mb-1 font-bold md:animate-pulse">
-                          ⚠ SYSTEM SHIELD OFFLINE
+                          天中殺の刻
                         </div>
                         <div className="text-red-400/80 leading-relaxed">
                           {item.japanese}
@@ -597,21 +577,21 @@ export function SolarTimeTableComponent({
                           <strong
                             className={`block mb-1 ${isOptimal ? "text-emerald-600" : "text-stone-600"}`}
                           >
-                            [ 空間評価 (Spatial Eval) ]
+                            五行の相性
                           </strong>
                           {isOptimal
-                            ? "あなたの本命星と方位の星（九星）の相性が良く、さらに八門が吉方位を示している時間帯です。伝統的には、決断や出発に向くとされます。"
-                            : "通常の時間帯です。極端なノイズはないため、日常の業務や生活に問題はありません。"}
+                            ? "あなたの本命星と、この刻の九星（時盤）の五行が相生・比和にあたります。伝統的には、決断や出発に向くとされます。"
+                            : "相生・比和ではない刻です。凶ではありません。"}
                         </div>
 
                         {evalPhase.myElement && evalPhase.timeElement && (
                           <div className="border-t border-stone-200 pt-2 mt-1">
                             <strong className="block mb-1 text-purple-600">
-                              [ 周波数共鳴解析 (Elemental Resonance) ]
+                              五行の内訳
                             </strong>
                             <div className="flex flex-wrap items-center gap-2 mb-1 font-mono">
                               <span className="bg-white border border-stone-200 px-1.5 py-0.5">
-                                My Base:{" "}
+                                本命星:{" "}
                                 <span
                                   className={`${evalPhase.myElement.color} font-bold`}
                                 >
@@ -621,7 +601,7 @@ export function SolarTimeTableComponent({
                               </span>
                               <span className="text-stone-600">×</span>
                               <span className="bg-white border border-stone-200 px-1.5 py-0.5">
-                                Time Qi:{" "}
+                                刻の九星:{" "}
                                 <span
                                   className={`${evalPhase.timeElement.color} font-bold`}
                                 >
@@ -631,11 +611,11 @@ export function SolarTimeTableComponent({
                               </span>
                             </div>
                             <div className="flex items-center gap-2">
-                              <span className="text-stone-600">Status:</span>
+                              <span className="text-stone-600">関係:</span>
                               <span
                                 className={`font-bold ${evalPhase.isFavorable ? "text-emerald-600" : "text-stone-500"}`}
                               >
-                                {evalPhase.relation || "関係性なし (中立)"}
+                                {evalPhase.relation || "中立"}
                               </span>
                             </div>
                             <p className="mt-1 text-[9px] opacity-80 text-justify">
@@ -645,23 +625,12 @@ export function SolarTimeTableComponent({
                         )}
                       </div>
                     )}
-                    <div className="bg-white/80 p-2 border border-stone-200">
-                      <strong className="block mb-1 text-stone-600">
-                        [ {item.hachimon.japanese}門の特性 (Gate Filter) ]
-                      </strong>
-                      <span className="text-amber-400/80">
-                        {getGateDescription(item.hachimon.japanese)}
-                      </span>
-                      <p className="mt-1 text-[9px] opacity-80 text-justify">
-                        奇門遁甲の八門による、時間帯ごとの吉凶の区分です。伝統的に、吉門は物事が運びやすく、凶門はトラブルが生じやすいとされます。
-                      </p>
-                    </div>
                   </div>
 
                   {/* Compass Matrix */}
                   <div className="bg-white/70 p-2 border border-stone-200 rounded-xl flex flex-col items-center justify-center min-w-[200px]">
-                    <div className="text-[9px] text-stone-600 uppercase tracking-widest mb-2 font-bold">
-                      Kigaku Compass Matrix
+                    <div className="text-[10px] text-stone-600 tracking-widest mb-2 font-bold">
+                      この刻の盤（時盤）
                     </div>
                     <div className="scale-75 origin-top opacity-90">
                       <KigakuBoard centerStar={item.kyusei} />
