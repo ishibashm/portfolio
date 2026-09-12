@@ -53,6 +53,12 @@ export interface ProfileStep {
   value?: string;
   /** 判定の道具が動くのに必須か（出生地は任意）。 */
   required: boolean;
+  /**
+   * 場所の段だけ。表示側（ProfileProgress）が地名に直すために持つ
+   * （lib/placeLabel。座標のまま出さない。利用者の指摘、2026-09-12）。
+   * value は従来どおり座標つきの文字列で、地名が引けないときの控え。
+   */
+  place?: { lat: number; lon: number; label?: string };
 }
 
 function hasPoint(settings: Settings, latKey: string, lonKey: string): boolean {
@@ -99,6 +105,19 @@ export function formatCoords(
  * 地名は**端末にだけ**残る（`SYNCED_FIELDS` に入れていないので、
  * `saveSettings` の同期には乗らない）。別の端末では座標だけになる。
  */
+function placeOf(
+  settings: Settings,
+  latKey: string,
+  lonKey: string,
+  labelKey: string,
+): ProfileStep["place"] {
+  const lat = settingNumber(settings, latKey);
+  const lon = settingNumber(settings, lonKey);
+  if (lat === undefined || lon === undefined) return undefined;
+  const label = settingString(settings, labelKey);
+  return { lat, lon, ...(label ? { label } : {}) };
+}
+
 function pointValue(
   settings: Settings,
   latKey: string,
@@ -129,6 +148,7 @@ export function profileSteps(settings: Settings): ProfileStep[] {
       label: "いま住んでいる場所",
       done: hasPoint(settings, "base_lat", "base_lon"),
       value: pointValue(settings, "base_lat", "base_lon", "base_label"),
+      place: placeOf(settings, "base_lat", "base_lon", "base_label"),
       need: "どちらの方位に動くのかが決まりません。物件検索の並びにも使います。",
       required: true,
     },
@@ -137,6 +157,7 @@ export function profileSteps(settings: Settings): ProfileStep[] {
       label: "出生地",
       done: hasPoint(settings, "birth_lat", "birth_lon"),
       value: pointValue(settings, "birth_lat", "birth_lon", "birth_label"),
+      place: placeOf(settings, "birth_lat", "birth_lon", "birth_label"),
       need: "八宅（本命卦）と出生時の盤が出せません。無くても方位の判定は動きます。",
       required: false,
     },

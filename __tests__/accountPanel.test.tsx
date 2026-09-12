@@ -86,8 +86,13 @@ describe("AccountPanel", () => {
     await waitFor(() =>
       expect(screen.getByText("1990-01-02")).toBeInTheDocument(),
     );
-    expect(screen.getByText("北緯 35.681 / 東経 139.767")).toBeInTheDocument();
-    expect(screen.getByText("北緯 34.694 / 東経 135.502")).toBeInTheDocument();
+    /* 場所は座標ではなく地名（利用者の指摘、2026-09-12）。端末に地名が
+       無いので最寄りの市区町村「付近」。引けるまでは座標が出ている */
+    await waitFor(() =>
+      expect(screen.getByText("東京都千代田区 付近")).toBeInTheDocument(),
+    );
+    expect(screen.getByText("大阪府大阪市北区 付近")).toBeInTheDocument();
+    expect(screen.queryByText("北緯 35.681 / 東経 139.767")).toBeNull();
   });
 
   it("目的地を出す。端末にだけ残ることも添える", async () => {
