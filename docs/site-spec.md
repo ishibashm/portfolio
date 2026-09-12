@@ -42,6 +42,7 @@ X 閲覧・研究レポートが同居しており、17 ページ／47 API の�
 | どこへ | `/houi`                 | 本命星と吉方位を調べる   | ISR（60 秒） |
 | いつ   | `/relocation/timing`    | 引越し時期を分析する     | クライアント |
 | いつ   | `/calendar`             | 引越しの日取りを選ぶ     | 静的         |
+| いつ   | `/relocation/dashboard` | 今日の方位と時刻を確かめる | クライアント |
 | いくら | `/relocation/market`    | 家賃相場を分析する       | クライアント |
 | いくら | `/relocation/purchase`  | 購入の相場を分析する     | クライアント |
 | いくら | `/relocation/appraisal` | 検討中の物件を査定する   | クライアント |
