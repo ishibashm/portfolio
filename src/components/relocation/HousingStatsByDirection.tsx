@@ -81,7 +81,11 @@ export function HousingStatsByDirection({
     error: string | null;
   } | null>(null);
 
-  const effectiveRadius = radiusKm ?? 150;
+  /* 全国モード（null）は API の上限まで。150 に落としていたが、「全国」を
+     選んだのに 150km で切られていて、props の註（500km）とも食い違って
+     いた。TransactionsPanel が null → 自分の上限（300）にしているのと
+     同じ形にそろえる。 */
+  const effectiveRadius = radiusKm ?? 500;
   const requestKey = `${lat},${lon},${effectiveRadius}`;
   const data = result?.key === requestKey ? result.data : null;
   const error = result?.key === requestKey ? result.error : null;
