@@ -99,15 +99,12 @@ export function BioMagneticDashboard({
         <div className="flex items-center gap-2 mb-4 relative z-10 border-b border-stone-200 pb-2">
           <Radio size={14} className="text-emerald-500 md:animate-pulse" />
           <h2 className="text-[10px] uppercase font-mono tracking-widest text-stone-600 font-bold">
-            Environmental Telemetry{" "}
-            <span className="text-stone-600 font-normal">
-              / 外部環境パラメータ
-            </span>
+            外部環境の実測値
           </h2>
           <div className="ml-auto flex items-center gap-1">
             <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse"></span>
             <span className="text-[9px] text-emerald-500 font-mono tracking-widest">
-              LIVE DATA
+              実測
             </span>
           </div>
         </div>
@@ -116,7 +113,7 @@ export function BioMagneticDashboard({
           {/* KP Index Circular Gauge */}
           <div className="flex flex-col p-3 bg-white/70 border border-stone-200 rounded-sm relative overflow-hidden">
             <span className="text-[10px] text-stone-600 font-bold uppercase tracking-wider mb-2 flex items-center gap-1">
-              <Orbit size={10} className="text-stone-600" /> KP-INDEX (NOAA)
+              <Orbit size={10} className="text-stone-600" /> 地磁気 Kp（NOAA）
             </span>
             <div className="flex items-center justify-between">
               <div className="relative w-14 h-14">
@@ -171,7 +168,7 @@ export function BioMagneticDashboard({
           {/* XRAY FLUX Linear Gauge */}
           <div className="flex flex-col p-3 bg-white/70 border border-stone-200 rounded-sm relative overflow-hidden">
             <span className="text-[10px] text-stone-600 font-bold uppercase tracking-wider mb-2 flex items-center gap-1">
-              <Zap size={10} className="text-stone-600" /> X-RAY FLUX
+              <Zap size={10} className="text-stone-600" /> 太陽 X 線
             </span>
             <div className="flex flex-col grow justify-center gap-2">
               <div
@@ -200,7 +197,7 @@ export function BioMagneticDashboard({
             <div className="flex items-center gap-1.5 mb-2">
               <Waves size={12} className="text-sky-600" />
               <span className="text-[9px] text-sky-500/80 font-bold uppercase tracking-wider">
-                SURFACE PRESSURE (3H DELTA)
+                地上気圧（3 時間の変化）
               </span>
             </div>
             <div className="grid grid-cols-3 gap-1">
@@ -257,7 +254,7 @@ export function BioMagneticDashboard({
               <div className="flex items-center gap-1.5">
                 <Compass size={12} className="text-emerald-600" />
                 <span className="text-[9px] text-emerald-500/80 font-bold uppercase tracking-wider">
-                  LOCAL GEOMAGNETICS (WMM2020)
+                  地磁気（WMM）
                 </span>
               </div>
               <span className="text-[9px] text-stone-600 px-1 py-0.5 bg-white rounded-sm">

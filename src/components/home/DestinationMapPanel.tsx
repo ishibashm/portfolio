@@ -35,6 +35,7 @@ import { PlaceInput } from "@/components/relocation/PlaceInput";
 import { nearestMunicipality, nearestPlaceLabel } from "@/lib/nearestPlace";
 import type { Layers } from "./ConsultPanel";
 import type { HeatmapColumn, TrendCell } from "../SolarTimeClock";
+import { getZonedDateTimeFields } from "@/utils/solarTime";
 
 /**
  * 地図と地点選択。移動元（SolarTimeClock）と同じく、描画されるまで
@@ -136,6 +137,16 @@ export interface DestinationMapPanelProps {
       hazard: boolean;
     }>
   >;
+}
+
+/* 日付入力の値（YYYY-MM-DD）と「表示中」の札は日本時間の暦日で作る。 */
+function jstDateInputValue(d: Date): string {
+  const f = getZonedDateTimeFields(d, 9);
+  return `${f.year}-${String(f.month).padStart(2, "0")}-${String(f.day).padStart(2, "0")}`;
+}
+function jstYearMonthLabel(d: Date): string {
+  const f = getZonedDateTimeFields(d, 9);
+  return `${f.year}年${f.month}月`;
 }
 
 export default function DestinationMapPanel({
@@ -257,10 +268,10 @@ export default function DestinationMapPanel({
                 }
                 className="bg-transparent text-emerald-600 font-bold text-[10px] outline-none cursor-pointer text-right"
               >
-                <option value="DEFAULT">DEFAULT (通常行動)</option>
-                <option value="REST">REST (回復・静養)</option>
-                <option value="BUSINESS">BUSINESS (事業・拡張)</option>
-                <option value="MIGRATION">MIGRATION (引越し・長期滞在)</option>
+                <option value="DEFAULT">通常の外出</option>
+                <option value="REST">回復・静養</option>
+                <option value="BUSINESS">交渉・ビジネス</option>
+                <option value="MIGRATION">引越し・長期滞在</option>
               </select>
             </div>
 
@@ -283,16 +294,18 @@ export default function DestinationMapPanel({
                 </button>
                 <input
                   type="date"
-                  value={`${evalDate.getFullYear()}-${String(evalDate.getMonth() + 1).padStart(2, "0")}-${String(evalDate.getDate()).padStart(2, "0")}`}
+                  value={jstDateInputValue(evalDate)}
                   onChange={(e) => {
                     if (!e.target.value) return;
-                    const selectedDate = new Date(e.target.value);
-                    const base = baseTime || new Date();
-                    selectedDate.setHours(12, 0, 0, 0);
-                    const baseCopy = new Date(base.getTime());
-                    baseCopy.setHours(12, 0, 0, 0);
+                    /* 日の差は日本時間の暦日で数える。以前は setHours(12) で
+                       端末のタイムゾーンの正午どうしを引いていたので、日本より
+                       西の端末では選んだ日の 1 日前が評価日になった。 */
+                    const [y, m, d] = e.target.value.split("-").map(Number);
+                    const b = getZonedDateTimeFields(baseTime || new Date(), 9);
                     const diffDays = Math.round(
-                      (selectedDate.getTime() - baseCopy.getTime()) / 86400000,
+                      (Date.UTC(y, m - 1, d) -
+                        Date.UTC(b.year, b.month - 1, b.day)) /
+                        86400000,
                     );
                     setTimeOffsetDays(diffDays);
                   }}
@@ -315,10 +328,10 @@ export default function DestinationMapPanel({
                   disabled={isPlaying}
                   className="bg-transparent text-stone-500 text-[10px] font-mono outline-none cursor-pointer"
                 >
-                  <option value={1}>1D/tick</option>
-                  <option value={7}>1W/tick</option>
-                  <option value={30}>1M/tick</option>
-                  <option value={365}>1Y/tick</option>
+                  <option value={1}>1 日ずつ</option>
+                  <option value={7}>1 週ずつ</option>
+                  <option value={30}>1 か月ずつ</option>
+                  <option value={365}>1 年ずつ</option>
                 </select>
               </div>
               <div className="flex justify-end gap-1 flex-wrap items-center">
@@ -572,7 +585,7 @@ export default function DestinationMapPanel({
                       </span>
                     )}
                   </div>
-                  <span className="text-[10px] opacity-70">TARGET EVAL</span>
+                  <span className="text-[10px] opacity-70">目的地の判定</span>
                 </div>
               )}
             </div>
@@ -894,7 +907,7 @@ export default function DestinationMapPanel({
                   <span>
                     📅 表示中:{" "}
                     <strong className="text-rose-600 font-bold">
-                      {evalDate.getFullYear()}年{evalDate.getMonth() + 1}月
+                      {jstYearMonthLabel(evalDate)}
                     </strong>
                   </span>
                   <span className="text-stone-300">|</span>
@@ -1294,8 +1307,8 @@ export default function DestinationMapPanel({
                       </div>
                       <p className="text-[10px] leading-relaxed text-amber-800">
                         この時期、<strong>{selectedTrendCell.dir} 方位</strong>{" "}
-                        には暦上の最高吉神「天道」が回座しています。天道の強力な吉パワーにより、本命殺や月命殺等の個人の凶作用が相殺・補正され、総合判定として
-                        <strong>大吉（OPTIMAL）</strong>へ昇格評価されています。
+                        には天道が回座しています。伝統的に、天道は本命殺・月命殺などの個人の凶を打ち消すとされ、このサイトの総合判定でも
+                        <strong>大吉</strong>に上げています。
                       </p>
                     </div>
                   )}
@@ -1305,7 +1318,7 @@ export default function DestinationMapPanel({
                       レイヤー（層）別判定ブレイクダウン
                     </div>
                     <div className="flex justify-between text-[11px]">
-                      <span className="text-stone-600">年盤 (Year):</span>
+                      <span className="text-stone-600">年盤</span>
                       <span className="font-semibold text-stone-700">
                         {selectedTrendCell.raw?.yearLayer?.[
                           selectedTrendCell.dir
@@ -1313,7 +1326,7 @@ export default function DestinationMapPanel({
                       </span>
                     </div>
                     <div className="flex justify-between text-[11px]">
-                      <span className="text-stone-600">月盤 (Month):</span>
+                      <span className="text-stone-600">月盤</span>
                       <span className="font-semibold text-stone-700">
                         {selectedTrendCell.raw?.monthLayer?.[
                           selectedTrendCell.dir
@@ -1321,7 +1334,7 @@ export default function DestinationMapPanel({
                       </span>
                     </div>
                     <div className="flex justify-between text-[11px]">
-                      <span className="text-stone-600">日盤 (Day):</span>
+                      <span className="text-stone-600">日盤</span>
                       <span className="font-semibold text-stone-700">
                         {selectedTrendCell.raw?.dayLayer?.[
                           selectedTrendCell.dir
@@ -1604,22 +1617,22 @@ export default function DestinationMapPanel({
             <span className="text-emerald-500 group-open:rotate-90 transition-transform">
               ▶
             </span>
-            [ SYSTEM MANUAL ] 判定基準とモデル・ゾーンの仕様
+            判定の決まり（2 つの盤と方位の区分）
           </summary>
           <div className="mt-4 text-xs sm:text-sm text-stone-600 font-mono leading-relaxed space-y-6 cursor-text">
             {/* Model Differences */}
             <div className="space-y-2">
               <h3 className="text-emerald-600 font-bold border-b border-stone-200 pb-1">
-                ■ 演算モデルの違い (PHYSICAL vs CLASSICAL)
+                ■ 2 つの盤の違い（古典／物理）
               </h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
                 <div className="bg-white/80 p-3 border-l-2 border-emerald-500">
                   <div className="text-emerald-500 font-bold mb-1">
-                    PHYSICAL MODEL (天体位相・物理基準)
+                    物理の盤（天体の位置から）
                   </div>
                   <p className="text-stone-500 text-[10px] sm:text-xs">
-                    天体の実際の位置（Swiss
-                    Ephemeris）から方位を割り当てます。木星の黄経や太陽・月の位置を使うため、暦の区切りではなく天体の動きに沿って変わります。
+                    天体の実際の位置（astronomy-engine の VSOP87
+                    による天体暦）から方位を割り当てます。木星の黄経や太陽・月の位置を使うため、暦の区切りではなく天体の動きに沿って変わります。
                     <br />
                     <br />
                     <span className="text-stone-600">
@@ -1630,14 +1643,15 @@ export default function DestinationMapPanel({
                 </div>
                 <div className="bg-white/80 p-3 border-l-2 border-zinc-500">
                   <div className="text-stone-500 font-bold mb-1">
-                    CLASSICAL MODEL (節切り・暦基準)
+                    古典の盤（節入りの暦から）
                   </div>
                   <p className="text-stone-500 text-[10px] sm:text-xs">
-                    伝統的な九星気学や東洋占星術のカレンダーを使用。「立春」などの二十四節気を基準とし、過去数千年の統計データや解釈と完全に一致するルールベースのモデルです。
+                    伝統的な九星気学の暦を使います。立春などの二十四節気を区切りにする、規則どおりの盤です。統計に基づくものではありません。
                     <br />
                     <br />
                     <span className="text-stone-600">推奨用途:</span>{" "}
-                    対人交渉、引っ越し、大きな契約など、社会的なタイミングやバイオリズムの周期性を読む場合。
+                    引越しや契約など、暦で日を選ぶ場面。このサイトの判定（段階
+                    S〜X）はこちらを既定にしています。
                   </p>
                 </div>
               </div>
@@ -1646,13 +1660,13 @@ export default function DestinationMapPanel({
             {/* Zone Differences */}
             <div className="space-y-2">
               <h3 className="text-emerald-600 font-bold border-b border-stone-200 pb-1">
-                ■ ゾーン分類の定義 (SAFE vs OPTIMAL)
+                ■ 方位の区分（大吉・平穏）
               </h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
                 <div className="bg-white/80 p-3 border-l-2 border-emerald-500">
                   <div className="text-emerald-500 font-bold mb-1 flex items-center gap-2">
                     <span className="w-2 h-2 bg-emerald-500 rounded-full"></span>
-                    [ GO ] 推奨方位 (OPTIMAL)
+                    大吉方位
                   </div>
                   <p className="text-stone-500 text-[10px] sm:text-xs">
                     凶殺が存在しないことに加え、あなたの「本命星」とその方位の星が『相生（互いを生かし合うとされる関係）』になっています。
@@ -1664,8 +1678,8 @@ export default function DestinationMapPanel({
                 </div>
                 <div className="bg-white/80 p-3 border-l-2 border-blue-500">
                   <div className="text-blue-500 font-bold mb-1 flex items-center gap-2">
-                    <span className="w-2 h-2 bg-blue-500 rounded-full"></span>[
-                    SAFE ] 進入可能方位
+                    <span className="w-2 h-2 bg-blue-500 rounded-full"></span>
+                    平穏（凶ではない）
                   </div>
                   <p className="text-stone-500 text-[10px] sm:text-xs">
                     五黄殺、暗剣殺、天中殺といった凶殺が存在しない方位です。
