@@ -3522,9 +3522,17 @@ export const SolarTimeClock = () => {
       const targetTime = new Date(
         baseTime.getTime() + timeOffsetDays * 86400000,
       );
-      setSolarData(calculateSolarTime(targetTime, targetLon || lon));
+      /*
+        時計の真太陽時は**出発地**の経度で出す。以前は目的地を置くと
+        目的地の経度（targetLon）に切り替わっていたが、刻の一覧
+        （getDailySolarSchedule）は出発地で組んでいるので、東京→福岡
+        なら 38 分ずれて、時計の刻と一覧の刻が別の十二支になる時間帯が
+        毎日あった。頁の説明も「出発地の経度と均時差を補正」。
+        タイムゾーンは既定（JST）。
+      */
+      setSolarData(calculateSolarTime(targetTime, lon));
     }
-  }, [baseTime, lon, timeOffsetDays, targetLon]);
+  }, [baseTime, lon, timeOffsetDays]);
 
   useEffect(() => {
     if (lat && lon) {
