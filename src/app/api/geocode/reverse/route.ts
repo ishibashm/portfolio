@@ -4,7 +4,7 @@ import { mergeWithListed } from "@/lib/municipalityCoords";
 import { nearestMunicipality } from "@/lib/nearestMunicipality";
 
 /**
- * 座標 → 一番近い市区町村名。画面が「北緯 35.689 / 東経 139.692」の
+ * 座標 → 一番近い市区町村名。画面が「35.689 / 139.692」のような座標の
  * 代わりに「東京都千代田区 付近」と出すための口（lib/nearestMunicipality）。
  *
  * 外部サービスには出さない。同梱の代表点（1,894 市区町村）から引く
