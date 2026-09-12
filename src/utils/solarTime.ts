@@ -48,14 +48,30 @@ export function getLongitudeCorrection(
 export function calculateSolarTime(
   date: Date,
   longitude: number,
-  timezoneOffset?: number,
+  /*
+    標準時。既定は日本標準時（UTC+9、標準子午線 135 度）。
+
+    以前の既定は `Math.round(経度 / 15)` で、経度からタイムゾーンを
+    推測していた。日本は全国が JST なのに、経度 127.5 度未満（石垣・
+    宮古島）は 8、142.5 度以上（帯広・釧路・根室）は 10 と推測され、
+    **真太陽時が 60 分ずれていた。**盤の評価時刻（boardInstant）は 9 を
+    明示していたが、時計（SolarTimeClock の setSolarData）は既定のまま
+    だった。海外の出生地はこのサイトでは扱わない（生年月日も日本時間で
+    読む。utils/japanDate）ので、既定を 9 にする。
+    見張りは __tests__/solarTimeJstClock.test.ts。
+  */
+  timezoneOffset: number = 9,
 ): SolarTimeResult {
-  const tzOffset =
-    timezoneOffset !== undefined ? timezoneOffset : Math.round(longitude / 15);
+  const tzOffset = timezoneOffset;
 
   // 1. Day of Year (n)
-  const start = new Date(date.getFullYear(), 0, 0);
-  const diff = date.getTime() - start.getTime();
+  // 年の頭は**その標準時**で取る。`new Date(year, 0, 0)` は実行環境の
+  // タイムゾーンで年を読むので、UTC の環境では 1/1 の 0〜9 時が前年に
+  // なる（均時差が 1 日ぶんずれる。差は 0.5 分未満だが、日本時間で
+  // 揃える決まりに反する）。
+  const fields = getZonedDateTimeFields(date, tzOffset);
+  const start = Date.UTC(fields.year, 0, 0) - tzOffset * 3600000;
+  const diff = date.getTime() - start;
   const oneDay = 1000 * 60 * 60 * 24;
   const dayOfYear = Math.floor(diff / oneDay);
 
