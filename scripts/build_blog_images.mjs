@@ -121,6 +121,48 @@ function board(hit, caption) {
  */
 const FIGURES = [
   {
+    /* 記事の実測表から。偏角は場所ごとに違うので一律の補正が当たらない。 */
+    slug: "where-feng-shui-came-from",
+    kicker: "風水の来歴と、このサイトの北",
+    title: "方位磁針の北は、<br>場所ごとに違う",
+    sub: "国内だけで 4.07 度の幅があります。一律の補正では、どこかの土地で必ず外します。",
+    body: `<div style="display:flex;gap:36px;align-items:center">
+      <div style="display:flex;flex-direction:column;gap:5px">
+        ${[
+          ["札幌", "\u22129.94", "22.1", true],
+          ["仙台", "\u22128.55", "19.0", false],
+          ["大阪", "\u22128.16", "18.1", false],
+          ["東京", "\u22127.94", "17.6", false],
+          ["那覇", "\u22125.86", "13.0", true],
+        ]
+          .map(
+            ([
+              city,
+              decl,
+              ratio,
+              edge,
+            ]) => `<div style="display:flex;align-items:center;gap:12px;
+               background:${edge ? "#fff" : "transparent"};border:1px solid ${edge ? "#e11d48" : "transparent"};
+               border-radius:9px;padding:6px 12px">
+            <div style="width:78px;font-size:19px;font-weight:800;color:${edge ? "#e11d48" : "#334155"}">${city}</div>
+            <div style="width:86px;font-size:19px;color:#0f172a;text-align:right">${decl}\u5ea6</div>
+            <div style="width:170px;height:13px;background:#efe7e0;border-radius:7px;overflow:hidden">
+              <div style="width:${(Number(ratio) / 22.1) * 100}%;height:100%;
+                   background:${edge ? "#e11d48" : "#94a3b8"}"></div>
+            </div>
+            <div style="width:62px;font-size:17px;color:#475569;text-align:right">${ratio}%</div>
+          </div>`,
+          )
+          .join("")}
+      </div>
+      <div class="note">
+        帯は<b>方位磁針の数字をそのまま読むと別の八方位に落ちる割合</b>。
+        境目は 8 本なので<b>偏角 \u00f7 45 度</b>です。
+        判定は<b>真北</b>で固定しています。
+      </div>
+    </div>`,
+  },
+  {
     /* 記事の表をそのまま。入力と、答える問いが体系ごとに違う。 */
     slug: "other-systems-beyond-kigaku",
     kicker: "引越しの考え方",
