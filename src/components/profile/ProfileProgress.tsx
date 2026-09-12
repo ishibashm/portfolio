@@ -2,6 +2,16 @@
 
 import { CheckCircle2, Circle } from "lucide-react";
 import type { ProfileCompletion } from "@/lib/profileCompletion";
+import { usePlaceName } from "@/lib/placeLabel";
+import type { ProfileStep } from "@/lib/profileCompletion";
+
+/**
+ * 場所の段は座標ではなく地名で出す（利用者の指摘、2026-09-12）。端末の
+ * 地名 → 最寄りの市区町村「付近」→ 座標 の順（lib/placeLabel）。
+ */
+function PlaceValue({ place }: { place: NonNullable<ProfileStep["place"]> }) {
+  return <>{usePlaceName(place.lat, place.lon, place.label)}</>;
+}
 
 /**
  * 「あとどれが入っていないか」を頁の頭に出す。
@@ -90,7 +100,7 @@ export function ProfileProgress({
                   桁が多いので等幅で出す（数字の位が縦にそろう） */}
               {step.done && step.value && (
                 <p className="mt-0.5 font-mono text-[11px] leading-relaxed break-all text-stone-600">
-                  {step.value}
+                  {step.place ? <PlaceValue place={step.place} /> : step.value}
                 </p>
               )}
             </div>
