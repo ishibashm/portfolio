@@ -166,8 +166,14 @@ async function main() {
     .slice(0, 30)
     .map((r) => `${r.areaCode} ${r.areaName}`)
     .join("、");
+  /*
+    政令市の親コード（01100 札幌市など 20 件）と 13100 特別区部は、代表点の
+    側が区で持っているので結合できなくて正しい（municipalityCoords の註）。
+    実測（run 34660353940）はちょうどその 21 件で、区の側は 1,214 件が
+    結合した。ここに区や市が並び始めたら体系がずれている。
+  */
   console.log(
-    `代表点と結合できる行: ${coverage.matched} / ${rows.length}（結合できない ${coverage.unmatched.length}: ${unmatchedNames}）`,
+    `代表点と結合できる行: ${coverage.matched} / ${rows.length}（結合できない ${coverage.unmatched.length}: ${unmatchedNames}。政令市の親コードと特別区部は区の側で結合するので、ここに出て正しい）`,
   );
   if (rows.length > 0 && coverage.matched * 2 < rows.length) {
     console.warn(
@@ -194,7 +200,7 @@ async function main() {
         `- 空き家率を出せる（総住宅数と空き家数あり）: ${withVacancy} 件`,
         `- 代表点と結合できる（読み口が方位を出せる）: **${coverage.matched}** 件 / 結合できない ${coverage.unmatched.length} 件`,
         coverage.unmatched.length > 0
-          ? `  - 結合できない行（先頭 30）: ${unmatchedNames}`
+          ? `  - 結合できない行（先頭 30。政令市の親コードと特別区部は区の側で結合するので、ここに出て正しい）: ${unmatchedNames}`
           : "",
         "",
       ].join("\n"),
