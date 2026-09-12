@@ -38,6 +38,8 @@ const TOOL_PAGES = [
   "src/app/relocation/timing/page.tsx",
   "src/app/relocation/wealth/page.tsx",
   "src/app/houi/page.tsx",
+  // 総点検（2026-09-12）で、この頁だけ帯が無いと分かった。
+  "src/app/relocation/dashboard/page.tsx",
 ];
 
 /** 桁区切りのある数（1,022 / 1,149 など）。 */
@@ -58,7 +60,7 @@ describe("/about が書いていること", () => {
     expect(src).toContain("前提を1つに固定する");
   });
 
-  it("「各ページの上部に表示します」の主張どおり、道具の5画面に帯がある", () => {
+  it("「各ページの上部に表示します」の主張どおり、道具の6画面に帯がある", () => {
     const missing = TOOL_PAGES.filter((p) => !BADGE_TAG.test(read(p)));
 
     expect(missing).toEqual([]);
