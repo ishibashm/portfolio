@@ -467,7 +467,7 @@ async function fetchCitiesForPrefecture(
     /* 取り直しても増えなかった。掲載が本当に減った可能性もあるので
        止めはしないが、その日の巡回はこの範囲しか回れないと分かる形で残す。 */
     console.warn(
-      `⚠️ ${prefAlpha} の市区町村一覧は ${CITY_LIST_ATTEMPTS} 回とも ` +
+      `::warning::${prefAlpha} の市区町村一覧は ${CITY_LIST_ATTEMPTS} 回とも ` +
         `${best.length} 件どまりだった（前は ${knownCityCount} 件）。` +
         `この範囲だけを回る。`,
     );
@@ -734,9 +734,14 @@ async function main() {
     } else {
       if (areasCrawled === 0) {
         /* 1 つも回らずに「完了」するのは、ほぼ再開位置の壊れ。緑のまま
-           0 件が続くと気付けないので、はっきり警告として残す。 */
+           0 件が続くと気付けないので、はっきり警告として残す。
+           ::warning:: にするのは、素の console.warn だと 25 本のジョブの
+           ログに埋もれて誰も読まないため（MarketDailySummary が 1 日も
+           積まれていなかった件。CLAUDE.md 3 節）。注釈なら run の
+           Summary に出る。下の「半分以上 0 件」と、市区町村一覧が
+           取り直しても増えなかった警告も同じ。 */
         console.warn(
-          "⚠️ 1 つも市区町村を回らずに終了した。再開位置か市区町村一覧を疑うこと。",
+          "::warning::1 つも市区町村を回らずに終了した。再開位置か市区町村一覧を疑うこと。",
         );
       } else {
         console.log(
@@ -755,7 +760,7 @@ async function main() {
         */
         if (areasCrawled >= 4 && emptyAreas > areasCrawled / 2) {
           console.warn(
-            `⚠️ ${areasCrawled} 件中 ${emptyAreas} 件で 1 件も取れていない。` +
+            `::warning::${areasCrawled} 件中 ${emptyAreas} 件で 1 件も取れていない。` +
               `取得間隔（MIN_PAGE_INTERVAL_MS）と、相手に弾かれていないかを疑うこと。`,
           );
         }
