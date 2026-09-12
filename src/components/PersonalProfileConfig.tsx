@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { formatCoords } from "@/lib/profileCompletion";
+import { usePlaceName } from "@/lib/placeLabel";
 import { PROFILE_FIELDS } from "@/lib/profileFields";
 import {
   Database,
@@ -9,17 +9,9 @@ import {
   CalendarClock,
   Crosshair,
   Fingerprint,
-  Save,
-  Plus,
-  Trash2,
-  UserCheck,
 } from "lucide-react";
-import {
-  loadProfilePresets,
-  saveProfilePresets,
-  deleteProfilePreset,
-  type ProfilePreset,
-} from "@/lib/profilePresetSync";
+import { loadProfilePresets } from "@/lib/profilePresetSync";
+import { ProfilePicker } from "@/components/profile/ProfilePicker";
 import { getProfileStorageMode } from "@/lib/profilePresentation";
 
 interface PersonalProfileProps {
@@ -75,16 +67,11 @@ interface PersonalProfileProps {
 
 export function PersonalProfileConfig({
   birthDate,
-  setBirthDate,
   birthLat,
-  setBirthLat,
   birthLon,
-  setBirthLon,
-  birthPlaceOwned = false,
   baseLat,
-  setBaseLat,
   baseLon,
-  setBaseLon,
+  birthPlaceOwned = false,
   onSave,
   isSaving,
   onLoad,
@@ -119,10 +106,17 @@ export function PersonalProfileConfig({
    * 埋めないと使えないように見える（利用者の指摘で画面を整理した）。
    */
   const [showAdvanced, setShowAdvanced] = useState(false);
+  /* 場所は座標ではなく地名で出す（lib/placeLabel。利用者の指摘、2026-09-12）。
+     出生地は利用者の値のときだけ（初期値の東京駅に地名を付けない） */
+  const birthPlaceName = usePlaceName(
+    birthPlaceOwned ? birthLat : null,
+    birthPlaceOwned ? birthLon : null,
+  );
+  const basePlaceName = usePlaceName(baseLat, baseLon);
 
-  const [presets, setPresets] = useState<ProfilePreset[]>([]);
-  const [selectedPresetId, setSelectedPresetId] = useState<string>("");
-  const [newPresetName, setNewPresetName] = useState<string>("");
+  /* 控えの呼び出し・新規保存・更新・削除はここから外し、ProfilePicker と
+     /profile・/account に一本化した（lib/activeProfile。利用者の指摘、
+     2026-09-12）。残すのは「保存先がクラウドか端末か」の札のための読み込みだけ。 */
   const [presetCloudSynced, setPresetCloudSynced] = useState<boolean | null>(
     null,
   );
@@ -135,7 +129,6 @@ export function PersonalProfileConfig({
     const loadPresets = async () => {
       if (typeof window === "undefined") return;
       const result = await loadProfilePresets(fetch, window.localStorage);
-      setPresets(result.presets);
       setPresetCloudSynced(result.cloudSynced);
       setNeedsLogin(result.reason === "unauthenticated");
     };
@@ -143,152 +136,6 @@ export function PersonalProfileConfig({
     void loadPresets();
   }, []);
 
-  const savePresetsToStorage = async (newPresets: ProfilePreset[]) => {
-    setPresets(newPresets);
-    if (typeof window === "undefined") return false;
-
-    const result = await saveProfilePresets(
-      newPresets,
-      fetch,
-      window.localStorage,
-    );
-    // 保存は「足す・上書き」で、他所で足したものは残る。返ってきた
-    // 最新の一覧で差し替える（この部品の一覧は古いことがある）
-    setPresets(result.presets);
-    setPresetCloudSynced(result.cloudSynced);
-    setNeedsLogin(result.reason === "unauthenticated");
-    return result.cloudSynced;
-  };
-
-  const handleSaveNewPreset = async () => {
-    const name = newPresetName.trim() || `プロファイル ${presets.length + 1}`;
-    const newPreset: ProfilePreset = {
-      id: `preset_${Date.now()}`,
-      name,
-      birthDate,
-      /* 出生地は利用者の値のときだけ。初期値（東京駅）を控えに入れると、
-         呼び出したときにクラウドへ書かれてサイト全体の出生地になる */
-      ...(birthPlaceOwned ? { birthLat, birthLon } : {}),
-      baseLat,
-      baseLon,
-      voidZodiacOverride,
-      geminiKey,
-      baselineHrvMean,
-      baselineHrvStd,
-      baselineGsrMean,
-      baselineGsrStd,
-      usePsychologyScorer,
-      useKigakuScorer,
-      useAstrologyScorer,
-      createdAt: new Date().toISOString(),
-    };
-    const updated = [...presets, newPreset];
-    const cloudSynced = await savePresetsToStorage(updated);
-    setSelectedPresetId(newPreset.id);
-    setNewPresetName("");
-    if (onSave) onSave();
-    alert(
-      cloudSynced
-        ? `プリセット「${name}」をクラウドへ保存しました。`
-        : `プリセット「${name}」をこの端末に保存しました。クラウド同期にはログインが必要です。`,
-    );
-  };
-
-  const handleUpdateSelectedPreset = async () => {
-    if (!selectedPresetId) return;
-    const target = presets.find((p) => p.id === selectedPresetId);
-    const updatedName = newPresetName.trim() || target?.name || "プロファイル";
-    const updated = presets.map((p) => {
-      if (p.id === selectedPresetId) {
-        return {
-          ...p,
-          name: updatedName,
-          birthDate,
-          /* 利用者の値のときだけ差し替える。触っていなければ元の控えの
-             出生地をそのまま残す（...p） */
-          ...(birthPlaceOwned ? { birthLat, birthLon } : {}),
-          baseLat,
-          baseLon,
-          voidZodiacOverride,
-          geminiKey,
-          baselineHrvMean,
-          baselineHrvStd,
-          baselineGsrMean,
-          baselineGsrStd,
-          usePsychologyScorer,
-          useKigakuScorer,
-          useAstrologyScorer,
-        };
-      }
-      return p;
-    });
-    const cloudSynced = await savePresetsToStorage(updated);
-    if (onSave) onSave();
-    alert(
-      cloudSynced
-        ? `プリセット「${updatedName}」をクラウドで更新しました。`
-        : `プリセット「${updatedName}」をこの端末で更新しました。クラウド同期にはログインが必要です。`,
-    );
-  };
-
-  const handleDeletePreset = async () => {
-    if (!selectedPresetId) return;
-    const target = presets.find((p) => p.id === selectedPresetId);
-    if (!confirm(`プリセット「${target?.name}」を削除してもよろしいですか？`))
-      return;
-    // 消すのは専用の口で。古い一覧を丸ごと保存すると、他所で足した
-    // ものまで消える（saveProfilePresets は足す・上書きしかしない）
-    const result = await deleteProfilePreset(
-      selectedPresetId,
-      fetch,
-      window.localStorage,
-    );
-    setPresets(result.presets);
-    setPresetCloudSynced(result.cloudSynced);
-    setNeedsLogin(result.reason === "unauthenticated");
-    setSelectedPresetId("");
-    setNewPresetName("");
-  };
-
-  const handleLoadPreset = (presetId: string) => {
-    setSelectedPresetId(presetId);
-    if (!presetId) return;
-    const preset = presets.find((p) => p.id === presetId);
-    if (preset) {
-      if (preset.birthDate) setBirthDate(preset.birthDate);
-      if (preset.birthLat !== undefined) setBirthLat(Number(preset.birthLat));
-      if (preset.birthLon !== undefined) setBirthLon(Number(preset.birthLon));
-      if (preset.baseLat !== undefined) setBaseLat(Number(preset.baseLat));
-      if (preset.baseLon !== undefined) setBaseLon(Number(preset.baseLon));
-      if (preset.voidZodiacOverride !== undefined && setVoidZodiacOverride) {
-        setVoidZodiacOverride(preset.voidZodiacOverride);
-      }
-      if (preset.geminiKey !== undefined && setGeminiKey) {
-        setGeminiKey(preset.geminiKey);
-      }
-      if (preset.baselineHrvMean !== undefined && setBaselineHrvMean) {
-        setBaselineHrvMean(preset.baselineHrvMean);
-      }
-      if (preset.baselineHrvStd !== undefined && setBaselineHrvStd) {
-        setBaselineHrvStd(preset.baselineHrvStd);
-      }
-      if (preset.baselineGsrMean !== undefined && setBaselineGsrMean) {
-        setBaselineGsrMean(preset.baselineGsrMean);
-      }
-      if (preset.usePsychologyScorer !== undefined && setUsePsychologyScorer) {
-        setUsePsychologyScorer(preset.usePsychologyScorer);
-      }
-      if (preset.useKigakuScorer !== undefined && setUseKigakuScorer) {
-        setUseKigakuScorer(preset.useKigakuScorer);
-      }
-      if (preset.useAstrologyScorer !== undefined && setUseAstrologyScorer) {
-        setUseAstrologyScorer(preset.useAstrologyScorer);
-      }
-      setNewPresetName(preset.name);
-    }
-  };
-
-  // 右上の表示とプリセット欄のバッジは同じ状態を指す。文言が割れないよう 1 か所から。
   const storageMode = getProfileStorageMode(presetCloudSynced, needsLogin);
 
   return (
@@ -333,111 +180,10 @@ export function PersonalProfileConfig({
         </div>
       </div>
 
-      {/* Profile Presets Manager Card */}
-      <div className="mb-6 p-3 bg-white/80 border border-purple-200 rounded-xl relative z-10 font-mono text-xs">
-        <div className="flex items-center justify-between mb-2 flex-wrap gap-2">
-          <div className="flex items-center gap-2">
-            <UserCheck size={14} className="text-purple-600" />
-            <span className="text-[10px] font-bold text-purple-600 uppercase tracking-widest">
-              保存済みプロフィールの呼び出し・マルチ管理
-            </span>
-          </div>
-          <div className="flex items-center gap-2">
-            <span
-              className={`text-[9px] border px-2 py-0.5 rounded-xs ${
-                storageMode.tone === "synced"
-                  ? "text-emerald-600 bg-emerald-50 border-emerald-200"
-                  : storageMode.tone === "local"
-                    ? "text-amber-700 bg-amber-50 border-amber-200"
-                    : "text-stone-500 bg-stone-50 border-stone-200"
-              }`}
-            >
-              {storageMode.label}
-            </span>
-            {selectedPresetId && (
-              <span className="text-[9px] text-emerald-600 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-xs">
-                選択中: {presets.find((p) => p.id === selectedPresetId)?.name}
-              </span>
-            )}
-          </div>
-        </div>
-
-        {/* 9px のバッジだけでは気付けない。空リストの理由をその場に書く。 */}
-        {needsLogin && (
-          <div className="mb-2 flex items-center gap-2 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-[11px] text-amber-800">
-            <span>
-              未ログインのため、保存済みプロフィールを読み込めていません。ここでの保存はこの端末だけに残ります。
-            </span>
-            <a
-              href="/login"
-              className="shrink-0 rounded-xs border border-amber-300 bg-white px-2 py-0.5 font-medium hover:bg-amber-100"
-            >
-              ログイン
-            </a>
-          </div>
-        )}
-
-        <div className="flex flex-col md:flex-row gap-2 items-center">
-          {/* Preset Dropdown */}
-          <div className="flex-1 w-full">
-            <select
-              aria-label="保存済みプロフィールの選択"
-              value={selectedPresetId}
-              onChange={(e) => handleLoadPreset(e.target.value)}
-              className="w-full bg-white border border-slate-300 text-slate-700 px-3 py-2 rounded-xl outline-none focus:border-rose-400 text-xs"
-            >
-              <option value="">-- 保存済みプロフィールを選択 --</option>
-              {presets.map((p) => (
-                <option key={p.id} value={p.id}>
-                  {p.name} ({new Date(p.createdAt).toLocaleDateString()})
-                </option>
-              ))}
-            </select>
-          </div>
-
-          {/* Preset Name Input */}
-          <div className="w-full md:w-48">
-            <input
-              type="text"
-              value={newPresetName}
-              onChange={(e) => setNewPresetName(e.target.value)}
-              placeholder="プロフィール名を入力..."
-              className="w-full bg-white border border-slate-300 text-slate-700 px-3 py-2 rounded-xl outline-none focus:border-rose-400 text-xs"
-            />
-          </div>
-
-          {/* Action Buttons */}
-          <div className="flex gap-2 w-full md:w-auto shrink-0 flex-wrap sm:flex-nowrap">
-            <button
-              onClick={handleSaveNewPreset}
-              className="flex items-center justify-center gap-1 px-4 py-2 rounded-full bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold transition-colors cursor-pointer"
-              title="現在の設定を新規プロフィールとして追加保存"
-            >
-              <Plus size={12} />
-              新規保存
-            </button>
-            {selectedPresetId && (
-              <>
-                <button
-                  onClick={handleUpdateSelectedPreset}
-                  className="flex items-center justify-center gap-1 px-4 py-2 rounded-full border border-slate-300 bg-white text-xs font-bold text-slate-700 transition-colors hover:bg-slate-50 cursor-pointer"
-                  title="選択中プロフィールの内容を上書き更新"
-                >
-                  <Save size={12} />
-                  更新
-                </button>
-                <button
-                  onClick={handleDeletePreset}
-                  className="flex items-center justify-center gap-1 px-4 py-2 rounded-full border border-rose-300 bg-white text-xs font-bold text-rose-600 transition-colors hover:bg-rose-50 cursor-pointer"
-                  title="選択中のプロフィールを削除"
-                >
-                  <Trash2 size={12} />
-                  削除
-                </button>
-              </>
-            )}
-          </div>
-        </div>
+      {/* 使用中のプロフィールの切り替え（全頁共通の 1 つの部品）。
+          作る・直す・消すは /profile と /account */}
+      <div className="mb-6 relative z-10">
+        <ProfilePicker />
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 relative z-10 font-mono text-xs">
@@ -536,11 +282,9 @@ export function PersonalProfileConfig({
 
           {/* 出生地の入力も上へ移した（地名・郵便番号でも入れられる）。 */}
           <div className="flex flex-col gap-1 mt-2">
-            <span className="text-[10px] text-stone-600 uppercase">
-              出生地座標 (緯度・経度)
-            </span>
+            <span className="text-[10px] text-stone-600 uppercase">出生地</span>
             <span className="text-xs text-stone-700 font-bold">
-              {formatCoords(birthLat, birthLon)}
+              {birthPlaceName}
             </span>
             <span className="text-[9px] text-stone-600 mt-0.5 text-justify">
               {
@@ -583,11 +327,9 @@ export function PersonalProfileConfig({
 
           {/* 現在地の入力も上へ移した（地名・郵便番号でも入れられる）。 */}
           <div className="flex flex-col gap-1 mt-2">
-            <span className="text-[10px] text-stone-600 uppercase">
-              現在地の座標 (緯度・経度)
-            </span>
+            <span className="text-[10px] text-stone-600 uppercase">現在地</span>
             <span className="text-xs text-stone-700 font-bold">
-              {formatCoords(baseLat, baseLon)}
+              {basePlaceName}
             </span>
             <span className="text-[9px] text-stone-600 mt-0.5 text-justify">
               {PROFILE_FIELDS.base.help}
@@ -818,20 +560,6 @@ export function PersonalProfileConfig({
             >
               画面設定を再読込
             </button>
-            {presets.length > 0 && (
-              <select
-                value={selectedPresetId}
-                className="px-3 py-2 rounded-full border border-slate-300 bg-white text-xs font-bold text-slate-700 outline-none focus:border-rose-400 transition-colors cursor-pointer"
-                onChange={(e) => handleLoadPreset(e.target.value)}
-              >
-                <option value="">保存済みから選ぶ</option>
-                {presets.map((p) => (
-                  <option key={p.id} value={p.id}>
-                    {p.name}
-                  </option>
-                ))}
-              </select>
-            )}
           </div>
           {/* 保存先を名前で示す。「永久保存」と書いてあったが実体は端末の
               localStorage だけで、別の端末で開くと空になる。何が起きるのか
