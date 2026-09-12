@@ -43,7 +43,21 @@ beforeEach(() => {
   /* ログインしていないので、控えは端末のものだけを読む */
   vi.stubGlobal(
     "fetch",
-    vi.fn(async () => ({ ok: false, status: 401, json: async () => ({}) })),
+    vi.fn(async (input: RequestInfo | URL) => {
+      const url = String(input);
+      /* 座標 → 市区町村名（lib/placeLabel）。一覧の場所は地名で出す */
+      if (url.startsWith("/api/geocode/reverse")) {
+        const name = url.includes("35.6812")
+          ? "東京都千代田区"
+          : "大阪府大阪市北区";
+        return {
+          ok: true,
+          status: 200,
+          json: async () => ({ data: { name } }),
+        };
+      }
+      return { ok: false, status: 401, json: async () => ({}) };
+    }),
   );
 });
 
@@ -105,11 +119,14 @@ describe("AccountPanel", () => {
     await waitFor(() => expect(screen.getByText("家族A")).toBeInTheDocument());
     expect(screen.getByText(/1988-03-04/)).toBeInTheDocument();
     /* 住んでいる場所と出生地の両方。名前だけだと家族ぶんが並んだときに
-       どれがどれだか分からない */
-    expect(
-      screen.getByText(
-        "住 北緯 35.681 / 東経 139.767 ／ 生 北緯 34.694 / 東経 135.502",
-      ),
-    ).toBeInTheDocument();
+       どれがどれだか分からない。**座標ではなく地名で**出す（利用者の
+       指摘、2026-09-12）。控えに地名が無いので最寄りの市区町村「付近」 */
+    await waitFor(() =>
+      expect(
+        screen.getByText(
+          "出発地 東京都千代田区 付近 ／ 出生地 大阪府大阪市北区 付近",
+        ),
+      ).toBeInTheDocument(),
+    );
   });
 });
