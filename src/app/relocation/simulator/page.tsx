@@ -63,6 +63,7 @@ import {
   SETTINGS_KEY,
   type Settings,
 } from "@/lib/userSettings";
+import { ActiveProfileBadge } from "@/components/profile/ActiveProfileBadge";
 
 // Dynamically import Leaflet map to disable SSR
 const SimulatorMap = dynamic(() => import("@/components/nba/SimulatorMap"), {
@@ -1677,6 +1678,9 @@ export default function RelocationSimulatorPage() {
               出発地から見た方位と、動く時期の吉凶を試算します。
             </p>
           </div>
+          {/* どのプロフィールで試算するかを先に 1 行（利用者の指摘、
+              2026-09-12） */}
+          <ActiveProfileBadge purpose="引越し先の試算" />
           <SimulatorStart
             /*
               下書きから戻した人は行き先が既に入っている。空で出すと、
@@ -1760,6 +1764,7 @@ export default function RelocationSimulatorPage() {
               <p className="text-sm text-stone-500 mt-2">
                 行き先と日付を入れると、方位の吉凶を試算します。大凶のときは、遠回りして凶を避ける「仮吉方」ルートも提案します。
               </p>
+              <ActiveProfileBadge purpose="引越し先の試算" className="mt-3" />
               <p className="text-xs font-mono text-stone-600 mt-2">
                 本命星:{" "}
                 <strong className="text-indigo-500">{personalStar}</strong>

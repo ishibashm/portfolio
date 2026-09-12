@@ -56,6 +56,7 @@ import {
 } from "@/lib/timingFilter";
 import { DEFAULT_TENCHUSATSU_MODE } from "@/utils/tenchusatsuPolicy";
 import { loadSettings } from "@/lib/userSettings";
+import { ActiveProfileBadge } from "@/components/profile/ActiveProfileBadge";
 
 interface TimelineDay {
   date: string;
@@ -564,6 +565,9 @@ export default function TimingAnalyticsPage() {
             を使ってください。
           </p>
         </header>
+        {/* どのプロフィールで時期を出しているかを頭に 1 行（利用者の指摘、
+            2026-09-12。「このプロフィールでこの時期です」と分かるように） */}
+        <ActiveProfileBadge purpose="時期の吉凶" />
 
         {/* 走査範囲 */}
         <section className="rounded-2xl border border-gray-200 bg-white p-4 shadow-xs">
