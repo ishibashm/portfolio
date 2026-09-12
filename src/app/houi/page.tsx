@@ -13,6 +13,7 @@ import {
 import { AdBanner } from "@/components/ads/AdBanner";
 import { prefNameByCode } from "@/lib/prefContent";
 import { PREF_EDITORIAL } from "@/lib/prefEditorial";
+import { ActiveProfileBadge } from "@/components/profile/ActiveProfileBadge";
 
 /**
  * 方位コンテンツの入口。
@@ -85,6 +86,8 @@ export default function Page() {
               上の断りを読み飛ばしても 1 年ずれない。星の名前と行き先の年は
               props で渡す（client 側に kigakuContent → ephemerisEngine を
               値として乗せないため）。 */}
+          {/* どのプロフィールで引くかを先に 1 行（利用者の指摘、2026-09-12） */}
+          <ActiveProfileBadge purpose="本命星と吉方位" className="mb-3" />
           <HonmeiLookup starNames={STAR_NAMES} linkYear={years[0]} />
           <p className="mt-8 text-xs font-bold text-slate-700">
             生まれ年から表で引く場合
