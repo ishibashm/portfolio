@@ -10,8 +10,12 @@ import type { KimonScheduleItem } from "@/utils/solarTime";
 /**
  * 時間帯の吉凶判定を、SolarTimeTable から lib/timePhase へ移したときの
  * 固定。ホームのポータルが同じ判定を出すため集約した（同じことを
- * 2 か所に書かない）。**移しただけで中身は変えていない**ことを、
- * 移す前の実装の答えで押さえる。
+ * 2 か所に書かない）。
+ *
+ * 2026-09-12 に八門を判定から外した（八門が仮実装だったため。経緯は
+ * lib/timePhase の註と timePhaseNoPlaceholderGate.test.ts）。ここは
+ * **外したあとの判定**を押さえる。門の名前を渡しているのは、型に
+ * まだ hachimon が残っているから。判定はそれを読まない。
  *
  * ここが崩れると、詳細画面の緑帯（[GO] 推奨）とポータルの要点が
  * 食い違う。利用者からは「同じ時間なのに画面によって言うことが違う」
@@ -72,26 +76,20 @@ describe("時間帯の吉凶", () => {
     ).toBe(false);
   });
 
-  it("吉門でも五行が相剋なら吉にしない", () => {
+  it("五行が相剋なら吉にしない（門の名前は見ない）", () => {
     // 古典 7（金）に対して 9（火）は火剋金
     const r = evaluateTimePhase(hour("子", GOOD_GATE, 9), honmei, true);
-    expect(r.isGoodGate).toBe(true);
     expect(r.isFavorable).toBe(false);
     expect(r.isOptimal).toBe(false);
   });
 
-  it("五行が相生でも凶門なら吉にしない", () => {
-    // 古典 7（金）に対して 8（土）は土生金
-    const r = evaluateTimePhase(hour("子", BAD_GATE, 8), honmei, true);
-    expect(r.isFavorable).toBe(true);
-    expect(r.isGoodGate).toBe(false);
-    expect(r.isOptimal).toBe(false);
-  });
-
-  it("吉門かつ相生なら吉にする", () => {
-    const r = evaluateTimePhase(hour("子", GOOD_GATE, 8), honmei, true);
-    expect(r.isOptimal).toBe(true);
-    expect(r.relation).toContain("土生金");
+  it("五行が相生なら、門の名前に関わらず吉にする", () => {
+    // 古典 7（金）に対して 8（土）は土生金。以前は凶門だと落としていた。
+    const good = evaluateTimePhase(hour("子", GOOD_GATE, 8), honmei, true);
+    const bad = evaluateTimePhase(hour("子", BAD_GATE, 8), honmei, true);
+    expect(good.isOptimal).toBe(true);
+    expect(bad.isOptimal).toBe(true);
+    expect(good.relation).toContain("土生金");
   });
 
   it("同じ属性は相比として吉にする", () => {

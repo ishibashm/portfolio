@@ -4,8 +4,22 @@
  * これまで SolarTimeTable の中だけに置かれていた。ホームのポータル
  * （home/HomePortal）が「今の時間帯は動いてよいか」を要点として出す
  * ようになり、同じ判定を 2 か所で持つことになったので集約した。
- * **中身は 1 文字も変えていない。**数値・条件式は判定の見え方を
- * 決めるので触らない（CLAUDE.md 3 節）。
+ *
+ * ## 八門を判定から外した（2026-09-12）
+ *
+ * 集約した時点では `isOptimal = 八門が吉門 && 五行が相生・相比` だった。
+ * ところが八門を出している `utils/kigaku` の `getHourlyHachimon` は
+ * **計算ではなく仮実装**で、月の陰陽で起点を変えて刻の順に 8 つの門を
+ * 回しているだけだった（ソースに "Placeholder Algorithm … Just returning
+ * a cycle for visualization" と書いてある）。日干を変えても門は変わらない。
+ * 奇門遁甲の盤は組んでいない。
+ *
+ * つまり「動いてよい」「[ GO ] 推奨」の半分は、刻の番号で決まる見かけの
+ * 門で落とされていた。#724 の「月のボイドタイム」（土曜 14〜16 時を返す
+ * だけのモック）と同じ形で、記事側（other-systems）は「奇門遁甲は
+ * 使っていない」と書いている。**計算を装った表示は出さない**方針に
+ * 揃え、判定は五行の相生・相比だけにした。見張りは
+ * __tests__/timePhaseNoPlaceholderGate.test.ts。
  */
 
 import type { KimonScheduleItem } from "@/utils/solarTime";
@@ -18,10 +32,9 @@ export interface ElementInfo {
 }
 
 export interface TimePhase {
-  /** 八門が吉門で、かつ五行が相生・相比のとき true。緑の帯を出す条件。 */
+  /** 五行が相生・相比のとき true。緑の帯を出す条件。 */
   isOptimal: boolean;
   isFavorable?: boolean;
-  isGoodGate?: boolean;
   myElement: ElementInfo | null;
   timeElement: ElementInfo | null;
   relation: string | null;
@@ -60,8 +73,6 @@ export function evaluateTimePhase(
   honmeiStar: { classical?: number | null; physical?: number | null } | null,
   useClassical: boolean,
 ): TimePhase {
-  const isGoodGate = item.hachimon.auspicious; // 生, 休, 開
-
   if (!honmeiStar)
     return {
       isOptimal: false,
@@ -163,16 +174,21 @@ export function evaluateTimePhase(
   }
 
   return {
-    isOptimal: isGoodGate && isFavorable,
+    isOptimal: isFavorable,
     isFavorable,
-    isGoodGate,
     myElement,
     timeElement,
     relation,
   };
 }
 
-/** 八門の意味。画面に出す短い説明。 */
+/**
+ * 八門の意味。画面に出す短い説明。
+ *
+ * **消す予定。**八門そのものが仮実装（上の註）なので、意味を添えて出す
+ * ことがそのまま嘘になる。読み手（SolarTimeTable・HomePortal）を外して
+ * から、`utils/kigaku` の `getHourlyHachimon` ごと消す。
+ */
 export function getGateDescription(gateName: string): string {
   if (gateName.includes("生")) return "新しい開始・生命力 (Start/Vitality)";
   if (gateName.includes("休")) return "休息・回復・平和 (Rest/Peace)";
