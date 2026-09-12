@@ -27,6 +27,7 @@ import { ratingForStatus } from "@/lib/verdictRating";
 import { directionLabelShort } from "@/lib/directionLabels";
 import type { KimonScheduleItem } from "@/utils/solarTime";
 import type { Direction, getHonmeiStar } from "../../utils/ephemerisEngine";
+import { getZonedDateTimeFields } from "@/utils/solarTime";
 
 /** 8 方位。中央は動く先にならないので出さない。 */
 const DIRS: Direction[] = ["N", "NE", "E", "SE", "S", "SW", "W", "NW"];
@@ -192,12 +193,13 @@ export default function HomePortal({
       .slice(0, 3);
   }, [forecast]);
 
+  /* 時刻は日本時間で読む。getHours() は端末のタイムゾーンなので、日本より
+     西の端末では時計（Asia/Tokyo で描く）と別の時刻になる。 */
   const hhmm = (value: string | Date) => {
-    const d = new Date(value);
-    return `${String(d.getHours()).padStart(2, "0")}:${String(
-      d.getMinutes(),
-    ).padStart(2, "0")}`;
+    const f = getZonedDateTimeFields(new Date(value), 9);
+    return `${String(f.hours).padStart(2, "0")}:${String(f.minutes).padStart(2, "0")}`;
   };
+  const evalJst = getZonedDateTimeFields(evalDate, 9);
 
   const best = rankedDirections[0];
 
@@ -253,8 +255,7 @@ export default function HomePortal({
           </div>
         )}
         <div className="ml-auto text-[10px] text-stone-600">
-          {evalDate.getFullYear()}/{evalDate.getMonth() + 1}/
-          {evalDate.getDate()} 基準
+          {evalJst.year}/{evalJst.month}/{evalJst.day} 基準
         </div>
       </div>
 

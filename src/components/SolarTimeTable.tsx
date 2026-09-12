@@ -8,6 +8,7 @@ import {
   getCurrentEnvironmentalFrequencies,
 } from "../utils/ephemerisEngine";
 import { KigakuBoard } from "./KigakuBoard";
+import { getZonedDateTimeFields } from "@/utils/solarTime";
 import {
   evaluateTimePhase as evaluateTimePhaseShared,
   isVoidTimeHour as isVoidTimeHourShared,
@@ -87,16 +88,12 @@ export function SolarTimeTableComponent({
     setExpandedIndex(expandedIndex === index ? null : index);
   };
 
+  /* 日本時間で描く。端末のタイムゾーンで読むと、日本より西の端末では
+     刻の開始が前日の日付で出る。 */
   const formatTime = (d: Date) => {
-    const year = d.getFullYear();
-    const month = (d.getMonth() + 1).toString().padStart(2, "0");
-    const day = d.getDate().toString().padStart(2, "0");
-    const time = d.toLocaleTimeString("en-US", {
-      hour12: false,
-      hour: "2-digit",
-      minute: "2-digit",
-    });
-    return `${year}/${month}/${day} ${time}`;
+    const f = getZonedDateTimeFields(d, 9);
+    const pad = (n: number) => String(n).padStart(2, "0");
+    return `${f.year}/${pad(f.month)}/${pad(f.day)} ${pad(f.hours)}:${pad(f.minutes)}`;
   };
 
   const generateCsvString = () => {
@@ -284,7 +281,7 @@ export function SolarTimeTableComponent({
           className={`p-2 sm:p-3 border rounded-xl flex flex-col gap-1 transition-colors ${isYearVoid ? "border-red-200 bg-red-50 shadow-inner" : "border-stone-200 bg-white/80"}`}
         >
           <div className="flex justify-between items-center text-stone-600 tracking-widest">
-            <span>YEAR PHASE</span>
+            <span>年盤</span>
             <span className={isYearVoid ? "text-red-600" : "text-purple-600"}>
               {envData?.yearStar}
             </span>
@@ -297,10 +294,12 @@ export function SolarTimeTableComponent({
             </span>
             {isYearVoid ? (
               <span className="bg-red-50 text-red-700 px-1 py-0.5 text-[10px] md:animate-pulse ml-auto border border-red-200 whitespace-nowrap">
-                VOID / 天中殺
+                天中殺
               </span>
             ) : (
-              <span className="text-stone-600 text-[10px] ml-auto">NORMAL</span>
+              <span className="text-stone-600 text-[10px] ml-auto">
+                天中殺ではない
+              </span>
             )}
           </div>
           <div className="text-[10px] text-stone-600 mt-auto pt-1 border-t border-stone-200 leading-tight">
@@ -312,7 +311,7 @@ export function SolarTimeTableComponent({
           className={`p-2 sm:p-3 border rounded-xl flex flex-col gap-1 transition-colors ${isMonthVoid ? "border-red-200 bg-red-50 shadow-inner" : "border-stone-200 bg-white/80"}`}
         >
           <div className="flex justify-between items-center text-stone-600 tracking-widest">
-            <span>MONTH PHASE</span>
+            <span>月盤</span>
             <span className={isMonthVoid ? "text-red-600" : "text-amber-600"}>
               {envData?.monthStar}
             </span>
@@ -325,10 +324,12 @@ export function SolarTimeTableComponent({
             </span>
             {isMonthVoid ? (
               <span className="bg-red-50 text-red-700 px-1 py-0.5 text-[10px] md:animate-pulse ml-auto border border-red-200 whitespace-nowrap">
-                VOID / 天中殺
+                天中殺
               </span>
             ) : (
-              <span className="text-stone-600 text-[10px] ml-auto">NORMAL</span>
+              <span className="text-stone-600 text-[10px] ml-auto">
+                天中殺ではない
+              </span>
             )}
           </div>
           <div className="text-[10px] text-stone-600 mt-auto pt-1 border-t border-stone-200 leading-tight">
@@ -341,12 +342,12 @@ export function SolarTimeTableComponent({
         >
           <div className="flex justify-between items-center text-stone-600 tracking-widest">
             <div className="flex items-center gap-1">
-              <span>DAY PHASE</span>
+              <span>日盤</span>
               {envData?.isYinPhase !== undefined && (
                 <span
                   className={`text-[10px] px-1 py-0.5 border ${envData.isYinPhase ? "border-blue-200 text-blue-600 bg-blue-50" : "border-amber-200 text-amber-600 bg-amber-50"}`}
                 >
-                  {envData.isYinPhase ? "陰遁 (YIN)" : "陽遁 (YANG)"}
+                  {envData.isYinPhase ? "陰遁" : "陽遁"}
                 </span>
               )}
             </div>
@@ -362,10 +363,12 @@ export function SolarTimeTableComponent({
             </span>
             {isDayVoid ? (
               <span className="bg-red-50 text-red-700 px-1 py-0.5 text-[10px] md:animate-pulse ml-auto border border-red-200 whitespace-nowrap">
-                VOID / 天中殺
+                天中殺
               </span>
             ) : (
-              <span className="text-stone-600 text-[10px] ml-auto">NORMAL</span>
+              <span className="text-stone-600 text-[10px] ml-auto">
+                天中殺ではない
+              </span>
             )}
           </div>
           <div className="text-[10px] text-stone-600 mt-auto pt-1 border-t border-stone-200 leading-tight">
@@ -508,7 +511,7 @@ export function SolarTimeTableComponent({
                   </div>
                 </div>
 
-                {/* Kyusei and Hachimon Summaries */}
+                {/* 時盤の九星と五行の相性 */}
                 <div className="flex flex-row items-center gap-2 xl:gap-4 flex-1 min-w-0 text-[10px] sm:text-xs w-full">
                   {/* 九星 */}
                   <div className="flex flex-col w-1/3 xl:w-auto shrink-0">
