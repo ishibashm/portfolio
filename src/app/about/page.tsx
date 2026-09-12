@@ -43,6 +43,78 @@ export default function AboutPage() {
           </ul>
         </section>
 
+        {/*
+          「何をするサイトか」は機能の一覧で、**決めるときに何の役に立つか**は
+          どこにも書いていなかった（記事 29 本もすべて個別の論点で、入口が無い）。
+          判定を断定的に出す画面がある一方、**しないこと**を正面から書いた場所が
+          免責しか無いのは案内として足りない。ここに置く。
+
+          **移り変わる数字を書かないこと。**掲載を集計できた市区町村の数は
+          毎晩の巡回で動くので、ここに書くと確実に古くなる（CLAUDE.md 4 節の
+          「残数は必ず実測してから言う」と同じ理由）。構造だけを書く。
+        */}
+        <section className="mt-10">
+          <h2 className="text-lg font-bold font-serif border-b border-slate-300 pb-2">
+            決めるために、この道具が何をするか
+          </h2>
+          <p className="mt-4 text-sm leading-relaxed text-slate-700">
+            引越しの決断が重いのは、選択肢が多すぎて比べられないからです。このサイトがするのは、どの未来が来るかを当てることではなく、比べられる形に整えることです。
+          </p>
+          <dl className="mt-4 text-sm text-slate-700 space-y-3">
+            <div>
+              <dt className="font-bold text-xs text-slate-500">候補を絞る</dt>
+              <dd className="leading-relaxed">
+                全国の市区町村と、募集中の賃貸物件を、方位の吉凶と相場の両方で絞り込みます。検討できる数まで候補を減らすところが、手作業ではいちばん手間の掛かる部分です。
+              </dd>
+            </div>
+            <div>
+              <dt className="font-bold text-xs text-slate-500">
+                前提を1つに固定する
+              </dt>
+              <dd className="leading-relaxed">
+                生年月日と出発地は「使用中のプロフィール」1つに決まり、どの画面も同じ値を読みます。各ページの上部に「この設定でこの方位を出しています」と表示します。判定の基準は常に真北、暦の日付は常に日本時間なので、閲覧する場所や時刻で答えが変わることはありません。真北で判定する理由は
+                <Link
+                  href="/blog/where-feng-shui-came-from"
+                  className="underline hover:text-rose-600"
+                >
+                  風水はどこから来たのか
+                </Link>
+                に書いています。
+              </dd>
+            </div>
+            <div>
+              <dt className="font-bold text-xs text-slate-500">
+                分からないことは、分からないと書く
+              </dt>
+              <dd className="leading-relaxed">
+                方位ごとの一覧で候補が出ないとき、「掲載を集計できていないだけ」と「陸が尽きている」を分けて書きます。流派によって算出が分かれる箇所は、どちらかを選ばず両方を併記します。方位磁針で測ると別の方位に見える地点には、その注意を添えます。
+              </dd>
+            </div>
+            <div>
+              <dt className="font-bold text-xs text-slate-500">
+                「動かない」も答えとして出す
+              </dt>
+              <dd className="leading-relaxed">
+                避けるべきとされる方位や時期は、そのまま表示します。見送るという選択も検討できるようにしてあります。
+              </dd>
+            </div>
+          </dl>
+          <p className="mt-4 text-sm leading-relaxed text-slate-700">
+            反対に、この道具が決めないこともあります。方位の判定は参考にする条件の1つで、家賃、災害リスク、契約条件、通勤時間、医療・教育環境、家族の合意は別に確かめる必要があります。判定の考え方がいつ・誰の手で形になったものかは
+            <Link
+              href="/blog/where-kigaku-and-houi-came-from"
+              className="underline hover:text-rose-600"
+            >
+              九星気学と方位はどこから来たのか
+            </Link>
+            に、操作の手順は
+            <Link href="/guide" className="underline hover:text-rose-600">
+              使い方の案内
+            </Link>
+            にまとめています。
+          </p>
+        </section>
+
         <section className="mt-10">
           <h2 className="text-lg font-bold font-serif border-b border-slate-300 pb-2">
             データの出典
