@@ -9,16 +9,30 @@ dotenv.config({ path: envPath });
 
 import { Pool } from "pg";
 import { toLogMessage } from "../src/lib/errorMessage";
+import municipalityCoords from "../src/data/municipalityCoords.json";
+import areaDirections from "../src/data/areaDirections.json";
 import type { EstatStatsResponse } from "./estatWealth";
 import {
   HOUSING_ITEMS,
   HOUSING_TABLE_ID,
   aggregateHousing,
+  joinCoverage,
   type HousingRow,
 } from "./estatHousing";
 
 /**
  * 市区町村別の住宅の統計（家賃・空き家）を e-Stat から取り込む。
+ *
+ * ## 代表点と結合できるかを、取り込んだ時点で数える
+ *
+ * 読み口（/api/housing-stats/by-direction）は area_code を
+ * `municipalityCoords` + `areaDirections` の代表点に突き合わせて方位を
+ * 出す。**コードの体系が合っていなければ、表は埋まるのに画面は
+ * 「統計のある市区町村がありませんでした」になる**（dry-run の通過を
+ * 根拠にしない、と同じ種類の落とし穴。CLAUDE.md 3 節）。1 回目の
+ * 取り込み（run 34657021102）は件数しか出しておらず、結合できるかは
+ * 誰も見ていなかった。取り込むたびに結合率と結合できない行の顔ぶれを
+ * Summary に出し、半分を切ったら ::warning:: にする。
  *
  * 出どころは「統計でみる市区町村のすがた」Ｈ 居住（表 0000020108）。
  * 富裕度（import_municipalities_wealth.ts）と同じ体系・同じ地域コード。
@@ -126,6 +140,18 @@ async function saveRows(rows: HousingRow[]): Promise<number> {
   return written;
 }
 
+/**
+ * 読み口と同じ母集団（掲載の有無と無関係な代表点 + 掲載を集計できた
+ * 市区町村）のコード。`municipalityCoords.mergeWithListed` と同じ和集合。
+ * `@/` の別名は tsx が解決しないので JSON を直に読む。
+ */
+function coordinateCodes(): Set<string> {
+  const codes = new Set<string>();
+  for (const a of municipalityCoords.areas) codes.add(a.code);
+  for (const a of areaDirections.areas) codes.add(a.code);
+  return codes;
+}
+
 async function main() {
   const rows = await fetchHousing();
   const withRent = rows.filter((r) => r.rentPerTatamiYen !== null).length;
@@ -135,6 +161,19 @@ async function main() {
   console.log(
     `市区町村 ${rows.length} 件（家賃あり ${withRent}、空き家率を出せる ${withVacancy}）`,
   );
+  const coverage = joinCoverage(rows, coordinateCodes());
+  const unmatchedNames = coverage.unmatched
+    .slice(0, 30)
+    .map((r) => `${r.areaCode} ${r.areaName}`)
+    .join("、");
+  console.log(
+    `代表点と結合できる行: ${coverage.matched} / ${rows.length}（結合できない ${coverage.unmatched.length}: ${unmatchedNames}）`,
+  );
+  if (rows.length > 0 && coverage.matched * 2 < rows.length) {
+    console.warn(
+      `::warning::取り込んだ行の半分以上が代表点と結合できない（${coverage.matched} / ${rows.length}）。地域コードの体系が読み口と合っていない可能性。`,
+    );
+  }
   if (rows.length === 0) {
     console.error(
       `::error::${DATA_YEAR} 年度の値が 0 件。年度（ESTAT_HOUSING_YEAR）か表を確かめる。`,
@@ -153,6 +192,10 @@ async function main() {
         `- 市区町村: **${rows.length}** 件`,
         `- 1 畳当たり家賃あり: ${withRent} 件`,
         `- 空き家率を出せる（総住宅数と空き家数あり）: ${withVacancy} 件`,
+        `- 代表点と結合できる（読み口が方位を出せる）: **${coverage.matched}** 件 / 結合できない ${coverage.unmatched.length} 件`,
+        coverage.unmatched.length > 0
+          ? `  - 結合できない行（先頭 30）: ${unmatchedNames}`
+          : "",
         "",
       ].join("\n"),
     );

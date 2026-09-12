@@ -3,6 +3,7 @@ import {
   HOUSING_ITEMS,
   aggregateHousing,
   isMunicipalityCode,
+  joinCoverage,
   parseEstatValue,
 } from "../scripts/estatHousing";
 import type { EstatStatsResponse } from "../scripts/estatWealth";
@@ -143,5 +144,35 @@ describe("aggregateHousing", () => {
     );
     expect(rows).toHaveLength(1);
     expect(rows[0].totalDwellings).toBe(10);
+  });
+});
+
+describe("joinCoverage", () => {
+  const row = (areaCode: string, areaName: string) => ({
+    areaCode,
+    areaName,
+    totalDwellings: null,
+    vacantDwellings: null,
+    rentPerTatamiYen: null,
+    tatamiPerRental: null,
+    floorAreaPerRental: null,
+  });
+
+  it("代表点にあるコードだけを結合できると数え、無い行は顔ぶれごと返す", () => {
+    const codes = new Set(["13101", "01101"]);
+    const c = joinCoverage(
+      [
+        row("13101", "千代田区"),
+        row("01100", "札幌市"),
+        row("01101", "中央区"),
+      ],
+      codes,
+    );
+    expect(c.matched).toBe(2);
+    expect(c.unmatched.map((r) => r.areaCode)).toEqual(["01100"]);
+  });
+
+  it("空なら 0 / 0", () => {
+    expect(joinCoverage([], new Set())).toEqual({ matched: 0, unmatched: [] });
   });
 });

@@ -114,3 +114,16 @@ export function aggregateHousing(data: EstatStatsResponse): HousingRow[] {
       r.floorAreaPerRental !== null,
   );
 }
+
+/**
+ * 取り込んだ行のうち、読み口の代表点（municipalityCoords + areaDirections
+ * のコード）に結合できる行を数える。結合できない行は顔ぶれごと返す
+ * （政令市の親コードのような「体系の違い」は、名前を見れば分かる）。
+ */
+export function joinCoverage(
+  rows: readonly HousingRow[],
+  codes: ReadonlySet<string>,
+): { matched: number; unmatched: HousingRow[] } {
+  const unmatched = rows.filter((r) => !codes.has(r.areaCode));
+  return { matched: rows.length - unmatched.length, unmatched };
+}
