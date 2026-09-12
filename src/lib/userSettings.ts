@@ -160,10 +160,41 @@ export async function loadSettings(): Promise<LoadResult> {
   }
 }
 
+/**
+ * クラウドへ保存できなかった理由。**画面の文言はこれで分ける。**
+ *
+ * 以前は `synced: false` の 1 つしか無く、次の 4 つが同じ
+ * 「この端末に保存しました。ログインすると、ほかの端末でも同じ設定が
+ * 使えます。」になっていた。
+ *
+ *   - 未ログイン（そのとおりの案内）
+ *   - ログインしているのにサーバが 401（ログインし直せば直る）
+ *   - サーバが別の理由で断った（4xx/5xx。利用者には直せない）
+ *   - 送る項目が 1 つも無かった（そもそも通信していない）
+ *
+ * 2026-09-12 に「/profile で保存すると『この端末に保存しました』と出て
+ * プロフィールに保存できない」という報告を受けたが、**画面もログも
+ * どれなのかを言えなかった。**ログインしている人に「ログインすると」と
+ * 案内するのは、それ自体が間違った案内でもある。
+ */
+export type SaveFailure =
+  /** 401。未ログイン、またはログインの状態が切れている。 */
+  | "unauthenticated"
+  /** 401 以外の応答。status に実際のコードが入る。 */
+  | "rejected"
+  /** 応答が返らなかった（通信断・遮断）。 */
+  | "offline"
+  /** クラウドへ送る項目が 1 つも無かった（端末だけの項目を保存した）。 */
+  | "nothing-to-sync";
+
 export type SaveResult = {
   settings: Settings;
   /** クラウドにも保存できたか。未ログインなら false。 */
   synced: boolean;
+  /** synced が false のときだけ入る。なぜ送れなかったか。 */
+  reason?: SaveFailure;
+  /** reason が "rejected" のときの HTTP のコード。 */
+  status?: number;
 };
 
 /** 端末には必ず保存し、ログイン中ならクラウドにも送る。 */
@@ -172,7 +203,7 @@ export async function saveSettings(patch: Settings): Promise<SaveResult> {
   const payload = pickSynced(patch);
 
   if (Object.keys(payload).length === 0) {
-    return { settings, synced: false };
+    return { settings, synced: false, reason: "nothing-to-sync" };
   }
 
   try {
@@ -181,8 +212,14 @@ export async function saveSettings(patch: Settings): Promise<SaveResult> {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload),
     });
-    return { settings, synced: res.ok };
+    if (res.ok) return { settings, synced: true };
+    return {
+      settings,
+      synced: false,
+      reason: res.status === 401 ? "unauthenticated" : "rejected",
+      status: res.status,
+    };
   } catch {
-    return { settings, synced: false };
+    return { settings, synced: false, reason: "offline" };
   }
 }

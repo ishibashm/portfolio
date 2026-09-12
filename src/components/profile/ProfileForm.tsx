@@ -10,6 +10,7 @@ import {
   saveSettings,
   settingNumber,
   settingString,
+  type SaveResult,
 } from "@/lib/userSettings";
 import { readDestination, writeDestination } from "@/lib/destinationSetting";
 import { PLACE_LABEL_KEYS, profileCompletion } from "@/lib/profileCompletion";
@@ -53,6 +54,36 @@ import { ProfileProgress } from "@/components/profile/ProfileProgress";
 const MIN_BIRTH = "1900-01-01";
 
 type Status = "idle" | "loading" | "saving" | "saved" | "error";
+
+/**
+ * 保存したあとの文言。**「保存できなかった理由」ごとに変える。**
+ *
+ * 以前はここが 2 択で、クラウドへ届かなかったときは理由を問わず
+ * 「この端末に保存しました。ログインすると、ほかの端末でも同じ設定が
+ * 使えます。」と出していた。**ログインしている人にログインを勧める**
+ * ことになるうえ、2026-09-12 の「保存できない」という報告で、画面からも
+ * ログからも原因を絞れなかった（サーバに 5xx は 1 件も無かった）。
+ *
+ * 端末に保存できたことは変わらないので、そこは必ず先に言う。
+ */
+export function saveMessage(result: SaveResult): string {
+  if (result.synced) {
+    return "保存しました。ログイン中なので、ほかの端末でも同じ設定になります。";
+  }
+  const local = "この端末には保存しました。";
+  switch (result.reason) {
+    case "unauthenticated":
+      return `${local}ログインの状態が切れているため、クラウドには保存できていません。ログインし直すと、ほかの端末でも同じ設定が使えます。`;
+    case "rejected":
+      return `${local}クラウドへの保存は断られました（コード ${result.status ?? "不明"}）。時間をおいても直らないときは、このコードを添えてお知らせください。`;
+    case "offline":
+      return `${local}通信が届かず、クラウドには保存できていません。電波の状態を確かめて、もう一度お試しください。`;
+    case "nothing-to-sync":
+      return `${local}クラウドへ送る項目がありませんでした（この画面で保存できるのは生年月日・出生地・出発地です）。`;
+    default:
+      return `${local}ログインすると、ほかの端末でも同じ設定が使えます。`;
+  }
+}
 
 export function ProfileForm() {
   const [status, setStatus] = React.useState<Status>("loading");
@@ -221,11 +252,7 @@ export function ProfileForm() {
       });
       setSynced(result.synced);
       setStatus("saved");
-      setMessage(
-        result.synced
-          ? "保存しました。ログイン中なので、ほかの端末でも同じ設定になります。"
-          : "この端末に保存しました。ログインすると、ほかの端末でも同じ設定が使えます。",
-      );
+      setMessage(saveMessage(result));
     } catch {
       setStatus("error");
       setMessage(
