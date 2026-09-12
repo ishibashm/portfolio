@@ -39,10 +39,8 @@ describe("天中殺の「今年の状態」の札", () => {
 
     render(<TenchusatsuVisualizer birthDateStr={BIRTH} />);
 
-    expect(
-      screen.getByText(/Current Year Status \(2025\)/),
-    ).toBeInTheDocument();
-    expect(screen.queryByText(/Current Year Status \(2026\)/)).toBeNull();
+    expect(screen.getByText(/今年（2025 年・立春から）/)).toBeInTheDocument();
+    expect(screen.queryByText(/今年（2026 年・立春から）/)).toBeNull();
   });
 
   it("札の年と、VOID / CLEAR の中身の年が一致する", () => {
@@ -52,11 +50,30 @@ describe("天中殺の「今年の状態」の札", () => {
     const expected = calculateTenchusatsu(new Date(BIRTH), 2025);
     render(<TenchusatsuVisualizer birthDateStr={BIRTH} />);
 
-    const phase = expected.isYearTenchusatsu ? "VOID PHASE" : "CLEAR PHASE";
+    const phase = expected.isYearTenchusatsu ? "年の天中殺" : "天中殺ではない";
     expect(screen.getByText(phase)).toBeInTheDocument();
-    expect(
-      screen.getByText(/Current Year Status \(2025\)/),
-    ).toBeInTheDocument();
+    expect(screen.getByText(/今年（2025 年・立春から）/)).toBeInTheDocument();
+  });
+
+  it("8 年の帯を描く（見出しの「周期」の実体）", () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-06-01T12:00:00+09:00"));
+
+    render(<TenchusatsuVisualizer birthDateStr={BIRTH} />);
+
+    const strip = screen.getByRole("list", { name: "前後 8 年の天中殺" });
+    const cells = strip.querySelectorAll("li");
+    expect(cells).toHaveLength(8);
+    // 3 年前から 4 年先まで。今年が含まれる。
+    expect(strip.textContent).toContain("2023");
+    expect(strip.textContent).toContain("2026");
+    expect(strip.textContent).toContain("2030");
+    // 12 年に 2 年なので、8 年の窓に天中殺の年は 1 つか 2 つ入る。
+    const voidCells = Array.from(cells).filter((c) =>
+      c.textContent?.includes("天中殺"),
+    );
+    expect(voidCells.length).toBeGreaterThanOrEqual(1);
+    expect(voidCells.length).toBeLessThanOrEqual(2);
   });
 
   it("立春を過ぎていれば今までどおり暦年と同じ", () => {
@@ -66,8 +83,6 @@ describe("天中殺の「今年の状態」の札", () => {
     expect(honmeiYearFor(new Date())).toBe(legacyLabelYear());
 
     render(<TenchusatsuVisualizer birthDateStr={BIRTH} />);
-    expect(
-      screen.getByText(/Current Year Status \(2026\)/),
-    ).toBeInTheDocument();
+    expect(screen.getByText(/今年（2026 年・立春から）/)).toBeInTheDocument();
   });
 });

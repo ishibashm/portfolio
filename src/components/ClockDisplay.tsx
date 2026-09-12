@@ -117,10 +117,13 @@ export function ClockDisplay({
 
       {/* 1. Spatial Phase (Kimon) */}
       <div className="text-center md:text-left space-y-1 w-1/3">
-        <div className="text-[9px] md:text-[10px] tracking-[0.2em] md:tracking-[0.3em] text-stone-600 uppercase font-mono mb-1">
-          Matrix Phase
-          <span className="hidden sm:block text-[9px] tracking-normal text-stone-600 mt-1 normal-case font-sans whitespace-nowrap">
-            (地磁気と太陽角による空間位相)
+        {/* 以前は "Matrix Phase (地磁気と太陽角による空間位相)" と書いて
+            いたが、出しているのは真太陽時で切った 2 時間ごとの刻の十二支
+            そのもの（getKimonHour）。地磁気は見ていない。実装のとおりに書く。 */}
+        <div className="text-[10px] tracking-[0.2em] text-stone-600 mb-1">
+          いまの刻
+          <span className="hidden sm:block text-[10px] tracking-normal text-stone-600 mt-1 font-sans whitespace-nowrap">
+            （真太陽時で切る 2 時間ごとの十二支）
           </span>
         </div>
         <div
@@ -129,16 +132,16 @@ export function ClockDisplay({
           {kimon?.japanese || "--"}
         </div>
         <div className="text-xs md:text-sm tracking-widest text-stone-500 font-serif">
-          {kimon?.reading || "--"}
+          {kimon ? (isVoidTime ? "天中殺の刻" : "の刻") : "--"}
         </div>
       </div>
 
       {/* 2. Lunar Phase & Rokuyo */}
       <div className="text-center space-y-1 border-x border-stone-200 px-4 w-1/3">
-        <div className="text-[9px] md:text-[10px] tracking-[0.2em] md:tracking-[0.3em] text-purple-400/80 uppercase font-mono mb-1">
-          Lunar Cycle
-          <span className="hidden sm:block text-[9px] tracking-normal text-stone-600 mt-1 normal-case font-sans whitespace-nowrap">
-            (太陰暦 / 東洋カレンダー基準)
+        <div className="text-[10px] tracking-[0.2em] text-purple-500 mb-1">
+          六曜・旧暦
+          <span className="hidden sm:block text-[10px] tracking-normal text-stone-600 mt-1 font-sans whitespace-nowrap">
+            （日本時間の暦日で引く）
           </span>
         </div>
         <div
@@ -154,24 +157,25 @@ export function ClockDisplay({
       {/* 3. Temporal Phase (Time) */}
       <div className="flex flex-col items-center md:items-end space-y-3 w-1/3">
         <div className="text-right">
-          <div className="text-[9px] uppercase tracking-widest text-emerald-900/80 font-mono">
-            True Solar Time
+          <div className="text-[10px] tracking-widest text-emerald-900/80">
+            真太陽時
           </div>
           <div className="text-2xl sm:text-3xl font-mono font-light text-emerald-600">
             {formatTime(new Date(now.getTime() + (eot + longOffset) * 60000))}
           </div>
         </div>
         <div className="text-right">
-          <div className="text-[9px] uppercase tracking-widest text-stone-600 font-mono">
-            Standard JST
+          <div className="text-[10px] tracking-widest text-stone-600">
+            日本標準時
           </div>
           <div className="text-lg font-mono font-light text-stone-600">
             {formatTime(now)}
           </div>
         </div>
+        {/* 真太陽時 ＝ 日本標準時 ＋ 均時差 ＋ 経度差。内訳を分で出す。 */}
         <div className="text-[10px] font-mono text-stone-600 gap-2 flex justify-end">
-          <span>EOT:{eot.toFixed(1)}m</span>
-          <span>OS:{longOffset.toFixed(1)}m</span>
+          <span>均時差 {eot.toFixed(1)} 分</span>
+          <span>経度差 {longOffset.toFixed(1)} 分</span>
         </div>
       </div>
     </div>
