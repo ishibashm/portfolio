@@ -43,16 +43,12 @@ export const TenchusatsuVisualizer: React.FC<TenchusatsuVisualizerProps> = ({
 
   const baseYear = currentYear - 3;
   /*
-    **消さないこと。**未使用だが、これは「作りかけ」のしるし。
-
-    この部品の見出しは「Tenchusatsu (Void) **Cycle** Diagnostics /
-    天中殺**周期**の解読」だが、実際に描いているのは日干支の欄と
-    今年の状態の 2 枚だけで、**周期を出す表示が無い。**
-    その表示に渡すはずだった 8 年ぶん（VOID / CLEAR）がこれ。
-
-    消すと baseYear も道連れになり、何を出すつもりだったのかが
-    分からなくなる。扱いは相談してから決める
-    （CLAUDE.md 4 節の setMapProperties と同じ）。
+    8 年ぶんの帯。見出しが「天中殺の周期」なのに、長らく日干支の欄と
+    今年の状態の 2 枚しか描いておらず、この配列は計算だけして捨てて
+    いた（CLAUDE.md 4 節の「消してはいけない未使用」に載せていた
+    `years`）。総点検（2026-09-12）で描く先を作って繋いだ。
+    12 年に 2 年が天中殺なので、3 年前から 4 年先までの 8 年を出せば
+    必ず 1 回は見える。
   */
   const years = Array.from({ length: 8 }).map((_, i) => {
     const y = baseYear + i;
@@ -72,16 +68,15 @@ export const TenchusatsuVisualizer: React.FC<TenchusatsuVisualizerProps> = ({
       列で幅を決める。
     */
     <div className="bg-white/80 rounded-sm shadow-lg border border-stone-200 p-4 mt-4 w-full h-full">
-      <h3 className="text-[10px] uppercase font-mono tracking-widest text-stone-500 mb-4 border-b border-stone-200 pb-2 flex items-center gap-2">
-        <span className="text-red-500 blur-[0.5px]">◆</span> Tenchusatsu (Void)
-        Cycle Diagnostics / 天中殺周期の解読
+      <h3 className="text-[10px] tracking-widest text-stone-500 mb-4 border-b border-stone-200 pb-2 flex items-center gap-2">
+        <span className="text-red-500 blur-[0.5px]">◆</span> 天中殺の周期
       </h3>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {/* Profile */}
         <div className="bg-white/70 p-3 rounded-sm border border-stone-200 flex flex-col justify-center">
-          <h4 className="font-semibold text-[9px] text-stone-600 uppercase tracking-widest mb-2 border-b border-stone-200 pb-1">
-            Base Imprint (日干支)
+          <h4 className="font-semibold text-[10px] text-stone-600 tracking-widest mb-2 border-b border-stone-200 pb-1">
+            生まれた日の干支
           </h4>
           {/*
               左右に振る行は、収まらないときだけ 2 段にする。以前は
@@ -95,7 +90,7 @@ export const TenchusatsuVisualizer: React.FC<TenchusatsuVisualizerProps> = ({
           <dl className="space-y-1 text-sm font-mono">
             <div className="flex flex-wrap items-baseline gap-x-2">
               <dt className="text-stone-600 text-[10px] whitespace-nowrap">
-                Birth Date:
+                生年月日
               </dt>
               <dd className="text-stone-600 ml-auto whitespace-nowrap">
                 {birthDateStr}
@@ -103,7 +98,7 @@ export const TenchusatsuVisualizer: React.FC<TenchusatsuVisualizerProps> = ({
             </div>
             <div className="flex flex-wrap items-baseline gap-x-2">
               <dt className="text-stone-600 text-[10px] whitespace-nowrap">
-                Day Pillar (干支):
+                日干支
               </dt>
               <dd className="font-bold text-stone-600 ml-auto whitespace-nowrap">
                 {data.ganZhi}
@@ -111,16 +106,17 @@ export const TenchusatsuVisualizer: React.FC<TenchusatsuVisualizerProps> = ({
             </div>
             <div className="flex flex-wrap items-baseline gap-x-2">
               <dt className="text-stone-600 text-[10px] whitespace-nowrap">
-                Void Zodiac Group:
+                天中殺（空亡）
               </dt>
               <dd className="text-red-700 font-bold tracking-widest ml-auto whitespace-nowrap">
                 {data.tenchusatsu.name}
               </dd>
             </div>
           </dl>
-          <div className="mt-3 text-[9px] text-stone-600 leading-tight">
-            *
-            算出された日干支から、四柱推命でいう天中殺（空亡）の周期を求めています。伝統的に、大きな決断や移動を控えるのが良いとされる期間です。
+          <div className="mt-3 text-[10px] text-stone-600 leading-tight">
+            日干支から、四柱推命でいう天中殺（空亡）の年を求めています。12
+            年のうち 2
+            年で、伝統的に大きな決断や移動を控えるのが良いとされる期間です。
           </div>
         </div>
 
@@ -129,33 +125,53 @@ export const TenchusatsuVisualizer: React.FC<TenchusatsuVisualizerProps> = ({
           <div
             className={`p-4 rounded-sm border ${data.isYearTenchusatsu ? "bg-red-50 border-red-200" : "bg-emerald-50 border-emerald-200"} text-center flex flex-col justify-center gap-2 h-full`}
           >
-            <span className="text-[10px] tracking-widest uppercase font-bold text-stone-600">
-              Current Year Status ({currentYear})
+            <span className="text-[10px] tracking-widest font-bold text-stone-600">
+              今年（{currentYear} 年・立春から）
             </span>
             {data.isYearTenchusatsu ? (
               <>
-                <span className="text-xl md:text-2xl font-bold tracking-[0.2em] text-red-500 animate-pulse">
-                  VOID PHASE
+                <span className="text-xl md:text-2xl font-bold tracking-[0.2em] text-red-500">
+                  年の天中殺
                 </span>
                 {/* 以前は red-400/80。赤地（red-50）に対して約 1.9:1 で
                     読めなかった。red-700 で 5.9:1。 */}
                 <span className="text-[10px] text-red-700">
-                  現在は年の天中殺期間です。能動的な行動はリセットされやすい状態です。
+                  今年はあなたの天中殺の年です。伝統的に、引越しや大きな決断は避けるとされます。
                 </span>
               </>
             ) : (
               <>
                 <span className="text-xl md:text-2xl font-bold tracking-[0.2em] text-emerald-700">
-                  CLEAR PHASE
+                  天中殺ではない
                 </span>
                 <span className="text-[10px] text-emerald-700">
-                  今年は天中殺の年ではありません。空間的な年単位の制約はクリアです。
+                  今年はあなたの天中殺の年ではありません。
                 </span>
               </>
             )}
           </div>
         </div>
       </div>
+
+      {/* 8 年の帯。見出しの「周期」を実際に描く。 */}
+      <ol
+        className="mt-4 grid grid-cols-4 gap-1 sm:grid-cols-8"
+        aria-label="前後 8 年の天中殺"
+      >
+        {years.map((y) => (
+          <li
+            key={y.year}
+            className={`rounded-sm border px-1 py-1.5 text-center text-[10px] ${
+              y.status === "VOID"
+                ? "border-red-200 bg-red-50 text-red-700 font-bold"
+                : "border-stone-200 bg-white/70 text-stone-600"
+            } ${y.year === currentYear ? "ring-1 ring-stone-400" : ""}`}
+          >
+            <div>{y.year}</div>
+            <div>{y.status === "VOID" ? "天中殺" : "—"}</div>
+          </li>
+        ))}
+      </ol>
     </div>
   );
 };
