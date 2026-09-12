@@ -3,12 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { toUserMessage } from "@/lib/errorMessage";
 import type { Settings } from "@/lib/userSettings";
-import {
-  loadProfilePresets,
-  saveProfilePresets,
-  deleteProfilePreset,
-  type ProfilePreset,
-} from "@/lib/profilePresetSync";
+import { ProfilePicker } from "@/components/profile/ProfilePicker";
 import { ALL_DIRECTIONS, DIRECTION_LABELS } from "@/utils/auspiciousDays";
 import { parseWealthStatus } from "@/lib/wealthMapPresentation";
 import { directionLabelShort } from "@/lib/directionLabels";
@@ -26,9 +21,6 @@ import {
   ChevronRight,
   Search,
   Filter,
-  Bookmark,
-  Save,
-  Trash2,
 } from "lucide-react";
 import Link from "next/link";
 import { WealthMap } from "@/components/WealthMap";
@@ -194,14 +186,10 @@ export default function RegionalWealthPage() {
   const [filterMinScore, setFilterMinScore] = useState<string>("");
   const itemsPerPage = 50;
 
-  // Preset state
-  const [presets, setPresets] = useState<ProfilePreset[]>([]);
-  const [selectedPresetId, setSelectedPresetId] = useState<string>("");
-  const [newPresetName, setNewPresetName] = useState<string>("");
-  const [presetCloudSynced, setPresetCloudSynced] = useState<boolean | null>(
-    null,
-  );
-  const [presetNeedsLogin, setPresetNeedsLogin] = useState(false);
+  /* 控えの呼び出し・保存・削除はこの頁から外し、ProfilePicker と
+     /profile・/account に一本化した（lib/activeProfile。利用者の指摘、
+     2026-09-12）。この頁だけが控えに持っていた目標日・エンジン・層は、
+     控えの項目ではなく画面の設定として扱う。 */
 
   // Map Picker State
   const [showBirthMapPicker, setShowBirthMapPicker] = useState(false);
@@ -485,15 +473,6 @@ export default function RegionalWealthPage() {
   // Load Presets & Last Config
   useEffect(() => {
     if (typeof window !== "undefined") {
-      // プリセットは他画面と同じ profilePresetSync 経由で読む。
-      // ここだけ localStorage を直接触っていたため、保存内容がクラウドに
-      // 上がらず、他画面がキャッシュを書き直したときに消えていた。
-      void loadProfilePresets(fetch, window.localStorage).then((result) => {
-        setPresets(result.presets);
-        setPresetCloudSynced(result.cloudSynced);
-        setPresetNeedsLogin(result.reason === "unauthenticated");
-      });
-
       let bDate = "";
       let bLat = "";
       let bLon = "";
@@ -634,106 +613,6 @@ export default function RegionalWealthPage() {
       );
     };
   }, []);
-
-  const persistPresets = async (updated: ProfilePreset[]) => {
-    setPresets(updated);
-    if (typeof window === "undefined") return;
-    const result = await saveProfilePresets(updated, fetch, window.localStorage);
-    // 足す・上書きだけ。他所で足したものは残るので、返ってきた最新で差し替える
-    setPresets(result.presets);
-    setPresetCloudSynced(result.cloudSynced);
-    setPresetNeedsLogin(result.reason === "unauthenticated");
-  };
-
-  const handleSavePreset = () => {
-    if (!newPresetName.trim()) {
-      alert("プリセット名を入力してください。");
-      return;
-    }
-    // 共有スキーマは緯度経度を数値で持つ。画面側の文字列のまま入れると
-    // 型検証を通らず、クラウドへ上がらないまま端末内に取り残される。
-    const coords = [baseLat, baseLon, birthLat, birthLon].map(parseFloat);
-    if (!coords.every(Number.isFinite)) {
-      alert("出生地と現在地の緯度経度を入力してください。");
-      return;
-    }
-    const [bsLat, bsLon, bLat, bLon] = coords;
-
-    const newPreset: ProfilePreset = {
-      id: `preset_${Date.now()}`,
-      name: newPresetName.trim(),
-      birthDate,
-      birthLat: bLat,
-      birthLon: bLon,
-      baseLat: bsLat,
-      baseLon: bsLon,
-      targetDate,
-      engineType,
-      layerMode,
-      createdAt: new Date().toISOString(),
-    };
-    setSelectedPresetId(newPreset.id);
-    setNewPresetName("");
-    void persistPresets([...presets, newPreset]);
-  };
-
-  const handleLoadPreset = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    const pId = e.target.value;
-    setSelectedPresetId(pId);
-    if (!pId) return;
-
-    const preset = presets.find((p) => p.id === pId);
-    if (preset) {
-      // 他画面で作られたプリセットには wealth 固有の項目が無い。
-      // その場合は現在の設定を維持する。
-      const nextTargetDate = preset.targetDate ?? targetDate;
-      const nextEngineType = preset.engineType ?? engineType;
-      const nextLayerMode = preset.layerMode ?? layerMode;
-      const nextBaseLat = String(preset.baseLat);
-      const nextBaseLon = String(preset.baseLon);
-      // 出生地は任意。控えに入っていなければ空欄のまま（この頁は空文字を
-      // 「未入力」として扱い、API へ送らない）。String(undefined) を通すと
-      // "undefined" という文字列が欄に入る。
-      const nextBirthLat =
-        preset.birthLat === undefined ? "" : String(preset.birthLat);
-      const nextBirthLon =
-        preset.birthLon === undefined ? "" : String(preset.birthLon);
-
-      setTargetDate(nextTargetDate);
-      setBirthDate(preset.birthDate);
-      setBaseLat(nextBaseLat);
-      setBaseLon(nextBaseLon);
-      setBirthLat(nextBirthLat);
-      setBirthLon(nextBirthLon);
-      setEngineType(nextEngineType);
-      setLayerMode(nextLayerMode);
-
-      // Auto fetch with new preset params
-      fetchData({
-        targetDate: nextTargetDate,
-        birthDate: preset.birthDate,
-        baseLat: nextBaseLat,
-        baseLon: nextBaseLon,
-        birthLat: nextBirthLat,
-        birthLon: nextBirthLon,
-        engineType: nextEngineType,
-        layerMode: nextLayerMode,
-        lunarPhaseModifier: lunarPhaseModifier,
-      });
-    }
-  };
-
-  const handleDeletePreset = () => {
-    if (!selectedPresetId) return;
-    const id = selectedPresetId;
-    setSelectedPresetId("");
-    // 消すのは専用の口で（古い一覧の丸ごと保存で他所の分まで消さない）
-    void deleteProfilePreset(id, fetch, window.localStorage).then((result) => {
-      setPresets(result.presets);
-      setPresetCloudSynced(result.cloudSynced);
-      setPresetNeedsLogin(result.reason === "unauthenticated");
-    });
-  };
 
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat("ja-JP", {
@@ -1062,67 +941,10 @@ export default function RegionalWealthPage() {
 
         {/* Controls Section */}
         <div className="bg-white dark:bg-white p-4 md:p-6 rounded-2xl border border-gray-200 dark:border-stone-200 shadow-sm flex flex-col gap-5">
-          {/* 保存先が端末だけになっている状態を黙って進めない */}
-          {presetCloudSynced === false && (
-            <div className="flex items-center gap-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800">
-              <span>
-                {presetNeedsLogin
-                  ? "未ログインのため、プリセットはこの端末にのみ保存されます。"
-                  : "クラウドと同期できていません。プリセットはこの端末にのみ保存されています。"}
-              </span>
-              {presetNeedsLogin && (
-                <a
-                  href="/login"
-                  className="shrink-0 rounded border border-amber-300 bg-white px-2 py-0.5 font-medium hover:bg-amber-100"
-                >
-                  ログイン
-                </a>
-              )}
-            </div>
-          )}
-
-          {/* Presets Row */}
-          <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 pb-4 border-b border-gray-100 dark:border-stone-200">
-            <div className="flex flex-wrap items-center gap-2">
-              <Bookmark className="w-4 h-4 text-indigo-500" />
-              <select
-                value={selectedPresetId}
-                onChange={handleLoadPreset}
-                className="bg-gray-50 dark:bg-stone-50 border border-gray-300 dark:border-stone-300 rounded-lg px-3 py-1.5 text-sm focus:ring-2 focus:ring-indigo-500 outline-none transition-all w-48 md:w-64"
-              >
-                <option value="">カスタム設定...</option>
-                {presets.map((p) => (
-                  <option key={p.id} value={p.id}>
-                    {p.name}
-                  </option>
-                ))}
-              </select>
-              {selectedPresetId && (
-                <button
-                  onClick={handleDeletePreset}
-                  className="p-1.5 text-red-500 hover:bg-red-50 dark:hover:bg-red-50 rounded-lg transition-colors"
-                  title="このプリセットを削除"
-                >
-                  <Trash2 className="w-4 h-4" />
-                </button>
-              )}
-            </div>
-            <div className="flex items-center gap-2 w-full md:w-auto">
-              <input
-                type="text"
-                placeholder="新しい設定の名前..."
-                value={newPresetName}
-                onChange={(e) => setNewPresetName(e.target.value)}
-                className="flex-1 md:w-48 bg-gray-50 dark:bg-stone-50 border border-gray-300 dark:border-stone-300 rounded-lg px-3 py-1.5 text-sm focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
-              />
-              <button
-                onClick={handleSavePreset}
-                className="px-3 py-1.5 bg-gray-100 dark:bg-stone-100 hover:bg-gray-200 dark:hover:bg-stone-200 text-gray-700 dark:text-stone-600 text-sm font-medium rounded-lg flex items-center gap-1 transition-colors shrink-0"
-              >
-                <Save className="w-4 h-4" />
-                保存
-              </button>
-            </div>
+          {/* 使用中のプロフィールの切り替え（全頁共通の 1 つの部品）。
+              作る・直す・消すは /profile と /account */}
+          <div className="pb-4 border-b border-gray-100 dark:border-stone-200">
+            <ProfilePicker />
           </div>
 
           {/* 判定に要るのは「いつ」「誰が」「どこから」の 3 つ。
@@ -1140,7 +962,6 @@ export default function RegionalWealthPage() {
                 value={targetDate}
                 onChange={(e) => {
                   setTargetDate(e.target.value);
-                  setSelectedPresetId("");
                   saveUnifiedConfig({ target_date: e.target.value });
                 }}
                 className="w-full bg-gray-50 dark:bg-stone-50 border border-gray-300 dark:border-stone-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
@@ -1155,7 +976,6 @@ export default function RegionalWealthPage() {
                 value={birthDate}
                 onChange={(e) => {
                   setBirthDate(e.target.value);
-                  setSelectedPresetId("");
                   saveUnifiedConfig({ birth_date: e.target.value });
                 }}
                 className="w-full bg-gray-50 dark:bg-stone-50 border border-gray-300 dark:border-stone-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
@@ -1174,7 +994,6 @@ export default function RegionalWealthPage() {
             lon={baseLon ? parseFloat(baseLon) : null}
             onAdopt={(date) => {
               setTargetDate(date);
-              setSelectedPresetId("");
               saveUnifiedConfig({ target_date: date });
             }}
           />
@@ -1195,7 +1014,6 @@ export default function RegionalWealthPage() {
                 value={engineType}
                 onChange={(e) => {
                   setEngineType(e.target.value);
-                  setSelectedPresetId("");
                   saveUnifiedConfig({
                     use_classical_board: e.target.value === "classical",
                   });
@@ -1214,7 +1032,6 @@ export default function RegionalWealthPage() {
                 value={layerMode}
                 onChange={(e) => {
                   setLayerMode(e.target.value);
-                  setSelectedPresetId("");
                   saveUnifiedConfig({ layer_mode: e.target.value });
                 }}
                 className="w-full bg-gray-50 dark:bg-stone-50 border border-gray-300 dark:border-stone-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
@@ -1240,7 +1057,6 @@ export default function RegionalWealthPage() {
                 onChange={(e) => {
                   const val = e.target.value === "true";
                   setUseTrueNorth(val);
-                  setSelectedPresetId("");
                   saveUnifiedConfig({ use_true_north: val });
                 }}
                 className="w-full bg-gray-50 dark:bg-stone-50 border border-gray-300 dark:border-stone-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
@@ -1258,7 +1074,6 @@ export default function RegionalWealthPage() {
                 onChange={(e) => {
                   const val = e.target.value === "true";
                   setLunarPhaseModifier(val);
-                  setSelectedPresetId("");
                   saveUnifiedConfig({ lunar_phase_modifier: val });
                 }}
                 className="w-full bg-gray-50 dark:bg-stone-50 border border-gray-300 dark:border-stone-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
@@ -1306,7 +1121,6 @@ export default function RegionalWealthPage() {
                       value={birthLat || ""}
                       onChange={(e) => {
                         setBirthLat(e.target.value);
-                        setSelectedPresetId("");
                         saveUnifiedConfig({
                           birth_lat: e.target.value
                             ? parseFloat(e.target.value)
@@ -1321,7 +1135,6 @@ export default function RegionalWealthPage() {
                       value={birthLon || ""}
                       onChange={(e) => {
                         setBirthLon(e.target.value);
-                        setSelectedPresetId("");
                         saveUnifiedConfig({
                           birth_lon: e.target.value
                             ? parseFloat(e.target.value)
@@ -1375,7 +1188,6 @@ export default function RegionalWealthPage() {
                     value={baseLat}
                     onChange={(e) => {
                       setBaseLat(e.target.value);
-                      setSelectedPresetId("");
                       saveUnifiedConfig({
                         base_lat: e.target.value
                           ? parseFloat(e.target.value)
@@ -1390,7 +1202,6 @@ export default function RegionalWealthPage() {
                     value={baseLon}
                     onChange={(e) => {
                       setBaseLon(e.target.value);
-                      setSelectedPresetId("");
                       saveUnifiedConfig({
                         base_lon: e.target.value
                           ? parseFloat(e.target.value)
@@ -1403,7 +1214,6 @@ export default function RegionalWealthPage() {
                   <button
                     onClick={() => {
                       handleGetGPS();
-                      setSelectedPresetId("");
                     }}
                     title="現在地をGPSで取得"
                     className="p-2.5 bg-gray-100 dark:bg-stone-100 hover:bg-gray-200 dark:hover:bg-stone-200 rounded-lg text-stone-600 dark:text-stone-500 transition-colors shrink-0"
