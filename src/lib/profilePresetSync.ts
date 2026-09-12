@@ -39,6 +39,13 @@ export interface ProfilePreset {
    * ため）。
    */
   active?: boolean;
+  /**
+   * 地名で選んだときの表示用の名前（「東京駅」「大阪市北区」）。判定には
+   * 使わない。無ければ表示側が座標から最寄りの市区町村を引く
+   * （lib/placeLabel）。座標を手で直したときは付けない。
+   */
+  birthLabel?: string;
+  baseLabel?: string;
   voidZodiacOverride?: string;
   geminiKey?: string;
   baselineHrvMean?: number;

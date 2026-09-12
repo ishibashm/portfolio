@@ -55,6 +55,12 @@ export interface ProfileValues {
   birthLon?: number;
   baseLat: number;
   baseLon: number;
+  /**
+   * 地名で選んだときの表示用の名前（「東京駅」）。判定には使わない。
+   * 座標を手で直したときは付けない（前の地名が別の場所に残らないよう）。
+   */
+  birthLabel?: string;
+  baseLabel?: string;
 }
 
 /** 座標の一致。保存の往復で末尾の桁が動くことがあるので幅を持つ。 */
@@ -213,6 +219,13 @@ export async function upsertActiveProfile(
     delete merged.birthLat;
     delete merged.birthLon;
   }
+  /* 地名は「今回選べたときだけ」持ち替える。空なら前の地名を消す
+     （座標が変わったのに前の地名が付いたまま出ないよう） */
+  if (input.values.baseLabel) merged.baseLabel = input.values.baseLabel;
+  else delete merged.baseLabel;
+  if (hasBirthPlace && input.values.birthLabel)
+    merged.birthLabel = input.values.birthLabel;
+  else delete merged.birthLabel;
 
   const others = latest.filter((p) => p.id !== merged.id);
   const result = await saveProfilePresets(
@@ -232,12 +245,18 @@ export async function upsertActiveProfile(
  * 表示用の 1 行。各道具の「使用中のプロフィール」の札と /account の
  * 一覧が同じ書き方になるよう、ここだけで組む。
  */
-export function describeProfile(p: {
-  name: string;
-  birthDate: string;
-  baseLat?: number | null;
-  baseLon?: number | null;
-}): string {
+export function describeProfile(
+  p: {
+    name: string;
+    birthDate: string;
+    baseLat?: number | null;
+    baseLon?: number | null;
+    baseLabel?: string;
+  },
+  /** 出発地の表示（lib/placeLabel で地名にしたもの）。無ければ座標。 */
+  basePlace?: string,
+): string {
   const birth = p.birthDate ? p.birthDate.slice(0, 10) : "生年月日 未設定";
-  return `${p.name}（${birth} 生・出発地 ${formatCoords(p.baseLat, p.baseLon)}）`;
+  const place = basePlace ?? p.baseLabel ?? formatCoords(p.baseLat, p.baseLon);
+  return `${p.name}（${birth} 生・出発地 ${place}）`;
 }
