@@ -24,6 +24,21 @@ export interface ProfilePreset {
   birthLon?: number;
   baseLat: number;
   baseLon: number;
+  /**
+   * **使用中**か。一覧の中で 1 件だけ真（`lib/activeProfile` の
+   * `markActive` が保証する）。
+   *
+   * 「登録内容（設定）」と「保存済みプロフィール（控え）」が別の概念
+   * だったので、/profile で登録しても一覧には出ず、どの控えが判定に
+   * 使われているのかも画面から分からなかった（利用者の指摘、
+   * 2026-09-12）。使用中の 1 件の値が設定（user_configs）と同じ、と
+   * 決めて、一覧・/profile・各道具の表示を 1 つの概念にそろえる。
+   *
+   * 旗の無い古い控えは「使用中でない」。設定と同じ値を持つ控えは
+   * `findActiveProfile` が使用中と見なす（旗を立てる前に作った控えの
+   * ため）。
+   */
+  active?: boolean;
   voidZodiacOverride?: string;
   geminiKey?: string;
   baselineHrvMean?: number;

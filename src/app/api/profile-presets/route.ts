@@ -21,6 +21,9 @@ const profilePresetFields = z
     birthLon: z.number().finite().optional(),
     baseLat: z.number().finite(),
     baseLon: z.number().finite(),
+    // 使用中の旗（lib/activeProfile）。.strip() があるため、ここに書かないと
+    // 往復で落ちて、別の端末で開くと使用中が分からなくなる。
+    active: z.boolean().optional(),
     voidZodiacOverride: z.string().optional(),
     geminiKey: z.string().optional(),
     baselineHrvMean: z.number().finite().optional(),
