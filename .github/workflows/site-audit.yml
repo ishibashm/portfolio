@@ -335,6 +335,46 @@ jobs:
             echo "どこも 0 件。絞り込みが効きすぎているか、配信元に地名が出ていない" | tee -a "$GITHUB_STEP_SUMMARY"
           fi
 
+      # 道具の頁が読む口。頁は 200 で描けても、口が落ちていれば札や表が
+      # 空のまま（「統計のある市区町村がありませんでした」）になり、上の
+      # URL 健全性では見えない。座標は東京都庁（公の地点。個人情報ではない）。
+      - name: Check tool APIs
+        run: |
+          set -uo pipefail
+          BASE="https://cloud-palette.com"
+          LAT=35.6896; LON=139.6917
+          echo "## 道具の口（東京都庁から）" | tee -a "$GITHUB_STEP_SUMMARY"
+
+          # 座標 → 市区町村名（#1215）。札と一覧が地名を出せるか
+          BODY=$(curl -sf --compressed "$BASE/api/geocode/reverse?lat=$LAT&lon=$LON" || true)
+          if [[ "$BODY" == *"東京都新宿区"* ]]; then
+            echo "geocode/reverse: 東京都新宿区" | tee -a "$GITHUB_STEP_SUMMARY"
+          else
+            echo "::error::geocode/reverse が新宿区を返さない: ${BODY:0:200}" | tee -a "$GITHUB_STEP_SUMMARY"
+            echo "FAIL=1" >> "$GITHUB_ENV"
+          fi
+          sleep 0.3
+
+          # 方位別の家賃・空き家率（#1198）。表が空だと札が空になる
+          BODY=$(curl -sf --compressed "$BASE/api/housing-stats/by-direction?baseLat=$LAT&baseLon=$LON&maxKm=150" || true)
+          N=$(echo "$BODY" | grep -o '"municipalitiesScanned":[0-9]*' | grep -o '[0-9]*$' || true)
+          if [ -n "$N" ] && [ "$N" -gt 0 ]; then
+            echo "housing-stats/by-direction: 市区町村 $N 件" | tee -a "$GITHUB_STEP_SUMMARY"
+          else
+            echo "::error::housing-stats/by-direction が市区町村を返さない: ${BODY:0:200}" | tee -a "$GITHUB_STEP_SUMMARY"
+            echo "FAIL=1" >> "$GITHUB_ENV"
+          fi
+          sleep 0.3
+
+          # 方位別の地価（#1176）
+          BODY=$(curl -sf --compressed "$BASE/api/land-prices/by-direction?baseLat=$LAT&baseLon=$LON&maxKm=150" || true)
+          if [[ "$BODY" == *'"directions"'* ]]; then
+            echo "land-prices/by-direction: 応答あり" | tee -a "$GITHUB_STEP_SUMMARY"
+          else
+            echo "::error::land-prices/by-direction が応答しない: ${BODY:0:200}" | tee -a "$GITHUB_STEP_SUMMARY"
+            echo "FAIL=1" >> "$GITHUB_ENV"
+          fi
+
       - name: Result
         run: |
           if [ "${FAIL:-0}" = "1" ]; then
