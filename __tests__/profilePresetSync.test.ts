@@ -384,13 +384,13 @@ describe("renameProfilePreset", () => {
  * 控えの中身を直す。
  *
  * 画面が扱うのは生年月日と 2 つの場所だけで、控えにはそれ以外
- * （鍵・基準値・どの評価を使うか）も入っている。画面の値だけで組み立て
+ * （空亡の上書き・基準値・どの評価を使うか）も入っている。画面の値だけで組み立て
  * 直すと**見えていない項目が消える。**
  */
 describe("applyPresetEdits", () => {
   const rich: ProfilePreset = {
     ...localPreset,
-    geminiKey: "secret",
+    voidZodiacOverride: "午未",
     baselineHrvMean: 42,
     usePsychologyScorer: true,
   };
@@ -421,7 +421,7 @@ describe("applyPresetEdits", () => {
       baseLon: 141.35,
     });
 
-    expect(next.geminiKey).toBe("secret");
+    expect(next.voidZodiacOverride).toBe("午未");
     expect(next.baselineHrvMean).toBe(42);
     expect(next.usePsychologyScorer).toBe(true);
   });
