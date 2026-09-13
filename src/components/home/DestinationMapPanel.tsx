@@ -33,6 +33,7 @@ import type {
 } from "../../utils/ephemerisEngine";
 import { PlaceInput } from "@/components/relocation/PlaceInput";
 import { nearestMunicipality, nearestPlaceLabel } from "@/lib/nearestPlace";
+import { directionLabelName } from "@/lib/directionLabels";
 import type { Layers } from "./ConsultPanel";
 import type { HeatmapColumn, TrendCell } from "../SolarTimeClock";
 import { getZonedDateTimeFields } from "@/utils/solarTime";
@@ -563,7 +564,11 @@ export default function DestinationMapPanel({
                     >
                       磁北: {targetDirInfo.magneticDirection}
                     </span>
-                    <span>{targetVectorStatus}</span>
+                    <span>
+                      {targetVectorStatus
+                        ? directionLabelName(targetVectorStatus)
+                        : null}
+                    </span>
                     {(() => {
                       const currentTendo =
                         classicalLayers?.tendoDirection ||
@@ -1141,7 +1146,7 @@ export default function DestinationMapPanel({
                             <td
                               key={i}
                               className={`p-1 border border-stone-200 cursor-pointer hover:scale-110 transition-all ${bgClass}`}
-                              title={`${d.label} 方位${dir}: ${st}${isExcluded ? " ／ 大凶のため除外対象" : ""} ${tendoNote} (クリックで層詳細・根拠表示)`}
+                              title={`${d.label} 方位${dir}: ${directionLabelName(st)}${isExcluded ? " ／ 大凶のため除外対象" : ""} ${tendoNote} (クリックで層詳細・根拠表示)`}
                               onClick={() => {
                                 setTimeOffsetDays(d.offsetDays);
                                 // 押した方位を地図でも強調する。
@@ -1162,7 +1167,7 @@ export default function DestinationMapPanel({
                             >
                               <button
                                 type="button"
-                                aria-label={`${d.label} 方位${dir}: ${st}`}
+                                aria-label={`${d.label} 方位${dir}: ${directionLabelName(st)}`}
                                 className="w-6 h-6 mx-auto flex items-center justify-center text-[10px]"
                               >
                                 {isExcluded ? (
@@ -1282,7 +1287,7 @@ export default function DestinationMapPanel({
                     <p className="text-[11px] text-stone-500 font-mono">
                       総合判定:{" "}
                       <strong className="text-emerald-600 font-bold">
-                        {selectedTrendCell.status}
+                        {directionLabelName(selectedTrendCell.status)}
                       </strong>
                     </p>
                   </div>

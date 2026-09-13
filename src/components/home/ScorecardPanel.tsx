@@ -20,6 +20,7 @@ import { TenChiJinEvaluation } from "../nba/TenChiJinEvaluation";
 import type { NBAData } from "@/types/nbaData";
 import type { MunicipalityWealthItem } from "@/lib/municipalityWealth";
 import type { ScoredProperty } from "@/lib/scoredProperty";
+import { directionLabelName } from "@/lib/directionLabels";
 import {
   SCORE_TIER_LEGEND,
   scoreCellClass,
@@ -512,7 +513,7 @@ export default function ScorecardPanel({
                                 <span
                                   className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-mono font-bold border uppercase tracking-wider ${statusBadgeClass(m.status)}`}
                                 >
-                                  {m.status.replace("NOISE_", "")}
+                                  {directionLabelName(m.status)}
                                 </span>
                                 <span
                                   className={`font-mono font-bold text-[10px] ${scoreTextColor(m.score)}`}
@@ -533,7 +534,7 @@ export default function ScorecardPanel({
                             <div
                               className={`font-bold ${kigakuTextClass(bd.kigaku)}`}
                             >
-                              {bd.kigaku.replace("NOISE_", "")}
+                              {directionLabelName(bd.kigaku)}
                             </div>
                             <div className="text-[9px] text-stone-600">
                               ベース: {bd.kigakuScore}点
@@ -685,7 +686,7 @@ export default function ScorecardPanel({
                                 <span
                                   className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-mono font-bold border uppercase tracking-wider ${statusBadgeClass(item.classicalStatus)}`}
                                 >
-                                  {item.classicalStatus.replace("NOISE_", "")}
+                                  {directionLabelName(item.classicalStatus)}
                                 </span>
                                 <span
                                   className={`font-mono font-bold text-[10px] ${scoreTextColor(
@@ -703,10 +704,7 @@ export default function ScorecardPanel({
                                 <span
                                   className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-mono font-bold border uppercase tracking-wider ${statusBadgeClass(item.physicalIndepStatus)}`}
                                 >
-                                  {item.physicalIndepStatus.replace(
-                                    "NOISE_",
-                                    "",
-                                  )}
+                                  {directionLabelName(item.physicalIndepStatus)}
                                 </span>
                                 <span
                                   className={`font-mono font-bold text-[10px] ${scoreTextColor(
@@ -724,9 +722,8 @@ export default function ScorecardPanel({
                                 <span
                                   className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-mono font-bold border uppercase tracking-wider ${statusBadgeClass(item.physicalCoupledStatus)}`}
                                 >
-                                  {item.physicalCoupledStatus.replace(
-                                    "NOISE_",
-                                    "",
+                                  {directionLabelName(
+                                    item.physicalCoupledStatus,
                                   )}
                                 </span>
                                 <span
@@ -765,7 +762,7 @@ export default function ScorecardPanel({
                                 <span
                                   className={`font-bold ${kigakuTextClass(bd.kigaku)}`}
                                 >
-                                  {bd.kigaku.replace("NOISE_", "")}
+                                  {directionLabelName(bd.kigaku)}
                                 </span>
                                 <span className="text-[9px] text-stone-600">
                                   ベース: {bd.kigakuScore}点
@@ -1555,7 +1552,7 @@ export default function ScorecardPanel({
                         <span
                           className={`inline-flex items-center self-start px-2.5 py-0.5 rounded-full text-[9px] font-mono font-bold border uppercase tracking-wider ${statusBadgeClass(detail.status)}`}
                         >
-                          {detail.status}
+                          {directionLabelName(detail.status)}
                         </span>
                       </div>
                       <div className="flex flex-col items-end gap-1">
@@ -1609,7 +1606,7 @@ export default function ScorecardPanel({
                             <div
                               key={i}
                               className={`border p-1 text-center rounded flex flex-col items-center justify-center transition-all ${bg}`}
-                              title={`${d.dateStr}: ${d.status}`}
+                              title={`${d.dateStr}: ${directionLabelName(d.status)}`}
                             >
                               <span className="text-[9px] opacity-70 font-mono">
                                 {mMonth}/{mDay}
@@ -1720,7 +1717,9 @@ export default function ScorecardPanel({
                                   <span
                                     className={`px-1 py-0.5 rounded text-[10px] font-mono border ${statusBadgeClass(rental.astrologyStatus)}`}
                                   >
-                                    {rental.astrologyStatus}
+                                    {directionLabelName(
+                                      parseBreakdown(rental).kigaku,
+                                    )}
                                   </span>
                                 </div>
                               </>
