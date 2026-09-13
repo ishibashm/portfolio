@@ -34,6 +34,17 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
+      # 「記事の取り込み漏れ」が content/blog の slug を読む。この job は
+      # 本番の URL を叩くだけで checkout を持っていなかったので、glob が
+      # 展開されず `*` が 1 本の「未取り込みの記事」として毎晩落ちた
+      # （2026-09-12 の初回の定時実行。#1235 で足したときに手動実行で
+      # 確かめたつもりが、そちらも同じ経路で落ちていたのを見落とした）。
+      # 記事の一覧だけ要るので sparse-checkout にする。
+      - uses: actions/checkout@v4
+        with:
+          sparse-checkout: content/blog
+          sparse-checkout-cone-mode: false
+
       - name: Fetch sitemap and check every URL
         run: |
           set -uo pipefail
@@ -126,7 +137,13 @@ jobs:
           BASE="https://cloud-palette.com"
           echo "## 記事の取り込み漏れ" | tee -a "$GITHUB_STEP_SUMMARY"
 
-          # リポジトリ側（下書きは除く）。
+          # リポジトリ側（下書きは除く）。checkout が無いと glob が展開
+          # されず `*` が 1 本の記事に化けるので、先に有無を見る。
+          if ! ls content/blog/*.md >/dev/null 2>&1; then
+            echo "::error::content/blog が無い（checkout が効いていない）" | tee -a "$GITHUB_STEP_SUMMARY"
+            echo "FAIL=1" >> "$GITHUB_ENV"
+            exit 0
+          fi
           REPO=$(for f in content/blog/*.md; do
             grep -q '^draft: true' "$f" || basename "$f" .md
           done | sort -u)
