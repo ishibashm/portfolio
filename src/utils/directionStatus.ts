@@ -150,6 +150,25 @@ export function vectorsForLayerMode(
   }
 }
 
+/**
+ * 時間軸の呼び名。地図の凡例・目的地の札・時間軸のボタンで同じ言葉を使う。
+ * 以前は DestinationMapPanel が自分の表を持ち、地図の凡例は内部の値を
+ * `toUpperCase()` して "[FINAL]" と出していた。
+ */
+export const LAYER_MODE_LABELS: Record<LayerMode, string> = {
+  final: "全統合（年・月・日）",
+  year: "年盤",
+  month: "月盤",
+  day: "日盤",
+  year_month: "年+月",
+  month_day: "月+日",
+  year_day: "年+日",
+};
+
+export function layerModeLabel(mode: LayerMode): string {
+  return LAYER_MODE_LABELS[mode];
+}
+
 export const ALL_LAYER_MODES: LayerMode[] = [
   "final",
   "year",
