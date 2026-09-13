@@ -89,7 +89,12 @@ export function SolarTimeTableComponent({
   };
 
   /* 日本時間で描く。端末のタイムゾーンで読むと、日本より西の端末では
-     刻の開始が前日の日付で出る。 */
+     刻の開始が前日の日付で出る。見出しの日付（toLocaleDateString は
+     timeZone 無しだと端末の日付）も同じ。 */
+  const jstDateLabel = (d: Date) => {
+    const f = getZonedDateTimeFields(d, 9);
+    return `${f.year}/${f.month}/${f.day}`;
+  };
   const formatTime = (d: Date) => {
     const f = getZonedDateTimeFields(d, 9);
     const pad = (n: number) => String(n).padStart(2, "0");
@@ -100,9 +105,9 @@ export function SolarTimeTableComponent({
     // Telemetry Header
     const telemetryHeaders = [
       "Record Date",
-      date.toLocaleDateString(),
+      jstDateLabel(date),
       "Time",
-      date.toLocaleTimeString(),
+      date.toLocaleTimeString("ja-JP", { timeZone: "Asia/Tokyo" }),
       "Latitude",
       latitude?.toFixed(4) || "N/A",
       "Longitude",
@@ -233,7 +238,7 @@ export function SolarTimeTableComponent({
     const csvUrl = URL.createObjectURL(csvBlob);
     const link = document.createElement("a");
     link.setAttribute("href", csvUrl);
-    const dateStr = date.toLocaleDateString().replace(/\//g, "-");
+    const dateStr = jstDateLabel(date).replace(/\//g, "-");
     link.setAttribute("download", `temporal_matrix_${dateStr}.csv`);
     document.body.appendChild(link);
     link.click();
@@ -253,23 +258,20 @@ export function SolarTimeTableComponent({
       {/* HUD Header */}
       <div className="flex flex-wrap items-end justify-between gap-2 border-b border-stone-200 pb-2">
         <div className="flex items-center gap-2">
-          <h2 className="text-xs uppercase font-mono tracking-[0.3em] text-stone-500">
-            Temporal Filter Matrix
+          <h2 className="text-xs font-mono tracking-[0.3em] text-stone-500">
+            刻の一覧
           </h2>
-          <span className="text-[10px] bg-stone-100 text-stone-500 px-1 py-0.5 ml-2">
-            v2.4.2
-          </span>
         </div>
         <div className="flex items-center gap-4">
           <div className="text-[10px] font-mono text-stone-600 tracking-widest hidden md:block">
-            {date.toLocaleDateString()} / LON: {longitude.toFixed(4)}
+            {jstDateLabel(date)} / 経度 {longitude.toFixed(2)}
           </div>
           {isAuthorized && (
             <button
               onClick={openPreview}
               className="px-3 py-1 bg-white border border-stone-300 text-stone-600 text-[9px] uppercase tracking-widest hover:bg-stone-100 transition-colors"
             >
-              Review & Export Telemetry
+              記録を確認して書き出す
             </button>
           )}
         </div>
@@ -680,13 +682,13 @@ export function SolarTimeTableComponent({
                 onClick={() => setShowPreview(false)}
                 className="px-4 py-2 text-stone-500 text-xs font-mono uppercase tracking-widest hover:text-stone-900"
               >
-                Cancel
+                やめる
               </button>
               <button
                 onClick={executeDownload}
                 className="px-6 py-2 bg-emerald-50 text-emerald-600 border border-emerald-200 text-xs font-mono uppercase tracking-widest hover:bg-emerald-900 transition-colors shadow-[0_0_10px_rgba(16,185,129,0.2)]"
               >
-                Confirm & Download
+                書き出す
               </button>
             </div>
           </div>

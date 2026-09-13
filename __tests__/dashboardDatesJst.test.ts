@@ -31,6 +31,8 @@ describe("dashboard の日付・時刻は日本時間で読む", () => {
         /\.get(?:FullYear|Month|Date|Day|Hours|Minutes)\(\)/,
       );
       expect(body).not.toMatch(/\.setHours\(/);
+      // toLocaleDateString / toLocaleTimeString は timeZone 無しだと端末の日付
+      expect(body).not.toMatch(/\.toLocale(?:Date|Time)String\(\)/);
       expect(body).toMatch(/getZonedDateTimeFields\(/);
     });
   }

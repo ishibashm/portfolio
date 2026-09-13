@@ -354,7 +354,7 @@ export default function DestinationMapPanel({
                   onClick={() => setTimeOffsetDays(0)}
                   className={`text-[10px] font-mono px-2 py-0.5 rounded-xl transition-colors border ${timeOffsetDays === 0 ? "bg-emerald-50 text-emerald-600 border-emerald-200" : "bg-white/80 text-stone-600 border-stone-200 hover:border-emerald-200 hover:text-emerald-600"}`}
                 >
-                  TODAY
+                  今日
                 </button>
                 <button
                   onClick={() => setTimeOffsetDays(30)}
@@ -615,7 +615,7 @@ export default function DestinationMapPanel({
               <div className="text-[9px] text-stone-600 font-mono flex justify-between items-center border-b border-stone-200 pb-1">
                 <span>目標日</span>
                 <span className="text-emerald-600 font-bold">
-                  {evalDate.toLocaleDateString()}{" "}
+                  {jstDateInputValue(evalDate)}{" "}
                   <span className="text-stone-600 font-normal ml-1">
                     (
                     {timeOffsetDays > 0 ? `+${timeOffsetDays}` : timeOffsetDays}
@@ -898,7 +898,7 @@ export default function DestinationMapPanel({
                     className="px-2.5 py-1.5 bg-stone-100 text-stone-600 border border-stone-200 hover:bg-stone-200 rounded-xl cursor-pointer font-bold"
                     title="現在月へリセット"
                   >
-                    RESET
+                    今月に戻す
                   </button>
                 </div>
 
