@@ -954,7 +954,7 @@ export default function ScorecardPanel({
                   onClick={handleExportGridCsv}
                   className="px-3 py-1 bg-stone-100 hover:bg-stone-200 text-stone-600 border border-stone-300 font-mono text-[9px] uppercase tracking-wider rounded transition-all"
                 >
-                  EXPORT PATTERN CSV
+                  CSV で書き出す
                 </button>
               </div>
             </div>
@@ -1534,7 +1534,7 @@ export default function ScorecardPanel({
                     <div className="bg-white/80 border border-stone-200 rounded-lg p-4 flex items-center justify-between">
                       <div className="flex flex-col gap-1">
                         <span className="text-[10px] text-stone-600 uppercase tracking-widest font-mono">
-                          Astrological Wave
+                          方位の判定
                         </span>
                         <span
                           className={`inline-flex items-center self-start px-2.5 py-0.5 rounded-full text-[9px] font-mono font-bold border uppercase tracking-wider ${statusBadgeClass(detail.status)}`}
@@ -1544,7 +1544,7 @@ export default function ScorecardPanel({
                       </div>
                       <div className="flex flex-col items-end gap-1">
                         <span className="text-[10px] text-stone-600 uppercase tracking-widest font-mono">
-                          Score
+                          点数
                         </span>
                         <span
                           className={`text-2xl font-mono font-bold ${scoreTextColor(
