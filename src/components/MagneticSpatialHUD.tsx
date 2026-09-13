@@ -160,13 +160,13 @@ export function MagneticSpatialHUD({
       {/* HUD Overlays */}
       <div className="absolute inset-x-0 bottom-0 flex flex-col items-center justify-center pointer-events-none select-none">
         <div className="text-[10px] font-mono text-blue-400/70 border-t border-blue-200 px-2 bg-white/70 md:backdrop-blur-sm">
-          SPATIAL INTERFERENCE HUD v1.0
+          磁力線の立体表示
         </div>
         <div className="flex gap-4 text-[9px] font-mono text-stone-600 mt-0.5">
           <span>D: {declination.toFixed(1)}°</span>
           <span>I: {inclination.toFixed(1)}°</span>
           <span className={kpIndex >= 4 ? "text-red-500" : "text-emerald-500"}>
-            WTH: Kp{kpIndex.toFixed(1)}
+            Kp {kpIndex.toFixed(1)}
           </span>
         </div>
       </div>
@@ -174,22 +174,22 @@ export function MagneticSpatialHUD({
       {/* Hover Info */}
       <div className="absolute top-0 left-0 w-full h-full bg-white/70 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col justify-center items-center p-4 text-[9px] font-mono pointer-events-none text-stone-600 md:backdrop-blur-sm border border-blue-200">
         <div className="text-blue-600 mb-2 border-b border-blue-200 w-full text-center pb-1">
-          3D VECTOR DIAGNOSIS
+          磁力線の向き
         </div>
         <div className="w-full flex justify-between">
-          <span>INCLINATION (伏角):</span>
+          <span>伏角:</span>
           <span className="text-stone-900">{inclination.toFixed(2)}°</span>
         </div>
         <div className="w-full flex justify-between">
-          <span>DECLINATION (偏角):</span>
+          <span>偏角:</span>
           <span className="text-stone-900">{declination.toFixed(2)}°</span>
         </div>
         <div className="w-full flex justify-between mt-1">
-          <span>SHIELD CAP (護身):</span>
+          <span>順化（基準値の同期日数から）:</span>
           <span className="text-emerald-500">{shieldCapacity}%</span>
         </div>
         <div className="mt-2 text-[9px] text-stone-600 leading-tight">
-          磁力線の立体的な向きを可視化。伏角が急なほど、垂直方向のノイズ（天気）の影響を受けやすくなります。
+          出発地の磁力線の向き（伏角・偏角）を立体で描いたものです。方位の判定には使っていません。
         </div>
       </div>
     </div>
