@@ -108,35 +108,41 @@ export const SUUMO_PERSONAL_SITE_EXCEPTION = true;
  * SUUMO の賃貸一覧の URL は、綴りではなく**数字のコード 3 つ**で決まる
  * （利用者が実物を貼ってくれた。2026-09-13）。
  *
- *     ar  地方        関東 030 / 東海 050
- *     ta  都道府県    東京 13 / 愛知 23
+ *     ar  地方        北海道 010 … 九州・沖縄 090（下の表）
+ *     ta  都道府県    2 桁。**ゼロ埋めのまま**（北海道 01 / 宮城 04 / 東京 13）
  *     sc  市区町村    港区 13103 / 名古屋市中区 23106
  *
  * `sc` は JIS の 5 桁で、**このサイトが持っている市区町村コードと同じもの**
- * （`areaContent` の `code`）。変換表を持たずに組み立てられる。
+ * （`areaContent` の `code`）。`ta` はその先頭 2 桁。変換表を持たずに
+ * 組み立てられる。
  *
  * 残りの欄（賃料・面積・築年数・敷礼）は「指定なし」の既定値をそのまま
  * 写す。**こちらで条件を足さない。**利用者が向こうの画面で選ぶ。
  *
- * ## 確かめた地方だけを持つ
+ * ## 推測しないでよかった例
  *
- * 実物を見たのは関東と東海だけ。他の 7 地方の `ar` は**推測しない**
- * （1,900 頁に死んだリンクを置くことになる）。未確認の地方は
- * `suumoCitySearchUrl` が null を返し、呼び出し側が地方のトップへ落とす。
+ * 9 地方ぶん実物を貼ってもらって確定した（2026-09-13）。**並びは素直では
+ * ない。**
+ *
+ *     070  四国    ← 中国だと思い込むところ
+ *     080  中国
+ *
+ * 地方の並び順から埋めていたら、中国と四国が入れ替わったまま気付けない
+ * （どちらも 200 を返す実在の頁なので、リンクは壊れず**別の地方が開く**）。
+ * `ta` も `1` ではなく `01` で、ここも外していた。**実物を見るまで
+ * 組み立てない**という決めが 2 か所で効いた。
  */
 const SUUMO_AREA_CODE: Readonly<Record<string, string>> = {
+  北海道: "010",
+  東北: "020",
   関東: "030",
+  "北陸・甲信越": "040",
   東海: "050",
+  近畿: "060",
+  四国: "070",
+  中国: "080",
+  "九州・沖縄": "090",
 };
-
-/**
- * 先頭が 0 の都道府県コード（北海道 01 など）で `ta` が `1` なのか `01` なのかを
- * まだ確かめていない。確かめるまでは、先頭が 0 の県では市区町村の一覧へ
- * 渡さない。
- */
-function suumoPrefParam(prefCode: string): string | null {
-  return prefCode.startsWith("0") ? null : prefCode;
-}
 
 /** 「指定なし」の既定値。利用者が貼ってくれた URL の並びをそのまま写す。 */
 const SUUMO_DEFAULT_QUERY =
@@ -144,8 +150,8 @@ const SUUMO_DEFAULT_QUERY =
   "&shkr1=03&shkr2=03&shkr3=03&shkr4=03&fw2=&srch_navi=1";
 
 /**
- * その市区町村の賃貸一覧。渡してよい根拠が無い・コードを確かめていない
- * ときは null を返す。**呼び出し側で組み立てない。**
+ * その市区町村の賃貸一覧。渡してよい根拠が無い・コードが壊れているときは
+ * null を返す。**呼び出し側で組み立てない。**
  *
  * @param code JIS の市区町村コード 5 桁（`areaContent` の `code` と同じ）
  */
@@ -154,11 +160,10 @@ export function suumoCitySearchUrl(code: string): string | null {
   if (!/^\d{5}$/.test(code)) return null;
   const prefCode = code.slice(0, 2);
   const ar = SUUMO_AREA_CODE[PREF_REGION[prefCode]];
-  const ta = suumoPrefParam(prefCode);
-  if (!ar || !ta) return null;
+  if (!ar) return null;
   return (
     "https://suumo.jp/jj/chintai/ichiran/FR301FC001/" +
-    `?ar=${ar}&bs=040&ta=${ta}&sc=${code}&${SUUMO_DEFAULT_QUERY}`
+    `?ar=${ar}&bs=040&ta=${prefCode}&sc=${code}&${SUUMO_DEFAULT_QUERY}`
   );
 }
 

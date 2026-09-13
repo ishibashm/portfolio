@@ -117,28 +117,50 @@ describe("外部サイトへのリンクは規約の範囲を出ない", () => {
     expect(PORTAL_LINK_DISCLAIMER).toContain("提携");
   });
 
-  it("市区町村の一覧は、実物で確かめた地方でだけ組み立てる", () => {
-    /* 利用者が実物を貼ってくれたのは関東（ar=030）と東海（ar=050）だけ。
-       他の地方の `ar` を推測すると、1,900 頁に死んだリンクを置くことに
-       なる（2026-09-10 に規約を推測して失敗したのと同じ形） */
-    expect(suumoCitySearchUrl("13103")).toBe(
-      "https://suumo.jp/jj/chintai/ichiran/FR301FC001/?ar=030&bs=040&ta=13&sc=13103" +
-        "&cb=0.0&ct=9999999&et=9999999&cn=9999999&mb=0&mt=9999999" +
-        "&shkr1=03&shkr2=03&shkr3=03&shkr4=03&fw2=&srch_navi=1",
-    );
-    expect(suumoCitySearchUrl("23106")).toContain(
-      "ar=050&bs=040&ta=23&sc=23106",
-    );
-    /* 未確認の地方（近畿・九州など）は渡さない */
-    expect(suumoCitySearchUrl("27127")).toBeNull();
-    expect(suumoCitySearchUrl("40132")).toBeNull();
+  /* 利用者が実物を貼ってくれた 9 地方ぶん（2026-09-13）。**1 文字ずつ
+     そのまま**。ここを書き換えるときは、必ず実物を見てからにする */
+  const SAMPLES: [string, string, string][] = [
+    ["01101", "北海道札幌市中央区", "ar=010&bs=040&ta=01&sc=01101"],
+    ["04101", "宮城県仙台市青葉区", "ar=020&bs=040&ta=04&sc=04101"],
+    ["13103", "東京都港区", "ar=030&bs=040&ta=13&sc=13103"],
+    ["17201", "石川県金沢市", "ar=040&bs=040&ta=17&sc=17201"],
+    ["23106", "愛知県名古屋市中区", "ar=050&bs=040&ta=23&sc=23106"],
+    ["27127", "大阪府大阪市北区", "ar=060&bs=040&ta=27&sc=27127"],
+    ["37201", "香川県高松市", "ar=070&bs=040&ta=37&sc=37201"],
+    ["34101", "広島県広島市中区", "ar=080&bs=040&ta=34&sc=34101"],
+    ["40132", "福岡県福岡市博多区", "ar=090&bs=040&ta=40&sc=40132"],
+  ];
+
+  it("実物と 1 文字ずつ同じものを組み立てる", () => {
+    for (const [code, name, query] of SAMPLES) {
+      expect(suumoCitySearchUrl(code), name).toBe(
+        "https://suumo.jp/jj/chintai/ichiran/FR301FC001/?" +
+          query +
+          "&cb=0.0&ct=9999999&et=9999999&cn=9999999&mb=0&mt=9999999" +
+          "&shkr1=03&shkr2=03&shkr3=03&shkr4=03&fw2=&srch_navi=1",
+      );
+    }
   });
 
-  it("先頭が 0 の県は、ta の書き方を確かめるまで渡さない", () => {
-    /* 北海道 01 で `ta=1` なのか `ta=01` なのかが分かっていない。
-       関東にも茨城 08・栃木 09 がある */
-    expect(suumoCitySearchUrl("01101")).toBeNull();
-    expect(suumoCitySearchUrl("08201")).toBeNull();
+  it("中国と四国を取り違えていない", () => {
+    /* **地方の並び順から埋めると入れ替わる。**070 が四国で 080 が中国。
+       どちらも実在する頁なのでリンクは壊れず、**別の地方が開く**だけで
+       気付けない。実物を見て確かめた組を、ここで名指しで固定する */
+    expect(suumoCitySearchUrl("37201")).toContain("ar=070"); // 高松（四国）
+    expect(suumoCitySearchUrl("34101")).toContain("ar=080"); // 広島（中国）
+  });
+
+  it("都道府県はゼロ埋めのまま渡す", () => {
+    /* `ta=1` ではなく `ta=01`。ここも実物を見るまで外していた */
+    expect(suumoCitySearchUrl("01101")).toContain("ta=01&");
+    expect(suumoCitySearchUrl("04101")).toContain("ta=04&");
+  });
+
+  it("47 県すべてで組み立てられる", () => {
+    const missing = PREF_CODES.filter(
+      (p) => suumoCitySearchUrl(`${p}201`) === null,
+    ).map((p) => `${p} ${prefNameByCode(p)}`);
+    expect(missing).toEqual([]);
   });
 
   it("壊れたコードでは組み立てない", () => {
