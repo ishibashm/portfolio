@@ -193,6 +193,7 @@ import {
   searchAreaFromUrl,
 } from "@/utils/arbitrageSearchArea";
 import { ActiveProfileBadge } from "@/components/profile/ActiveProfileBadge";
+import { nearestMunicipality, nearestPlaceLabel } from "@/lib/nearestPlace";
 
 /**
  * スキャナーで選べる都道府県と、選択時に地図を寄せる代表座標。
@@ -1655,6 +1656,26 @@ export default function ArbitrageScannerPage() {
     applySmartFilters(local);
   };
 
+  /*
+    出発地を**言葉**でも出す（2026-09-13。利用者の報告「愛知県名古屋市が
+    出発地なのに地図は京都」）。画面に出ていたのは数字 2 つだけで、県を
+    選ぶと**地図の中心だけがその県へ移る**（出発地は動かない）。どちらが
+    何なのか、画面からは読み取れなかった。
+
+    逆引きは手元の代表点で行う（`lib/nearestPlace`。外部へ要求を出さない）。
+  */
+  const basePlace = useMemo(() => {
+    const la = parseFloat(baseLat);
+    const lo = parseFloat(baseLon);
+    if (isNaN(la) || isNaN(lo)) return null;
+    return nearestMunicipality(la, lo);
+  }, [baseLat, baseLon]);
+  const basePlaceLabel = nearestPlaceLabel(basePlace);
+
+  /** 検索範囲に県を選んでいて、そこに出発地が入っていないか。 */
+  const areaExcludesBase =
+    prefecture !== "all" && basePlace !== null && basePlace.pref !== prefecture;
+
   // 検索範囲の表示値とAPI条件は、変更経路にかかわらず一緒に保存する。
   const applySearchAreaState = (newSearchArea: string) => {
     const nextFilters = filtersForSearchArea(newSearchArea);
@@ -2499,6 +2520,28 @@ export default function ArbitrageScannerPage() {
                 指摘、2026-09-12。「このプロフィールでこの方位です」） */}
             <ActiveProfileBadge purpose="方位の吉凶と物件の並び" className="mt-3" />
 
+            {/* 出発地と検索範囲は別の設定。県を選ぶと**地図の中心だけ**が
+                その県へ動き、方位の基準は出発地のまま。設定は引き出しの
+                中なので、食い違っていることが頁の上からは分からなかった
+                （利用者の報告、2026-09-13）。食い違うときだけ、ここに書く。 */}
+            {areaExcludesBase && (
+              <p className="mt-2 flex flex-wrap items-center gap-x-1 gap-y-1 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-[11px] leading-relaxed text-amber-900">
+                {/* 文の途中で改行すると、prettier が `{" "}` を挟んで日本語の
+                    文中に半角スペースが入る（jsxJapaneseLinebreak が拾う）。
+                    文字列は 1 つの式にまとめて渡す。 */}
+                <span>
+                  {`いま出しているのは ${prefecture} の物件です。方位の基準（出発地）は ${basePlaceLabel ?? "未設定"} のままで、地図だけがこの県へ動いています。`}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => handleSearchAreaChange(NEARBY_SEARCH_AREA)}
+                  className="inline-flex min-h-[24px] items-center font-bold underline hover:text-amber-950"
+                >
+                  出発地の周りで探す
+                </button>
+              </p>
+            )}
+
             {/* 市区町村ページ（/houi/area/*）には「この街を出発地にして
                 探す」でこちらへ来る導線があるのに、**戻る側が無い片道**
                 だった。県 → 市区町村で同じことが起きていて #799 で直して
@@ -2979,6 +3022,12 @@ export default function ArbitrageScannerPage() {
                           placeholder="経度"
                         />
                       </div>
+                      {/* 数字だけでは、どこを基準にしているのか分からない */}
+                      {basePlaceLabel && (
+                        <p className="text-[10px] text-stone-600 dark:text-stone-500">
+                          いまの出発地: {basePlaceLabel}
+                        </p>
+                      )}
                     </div>
 
                     {showBaseMapPicker && (
