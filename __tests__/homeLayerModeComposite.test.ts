@@ -37,9 +37,15 @@ describe("ホームの時間軸の畳み方", () => {
   );
 
   it("DestinationMapPanel の見出しは組み合わせの名前を持つ", () => {
-    const src = codeOnly("src/components/home/DestinationMapPanel.tsx");
+    /* 名前の表は utils/directionStatus の LAYER_MODE_LABELS に 1 つ
+       （地図の凡例・目的地の札で同じ言葉を使う）。DestinationMapPanel は
+       自前の表を持たず、そこから引く。 */
+    const labels = codeOnly("src/utils/directionStatus.ts");
     for (const label of ["年+月", "月+日", "年+日"]) {
-      expect(src).toContain(label);
+      expect(labels).toContain(label);
     }
+    const src = codeOnly("src/components/home/DestinationMapPanel.tsx");
+    expect(src).toMatch(/layerModeLabel\(activeLayerMode\)/);
+    expect(src).not.toMatch(/const LAYER_TITLE/);
   });
 });

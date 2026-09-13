@@ -15,17 +15,12 @@ import dynamic from "next/dynamic";
 import type { MapProperty } from "@/lib/mapProperty";
 import type { SpaceWeatherData } from "../../utils/spaceWeather";
 import type { GeomagneticData } from "../../utils/geomagnetism";
-import { vectorsForLayerMode, type LayerMode } from "@/utils/directionStatus";
+import {
+  layerModeLabel,
+  vectorsForLayerMode,
+  type LayerMode,
+} from "@/utils/directionStatus";
 
-/** 目的地の札の見出し。TacticalMagneticMap の時間軸ボタンと同じ呼び名。 */
-const LAYER_TITLE: Partial<Record<LayerMode, string>> = {
-  year: "年盤",
-  month: "月盤",
-  day: "日盤",
-  year_month: "年+月",
-  month_day: "月+日",
-  year_day: "年+日",
-};
 import type {
   ActionIntent,
   Direction,
@@ -239,7 +234,7 @@ export default function DestinationMapPanel({
               目的地の方位を評価する
             </h3>
           </div>
-          <p className="text-[10px] text-stone-600 mb-4 h-8 mt-1">
+          <p className="text-xs text-stone-600 mb-4 mt-1">
             目的地の方位の吉凶を、行動の目的（引越し・療養など）に合わせて評価します。
           </p>
           <div className="flex flex-col gap-3 mt-auto">
@@ -760,8 +755,7 @@ export default function DestinationMapPanel({
                   const classVectors = classicalLayers
                     ? vectorsForLayerMode(classicalLayers, activeLayerMode)
                     : undefined;
-                  const titleSuffix =
-                    LAYER_TITLE[activeLayerMode] ?? "統合（年・月・日）";
+                  const titleSuffix = layerModeLabel(activeLayerMode);
 
                   return (
                     <div className="flex flex-col gap-4">
@@ -1653,7 +1647,7 @@ export default function DestinationMapPanel({
                   <div className="text-emerald-500 font-bold mb-1">
                     物理の盤（天体の位置から）
                   </div>
-                  <p className="text-stone-500 text-[10px] sm:text-xs">
+                  <p className="text-stone-500 text-xs">
                     天体の実際の位置（astronomy-engine の VSOP87
                     による天体暦）から方位を割り当てます。木星の黄経や太陽・月の位置を使うため、暦の区切りではなく天体の動きに沿って変わります。
                     <br />
@@ -1668,7 +1662,7 @@ export default function DestinationMapPanel({
                   <div className="text-stone-500 font-bold mb-1">
                     古典の盤（節入りの暦から）
                   </div>
-                  <p className="text-stone-500 text-[10px] sm:text-xs">
+                  <p className="text-stone-500 text-xs">
                     伝統的な九星気学の暦を使います。立春などの二十四節気を区切りにする、規則どおりの盤です。統計に基づくものではありません。
                     <br />
                     <br />
@@ -1691,7 +1685,7 @@ export default function DestinationMapPanel({
                     <span className="w-2 h-2 bg-emerald-500 rounded-full"></span>
                     大吉方位
                   </div>
-                  <p className="text-stone-500 text-[10px] sm:text-xs">
+                  <p className="text-stone-500 text-xs">
                     凶殺が存在しないことに加え、あなたの「本命星」とその方位の星が『相生（互いを生かし合うとされる関係）』になっています。
                     <br />
                     <br />
@@ -1704,7 +1698,7 @@ export default function DestinationMapPanel({
                     <span className="w-2 h-2 bg-blue-500 rounded-full"></span>
                     平穏（凶ではない）
                   </div>
-                  <p className="text-stone-500 text-[10px] sm:text-xs">
+                  <p className="text-stone-500 text-xs">
                     五黄殺、暗剣殺、天中殺といった凶殺が存在しない方位です。
                     <br />
                     <br />
