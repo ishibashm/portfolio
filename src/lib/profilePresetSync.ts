@@ -47,7 +47,6 @@ export interface ProfilePreset {
   birthLabel?: string;
   baseLabel?: string;
   voidZodiacOverride?: string;
-  geminiKey?: string;
   baselineHrvMean?: number;
   baselineHrvStd?: number;
   baselineGsrMean?: number;
