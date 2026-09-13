@@ -741,7 +741,6 @@ export const SolarTimeClock = () => {
   const [targetLon, setTargetLon] = useState<number | null>(null);
   const [targetElevation, setTargetElevation] = useState<number | null>(null);
   const [voidZodiacOverride, setVoidZodiacOverride] = useState<string>("");
-  const [geminiKey, setGeminiKey] = useState<string>("");
   const [isAutoSearching, setIsAutoSearching] = useState(false);
 
   // Timing Optimizer Preferences & Results
@@ -1002,7 +1001,6 @@ export const SolarTimeClock = () => {
         applyNum("base_lat", setLat);
         applyNum("base_lon", setLon);
         applyStr("void_zodiac_override", setVoidZodiacOverride);
-        if (data.gemini_key_exists) setGeminiKey("********");
         applyNum("baseline_hrv_mean", setBaselineHrvMean);
         applyNum("baseline_hrv_std", setBaselineHrvStd);
         applyNum("baseline_gsr_mean", setBaselineGsrMean);
@@ -1219,7 +1217,6 @@ export const SolarTimeClock = () => {
         base_lat: lat,
         base_lon: lon,
         void_zodiac_override: voidZodiacOverride,
-        gemini_key_exists: geminiKey && geminiKey !== "",
         baseline_hrv_mean: baselineHrvMean,
         baseline_hrv_std: baselineHrvStd,
         baseline_gsr_mean: baselineGsrMean,
@@ -1265,9 +1262,6 @@ export const SolarTimeClock = () => {
           ? "設定を保存しました。ログイン中のため、他の端末でも同じ設定が使えます。"
           : "設定をこの端末に保存しました。別の端末やブラウザには引き継がれません。",
       );
-      if (geminiKey && geminiKey !== "") {
-        setGeminiKey("********");
-      }
     } catch (err) {
       console.error("Save Error:", err);
       alert("設定をこの端末に保存しました。");
@@ -4061,8 +4055,6 @@ export const SolarTimeClock = () => {
               onGetGPS={handleGetGPS}
               voidZodiacOverride={voidZodiacOverride}
               setVoidZodiacOverride={setVoidZodiacOverride}
-              geminiKey={geminiKey}
-              setGeminiKey={setGeminiKey}
               baselineHrvMean={baselineHrvMean}
               setBaselineHrvMean={setBaselineHrvMean}
               baselineHrvStd={baselineHrvStd}
