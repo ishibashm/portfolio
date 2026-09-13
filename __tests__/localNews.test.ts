@@ -31,6 +31,7 @@ const src = (id: string) => ({
 const news = (
   title: string,
   summary: string | null = null,
+  source: MergedNewsItem["source"] = src("test"),
 ): MergedNewsItem => ({
   item: {
     title,
@@ -38,7 +39,7 @@ const news = (
     publishedAt: "2026-09-01T00:00:00+09:00",
     summary,
   },
-  source: src("test"),
+  source,
 });
 
 describe("地名の候補", () => {
@@ -146,6 +147,54 @@ describe("絞り込み", () => {
   it("市の鍵が無い頁でも県で拾える", () => {
     const generic = { pref: "東京都", city: [] };
     const got = filterLocalNews([news("東京都の住宅施策")], generic, 10);
+    expect(got).toHaveLength(1);
+    expect(got[0].scope).toBe("pref");
+  });
+});
+
+describe("県ごとの配信（FeedSource.pref）", () => {
+  const keys = localNewsKeys("新潟県", "新潟県新潟市東区");
+  const niigataPaper = { ...src("niigata-paper"), pref: "新潟県" };
+  const hiroshimaPaper = { ...src("hiroshima-paper"), pref: "広島県" };
+
+  it("その県の配信から来た見出しは、地名が題に無くても県のものとして出る", () => {
+    const got = filterLocalNews(
+      [news("県立病院の建て替え計画が固まる", null, niigataPaper)],
+      keys,
+      10,
+    );
+    expect(got).toHaveLength(1);
+    expect(got[0].scope).toBe("pref");
+    expect(got[0].matched).toBe("新潟県");
+  });
+
+  it("他県の配信から来た見出しは、地名が無ければ拾わない", () => {
+    const got = filterLocalNews(
+      [news("県立病院の建て替え計画が固まる", null, hiroshimaPaper)],
+      keys,
+      10,
+    );
+    expect(got).toEqual([]);
+  });
+
+  it("その県の配信でも、市の名前が題にあれば市として先に出る", () => {
+    const got = filterLocalNews(
+      [
+        news("県内の地価が動く", null, niigataPaper),
+        news("新潟市東区で再開発が始まる", null, niigataPaper),
+      ],
+      keys,
+      10,
+    );
+    expect(got.map((g) => g.scope)).toEqual(["city", "pref"]);
+  });
+
+  it("他県の配信でも、題に県名があれば今までどおり拾う", () => {
+    const got = filterLocalNews(
+      [news("新潟県の企業と提携", null, hiroshimaPaper)],
+      keys,
+      10,
+    );
     expect(got).toHaveLength(1);
     expect(got[0].scope).toBe("pref");
   });

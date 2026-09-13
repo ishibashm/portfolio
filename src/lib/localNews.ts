@@ -133,6 +133,13 @@ export function filterLocalNews(
 
   for (const m of items) {
     const text = haystack(m);
+    /*
+      県ごとの配信（FeedSource.pref）から来た見出しは、地名が題に無くても
+      その県のものとして扱う。地方紙の見出しは「◯◯市で」と書かないことが
+      多く、地名の一致だけでは県の頁にほとんど出ない。他県の配信から
+      来たものは、この経路では拾わない（題に県名があれば下で拾う）。
+    */
+    const fromPrefFeed = !!m.source.pref && m.source.pref === keys.pref;
     const hitCity = keys.city.find((n) => text.includes(n));
     if (hitCity) {
       if (seen.has(m.item.link)) continue;
@@ -140,7 +147,7 @@ export function filterLocalNews(
       city.push({ item: m, scope: "city", matched: hitCity });
       continue;
     }
-    if (keys.pref && text.includes(keys.pref)) {
+    if (fromPrefFeed || (keys.pref && text.includes(keys.pref))) {
       if (seen.has(m.item.link)) continue;
       seen.add(m.item.link);
       pref.push({ item: m, scope: "pref", matched: keys.pref });
