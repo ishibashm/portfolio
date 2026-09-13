@@ -188,7 +188,7 @@ export function MagneticSpatialHUD({
           <span>順化（基準値の同期日数から）:</span>
           <span className="text-emerald-500">{shieldCapacity}%</span>
         </div>
-        <div className="mt-2 text-[9px] text-stone-600 leading-tight">
+        <div className="mt-2 text-[10px] text-stone-600 leading-tight">
           出発地の磁力線の向き（伏角・偏角）を立体で描いたものです。方位の判定には使っていません。
         </div>
       </div>

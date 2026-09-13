@@ -845,7 +845,7 @@ export default function MagneticMapInner({
       {/* 帯（TacticalMagneticMap の 2 段目、出発地の座標）と重ならない
           ように top-28。top-16 だと 1024〜1280px で座標の札が真北の行に
           被っていた（Playwright の実測。帯の高さは 1024px で 104px）。 */}
-      <div className="absolute top-28 right-4 z-[1000] pointer-events-none">
+      <div className="hidden sm:block absolute top-28 right-4 z-[1000] pointer-events-none">
         <div className="bg-white/80 md:backdrop-blur-md px-3 py-2 border border-blue-200 rounded-sm shadow-lg flex flex-col gap-1 items-end text-right">
           <div className="flex items-center gap-2 mb-1 justify-end">
             <div className="text-[10px] uppercase font-mono tracking-widest text-emerald-600">
@@ -863,7 +863,7 @@ export default function MagneticMapInner({
             出発地の偏角（WMM）: {declination > 0 ? "東偏" : "西偏"}
             {Math.abs(declination).toFixed(2)}°
           </div>
-          <div className="text-[9px] text-stone-600 mt-0.5 leading-tight max-w-[200px]">
+          <div className="text-[10px] text-stone-600 mt-0.5 leading-tight max-w-[220px]">
             ※方位の吉凶は真北を基準に判定しています。磁北の表示は、方位磁針で測ったときにどれだけずれるかを示す参考です。月交点（空間方位）と月相（時間補正）は別個に評価されています。
           </div>
         </div>
