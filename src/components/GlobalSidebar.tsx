@@ -260,7 +260,7 @@ export function GlobalSidebar() {
           flex items-center justify-between px-3.5 py-2.5 rounded-2xl transition-all group font-medium text-xs
           ${
             isActive
-              ? "bg-rose-500 text-white shadow-md shadow-rose-200"
+              ? "bg-rose-600 text-white shadow-md shadow-rose-200"
               : "text-stone-600 hover:bg-rose-50 hover:text-stone-900"
           }
           ${centerWhenCollapsed}
@@ -437,7 +437,7 @@ export function GlobalSidebar() {
               href={`/login?next=${encodeURIComponent(pathname || "/")}`}
               prefetch={false}
               onClick={closeSidebar}
-              className={`flex items-center justify-start gap-3 text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50 p-2 rounded-xl transition-colors ${centerWhenCollapsed}`}
+              className={`flex items-center justify-start gap-3 text-emerald-700 hover:text-emerald-700 hover:bg-emerald-50 p-2 rounded-xl transition-colors ${centerWhenCollapsed}`}
               title="ログイン"
             >
               <LogIn size={18} />
