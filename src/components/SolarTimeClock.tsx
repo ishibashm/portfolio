@@ -3796,7 +3796,7 @@ export const SolarTimeClock = () => {
 
   if (!baseTime || !solarData)
     return (
-      <div className="min-h-screen flex items-center justify-center bg-stone-50 text-stone-500 text-sm tracking-widest">
+      <div className="min-h-screen flex items-center justify-center bg-stone-50 text-stone-600 text-sm tracking-widest">
         読み込んでいます…
       </div>
     );
@@ -3843,7 +3843,7 @@ export const SolarTimeClock = () => {
           <h2 className="text-stone-700 font-serif text-xl font-bold mb-2 flex items-center justify-center gap-3">
             いまの方位と時刻
           </h2>
-          <p className="text-stone-500 text-xs sm:text-sm leading-relaxed max-w-[70ch] mx-auto mb-4">
+          <p className="text-stone-600 text-xs sm:text-sm leading-relaxed max-w-[70ch] mx-auto mb-4">
             引越しや長期の滞在で、出発地から見た
             <strong className="text-stone-700">方位の吉凶</strong>
             と
@@ -3865,7 +3865,7 @@ export const SolarTimeClock = () => {
           <div className="w-full max-w-[1700px] animate-fade-in px-4">
             <div className="bg-stone-50 border border-stone-200 p-4 sm:p-6 shadow-2xl relative overflow-hidden flex flex-col gap-4 text-justify text-stone-600 text-xs sm:text-sm font-sans leading-relaxed">
               <div className="absolute top-0 left-0 w-1 h-full bg-emerald-500/50"></div>
-              <h2 className="text-emerald-500 font-bold uppercase tracking-widest border-b border-stone-200 pb-2 mb-2 font-mono text-[11px] sm:text-xs flex items-center gap-2">
+              <h2 className="text-emerald-700 font-bold uppercase tracking-widest border-b border-stone-200 pb-2 mb-2 font-mono text-[11px] sm:text-xs flex items-center gap-2">
                 <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse"></span>
                 方位と日時を決める 4 つの手順
               </h2>
@@ -3906,7 +3906,7 @@ export const SolarTimeClock = () => {
               </div>
 
               <div className="bg-emerald-50 border border-emerald-200 p-3 mt-2 text-[10px] sm:text-[11px]">
-                <strong className="text-emerald-600 font-bold mb-1 block">
+                <strong className="text-emerald-700 font-bold mb-1 block">
                   なぜこの統合計算が必要なのか？
                 </strong>
                 九星気学は伝統的に、引越しを「方位」と「時期」の両方で選びます。方位だけ良くても日が悪い、日だけ良くても方位が悪い、という片落ちを避けるため、方位（凶の無い向き）と時間（天中殺でない日・時間帯）を同じ画面で突き合わせられるようにしたのがこの道具です。効果を保証するものではなく、伝統的な選び方を計算で再現しています。
@@ -3998,7 +3998,7 @@ export const SolarTimeClock = () => {
                 htmlFor="home-action-intent"
                 className="text-[10px] text-stone-600 uppercase font-mono tracking-widest mb-2 flex items-center gap-1"
               >
-                <span className="text-emerald-500">◆</span> 移住・移動の目的
+                <span className="text-emerald-700">◆</span> 移住・移動の目的
               </label>
               <select
                 id="home-action-intent"
@@ -4273,14 +4273,14 @@ export const SolarTimeClock = () => {
               <h2 className="text-sm font-bold text-stone-700 mb-2">
                 日ごとの記録
               </h2>
-              <p className="text-xs text-stone-500 leading-relaxed max-w-[70ch]">
+              <p className="text-xs text-stone-600 leading-relaxed max-w-[70ch]">
                 {"引越しの前後で環境と体調がどう動いたかを、後から見返すための画面です。夜間の巡回が 1 日 1 件ずつ記録します。"}
                 <strong className="text-stone-700">
                   ここで吉凶は判定しません。
                 </strong>
                 {"方位と日取りは 2〜5 のタブで決めます。"}
               </p>
-              <ul className="text-xs text-stone-500 mt-3 space-y-1 list-disc pl-5">
+              <ul className="text-xs text-stone-600 mt-3 space-y-1 list-disc pl-5">
                 <li>
                   {"天体黄経 — 太陽・月・木星の位置。月盤と年盤の切り替わりがここに出ます"}
                 </li>
@@ -4327,7 +4327,7 @@ export const SolarTimeClock = () => {
                 天赦日・一粒万倍日・天中殺と、方位の吉凶を月ごとに見ます。
               </span>
             </span>
-            <span className="self-end text-indigo-500 text-xs shrink-0 sm:self-auto">
+            <span className="self-end text-indigo-700 text-xs shrink-0 sm:self-auto">
               開く →
             </span>
           </Link>

@@ -128,7 +128,7 @@ export function QuickProfileBar() {
           まずここを入れる
         </h2>
         {saved !== "none" && (
-          <span className="text-[11px] text-emerald-600 shrink-0">
+          <span className="text-[11px] text-emerald-700 shrink-0">
             {saved === "cloud"
               ? "保存しました（他の端末でも使えます）"
               : "この端末に保存しました"}
