@@ -120,9 +120,9 @@ export function ClockDisplay({
         {/* 以前は "Matrix Phase (地磁気と太陽角による空間位相)" と書いて
             いたが、出しているのは真太陽時で切った 2 時間ごとの刻の十二支
             そのもの（getKimonHour）。地磁気は見ていない。実装のとおりに書く。 */}
-        <div className="text-[10px] tracking-[0.2em] text-stone-600 mb-1">
+        <div className="text-xs tracking-[0.2em] text-stone-600 mb-1">
           いまの刻
-          <span className="hidden sm:block text-[10px] tracking-normal text-stone-600 mt-1 font-sans whitespace-nowrap">
+          <span className="hidden sm:block text-xs tracking-normal text-stone-600 mt-1 font-sans whitespace-nowrap">
             （真太陽時で切る 2 時間ごとの十二支）
           </span>
         </div>
@@ -138,9 +138,9 @@ export function ClockDisplay({
 
       {/* 2. Lunar Phase & Rokuyo */}
       <div className="text-center space-y-1 border-x border-stone-200 px-4 w-1/3">
-        <div className="text-[10px] tracking-[0.2em] text-purple-500 mb-1">
+        <div className="text-xs tracking-[0.2em] text-purple-500 mb-1">
           六曜・旧暦
-          <span className="hidden sm:block text-[10px] tracking-normal text-stone-600 mt-1 font-sans whitespace-nowrap">
+          <span className="hidden sm:block text-xs tracking-normal text-stone-600 mt-1 font-sans whitespace-nowrap">
             （日本時間の暦日で引く）
           </span>
         </div>
@@ -149,7 +149,7 @@ export function ClockDisplay({
         >
           {rokuyoName.split(" ")[0]}
         </div>
-        <div className="text-[10px] md:text-xs tracking-widest text-stone-500 font-mono mt-2">
+        <div className="text-xs tracking-widest text-stone-500 font-mono mt-2">
           {lunarDateString} / {yueXiang}
         </div>
       </div>
@@ -157,7 +157,7 @@ export function ClockDisplay({
       {/* 3. Temporal Phase (Time) */}
       <div className="flex flex-col items-center md:items-end space-y-3 w-1/3">
         <div className="text-right">
-          <div className="text-[10px] tracking-widest text-emerald-900/80">
+          <div className="text-xs tracking-widest text-emerald-900/80">
             真太陽時
           </div>
           <div className="text-2xl sm:text-3xl font-mono font-light text-emerald-600">
@@ -165,7 +165,7 @@ export function ClockDisplay({
           </div>
         </div>
         <div className="text-right">
-          <div className="text-[10px] tracking-widest text-stone-600">
+          <div className="text-xs tracking-widest text-stone-600">
             日本標準時
           </div>
           <div className="text-lg font-mono font-light text-stone-600">
@@ -173,7 +173,7 @@ export function ClockDisplay({
           </div>
         </div>
         {/* 真太陽時 ＝ 日本標準時 ＋ 均時差 ＋ 経度差。内訳を分で出す。 */}
-        <div className="text-[10px] font-mono text-stone-600 gap-2 flex justify-end">
+        <div className="text-xs font-mono text-stone-600 gap-2 flex justify-end">
           <span>均時差 {eot.toFixed(1)} 分</span>
           <span>経度差 {longOffset.toFixed(1)} 分</span>
         </div>
