@@ -1051,7 +1051,13 @@ export default function DestinationMapPanel({
                             )
                           }
                         >
-                          <span className="flex items-center justify-center gap-0.5">
+                          {/* キーボードで押せるように中を button にする。
+                              押した click は td の onClick へ泡立つので、
+                              マウスで余白を押したときと同じ経路を通る */}
+                          <button
+                            type="button"
+                            className="flex items-center justify-center gap-0.5 w-full"
+                          >
                             {targetDirection === dir && (
                               <span
                                 className="text-[9px]"
@@ -1061,7 +1067,7 @@ export default function DestinationMapPanel({
                               </span>
                             )}
                             {dir}
-                          </span>
+                          </button>
                         </td>
                         {heatmapData.map((d, i) => {
                           const st = d.vectors[dir];
@@ -1154,7 +1160,11 @@ export default function DestinationMapPanel({
                                 });
                               }}
                             >
-                              <div className="w-6 h-6 mx-auto flex items-center justify-center text-[10px]">
+                              <button
+                                type="button"
+                                aria-label={`${d.label} 方位${dir}: ${st}`}
+                                className="w-6 h-6 mx-auto flex items-center justify-center text-[10px]"
+                              >
                                 {isExcluded ? (
                                   <span className="text-[10px]">✕</span>
                                 ) : isTendoActive ? (
@@ -1164,7 +1174,7 @@ export default function DestinationMapPanel({
                                 ) : isOptimal ? (
                                   <span className="text-[10px]">★</span>
                                 ) : null}
-                              </div>
+                              </button>
                             </td>
                           );
                         })}
@@ -1250,6 +1260,7 @@ export default function DestinationMapPanel({
               >
                 <button
                   onClick={() => setSelectedTrendCell(null)}
+                  aria-label="閉じる"
                   className="absolute top-3.5 right-3.5 text-stone-500 hover:text-stone-900 p-1 text-sm font-bold"
                 >
                   ✕

@@ -52,6 +52,41 @@ describe("dashboard の入力欄・選択欄には読み上げ用の名前があ
     });
   }
 
+  it("記号だけのボタン（✕ など）には aria-label がある", () => {
+    /* `<button ...>` の開きタグは onClick の `=>` に `>` を含むので、
+       波括弧の深さを数えて閉じを探す。単純な `[^>]*` だと ✕ の閉じる
+       ボタンを見落とす（実際に 1 つ素通りしていた）。 */
+    for (const f of FILES) {
+      const s = readFileSync(f, "utf8");
+      const re = /<button\b/g;
+      let m: RegExpExecArray | null;
+      while ((m = re.exec(s))) {
+        let i = m.index + m[0].length;
+        let depth = 0;
+        for (; i < s.length; i++) {
+          const c = s[i];
+          if (c === "{") depth++;
+          else if (c === "}") depth--;
+          else if (c === ">" && depth === 0) break;
+        }
+        const attrs = s.slice(m.index, i);
+        const close = s.indexOf("</button>", i);
+        const child = s.slice(i + 1, close).trim();
+        if (!child || child.includes("<") || child.includes("{")) continue;
+        const hasWords =
+          /[\p{Script=Hiragana}\p{Script=Katakana}\p{Script=Han}A-Za-z0-9]/u.test(
+            child,
+          );
+        if (!hasWords) {
+          expect(
+            attrs,
+            `${f}:${s.slice(0, m.index).split("\n").length}`,
+          ).toMatch(/aria-label=/);
+        }
+      }
+    }
+  });
+
   it("アイコンだけのボタンに英語の title を残さない", () => {
     for (const f of FILES) {
       const body = readFileSync(f, "utf8");

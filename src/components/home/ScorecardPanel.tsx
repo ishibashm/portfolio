@@ -477,9 +477,15 @@ export default function ScorecardPanel({
                         className="p-4 space-y-3 hover:bg-white/80 transition-colors cursor-pointer"
                       >
                         <div className="flex items-center justify-between gap-2 flex-wrap">
-                          <span className="font-mono font-bold text-stone-700">
+                          {/* 札全体は div の onClick で開く。キーボードから
+                              も開けるように、方位名だけ button にする
+                              （click は div へ泡立つ） */}
+                          <button
+                            type="button"
+                            className="font-mono font-bold text-stone-700"
+                          >
                             {item.labelJa} ({item.direction})
-                          </span>
+                          </button>
                           {item.isConsensusClear && (
                             <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-600 border border-emerald-200">
                               トリプル大吉 🌟
@@ -663,7 +669,14 @@ export default function ScorecardPanel({
                               <span className="text-[10px] text-stone-600">
                                 ▶
                               </span>
-                              {item.labelJa} ({item.direction})
+                              {/* 行は tr の onClick で開く。キーボード用に
+                                  方位名を button にする（click は tr へ泡立つ） */}
+                              <button
+                                type="button"
+                                className="font-mono font-bold"
+                              >
+                                {item.labelJa} ({item.direction})
+                              </button>
                             </td>
 
                             {/* Classical Model */}
