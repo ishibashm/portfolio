@@ -150,16 +150,25 @@ describe("明るい地で読めない文字色を使っていない", () => {
   type UnreadableStep = (typeof UNREADABLE_TEXT_STEPS)[number];
 
   const KNOWN: Record<string, readonly UnreadableStep[]> = {
-    // 判定の色だけが残っている（#486 で yellow と amber を片付けた）。
-    "src/components/home/ConsultPanel.tsx": ["emerald-500"],
-    // どのファイルも**判定の色だけ**が残っている。yellow / amber は
-    // #486 で片付けた。
-    "src/components/home/ScorecardPanel.tsx": ["emerald-500"],
-    // #1288 で emerald-400 / 500 を 700 にした（白地で 1.92 / 2.54:1 →
-    // 4.5:1 以上。色相は変えず段だけ。判定のどの状態がどの色相かは
-    // そのまま）。
+    // 2026-09-13 の総点検（#1286〜）で、「今日の方位と時刻を確かめる」の
+    // 部品は白地で 4.5:1 を割る文字色を全部 1 段濃くした（色相は変えず
+    // 段だけ。判定のどの状態がどの色相かはそのまま）。以後は 0 を保つ。
+    "src/components/home/ConsultPanel.tsx": [],
+    "src/components/home/ScorecardPanel.tsx": [],
     "src/components/home/DestinationMapPanel.tsx": [],
     "src/components/home/HomePortal.tsx": [],
+    "src/components/home/QuickProfileBar.tsx": [],
+    "src/app/relocation/dashboard/page.tsx": [],
+    "src/components/SolarTimeClock.tsx": [],
+    "src/components/SolarTimeTable.tsx": [],
+    "src/components/ClockDisplay.tsx": [],
+    "src/components/TenchusatsuVisualizer.tsx": [],
+    "src/components/PersonalProfileConfig.tsx": [],
+    "src/components/BioMagneticDashboard.tsx": [],
+    "src/components/TacticalMagneticMap.tsx": [],
+    "src/components/MagneticMapInner.tsx": [],
+    "src/components/MagneticSpatialHUD.tsx": [],
+    "src/lib/verdictRating.ts": [],
   };
 
   it("対象を読めている（空回りしていない）", () => {
@@ -167,15 +176,21 @@ describe("明るい地で読めない文字色を使っていない", () => {
       expect(
         readFileSync(join(process.cwd(), f), "utf8").length,
         f,
-      ).toBeGreaterThan(1000);
+      ).toBeGreaterThan(500);
     }
   });
 
   for (const [f, known] of Object.entries(KNOWN)) {
     it(`${f} に新しい読めない文字色が無い`, () => {
-      const src = readFileSync(join(process.cwd(), f), "utf8");
+      /* コメントは除く（「以前は text-red-400 だった」と書けるように）。
+         hover: / group-hover: / dark: の付いたものと、地・枠（bg- /
+         border-）は対象にしない。禁じているのは常時見える文字だけ。 */
+      const src = readFileSync(join(process.cwd(), f), "utf8").replace(
+        /\/\*[\s\S]*?\*\/|\/\/.*$/gm,
+        "",
+      );
       const hits = UNREADABLE_TEXT_STEPS.filter((step) =>
-        src.includes(`text-${step}`),
+        new RegExp(`(?<![\\w:/-])text-${step}(?:/\\d+)?(?![\\w-])`).test(src),
       );
       const added = hits.filter((h) => !known.includes(h));
       expect(

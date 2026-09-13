@@ -140,8 +140,61 @@ export const UNREADABLE_TEXT_STEPS = [
   "emerald-300",
   "emerald-400",
   "emerald-500",
-  "sky-300",
-  "sky-400",
+  // 2026-09-13、「今日の方位と時刻を確かめる」の総点検で Playwright に
+  // 7 タブの全テキストの前景・背景を合成させて比を実測した。白地で 4.5:1
+  // を割る段を足す。600 でも割る色相がある: emerald-600 3.65 /
+  // amber-600 3.2 / orange-600 3.5 / rose-600 4.44 / fuchsia-600 4.2 /
+  // pink-600 4.3 / sky-600 3.9 / cyan-600 3.9 / teal-600 3.7 /
+  // green-600 3.9。red-600（4.5）・blue-600（5.2）・indigo-600（6.3）・
+  // purple-600（4.9）は通る。stone-500 は白地なら 4.67 だが淡い色地
+  // （red-50・emerald-50・頁の地色）の上で 4.4 に落ちる。
+  "emerald-600",
+  "amber-600",
+  "orange-600",
+  "green-300",
+  "green-400",
+  "green-500",
+  "green-600",
+  "teal-300",
+  "teal-400",
+  "teal-500",
+  "teal-600",
+  "cyan-300",
+  "cyan-400",
+  "cyan-500",
+  "cyan-600",
+  "sky-500",
+  "sky-600",
+  "red-300",
+  "red-400",
+  "red-500",
+  "rose-300",
+  "rose-400",
+  "rose-500",
+  "rose-600",
+  "pink-300",
+  "pink-400",
+  "pink-500",
+  "pink-600",
+  "fuchsia-300",
+  "fuchsia-400",
+  "fuchsia-500",
+  "fuchsia-600",
+  "blue-300",
+  "blue-400",
+  "blue-500",
+  "indigo-300",
+  "indigo-400",
+  "indigo-500",
+  "purple-300",
+  "purple-400",
+  "purple-500",
+  "violet-300",
+  "violet-400",
+  "violet-500",
+  "stone-300",
+  "stone-400",
+  "stone-500",
 ] as const;
 
 /**

@@ -42,10 +42,10 @@ export function BioMagneticDashboard({
   const getKpColor = (kp: number | null) => {
     if (kp === null) return "text-stone-600";
     if (kp >= 5)
-      return "text-red-500 drop-shadow-[0_0_8px_rgba(239,68,68,0.8)]";
+      return "text-red-700 drop-shadow-[0_0_8px_rgba(239,68,68,0.8)]";
     if (kp >= 4)
-      return "text-amber-500 drop-shadow-[0_0_8px_rgba(245,158,11,0.8)]";
-    return "text-emerald-600 drop-shadow-[0_0_8px_rgba(52,211,153,0.5)]";
+      return "text-amber-700 drop-shadow-[0_0_8px_rgba(245,158,11,0.8)]";
+    return "text-emerald-700 drop-shadow-[0_0_8px_rgba(52,211,153,0.5)]";
   };
 
   const getKpBgColor = (kp: number | null) => {
@@ -93,17 +93,17 @@ export function BioMagneticDashboard({
         <div className="absolute bottom-0 right-0 w-2 h-2 border-b-2 border-r-2 border-emerald-200"></div>
 
         <div className="absolute top-0 right-0 p-2 opacity-5 transition-opacity">
-          <Zap size={150} className="text-emerald-500" />
+          <Zap size={150} className="text-emerald-700" />
         </div>
 
         <div className="flex items-center gap-2 mb-4 relative z-10 border-b border-stone-200 pb-2">
-          <Radio size={14} className="text-emerald-500 md:animate-pulse" />
+          <Radio size={14} className="text-emerald-700 md:animate-pulse" />
           <h2 className="text-[10px] uppercase font-mono tracking-widest text-stone-600 font-bold">
             外部環境の実測値
           </h2>
           <div className="ml-auto flex items-center gap-1">
             <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse"></span>
-            <span className="text-[9px] text-emerald-500 font-mono tracking-widest">
+            <span className="text-[9px] text-emerald-700 font-mono tracking-widest">
               実測
             </span>
           </div>
@@ -172,7 +172,7 @@ export function BioMagneticDashboard({
             </span>
             <div className="flex flex-col grow justify-center gap-2">
               <div
-                className={`text-2xl font-bold tracking-tight text-center ${xrayData.type === "M" || xrayData.type === "X" ? "text-red-500 animate-pulse" : "text-stone-600"}`}
+                className={`text-2xl font-bold tracking-tight text-center ${xrayData.type === "M" || xrayData.type === "X" ? "text-red-700 animate-pulse" : "text-stone-600"}`}
               >
                 {xrayFlux || "--"}
               </div>
@@ -195,14 +195,14 @@ export function BioMagneticDashboard({
           {/* 気圧（気象病モデルの入力） */}
           <div className="col-span-2 mt-2 pt-2 border-t border-stone-200">
             <div className="flex items-center gap-1.5 mb-2">
-              <Waves size={12} className="text-sky-600" />
-              <span className="text-[9px] text-sky-500/80 font-bold uppercase tracking-wider">
+              <Waves size={12} className="text-sky-700" />
+              <span className="text-[9px] text-sky-700 font-bold uppercase tracking-wider">
                 地上気圧（3 時間の変化）
               </span>
             </div>
             <div className="grid grid-cols-3 gap-1">
               <div className="bg-white/80 p-2 flex flex-col items-center justify-center border-r border-stone-200">
-                <div className="text-[9px] text-sky-600/70 mb-1 uppercase tracking-widest">
+                <div className="text-[9px] text-sky-700 mb-1 uppercase tracking-widest">
                   現在
                 </div>
                 <div className="text-sm text-stone-700 font-mono font-bold tracking-tight">
@@ -211,15 +211,15 @@ export function BioMagneticDashboard({
                 </div>
               </div>
               <div className="bg-white/80 p-2 flex flex-col items-center justify-center border-r border-stone-200">
-                <div className="text-[9px] text-sky-600/70 mb-1 uppercase tracking-widest">
+                <div className="text-[9px] text-sky-700 mb-1 uppercase tracking-widest">
                   3時間変化
                 </div>
                 <div
                   className={`text-sm font-mono font-bold tracking-tight ${
                     pressure && pressure.drop <= -3
-                      ? "text-red-500"
+                      ? "text-red-700"
                       : pressure && pressure.drop < 0
-                        ? "text-amber-600"
+                        ? "text-amber-700"
                         : "text-stone-700"
                   }`}
                 >
@@ -230,7 +230,7 @@ export function BioMagneticDashboard({
                 </div>
               </div>
               <div className="bg-white/80 p-2 flex flex-col items-center justify-center">
-                <div className="text-[9px] text-sky-600/70 mb-1 uppercase tracking-widest">
+                <div className="text-[9px] text-sky-700 mb-1 uppercase tracking-widest">
                   自律神経負荷
                 </div>
                 <div className="text-sm text-stone-700 font-mono font-bold tracking-tight">
@@ -252,8 +252,8 @@ export function BioMagneticDashboard({
           <div className="col-span-2 mt-2 pt-2 border-t border-stone-200">
             <div className="flex justify-between items-center mb-2">
               <div className="flex items-center gap-1.5">
-                <Compass size={12} className="text-emerald-600" />
-                <span className="text-[9px] text-emerald-500/80 font-bold uppercase tracking-wider">
+                <Compass size={12} className="text-emerald-700" />
+                <span className="text-[9px] text-emerald-700 font-bold uppercase tracking-wider">
                   地磁気（WMM）
                 </span>
               </div>
@@ -271,7 +271,7 @@ export function BioMagneticDashboard({
               <div className="absolute top-0 right-0 w-1 h-full border-y border-r border-stone-200 pointer-events-none"></div>
 
               <div className="bg-white/80 p-2 flex flex-col items-center justify-center border-r border-stone-200 last:border-0">
-                <div className="text-[9px] text-emerald-600/70 mb-1 uppercase tracking-widest">
+                <div className="text-[9px] text-emerald-700 mb-1 uppercase tracking-widest">
                   全磁力 F
                 </div>
                 <div className="text-sm text-stone-700 font-mono font-bold tracking-tight">
@@ -280,7 +280,7 @@ export function BioMagneticDashboard({
                 </div>
               </div>
               <div className="bg-white/80 p-2 flex flex-col items-center justify-center border-r border-stone-200 last:border-0">
-                <div className="text-[9px] text-emerald-600/70 mb-1 uppercase tracking-widest">
+                <div className="text-[9px] text-emerald-700 mb-1 uppercase tracking-widest">
                   偏角 D
                 </div>
                 <div className="text-sm text-stone-700 font-mono font-bold tracking-tight">
@@ -289,7 +289,7 @@ export function BioMagneticDashboard({
                 </div>
               </div>
               <div className="bg-white/80 p-2 flex flex-col items-center justify-center border-r border-stone-200 last:border-0">
-                <div className="text-[9px] text-emerald-600/70 mb-1 uppercase tracking-widest">
+                <div className="text-[9px] text-emerald-700 mb-1 uppercase tracking-widest">
                   伏角 I
                 </div>
                 <div className="text-sm text-stone-700 font-mono font-bold tracking-tight">
