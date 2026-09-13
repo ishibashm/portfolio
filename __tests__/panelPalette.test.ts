@@ -155,10 +155,10 @@ describe("明るい地で読めない文字色を使っていない", () => {
     // どのファイルも**判定の色だけ**が残っている。yellow / amber は
     // #486 で片付けた。
     "src/components/home/ScorecardPanel.tsx": ["emerald-500"],
-    "src/components/home/DestinationMapPanel.tsx": [
-      "emerald-400",
-      "emerald-500",
-    ],
+    // #1288 で emerald-400 / 500 を 700 にした（白地で 1.92 / 2.54:1 →
+    // 4.5:1 以上。色相は変えず段だけ。判定のどの状態がどの色相かは
+    // そのまま）。
+    "src/components/home/DestinationMapPanel.tsx": [],
     "src/components/home/HomePortal.tsx": [],
   };
 
