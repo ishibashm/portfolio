@@ -13,7 +13,7 @@ const MagneticMapInner = dynamic(() => import("./MagneticMapInner"), {
   ssr: false,
   loading: () => (
     <div className="w-full h-96 bg-stone-50 border border-stone-200 flex items-center justify-center font-mono text-xs text-stone-600 md:animate-pulse">
-      [ INITIALIZING SPATIAL VECTORS... ]
+      地図を読み込んでいます…
     </div>
   ),
 });
@@ -205,28 +205,28 @@ export function TacticalMagneticMapComponent({
                   className={`px-1.5 py-0.5 text-[9px] font-mono border-r border-stone-200 transition-colors ${hudLayers.terrain ? "text-blue-600 bg-blue-500/10" : "text-stone-600"}`}
                   title="地形の陰影を重ねる"
                 >
-                  TER [地形]
+                  地形
                 </button>
                 <button
                   onClick={() => toggleLayer?.("weather")}
                   className={`px-1.5 py-0.5 text-[9px] font-mono border-r border-stone-200 transition-colors ${hudLayers.weather ? "text-amber-600 bg-amber-500/10" : "text-stone-600"}`}
                   title="宇宙天気（Kp 指数）の注意帯を重ねる"
                 >
-                  WTH [宇宙天気]
+                  宇宙天気
                 </button>
                 <button
                   onClick={() => toggleLayer?.("bio")}
                   className={`px-1.5 py-0.5 text-[9px] font-mono transition-colors ${hudLayers.bio ? "text-purple-600 bg-purple-500/10" : "text-stone-600"}`}
                   title="本命星から見た個人の吉凶の線を重ねる"
                 >
-                  BIO [本命星]
+                  本命星
                 </button>
                 <button
                   onClick={() => toggleLayer?.("hazard")}
                   className={`px-1.5 py-0.5 text-[9px] font-mono transition-colors border-l border-stone-200 ${hudLayers.hazard ? "text-red-500 bg-red-500/10 font-bold" : "text-stone-600"}`}
                   title="洪水と土砂災害の想定区域を重ねる（出典: ハザードマップポータルサイト）"
                 >
-                  HZD [災害域]
+                  災害域
                 </button>
               </div>
               <button
@@ -239,10 +239,10 @@ export function TacticalMagneticMapComponent({
               <button
                 onClick={() => setShowHUD(!showHUD)}
                 className={`pointer-events-auto bg-white/80 hover:bg-stone-100 text-stone-600 px-2 py-1 flex items-center gap-1 text-[11px] uppercase font-mono tracking-wider border rounded-sm transition-colors ${showHUD ? "border-blue-500 text-blue-600" : "border-stone-300"}`}
-                title="Toggle 3D HUD"
+                title="磁力線の立体表示を出す・しまう"
               >
                 <Box size={10} />
-                HUD: {showHUD ? "ON" : "OFF"}
+                立体表示: {showHUD ? "出す" : "しまう"}
               </button>
               <button
                 onClick={() =>
@@ -259,12 +259,12 @@ export function TacticalMagneticMapComponent({
                 className="pointer-events-auto bg-white/80 hover:bg-stone-100 text-stone-600 px-2 py-1 flex items-center gap-1 text-[11px] uppercase font-mono tracking-wider border border-stone-300 rounded-sm transition-colors"
               >
                 <Download size={10} />
-                KML Export
+                KML で書き出す
               </button>
             </div>
             <div className="text-[10px] font-mono text-stone-500 text-right bg-white/70 px-1 py-0.5 border border-stone-200">
-              制作者座標: {lat.toFixed(4)}N, {lon.toFixed(4)}E<br />
-              現在地磁気偏角: {declination ? declination.toFixed(2) : "--"}°
+              出発地: {lat.toFixed(4)}N, {lon.toFixed(4)}E<br />
+              出発地の偏角: {declination ? declination.toFixed(2) : "--"}°
             </div>
           </div>
         </div>
@@ -275,7 +275,7 @@ export function TacticalMagneticMapComponent({
             <div
               className={`text-6xl md:text-8xl font-black uppercase tracking-tighter -rotate-12 ${isPhysical ? "text-emerald-500" : "text-stone-600"}`}
             >
-              {isPhysical ? "[ PHYSICAL MODEL ]" : "[ CLASSICAL MODEL ]"}
+              {isPhysical ? "物理モデル" : "古典暦モデル"}
             </div>
           </div>
 
@@ -284,9 +284,7 @@ export function TacticalMagneticMapComponent({
             <div
               className={`px-2 py-1 text-[10px] font-mono font-bold tracking-widest uppercase border backdrop-blur-sm shadow-lg ${isPhysical ? "bg-emerald-50 text-emerald-600 border-emerald-200" : "bg-white/80 text-stone-500 border-zinc-500/50"}`}
             >
-              {isPhysical
-                ? "▶ PHYSICAL MODEL ACTIVE"
-                : "▶ CLASSICAL MODEL ACTIVE"}
+              {isPhysical ? "▶ 物理モデル" : "▶ 古典暦モデル"}
             </div>
           </div>
           <MagneticMapInner
@@ -333,7 +331,7 @@ export function TacticalMagneticMapComponent({
       <details className="mt-4 bg-white/80 border border-stone-200 text-[10px] font-mono text-stone-500 w-full group">
         <summary className="p-3 cursor-pointer hover:bg-white/80 list-none flex items-center justify-between uppercase tracking-widest font-bold">
           <div className="flex items-center gap-2">
-            <span className="text-red-500 blur-[0.5px]">◆</span> [ ALGORITHM ]
+            <span className="text-red-500 blur-[0.5px]">◆</span>
             吉凶方位の分析ロジック（空間ベクトル）
           </div>
           <span className="group-open:rotate-180 transition-transform text-stone-600">
