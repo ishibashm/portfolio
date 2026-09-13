@@ -652,6 +652,15 @@ export const SolarTimeClock = () => {
   */
   const [birthDateOwned, setBirthDateOwned] = useState(false);
   const [birthPlaceOwned, setBirthPlaceOwned] = useState(false);
+  /*
+    出発地も同じ扱いにする（2026-09-13。利用者の報告「愛知県名古屋市が
+    出発地なのに地図は京都」）。**生年月日と出生地だけ守って、出発地は
+    素通しだった。**画面は計算のために東京駅（35.6895 / 139.6917）を
+    初期値に持つので、保存が走るたびにそれが `base_lat` / `base_lon` として
+    書かれ、**他の画面（物件検索など）が登録内容として読む。**
+    #1100・#1114・#1126 と同じ形で、守りから漏れていた 4 つ目。
+  */
+  const [basePlaceOwned, setBasePlaceOwned] = useState(false);
 
   // Bio-Sync State
   const [hrv, setHrv] = useState(30);
@@ -1000,8 +1009,14 @@ export const SolarTimeClock = () => {
           setBirthLon(v);
           setBirthPlaceOwned(true);
         });
-        applyNum("base_lat", setLat);
-        applyNum("base_lon", setLon);
+        applyNum("base_lat", (v) => {
+          setLat(v);
+          setBasePlaceOwned(true);
+        });
+        applyNum("base_lon", (v) => {
+          setLon(v);
+          setBasePlaceOwned(true);
+        });
         applyStr("void_zodiac_override", setVoidZodiacOverride);
         applyNum("baseline_hrv_mean", setBaselineHrvMean);
         applyNum("baseline_hrv_std", setBaselineHrvStd);
@@ -1069,10 +1084,12 @@ export const SolarTimeClock = () => {
       }
       if (wBaseLat) {
         setLat(Number(wBaseLat));
+        setBasePlaceOwned(true);
         isLoaded = true;
       }
       if (wBaseLon) {
         setLon(Number(wBaseLon));
+        setBasePlaceOwned(true);
         isLoaded = true;
       }
     }
@@ -1118,10 +1135,9 @@ export const SolarTimeClock = () => {
           lunar_phase_modifier: lunarPhaseModifier,
           layer_mode: activeLayerMode,
           direction_filter_mode: directionFilterMode,
-          base_lat: lat,
-          base_lon: lon,
-          /* 利用者の値だけ書く。初期値（2000-01-01・東京）を書くと、
+          /* 利用者の値だけ書く。初期値（2000-01-01・東京駅）を書くと、
              他の画面がそれを登録内容として読む（上の註） */
+          ...(basePlaceOwned ? { base_lat: lat, base_lon: lon } : {}),
           ...(birthDateOwned ? { birth_date: birthDate } : {}),
           ...(birthPlaceOwned
             ? { birth_lat: birthLat, birth_lon: birthLon }
@@ -1161,6 +1177,7 @@ export const SolarTimeClock = () => {
     birthLon,
     birthDateOwned,
     birthPlaceOwned,
+    basePlaceOwned,
     configLoaded,
   ]);
 
@@ -1170,6 +1187,7 @@ export const SolarTimeClock = () => {
         (position) => {
           setLat(position.coords.latitude);
           setLon(position.coords.longitude);
+          setBasePlaceOwned(true);
 
           const nowIso = new Date().toISOString();
           setBaseSyncTimestamp(nowIso);
@@ -1216,8 +1234,7 @@ export const SolarTimeClock = () => {
         ...(birthPlaceOwned
           ? { birth_lat: birthLat, birth_lon: birthLon }
           : {}),
-        base_lat: lat,
-        base_lon: lon,
+        ...(basePlaceOwned ? { base_lat: lat, base_lon: lon } : {}),
         void_zodiac_override: voidZodiacOverride,
         baseline_hrv_mean: baselineHrvMean,
         baseline_hrv_std: baselineHrvStd,
@@ -4078,9 +4095,16 @@ export const SolarTimeClock = () => {
               /* 控えに出生地を書いてよいか（初期値の東京駅を書かない） */
               birthPlaceOwned={birthPlaceOwned}
               baseLat={lat}
-              setBaseLat={setLat}
+              /* 欄を直した時点で「利用者の値」になる（上の註） */
+              setBaseLat={(v) => {
+                setLat(v);
+                setBasePlaceOwned(true);
+              }}
               baseLon={lon}
-              setBaseLon={setLon}
+              setBaseLon={(v) => {
+                setLon(v);
+                setBasePlaceOwned(true);
+              }}
               onSave={handleSaveConfig}
               isSaving={isSaving}
               onLoad={() => handleLoadConfig(false)}
