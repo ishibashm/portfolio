@@ -351,6 +351,7 @@ export default function ScorecardPanel({
                   対象県:
                 </span>
                 <select
+                  aria-label="対象県"
                   value={scorecardPrefecture}
                   onChange={(e) => setScorecardPrefecture(e.target.value)}
                   className="bg-white text-stone-700 border-0 text-[10px] font-mono focus:outline-none focus:ring-0 cursor-pointer"
@@ -923,6 +924,7 @@ export default function ScorecardPanel({
 
                 {/* Model Selector */}
                 <select
+                  aria-label="判定モデル"
                   value={gridModelView}
                   onChange={(e) =>
                     setGridModelView(e.target.value as typeof gridModelView)
@@ -937,6 +939,7 @@ export default function ScorecardPanel({
 
                 {/* 表示軸 (Dimension Selector) */}
                 <select
+                  aria-label="表示軸"
                   value={gridDimension}
                   onChange={(e) =>
                     setGridDimension(e.target.value as typeof gridDimension)

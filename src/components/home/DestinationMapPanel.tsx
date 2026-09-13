@@ -254,6 +254,7 @@ export default function DestinationMapPanel({
                 </span>
               </div>
               <select
+                aria-label="行動の目的"
                 value={actionIntent}
                 onChange={(e) =>
                   /*
@@ -294,6 +295,7 @@ export default function DestinationMapPanel({
                 </button>
                 <input
                   type="date"
+                  aria-label="目標日"
                   value={jstDateInputValue(evalDate)}
                   onChange={(e) => {
                     if (!e.target.value) return;
@@ -323,6 +325,7 @@ export default function DestinationMapPanel({
                   {isPlaying ? "⏸ 一時停止" : "▶ 再生"}
                 </button>
                 <select
+                  aria-label="再生の刻み"
                   value={playSpeedDays}
                   onChange={(e) => setPlaySpeedDays(Number(e.target.value))}
                   disabled={isPlaying}
@@ -338,14 +341,16 @@ export default function DestinationMapPanel({
                 <button
                   onClick={() => setTimeOffsetDays((prev) => prev - 1)}
                   className="text-[10px] font-mono px-2 py-0.5 rounded-xl transition-colors border bg-white/80 text-stone-600 border-stone-200 hover:border-emerald-200 hover:text-emerald-600"
-                  title="Previous Day"
+                  title="前の日"
+                  aria-label="前の日"
                 >
                   ◀
                 </button>
                 <button
                   onClick={() => setTimeOffsetDays((prev) => prev + 1)}
                   className="text-[10px] font-mono px-2 py-0.5 rounded-xl transition-colors border bg-white/80 text-stone-600 border-stone-200 hover:border-emerald-200 hover:text-emerald-600"
-                  title="Next Day"
+                  title="次の日"
+                  aria-label="次の日"
                 >
                   ▶
                 </button>
@@ -434,6 +439,7 @@ export default function DestinationMapPanel({
               <div className="w-full relative z-10 flex gap-1 mb-1">
                 <input
                   type="text"
+                  aria-label="座標または Google マップの URL"
                   placeholder="座標またはGoogleマップのURLを貼り付け... (例: 35.68, 139.76)"
                   className="flex-1 bg-white border border-stone-300 focus:border-emerald-200 text-stone-600 text-xs px-2 py-1.5 rounded-xl outline-none transition-colors"
                   onChange={(e) => {
@@ -453,6 +459,7 @@ export default function DestinationMapPanel({
               <div className="flex gap-2 relative z-10 mt-1">
                 <input
                   type="number"
+                  aria-label="緯度"
                   placeholder="緯度"
                   value={targetLat ?? ""}
                   onChange={(e) =>
@@ -462,6 +469,7 @@ export default function DestinationMapPanel({
                 />
                 <input
                   type="number"
+                  aria-label="経度"
                   placeholder="経度"
                   value={targetLon ?? ""}
                   onChange={(e) =>
@@ -471,6 +479,7 @@ export default function DestinationMapPanel({
                 />
                 <input
                   type="number"
+                  aria-label="標高（m）"
                   placeholder="標高(m)"
                   value={targetElevation ?? ""}
                   onChange={(e) =>
