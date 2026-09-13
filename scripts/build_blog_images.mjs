@@ -121,6 +121,84 @@ function board(hit, caption) {
  */
 const FIGURES = [
   {
+    /* 記事の 2026 年盤の表から。年盤の段階で 8 方位のうち 2〜3 しか残らない。 */
+    slug: "what-this-tool-can-and-cannot-decide",
+    kicker: "決められること、決められないこと",
+    title: "8 方位から選ぶのでは<br>ない。2〜3 から選ぶ",
+    sub: "2026 年盤。同じ年でも、大吉方位が 1 つも無い人がいます。",
+    body: `<div style="display:flex;gap:30px;align-items:center">
+      ${[
+        [
+          "\u4e8c\u9ed2",
+          ["", "", "\u5e73", "\u7684", "", "", "\u5e73", "\u547d"],
+        ],
+        [
+          "\u516d\u767d",
+          ["", "", "\u5927\u5409", "\u5e73", "", "", "\u5e73", "\u5927\u5409"],
+        ],
+        [
+          "\u4e00\u767d",
+          ["", "", "", "\u5e73", "", "", "\u5927\u5409", "\u5e73"],
+        ],
+        [
+          "\u4e5d\u7d2b",
+          ["", "", "\u5927\u5409", "\u547d", "", "", "\u5927\u5409", "\u7684"],
+        ],
+      ]
+        .map(([star, cells]) => {
+          /* 盤の並びは北西・北・北東 / 西・中・東 / 南西・南・南東。
+             cells は 北・北東・東・南東・南・南西・西・北西 の順で渡す。 */
+          const at = (i) => cells[i];
+          const order = [7, 0, 1, 6, -1, 2, 5, 4, 3];
+          const grid = order
+            .map((i) => {
+              if (i === -1) return `<div class="c mid">${star}</div>`;
+              const v = at(i);
+              if (v === "\u5927\u5409")
+                return `<div class="c hit">\u5927\u5409</div>`;
+              if (v === "\u5e73") return `<div class="c">\u5e73</div>`;
+              return `<div class="c" style="background:#efe7e0;color:#b6ada5">${v || "\u51f6"}</div>`;
+            })
+            .join("");
+          return `<figure><div class="g">${grid}</div><figcaption>${star}</figcaption></figure>`;
+        })
+        .join("")}
+      <div class="note">
+        <b>北は暗剣殺・南は五黄殺</b>で、誰にとっても塞がります。
+        <b>本命殺</b>（命）と<b>本命的殺</b>（的）が人ごとに 2 つ消します。
+        <b>平</b>は平穏で、凶ではありませんが<b>吉でもありません</b>。
+      </div>
+    </div>`,
+  },
+  {
+    /* 記事の集計から。9 つの本命星 × 2026 年 × 8 方位の大凶を、理由の種類で分けた。 */
+    slug: "why-bad-directions-feel-frightening",
+    kicker: "凶方位が怖いのはなぜか",
+    title: "凶の理由は 2 種類。<br>自分に紐づくのは 3 分の 2",
+    sub: "大凶（X）の内訳。62.9〜72.5% は自分の生年月日に紐づく理由を含み、残りは誰にとっても同じです。",
+    body: `<div style="display:flex;flex-direction:column;gap:14px">
+      <div style="display:flex;height:56px;border-radius:12px;overflow:hidden;border:1px solid #e2d9d0">
+        <div style="width:67.7%;background:#e11d48;color:#fff;display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:800">
+          自分に紐づく理由を含む 62.9〜72.5%
+        </div>
+        <div style="flex:1;background:#efe7e0;color:#334155;display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:700">
+          誰にでも同じ 27.5〜37.1%
+        </div>
+      </div>
+      <div style="display:flex;gap:28px">
+        <div style="flex:1;background:#fff;border:1px solid #e11d48;border-radius:12px;padding:10px 16px">
+          <div style="font-size:17px;font-weight:800;color:#e11d48;margin-bottom:6px">自分に紐づく</div>
+          <div style="font-size:18px;color:#0f172a;line-height:1.5">本命殺・本命的殺・月命殺・月命的殺・天中殺方位。<b>その人の生年月日</b>で決まる。</div>
+        </div>
+        <div style="flex:1;background:#fff;border:1px solid #cbd5e1;border-radius:12px;padding:10px 16px">
+          <div style="font-size:17px;font-weight:800;color:#475569;margin-bottom:6px">誰にでも同じ</div>
+          <div style="font-size:18px;color:#0f172a;line-height:1.5">五黄殺・暗剣殺・破・月交点。<b>盤だけ</b>で決まり、誰が見ても同じ方位。</div>
+        </div>
+      </div>
+      <div class="note" style="max-width:none">理由の無い大凶は <b>0 件</b>。<b>数が多いことは、危険が多いことではありません。</b>凶の理由を分けて読むと、怖さの出どころが見えます。</div>
+    </div>`,
+  },
+  {
     /* 記事の実測表から。偏角は場所ごとに違うので一律の補正が当たらない。 */
     slug: "where-feng-shui-came-from",
     kicker: "風水の来歴と、このサイトの北",
