@@ -33,39 +33,39 @@ export interface RatingDetails {
 const OPTIMAL: RatingDetails = {
   rating: "大吉",
   score: 100,
-  color: "text-emerald-400 border border-emerald-500/30 bg-emerald-500/10",
+  color: "text-emerald-700 border border-emerald-500/30 bg-emerald-500/10",
 };
 
 const GOOD: RatingDetails = {
   rating: "吉",
   score: 50,
-  color: "text-emerald-500/80 border border-emerald-500/20 bg-emerald-500/5",
+  color: "text-emerald-700 border border-emerald-500/20 bg-emerald-500/5",
 };
 
 const NEUTRAL: RatingDetails = {
   rating: "平穏",
   score: 0,
-  color: "text-stone-500 border border-stone-200/80 bg-stone-100/80",
+  color: "text-stone-600 border border-stone-200/80 bg-stone-100/80",
 };
 
 const CAUTION: RatingDetails = {
   rating: "注意",
   score: -10,
-  color: "text-amber-400 border border-amber-500/20 bg-amber-500/5",
+  color: "text-amber-700 border border-amber-500/20 bg-amber-500/5",
 };
 
 /** 二次凶（天中殺方位・月命殺・月命的殺・月交点） */
 const BAD: RatingDetails = {
   rating: "凶",
   score: -30,
-  color: "text-orange-400 border border-orange-500/20 bg-orange-500/5",
+  color: "text-orange-700 border border-orange-500/20 bg-orange-500/5",
 };
 
 /** 五大凶殺（五黄殺・暗剣殺・破・本命殺・本命的殺） */
 const FATAL: RatingDetails = {
   rating: "大凶",
   score: -100,
-  color: "text-red-400 border border-red-500/30 bg-red-500/10",
+  color: "text-red-700 border border-red-500/30 bg-red-500/10",
 };
 
 export function ratingForStatus(status: string): RatingDetails {

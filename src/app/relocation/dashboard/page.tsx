@@ -92,14 +92,14 @@ export default function DashboardPage() {
             だけで、日はまたがない）。真太陽時で切るのは 2 時間ごとの刻
             （十二支・時盤の九星）だけ。書くなら実装のとおりに書く。
           */}
-          <p className="mt-1 text-xs leading-relaxed text-stone-500">
+          <p className="mt-1 text-xs leading-relaxed text-stone-600">
             年盤・月盤・日盤は日本時間の暦日で決まります。2
             時間ごとの刻（十二支・時盤の九星）だけ、出発地の経度と均時差を補正した真太陽時で切ります。引越し当日の動き出す時刻を決めるときに使います。
           </p>
           {/* 「時期を選ぶ」道具は 3 本ある。役割の違いを冒頭に書かないと、
               どちらを開けばいいか初見で分からない（timing・calendar と
               同じ作法）。 */}
-          <p className="mt-2 text-xs leading-relaxed text-stone-500">
+          <p className="mt-2 text-xs leading-relaxed text-stone-600">
             この頁は「今日・いま」の判定です。日ごとの一覧は
             <Link
               href="/relocation/timing"
