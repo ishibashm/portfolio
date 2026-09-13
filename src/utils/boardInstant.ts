@@ -95,3 +95,16 @@ export function forecastAnchorMs(baseTime: Date): number {
   // JST の正午 ＝ UTC の (12 - 9) 時。環境のタイムゾーンに依存しない。
   return Date.UTC(f.year, f.month - 1, f.day, 12 - JST_OFFSET_HOURS, 0, 0, 0);
 }
+
+/**
+ * その日時の**日本時間での正午**（`forecastAnchorMs` を Date で返すだけ）。
+ *
+ * 「その日の盤」を 1 つに決めるための代表時刻。判定は日本時間の日で
+ * 切る。正午にするのは、日の端に寄せると数分のずれで前日・翌日へ
+ * 倒れるため。同じ関数が ephemerisEngine・auspiciousDays・kigakuContent
+ * に 1 つずつ写されていた（同じことを 3 か所に書いていた）ので、
+ * ここに寄せた（2026-09-13）。
+ */
+export function jstNoonOf(date: Date): Date {
+  return new Date(forecastAnchorMs(date));
+}
