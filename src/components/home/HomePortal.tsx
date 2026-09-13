@@ -104,7 +104,7 @@ function Card({
         {onDetail && (
           <button
             onClick={onDetail}
-            className="text-[10px] text-indigo-500 hover:text-indigo-700 hover:underline shrink-0"
+            className="text-[10px] text-indigo-700 hover:text-indigo-700 hover:underline shrink-0"
           >
             {detailLabel} →
           </button>
@@ -214,7 +214,7 @@ export default function HomePortal({
               <strong className="text-xl font-bold text-stone-700">
                 {best.ja}
               </strong>
-              <span className="text-xs text-emerald-600 font-bold">
+              <span className="text-xs text-emerald-700 font-bold">
                 {best.rating.rating}
               </span>
             </>
@@ -230,9 +230,9 @@ export default function HomePortal({
             <strong
               className={`text-sm font-bold ${
                 timing.current.isVoid
-                  ? "text-red-500"
+                  ? "text-red-700"
                   : timing.current.isOptimal
-                    ? "text-emerald-600"
+                    ? "text-emerald-700"
                     : "text-stone-600"
               }`}
             >
@@ -249,7 +249,7 @@ export default function HomePortal({
         {timing?.next && (
           <div className="flex items-baseline gap-2">
             <span className="text-[10px] text-stone-600">次に動ける</span>
-            <strong className="text-sm font-bold text-emerald-600">
+            <strong className="text-sm font-bold text-emerald-700">
               {hhmm(timing.next.item.startStandard)}
             </strong>
           </div>
@@ -299,9 +299,9 @@ export default function HomePortal({
         >
           {timing ? (
             <div className="flex flex-col gap-2">
-              <p className="text-[11px] text-stone-500">
+              <p className="text-[11px] text-stone-600">
                 今日は{" "}
-                <strong className="text-emerald-600">
+                <strong className="text-emerald-700">
                   {timing.goCount} つ
                 </strong>{" "}
                 の時間帯が「動いてよい」です。
@@ -318,7 +318,7 @@ export default function HomePortal({
               )}
               {timing.next ? (
                 <div className="text-xs bg-emerald-50 border border-emerald-200 rounded-lg p-2">
-                  <div className="text-[10px] text-emerald-600">次に動ける</div>
+                  <div className="text-[10px] text-emerald-700">次に動ける</div>
                   <div className="font-bold text-emerald-700">
                     {hhmm(timing.next.item.startStandard)}–
                     {hhmm(timing.next.item.endStandard)}{" "}
@@ -349,8 +349,8 @@ export default function HomePortal({
                   className="flex items-center justify-between text-xs"
                 >
                   <span className="font-bold text-stone-600">{w.ja}</span>
-                  <span className="text-stone-500">
-                    <strong className="text-amber-600">{w.luckyDays}</strong> 日
+                  <span className="text-stone-600">
+                    <strong className="text-amber-700">{w.luckyDays}</strong> 日
                     {w.firstDate && (
                       <span className="text-[10px] text-stone-600 ml-1.5">
                         最短 {w.firstDate.slice(5)}
@@ -396,7 +396,7 @@ export default function HomePortal({
             </div>
           </dl>
           {pressure && pressure.drop < -3 && (
-            <p className="text-[10px] text-amber-600 mt-2 leading-relaxed">
+            <p className="text-[10px] text-amber-700 mt-2 leading-relaxed">
               3 時間で {pressure.drop.toFixed(1)}
               hPa 下がっています。体調が出やすい人は無理をしないでください。
             </p>
@@ -425,7 +425,7 @@ export default function HomePortal({
               </div>
               <div className="flex justify-between">
                 <dt className="text-stone-600">天中殺</dt>
-                <dd className="font-bold text-red-500">
+                <dd className="font-bold text-red-700">
                   {personalVoidZodiac.length > 0
                     ? personalVoidZodiac.join("・")
                     : "—"}
@@ -444,7 +444,7 @@ export default function HomePortal({
             <li>
               <Link
                 href="/relocation/arbitrage"
-                className="text-indigo-500 hover:underline"
+                className="text-indigo-700 hover:underline"
               >
                 物件を方位で探す →
               </Link>
@@ -458,7 +458,7 @@ export default function HomePortal({
               */}
               <Link
                 href="/calendar"
-                className="text-indigo-500 hover:underline"
+                className="text-indigo-700 hover:underline"
               >
                 引越しの日取りを選ぶ →
               </Link>
@@ -471,7 +471,7 @@ export default function HomePortal({
               */}
               <Link
                 href="/relocation/appraisal"
-                className="text-indigo-500 hover:underline"
+                className="text-indigo-700 hover:underline"
               >
                 検討中の物件を査定する →
               </Link>
@@ -480,14 +480,14 @@ export default function HomePortal({
                 ナビから外した（OFF_THEME。siteStructure の註を参照）。
                 URL 直打ちでは従来どおり使える。 */}
             <li>
-              <Link href="/houi" className="text-indigo-500 hover:underline">
+              <Link href="/houi" className="text-indigo-700 hover:underline">
                 方位の読みもの →
               </Link>
             </li>
             <li>
               <button
                 onClick={() => onOpenTab("history")}
-                className="text-indigo-500 hover:underline"
+                className="text-indigo-700 hover:underline"
               >
                 過去の引越しを振り返る →
               </button>
