@@ -482,7 +482,7 @@ export default function MagneticMapInner({
           >
             <Tooltip className="custom-map-tooltip">
               <div className="bg-stone-50 text-stone-700 p-2 font-mono text-[10px] border border-stone-200 shadow-xl max-w-[200px]">
-                <div className="text-blue-600 border-b border-stone-200 mb-1 pb-1 uppercase tracking-widest flex justify-between items-center">
+                <div className="text-blue-700 border-b border-stone-200 mb-1 pb-1 uppercase tracking-widest flex justify-between items-center">
                   <span>{d.dir} Sector</span>
                   <span className="text-stone-600 font-normal">
                     Analysis {dashArray ? "(破線)" : "(実線)"}
@@ -496,8 +496,8 @@ export default function MagneticMapInner({
                         y.includes("NOISE") ||
                         m.includes("NOISE") ||
                         dLayer.includes("NOISE")
-                          ? "text-red-500"
-                          : "text-emerald-500"
+                          ? "text-red-700"
+                          : "text-emerald-700"
                       }
                     >
                       {formatLayer(y)} / {formatLayer(m)}
@@ -508,8 +508,8 @@ export default function MagneticMapInner({
                     <span
                       className={
                         d.status.includes("HONMEI") || d.status.includes("TEKI")
-                          ? "text-[#a855f7]"
-                          : "text-emerald-500"
+                          ? "text-purple-700"
+                          : "text-emerald-700"
                       }
                     >
                       {formatLayer(dLayer)}
@@ -517,21 +517,21 @@ export default function MagneticMapInner({
                   </div>
                   <div className="mt-1 pt-1 border-t border-stone-200 text-[9px] flex flex-col gap-1">
                     <div className="flex gap-2">
-                      <span className="text-stone-500">判定: </span>
+                      <span className="text-stone-600">判定: </span>
                       <span
                         className={
                           color.includes("10b981") || color.includes("34d399")
-                            ? "text-emerald-500"
+                            ? "text-emerald-700"
                             : color.includes("ef4444") ||
                                 color.includes("f43f5e")
-                              ? "text-red-500"
+                              ? "text-red-700"
                               : color.includes("d946ef") ||
                                   color.includes("c026d3")
                                 ? "text-[#d946ef]"
                                 : color.includes("eab308") ||
                                     color.includes("f59e0b")
                                   ? "text-[#eab308]"
-                                  : "text-blue-500"
+                                  : "text-blue-700"
                         }
                       >
                         {directionLabelShort(
@@ -825,7 +825,7 @@ export default function MagneticMapInner({
                 <div className="font-mono text-xs text-zinc-800 p-1">
                   <div className="font-bold">{prop.property_name}</div>
                   {prop.is_new_build && (
-                    <div className="text-emerald-600 font-bold">[新築]</div>
+                    <div className="text-emerald-700 font-bold">[新築]</div>
                   )}
                   <div>
                     家賃:{" "}
@@ -848,13 +848,13 @@ export default function MagneticMapInner({
       <div className="hidden sm:block absolute top-28 right-4 z-[1000] pointer-events-none">
         <div className="bg-white/80 md:backdrop-blur-md px-3 py-2 border border-blue-200 rounded-sm shadow-lg flex flex-col gap-1 items-end text-right">
           <div className="flex items-center gap-2 mb-1 justify-end">
-            <div className="text-[10px] uppercase font-mono tracking-widest text-emerald-600">
+            <div className="text-[10px] uppercase font-mono tracking-widest text-emerald-700">
               真北
             </div>
             <div className="w-4 border-t-2 border-emerald-500 border-dashed"></div>
           </div>
           <div className="flex items-center gap-2 justify-end">
-            <div className="text-[10px] uppercase font-mono tracking-widest text-blue-600">
+            <div className="text-[10px] uppercase font-mono tracking-widest text-blue-700">
               磁北
             </div>
             <div className="w-4 border-t-[3px] border-blue-500"></div>
@@ -873,7 +873,7 @@ export default function MagneticMapInner({
         <div className="bg-white/80 md:backdrop-blur-md px-3 py-2 border border-stone-200 rounded-sm text-[9px] flex flex-col gap-1.5 shadow-xl">
           <div className="text-stone-600 font-mono uppercase tracking-widest border-b border-stone-200 pb-1 flex justify-between gap-4">
             <span>凡例</span>
-            <span className="text-emerald-500">
+            <span className="text-emerald-700">
               {layerModeLabel(parseLayerMode(activeLayerMode))}
             </span>
           </div>
@@ -925,7 +925,7 @@ export default function MagneticMapInner({
           </div>
 
           {honmeiStar && (
-            <div className="text-[10px] text-[#a855f7] border-t border-stone-200 pt-1 mt-1 font-mono">
+            <div className="text-[10px] text-purple-700 border-t border-stone-200 pt-1 mt-1 font-mono">
               本命星（物理モデル）: {honmeiStar.physical}
             </div>
           )}
@@ -936,7 +936,7 @@ export default function MagneticMapInner({
       {clickedPos && (
         <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-[1000] pointer-events-auto">
           <div className="bg-white/80 md:backdrop-blur-md px-3 py-2 border border-emerald-200 rounded-sm shadow-xl flex flex-col gap-1.5 animate-fade-in-up">
-            <div className="text-[9px] font-mono text-emerald-600 uppercase tracking-widest border-b border-stone-200 pb-1 flex justify-between gap-4">
+            <div className="text-[9px] font-mono text-emerald-700 uppercase tracking-widest border-b border-stone-200 pb-1 flex justify-between gap-4">
               <span>選んだ地点の座標</span>
               <button
                 onClick={() => setClickedPos(null)}
@@ -960,7 +960,7 @@ export default function MagneticMapInner({
                     `座標をコピーしました: ${clickedPos[0].toFixed(5)},${clickedPos[1].toFixed(5)}`,
                   );
                 }}
-                className="bg-emerald-50 text-emerald-600 border border-emerald-200 px-2 py-1.5 text-[9px] uppercase tracking-widest hover:bg-emerald-800/60 transition-colors"
+                className="bg-emerald-50 text-emerald-700 border border-emerald-200 px-2 py-1.5 text-[9px] uppercase tracking-widest hover:bg-emerald-800/60 transition-colors"
               >
                 📋 コピー
               </button>

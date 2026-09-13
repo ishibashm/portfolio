@@ -125,7 +125,7 @@ export function TacticalMagneticMapComponent({
           <div className="flex items-center gap-2">
             <Crosshair
               size={14}
-              className="text-blue-500 md:animate-pulse mt-1"
+              className="text-blue-700 md:animate-pulse mt-1"
             />
             <div className="flex flex-col">
               <h2 className="text-xs uppercase font-mono tracking-widest text-stone-600 drop-shadow-md">
@@ -141,7 +141,7 @@ export function TacticalMagneticMapComponent({
                   onClick={() =>
                     setActiveLayerMode && setActiveLayerMode("final")
                   }
-                  className={`px-2 py-1 transition-colors ${activeLayerMode === "final" || !activeLayerMode ? "bg-emerald-50 text-emerald-600 font-bold" : "text-stone-600 hover:text-stone-800"} border-r border-stone-200 cursor-pointer`}
+                  className={`px-2 py-1 transition-colors ${activeLayerMode === "final" || !activeLayerMode ? "bg-emerald-50 text-emerald-700 font-bold" : "text-stone-600 hover:text-stone-800"} border-r border-stone-200 cursor-pointer`}
                 >
                   🪐 全統合(年+月+日)
                 </button>
@@ -149,7 +149,7 @@ export function TacticalMagneticMapComponent({
                   onClick={() =>
                     setActiveLayerMode && setActiveLayerMode("year_month")
                   }
-                  className={`px-2 py-1 transition-colors ${activeLayerMode === "year_month" ? "bg-purple-50 text-purple-600 font-bold" : "text-stone-600 hover:text-stone-800"} border-r border-stone-200 cursor-pointer`}
+                  className={`px-2 py-1 transition-colors ${activeLayerMode === "year_month" ? "bg-purple-50 text-purple-700 font-bold" : "text-stone-600 hover:text-stone-800"} border-r border-stone-200 cursor-pointer`}
                 >
                   📅 年+月
                 </button>
@@ -157,7 +157,7 @@ export function TacticalMagneticMapComponent({
                   onClick={() =>
                     setActiveLayerMode && setActiveLayerMode("month_day")
                   }
-                  className={`px-2 py-1 transition-colors ${activeLayerMode === "month_day" ? "bg-blue-50 text-blue-600 font-bold" : "text-stone-600 hover:text-stone-800"} border-r border-stone-200 cursor-pointer`}
+                  className={`px-2 py-1 transition-colors ${activeLayerMode === "month_day" ? "bg-blue-50 text-blue-700 font-bold" : "text-stone-600 hover:text-stone-800"} border-r border-stone-200 cursor-pointer`}
                 >
                   🌓 月+日
                 </button>
@@ -165,7 +165,7 @@ export function TacticalMagneticMapComponent({
                   onClick={() =>
                     setActiveLayerMode && setActiveLayerMode("year_day")
                   }
-                  className={`px-2 py-1 transition-colors ${activeLayerMode === "year_day" ? "bg-amber-50 text-amber-600 font-bold" : "text-stone-600 hover:text-stone-800"} border-r border-stone-200 cursor-pointer`}
+                  className={`px-2 py-1 transition-colors ${activeLayerMode === "year_day" ? "bg-amber-50 text-amber-700 font-bold" : "text-stone-600 hover:text-stone-800"} border-r border-stone-200 cursor-pointer`}
                 >
                   ☀️ 年+日
                 </button>
@@ -181,7 +181,7 @@ export function TacticalMagneticMapComponent({
                   onClick={() =>
                     setActiveLayerMode && setActiveLayerMode("month")
                   }
-                  className={`px-2 py-1 transition-colors ${activeLayerMode === "month" ? "bg-purple-50 text-purple-600 font-bold" : "text-stone-600 hover:text-stone-800"} border-r border-stone-200 cursor-pointer`}
+                  className={`px-2 py-1 transition-colors ${activeLayerMode === "month" ? "bg-purple-50 text-purple-700 font-bold" : "text-stone-600 hover:text-stone-800"} border-r border-stone-200 cursor-pointer`}
                 >
                   月
                 </button>
@@ -189,7 +189,7 @@ export function TacticalMagneticMapComponent({
                   onClick={() =>
                     setActiveLayerMode && setActiveLayerMode("day")
                   }
-                  className={`px-2 py-1 transition-colors ${activeLayerMode === "day" ? "bg-cyan-50 text-cyan-600 font-bold" : "text-stone-600 hover:text-stone-800"} cursor-pointer`}
+                  className={`px-2 py-1 transition-colors ${activeLayerMode === "day" ? "bg-cyan-50 text-cyan-700 font-bold" : "text-stone-600 hover:text-stone-800"} cursor-pointer`}
                 >
                   日
                 </button>
@@ -202,28 +202,28 @@ export function TacticalMagneticMapComponent({
               <div className="pointer-events-auto flex items-center bg-white/80 border border-stone-200 p-0.5 rounded-sm mr-2 hidden lg:flex">
                 <button
                   onClick={() => toggleLayer?.("terrain")}
-                  className={`px-1.5 py-0.5 text-[9px] font-mono border-r border-stone-200 transition-colors ${hudLayers.terrain ? "text-blue-600 bg-blue-500/10" : "text-stone-600"}`}
+                  className={`px-1.5 py-0.5 text-[9px] font-mono border-r border-stone-200 transition-colors ${hudLayers.terrain ? "text-blue-700 bg-blue-500/10" : "text-stone-600"}`}
                   title="地形の陰影を重ねる"
                 >
                   地形
                 </button>
                 <button
                   onClick={() => toggleLayer?.("weather")}
-                  className={`px-1.5 py-0.5 text-[9px] font-mono border-r border-stone-200 transition-colors ${hudLayers.weather ? "text-amber-600 bg-amber-500/10" : "text-stone-600"}`}
+                  className={`px-1.5 py-0.5 text-[9px] font-mono border-r border-stone-200 transition-colors ${hudLayers.weather ? "text-amber-700 bg-amber-500/10" : "text-stone-600"}`}
                   title="宇宙天気（Kp 指数）の注意帯を重ねる"
                 >
                   宇宙天気
                 </button>
                 <button
                   onClick={() => toggleLayer?.("bio")}
-                  className={`px-1.5 py-0.5 text-[9px] font-mono transition-colors ${hudLayers.bio ? "text-purple-600 bg-purple-500/10" : "text-stone-600"}`}
+                  className={`px-1.5 py-0.5 text-[9px] font-mono transition-colors ${hudLayers.bio ? "text-purple-700 bg-purple-500/10" : "text-stone-600"}`}
                   title="本命星から見た個人の吉凶の線を重ねる"
                 >
                   本命星
                 </button>
                 <button
                   onClick={() => toggleLayer?.("hazard")}
-                  className={`px-1.5 py-0.5 text-[9px] font-mono transition-colors border-l border-stone-200 ${hudLayers.hazard ? "text-red-500 bg-red-500/10 font-bold" : "text-stone-600"}`}
+                  className={`px-1.5 py-0.5 text-[9px] font-mono transition-colors border-l border-stone-200 ${hudLayers.hazard ? "text-red-700 bg-red-500/10 font-bold" : "text-stone-600"}`}
                   title="洪水と土砂災害の想定区域を重ねる（出典: ハザードマップポータルサイト）"
                 >
                   災害域
@@ -231,14 +231,14 @@ export function TacticalMagneticMapComponent({
               </div>
               <button
                 onClick={() => setUseTrueNorth(!useTrueNorth)}
-                className={`pointer-events-auto bg-white/80 hover:bg-stone-100 text-stone-600 px-2 py-1 flex items-center gap-1 text-[11px] font-bold font-mono tracking-wider border rounded-sm transition-colors ${useTrueNorth ? "border-emerald-500 text-emerald-600" : "border-blue-500 text-blue-600"}`}
+                className={`pointer-events-auto bg-white/80 hover:bg-stone-100 text-stone-600 px-2 py-1 flex items-center gap-1 text-[11px] font-bold font-mono tracking-wider border rounded-sm transition-colors ${useTrueNorth ? "border-emerald-500 text-emerald-700" : "border-blue-500 text-blue-700"}`}
                 title="Toggle True/Magnetic North Base"
               >
                 基準: {useTrueNorth ? "真北" : "磁北"}
               </button>
               <button
                 onClick={() => setShowHUD(!showHUD)}
-                className={`pointer-events-auto bg-white/80 hover:bg-stone-100 text-stone-600 px-2 py-1 hidden sm:flex items-center gap-1 text-[11px] uppercase font-mono tracking-wider border rounded-sm transition-colors ${showHUD ? "border-blue-500 text-blue-600" : "border-stone-300"}`}
+                className={`pointer-events-auto bg-white/80 hover:bg-stone-100 text-stone-600 px-2 py-1 hidden sm:flex items-center gap-1 text-[11px] uppercase font-mono tracking-wider border rounded-sm transition-colors ${showHUD ? "border-blue-500 text-blue-700" : "border-stone-300"}`}
                 title="磁力線の立体表示を出す・しまう"
               >
                 <Box size={10} />
@@ -262,7 +262,7 @@ export function TacticalMagneticMapComponent({
                 KML で書き出す
               </button>
             </div>
-            <div className="text-[10px] font-mono text-stone-500 text-right bg-white/70 px-1 py-0.5 border border-stone-200">
+            <div className="text-[10px] font-mono text-stone-600 text-right bg-white/70 px-1 py-0.5 border border-stone-200">
               出発地: {lat.toFixed(4)}N, {lon.toFixed(4)}E<br />
               出発地の偏角: {declination ? declination.toFixed(2) : "--"}°
             </div>
@@ -273,7 +273,7 @@ export function TacticalMagneticMapComponent({
           {/* Model Indicator Watermark */}
           <div className="absolute inset-0 pointer-events-none flex items-center justify-center z-10 opacity-[0.03]">
             <div
-              className={`text-6xl md:text-8xl font-black uppercase tracking-tighter -rotate-12 ${isPhysical ? "text-emerald-500" : "text-stone-600"}`}
+              className={`text-6xl md:text-8xl font-black uppercase tracking-tighter -rotate-12 ${isPhysical ? "text-emerald-700" : "text-stone-600"}`}
             >
               {isPhysical ? "物理モデル" : "古典暦モデル"}
             </div>
@@ -282,7 +282,7 @@ export function TacticalMagneticMapComponent({
           {/* HUD Label Top Left */}
           <div className="absolute top-16 left-2 pointer-events-none z-10">
             <div
-              className={`px-2 py-1 text-[10px] font-mono font-bold tracking-widest uppercase border backdrop-blur-sm shadow-lg ${isPhysical ? "bg-emerald-50 text-emerald-600 border-emerald-200" : "bg-white/80 text-stone-500 border-zinc-500/50"}`}
+              className={`px-2 py-1 text-[10px] font-mono font-bold tracking-widest uppercase border backdrop-blur-sm shadow-lg ${isPhysical ? "bg-emerald-50 text-emerald-700 border-emerald-200" : "bg-white/80 text-stone-600 border-zinc-500/50"}`}
             >
               {isPhysical ? "▶ 物理モデル" : "▶ 古典暦モデル"}
             </div>
@@ -328,10 +328,10 @@ export function TacticalMagneticMapComponent({
         </div>
       </div>
       {/* Theoretical Info Panel -> Compact Algorithm Info */}
-      <details className="mt-4 bg-white/80 border border-stone-200 text-[10px] font-mono text-stone-500 w-full group">
+      <details className="mt-4 bg-white/80 border border-stone-200 text-[10px] font-mono text-stone-600 w-full group">
         <summary className="p-3 cursor-pointer hover:bg-white/80 list-none flex items-center justify-between uppercase tracking-widest font-bold">
           <div className="flex items-center gap-2">
-            <span className="text-red-500 blur-[0.5px]">◆</span>
+            <span className="text-red-700 blur-[0.5px]">◆</span>
             吉凶方位の分析ロジック（空間ベクトル）
           </div>
           <span className="group-open:rotate-180 transition-transform text-stone-600">
@@ -343,39 +343,39 @@ export function TacticalMagneticMapComponent({
             <strong className="text-red-600 block mb-1 font-mono text-[9px] uppercase">
               ◆ 1. 凶殺ベクトル (NOISE)
             </strong>
-            <p className="text-stone-500 text-justify mt-1">
+            <p className="text-stone-600 text-justify mt-1">
               地図上の
-              <strong className="text-red-500 font-bold">赤い破線</strong>や
-              <strong className="text-fuchsia-500 font-bold">紫の複破線</strong>
+              <strong className="text-red-700 font-bold">赤い破線</strong>や
+              <strong className="text-fuchsia-700 font-bold">紫の複破線</strong>
               は、凶方位（五黄殺・暗剣殺などの環境の凶と、本命殺などあなたの本命星から見た凶）です。九星気学では引越しや長期滞在で避けるべき方位とされます。
             </p>
           </div>
           <div className="p-2 sm:p-3 border border-yellow-900/30 rounded-sm">
-            <strong className="text-yellow-400 block mb-1 font-mono text-[9px] uppercase">
+            <strong className="text-yellow-700 block mb-1 font-mono text-[9px] uppercase">
               ◆ 2. 天中殺 (VOID)
             </strong>
-            <p className="text-stone-500 text-justify mt-1">
-              <strong className="text-yellow-500 font-bold">黄色の点線</strong>
+            <p className="text-stone-600 text-justify mt-1">
+              <strong className="text-yellow-700 font-bold">黄色の点線</strong>
               は、あなたの天中殺（空亡）の十二支に当たる方向です。伝統的に、この期間・方位での大きな決断は避けるとされるため、当サイトでは保留を勧める表示にしています。
             </p>
           </div>
           <div className="p-2 sm:p-3 border border-amber-200 rounded-sm">
-            <strong className="text-amber-500 block mb-1 font-mono text-[9px] uppercase">
+            <strong className="text-amber-700 block mb-1 font-mono text-[9px] uppercase">
               ◆ 3. 月交点 (NODE)
             </strong>
-            <p className="text-stone-500 text-justify mt-1">
-              <strong className="text-amber-500 font-bold">
+            <p className="text-stone-600 text-justify mt-1">
+              <strong className="text-amber-700 font-bold">
                 オレンジの破線
               </strong>
               は、月の軌道と黄道の交点「羅睺・計都軸（月交点）」の方向です。日食・月食が起こる軸で、インド占星術で避けるとされるため、当サイトでは凶として扱います（※全方位に効く「月相」と違い、方位の偏りを持つ要因です）。
             </p>
           </div>
           <div className="p-2 sm:p-3 border border-emerald-200 rounded-sm">
-            <strong className="text-emerald-600 block mb-1 font-mono text-[9px] uppercase">
+            <strong className="text-emerald-700 block mb-1 font-mono text-[9px] uppercase">
               ◆ 4. 最適化ゾーン (OPTIMAL)
             </strong>
-            <p className="text-stone-500 text-justify mt-1">
-              <strong className="text-emerald-500 font-bold">緑の実線</strong>
+            <p className="text-stone-600 text-justify mt-1">
+              <strong className="text-emerald-700 font-bold">緑の実線</strong>
               は、年・月・日のどの盤でも凶が無く、あなたの本命星と相生・比和になる「大吉方位」です。九星気学で最も良いとされる組み合わせで、条件が厳しいため表示されない日も多くあります。
             </p>
           </div>
