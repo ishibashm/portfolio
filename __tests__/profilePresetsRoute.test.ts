@@ -70,6 +70,7 @@ describe("/api/profile-presets", () => {
         birthLon: 135,
         baseLat: 35,
         baseLon: 135,
+        // 古い控えに残っている暗号化済みのキー。読む機能が無いので返さない
         encryptedGeminiKey: "encrypted:server-secret",
         createdAt: "2026-07-27T00:00:00.000Z",
       },
@@ -83,19 +84,17 @@ describe("/api/profile-presets", () => {
     const response = await GET();
 
     expect(response.status).toBe(200);
-    await expect(response.json()).resolves.toMatchObject({
-      presets: [
-        expect.objectContaining({
-          id: "preset_1",
-          geminiKey: "server-secret",
-        }),
-      ],
+    const body = await response.json();
+    expect(body).toMatchObject({
+      presets: [expect.objectContaining({ id: "preset_1", name: "Kyoto" })],
       presets_initialized: true,
     });
+    expect(body.presets[0]).not.toHaveProperty("geminiKey");
+    expect(body.presets[0]).not.toHaveProperty("encryptedGeminiKey");
     expect(findFirst).toHaveBeenCalled();
   });
 
-  it("persists encrypted presets for the signed-in user", async () => {
+  it("persists presets for the signed-in user and drops a posted geminiKey", async () => {
     findFirst.mockResolvedValue(null);
     create.mockResolvedValue({});
     const request = new Request("http://localhost/api/profile-presets", {
@@ -126,15 +125,14 @@ describe("/api/profile-presets", () => {
         data: expect.objectContaining({
           user_id: authenticatedUser.id,
           user_email: authenticatedUser.email,
-          presets: [
-            expect.objectContaining({
-              encryptedGeminiKey:
-                "encrypted:must-not-be-stored-in-plaintext",
-            }),
-          ],
+          presets: [expect.objectContaining({ id: "preset_1" })],
         }),
       }),
     );
+    // キーは平文でも暗号化でも保存しない（受け口が無い）
+    const stored = create.mock.calls[0][0].data.presets[0];
+    expect(stored).not.toHaveProperty("geminiKey");
+    expect(stored).not.toHaveProperty("encryptedGeminiKey");
   });
 
   it("reports a cloud persistence failure instead of claiming success", async () => {
