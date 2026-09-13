@@ -28,7 +28,20 @@ import { describe, expect, it } from "vitest";
 const SOURCE = "src/components/SolarTimeClock.tsx";
 /** 相場マップ。こちらは**空文字**を書いてクラウドの値を消していた。 */
 const WEALTH = "src/app/relocation/wealth/page.tsx";
-const GUARDED = ["birth_date", "birth_lat", "birth_lon"];
+/*
+  守る欄。**出発地（base_lat / base_lon）は 2026-09-13 に足した。**
+  利用者の報告「愛知県名古屋市が出発地なのに地図は京都」を追って見つけた。
+  生年月日と出生地だけ旗で包み、**出発地は素通しで書いていた。**画面は
+  計算のために東京駅（35.6895 / 139.6917）を初期値に持つので、保存が走る
+  たびにそれが登録内容として他の画面（物件検索など）に渡っていた。
+*/
+const GUARDED = [
+  "birth_date",
+  "birth_lat",
+  "birth_lon",
+  "base_lat",
+  "base_lon",
+];
 
 function autoSavePayloadProperties(
   source: string = SOURCE,
@@ -69,12 +82,13 @@ describe("ホームの自動保存", () => {
     const names = literal.properties
       .filter(ts.isPropertyAssignment)
       .map((p) => p.name.getText());
-    /* 盤の設定や出発地は今までどおり無条件に書く */
-    expect(names).toContain("base_lat");
+    /* 盤の設定は今までどおり無条件に書く。**出発地はここに置かない**
+       （2026-09-13 から旗で包んだので、素の欄として現れたら回帰） */
     expect(names).toContain("use_classical_board");
+    expect(names).toContain("layer_mode");
   });
 
-  it("生年月日と出生地を無条件には書かない", () => {
+  it("生年月日・出生地・出発地を無条件には書かない", () => {
     const names = literal.properties
       .filter(ts.isPropertyAssignment)
       .map((p) => p.name.getText());
@@ -117,11 +131,11 @@ describe("ホームの手動保存", () => {
     const names = literal.properties
       .filter(ts.isPropertyAssignment)
       .map((p) => p.name.getText());
-    expect(names).toContain("base_lat");
     expect(names).toContain("baseline_hrv_mean");
+    expect(names).toContain("void_zodiac_override");
   });
 
-  it("生年月日と出生地を無条件には書かない", () => {
+  it("生年月日・出生地・出発地を無条件には書かない", () => {
     const names = literal.properties
       .filter(ts.isPropertyAssignment)
       .map((p) => p.name.getText());
