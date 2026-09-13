@@ -13,7 +13,7 @@
 import React, { useState } from "react";
 import dynamic from "next/dynamic";
 import { directionFromBearing } from "../../utils/directionGeo";
-import { directionLabelName } from "@/lib/directionLabels";
+import { directionLabelBadge, directionLabelName } from "@/lib/directionLabels";
 import type {
   BoardLayout,
   Direction,
@@ -250,6 +250,27 @@ export interface ConsultPanelProps {
   currentZodiac: ReturnType<typeof getCurrentZodiac>;
 }
 
+/**
+ * どちらの盤を判定に使っているかの札。
+ *
+ * 以前は**使っていない側を薄くして**（`opacity-30` + `grayscale` + `blur`）
+ * 区別していたが、**読めなかった**（利用者の指摘、2026-09-13）。薄さで
+ * 意味を伝えるのをやめ、語と枠で示す。色だけ・濃さだけに意味を持たせない。
+ */
+function BoardUseBadge({ inUse }: { inUse: boolean }) {
+  return (
+    <span
+      className={`ml-auto rounded px-1.5 py-0.5 text-[9px] font-bold tracking-normal ${
+        inUse
+          ? "bg-emerald-100 text-emerald-800"
+          : "bg-stone-100 text-stone-700"
+      }`}
+    >
+      {inUse ? "いま使っている盤" : "参考"}
+    </span>
+  );
+}
+
 export function ConsultPanel({
   honmeiStar,
   env,
@@ -272,6 +293,20 @@ export function ConsultPanel({
    * （SolarTimeClock に居たときは全タブ分の state が本体に積まれていた）。
    */
   const [showAstrophysicalLogic, setShowAstrophysicalLogic] = useState(false);
+
+  /* 盤の升目に出す方位。`SE` のような略号をそのまま出していた。
+     中央（C）は方位ではないので「中」。 */
+  const MATRIX_DIRECTION_JA: Record<string, string> = {
+    N: "北",
+    NE: "北東",
+    E: "東",
+    SE: "南東",
+    S: "南",
+    SW: "南西",
+    W: "西",
+    NW: "北西",
+    C: "中",
+  };
 
   const renderMatrixCell = (
     dir: string,
@@ -319,8 +354,8 @@ export function ConsultPanel({
       <div
         className={`p-1 flex flex-col items-center justify-center border rounded-xl transition-all ${baseClass} ${colorClass}`}
       >
-        <span className="text-[9px] text-stone-600 uppercase tracking-widest">
-          {dir}
+        <span className="text-[9px] text-stone-600 tracking-widest">
+          {MATRIX_DIRECTION_JA[dir] ?? dir}
         </span>
         <span
           className={`text-lg sm:text-xl font-mono font-bold leading-none my-0.5 ${isCenter ? "text-stone-600" : ""}`}
@@ -328,8 +363,12 @@ export function ConsultPanel({
           {star || "-"}
         </span>
         {!isCenter && status && (
-          <span className="text-[9px] uppercase tracking-tighter leading-none">
-            {status.replace("NOISE_", "")}
+          /* 内部のコード（GOU・ANKEN・OPTIMAL_REGULAR…）をそのまま出して
+             いた。日本語の頁で読み手が得るものが無く、同じ判定が別の場所
+             では日本語で出ている（#1273 で寄せた対応表）。ここも同じ表を
+             引く。`uppercase` も外す（日本語には効かない） */
+          <span className="text-[9px] tracking-tighter leading-none">
+            {directionLabelBadge(status) || directionLabelName(status)}
           </span>
         )}
       </div>
@@ -823,13 +862,21 @@ export function ConsultPanel({
               <div className="flex flex-col gap-4">
                 {/* Physical Model Section */}
                 <div
-                  className={`transition-all duration-300 ${!useClassicalBoard ? "opacity-100" : "opacity-30 grayscale-[50%] blur-[0.5px] hover:opacity-100 hover:grayscale-0 hover:blur-none"}`}
+                  className={
+                    /* 選んでいない側を薄くするのをやめた（2026-09-13。利用者の指摘
+                       「物理の盤が薄い色でほぼ見えない」）。opacity-30 に
+                       grayscale と blur まで重なっていて、**読めない上に
+                       コントラストも落ちていた。**どちらが選ばれているかは
+                       下の札と枠で示す。 */
+                    `transition-all duration-300 ${!useClassicalBoard ? "rounded-xl ring-1 ring-emerald-200 bg-emerald-50/40 p-2" : "p-2"}`
+                  }
                 >
                   <div
                     className={`text-emerald-700 font-bold text-[10px] tracking-widest uppercase border-b border-stone-200 pb-1 flex items-center gap-2 ${!useClassicalBoard ? "drop-shadow-[0_0_5px_rgba(16,185,129,0.5)]" : ""}`}
                   >
                     <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse"></span>
                     物理の盤（天体の位置から）
+                    <BoardUseBadge inUse={!useClassicalBoard} />
                   </div>
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-[11px] font-mono text-stone-600">
                     <div className="bg-white/70 border border-purple-200 p-2">
@@ -1016,13 +1063,14 @@ export function ConsultPanel({
 
                 {/* Classical Model Section */}
                 <div
-                  className={`transition-all duration-300 mt-4 ${useClassicalBoard ? "opacity-100" : "opacity-30 grayscale-[50%] blur-[0.5px] hover:opacity-100 hover:grayscale-0 hover:blur-none"}`}
+                  className={`transition-all duration-300 mt-4 ${useClassicalBoard ? "rounded-xl ring-1 ring-stone-300 bg-stone-50/60 p-2" : "p-2"}`}
                 >
                   <div
                     className={`text-stone-600 font-bold text-[10px] tracking-widest uppercase border-b border-stone-200 pb-1 flex items-center gap-2 ${useClassicalBoard ? "drop-shadow-[0_0_5px_rgba(255,255,255,0.3)]" : ""}`}
                   >
                     <span className="w-1.5 h-1.5 bg-zinc-400 rounded-full animate-pulse"></span>
                     古典の盤（節入りの暦から）
+                    <BoardUseBadge inUse={useClassicalBoard} />
                   </div>
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-[11px] font-mono text-stone-600 mt-2">
                     <div className="bg-white/80 border border-stone-200 p-2">
@@ -1227,13 +1275,21 @@ export function ConsultPanel({
               <div className="overflow-visible w-full mt-4 flex flex-col gap-6">
                 {/* Physical Model Table */}
                 <div
-                  className={`transition-all duration-300 ${!useClassicalBoard ? "opacity-100" : "opacity-30 grayscale-[50%] blur-[0.5px] hover:opacity-100 hover:grayscale-0 hover:blur-none"}`}
+                  className={
+                    /* 選んでいない側を薄くするのをやめた（2026-09-13。利用者の指摘
+                       「物理の盤が薄い色でほぼ見えない」）。opacity-30 に
+                       grayscale と blur まで重なっていて、**読めない上に
+                       コントラストも落ちていた。**どちらが選ばれているかは
+                       下の札と枠で示す。 */
+                    `transition-all duration-300 ${!useClassicalBoard ? "rounded-xl ring-1 ring-emerald-200 bg-emerald-50/40 p-2" : "p-2"}`
+                  }
                 >
                   <div
                     className={`text-emerald-700 font-bold text-[10px] tracking-widest uppercase border-b border-stone-200 pb-1 mb-2 flex items-center gap-2 ${!useClassicalBoard ? "drop-shadow-[0_0_5px_rgba(16,185,129,0.5)]" : ""}`}
                   >
                     <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse"></span>
                     物理の盤（天体の位置から）
+                    <BoardUseBadge inUse={!useClassicalBoard} />
                   </div>
                   <table className="w-full text-left font-mono">
                     <thead className="border-b border-stone-200 text-stone-600 text-[9px] uppercase tracking-wider">
@@ -1331,13 +1387,14 @@ export function ConsultPanel({
 
                 {/* Classical Model Table */}
                 <div
-                  className={`transition-all duration-300 ${useClassicalBoard ? "opacity-100" : "opacity-30 grayscale-[50%] blur-[0.5px] hover:opacity-100 hover:grayscale-0 hover:blur-none"}`}
+                  className={`transition-all duration-300 ${useClassicalBoard ? "rounded-xl ring-1 ring-stone-300 bg-stone-50/60 p-2" : "p-2"}`}
                 >
                   <div
                     className={`text-stone-600 font-bold text-[10px] tracking-widest uppercase border-b border-stone-200 pb-1 mb-2 flex items-center gap-2 ${useClassicalBoard ? "drop-shadow-[0_0_5px_rgba(255,255,255,0.3)]" : ""}`}
                   >
                     <span className="w-1.5 h-1.5 bg-zinc-400 rounded-full animate-pulse"></span>
                     古典の盤（節入りの暦から）
+                    <BoardUseBadge inUse={useClassicalBoard} />
                   </div>
                   <table className="w-full text-left font-mono">
                     <thead className="border-b border-stone-200 text-stone-600 text-[9px] uppercase tracking-wider">
