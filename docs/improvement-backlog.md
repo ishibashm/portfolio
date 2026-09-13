@@ -2736,7 +2736,7 @@ API のページを読める機会があれば全文を写す。
 
 ### 残っているもの
 
-- `encrypted_gemini_key` の列と `profile-presets` の暗号化・復号の経路。読む人が誰もいない。**列を落とすのは戻せない変更**なので、コード側（API の受け口）だけ先に消し、列は判断待ち
-- `jstNoonOf` が `ephemerisEngine`・`auspiciousDays`・`kigakuContent` に 1 つずつある（同じことを 3 か所に書いている）。`boardInstant` に寄せる
-- `ScorecardPanel` の残りの英語（"Astrological Wave" など nbaData の節）
+- `encrypted_gemini_key` の列。コード側は全部消した（入力欄 #1253、API の受け口 #1263、型 #1264、管理画面の旗 #1265。手順の英字は #1266）。列と、控えの JSON に残る `encryptedGeminiKey` の値、読む人のいなくなった `utils/encryption` は**落とすのが戻せない変更**なので判断待ち
+- ~~`jstNoonOf` の 3 重~~ → #1260・#1261 で `boardInstant` に寄せ、検査で固定
+- ~~`ScorecardPanel` の残りの英語~~ → #1262
 - 地域ニュースの下準備（#1255。台帳の `pref`）は入れたが、主要メディアの出どころは利用者が規約を読んでから
