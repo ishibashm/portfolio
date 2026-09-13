@@ -4,7 +4,7 @@
  * 数値はすべて src/utils/ephemerisEngine.ts の計算結果をそのまま使う。
  * ここで独自に定数表を持つと、ツール側の判定と食い違う記事ができてしまう。
  */
-import { forecastAnchorMs } from "@/utils/boardInstant";
+import { jstNoonOf } from "@/utils/boardInstant";
 import { DIRECTION_LABELS } from "@/utils/directionGeo";
 import {
   generateBoard,
@@ -283,8 +283,8 @@ export const MONTHS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12];
  * 起きていた（`__tests__/kigakuMonthRangeNoon.test.ts`）。
  * #456 / #564 / #582 と同じ、時刻の基準の取りこぼし。
  */
-function jstNoonOf(year: number, month: number, day: number): Date {
-  return new Date(forecastAnchorMs(new Date(Date.UTC(year, month - 1, day))));
+function jstNoonOfYmd(year: number, month: number, day: number): Date {
+  return jstNoonOf(new Date(Date.UTC(year, month - 1, day)));
 }
 
 /**
@@ -301,7 +301,7 @@ export function kigakuMonthRange(
     system === "classical" ? getClassicalMonthStar(d) : getMonthStar(d);
 
   // その暦月の 20 日はほぼ確実に節入り後なので、これを代表点にする
-  const anchor = jstNoonOf(year, month, 20);
+  const anchor = jstNoonOfYmd(year, month, 20);
   const centerStar = starOn(anchor);
 
   const start = new Date(anchor);
@@ -331,7 +331,7 @@ export function getMonthDirections(
 } {
   const classical = system === "classical";
   const { start, end, centerStar } = kigakuMonthRange(year, month, system);
-  const d = jstNoonOf(year, month, 20);
+  const d = jstNoonOfYmd(year, month, 20);
 
   const yearBoard = generateBoard(
     classical ? getClassicalYearStar(d) : getYearStar(d),
