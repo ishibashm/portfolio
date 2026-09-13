@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { prefNameByCode } from "@/lib/prefContent";
 import {
   FEED_GROUPS,
   NEWS_FEEDS,
@@ -20,6 +21,18 @@ import {
  * ここで見るのは**形の整合だけ**で、生きているかは見ない。
  */
 describe("/news の台帳", () => {
+  it("県ごとの配信の pref は、接尾辞つきの県名（prefContent にあるもの）", () => {
+    const names = new Set(
+      Array.from({ length: 47 }, (_, i) =>
+        prefNameByCode(String(i + 1).padStart(2, "0")),
+      ),
+    );
+    for (const f of NEWS_FEEDS) {
+      if (f.pref === undefined) continue;
+      expect(names.has(f.pref), `${f.id}: ${f.pref}`).toBe(true);
+    }
+  });
+
   it("id が重複していない（取得キャッシュのキーになる）", () => {
     const ids = NEWS_FEEDS.map((f) => f.id);
     expect(new Set(ids).size).toBe(ids.length);
