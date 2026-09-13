@@ -68,14 +68,14 @@ export const TenchusatsuVisualizer: React.FC<TenchusatsuVisualizerProps> = ({
       列で幅を決める。
     */
     <div className="bg-white/80 rounded-sm shadow-lg border border-stone-200 p-4 mt-4 w-full h-full">
-      <h3 className="text-[10px] tracking-widest text-stone-500 mb-4 border-b border-stone-200 pb-2 flex items-center gap-2">
+      <h3 className="text-xs tracking-widest text-stone-500 mb-4 border-b border-stone-200 pb-2 flex items-center gap-2">
         <span className="text-red-500 blur-[0.5px]">◆</span> 天中殺の周期
       </h3>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {/* Profile */}
         <div className="bg-white/70 p-3 rounded-sm border border-stone-200 flex flex-col justify-center">
-          <h4 className="font-semibold text-[10px] text-stone-600 tracking-widest mb-2 border-b border-stone-200 pb-1">
+          <h4 className="font-semibold text-xs text-stone-600 tracking-widest mb-2 border-b border-stone-200 pb-1">
             生まれた日の干支
           </h4>
           {/*
@@ -89,7 +89,7 @@ export const TenchusatsuVisualizer: React.FC<TenchusatsuVisualizerProps> = ({
             */}
           <dl className="space-y-1 text-sm font-mono">
             <div className="flex flex-wrap items-baseline gap-x-2">
-              <dt className="text-stone-600 text-[10px] whitespace-nowrap">
+              <dt className="text-stone-600 text-xs whitespace-nowrap">
                 生年月日
               </dt>
               <dd className="text-stone-600 ml-auto whitespace-nowrap">
@@ -97,7 +97,7 @@ export const TenchusatsuVisualizer: React.FC<TenchusatsuVisualizerProps> = ({
               </dd>
             </div>
             <div className="flex flex-wrap items-baseline gap-x-2">
-              <dt className="text-stone-600 text-[10px] whitespace-nowrap">
+              <dt className="text-stone-600 text-xs whitespace-nowrap">
                 日干支
               </dt>
               <dd className="font-bold text-stone-600 ml-auto whitespace-nowrap">
@@ -105,7 +105,7 @@ export const TenchusatsuVisualizer: React.FC<TenchusatsuVisualizerProps> = ({
               </dd>
             </div>
             <div className="flex flex-wrap items-baseline gap-x-2">
-              <dt className="text-stone-600 text-[10px] whitespace-nowrap">
+              <dt className="text-stone-600 text-xs whitespace-nowrap">
                 天中殺（空亡）
               </dt>
               <dd className="text-red-700 font-bold tracking-widest ml-auto whitespace-nowrap">
@@ -113,7 +113,7 @@ export const TenchusatsuVisualizer: React.FC<TenchusatsuVisualizerProps> = ({
               </dd>
             </div>
           </dl>
-          <div className="mt-3 text-[10px] text-stone-600 leading-tight">
+          <div className="mt-3 text-xs text-stone-600 leading-relaxed">
             日干支から、四柱推命でいう天中殺（空亡）の年を求めています。12
             年のうち 2
             年で、伝統的に大きな決断や移動を控えるのが良いとされる期間です。
@@ -125,7 +125,7 @@ export const TenchusatsuVisualizer: React.FC<TenchusatsuVisualizerProps> = ({
           <div
             className={`p-4 rounded-sm border ${data.isYearTenchusatsu ? "bg-red-50 border-red-200" : "bg-emerald-50 border-emerald-200"} text-center flex flex-col justify-center gap-2 h-full`}
           >
-            <span className="text-[10px] tracking-widest font-bold text-stone-600">
+            <span className="text-xs tracking-widest font-bold text-stone-600">
               今年（{currentYear} 年・立春から）
             </span>
             {data.isYearTenchusatsu ? (
@@ -135,7 +135,7 @@ export const TenchusatsuVisualizer: React.FC<TenchusatsuVisualizerProps> = ({
                 </span>
                 {/* 以前は red-400/80。赤地（red-50）に対して約 1.9:1 で
                     読めなかった。red-700 で 5.9:1。 */}
-                <span className="text-[10px] text-red-700">
+                <span className="text-xs text-red-700">
                   今年はあなたの天中殺の年です。伝統的に、引越しや大きな決断は避けるとされます。
                 </span>
               </>
@@ -144,7 +144,7 @@ export const TenchusatsuVisualizer: React.FC<TenchusatsuVisualizerProps> = ({
                 <span className="text-xl md:text-2xl font-bold tracking-[0.2em] text-emerald-700">
                   天中殺ではない
                 </span>
-                <span className="text-[10px] text-emerald-700">
+                <span className="text-xs text-emerald-700">
                   今年はあなたの天中殺の年ではありません。
                 </span>
               </>
@@ -161,7 +161,7 @@ export const TenchusatsuVisualizer: React.FC<TenchusatsuVisualizerProps> = ({
         {years.map((y) => (
           <li
             key={y.year}
-            className={`rounded-sm border px-1 py-1.5 text-center text-[10px] ${
+            className={`rounded-sm border px-1 py-1.5 text-center text-[11px] ${
               y.status === "VOID"
                 ? "border-red-200 bg-red-50 text-red-700 font-bold"
                 : "border-stone-200 bg-white/70 text-stone-600"

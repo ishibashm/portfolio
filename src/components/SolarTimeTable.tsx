@@ -95,10 +95,18 @@ export function SolarTimeTableComponent({
     const f = getZonedDateTimeFields(d, 9);
     return `${f.year}/${f.month}/${f.day}`;
   };
-  const formatTime = (d: Date) => {
-    const f = getZonedDateTimeFields(d, 9);
+  /*
+    刻の範囲。日付は先頭に 1 回だけ書き、終わりが翌日なら「翌」を添える。
+    以前は「2026/09/12 22:36 - 2026/09/13 00:36」と両方に日付を付けていて
+    330px あり、400px の端末では札の右端で切れて「00:3」までしか読めなかった
+    （2026-09-13、Playwright で実測）。
+  */
+  const formatRange = (start: Date, end: Date) => {
+    const a = getZonedDateTimeFields(start, 9);
+    const b = getZonedDateTimeFields(end, 9);
     const pad = (n: number) => String(n).padStart(2, "0");
-    return `${f.year}/${pad(f.month)}/${pad(f.day)} ${pad(f.hours)}:${pad(f.minutes)}`;
+    const sameDay = a.year === b.year && a.month === b.month && a.day === b.day;
+    return `${a.year}/${pad(a.month)}/${pad(a.day)} ${pad(a.hours)}:${pad(a.minutes)} – ${sameDay ? "" : "翌 "}${pad(b.hours)}:${pad(b.minutes)}`;
   };
 
   const generateCsvString = () => {
@@ -396,7 +404,7 @@ export function SolarTimeTableComponent({
             <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse"></span>{" "}
             動いてよい刻
           </div>
-          <p className="text-stone-500 text-[10px] leading-relaxed font-sans text-justify">
+          <p className="text-stone-500 text-xs leading-relaxed font-sans text-justify">
             時盤の九星の五行が、あなたの本命星と相生・比和にあたる刻です。伝統的に、決断や出発に向くとされます。
           </p>
         </div>
@@ -405,7 +413,7 @@ export function SolarTimeTableComponent({
             <span className="w-1.5 h-1.5 bg-red-500 rounded-full animate-pulse"></span>{" "}
             天中殺の刻
           </div>
-          <p className="text-stone-500 text-[10px] leading-relaxed font-sans text-justify">
+          <p className="text-stone-500 text-xs leading-relaxed font-sans text-justify">
             あなたの天中殺（空亡）の十二支にあたる刻です。伝統的に、大きな決断や新しい始まり、長距離の移動は避けるとされます。体調や通信への影響を示すものではありません。
           </p>
         </div>
@@ -424,7 +432,7 @@ export function SolarTimeTableComponent({
             <strong className="text-purple-600 block mb-1 font-mono text-[9px]">
               ◆ 1. 陰陽五行・四柱推命
             </strong>
-            <p className="text-stone-500 text-justify">
+            <p className="text-stone-500 text-xs text-justify">
               「木・火・土・金・水」の五行に分け、互いに生み出す「相生」、打ち消し合う「相剋」という関係の決まりで計算します。干支暦（四柱推命）の組み合わせを併せて見ます。エネルギーを測っているのではなく、伝統的に決まっている規則をそのまま計算に写したものです。
             </p>
           </div>
@@ -432,7 +440,7 @@ export function SolarTimeTableComponent({
             <strong className="text-blue-600 block mb-1 font-mono text-[9px]">
               ◆ 2. 刻の切り方
             </strong>
-            <p className="text-stone-500 text-justify">
+            <p className="text-stone-500 text-xs text-justify">
               2
               時間ごとの刻の境目は、出発地の経度と均時差を補正した真太陽時で切ります。その刻の九星（時盤）は日の十二支から出します。年盤・月盤・日盤は日本時間の暦日で決まり、ここでは動かしません。
             </p>
@@ -441,7 +449,7 @@ export function SolarTimeTableComponent({
             <strong className="text-red-600 block mb-1 font-mono text-[9px]">
               ◆ 3. 天中殺の刻
             </strong>
-            <p className="text-stone-500 text-justify">
+            <p className="text-stone-500 text-xs text-justify">
               天中殺（空亡）は、四柱推命で干支の組み合わせが欠ける期間を指す考え方です。伝統的に、この期間の移動や大きな決断は避けるとされます。体調や自律神経への影響を示すものではありません。
             </p>
           </div>
@@ -449,7 +457,7 @@ export function SolarTimeTableComponent({
             <strong className="text-emerald-600 block mb-1 font-mono text-[9px]">
               ◆ 4. 動いてよい刻（相生・比和）
             </strong>
-            <p className="text-stone-500 text-justify">
+            <p className="text-stone-500 text-xs text-justify">
               緑は、時盤の九星の五行があなたの本命星と「相生」または「比和」にあたる刻です。以前は奇門遁甲の八門も条件にしていましたが、その八門は盤を組まず刻の順に門を回すだけの仮実装だったため、判定から外しました。
             </p>
           </div>
@@ -498,8 +506,7 @@ export function SolarTimeTableComponent({
                   */}
                 <div className="flex items-center gap-3 shrink-0 flex-wrap">
                   <span className="text-sm sm:text-base font-mono text-stone-800 font-bold tracking-widest drop-shadow-md whitespace-nowrap">
-                    {formatTime(item.startStandard)} -{" "}
-                    {formatTime(item.endStandard)}
+                    {formatRange(item.startStandard, item.endStandard)}
                   </span>
                   <div className="flex items-center gap-1">
                     <span
@@ -623,7 +630,7 @@ export function SolarTimeTableComponent({
                                 {evalPhase.relation || "中立"}
                               </span>
                             </div>
-                            <p className="mt-1 text-[9px] opacity-80 text-justify">
+                            <p className="mt-1 text-xs opacity-80 text-justify">
                               陰陽五行説（木火土金水）に基づく、あなたの本命星といまの九星の相性です。相生（生み出す関係）や比和（同じ属性）であれば、良い組み合わせとされます。
                             </p>
                           </div>
