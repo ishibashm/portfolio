@@ -72,7 +72,7 @@ const VARIANT_STYLES = {
       "w-full text-left px-2.5 py-1.5 text-xs text-stone-700 hover:bg-indigo-50 transition-colors",
     picked: "flex items-center gap-1.5 text-[10px] text-stone-500",
     pinSize: 10,
-    help: "text-[9px] text-stone-600 leading-relaxed",
+    help: "text-xs text-stone-600 leading-relaxed",
     coordsToggle: "self-start text-[9px] text-stone-600 hover:text-stone-800",
     coordInput:
       "px-2 py-1.5 bg-white border border-stone-200 rounded-lg text-[11px] font-mono text-stone-700",
