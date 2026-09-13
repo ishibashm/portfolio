@@ -4,6 +4,7 @@ import {
   ALLOWED_PORTAL_URLS,
   PORTAL_LINK_DISCLAIMER,
   portalLinksForPref,
+  suumoCitySearchUrl,
 } from "@/lib/portalLinks";
 import { PREF_REGION, prefNameByCode } from "@/lib/prefContent";
 
@@ -114,6 +115,44 @@ describe("外部サイトへのリンクは規約の範囲を出ない", () => {
     /* HOME'S の「提携または協力関係にあるものと誤認される…サイトからの
        リンクはお断りいたします」への手当て */
     expect(PORTAL_LINK_DISCLAIMER).toContain("提携");
+  });
+
+  it("市区町村の一覧は、実物で確かめた地方でだけ組み立てる", () => {
+    /* 利用者が実物を貼ってくれたのは関東（ar=030）と東海（ar=050）だけ。
+       他の地方の `ar` を推測すると、1,900 頁に死んだリンクを置くことに
+       なる（2026-09-10 に規約を推測して失敗したのと同じ形） */
+    expect(suumoCitySearchUrl("13103")).toBe(
+      "https://suumo.jp/jj/chintai/ichiran/FR301FC001/?ar=030&bs=040&ta=13&sc=13103" +
+        "&cb=0.0&ct=9999999&et=9999999&cn=9999999&mb=0&mt=9999999" +
+        "&shkr1=03&shkr2=03&shkr3=03&shkr4=03&fw2=&srch_navi=1",
+    );
+    expect(suumoCitySearchUrl("23106")).toContain(
+      "ar=050&bs=040&ta=23&sc=23106",
+    );
+    /* 未確認の地方（近畿・九州など）は渡さない */
+    expect(suumoCitySearchUrl("27127")).toBeNull();
+    expect(suumoCitySearchUrl("40132")).toBeNull();
+  });
+
+  it("先頭が 0 の県は、ta の書き方を確かめるまで渡さない", () => {
+    /* 北海道 01 で `ta=1` なのか `ta=01` なのかが分かっていない。
+       関東にも茨城 08・栃木 09 がある */
+    expect(suumoCitySearchUrl("01101")).toBeNull();
+    expect(suumoCitySearchUrl("08201")).toBeNull();
+  });
+
+  it("壊れたコードでは組み立てない", () => {
+    for (const bad of ["", "13", "131030", "abcde", "1310a"]) {
+      expect(suumoCitySearchUrl(bad)).toBeNull();
+    }
+  });
+
+  it("こちらで検索の条件を足していない", () => {
+    /* 賃料・面積・築年数・敷礼は「指定なし」の既定のまま渡す。絞るのは
+       向こうの画面で利用者がやること */
+    const url = suumoCitySearchUrl("13103")!;
+    expect(url).toContain("cb=0.0&ct=9999999");
+    expect(url).toContain("fw2=&srch_navi=1");
   });
 
   it("台帳に規約の出典と読んだ日が書いてある", () => {
