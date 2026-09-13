@@ -22,6 +22,8 @@ const FILES = [
   "src/components/home/ScorecardPanel.tsx",
   "src/components/home/ConsultPanel.tsx",
   "src/components/PersonalProfileConfig.tsx",
+  "src/components/SolarTimeTable.tsx",
+  "src/components/BioMagneticDashboard.tsx",
 ];
 
 function unlabeledControls(path: string): string[] {
@@ -85,6 +87,41 @@ describe("dashboard の入力欄・選択欄には読み上げ用の名前があ
         }
       }
     }
+  });
+
+  it("英語だけの文（行ごと英語の text node）を残さない", () => {
+    /* 「YEAR: JUPITER RESONANCE」「EXAMINE」のように、開きタグの次の行に
+       英語だけの行が置かれている形。1 行に `>English<` と書かれた形は
+       別の検査（#1268 まで）で拾ったが、こちらは行が分かれていて
+       素通りしていた（2026-09-13 に 7 件）。直前の空でない行が `>` で
+       終わり、直後の空でない行が `<` で始まるものを text node とみなす。
+       CSV の列名や JSX 式（波括弧）は対象にしない。 */
+    /* まだ英語が残っている DestinationMapPanel（DIR）・ScorecardPanel
+       （Loading…）・BioMagneticDashboard（V.2020-2025 など）は次の PR で
+       直してから足す。 */
+    const ENGLISH_TEXT_FILES = FILES.filter(
+      (f) => !/DestinationMapPanel|ScorecardPanel|BioMagneticDashboard/.test(f),
+    );
+    const hits: string[] = [];
+    for (const f of ENGLISH_TEXT_FILES) {
+      const lines = readFileSync(f, "utf8").split("\n");
+      for (let i = 0; i < lines.length; i++) {
+        if (!/^\s*[A-Z][A-Za-z0-9 :&/().,'+-]{2,}\s*$/.test(lines[i])) continue;
+        let p = i - 1;
+        while (p >= 0 && !lines[p].trim()) p--;
+        let n = i + 1;
+        while (n < lines.length && !lines[n].trim()) n++;
+        if (
+          p >= 0 &&
+          n < lines.length &&
+          lines[p].trimEnd().endsWith(">") &&
+          lines[n].trimStart().startsWith("<")
+        ) {
+          hits.push(`${f}:${i + 1}: ${lines[i].trim()}`);
+        }
+      }
+    }
+    expect(hits).toEqual([]);
   });
 
   it("アイコンだけのボタンに英語の title を残さない", () => {
