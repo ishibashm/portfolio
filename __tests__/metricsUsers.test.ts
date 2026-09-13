@@ -92,7 +92,6 @@ describe("metrics users", () => {
         birth_lat: 34.1234,
         base_lat: 35.5678,
         presets: [{ name: "a" }, { name: "b" }],
-        encrypted_gemini_key: "encrypted-secret-value",
       },
       {
         user_id: null,
@@ -103,7 +102,6 @@ describe("metrics users", () => {
         birth_lat: null,
         base_lat: null,
         presets: null,
-        encrypted_gemini_key: null,
       },
     ]);
     favGroupBy.mockResolvedValue([
@@ -136,7 +134,6 @@ describe("metrics users", () => {
         birthDate: true,
         birthPlace: true,
         baseLocation: true,
-        geminiKey: true,
       },
       presetCount: 2,
       favorites: 3,
@@ -150,7 +147,6 @@ describe("metrics users", () => {
         birthDate: false,
         birthPlace: false,
         baseLocation: false,
-        geminiKey: false,
       },
       presetCount: 0,
       favorites: 0,

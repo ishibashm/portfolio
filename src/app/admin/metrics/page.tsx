@@ -55,7 +55,6 @@ type UserRow = {
     birthDate: boolean;
     birthPlace: boolean;
     baseLocation: boolean;
-    geminiKey: boolean;
   };
   presetCount: number;
   favorites: number;
@@ -1733,7 +1732,6 @@ export default function AdminMetricsPage() {
                                 on={u.presetCount > 0}
                                 label={`ﾌﾟﾘｾｯﾄ${u.presetCount}`}
                               />
-                              <FlagBadge on={u.has.geminiKey} label="APIｷｰ" />
                             </span>
                           </td>
                           <td className="py-1.5 pr-2 font-mono text-right text-stone-700">
