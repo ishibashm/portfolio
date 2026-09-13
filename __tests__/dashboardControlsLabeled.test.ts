@@ -121,6 +121,32 @@ describe("dashboard の入力欄・選択欄には読み上げ用の名前があ
     expect(hits).toEqual([]);
   });
 
+  it("判定の内部コードを、そのまま画面に出していない", () => {
+    /*
+      2026-09-13 に利用者の画面で見つけた。盤の升目が判定を内部のコード
+      （`GOU` `ANKEN` `OPTIMAL_REGULAR` `GETSUTEKI` …）のまま出していた。
+
+          {status.replace("NOISE_", "")}
+
+      **この形は上の「英語だけの text node」の検査に当たらない。**text node
+      ではなく式なので素通りする。呼び名は `lib/directionLabels` の対応表
+      （#1273 で寄せた）を引く。
+    */
+    const bad: string[] = [];
+    for (const f of FILES) {
+      const src = readFileSync(f, "utf8");
+      const lines = src.split("\n");
+      lines.forEach((line, i) => {
+        /* コードの前置きを剥がして出す形。文字列の比較（=== や
+           startsWith）は判定の分岐なので対象にしない */
+        if (/\{[^}]*\breplace\(\s*["'`]NOISE_["'`]/.test(line)) {
+          bad.push(`${f}:${i + 1}`);
+        }
+      });
+    }
+    expect(bad).toEqual([]);
+  });
+
   it("アイコンだけのボタンに英語の title を残さない", () => {
     for (const f of FILES) {
       const body = readFileSync(f, "utf8");

@@ -43,9 +43,9 @@ interface SolarTimeTableProps {
    * 2000 年生まれの天中殺と本命星が「あなたの」として出ていた
    * （同じ画面の上では「プロフィールが未設定です」と言っている）。
    *
-   * 偽のときは個人の判定を**出さない。**空の配列を渡すのでは足りない:
-   * `lib/timePhase` の `isVoidTimeHour` は天中殺が出せないと午・未を
-   * 既定として返すので、**誰のものでもない天中殺**が出てしまう。
+   * **判定は出す。**利用者の判断（2026-09-13）で「見本と明記して出す」を
+   * 採ったため、頁の上に見本の帯（`SampleProfileNotice`）を置き、ここでは
+   * **「あなたの」と書かない**ようにする。誰の例かは帯が書く。
    */
   hasBirthDate?: boolean;
 }
@@ -77,26 +77,23 @@ export function SolarTimeTableComponent({
     [date, longitude, zodiacTimeBasis],
   );
 
-  /* 生年月日が利用者のものでないときは、個人の判定を一切通さない
-     （上の prop の註）。ここで 1 度だけ落とし、以下は同じ道を通る。 */
-  const ownVoidZodiac = hasBirthDate ? personalVoidZodiac : undefined;
-  const ownHonmeiStar = hasBirthDate ? (honmeiStar ?? null) : null;
+  /* 誰の判定かで言い方だけ変える。**計算は変えない**（見本でも同じ式で
+     出す。誰の例かは頁の上の帯が書く） */
+  const whose = hasBirthDate ? "あなたの" : "この例の";
 
   const isYearVoid =
-    (hasBirthDate && ownVoidZodiac?.includes(currentZodiac.yearZodiac)) ||
-    false;
+    personalVoidZodiac?.includes(currentZodiac.yearZodiac) || false;
   const isMonthVoid =
-    (hasBirthDate && ownVoidZodiac?.includes(currentZodiac.monthZodiac)) ||
-    false;
+    personalVoidZodiac?.includes(currentZodiac.monthZodiac) || false;
   const isDayVoid =
-    (hasBirthDate && ownVoidZodiac?.includes(currentZodiac.dayZodiac)) || false;
+    personalVoidZodiac?.includes(currentZodiac.dayZodiac) || false;
 
   // 判定は lib/timePhase に集約した（ホームのポータルと共用）。
   // 呼び出し側の書き方を変えないよう、ここでは束縛だけ足す。
   const isVoidTimeHour = (item: KimonScheduleItem) =>
-    hasBirthDate ? isVoidTimeHourShared(item, ownVoidZodiac) : false;
+    isVoidTimeHourShared(item, personalVoidZodiac);
   const evaluateTimePhase = (item: KimonScheduleItem) =>
-    evaluateTimePhaseShared(item, ownHonmeiStar, useClassical ?? true);
+    evaluateTimePhaseShared(item, honmeiStar ?? null, useClassical ?? true);
 
   const [expandedIndex, setExpandedIndex] = useState<number | null>(null);
   const [showPreview, setShowPreview] = useState(false);
@@ -328,11 +325,8 @@ export function SolarTimeTableComponent({
                 天中殺
               </span>
             ) : (
-              /* 生年月日が利用者のものでなければ「天中殺ではない」とも
-                 言えない（天中殺は人ごとに決まる）。旗が偽のときは
-                 判定を出さず、線を引く。 */
               <span className="text-stone-600 text-[10px] ml-auto">
-                {hasBirthDate ? "天中殺ではない" : "—"}
+                天中殺ではない
               </span>
             )}
           </div>
@@ -361,11 +355,8 @@ export function SolarTimeTableComponent({
                 天中殺
               </span>
             ) : (
-              /* 生年月日が利用者のものでなければ「天中殺ではない」とも
-                 言えない（天中殺は人ごとに決まる）。旗が偽のときは
-                 判定を出さず、線を引く。 */
               <span className="text-stone-600 text-[10px] ml-auto">
-                {hasBirthDate ? "天中殺ではない" : "—"}
+                天中殺ではない
               </span>
             )}
           </div>
@@ -403,11 +394,8 @@ export function SolarTimeTableComponent({
                 天中殺
               </span>
             ) : (
-              /* 生年月日が利用者のものでなければ「天中殺ではない」とも
-                 言えない（天中殺は人ごとに決まる）。旗が偽のときは
-                 判定を出さず、線を引く。 */
               <span className="text-stone-600 text-[10px] ml-auto">
-                {hasBirthDate ? "天中殺ではない" : "—"}
+                天中殺ではない
               </span>
             )}
           </div>
@@ -427,26 +415,16 @@ export function SolarTimeTableComponent({
         </div>
       </div>
 
-      {/* 生年月日が利用者のものでないときは、個人の判定の凡例を出さない。
-          出すと「あなたの本命星」「あなたの天中殺」と書いた札だけが並び、
-          中身は既定値（2000-01-01）のものになる。 */}
-      {!hasBirthDate && (
-        <div className="mb-2 border-l-2 border-stone-300 bg-stone-50 p-2 md:p-3 text-xs leading-relaxed text-stone-600">
-          生年月日を登録すると、あなたの天中殺にあたる刻と、本命星と相生・比和になる刻がここに出ます。いまは十二支・干支・時盤の九星だけを出しています。
-        </div>
-      )}
-
       {/* Actionable Directives Legend */}
-      <div
-        className={`grid grid-cols-1 md:grid-cols-2 gap-2 mb-2 ${hasBirthDate ? "" : "hidden"}`}
-      >
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-2 mb-2">
         <div className="bg-emerald-50 border-l-2 border-emerald-500 p-2 md:p-3 shadow-inner">
           <div className="text-emerald-700 font-bold text-[10px] md:text-xs mb-1 tracking-widest uppercase flex items-center gap-2">
             <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse"></span>{" "}
             動いてよい刻
           </div>
           <p className="text-stone-600 text-xs leading-relaxed font-sans text-justify">
-            時盤の九星の五行が、あなたの本命星と相生・比和にあたる刻です。伝統的に、決断や出発に向くとされます。
+            時盤の九星の五行が、{whose}
+            本命星と相生・比和にあたる刻です。伝統的に、決断や出発に向くとされます。
           </p>
         </div>
         <div className="bg-red-50 border-l-2 border-red-500 p-2 md:p-3 shadow-inner">
@@ -455,7 +433,8 @@ export function SolarTimeTableComponent({
             天中殺の刻
           </div>
           <p className="text-stone-600 text-xs leading-relaxed font-sans text-justify">
-            あなたの天中殺（空亡）の十二支にあたる刻です。伝統的に、大きな決断や新しい始まり、長距離の移動は避けるとされます。体調や通信への影響を示すものではありません。
+            {whose}
+            天中殺（空亡）の十二支にあたる刻です。伝統的に、大きな決断や新しい始まり、長距離の移動は避けるとされます。体調や通信への影響を示すものではありません。
           </p>
         </div>
       </div>
@@ -499,7 +478,8 @@ export function SolarTimeTableComponent({
               ◆ 4. 動いてよい刻（相生・比和）
             </strong>
             <p className="text-stone-600 text-xs text-justify">
-              緑は、時盤の九星の五行があなたの本命星と「相生」または「比和」にあたる刻です。以前は奇門遁甲の八門も条件にしていましたが、その八門は盤を組まず刻の順に門を回すだけの仮実装だったため、判定から外しました。
+              緑は、時盤の九星の五行が{whose}
+              本命星と「相生」または「比和」にあたる刻です。以前は奇門遁甲の八門も条件にしていましたが、その八門は盤を組まず刻の順に門を回すだけの仮実装だったため、判定から外しました。
             </p>
           </div>
         </div>
@@ -633,7 +613,7 @@ export function SolarTimeTableComponent({
                             五行の相性
                           </strong>
                           {isOptimal
-                            ? "あなたの本命星と、この刻の九星（時盤）の五行が相生・比和にあたります。伝統的には、決断や出発に向くとされます。"
+                            ? `${whose}本命星と、この刻の九星（時盤）の五行が相生・比和にあたります。伝統的には、決断や出発に向くとされます。`
                             : "相生・比和ではない刻です。凶ではありません。"}
                         </div>
 
@@ -672,7 +652,8 @@ export function SolarTimeTableComponent({
                               </span>
                             </div>
                             <p className="mt-1 text-xs text-justify">
-                              陰陽五行説（木火土金水）に基づく、あなたの本命星といまの九星の相性です。相生（生み出す関係）や比和（同じ属性）であれば、良い組み合わせとされます。
+                              陰陽五行説（木火土金水）に基づく、{whose}
+                              本命星といまの九星の相性です。相生（生み出す関係）や比和（同じ属性）であれば、良い組み合わせとされます。
                             </p>
                           </div>
                         )}

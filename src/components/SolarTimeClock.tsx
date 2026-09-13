@@ -18,6 +18,8 @@ import { Solar } from "lunar-javascript";
 import { getZonedDateTimeFields } from "@/utils/solarTime";
 
 import { ClockDisplay } from "./ClockDisplay";
+import { SampleProfileNotice } from "./profile/SampleProfileNotice";
+import { STAR_NAMES } from "@/lib/kigakuContent";
 import {
   getHonmeiStar,
   getClassicalMonthStar,
@@ -3747,6 +3749,18 @@ export const SolarTimeClock = () => {
   const personalVoidZodiac = voidZodiacOverride
     ? voidZodiacOverride.split("")
     : basePersonalVoidZodiac;
+  /* 見本の帯に出す「誰の例か」。初期値そのものを読むので、初期値を
+     変えたらここも追随する（同じ数字を 2 か所に書かない）。 */
+  const sampleBirthLabel = React.useMemo(() => {
+    const d = parseJapanDateTime(birthDate);
+    if (isNaN(d.getTime())) return "既定の生年月日";
+    const f = getZonedDateTimeFields(d, 9);
+    return `${f.year} 年 ${f.month} 月 ${f.day} 日`;
+  }, [birthDate]);
+  const sampleStarLabel = honmeiStar
+    ? STAR_NAMES[useClassicalBoard ? honmeiStar.classical : honmeiStar.physical]
+    : undefined;
+
   const kimon = solarData ? getKimonHour(solarData.solarTime) : null;
   const isPersonalVoid = kimon
     ? personalVoidZodiac.includes(kimon.japanese)
@@ -3941,6 +3955,20 @@ export const SolarTimeClock = () => {
             uppercase も外した。日本語には効かず、英数字（ホーム以外の
             「1.」など）だけが対象になって揃わない。
           */}
+        {/* 生年月日が利用者のものでないときは、**見本だと断ってから**出す。
+            初期値（2000-01-01）で計算した本命星と方位の吉凶が「あなたの」
+            として出ていた（2026-09-13 に実測）。出すのをやめると初めて来た
+            人に道具の中身が伝わらないので、利用者の判断で「見本と明記して
+            出す」を採った。 */}
+        {!birthDateOwned && (
+          <div className="w-full max-w-[1700px] px-3 md:px-4 mb-2">
+            <SampleProfileNotice
+              birthLabel={sampleBirthLabel}
+              starLabel={sampleStarLabel}
+            />
+          </div>
+        )}
+
         <div className="w-full max-w-[1700px] flex items-center justify-center p-1 bg-white/80 border border-stone-200 rounded-3xl xl:rounded-full md:backdrop-blur-sm sticky top-4 z-40 flex-wrap gap-1">
           {(
             [
