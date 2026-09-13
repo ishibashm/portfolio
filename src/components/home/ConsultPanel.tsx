@@ -797,7 +797,7 @@ export function ConsultPanel({
             </summary>
 
             <div className="p-3 border-t border-stone-200 bg-white/70">
-              <div className="mb-4 p-2 bg-white/80 border border-stone-200 text-[9px] sm:text-[10px] text-stone-500 font-mono leading-relaxed">
+              <div className="mb-4 p-2 bg-white/80 border border-stone-200 text-xs text-stone-500 font-mono leading-relaxed">
                 <strong>色の読み方</strong>
                 <br />
                 年・月・日の方位盤に、あなたの本命星・月命星を重ねた結果です。
@@ -1210,15 +1210,15 @@ export function ConsultPanel({
           {/* Final Vector Calculation Visualization */}
           {env && layers && (
             <div className="mt-4 bg-white/70 border border-stone-200 p-3 w-full">
-              <div className="text-emerald-500 font-bold mb-1 border-b border-stone-200 pb-1 text-[10px] tracking-widest uppercase flex items-center gap-2">
+              <div className="text-emerald-500 font-bold mb-1 border-b border-stone-200 pb-1 text-[10px] tracking-widest uppercase flex flex-col items-start gap-0.5">
                 <span>年・月・日の盤の重ね合わせ</span>
-                <span className="text-stone-600 text-[10px]">
+                <span className="text-stone-600 text-xs font-normal normal-case tracking-normal">
                   {
                     "（重い順: 五黄殺・暗剣殺・破・本命殺・本命的殺 ＞ 天中殺方位 ＞ 月命殺・月命的殺 ＞ 月交点。凶が無ければ吉、吉も無ければ平）"
                   }
                 </span>
               </div>
-              <div className="text-[10px] text-stone-600 mb-2 leading-relaxed text-justify pr-2 font-sans">
+              <div className="text-xs text-stone-600 mb-2 leading-relaxed text-justify pr-2 font-sans">
                 <strong className="text-stone-500">判定の決まり:</strong>{" "}
                 {
                   "年盤・月盤・日盤の判定を重ねて最終結果を出します。どれか 1 つの盤でも凶（赤・紫）があれば、他の盤が吉（緑）でも最終結果は凶になります。凶を 1 つでも含む方位は勧めない、という九星気学の一般的な扱いをそのまま実装したものです。"
