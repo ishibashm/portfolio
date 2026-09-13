@@ -17,10 +17,8 @@ vi.mock("@/lib/prisma", () => ({
   default: { $queryRawUnsafe: queryRawUnsafe },
 }));
 
-import {
-  ESTAT_API_CREDIT,
-  GET,
-} from "@/app/api/housing-stats/by-direction/route";
+import { GET } from "@/app/api/housing-stats/by-direction/route";
+import { ESTAT_API_CREDIT } from "@/lib/estatCredit";
 import { AREAS } from "@/lib/areaContent";
 
 /* 大阪駅。東京を既定にしていたら方位が入れ替わるので、ずれが出る */
