@@ -30,7 +30,7 @@ import { SITE_URL } from "@/lib/siteUrl";
 
 const TITLE = "アカウントと登録内容";
 const DESCRIPTION =
-  "ログイン中のアカウント、登録した生年月日と場所、保存済みプロフィールの一覧をまとめて確認します。";
+  "ログイン中のアカウント、使用中のプロフィール、プロフィールの一覧をまとめて確認し、切り替えます。";
 
 export const metadata: Metadata = {
   title: TITLE,
