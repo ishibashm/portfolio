@@ -642,7 +642,7 @@ export default function DestinationMapPanel({
                 <span className="text-purple-600 font-bold">
                   {honmeiStar
                     ? `本命星 ${useClassicalBoard ? honmeiStar.classical : honmeiStar.physical}`
-                    : "Unset"}{" "}
+                    : "未設定"}{" "}
                   <span className="text-stone-600 font-normal ml-1">
                     ({birthDate.split("T")[0]})
                   </span>
@@ -985,7 +985,7 @@ export default function DestinationMapPanel({
                 <thead>
                   <tr className="bg-stone-100/80">
                     <th className="p-2 border border-stone-200 text-[10px] font-mono text-stone-600 font-bold w-10 bg-stone-100 sticky left-0 z-10">
-                      DIR
+                      方位
                     </th>
                     {heatmapData.map((d, i) => {
                       // 地図が描いているのは先頭列だけ。
@@ -1527,10 +1527,8 @@ export default function DestinationMapPanel({
               onClick={() => setUseClassicalBoard(!useClassicalBoard)}
               className={`px-3 py-1 text-[10px] font-mono uppercase tracking-widest border rounded transition-colors ${useClassicalBoard ? "bg-zinc-500/20 text-stone-500 border-zinc-500/50 hover:bg-zinc-500/30" : "bg-emerald-500/20 text-emerald-600 border-emerald-200 hover:bg-emerald-500/30"}`}
             >
-              Model:{" "}
-              {useClassicalBoard
-                ? "Classical (暦基準)"
-                : "Physical (木星黄経基準)"}
+              盤:{" "}
+              {useClassicalBoard ? "古典暦モデル" : "物理モデル（木星黄経）"}
             </button>
           </div>
         </div>
