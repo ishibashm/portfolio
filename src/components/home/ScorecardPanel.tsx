@@ -101,12 +101,12 @@ export interface ScorecardSummaryRow {
 */
 const statusBadgeClass = (s: string) => {
   if (s === "OPTIMAL")
-    return "text-emerald-600 bg-emerald-500/10 border-emerald-200";
+    return "text-emerald-700 bg-emerald-500/10 border-emerald-200";
   if (s === "OPTIMAL_REGULAR")
-    return "text-emerald-500 bg-emerald-500/5 border-emerald-200";
-  if (s === "SAFE") return "text-blue-600 bg-blue-500/10 border-blue-200";
+    return "text-emerald-700 bg-emerald-500/5 border-emerald-200";
+  if (s === "SAFE") return "text-blue-700 bg-blue-500/10 border-blue-200";
   if (s === "WARNING")
-    return "text-orange-600 bg-orange-500/10 border-orange-200";
+    return "text-orange-700 bg-orange-500/10 border-orange-200";
   if (s.startsWith("NOISE_VOID"))
     return "text-stone-600 bg-stone-100 border-stone-300";
   if (s.startsWith("NOISE_NODE"))
@@ -117,9 +117,9 @@ const statusBadgeClass = (s: string) => {
 };
 
 const kigakuTextClass = (s: string) => {
-  if (s === "OPTIMAL" || s === "OPTIMAL_REGULAR") return "text-emerald-600";
-  if (s === "SAFE") return "text-blue-600";
-  if (s === "WARNING") return "text-orange-600";
+  if (s === "OPTIMAL" || s === "OPTIMAL_REGULAR") return "text-emerald-700";
+  if (s === "SAFE") return "text-blue-700";
+  if (s === "WARNING") return "text-orange-700";
   return "text-red-600";
 };
 
@@ -217,8 +217,8 @@ const getDimensionCellBgColor = (
     return getCellBgColor(score, status);
   }
   if (dimension === "astro") {
-    if (score >= 30) return "bg-blue-50 text-blue-600 border border-blue-200";
-    if (score > 0) return "bg-blue-50 text-blue-400/80 border border-blue-200";
+    if (score >= 30) return "bg-blue-50 text-blue-700 border border-blue-200";
+    if (score > 0) return "bg-blue-50 text-blue-700 border border-blue-200";
     return "text-stone-600 border border-stone-200";
   }
   if (dimension === "timeGate") {
@@ -226,7 +226,7 @@ const getDimensionCellBgColor = (
       return "bg-red-50 text-red-600 border border-red-500/35 font-bold";
     if (score < 0) return "bg-amber-50 text-amber-700 border border-amber-200";
     if (score > 0)
-      return "bg-emerald-50 text-emerald-600 border border-emerald-200";
+      return "bg-emerald-50 text-emerald-700 border border-emerald-200";
     return "text-stone-600 border border-stone-200";
   }
   return "";
@@ -324,18 +324,18 @@ export default function ScorecardPanel({
           <div className="w-full bg-white border border-stone-200 rounded-xl p-4 md:p-6 shadow-lg relative overflow-hidden flex flex-col gap-4">
             <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/5 rounded-full blur-3xl -mr-10 -mt-10 pointer-events-none"></div>
             <div>
-              <h2 className="text-emerald-500 font-mono text-base tracking-[0.1em] font-bold mb-1 uppercase flex items-center gap-2">
+              <h2 className="text-emerald-700 font-mono text-base tracking-[0.1em] font-bold mb-1 uppercase flex items-center gap-2">
                 <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse"></span>
                 5. 総合スコア / 8方位統合評価マトリクス
               </h2>
-              <p className="text-stone-500 text-xs leading-relaxed max-w-xl">
+              <p className="text-stone-600 text-xs leading-relaxed max-w-xl">
                 {
                   "直近 30 日の吉凶の見通しと、各方位の推奨エリア（市区町村の平均所得つき）を 1 か所で見比べる画面です。"
                 }
               </p>
               <div className="mt-2 text-stone-600 text-xs leading-relaxed flex flex-wrap gap-x-4 gap-y-1">
                 <span>
-                  <strong className="text-emerald-600">🌟 トリプル大吉:</strong>{" "}
+                  <strong className="text-emerald-700">🌟 トリプル大吉:</strong>{" "}
                   3つの計算モデル（古典/物理独立/伝統連動）すべてで吉方位となる最も安全な方位。
                 </span>
                 <span>
@@ -348,7 +348,7 @@ export default function ScorecardPanel({
             <div className="flex flex-wrap items-center gap-3">
               {/* Prefecture Filter */}
               <div className="flex items-center gap-1.5 bg-stone-50 px-2 py-1.5 rounded-md border border-stone-200">
-                <span className="text-stone-500 font-mono text-[9px] uppercase tracking-wider">
+                <span className="text-stone-600 font-mono text-[9px] uppercase tracking-wider">
                   対象県:
                 </span>
                 <select
@@ -376,7 +376,7 @@ export default function ScorecardPanel({
                 className={`px-3 py-1.5 text-[9px] font-mono rounded-md border transition-all flex items-center gap-1.5 ${
                   showNoiseDirections
                     ? "bg-stone-100 text-stone-600 border-stone-300"
-                    : "bg-emerald-50 text-emerald-600 border-emerald-200"
+                    : "bg-emerald-50 text-emerald-700 border-emerald-200"
                 }`}
               >
                 {showNoiseDirections
@@ -424,7 +424,7 @@ export default function ScorecardPanel({
 
           {scorecardLoading && wealthData.length === 0 ? (
             <div className="w-full bg-stone-50 border border-stone-200 rounded-xl p-12 flex flex-col items-center justify-center gap-3">
-              <Loader2 className="w-8 h-8 text-emerald-500 animate-spin" />
+              <Loader2 className="w-8 h-8 text-emerald-700 animate-spin" />
               <span className="text-[10px] font-mono text-stone-600 tracking-[0.2em] uppercase">
                 読み込んでいます…
               </span>
@@ -488,7 +488,7 @@ export default function ScorecardPanel({
                             {item.labelJa} ({item.direction})
                           </button>
                           {item.isConsensusClear && (
-                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-600 border border-emerald-200">
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
                               トリプル大吉 🌟
                             </span>
                           )}
@@ -545,7 +545,7 @@ export default function ScorecardPanel({
                               ② 天体の線
                             </div>
                             <div
-                              className={`text-[10px] ${bd.astroScore > 0 ? "text-blue-600 font-bold" : "text-stone-600"}`}
+                              className={`text-[10px] ${bd.astroScore > 0 ? "text-blue-700 font-bold" : "text-stone-600"}`}
                             >
                               {bd.astro.length > 0
                                 ? bd.astro.join(", ")
@@ -560,7 +560,7 @@ export default function ScorecardPanel({
                               ③ 時期の補正
                             </div>
                             <div
-                              className={`text-[10px] ${bd.timeGateScore < 0 ? "text-red-600 font-bold" : bd.timeGateScore > 0 ? "text-emerald-600 font-bold" : "text-stone-600"}`}
+                              className={`text-[10px] ${bd.timeGateScore < 0 ? "text-red-600 font-bold" : bd.timeGateScore > 0 ? "text-emerald-700 font-bold" : "text-stone-600"}`}
                             >
                               {bd.timeGate.length > 0
                                 ? bd.timeGate.join(", ")
@@ -575,7 +575,7 @@ export default function ScorecardPanel({
 
                         <div className="text-[10px] text-stone-600 space-y-0.5">
                           <div>
-                            <span className="text-stone-500">
+                            <span className="text-stone-600">
                               30日で動ける日:
                             </span>{" "}
                             <span className="font-mono">
@@ -583,7 +583,7 @@ export default function ScorecardPanel({
                             </span>
                           </div>
                           <div>
-                            <span className="text-stone-500">推奨エリア:</span>{" "}
+                            <span className="text-stone-600">推奨エリア:</span>{" "}
                             {item.topArea ? (
                               <span className="text-stone-700 font-bold">
                                 {item.topArea.areaName}
@@ -600,7 +600,7 @@ export default function ScorecardPanel({
                             )}
                           </div>
                           <div>
-                            <span className="text-stone-500">推奨物件:</span>{" "}
+                            <span className="text-stone-600">推奨物件:</span>{" "}
                             {item.topRental ? (
                               <span className="text-stone-700 font-bold">
                                 {item.topRental.property_name}
@@ -631,7 +631,7 @@ export default function ScorecardPanel({
                   */}
                 <table className="w-full min-w-[1120px] text-left border-collapse">
                   <thead>
-                    <tr className="border-b border-stone-200 bg-white/80 text-[9px] font-mono text-stone-500 uppercase tracking-wider whitespace-nowrap">
+                    <tr className="border-b border-stone-200 bg-white/80 text-[9px] font-mono text-stone-600 uppercase tracking-wider whitespace-nowrap">
                       <th className="p-3 w-24">方位</th>
                       <th className="p-3 w-20">古典</th>
                       <th className="p-3 w-20">物理独立</th>
@@ -739,7 +739,7 @@ export default function ScorecardPanel({
                             {/* Consensus / Highlights */}
                             <td className="p-3 whitespace-nowrap text-center">
                               {item.isConsensusClear && (
-                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-600 border border-emerald-200">
+                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
                                   トリプル大吉 🌟
                                 </span>
                               )}
@@ -774,7 +774,7 @@ export default function ScorecardPanel({
                             <td className="p-3 bg-blue-50 border-r border-stone-200 font-mono">
                               <div className="flex flex-col">
                                 <span
-                                  className={`text-[10px] ${bd.astroScore > 0 ? "text-blue-600 font-bold" : "text-stone-600"}`}
+                                  className={`text-[10px] ${bd.astroScore > 0 ? "text-blue-700 font-bold" : "text-stone-600"}`}
                                 >
                                   {bd.astro.length > 0
                                     ? bd.astro.join(", ")
@@ -790,7 +790,7 @@ export default function ScorecardPanel({
                             <td className="p-3 bg-amber-50 border-r border-stone-200 font-mono">
                               <div className="flex flex-col">
                                 <span
-                                  className={`text-[10px] ${bd.timeGateScore < 0 ? "text-red-600 font-bold" : bd.timeGateScore > 0 ? "text-emerald-600 font-bold" : "text-stone-600"}`}
+                                  className={`text-[10px] ${bd.timeGateScore < 0 ? "text-red-600 font-bold" : bd.timeGateScore > 0 ? "text-emerald-700 font-bold" : "text-stone-600"}`}
                                 >
                                   {bd.timeGate.length > 0
                                     ? bd.timeGate.join(", ")
@@ -804,7 +804,7 @@ export default function ScorecardPanel({
                             </td>
 
                             {/* 30日で動ける日（凶でない日。SAFE は吉ではない） */}
-                            <td className="p-3 text-center font-mono text-[10px] text-stone-500">
+                            <td className="p-3 text-center font-mono text-[10px] text-stone-600">
                               {item.luckyDays}日
                             </td>
 
@@ -915,7 +915,7 @@ export default function ScorecardPanel({
                     className={`px-3 py-1 rounded transition-all ${
                       scorecardActiveGridTab === "dates"
                         ? "bg-emerald-600 text-stone-900 font-bold"
-                        : "text-stone-500 hover:text-stone-700"
+                        : "text-stone-600 hover:text-stone-700"
                     }`}
                   >
                     30日カレンダー
@@ -925,7 +925,7 @@ export default function ScorecardPanel({
                     className={`px-3 py-1 rounded transition-all ${
                       scorecardActiveGridTab === "stars"
                         ? "bg-emerald-600 text-stone-900 font-bold"
-                        : "text-stone-500 hover:text-stone-700"
+                        : "text-stone-600 hover:text-stone-700"
                     }`}
                   >
                     九星本命星別 (当日)
@@ -993,7 +993,7 @@ export default function ScorecardPanel({
               </span>
               {gridModelView === "consensus" && (
                 <>
-                  <span className="text-emerald-600">🌟 = トリプル大吉</span>
+                  <span className="text-emerald-700">🌟 = トリプル大吉</span>
                   <span className="text-amber-700">⚠️ = 位相差警告</span>
                 </>
               )}
@@ -1004,7 +1004,7 @@ export default function ScorecardPanel({
               <div className="overflow-x-auto">
                 <table className="w-full text-center border-collapse">
                   <thead>
-                    <tr className="border-b border-zinc-850 bg-white/80 text-[9px] font-mono text-stone-500 uppercase tracking-wider">
+                    <tr className="border-b border-zinc-850 bg-white/80 text-[9px] font-mono text-stone-600 uppercase tracking-wider">
                       <th className="p-2.5 text-left w-28">
                         {scorecardActiveGridTab === "dates" ? "日付" : "本命星"}
                       </th>
@@ -1045,14 +1045,14 @@ export default function ScorecardPanel({
                             day.weekday === 0
                               ? "text-red-600"
                               : day.weekday === 6
-                                ? "text-blue-600"
-                                : "text-stone-500";
+                                ? "text-blue-700"
+                                : "text-stone-600";
                           return (
                             <tr
                               key={day.dateStr}
                               className="hover:bg-white/80 transition-colors"
                             >
-                              <td className="p-2 text-left text-[9px] text-stone-500 border-r border-stone-200 whitespace-nowrap">
+                              <td className="p-2 text-left text-[9px] text-stone-600 border-r border-stone-200 whitespace-nowrap">
                                 {day.dateStr}{" "}
                                 <span className={wdayColor}>({wdayJa})</span>
                               </td>
@@ -1449,7 +1449,7 @@ export default function ScorecardPanel({
                   {/* Close button */}
                   <div className="flex items-center justify-between p-4 border-b border-stone-200 bg-white/80">
                     <div className="flex items-center gap-2">
-                      <span className="text-emerald-500 font-bold font-mono">
+                      <span className="text-emerald-700 font-bold font-mono">
                         ▶
                       </span>
                       <h3 className="text-sm font-bold text-stone-700">
@@ -1458,7 +1458,7 @@ export default function ScorecardPanel({
                     </div>
                     <button
                       onClick={() => setSelectedDirection(null)}
-                      className="text-stone-500 hover:text-stone-900 transition-colors p-1"
+                      className="text-stone-600 hover:text-stone-900 transition-colors p-1"
                     >
                       ✕ 閉じる
                     </button>
@@ -1572,7 +1572,7 @@ export default function ScorecardPanel({
                     {/* 30-Day Forecast Calendar */}
                     <div className="space-y-2">
                       <div className="flex justify-between items-center">
-                        <h4 className="text-[11px] font-mono text-stone-500 uppercase tracking-wider flex items-center gap-1.5">
+                        <h4 className="text-[11px] font-mono text-stone-600 uppercase tracking-wider flex items-center gap-1.5">
                           <span>📅 直近 30 日の吉凶</span>
                         </h4>
                         <span className="text-[9px] text-stone-600 font-mono">
@@ -1586,15 +1586,15 @@ export default function ScorecardPanel({
                             "bg-white/80 border-stone-200 text-stone-600";
                           if (d.status === "OPTIMAL")
                             bg =
-                              "bg-emerald-500/20 border-emerald-200 text-emerald-600";
+                              "bg-emerald-500/20 border-emerald-200 text-emerald-700";
                           else if (d.status === "OPTIMAL_REGULAR")
                             bg =
-                              "bg-emerald-500/10 border-emerald-200 text-emerald-600";
+                              "bg-emerald-500/10 border-emerald-200 text-emerald-700";
                           else if (d.status === "SAFE")
-                            bg = "bg-blue-500/10 border-blue-200 text-blue-600";
+                            bg = "bg-blue-500/10 border-blue-200 text-blue-700";
                           else if (d.status === "WARNING")
                             bg =
-                              "bg-orange-500/10 border-orange-200 text-orange-600";
+                              "bg-orange-500/10 border-orange-200 text-orange-700";
                           else if (d.status.startsWith("NOISE"))
                             bg = "bg-red-500/10 border-red-200 text-red-600";
 
@@ -1622,7 +1622,7 @@ export default function ScorecardPanel({
 
                     {/* Top 5 Wealth Municipalities */}
                     <div className="space-y-3">
-                      <h4 className="text-[11px] font-mono text-stone-500 uppercase tracking-wider flex items-center gap-1.5 border-b border-stone-200 pb-1.5">
+                      <h4 className="text-[11px] font-mono text-stone-600 uppercase tracking-wider flex items-center gap-1.5 border-b border-stone-200 pb-1.5">
                         <span>🏢 平均所得の高い市区町村 5 件</span>
                       </h4>
                       {detail.topAreas.length > 0 ? (
@@ -1671,7 +1671,7 @@ export default function ScorecardPanel({
 
                     {/* Top 5 Rentals */}
                     <div className="space-y-3">
-                      <h4 className="text-[11px] font-mono text-stone-500 uppercase tracking-wider flex items-center gap-1.5 border-b border-stone-200 pb-1.5">
+                      <h4 className="text-[11px] font-mono text-stone-600 uppercase tracking-wider flex items-center gap-1.5 border-b border-stone-200 pb-1.5">
                         <span>🏠 相場より安い賃貸 5 件</span>
                       </h4>
                       {detail.topRentals.length > 0 ? (
@@ -1706,7 +1706,7 @@ export default function ScorecardPanel({
                                   </div>
                                 </div>
 
-                                <div className="flex justify-between items-center border-t border-stone-200 pt-1.5 text-[10px] text-stone-500">
+                                <div className="flex justify-between items-center border-t border-stone-200 pt-1.5 text-[10px] text-stone-600">
                                   <span>
                                     賃料+管理費:{" "}
                                     <strong className="text-stone-600 font-bold font-mono">

@@ -287,14 +287,14 @@ export function ConsultPanel({
     const getColorClass = (s: string | undefined) => {
       if (!s) return "text-stone-600";
       if (s.startsWith("NOISE_GOU") || s.startsWith("NOISE_ANKEN"))
-        return "text-red-500 font-bold bg-red-50 border-red-200";
+        return "text-red-700 font-bold bg-red-50 border-red-200";
       if (
         s.startsWith("NOISE_HONMEI") ||
         s.startsWith("NOISE_TEKI") ||
         s.startsWith("NOISE_GETSUMEI") ||
         s.startsWith("NOISE_GETSUTEKI")
       )
-        return "text-[#a855f7] font-bold bg-[#a855f7]/10 border-[#a855f7]/30";
+        return "text-purple-700 font-bold bg-[#a855f7]/10 border-[#a855f7]/30";
       if (s.startsWith("NOISE_VOID"))
         return "text-stone-600 bg-white border-stone-300";
       if (s.startsWith("NOISE_NODE"))
@@ -304,10 +304,10 @@ export function ConsultPanel({
         // amber-700 は 5.02:1（本文に要る 4.5:1 を満たす）。
         return "text-amber-700 font-bold bg-amber-50 border-amber-200";
       if (s === "OPTIMAL")
-        return "text-emerald-600 font-bold bg-emerald-50 border-emerald-200 shadow-[0_0_8px_rgba(16,185,129,0.2)]";
+        return "text-emerald-700 font-bold bg-emerald-50 border-emerald-200 shadow-[0_0_8px_rgba(16,185,129,0.2)]";
       if (s === "OPTIMAL_REGULAR")
-        return "text-emerald-500 font-bold bg-emerald-50 border-emerald-200 shadow-[0_0_4px_rgba(16,185,129,0.1)]";
-      return "text-blue-600 bg-blue-50 border-blue-200";
+        return "text-emerald-700 font-bold bg-emerald-50 border-emerald-200 shadow-[0_0_4px_rgba(16,185,129,0.1)]";
+      return "text-blue-700 bg-blue-50 border-blue-200";
     };
 
     const baseClass = isCenter
@@ -328,7 +328,7 @@ export function ConsultPanel({
           {star || "-"}
         </span>
         {!isCenter && status && (
-          <span className="text-[9px] uppercase tracking-tighter opacity-80 leading-none">
+          <span className="text-[9px] uppercase tracking-tighter leading-none">
             {status.replace("NOISE_", "")}
           </span>
         )}
@@ -354,25 +354,25 @@ export function ConsultPanel({
   }) => {
     const getColor = (s: string) => {
       if (s === "NOISE_GOU" || s === "NOISE_ANKEN")
-        return "text-red-500 font-bold";
+        return "text-red-700 font-bold";
       if (
         s === "NOISE_HONMEI" ||
         s === "NOISE_TEKI" ||
         s === "NOISE_GETSUMEI" ||
         s === "NOISE_GETSUTEKI"
       )
-        return "text-[#a855f7] font-bold";
+        return "text-purple-700 font-bold";
       if (s === "NOISE_VOID")
         return "text-stone-600 font-bold drop-shadow-[0_0_3px_rgba(0,0,0,1)] bg-stone-50 px-1 border border-stone-200";
       // 1.53:1 で読めなかった 黄色 を amber-700（5.02:1）へ。
       if (s === "NOISE_NODE") return "text-amber-700 font-bold";
-      if (s === "NOISE_HA") return "text-rose-600 font-bold";
+      if (s === "NOISE_HA") return "text-rose-700 font-bold";
       if (s === "OPTIMAL")
-        return "text-emerald-600 font-bold drop-shadow-[0_0_5px_rgba(16,185,129,0.8)]";
+        return "text-emerald-700 font-bold drop-shadow-[0_0_5px_rgba(16,185,129,0.8)]";
       if (s === "OPTIMAL_REGULAR")
-        return "text-emerald-500 font-medium drop-shadow-[0_0_2px_rgba(16,185,129,0.4)]";
-      if (s === "WARNING") return "text-orange-600 font-bold";
-      return "text-blue-600";
+        return "text-emerald-700 font-medium drop-shadow-[0_0_2px_rgba(16,185,129,0.4)]";
+      if (s === "WARNING") return "text-orange-700 font-bold";
+      return "text-blue-700";
     };
 
     /*
@@ -456,9 +456,9 @@ export function ConsultPanel({
           >
             {title}
           </div>
-          <div className="text-stone-500 mb-1 leading-tight">{desc}</div>
+          <div className="text-stone-600 mb-1 leading-tight">{desc}</div>
           {isTendoDir && (
-            <div className="text-[10px] text-emerald-600 font-bold mb-1 bg-emerald-50 p-1 border border-emerald-200 rounded-xs">
+            <div className="text-[10px] text-emerald-700 font-bold mb-1 bg-emerald-50 p-1 border border-emerald-200 rounded-xs">
               {
                 "✨ 天道（その月の吉方）と重なっています（本命殺・的殺などの個人の凶が打ち消されるとする流派の扱いを適用）"
               }
@@ -486,8 +486,8 @@ export function ConsultPanel({
                   <span
                     className={
                       br.environmental.includes("通常")
-                        ? "text-blue-600"
-                        : "text-rose-600 font-bold"
+                        ? "text-blue-700"
+                        : "text-rose-700 font-bold"
                     }
                   >
                     {br.environmental}
@@ -500,8 +500,8 @@ export function ConsultPanel({
                       br.personal.includes("通常")
                         ? "text-stone-600"
                         : br.personal.includes("吉")
-                          ? "text-emerald-600 font-bold"
-                          : "text-purple-600 font-bold"
+                          ? "text-emerald-700 font-bold"
+                          : "text-purple-700 font-bold"
                     }
                   >
                     {br.personal}
@@ -529,7 +529,7 @@ export function ConsultPanel({
 
         <div className="mt-8 flex flex-col gap-4 border-b border-stone-200 pb-4 w-full max-w-[1700px]">
           <div className="flex items-center gap-2 mb-2">
-            <h2 className="text-[10px] uppercase font-mono tracking-[0.3em] text-purple-600">
+            <h2 className="text-[10px] uppercase font-mono tracking-[0.3em] text-purple-700">
               盤の内訳
             </h2>
           </div>
@@ -542,7 +542,7 @@ export function ConsultPanel({
 
               <div className="flex flex-col gap-1 border-b border-stone-200 pb-2">
                 <div className="text-[11px] text-stone-600 font-bold uppercase tracking-widest flex items-center gap-2">
-                  <span className="text-purple-500">▶</span> あなたの星{" "}
+                  <span className="text-purple-700">▶</span> あなたの星{" "}
                   <span className="text-stone-600 font-normal">
                     （本命星・月命星・天中殺）
                   </span>
@@ -555,19 +555,19 @@ export function ConsultPanel({
               <div className="flex flex-col gap-3 z-10">
                 <div className="bg-white/70 border border-purple-200 p-3 flex flex-col w-full rounded-xl">
                   <div className="flex justify-between items-center mb-1">
-                    <span className="text-[10px] text-stone-500 uppercase tracking-widest font-bold">
+                    <span className="text-[10px] text-stone-600 uppercase tracking-widest font-bold">
                       本命星
                     </span>
-                    <span className="text-[10px] text-purple-600 bg-purple-500/10 px-1 border border-purple-200">
+                    <span className="text-[10px] text-purple-700 bg-purple-500/10 px-1 border border-purple-200">
                       生年から
                     </span>
                   </div>
                   <div className="flex items-end gap-3 mt-1">
                     <div className="flex flex-col">
-                      <span className="text-2xl font-bold font-mono text-emerald-600 leading-none">
+                      <span className="text-2xl font-bold font-mono text-emerald-700 leading-none">
                         {honmeiStar?.physical}
                       </span>
-                      <span className="text-[9px] text-stone-500 mt-1">
+                      <span className="text-[9px] text-stone-600 mt-1">
                         物理
                       </span>
                     </div>
@@ -585,11 +585,11 @@ export function ConsultPanel({
 
                 <div className="grid grid-cols-3 gap-2">
                   <div className="bg-white/70 border border-stone-200 p-2 flex flex-col rounded-xl">
-                    <span className="text-[9px] text-stone-500 uppercase tracking-widest mb-1">
+                    <span className="text-[9px] text-stone-600 uppercase tracking-widest mb-1">
                       生まれた年の星
                     </span>
                     <div className="flex items-baseline gap-1 font-mono">
-                      <span className="text-lg text-purple-600 font-bold">
+                      <span className="text-lg text-purple-700 font-bold">
                         {birthEnv?.yearStar}
                       </span>
                       <span className="text-[10px] text-stone-600">/</span>
@@ -602,10 +602,10 @@ export function ConsultPanel({
                     </span>
                   </div>
                   <div className="bg-white/70 border border-stone-200 p-2 flex flex-col rounded-xl">
-                    <span className="text-[9px] text-stone-500 uppercase tracking-widest mb-1">
+                    <span className="text-[9px] text-stone-600 uppercase tracking-widest mb-1">
                       生まれた月の星
                     </span>
-                    <span className="text-lg font-mono text-amber-600 font-bold">
+                    <span className="text-lg font-mono text-amber-700 font-bold">
                       {birthEnv?.monthStar || "--"}
                     </span>
                     <span className="text-[10px] text-stone-600 mt-1">
@@ -613,10 +613,10 @@ export function ConsultPanel({
                     </span>
                   </div>
                   <div className="bg-white/70 border border-stone-200 p-2 flex flex-col rounded-xl">
-                    <span className="text-[9px] text-stone-500 uppercase tracking-widest mb-1">
+                    <span className="text-[9px] text-stone-600 uppercase tracking-widest mb-1">
                       生まれた日の星
                     </span>
-                    <span className="text-lg font-mono text-blue-600 font-bold">
+                    <span className="text-lg font-mono text-blue-700 font-bold">
                       {birthEnv?.dayStar || "--"}
                     </span>
                     <span className="text-[10px] text-stone-600 mt-1">
@@ -635,35 +635,35 @@ export function ConsultPanel({
                   </div>
                   <div className="grid grid-cols-3 gap-2">
                     <div className="bg-stone-50 border border-purple-200 p-2 flex flex-col rounded-xl">
-                      <span className="text-[9px] text-stone-500 uppercase tracking-widest flex items-center justify-between">
+                      <span className="text-[9px] text-stone-600 uppercase tracking-widest flex items-center justify-between">
                         木星{" "}
-                        <span className="text-[10px] text-purple-500 border border-purple-200 px-0.5">
+                        <span className="text-[10px] text-purple-700 border border-purple-200 px-0.5">
                           Y
                         </span>
                       </span>
-                      <span className="text-sm font-mono text-purple-600 mt-1">
+                      <span className="text-sm font-mono text-purple-700 mt-1">
                         {birthEnv.raw.jupiterLon.toFixed(2)}°
                       </span>
                     </div>
                     <div className="bg-stone-50 border border-amber-200 p-2 flex flex-col rounded-xl">
-                      <span className="text-[9px] text-stone-500 uppercase tracking-widest flex items-center justify-between">
+                      <span className="text-[9px] text-stone-600 uppercase tracking-widest flex items-center justify-between">
                         月{" "}
                         <span className="text-[10px] text-amber-700 border border-amber-200 px-0.5">
                           M
                         </span>
                       </span>
-                      <span className="text-sm font-mono text-amber-600 mt-1">
+                      <span className="text-sm font-mono text-amber-700 mt-1">
                         {birthEnv.raw.moonLon.toFixed(2)}°
                       </span>
                     </div>
                     <div className="bg-stone-50 border border-blue-200 p-2 flex flex-col rounded-xl">
-                      <span className="text-[9px] text-stone-500 uppercase tracking-widest flex items-center justify-between">
+                      <span className="text-[9px] text-stone-600 uppercase tracking-widest flex items-center justify-between">
                         太陽{" "}
-                        <span className="text-[10px] text-blue-500 border border-blue-200 px-0.5">
+                        <span className="text-[10px] text-blue-700 border border-blue-200 px-0.5">
                           D
                         </span>
                       </span>
-                      <span className="text-sm font-mono text-blue-600 mt-1">
+                      <span className="text-sm font-mono text-blue-700 mt-1">
                         {birthEnv.raw.sunLon.toFixed(2)}°
                       </span>
                     </div>
@@ -680,11 +680,11 @@ export function ConsultPanel({
               <div className="flex flex-col gap-1 border-b border-stone-200 pb-2">
                 <div className="text-[11px] text-stone-600 font-bold uppercase tracking-widest flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    <span className="text-emerald-500">▶</span> いまの盤と天体
+                    <span className="text-emerald-700">▶</span> いまの盤と天体
                   </div>
                   <div className="flex items-center gap-1.5 bg-emerald-500/10 border border-emerald-200 rounded-xl px-2 py-0.5">
                     <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse"></span>
-                    <span className="text-[10px] text-emerald-600 font-mono tracking-widest">
+                    <span className="text-[10px] text-emerald-700 font-mono tracking-widest">
                       更新中
                     </span>
                   </div>
@@ -697,11 +697,11 @@ export function ConsultPanel({
               <div className="flex flex-col gap-3 z-10">
                 <div className="grid grid-cols-3 gap-2 mt-1">
                   <div className="bg-white/70 border border-stone-200 p-3 flex flex-col rounded-xl">
-                    <span className="text-[9px] text-stone-500 uppercase tracking-widest mb-1">
+                    <span className="text-[9px] text-stone-600 uppercase tracking-widest mb-1">
                       年盤の星
                     </span>
                     <div className="flex items-baseline gap-1 font-mono">
-                      <span className="text-2xl text-purple-600 font-bold leading-none">
+                      <span className="text-2xl text-purple-700 font-bold leading-none">
                         {env?.yearStar}
                       </span>
                       <span className="text-[10px] text-stone-600">/</span>
@@ -714,10 +714,10 @@ export function ConsultPanel({
                     </span>
                   </div>
                   <div className="bg-white/70 border border-stone-200 p-3 flex flex-col rounded-xl">
-                    <span className="text-[9px] text-stone-500 uppercase tracking-widest mb-1">
+                    <span className="text-[9px] text-stone-600 uppercase tracking-widest mb-1">
                       月盤の星
                     </span>
-                    <span className="text-2xl font-mono text-amber-600 font-bold leading-none">
+                    <span className="text-2xl font-mono text-amber-700 font-bold leading-none">
                       {env?.monthStar || "--"}
                     </span>
                     <span className="text-[10px] text-stone-600 mt-2">
@@ -725,10 +725,10 @@ export function ConsultPanel({
                     </span>
                   </div>
                   <div className="bg-white/70 border border-stone-200 p-3 flex flex-col rounded-xl">
-                    <span className="text-[9px] text-stone-500 uppercase tracking-widest mb-1">
+                    <span className="text-[9px] text-stone-600 uppercase tracking-widest mb-1">
                       日盤の星
                     </span>
-                    <span className="text-2xl font-mono text-blue-600 font-bold leading-none">
+                    <span className="text-2xl font-mono text-blue-700 font-bold leading-none">
                       {env?.dayStar || "--"}
                     </span>
                     <span className="text-[10px] text-stone-600 mt-2">
@@ -747,35 +747,35 @@ export function ConsultPanel({
                   </div>
                   <div className="grid grid-cols-3 gap-2">
                     <div className="bg-stone-50 border border-purple-200 p-2 flex flex-col rounded-xl">
-                      <span className="text-[9px] text-stone-500 uppercase tracking-widest flex items-center justify-between">
+                      <span className="text-[9px] text-stone-600 uppercase tracking-widest flex items-center justify-between">
                         木星{" "}
-                        <span className="text-[10px] text-purple-500 border border-purple-200 px-0.5 animate-pulse">
+                        <span className="text-[10px] text-purple-700 border border-purple-200 px-0.5 animate-pulse">
                           Y
                         </span>
                       </span>
-                      <span className="text-sm font-mono text-purple-600 mt-1">
+                      <span className="text-sm font-mono text-purple-700 mt-1">
                         {env.raw.jupiterLon.toFixed(2)}°
                       </span>
                     </div>
                     <div className="bg-stone-50 border border-amber-200 p-2 flex flex-col rounded-xl">
-                      <span className="text-[9px] text-stone-500 uppercase tracking-widest flex items-center justify-between">
+                      <span className="text-[9px] text-stone-600 uppercase tracking-widest flex items-center justify-between">
                         月{" "}
                         <span className="text-[10px] text-amber-700 border border-amber-200 px-0.5 animate-pulse">
                           M
                         </span>
                       </span>
-                      <span className="text-sm font-mono text-amber-600 mt-1">
+                      <span className="text-sm font-mono text-amber-700 mt-1">
                         {env.raw.moonLon.toFixed(2)}°
                       </span>
                     </div>
                     <div className="bg-stone-50 border border-blue-200 p-2 flex flex-col rounded-xl">
-                      <span className="text-[9px] text-stone-500 uppercase tracking-widest flex items-center justify-between">
+                      <span className="text-[9px] text-stone-600 uppercase tracking-widest flex items-center justify-between">
                         太陽{" "}
-                        <span className="text-[10px] text-blue-500 border border-blue-200 px-0.5 animate-pulse">
+                        <span className="text-[10px] text-blue-700 border border-blue-200 px-0.5 animate-pulse">
                           D
                         </span>
                       </span>
-                      <span className="text-sm font-mono text-blue-600 mt-1">
+                      <span className="text-sm font-mono text-blue-700 mt-1">
                         {env.raw.sunLon.toFixed(2)}°
                       </span>
                     </div>
@@ -788,7 +788,7 @@ export function ConsultPanel({
           <details className="mt-4 mb-4 border border-stone-200 bg-white/80 group">
             <summary className="p-3 text-[10px] text-stone-600 font-mono uppercase tracking-widest cursor-pointer hover:bg-white/80 flex items-center justify-between list-none">
               <div className="flex items-center gap-2">
-                <span className="text-purple-500 animate-pulse">◆</span>
+                <span className="text-purple-700 animate-pulse">◆</span>
                 方位盤の内訳を開く（年・月・日の盤と本命星の重ね合わせ）
               </div>
               <span className="group-open:rotate-180 transition-transform">
@@ -797,7 +797,7 @@ export function ConsultPanel({
             </summary>
 
             <div className="p-3 border-t border-stone-200 bg-white/70">
-              <div className="mb-4 p-2 bg-white/80 border border-stone-200 text-xs text-stone-500 font-mono leading-relaxed">
+              <div className="mb-4 p-2 bg-white/80 border border-stone-200 text-xs text-stone-600 font-mono leading-relaxed">
                 <strong>色の読み方</strong>
                 <br />
                 年・月・日の方位盤に、あなたの本命星・月命星を重ねた結果です。
@@ -808,9 +808,9 @@ export function ConsultPanel({
                 <span className="text-amber-700 font-bold">黄</span>{" "}
                 は月交点（羅睺・計都軸）に当たるマスです。天中殺方位のマスは白抜きで出します。どちらも当サイトでは避ける扱いにしています。
                 <br />
-                <span className="text-emerald-600 font-bold">緑</span>{" "}
+                <span className="text-emerald-700 font-bold">緑</span>{" "}
                 は本命星と相生・比和になる吉方位、
-                <span className="text-blue-600 font-bold">青</span>{" "}
+                <span className="text-blue-700 font-bold">青</span>{" "}
                 はどの凶方位にも当たっていないマスです。
                 <br />
                 <em>
@@ -826,14 +826,14 @@ export function ConsultPanel({
                   className={`transition-all duration-300 ${!useClassicalBoard ? "opacity-100" : "opacity-30 grayscale-[50%] blur-[0.5px] hover:opacity-100 hover:grayscale-0 hover:blur-none"}`}
                 >
                   <div
-                    className={`text-emerald-600 font-bold text-[10px] tracking-widest uppercase border-b border-stone-200 pb-1 flex items-center gap-2 ${!useClassicalBoard ? "drop-shadow-[0_0_5px_rgba(16,185,129,0.5)]" : ""}`}
+                    className={`text-emerald-700 font-bold text-[10px] tracking-widest uppercase border-b border-stone-200 pb-1 flex items-center gap-2 ${!useClassicalBoard ? "drop-shadow-[0_0_5px_rgba(16,185,129,0.5)]" : ""}`}
                   >
                     <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse"></span>
                     物理の盤（天体の位置から）
                   </div>
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-[11px] font-mono text-stone-600">
                     <div className="bg-white/70 border border-purple-200 p-2">
-                      <div className="text-purple-500 font-bold mb-1 border-b border-stone-200 pb-1 flex justify-between">
+                      <div className="text-purple-700 font-bold mb-1 border-b border-stone-200 pb-1 flex justify-between">
                         <span>物理年盤</span>
                         <span className="text-[9px] text-stone-600">年盤</span>
                       </div>
@@ -953,7 +953,7 @@ export function ConsultPanel({
                     </div>
 
                     <div className="bg-white/70 border border-blue-200 p-2">
-                      <div className="text-blue-500 font-bold mb-1 border-b border-stone-200 pb-1 flex justify-between">
+                      <div className="text-blue-700 font-bold mb-1 border-b border-stone-200 pb-1 flex justify-between">
                         <span>物理日盤</span>
                         <span className="text-[9px] text-stone-600">日盤</span>
                       </div>
@@ -1210,7 +1210,7 @@ export function ConsultPanel({
           {/* Final Vector Calculation Visualization */}
           {env && layers && (
             <div className="mt-4 bg-white/70 border border-stone-200 p-3 w-full">
-              <div className="text-emerald-500 font-bold mb-1 border-b border-stone-200 pb-1 text-[10px] tracking-widest uppercase flex flex-col items-start gap-0.5">
+              <div className="text-emerald-700 font-bold mb-1 border-b border-stone-200 pb-1 text-[10px] tracking-widest uppercase flex flex-col items-start gap-0.5">
                 <span>年・月・日の盤の重ね合わせ</span>
                 <span className="text-stone-600 text-xs font-normal normal-case tracking-normal">
                   {
@@ -1219,7 +1219,7 @@ export function ConsultPanel({
                 </span>
               </div>
               <div className="text-xs text-stone-600 mb-2 leading-relaxed text-justify pr-2 font-sans">
-                <strong className="text-stone-500">判定の決まり:</strong>{" "}
+                <strong className="text-stone-600">判定の決まり:</strong>{" "}
                 {
                   "年盤・月盤・日盤の判定を重ねて最終結果を出します。どれか 1 つの盤でも凶（赤・紫）があれば、他の盤が吉（緑）でも最終結果は凶になります。凶を 1 つでも含む方位は勧めない、という九星気学の一般的な扱いをそのまま実装したものです。"
                 }
@@ -1230,7 +1230,7 @@ export function ConsultPanel({
                   className={`transition-all duration-300 ${!useClassicalBoard ? "opacity-100" : "opacity-30 grayscale-[50%] blur-[0.5px] hover:opacity-100 hover:grayscale-0 hover:blur-none"}`}
                 >
                   <div
-                    className={`text-emerald-600 font-bold text-[10px] tracking-widest uppercase border-b border-stone-200 pb-1 mb-2 flex items-center gap-2 ${!useClassicalBoard ? "drop-shadow-[0_0_5px_rgba(16,185,129,0.5)]" : ""}`}
+                    className={`text-emerald-700 font-bold text-[10px] tracking-widest uppercase border-b border-stone-200 pb-1 mb-2 flex items-center gap-2 ${!useClassicalBoard ? "drop-shadow-[0_0_5px_rgba(16,185,129,0.5)]" : ""}`}
                   >
                     <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse"></span>
                     物理の盤（天体の位置から）
@@ -1282,7 +1282,7 @@ export function ConsultPanel({
                             key={dir}
                             className="hover:bg-white/80 transition-colors"
                           >
-                            <td className="py-2.5 pr-2 text-stone-500 font-bold align-middle">
+                            <td className="py-2.5 pr-2 text-stone-600 font-bold align-middle">
                               {dir}
                             </td>
                             <td className="py-2.5 px-1 align-middle">
@@ -1439,7 +1439,7 @@ export function ConsultPanel({
           {/* Theory & Model Explanation */}
           <div className="mt-4 bg-white/80 border border-stone-200 p-3 w-full">
             <div className="flex items-center justify-between mb-2 border-b border-stone-200 pb-2">
-              <div className="text-blue-600 font-bold text-[10px] tracking-widest uppercase flex items-center gap-2">
+              <div className="text-blue-700 font-bold text-[10px] tracking-widest uppercase flex items-center gap-2">
                 <span className="w-2 h-2 bg-blue-500 rounded-full md:animate-pulse"></span>
                 天体物理コアロジック (理論と数理モデル)
               </div>
@@ -1447,7 +1447,7 @@ export function ConsultPanel({
                 onClick={() =>
                   setShowAstrophysicalLogic(!showAstrophysicalLogic)
                 }
-                className="text-[9px] font-mono text-stone-500 hover:text-stone-900 bg-stone-50 px-2 py-1 border border-stone-300 hover:border-zinc-500 transition-colors uppercase tracking-widest"
+                className="text-[9px] font-mono text-stone-600 hover:text-stone-900 bg-stone-50 px-2 py-1 border border-stone-300 hover:border-zinc-500 transition-colors uppercase tracking-widest"
               >
                 {showAstrophysicalLogic ? "計算式を閉じる" : "計算式を見る"}
               </button>
@@ -1457,7 +1457,7 @@ export function ConsultPanel({
               <div className="animate-fade-in border-l-2 border-blue-500 pl-3 mt-3">
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <div className="flex flex-col gap-2">
-                    <span className="text-[9px] text-purple-600 font-bold border-l-2 border-purple-500 pl-2 bg-purple-50 py-0.5">
+                    <span className="text-[9px] text-purple-700 font-bold border-l-2 border-purple-500 pl-2 bg-purple-50 py-0.5">
                       年盤: 木星の黄経
                     </span>
                     <p className="text-[10px] text-stone-600 leading-relaxed">
@@ -1476,7 +1476,7 @@ export function ConsultPanel({
                     </div>
                   </div>
                   <div className="flex flex-col gap-2">
-                    <span className="text-[9px] text-amber-600 font-bold border-l-2 border-amber-500 pl-2 bg-amber-50 py-0.5">
+                    <span className="text-[9px] text-amber-700 font-bold border-l-2 border-amber-500 pl-2 bg-amber-50 py-0.5">
                       月盤: 太陽黄経と月相
                     </span>
                     <p className="text-[10px] text-stone-600 leading-relaxed">
@@ -1495,7 +1495,7 @@ export function ConsultPanel({
                     </div>
                   </div>
                   <div className="flex flex-col gap-2">
-                    <span className="text-[9px] text-blue-600 font-bold border-l-2 border-blue-500 pl-2 bg-blue-50 py-0.5">
+                    <span className="text-[9px] text-blue-700 font-bold border-l-2 border-blue-500 pl-2 bg-blue-50 py-0.5">
                       日盤: ユリウス日
                     </span>
                     <p className="text-[10px] text-stone-600 leading-relaxed">
