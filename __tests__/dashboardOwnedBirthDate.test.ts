@@ -41,9 +41,20 @@ describe("未登録の人に、既定の生年月日の判定を出さない", (
   });
 
   it("ホームと刻の一覧は、どちらも birthDateOwned を見ている", () => {
+    /* ホームは「見本か」（否定形）、刻の一覧は「利用者の値か」。
+     **どちらも初期値では真にならない旗を見ていること**を固定する */
+    expect(CLOCK).toContain("profileIsSample={!birthDateOwned}");
     const wired = CLOCK.match(/hasBirthDate=\{[^}]+\}/g) ?? [];
-    expect(wired.length).toBeGreaterThanOrEqual(2);
+    expect(wired.length).toBeGreaterThanOrEqual(1);
     for (const w of wired) expect(w).toBe("hasBirthDate={birthDateOwned}");
+  });
+
+  it("ホームは、見本でも値を出す（隠さない）", () => {
+    /* 2026-09-13 の方針。隠すと初めて来た人に道具の中身が伝わらない。
+       誰の例かは頁の上の帯と、札の「（見本）」が書く */
+    const PORTAL = readFileSync("src/components/home/HomePortal.tsx", "utf8");
+    expect(PORTAL).not.toContain("生年月日を入れると");
+    expect(PORTAL).toContain('${profileIsSample ? "（見本）" : ""}');
   });
 
   it("刻の一覧は、旗が偽なら「あなたの」と書かない", () => {

@@ -4014,11 +4014,11 @@ export const SolarTimeClock = () => {
             kpIndex={spaceWeather?.kpIndex ?? null}
             pressure={pressureData}
             declination={geoData?.declination ?? null}
-            /* 初期値（2000-01-01）でも真になってしまうので、
-               `Boolean(birthDate)` ではなく「利用者が入れた値か」の旗で見る。
-               ここが効いていなかったため、未登録の人にも個人の判定が
-               出ていた（SolarTimeTable の hasBirthDate の註）。 */
-            hasBirthDate={birthDateOwned}
+            /* 見本かどうか。値は常に出し、誰の例かは頁の上の帯が書く
+               （2026-09-13 の方針）。初期値（2000-01-01）でも真になる
+               `Boolean(birthDate)` ではなく、「利用者が入れた値か」の旗で
+               見る。 */
+            profileIsSample={!birthDateOwned}
           />
         )}
 
