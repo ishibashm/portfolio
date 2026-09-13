@@ -18,7 +18,21 @@ const FILES = [
   "src/components/home/HomePortal.tsx",
   "src/components/home/DestinationMapPanel.tsx",
   "src/components/SolarTimeTable.tsx",
+  "src/components/PersonalProfileConfig.tsx",
+  "src/components/BioMagneticDashboard.tsx",
 ];
+
+/**
+ * 日付の欄を組み立てる部品。日本時間の取り出し（getZonedDateTimeFields）
+ * を必ず通っているはず、という向きの検査もこちらだけに掛ける。
+ * PersonalProfileConfig と BioMagneticDashboard は日付を組み立てず、
+ * 同期日時の 1 行だけなので「端末の getter を使わない」向きだけ見る。
+ */
+const BUILDS_DATE_FIELDS = new Set([
+  "src/components/home/HomePortal.tsx",
+  "src/components/home/DestinationMapPanel.tsx",
+  "src/components/SolarTimeTable.tsx",
+]);
 
 describe("dashboard の日付・時刻は日本時間で読む", () => {
   for (const file of FILES) {
@@ -33,7 +47,9 @@ describe("dashboard の日付・時刻は日本時間で読む", () => {
       expect(body).not.toMatch(/\.setHours\(/);
       // toLocaleDateString / toLocaleTimeString は timeZone 無しだと端末の日付
       expect(body).not.toMatch(/\.toLocale(?:Date|Time)String\(\)/);
-      expect(body).toMatch(/getZonedDateTimeFields\(/);
+      if (BUILDS_DATE_FIELDS.has(file)) {
+        expect(body).toMatch(/getZonedDateTimeFields\(/);
+      }
     });
   }
 });

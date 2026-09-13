@@ -341,8 +341,11 @@ export function PersonalProfileConfig({
                 </span>
                 <span className="text-[9px] text-emerald-500">
                   {baseSyncTimestamp
-                    ? `Sync: ${new Date(baseSyncTimestamp).toLocaleDateString()}`
-                    : "Not Synced"}
+                    ? `同期: ${new Date(baseSyncTimestamp).toLocaleDateString(
+                        "ja-JP",
+                        { timeZone: "Asia/Tokyo" },
+                      )}`
+                    : "未同期"}
                 </span>
               </div>
 
