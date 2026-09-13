@@ -3986,7 +3986,11 @@ export const SolarTimeClock = () => {
             kpIndex={spaceWeather?.kpIndex ?? null}
             pressure={pressureData}
             declination={geoData?.declination ?? null}
-            hasBirthDate={Boolean(birthDate)}
+            /* 初期値（2000-01-01）でも真になってしまうので、
+               `Boolean(birthDate)` ではなく「利用者が入れた値か」の旗で見る。
+               ここが効いていなかったため、未登録の人にも個人の判定が
+               出ていた（SolarTimeTable の hasBirthDate の註）。 */
+            hasBirthDate={birthDateOwned}
           />
         )}
 
@@ -4127,6 +4131,7 @@ export const SolarTimeClock = () => {
               personalVoidZodiac={personalVoidZodiac}
               useClassical={useClassicalBoard}
               zodiacTimeBasis={zodiacTimeBasis}
+              hasBirthDate={birthDateOwned}
             />
           </div>
         )}

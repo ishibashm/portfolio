@@ -35,6 +35,19 @@ interface SolarTimeTableProps {
   useClassical?: boolean;
   /** 時支をどの時刻で採るか。省くと標準時（従来の答え）。 */
   zodiacTimeBasis?: ZodiacTimeBasis;
+  /**
+   * **利用者が生年月日を入れた（または保存済みの値を読んだ）か。**
+   *
+   * 画面は計算のために生年月日の初期値（2000-01-01）を state に持つ。
+   * `Boolean(birthDate)` で見ると**常に真**になり、未登録の人に
+   * 2000 年生まれの天中殺と本命星が「あなたの」として出ていた
+   * （同じ画面の上では「プロフィールが未設定です」と言っている）。
+   *
+   * 偽のときは個人の判定を**出さない。**空の配列を渡すのでは足りない:
+   * `lib/timePhase` の `isVoidTimeHour` は天中殺が出せないと午・未を
+   * 既定として返すので、**誰のものでもない天中殺**が出てしまう。
+   */
+  hasBirthDate?: boolean;
 }
 
 export function SolarTimeTableComponent({
@@ -52,6 +65,7 @@ export function SolarTimeTableComponent({
   personalVoidZodiac,
   useClassical,
   zodiacTimeBasis = "standard",
+  hasBirthDate = false,
 }: SolarTimeTableProps) {
   const schedule = useMemo(
     () => getDailySolarSchedule(date, longitude),
@@ -63,19 +77,26 @@ export function SolarTimeTableComponent({
     [date, longitude, zodiacTimeBasis],
   );
 
+  /* 生年月日が利用者のものでないときは、個人の判定を一切通さない
+     （上の prop の註）。ここで 1 度だけ落とし、以下は同じ道を通る。 */
+  const ownVoidZodiac = hasBirthDate ? personalVoidZodiac : undefined;
+  const ownHonmeiStar = hasBirthDate ? (honmeiStar ?? null) : null;
+
   const isYearVoid =
-    personalVoidZodiac?.includes(currentZodiac.yearZodiac) || false;
+    (hasBirthDate && ownVoidZodiac?.includes(currentZodiac.yearZodiac)) ||
+    false;
   const isMonthVoid =
-    personalVoidZodiac?.includes(currentZodiac.monthZodiac) || false;
+    (hasBirthDate && ownVoidZodiac?.includes(currentZodiac.monthZodiac)) ||
+    false;
   const isDayVoid =
-    personalVoidZodiac?.includes(currentZodiac.dayZodiac) || false;
+    (hasBirthDate && ownVoidZodiac?.includes(currentZodiac.dayZodiac)) || false;
 
   // 判定は lib/timePhase に集約した（ホームのポータルと共用）。
   // 呼び出し側の書き方を変えないよう、ここでは束縛だけ足す。
   const isVoidTimeHour = (item: KimonScheduleItem) =>
-    isVoidTimeHourShared(item, personalVoidZodiac);
+    hasBirthDate ? isVoidTimeHourShared(item, ownVoidZodiac) : false;
   const evaluateTimePhase = (item: KimonScheduleItem) =>
-    evaluateTimePhaseShared(item, honmeiStar ?? null, useClassical ?? true);
+    evaluateTimePhaseShared(item, ownHonmeiStar, useClassical ?? true);
 
   const [expandedIndex, setExpandedIndex] = useState<number | null>(null);
   const [showPreview, setShowPreview] = useState(false);
@@ -307,8 +328,11 @@ export function SolarTimeTableComponent({
                 天中殺
               </span>
             ) : (
+              /* 生年月日が利用者のものでなければ「天中殺ではない」とも
+                 言えない（天中殺は人ごとに決まる）。旗が偽のときは
+                 判定を出さず、線を引く。 */
               <span className="text-stone-600 text-[10px] ml-auto">
-                天中殺ではない
+                {hasBirthDate ? "天中殺ではない" : "—"}
               </span>
             )}
           </div>
@@ -337,8 +361,11 @@ export function SolarTimeTableComponent({
                 天中殺
               </span>
             ) : (
+              /* 生年月日が利用者のものでなければ「天中殺ではない」とも
+                 言えない（天中殺は人ごとに決まる）。旗が偽のときは
+                 判定を出さず、線を引く。 */
               <span className="text-stone-600 text-[10px] ml-auto">
-                天中殺ではない
+                {hasBirthDate ? "天中殺ではない" : "—"}
               </span>
             )}
           </div>
@@ -376,8 +403,11 @@ export function SolarTimeTableComponent({
                 天中殺
               </span>
             ) : (
+              /* 生年月日が利用者のものでなければ「天中殺ではない」とも
+                 言えない（天中殺は人ごとに決まる）。旗が偽のときは
+                 判定を出さず、線を引く。 */
               <span className="text-stone-600 text-[10px] ml-auto">
-                天中殺ではない
+                {hasBirthDate ? "天中殺ではない" : "—"}
               </span>
             )}
           </div>
@@ -397,8 +427,19 @@ export function SolarTimeTableComponent({
         </div>
       </div>
 
+      {/* 生年月日が利用者のものでないときは、個人の判定の凡例を出さない。
+          出すと「あなたの本命星」「あなたの天中殺」と書いた札だけが並び、
+          中身は既定値（2000-01-01）のものになる。 */}
+      {!hasBirthDate && (
+        <div className="mb-2 border-l-2 border-stone-300 bg-stone-50 p-2 md:p-3 text-xs leading-relaxed text-stone-600">
+          生年月日を登録すると、あなたの天中殺にあたる刻と、本命星と相生・比和になる刻がここに出ます。いまは十二支・干支・時盤の九星だけを出しています。
+        </div>
+      )}
+
       {/* Actionable Directives Legend */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-2 mb-2">
+      <div
+        className={`grid grid-cols-1 md:grid-cols-2 gap-2 mb-2 ${hasBirthDate ? "" : "hidden"}`}
+      >
         <div className="bg-emerald-50 border-l-2 border-emerald-500 p-2 md:p-3 shadow-inner">
           <div className="text-emerald-700 font-bold text-[10px] md:text-xs mb-1 tracking-widest uppercase flex items-center gap-2">
             <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse"></span>{" "}
@@ -516,9 +557,6 @@ export function SolarTimeTableComponent({
                       className={`text-sm font-bold ${isVoid ? "text-red-700" : "text-stone-600"}`}
                     >
                       {item.etoKanji}の刻
-                    </span>
-                    <span className="text-[9px] text-stone-600 font-mono hidden sm:inline-block tracking-widest uppercase">
-                      [{item.reading}]
                     </span>
                   </div>
                 </div>
