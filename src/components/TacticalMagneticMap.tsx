@@ -119,7 +119,7 @@ export function TacticalMagneticMapComponent({
       {/* Map Container */}
       <div
         ref={mapContainerRef}
-        className={`relative border ${borderColor} transition-all duration-500 shadow-2xl w-full flex flex-col h-[400px] md:h-[600px] lg:h-[700px]`}
+        className={`relative border ${borderColor} transition-all duration-500 shadow-2xl w-full flex flex-col h-[480px] md:h-[600px] lg:h-[700px]`}
       >
         <div className="absolute top-0 left-0 w-full p-2 z-10 bg-linear-to-b from-black/80 to-transparent pointer-events-none flex flex-col sm:flex-row justify-between items-start gap-2">
           <div className="flex items-center gap-2">
@@ -238,7 +238,7 @@ export function TacticalMagneticMapComponent({
               </button>
               <button
                 onClick={() => setShowHUD(!showHUD)}
-                className={`pointer-events-auto bg-white/80 hover:bg-stone-100 text-stone-600 px-2 py-1 flex items-center gap-1 text-[11px] uppercase font-mono tracking-wider border rounded-sm transition-colors ${showHUD ? "border-blue-500 text-blue-600" : "border-stone-300"}`}
+                className={`pointer-events-auto bg-white/80 hover:bg-stone-100 text-stone-600 px-2 py-1 hidden sm:flex items-center gap-1 text-[11px] uppercase font-mono tracking-wider border rounded-sm transition-colors ${showHUD ? "border-blue-500 text-blue-600" : "border-stone-300"}`}
                 title="磁力線の立体表示を出す・しまう"
               >
                 <Box size={10} />
@@ -316,7 +316,7 @@ export function TacticalMagneticMapComponent({
 
         {/* 3D HUD Overlay */}
         <div
-          className={`absolute bottom-2 left-2 z-20 pointer-events-auto transition-all duration-500 translate-y-0 ${showHUD ? "opacity-100 scale-100" : "opacity-0 scale-90 translate-y-4 pointer-events-none"}`}
+          className={`hidden sm:block absolute bottom-2 left-2 z-20 pointer-events-auto transition-all duration-500 translate-y-0 ${showHUD ? "opacity-100 scale-100" : "opacity-0 scale-90 translate-y-4 pointer-events-none"}`}
         >
           <MagneticSpatialHUD
             declination={declination || 0}
@@ -338,7 +338,7 @@ export function TacticalMagneticMapComponent({
             ▼
           </span>
         </summary>
-        <div className="p-3 sm:p-4 border-t border-stone-200 grid grid-cols-1 md:grid-cols-4 gap-3 bg-white/70 text-[10px] leading-relaxed font-sans">
+        <div className="p-3 sm:p-4 border-t border-stone-200 grid grid-cols-1 md:grid-cols-4 gap-3 bg-white/70 text-xs leading-relaxed font-sans">
           <div className="p-2 sm:p-3 border border-red-200 rounded-sm">
             <strong className="text-red-600 block mb-1 font-mono text-[9px] uppercase">
               ◆ 1. 凶殺ベクトル (NOISE)
