@@ -242,7 +242,7 @@ export function BioMagneticDashboard({
               </div>
             </div>
             {!pressure && (
-              <div className="mt-1 text-[9px] text-stone-600">
+              <div className="mt-1 text-xs text-stone-600">
                 気圧を取得できていません。この項目は負荷の計算に入っていません。
               </div>
             )}

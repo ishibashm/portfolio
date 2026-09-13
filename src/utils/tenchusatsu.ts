@@ -31,37 +31,37 @@ export const JUNISHI = [
 export const TENCHUSATSU_GROUPS = [
   {
     id: 0,
-    name: "戌亥 (Inu-I)",
+    name: "戌亥",
     voidBranches: ["戌", "亥"],
     years: [2030, 2031],
   }, // Approximate recent years
   {
     id: 1,
-    name: "申酉 (Saru-Tori)",
+    name: "申酉",
     voidBranches: ["申", "酉"],
     years: [2028, 2029],
   },
   {
     id: 2,
-    name: "午未 (Uma-Hitsuji)",
+    name: "午未",
     voidBranches: ["午", "未"],
     years: [2026, 2027],
   },
   {
     id: 3,
-    name: "辰巳 (Tatsu-Mi)",
+    name: "辰巳",
     voidBranches: ["辰", "巳"],
     years: [2024, 2025],
   },
   {
     id: 4,
-    name: "寅卯 (Tora-U)",
+    name: "寅卯",
     voidBranches: ["寅", "卯"],
     years: [2022, 2023],
   },
   {
     id: 5,
-    name: "子丑 (Ne-Ushi)",
+    name: "子丑",
     voidBranches: ["子", "丑"],
     years: [2020, 2021],
   },
