@@ -2147,8 +2147,14 @@ export const SolarTimeClock = () => {
         activeLayerMode,
       );
       const doyou_class = vec_class.doyouState?.isDoyouHazard ? -30 : 0;
+      /*
+        天中殺の減点は 3 モデル共通。以前は古典だけ voidPenalty を足して
+        おらず、天中殺の日は古典だけ高い点のまま「位相差警告」が必ず出て
+        いた。空亡は生年月日で決まり、盤の組み方には依らない。
+        見張りは __tests__/scorecardVoidPenaltyAllModels.test.ts。
+      */
       const timeGate_class =
-        doyou_class + (lunarPhaseModifier ? lunarPhaseScore : 0);
+        voidPenalty + doyou_class + (lunarPhaseModifier ? lunarPhaseScore : 0);
 
       // 2. Physical Independent Model
       const yB_indep = generateBoard(testEnv.yearStar);
