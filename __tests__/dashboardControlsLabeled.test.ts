@@ -24,6 +24,9 @@ const FILES = [
   "src/components/PersonalProfileConfig.tsx",
   "src/components/SolarTimeTable.tsx",
   "src/components/BioMagneticDashboard.tsx",
+  "src/components/TacticalMagneticMap.tsx",
+  "src/components/MagneticMapInner.tsx",
+  "src/components/MagneticSpatialHUD.tsx",
 ];
 
 function unlabeledControls(path: string): string[] {
@@ -96,14 +99,8 @@ describe("dashboard の入力欄・選択欄には読み上げ用の名前があ
        素通りしていた（2026-09-13 に 7 件）。直前の空でない行が `>` で
        終わり、直後の空でない行が `<` で始まるものを text node とみなす。
        CSV の列名や JSX 式（波括弧）は対象にしない。 */
-    /* まだ英語が残っている DestinationMapPanel（DIR）・ScorecardPanel
-       （Loading…）・BioMagneticDashboard（V.2020-2025 など）は次の PR で
-       直してから足す。 */
-    const ENGLISH_TEXT_FILES = FILES.filter(
-      (f) => !/DestinationMapPanel|ScorecardPanel|BioMagneticDashboard/.test(f),
-    );
     const hits: string[] = [];
-    for (const f of ENGLISH_TEXT_FILES) {
+    for (const f of FILES) {
       const lines = readFileSync(f, "utf8").split("\n");
       for (let i = 0; i < lines.length; i++) {
         if (!/^\s*[A-Z][A-Za-z0-9 :&/().,'+-]{2,}\s*$/.test(lines[i])) continue;
