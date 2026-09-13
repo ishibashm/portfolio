@@ -328,12 +328,12 @@ export default function ScorecardPanel({
                 <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse"></span>
                 5. 総合スコア / 8方位統合評価マトリクス
               </h2>
-              <p className="text-stone-500 text-[10px] sm:text-xs leading-relaxed max-w-xl">
+              <p className="text-stone-500 text-xs leading-relaxed max-w-xl">
                 {
                   "直近 30 日の吉凶の見通しと、各方位の推奨エリア（市区町村の平均所得つき）を 1 か所で見比べる画面です。"
                 }
               </p>
-              <div className="mt-2 text-stone-600 text-[9px] leading-relaxed flex flex-wrap gap-x-4 gap-y-1">
+              <div className="mt-2 text-stone-600 text-xs leading-relaxed flex flex-wrap gap-x-4 gap-y-1">
                 <span>
                   <strong className="text-emerald-600">🌟 トリプル大吉:</strong>{" "}
                   3つの計算モデル（古典/物理独立/伝統連動）すべてで吉方位となる最も安全な方位。
@@ -902,7 +902,7 @@ export default function ScorecardPanel({
                   <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full"></span>
                   多次元吉凶パターンマトリクス (Grid Scorecard)
                 </h3>
-                <p className="text-stone-600 text-[10px] sm:text-xs">
+                <p className="text-stone-600 text-xs">
                   本命星別、または日付別の全方位吉凶パターンを網羅した詳細グリッド表です。
                 </p>
               </div>
