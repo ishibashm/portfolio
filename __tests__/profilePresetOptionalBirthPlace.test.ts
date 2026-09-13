@@ -37,11 +37,6 @@ vi.mock("@/lib/prisma", () => ({
   default: { user_configs: { findFirst, update, create } },
 }));
 
-vi.mock("@/utils/encryption", () => ({
-  encrypt: (value: string) => `encrypted:${value}`,
-  decrypt: (value: string) => value.replace(/^encrypted:/, ""),
-}));
-
 import { POST } from "@/app/api/profile-presets/route";
 import {
   type ProfilePreset,

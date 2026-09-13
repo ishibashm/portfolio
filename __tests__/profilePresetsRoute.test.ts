@@ -26,11 +26,6 @@ vi.mock("@/lib/prisma", () => ({
   },
 }));
 
-vi.mock("@/utils/encryption", () => ({
-  encrypt: (value: string) => `encrypted:${value}`,
-  decrypt: (value: string) => value.replace(/^encrypted:/, ""),
-}));
-
 import { GET, POST } from "@/app/api/profile-presets/route";
 
 // user_id は uuid 形式でないと toUserId が null を返し、行の照合に使われない。
