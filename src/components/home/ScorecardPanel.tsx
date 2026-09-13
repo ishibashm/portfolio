@@ -395,7 +395,7 @@ export default function ScorecardPanel({
                   </>
                 ) : (
                   <>
-                    <span>EXPORT FOR GEMINI</span>
+                    <span>AI 相談用に書き出す（JSON）</span>
                   </>
                 )}
               </button>
@@ -413,7 +413,7 @@ export default function ScorecardPanel({
                   </>
                 ) : (
                   <>
-                    <span>UNIFIED MASTER EXPORT</span>
+                    <span>全データを書き出す（JSON）</span>
                   </>
                 )}
               </button>
@@ -534,7 +534,7 @@ export default function ScorecardPanel({
                           </div>
                           <div className="bg-blue-50 border border-blue-200 rounded-lg px-2.5 py-1.5">
                             <div className="text-[10px] text-stone-600">
-                              ② アストロ
+                              ② 天体の線
                             </div>
                             <div
                               className={`text-[10px] ${bd.astroScore > 0 ? "text-blue-600 font-bold" : "text-stone-600"}`}
@@ -549,7 +549,7 @@ export default function ScorecardPanel({
                           </div>
                           <div className="bg-amber-50 border border-amber-200 rounded-lg px-2.5 py-1.5">
                             <div className="text-[10px] text-stone-600">
-                              ③ 時間ゲート
+                              ③ 時期の補正
                             </div>
                             <div
                               className={`text-[10px] ${bd.timeGateScore < 0 ? "text-red-600 font-bold" : bd.timeGateScore > 0 ? "text-emerald-600 font-bold" : "text-stone-600"}`}
@@ -624,21 +624,21 @@ export default function ScorecardPanel({
                 <table className="w-full min-w-[1120px] text-left border-collapse">
                   <thead>
                     <tr className="border-b border-stone-200 bg-white/80 text-[9px] font-mono text-stone-500 uppercase tracking-wider whitespace-nowrap">
-                      <th className="p-3 w-24">方位 (Sector)</th>
-                      <th className="p-3 w-20">古典 (Classical)</th>
-                      <th className="p-3 w-20">物理独立 (Phys Indep)</th>
-                      <th className="p-3 w-20">伝統連動 (Phys Coupled)</th>
+                      <th className="p-3 w-24">方位</th>
+                      <th className="p-3 w-20">古典</th>
+                      <th className="p-3 w-20">物理独立</th>
+                      <th className="p-3 w-20">伝統連動</th>
                       <th className="p-3 w-28 text-center">合意判定</th>
 
                       {/* 3つの個別判断軸カラム */}
                       <th className="p-3 w-32 bg-emerald-50 border-x border-emerald-200">
-                        ① 気学方位 (Kigaku)
+                        ① 気学方位
                       </th>
                       <th className="p-3 w-32 bg-blue-50 border-r border-blue-200">
-                        ② アストロ (Astro)
+                        ② 天体の線
                       </th>
                       <th className="p-3 w-32 bg-amber-50 border-r border-amber-200">
-                        ③ 時間ゲート (Time)
+                        ③ 時期の補正
                       </th>
 
                       <th className="p-3 w-20 text-center">30日で動ける日</th>
@@ -929,14 +929,10 @@ export default function ScorecardPanel({
                   }
                   className="bg-stone-50 text-stone-600 border border-stone-200 rounded-md px-2 py-1 text-[10px] font-mono focus:outline-none cursor-pointer"
                 >
-                  <option value="consensus">合意判定 (Consensus)</option>
-                  <option value="classical">古典暦モデル (Classical)</option>
-                  <option value="physicalIndep">
-                    物理独立モデル (Phys Indep)
-                  </option>
-                  <option value="physicalCoupled">
-                    伝統連動モデル (Phys Coupled)
-                  </option>
+                  <option value="consensus">合意判定</option>
+                  <option value="classical">古典暦モデル</option>
+                  <option value="physicalIndep">物理独立モデル</option>
+                  <option value="physicalCoupled">伝統連動モデル</option>
                 </select>
 
                 {/* 表示軸 (Dimension Selector) */}
@@ -949,8 +945,8 @@ export default function ScorecardPanel({
                 >
                   <option value="total">表示軸: 総合スコア</option>
                   <option value="kigaku">表示軸: ①気学方位</option>
-                  <option value="astro">表示軸: ②アストロライン</option>
-                  <option value="timeGate">表示軸: ③時間ゲート</option>
+                  <option value="astro">表示軸: ②天体の線</option>
+                  <option value="timeGate">表示軸: ③時期の補正</option>
                 </select>
 
                 {/* CSV Export Button */}
@@ -1564,7 +1560,7 @@ export default function ScorecardPanel({
                     <div className="space-y-2">
                       <div className="flex justify-between items-center">
                         <h4 className="text-[11px] font-mono text-stone-500 uppercase tracking-wider flex items-center gap-1.5">
-                          <span>📅 直近30日の時空吉凶シミュレーション</span>
+                          <span>📅 直近 30 日の吉凶</span>
                         </h4>
                         <span className="text-[9px] text-stone-600 font-mono">
                           動ける日（凶でない日）: {detail.luckyDays}日
@@ -1614,7 +1610,7 @@ export default function ScorecardPanel({
                     {/* Top 5 Wealth Municipalities */}
                     <div className="space-y-3">
                       <h4 className="text-[11px] font-mono text-stone-500 uppercase tracking-wider flex items-center gap-1.5 border-b border-stone-200 pb-1.5">
-                        <span>🏢 富裕度市区町村 TOP 5</span>
+                        <span>🏢 平均所得の高い市区町村 5 件</span>
                       </h4>
                       {detail.topAreas.length > 0 ? (
                         <div className="space-y-2">
@@ -1663,7 +1659,7 @@ export default function ScorecardPanel({
                     {/* Top 5 Rentals */}
                     <div className="space-y-3">
                       <h4 className="text-[11px] font-mono text-stone-500 uppercase tracking-wider flex items-center gap-1.5 border-b border-stone-200 pb-1.5">
-                        <span>🏠 推奨賃貸物件（掘り出し） TOP 5</span>
+                        <span>🏠 相場より安い賃貸 5 件</span>
                       </h4>
                       {detail.topRentals.length > 0 ? (
                         <div className="space-y-2">
