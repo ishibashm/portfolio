@@ -73,7 +73,10 @@ const VARIANT_STYLES = {
     picked: "flex items-center gap-1.5 text-[10px] text-stone-500",
     pinSize: 10,
     help: "text-xs text-stone-600 leading-relaxed",
-    coordsToggle: "self-start text-[9px] text-stone-600 hover:text-stone-800",
+    /* 押し所は 24px 角より小さくしない（WCAG 2.2 の Target Size
+       (Minimum)）。実測 102 × 14px。字は変えず高さだけ確保する */
+    coordsToggle:
+      "inline-flex min-h-[24px] items-center self-start text-[9px] text-stone-600 hover:text-stone-800",
     coordInput:
       "px-2 py-1.5 bg-white border border-stone-200 rounded-lg text-[11px] font-mono text-stone-700",
   },
@@ -91,7 +94,8 @@ const VARIANT_STYLES = {
     picked: "flex items-center gap-1.5 text-xs text-slate-500",
     pinSize: 12,
     help: "text-xs text-slate-500 leading-relaxed",
-    coordsToggle: "self-start text-xs text-slate-400 hover:text-slate-600",
+    coordsToggle:
+      "inline-flex min-h-[24px] items-center self-start text-xs text-slate-400 hover:text-slate-600",
     coordInput:
       "px-2 py-2 bg-white border border-slate-300 rounded-lg text-sm font-mono text-slate-700",
   },

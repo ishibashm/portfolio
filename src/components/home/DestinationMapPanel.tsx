@@ -263,7 +263,7 @@ export default function DestinationMapPanel({
                   */
                   setActionIntent(e.target.value as ActionIntent)
                 }
-                className="bg-transparent text-emerald-700 font-bold text-[10px] outline-none cursor-pointer text-right"
+                className="min-h-[24px] bg-transparent text-emerald-700 font-bold text-[10px] outline-none cursor-pointer text-right"
               >
                 <option value="DEFAULT">通常の外出</option>
                 <option value="REST">回復・静養</option>
@@ -285,7 +285,7 @@ export default function DestinationMapPanel({
                 <button
                   onClick={handleAutoSearch}
                   disabled={isAutoSearching}
-                  className="text-[9px] text-emerald-700 border border-emerald-200 bg-emerald-50 px-2 py-1 rounded-xl hover:bg-emerald-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed uppercase tracking-widest shadow-[0_0_10px_rgba(16,185,129,0.1)]"
+                  className="inline-flex min-h-[24px] items-center justify-center text-[9px] text-emerald-700 border border-emerald-200 bg-emerald-50 px-2 py-1 rounded-xl hover:bg-emerald-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed uppercase tracking-widest shadow-[0_0_10px_rgba(16,185,129,0.1)]"
                 >
                   {isAutoSearching ? "検索中..." : "自動検索"}
                 </button>
@@ -307,7 +307,7 @@ export default function DestinationMapPanel({
                     );
                     setTimeOffsetDays(diffDays);
                   }}
-                  className="w-24 bg-transparent text-emerald-700 font-bold text-[10px] outline-none cursor-pointer text-right [color-scheme:dark]"
+                  className="min-h-[24px] w-24 bg-transparent text-emerald-700 font-bold text-[10px] outline-none cursor-pointer text-right [color-scheme:dark]"
                 />
               </div>
             </div>
@@ -316,7 +316,7 @@ export default function DestinationMapPanel({
               <div className="flex items-center gap-1 bg-white/70 p-0.5 border border-stone-200 rounded-xl">
                 <button
                   onClick={() => setIsPlaying(!isPlaying)}
-                  className={`text-[10px] font-mono px-2 py-0.5 rounded-xl transition-colors border ${isPlaying ? "bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-50 shadow-[0_0_8px_rgba(245,158,11,0.2)]" : "bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-50 shadow-[0_0_8px_rgba(59,130,246,0.2)]"}`}
+                  className={`text-[10px] inline-flex min-h-[24px] items-center justify-center font-mono px-2 py-0.5 rounded-xl transition-colors border ${isPlaying ? "bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-50 shadow-[0_0_8px_rgba(245,158,11,0.2)]" : "bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-50 shadow-[0_0_8px_rgba(59,130,246,0.2)]"}`}
                 >
                   {isPlaying ? "⏸ 一時停止" : "▶ 再生"}
                 </button>
@@ -325,7 +325,7 @@ export default function DestinationMapPanel({
                   value={playSpeedDays}
                   onChange={(e) => setPlaySpeedDays(Number(e.target.value))}
                   disabled={isPlaying}
-                  className="bg-transparent text-stone-600 text-[10px] font-mono outline-none cursor-pointer"
+                  className="min-h-[24px] bg-transparent text-stone-600 text-[10px] font-mono outline-none cursor-pointer"
                 >
                   <option value={1}>1 日ずつ</option>
                   <option value={7}>1 週ずつ</option>
@@ -336,7 +336,7 @@ export default function DestinationMapPanel({
               <div className="flex justify-end gap-1 flex-wrap items-center">
                 <button
                   onClick={() => setTimeOffsetDays((prev) => prev - 1)}
-                  className="text-[10px] font-mono px-2 py-0.5 rounded-xl transition-colors border bg-white/80 text-stone-600 border-stone-200 hover:border-emerald-200 hover:text-emerald-600"
+                  className="text-[10px] inline-flex min-h-[24px] items-center justify-center font-mono px-2 py-0.5 rounded-xl transition-colors border bg-white/80 text-stone-600 border-stone-200 hover:border-emerald-200 hover:text-emerald-600"
                   title="前の日"
                   aria-label="前の日"
                 >
@@ -344,7 +344,7 @@ export default function DestinationMapPanel({
                 </button>
                 <button
                   onClick={() => setTimeOffsetDays((prev) => prev + 1)}
-                  className="text-[10px] font-mono px-2 py-0.5 rounded-xl transition-colors border bg-white/80 text-stone-600 border-stone-200 hover:border-emerald-200 hover:text-emerald-600"
+                  className="text-[10px] inline-flex min-h-[24px] items-center justify-center font-mono px-2 py-0.5 rounded-xl transition-colors border bg-white/80 text-stone-600 border-stone-200 hover:border-emerald-200 hover:text-emerald-600"
                   title="次の日"
                   aria-label="次の日"
                 >
@@ -353,31 +353,31 @@ export default function DestinationMapPanel({
                 <div className="w-px h-3 bg-stone-100 my-auto mx-0.5"></div>
                 <button
                   onClick={() => setTimeOffsetDays(0)}
-                  className={`text-[10px] font-mono px-2 py-0.5 rounded-xl transition-colors border ${timeOffsetDays === 0 ? "bg-emerald-50 text-emerald-700 border-emerald-200" : "bg-white/80 text-stone-600 border-stone-200 hover:border-emerald-200 hover:text-emerald-600"}`}
+                  className={`text-[10px] inline-flex min-h-[24px] items-center justify-center font-mono px-2 py-0.5 rounded-xl transition-colors border ${timeOffsetDays === 0 ? "bg-emerald-50 text-emerald-700 border-emerald-200" : "bg-white/80 text-stone-600 border-stone-200 hover:border-emerald-200 hover:text-emerald-600"}`}
                 >
                   今日
                 </button>
                 <button
                   onClick={() => setTimeOffsetDays(30)}
-                  className={`text-[10px] font-mono px-2 py-0.5 rounded-xl transition-colors border ${timeOffsetDays === 30 ? "bg-emerald-50 text-emerald-700 border-emerald-200" : "bg-white/80 text-stone-600 border-stone-200 hover:border-emerald-200 hover:text-emerald-600"}`}
+                  className={`text-[10px] inline-flex min-h-[24px] items-center justify-center font-mono px-2 py-0.5 rounded-xl transition-colors border ${timeOffsetDays === 30 ? "bg-emerald-50 text-emerald-700 border-emerald-200" : "bg-white/80 text-stone-600 border-stone-200 hover:border-emerald-200 hover:text-emerald-600"}`}
                 >
                   +30D
                 </button>
                 <button
                   onClick={() => setTimeOffsetDays(90)}
-                  className={`text-[10px] font-mono px-2 py-0.5 rounded-xl transition-colors border ${timeOffsetDays === 90 ? "bg-emerald-50 text-emerald-700 border-emerald-200" : "bg-white/80 text-stone-600 border-stone-200 hover:border-emerald-200 hover:text-emerald-600"}`}
+                  className={`text-[10px] inline-flex min-h-[24px] items-center justify-center font-mono px-2 py-0.5 rounded-xl transition-colors border ${timeOffsetDays === 90 ? "bg-emerald-50 text-emerald-700 border-emerald-200" : "bg-white/80 text-stone-600 border-stone-200 hover:border-emerald-200 hover:text-emerald-600"}`}
                 >
                   +90D
                 </button>
                 <button
                   onClick={() => setTimeOffsetDays(180)}
-                  className={`text-[10px] font-mono px-2 py-0.5 rounded-xl transition-colors border ${timeOffsetDays === 180 ? "bg-emerald-50 text-emerald-700 border-emerald-200" : "bg-white/80 text-stone-600 border-stone-200 hover:border-emerald-200 hover:text-emerald-600"}`}
+                  className={`text-[10px] inline-flex min-h-[24px] items-center justify-center font-mono px-2 py-0.5 rounded-xl transition-colors border ${timeOffsetDays === 180 ? "bg-emerald-50 text-emerald-700 border-emerald-200" : "bg-white/80 text-stone-600 border-stone-200 hover:border-emerald-200 hover:text-emerald-600"}`}
                 >
                   +180D
                 </button>
                 <button
                   onClick={() => setTimeOffsetDays(365)}
-                  className={`text-[10px] font-mono px-2 py-0.5 rounded-xl transition-colors border ${timeOffsetDays === 365 ? "bg-emerald-50 text-emerald-700 border-emerald-200" : "bg-white/80 text-stone-600 border-stone-200 hover:border-emerald-200 hover:text-emerald-600"}`}
+                  className={`text-[10px] inline-flex min-h-[24px] items-center justify-center font-mono px-2 py-0.5 rounded-xl transition-colors border ${timeOffsetDays === 365 ? "bg-emerald-50 text-emerald-700 border-emerald-200" : "bg-white/80 text-stone-600 border-stone-200 hover:border-emerald-200 hover:text-emerald-600"}`}
                 >
                   +1Y
                 </button>
@@ -392,7 +392,7 @@ export default function DestinationMapPanel({
                 </label>
                 <button
                   onClick={() => setShowMapPicker(!showMapPicker)}
-                  className={`text-[9px] px-1.5 py-0.5 rounded border transition-colors ${showMapPicker ? "bg-emerald-500/20 text-emerald-700 border-emerald-200" : "bg-stone-100 text-stone-600 border-stone-300 hover:bg-stone-200"}`}
+                  className={`inline-flex min-h-[24px] items-center justify-center text-[9px] px-1.5 py-0.5 rounded border transition-colors ${showMapPicker ? "bg-emerald-500/20 text-emerald-700 border-emerald-200" : "bg-stone-100 text-stone-600 border-stone-300 hover:bg-stone-200"}`}
                 >
                   [ 地図検索 ]
                 </button>
@@ -1398,7 +1398,7 @@ export default function DestinationMapPanel({
             </span>
             <button
               onClick={() => setDirectionFilterMode("composite")}
-              className={`px-2 py-0.5 text-[9px] font-mono rounded-xs transition-all border cursor-pointer ${
+              className={`inline-flex min-h-[24px] items-center justify-center px-2 py-0.5 text-[9px] font-mono rounded-xs transition-all border cursor-pointer ${
                 directionFilterMode === "composite"
                   ? "bg-emerald-50 text-emerald-700 border-emerald-200 shadow-[0_0_5px_rgba(16,185,129,0.2)]"
                   : "bg-white/80 text-stone-600 border-transparent hover:border-stone-300"
@@ -1408,7 +1408,7 @@ export default function DestinationMapPanel({
             </button>
             <button
               onClick={() => setDirectionFilterMode("kigaku_env")}
-              className={`px-2 py-0.5 text-[9px] font-mono rounded-xs transition-all border cursor-pointer ${
+              className={`inline-flex min-h-[24px] items-center justify-center px-2 py-0.5 text-[9px] font-mono rounded-xs transition-all border cursor-pointer ${
                 directionFilterMode === "kigaku_env"
                   ? "bg-purple-50 text-purple-700 border-purple-200 shadow-[0_0_5px_rgba(168,85,247,0.2)]"
                   : "bg-white/80 text-stone-600 border-transparent hover:border-stone-300"
@@ -1418,7 +1418,7 @@ export default function DestinationMapPanel({
             </button>
             <button
               onClick={() => setDirectionFilterMode("kigaku_bazi")}
-              className={`px-2 py-0.5 text-[9px] font-mono rounded-xs transition-all border cursor-pointer ${
+              className={`inline-flex min-h-[24px] items-center justify-center px-2 py-0.5 text-[9px] font-mono rounded-xs transition-all border cursor-pointer ${
                 directionFilterMode === "kigaku_bazi"
                   ? "bg-indigo-50 text-indigo-600 border-indigo-200 shadow-[0_0_5px_rgba(99,102,241,0.2)]"
                   : "bg-white/80 text-stone-600 border-transparent hover:border-stone-300"
@@ -1428,7 +1428,7 @@ export default function DestinationMapPanel({
             </button>
             <button
               onClick={() => setDirectionFilterMode("bazi_env")}
-              className={`px-2 py-0.5 text-[9px] font-mono rounded-xs transition-all border cursor-pointer ${
+              className={`inline-flex min-h-[24px] items-center justify-center px-2 py-0.5 text-[9px] font-mono rounded-xs transition-all border cursor-pointer ${
                 directionFilterMode === "bazi_env"
                   ? "bg-amber-50 text-amber-700 border-amber-200 shadow-[0_0_5px_rgba(245,158,11,0.2)]"
                   : "bg-white/80 text-stone-600 border-transparent hover:border-stone-300"
@@ -1438,7 +1438,7 @@ export default function DestinationMapPanel({
             </button>
             <button
               onClick={() => setDirectionFilterMode("personal_kigaku")}
-              className={`px-2 py-0.5 text-[9px] font-mono rounded-xs transition-all border cursor-pointer ${
+              className={`inline-flex min-h-[24px] items-center justify-center px-2 py-0.5 text-[9px] font-mono rounded-xs transition-all border cursor-pointer ${
                 directionFilterMode === "personal_kigaku"
                   ? "bg-purple-50 text-purple-700 border-purple-200 shadow-[0_0_5px_rgba(168,85,247,0.2)]"
                   : "bg-white/80 text-stone-600 border-transparent hover:border-stone-300"
@@ -1448,7 +1448,7 @@ export default function DestinationMapPanel({
             </button>
             <button
               onClick={() => setDirectionFilterMode("personal_bazi")}
-              className={`px-2 py-0.5 text-[9px] font-mono rounded-xs transition-all border cursor-pointer ${
+              className={`inline-flex min-h-[24px] items-center justify-center px-2 py-0.5 text-[9px] font-mono rounded-xs transition-all border cursor-pointer ${
                 directionFilterMode === "personal_bazi"
                   ? "bg-amber-100 text-amber-800 border-amber-300 shadow-[0_0_5px_rgba(180,83,9,0.2)]"
                   : "bg-white/80 text-stone-600 border-transparent hover:border-stone-300"
@@ -1458,7 +1458,7 @@ export default function DestinationMapPanel({
             </button>
             <button
               onClick={() => setDirectionFilterMode("environmental")}
-              className={`px-2 py-0.5 text-[9px] font-mono rounded-xs transition-all border cursor-pointer ${
+              className={`inline-flex min-h-[24px] items-center justify-center px-2 py-0.5 text-[9px] font-mono rounded-xs transition-all border cursor-pointer ${
                 directionFilterMode === "environmental"
                   ? "bg-rose-50 text-rose-700 border-rose-200 shadow-[0_0_5px_rgba(244,63,94,0.2)]"
                   : "bg-white/80 text-stone-600 border-transparent hover:border-stone-300"
