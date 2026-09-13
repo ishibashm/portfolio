@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { toLogMessage } from "@/lib/errorMessage";
+import { ESTAT_API_CREDIT } from "@/lib/estatCredit";
 import { AREAS } from "@/lib/areaContent";
 import { mergeWithListed } from "@/lib/municipalityCoords";
 import {
@@ -24,10 +25,6 @@ import {
  * 市区町村の数（1,900 弱）しか無いので、矩形で絞らない。
  */
 export const dynamic = "force-dynamic";
-
-/** 政府統計の総合窓口の API 機能の利用規約が求めるクレジット。文言は変えない。 */
-export const ESTAT_API_CREDIT =
-  "このサービスは、政府統計総合窓口(e-Stat)のAPI機能を使用していますが、サービスの内容は国によって保証されたものではありません。";
 
 /**
  * 全国の市区町村の代表点（掲載の有無と無関係）。1 度だけ組んで使い回す。
