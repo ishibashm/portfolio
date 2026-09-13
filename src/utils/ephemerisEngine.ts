@@ -115,6 +115,7 @@ import {
 } from "astronomy-engine";
 import { Solar } from "lunar-javascript";
 import { calculateSolarTime, getZonedDateTimeFields } from "./solarTime";
+import { jstNoonOf } from "./boardInstant";
 import { directionFromBearing } from "./directionGeo";
 import { worstNoise } from "./noiseSeverity";
 
@@ -365,19 +366,7 @@ export function getYearStar(date: Date): StarFrequency {
  * 星の値そのものは lunar-javascript が正しいので、境界の判定だけを
  * 太陽黄経に合わせる。節月の中ほどの日を渡せば取り違えようがない。
  */
-/**
- * その日時の**日本時間での正午**。
- *
- * 「その日の盤」を 1 つに決めるための代表時刻。判定は日本時間の日で
- * 切る（`lib/boardInstant` の `directionBoardInstant` も同じ考え方で
- * 正午を使う）。正午にするのは、日の端に寄せると数分のずれで前日・
- * 翌日へ倒れるため。
- */
-function jstNoonOf(date: Date): Date {
-  const f = getZonedDateTimeFields(date, 9);
-  /* 12:00 JST = 03:00 UTC */
-  return new Date(Date.UTC(f.year, f.month - 1, f.day, 3, 0, 0));
-}
+/* 日本時間の正午（jstNoonOf）は utils/boardInstant に 1 つだけ置く。 */
 
 /**
  * 暦（lunar-javascript）を**日本時間で**引く。

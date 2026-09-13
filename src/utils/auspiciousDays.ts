@@ -25,7 +25,7 @@ import {
 } from "@/utils/ephemerisEngine";
 import { getRokuyo, getLuckyDays } from "@/utils/lunar";
 import { DIRECTION_LABELS as GEO_DIRECTION_LABELS } from "@/utils/directionGeo";
-import { directionBoardInstant, forecastAnchorMs } from "@/utils/boardInstant";
+import { directionBoardInstant, jstNoonOf } from "@/utils/boardInstant";
 import { getZonedDateTimeFields } from "@/utils/solarTime";
 import { isFatalNoise, isNoise } from "@/utils/noiseSeverity";
 import { TIER_ORDER, TIER_LABELS, type DayTier } from "@/utils/dayTier";
@@ -372,11 +372,6 @@ export function findYearBoardWindow(
  * 送るので表には出ていないが、`from` を省いたときのサーバ既定は
  * `new Date()` なので、日本時間の 0〜9 時に該当する。
  */
-
-/** その Date が指す「日本時間の日」の正午。盤の代表点そのもの。 */
-function jstNoonOf(d: Date): Date {
-  return new Date(forecastAnchorMs(d));
-}
 
 /** 日本時間基準の YYYY-MM-DD。 */
 function formatDate(d: Date): string {
