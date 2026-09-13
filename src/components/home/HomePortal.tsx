@@ -72,7 +72,15 @@ export interface HomePortalProps {
   pressure: { current: number; drop: number } | null;
   declination: number | null;
   /** 生年月日が未入力なら、個人の判定は出せない。 */
-  hasBirthDate: boolean;
+  /**
+   * **いま出している判定が見本か。**
+   *
+   * 生年月日が利用者のものでないとき（初期値のまま）に真。以前はここが
+   * `hasBirthDate` で、偽なら**値を出さない**作りだった。2026-09-13 に
+   * 「見本と明記して出す」へ方針を変えたので、値は常に出し、誰の例かは
+   * 頁の上の帯（`SampleProfileNotice`）が書く。
+   */
+  profileIsSample: boolean;
 }
 
 /** 判定の良し悪しを並べ替えるための点。lib/verdictRating が正。 */
@@ -130,7 +138,7 @@ export default function HomePortal({
   kpIndex,
   pressure,
   declination,
-  hasBirthDate,
+  profileIsSample,
 }: HomePortalProps) {
   /** 良い順に並べた 8 方位。「どこへ動けるか」を先に答える。 */
   const rankedDirections = React.useMemo(() => {
@@ -212,7 +220,7 @@ export default function HomePortal({
       <div className="w-full bg-white border border-stone-200 rounded-xl px-4 py-3 flex flex-wrap items-center gap-x-6 gap-y-2 shadow-sm">
         <div className="flex items-baseline gap-2">
           <span className="text-[10px] text-stone-600">いま良い方位</span>
-          {hasBirthDate && best?.rating ? (
+          {best?.rating ? (
             <>
               <strong className="text-xl font-bold text-stone-700">
                 {best.ja}
@@ -223,7 +231,7 @@ export default function HomePortal({
             </>
           ) : (
             <span className="text-xs text-stone-600">
-              生年月日を入れると出ます
+              いま吉方位はありません
             </span>
           )}
         </div>
@@ -265,12 +273,14 @@ export default function HomePortal({
       {/* 枠を多段に。画面が広いほど列を増やす（CLAUDE.md 3 節） */}
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
         <Card
-          title="今日の 8 方位"
+          /* 見本のときは札にも書く。頁の上の帯だけだと、長い頁を
+             下まで送った人には見えない */
+          title={`今日の 8 方位${profileIsSample ? "（見本）" : ""}`}
           accent="bg-emerald-500"
           onDetail={() => onOpenTab("destination")}
           detailLabel="地図で見る"
         >
-          {hasBirthDate ? (
+          {rankedDirections.length > 0 ? (
             <ul className="grid grid-cols-2 gap-x-3 gap-y-1">
               {rankedDirections.map((d) => (
                 <li
@@ -290,7 +300,7 @@ export default function HomePortal({
             </ul>
           ) : (
             <p className="text-xs text-stone-600 leading-relaxed">
-              生年月日を入れると、あなたの本命星から 8 方位の吉凶が出ます。
+              8 方位を計算中です。
             </p>
           )}
         </Card>
@@ -340,7 +350,7 @@ export default function HomePortal({
         </Card>
 
         <Card
-          title="30 日の窓"
+          title={`30 日の窓${profileIsSample ? "（見本）" : ""}`}
           accent="bg-amber-500"
           onDetail={() => onOpenTab("scorecard")}
         >
@@ -365,9 +375,7 @@ export default function HomePortal({
             </ul>
           ) : (
             <p className="text-xs text-stone-600 leading-relaxed">
-              {hasBirthDate
-                ? "この 30 日に動ける方位がありません。期間を広げて探してください。"
-                : "生年月日を入れると、30 日先までの窓が出ます。"}
+              この 30 日に動ける方位がありません。期間を広げて探してください。
             </p>
           )}
         </Card>
