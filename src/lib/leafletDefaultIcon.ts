@@ -1,4 +1,5 @@
 import L from "leaflet";
+import type { StaticImageData } from "next/image";
 import markerIcon from "leaflet/dist/images/marker-icon.png";
 import markerIcon2x from "leaflet/dist/images/marker-icon-2x.png";
 import markerShadow from "leaflet/dist/images/marker-shadow.png";
@@ -69,8 +70,29 @@ function clearLeafletDefaultIconUrl(): void {
 export function applyLeafletDefaultIcon(): void {
   clearLeafletDefaultIconUrl();
   L.Icon.Default.mergeOptions({
-    iconRetinaUrl: markerIcon2x.src,
-    iconUrl: markerIcon.src,
-    shadowUrl: markerShadow.src,
+    iconRetinaUrl: assetUrl(markerIcon2x),
+    iconUrl: assetUrl(markerIcon),
+    shadowUrl: assetUrl(markerShadow),
   });
+}
+
+/**
+ * import した画像の URL を取り出す。
+ *
+ * **バンドラで形が違う。**webpack（`next build --webpack`。本番）は
+ * `{ src, width, height }` を返すが、Turbopack（`next dev` の既定）は
+ * node_modules の PNG を「静的な資産」として扱い、**URL の文字列を
+ * そのまま**返す。`.src` だけを読むと Turbopack では undefined になり、
+ * `mergeOptions({ iconUrl: undefined })` の直後にマーカーを置いた時点で
+ * Leaflet が `iconUrl not set in Icon options` を投げる。
+ *
+ * 実際に `/relocation/dashboard` の「目的地と環境」タブが、開発サーバで
+ * これに当たって**頁ごと error boundary に落ちていた**（2026-09-13 の
+ * 総点検で Playwright に開かせて発見。目的地の既定マーカーと現在地の
+ * マーカーが既定アイコンを使う）。本番は webpack なので出ていないが、
+ * ビルドを Turbopack に切り替えた瞬間に同じ落ち方をする。どちらの形でも
+ * 通るようにしておく。
+ */
+export function assetUrl(asset: StaticImageData | string): string {
+  return typeof asset === "string" ? asset : asset.src;
 }
