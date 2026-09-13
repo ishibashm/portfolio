@@ -426,7 +426,7 @@ export default function ScorecardPanel({
             <div className="w-full bg-stone-50 border border-stone-200 rounded-xl p-12 flex flex-col items-center justify-center gap-3">
               <Loader2 className="w-8 h-8 text-emerald-500 animate-spin" />
               <span className="text-[10px] font-mono text-stone-600 tracking-[0.2em] uppercase">
-                Loading Relocation Scenarios...
+                読み込んでいます…
               </span>
             </div>
           ) : (

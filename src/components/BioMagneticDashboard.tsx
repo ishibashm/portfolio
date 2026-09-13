@@ -161,7 +161,7 @@ export function BioMagneticDashboard({
               </div>
             </div>
             <div className="mt-2 text-[9px] text-stone-600 text-right">
-              0-9 PLANETARY SCALE
+              Kp 指数（0〜9）
             </div>
           </div>
 
@@ -174,7 +174,7 @@ export function BioMagneticDashboard({
               <div
                 className={`text-2xl font-bold tracking-tight text-center ${xrayData.type === "M" || xrayData.type === "X" ? "text-red-500 animate-pulse" : "text-stone-600"}`}
               >
-                {xrayFlux || "A-CLASS"}
+                {xrayFlux || "--"}
               </div>
               <div className="w-full relative h-1.5 bg-white rounded-sm overflow-hidden">
                 <div
@@ -257,8 +257,11 @@ export function BioMagneticDashboard({
                   地磁気（WMM）
                 </span>
               </div>
+              {/* 以前は「V.2020-2025」と版の期間を書いていたが、geomagnetism
+                  0.2.0 は wmm-2025 を持ち、2026 年は WMM2025 で計算している。
+                  年を書くと次の版でまた嘘になるので、出典だけにする。 */}
               <span className="text-[9px] text-stone-600 px-1 py-0.5 bg-white rounded-sm">
-                V.2020-2025
+                出典: NOAA WMM
               </span>
             </div>
 
@@ -269,16 +272,16 @@ export function BioMagneticDashboard({
 
               <div className="bg-white/80 p-2 flex flex-col items-center justify-center border-r border-stone-200 last:border-0">
                 <div className="text-[9px] text-emerald-600/70 mb-1 uppercase tracking-widest">
-                  Intensity [F]
+                  全磁力 F
                 </div>
                 <div className="text-sm text-stone-700 font-mono font-bold tracking-tight">
-                  {magneticF ? `${magneticF.toFixed(0)}` : "CALC"}
+                  {magneticF ? `${magneticF.toFixed(0)}` : "計算中"}
                   <span className="text-[10px] text-stone-600 ml-0.5">nT</span>
                 </div>
               </div>
               <div className="bg-white/80 p-2 flex flex-col items-center justify-center border-r border-stone-200 last:border-0">
                 <div className="text-[9px] text-emerald-600/70 mb-1 uppercase tracking-widest">
-                  Declination [D]
+                  偏角 D
                 </div>
                 <div className="text-sm text-stone-700 font-mono font-bold tracking-tight">
                   {magneticD ? `${magneticD.toFixed(2)}` : "--"}
@@ -287,7 +290,7 @@ export function BioMagneticDashboard({
               </div>
               <div className="bg-white/80 p-2 flex flex-col items-center justify-center border-r border-stone-200 last:border-0">
                 <div className="text-[9px] text-emerald-600/70 mb-1 uppercase tracking-widest">
-                  Inclination [I]
+                  伏角 I
                 </div>
                 <div className="text-sm text-stone-700 font-mono font-bold tracking-tight">
                   {magneticI ? `${magneticI.toFixed(2)}` : "--"}
