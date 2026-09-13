@@ -38,8 +38,6 @@ interface PersonalProfileProps {
   onGetGPS?: () => void;
   voidZodiacOverride?: string;
   setVoidZodiacOverride?: (v: string) => void;
-  geminiKey?: string;
-  setGeminiKey?: (v: string) => void;
   baselineHrvMean?: number;
   setBaselineHrvMean?: (v: number) => void;
   baselineHrvStd?: number;
@@ -78,8 +76,6 @@ export function PersonalProfileConfig({
   onGetGPS,
   voidZodiacOverride,
   setVoidZodiacOverride,
-  geminiKey,
-  setGeminiKey,
   baselineHrvMean,
   setBaselineHrvMean,
   baselineHrvStd,
@@ -267,12 +263,12 @@ export function PersonalProfileConfig({
                 className="bg-white border border-stone-300 text-stone-600 px-2 py-1.5 rounded-xl outline-none focus:border-rose-400 transition-colors w-full uppercase"
               >
                 <option value="">生年月日から自動計算</option>
-                <option value="戌亥">戌亥 (Inui)</option>
-                <option value="申酉">申酉 (Sarutori)</option>
-                <option value="午未">午未 (Umapi)</option>
-                <option value="辰巳">辰巳 (Tatsumi)</option>
-                <option value="寅卯">寅卯 (Torau)</option>
-                <option value="子丑">子丑 (Neushi)</option>
+                <option value="戌亥">戌亥</option>
+                <option value="申酉">申酉</option>
+                <option value="午未">午未</option>
+                <option value="辰巳">辰巳</option>
+                <option value="寅卯">寅卯</option>
+                <option value="子丑">子丑</option>
               </select>
               <span className="text-[9px] text-stone-600 mt-0.5 text-justify">
                 流派や自覚が自動算出と違うときだけ使います。通常は自動計算のままで構いません。
@@ -293,27 +289,12 @@ export function PersonalProfileConfig({
             </span>
           </div>
 
-          {showAdvanced && (
-            <div className="flex flex-col gap-1 mt-2">
-              <label className="text-[10px] text-stone-600 uppercase flex items-center justify-between">
-                <span>Gemini API キー（AI 相談用・任意）</span>
-                <span className="text-[9px] text-stone-600">
-                  ※ 暗号化されてDBに保存されます
-                </span>
-              </label>
-              <input
-                type="password"
-                value={geminiKey || ""}
-                onChange={(e) => setGeminiKey?.(e.target.value)}
-                placeholder="AI_..."
-                className="bg-white border border-stone-300 text-stone-600 px-2 py-1.5 rounded-xl outline-none focus:border-rose-400 transition-colors w-full font-mono text-[10px]"
-              />
-              <span className="text-[9px] text-stone-600 mt-0.5 text-justify">
-                AI
-                への相談機能を使うときだけ必要です。空のままで他の機能はすべて動きます。
-              </span>
-            </div>
-          )}
+          {/*
+            ここに「Gemini API キー（AI 相談用）」の欄があったが消した。
+            入力しても送っていたのは「キーがあるか」の真偽値だけで、
+            キー本体はどこにも保存されず、AI に相談する機能もサイトに無い
+            （総点検 2026-09-12）。無い機能の入力欄を置かない。
+          */}
         </div>
 
         {/* Current Anchor (Base) */}
