@@ -1449,9 +1449,7 @@ export function ConsultPanel({
                 }
                 className="text-[9px] font-mono text-stone-500 hover:text-stone-900 bg-stone-50 px-2 py-1 border border-stone-300 hover:border-zinc-500 transition-colors uppercase tracking-widest"
               >
-                {showAstrophysicalLogic
-                  ? "[-] CLOSE TERMINAL"
-                  : "[+] EXAMINE LOGIC"}
+                {showAstrophysicalLogic ? "計算式を閉じる" : "計算式を見る"}
               </button>
             </div>
 
@@ -1460,7 +1458,7 @@ export function ConsultPanel({
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <div className="flex flex-col gap-2">
                     <span className="text-[9px] text-purple-600 font-bold border-l-2 border-purple-500 pl-2 bg-purple-50 py-0.5">
-                      YEAR: JUPITER RESONANCE
+                      年盤: 木星の黄経
                     </span>
                     <p className="text-[10px] text-stone-600 leading-relaxed">
                       木星の公転周期（約11.86年）を黄経30度ごとの12区画に分け、区画の番号から年盤の星（1〜9）を決めます。木星の黄経が区画の境を越えた瞬間に年盤が切り替わります。太陽黄経による位相反転（陽遁・陰遁）を適用。
@@ -1473,13 +1471,13 @@ export function ConsultPanel({
                         <InlineMath
                           math={`L_j = ${env?.raw?.jupiterLon?.toFixed(2)}^\\circ`}
                         />{" "}
-                        (Jupiter Lon)
+                        （木星の黄経）
                       </div>
                     </div>
                   </div>
                   <div className="flex flex-col gap-2">
                     <span className="text-[9px] text-amber-600 font-bold border-l-2 border-amber-500 pl-2 bg-amber-50 py-0.5">
-                      MONTH: TIDAL INTERFERENCE
+                      月盤: 太陽黄経と月相
                     </span>
                     <p className="text-[10px] text-stone-600 leading-relaxed">
                       月盤の星を、太陽黄経と月相の組み合わせから決めています。
@@ -1492,13 +1490,13 @@ export function ConsultPanel({
                         <InlineMath
                           math={`\\Delta L = ${(((env?.raw?.moonLon ?? 0) - (env?.raw?.sunLon ?? 0) + 360) % 360).toFixed(2)}^\\circ`}
                         />{" "}
-                        (Phase)
+                        （月相）
                       </div>
                     </div>
                   </div>
                   <div className="flex flex-col gap-2">
                     <span className="text-[9px] text-blue-600 font-bold border-l-2 border-blue-500 pl-2 bg-blue-50 py-0.5">
-                      DAY: ROTATIONAL FLUX
+                      日盤: ユリウス日
                     </span>
                     <p className="text-[10px] text-stone-600 leading-relaxed">
                       日盤はユリウス日（JD）を基に数え、太陽黄経から求めた夏至・冬至を境に九星の巡り（陽遁/陰遁）を反転させます。
@@ -1508,7 +1506,7 @@ export function ConsultPanel({
                         math={`S_d = \\begin{cases} 9 - (JD \\% 9) & (\\text{陰遁}) \\\\ (JD \\% 9) + 1 & (\\text{陽遁}) \\end{cases}`}
                       />
                       <div className="mt-1 text-stone-600 border-t border-stone-200 pt-1 italic">
-                        JD: Julian Day Baseline
+                        JD はユリウス日
                       </div>
                     </div>
                   </div>

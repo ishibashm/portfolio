@@ -556,7 +556,7 @@ export function SolarTimeTableComponent({
                     >
                       {expandedIndex === index ? "▲" : "▼"}
                     </span>
-                    {expandedIndex === index ? "HIDE" : "EXAMINE"}
+                    {expandedIndex === index ? "閉じる" : "根拠を見る"}
                   </button>
                 </div>
               </div>
