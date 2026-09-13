@@ -817,6 +817,29 @@ model PageView {
 ///
 /// 同じ人が同じ物件を二度入れられないよう (user_id, property_id) に一意を
 /// 置く。押すたびに行が増えると、外すときにどれを消すかが決まらない。
+/// 利用者が自分で登録した地点（お気に入りの場所）。
+///
+/// 利用者の依頼（2026-09-13）で localStorage から DB へ移した。入るのは
+/// **利用者が選んだ地点の名前と座標**で、個人情報にあたる（CLAUDE.md 6 節）。
+/// 読み書きは本人だけ。DDL は prisma/sql/20260913_add_user_spots.sql。
+model UserSpot {
+  id         String   @id @default(cuid())
+  /// Supabase の user.id。favorite_properties と同じ安定キー。
+  user_id    String   @db.Uuid
+  /// 利用者が付けた名前（60 文字まで。API 側で切る）。
+  name       String
+  lat        Float
+  lon        Float
+  /// 座標を 5 桁に丸めた文字列。画面側の `sameSpot` と同じ規則で
+  /// 同じ地点を重ねないための鍵（浮動小数に一意を張らない）。
+  point_key  String
+  created_at DateTime @default(now()) @db.Timestamptz(6)
+
+  @@unique([user_id, point_key])
+  @@index([user_id, created_at])
+  @@map("user_spots")
+}
+
 model FavoriteProperty {
   id          String   @id @default(cuid())
   /// Supabase の user.id。user_configs と同じ安定キーを使う。
