@@ -1204,6 +1204,10 @@ export default function ArbitrageMapInner({
               iconAnchor: [36, 10],
             })}
             interactive={false}
+            /* 飾りの札は キーボードの巡回から外す。`interactive={false}` だけ
+               では Leaflet の `keyboard`（既定 true）が tabindex と
+               role="button" を付ける（MagneticMapInner の註と同じ）。 */
+            keyboard={false}
           />
         </React.Fragment>
       );
@@ -1904,9 +1908,11 @@ export default function ArbitrageMapInner({
           </div>
         )}
 
-        {/* Base Location Marker (Glowing Center) */}
+        {/* 起点の目印。吹き出しを持つので押せる。押せるものには名前が要る
+            （Leaflet は `alt` を画像の代替文にする。無いと読み上げが
+            「ボタン」とだけ言う）。 */}
         {zoom >= 10 && (
-          <Marker position={[baseLat, baseLon]}>
+          <Marker position={[baseLat, baseLon]} alt="現在地・スキャン起点">
             <Popup>
               <div className="font-sans text-xs text-gray-900 p-1">
                 <div className="font-bold text-indigo-600">
@@ -2164,6 +2170,7 @@ export default function ArbitrageMapInner({
                   iconAnchor: [32, 6],
                 })}
                 interactive={false}
+                keyboard={false}
               />
             </React.Fragment>
           );
@@ -2294,6 +2301,7 @@ export default function ArbitrageMapInner({
                         iconAnchor: [28, 6],
                       })}
                       interactive={false}
+                      keyboard={false}
                     />
                   </React.Fragment>
                 );
@@ -2320,6 +2328,10 @@ export default function ArbitrageMapInner({
                   <Marker
                     key={`grid-${cluster.lat.toFixed(5)}-${cluster.lon.toFixed(5)}`}
                     position={[cluster.lat, cluster.lon]}
+                    /* 押すと寄るので、キーボードの押し所として正しい。
+                       押せるものには名前が要る（Leaflet は `alt` を画像の
+                       代替文にする）。 */
+                    alt={`この一帯の ${cluster.count} 件を開く`}
                     icon={L.divIcon({
                       className: "custom-cluster-icon",
                       html: `<div class="w-9 h-9 rounded-full bg-white border-2 border-indigo-500 shadow-[0_2.5px_8px_rgba(79,70,229,0.35)] text-indigo-600 font-extrabold text-[11px] flex items-center justify-center pointer-events-auto">${cluster.count}</div>`,

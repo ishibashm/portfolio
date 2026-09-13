@@ -266,7 +266,7 @@ export function SolarTimeTableComponent({
       {/* HUD Header */}
       <div className="flex flex-wrap items-end justify-between gap-2 border-b border-stone-200 pb-2">
         <div className="flex items-center gap-2">
-          <h2 className="text-xs font-mono tracking-[0.3em] text-stone-500">
+          <h2 className="text-xs font-mono tracking-[0.3em] text-stone-600">
             刻の一覧
           </h2>
         </div>
@@ -277,7 +277,7 @@ export function SolarTimeTableComponent({
           {isAuthorized && (
             <button
               onClick={openPreview}
-              className="px-3 py-1 bg-white border border-stone-300 text-stone-600 text-[9px] uppercase tracking-widest hover:bg-stone-100 transition-colors"
+              className="inline-flex min-h-[24px] items-center justify-center px-3 py-1 bg-white border border-stone-300 text-stone-600 text-[9px] uppercase tracking-widest hover:bg-stone-100 transition-colors"
             >
               記録を確認して書き出す
             </button>
@@ -292,7 +292,7 @@ export function SolarTimeTableComponent({
         >
           <div className="flex justify-between items-center text-stone-600 tracking-widest">
             <span>年盤</span>
-            <span className={isYearVoid ? "text-red-600" : "text-purple-600"}>
+            <span className={isYearVoid ? "text-red-600" : "text-purple-700"}>
               {envData?.yearStar}
             </span>
           </div>
@@ -322,7 +322,7 @@ export function SolarTimeTableComponent({
         >
           <div className="flex justify-between items-center text-stone-600 tracking-widest">
             <span>月盤</span>
-            <span className={isMonthVoid ? "text-red-600" : "text-amber-600"}>
+            <span className={isMonthVoid ? "text-red-600" : "text-amber-700"}>
               {envData?.monthStar}
             </span>
           </div>
@@ -355,13 +355,13 @@ export function SolarTimeTableComponent({
               <span>日盤</span>
               {envData?.isYinPhase !== undefined && (
                 <span
-                  className={`text-[10px] px-1 py-0.5 border ${envData.isYinPhase ? "border-blue-200 text-blue-600 bg-blue-50" : "border-amber-200 text-amber-600 bg-amber-50"}`}
+                  className={`text-[10px] px-1 py-0.5 border ${envData.isYinPhase ? "border-blue-200 text-blue-700 bg-blue-50" : "border-amber-200 text-amber-700 bg-amber-50"}`}
                 >
                   {envData.isYinPhase ? "陰遁" : "陽遁"}
                 </span>
               )}
             </div>
-            <span className={isDayVoid ? "text-red-600" : "text-blue-600"}>
+            <span className={isDayVoid ? "text-red-600" : "text-blue-700"}>
               {envData?.dayStar}
             </span>
           </div>
@@ -400,20 +400,20 @@ export function SolarTimeTableComponent({
       {/* Actionable Directives Legend */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-2 mb-2">
         <div className="bg-emerald-50 border-l-2 border-emerald-500 p-2 md:p-3 shadow-inner">
-          <div className="text-emerald-500 font-bold text-[10px] md:text-xs mb-1 tracking-widest uppercase flex items-center gap-2">
+          <div className="text-emerald-700 font-bold text-[10px] md:text-xs mb-1 tracking-widest uppercase flex items-center gap-2">
             <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse"></span>{" "}
             動いてよい刻
           </div>
-          <p className="text-stone-500 text-xs leading-relaxed font-sans text-justify">
+          <p className="text-stone-600 text-xs leading-relaxed font-sans text-justify">
             時盤の九星の五行が、あなたの本命星と相生・比和にあたる刻です。伝統的に、決断や出発に向くとされます。
           </p>
         </div>
         <div className="bg-red-50 border-l-2 border-red-500 p-2 md:p-3 shadow-inner">
-          <div className="text-red-500 font-bold text-[10px] md:text-xs mb-1 tracking-widest uppercase flex items-center gap-2">
+          <div className="text-red-700 font-bold text-[10px] md:text-xs mb-1 tracking-widest uppercase flex items-center gap-2">
             <span className="w-1.5 h-1.5 bg-red-500 rounded-full animate-pulse"></span>{" "}
             天中殺の刻
           </div>
-          <p className="text-stone-500 text-xs leading-relaxed font-sans text-justify">
+          <p className="text-stone-600 text-xs leading-relaxed font-sans text-justify">
             あなたの天中殺（空亡）の十二支にあたる刻です。伝統的に、大きな決断や新しい始まり、長距離の移動は避けるとされます。体調や通信への影響を示すものではありません。
           </p>
         </div>
@@ -422,25 +422,25 @@ export function SolarTimeTableComponent({
       <details className="mb-4 bg-white/80 border border-stone-200 text-[9px] font-mono text-stone-600 group">
         <summary className="p-2 cursor-pointer hover:bg-white/80 list-none flex items-center justify-between uppercase tracking-widest">
           <div className="flex items-center gap-2">
-            <span className="text-blue-500 blur-[0.5px]">◆</span>{" "}
+            <span className="text-blue-700 blur-[0.5px]">◆</span>{" "}
             刻の吉凶をどう決めているか
           </div>
           <span className="group-open:rotate-180 transition-transform">▼</span>
         </summary>
         <div className="p-3 border-t border-stone-200 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3 bg-white/70 text-[10px] leading-relaxed font-sans">
           <div className="p-2 border border-purple-200 rounded-xl">
-            <strong className="text-purple-600 block mb-1 font-mono text-[9px]">
+            <strong className="text-purple-700 block mb-1 font-mono text-[9px]">
               ◆ 1. 陰陽五行・四柱推命
             </strong>
-            <p className="text-stone-500 text-xs text-justify">
+            <p className="text-stone-600 text-xs text-justify">
               「木・火・土・金・水」の五行に分け、互いに生み出す「相生」、打ち消し合う「相剋」という関係の決まりで計算します。干支暦（四柱推命）の組み合わせを併せて見ます。エネルギーを測っているのではなく、伝統的に決まっている規則をそのまま計算に写したものです。
             </p>
           </div>
           <div className="p-2 border border-blue-200 rounded-xl">
-            <strong className="text-blue-600 block mb-1 font-mono text-[9px]">
+            <strong className="text-blue-700 block mb-1 font-mono text-[9px]">
               ◆ 2. 刻の切り方
             </strong>
-            <p className="text-stone-500 text-xs text-justify">
+            <p className="text-stone-600 text-xs text-justify">
               2
               時間ごとの刻の境目は、出発地の経度と均時差を補正した真太陽時で切ります。その刻の九星（時盤）は日の十二支から出します。年盤・月盤・日盤は日本時間の暦日で決まり、ここでは動かしません。
             </p>
@@ -449,15 +449,15 @@ export function SolarTimeTableComponent({
             <strong className="text-red-600 block mb-1 font-mono text-[9px]">
               ◆ 3. 天中殺の刻
             </strong>
-            <p className="text-stone-500 text-xs text-justify">
+            <p className="text-stone-600 text-xs text-justify">
               天中殺（空亡）は、四柱推命で干支の組み合わせが欠ける期間を指す考え方です。伝統的に、この期間の移動や大きな決断は避けるとされます。体調や自律神経への影響を示すものではありません。
             </p>
           </div>
           <div className="p-2 border border-emerald-200 rounded-xl">
-            <strong className="text-emerald-600 block mb-1 font-mono text-[9px]">
+            <strong className="text-emerald-700 block mb-1 font-mono text-[9px]">
               ◆ 4. 動いてよい刻（相生・比和）
             </strong>
-            <p className="text-stone-500 text-xs text-justify">
+            <p className="text-stone-600 text-xs text-justify">
               緑は、時盤の九星の五行があなたの本命星と「相生」または「比和」にあたる刻です。以前は奇門遁甲の八門も条件にしていましたが、その八門は盤を組まず刻の順に門を回すだけの仮実装だったため、判定から外しました。
             </p>
           </div>
@@ -484,7 +484,10 @@ export function SolarTimeTableComponent({
               className={`flex flex-col border ${cardClass} p-2 sm:p-3 rounded-xl relative overflow-hidden group`}
             >
               {/* Background Flavor text */}
-              <div className="absolute right-[-5%] top-[-10%] text-[60px] sm:text-[80px] font-bold text-black/20 select-none z-0 tracking-tighter mix-blend-overlay pointer-events-none">
+              <div
+                className="absolute right-[-5%] top-[-10%] text-[60px] sm:text-[80px] font-bold text-black/20 select-none z-0 tracking-tighter mix-blend-overlay pointer-events-none"
+                aria-hidden="true"
+              >
                 {item.etoKanji}
               </div>
 
@@ -510,7 +513,7 @@ export function SolarTimeTableComponent({
                   </span>
                   <div className="flex items-center gap-1">
                     <span
-                      className={`text-sm font-bold ${isVoid ? "text-red-500" : "text-stone-500"}`}
+                      className={`text-sm font-bold ${isVoid ? "text-red-700" : "text-stone-600"}`}
                     >
                       {item.etoKanji}の刻
                     </span>
@@ -539,12 +542,12 @@ export function SolarTimeTableComponent({
                 <div className="flex items-center justify-between w-full xl:w-auto gap-2 mt-2 xl:mt-0 shrink-0">
                   <div className="flex-shrink-0">
                     {isVoid && (
-                      <span className="bg-red-50 text-red-500 border border-red-500/80 px-2 py-0.5 font-bold text-[10px] tracking-widest md:animate-pulse shadow-md">
+                      <span className="bg-red-50 text-red-700 border border-red-500/80 px-2 py-0.5 font-bold text-[10px] tracking-widest md:animate-pulse shadow-md">
                         天中殺
                       </span>
                     )}
                     {!isVoid && isOptimal && (
-                      <span className="bg-emerald-50 text-emerald-600 border border-emerald-500/80 px-2 py-0.5 font-bold text-[10px] tracking-widest drop-shadow-[0_0_8px_rgba(16,185,129,0.5)]">
+                      <span className="bg-emerald-50 text-emerald-700 border border-emerald-500/80 px-2 py-0.5 font-bold text-[10px] tracking-widest drop-shadow-[0_0_8px_rgba(16,185,129,0.5)]">
                         動いてよい
                       </span>
                     )}
@@ -559,7 +562,7 @@ export function SolarTimeTableComponent({
                     className="text-[10px] text-stone-600 hover:text-blue-600 flex items-center gap-1 transition-colors uppercase tracking-widest font-bold bg-white/80 px-2 py-1 border border-stone-200 whitespace-nowrap"
                   >
                     <span
-                      className={expandedIndex === index ? "text-blue-500" : ""}
+                      className={expandedIndex === index ? "text-blue-700" : ""}
                     >
                       {expandedIndex === index ? "▲" : "▼"}
                     </span>
@@ -572,13 +575,13 @@ export function SolarTimeTableComponent({
               {isExpanded && (
                 <div className="mt-3 pt-3 border-t border-stone-200 relative z-10 flex flex-col md:flex-row gap-4 bg-white/70 p-2 rounded-xl animate-fade-in">
                   {/* Explain Phase */}
-                  <div className="flex-1 flex flex-col gap-2 text-[10px] text-stone-500 leading-relaxed">
+                  <div className="flex-1 flex flex-col gap-2 text-[10px] text-stone-600 leading-relaxed">
                     {isVoid ? (
                       <div className="bg-red-50 p-2 border-l-2 border-red-200 text-justify">
-                        <div className="font-mono text-red-500 uppercase tracking-widest mb-1 font-bold md:animate-pulse">
+                        <div className="font-mono text-red-700 uppercase tracking-widest mb-1 font-bold md:animate-pulse">
                           天中殺の刻
                         </div>
-                        <div className="text-red-400/80 leading-relaxed">
+                        <div className="text-red-700 leading-relaxed">
                           {item.japanese}
                           の刻は天中殺（空亡）にあたります。四柱推命では、この時間帯の移動・新しい行動・重要な決断は避けるとされます。物理的な測定に基づく判定ではありません。
                         </div>
@@ -587,7 +590,7 @@ export function SolarTimeTableComponent({
                       <div className="bg-white/80 p-2 border border-stone-200 flex flex-col gap-2">
                         <div>
                           <strong
-                            className={`block mb-1 ${isOptimal ? "text-emerald-600" : "text-stone-600"}`}
+                            className={`block mb-1 ${isOptimal ? "text-emerald-700" : "text-stone-600"}`}
                           >
                             五行の相性
                           </strong>
@@ -598,7 +601,7 @@ export function SolarTimeTableComponent({
 
                         {evalPhase.myElement && evalPhase.timeElement && (
                           <div className="border-t border-stone-200 pt-2 mt-1">
-                            <strong className="block mb-1 text-purple-600">
+                            <strong className="block mb-1 text-purple-700">
                               五行の内訳
                             </strong>
                             <div className="flex flex-wrap items-center gap-2 mb-1 font-mono">
@@ -625,12 +628,12 @@ export function SolarTimeTableComponent({
                             <div className="flex items-center gap-2">
                               <span className="text-stone-600">関係:</span>
                               <span
-                                className={`font-bold ${evalPhase.isFavorable ? "text-emerald-600" : "text-stone-500"}`}
+                                className={`font-bold ${evalPhase.isFavorable ? "text-emerald-700" : "text-stone-600"}`}
                               >
                                 {evalPhase.relation || "中立"}
                               </span>
                             </div>
-                            <p className="mt-1 text-xs opacity-80 text-justify">
+                            <p className="mt-1 text-xs text-justify">
                               陰陽五行説（木火土金水）に基づく、あなたの本命星といまの九星の相性です。相生（生み出す関係）や比和（同じ属性）であれば、良い組み合わせとされます。
                             </p>
                           </div>
@@ -660,7 +663,7 @@ export function SolarTimeTableComponent({
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-white/70 backdrop-blur-sm">
           <div className="bg-stone-50 border border-stone-200 p-6 w-full max-w-4xl max-h-[90vh] flex flex-col shadow-2xl overflow-hidden animate-fade-in-up">
             <div className="flex justify-between items-center border-b border-stone-200 pb-4 mb-4">
-              <h3 className="text-emerald-500 font-mono tracking-widest uppercase text-sm font-bold">
+              <h3 className="text-emerald-700 font-mono tracking-widest uppercase text-sm font-bold">
                 [ SECURE DATA REVIEW ]
               </h3>
               <button
@@ -671,12 +674,12 @@ export function SolarTimeTableComponent({
               </button>
             </div>
 
-            <p className="text-stone-500 text-xs font-mono mb-4 text-justify leading-relaxed">
+            <p className="text-stone-600 text-xs font-mono mb-4 text-justify leading-relaxed">
               以下は、いまの判定に使っている値の一覧です。本命星・現在地・盤の状態がすべて含まれます。内容を確かめて、手元に残す場合は書き出してください。
             </p>
 
             <div className="flex-grow overflow-auto border border-stone-200 bg-white/70 p-4 mb-4">
-              <pre className="text-[10px] sm:text-xs text-stone-500 font-mono whitespace-pre-wrap leading-tight">
+              <pre className="text-[10px] sm:text-xs text-stone-600 font-mono whitespace-pre-wrap leading-tight">
                 {previewContent.replace(
                   "data:text/csv;charset=utf-8,\uFEFF",
                   "",
@@ -687,13 +690,13 @@ export function SolarTimeTableComponent({
             <div className="flex justify-end gap-4 border-t border-stone-200 pt-4">
               <button
                 onClick={() => setShowPreview(false)}
-                className="px-4 py-2 text-stone-500 text-xs font-mono uppercase tracking-widest hover:text-stone-900"
+                className="px-4 py-2 text-stone-600 text-xs font-mono uppercase tracking-widest hover:text-stone-900"
               >
                 やめる
               </button>
               <button
                 onClick={executeDownload}
-                className="px-6 py-2 bg-emerald-50 text-emerald-600 border border-emerald-200 text-xs font-mono uppercase tracking-widest hover:bg-emerald-900 transition-colors shadow-[0_0_10px_rgba(16,185,129,0.2)]"
+                className="px-6 py-2 bg-emerald-50 text-emerald-700 border border-emerald-200 text-xs font-mono uppercase tracking-widest hover:bg-emerald-900 transition-colors shadow-[0_0_10px_rgba(16,185,129,0.2)]"
               >
                 書き出す
               </button>

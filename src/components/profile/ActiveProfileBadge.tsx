@@ -106,7 +106,10 @@ export function ActiveProfileBadge({
         </span>
         <Link
           href="/profile"
-          className="font-bold underline hover:text-amber-950"
+          /* 押し所は 24px 角より小さくしない（WCAG 2.2 の Target Size
+             (Minimum)）。実測 45 × 18px。文中ではなく帯の右端に立っている
+             ので、文の行送りは崩れない */
+          className="inline-flex min-h-[24px] items-center font-bold underline hover:text-amber-950"
         >
           登録する
         </Link>
@@ -127,7 +130,8 @@ export function ActiveProfileBadge({
       </span>
       <Link
         href="/account"
-        className="font-semibold text-indigo-600 underline hover:text-indigo-800"
+        /* 上と同じ（この帯のもう一方の押し所） */
+        className="inline-flex min-h-[24px] items-center font-semibold text-indigo-600 underline hover:text-indigo-800"
       >
         変更
       </Link>

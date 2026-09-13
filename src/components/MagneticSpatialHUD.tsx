@@ -159,13 +159,13 @@ export function MagneticSpatialHUD({
 
       {/* HUD Overlays */}
       <div className="absolute inset-x-0 bottom-0 flex flex-col items-center justify-center pointer-events-none select-none">
-        <div className="text-[10px] font-mono text-blue-400/70 border-t border-blue-200 px-2 bg-white/70 md:backdrop-blur-sm">
+        <div className="text-[10px] font-mono text-blue-700 border-t border-blue-200 px-2 bg-white/70 md:backdrop-blur-sm">
           磁力線の立体表示
         </div>
         <div className="flex gap-4 text-[9px] font-mono text-stone-600 mt-0.5">
           <span>D: {declination.toFixed(1)}°</span>
           <span>I: {inclination.toFixed(1)}°</span>
-          <span className={kpIndex >= 4 ? "text-red-500" : "text-emerald-500"}>
+          <span className={kpIndex >= 4 ? "text-red-700" : "text-emerald-700"}>
             Kp {kpIndex.toFixed(1)}
           </span>
         </div>
@@ -173,7 +173,7 @@ export function MagneticSpatialHUD({
 
       {/* Hover Info */}
       <div className="absolute top-0 left-0 w-full h-full bg-white/70 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col justify-center items-center p-4 text-[9px] font-mono pointer-events-none text-stone-600 md:backdrop-blur-sm border border-blue-200">
-        <div className="text-blue-600 mb-2 border-b border-blue-200 w-full text-center pb-1">
+        <div className="text-blue-700 mb-2 border-b border-blue-200 w-full text-center pb-1">
           磁力線の向き
         </div>
         <div className="w-full flex justify-between">
@@ -186,7 +186,7 @@ export function MagneticSpatialHUD({
         </div>
         <div className="w-full flex justify-between mt-1">
           <span>順化（基準値の同期日数から）:</span>
-          <span className="text-emerald-500">{shieldCapacity}%</span>
+          <span className="text-emerald-700">{shieldCapacity}%</span>
         </div>
         <div className="mt-2 text-[10px] text-stone-600 leading-tight">
           出発地の磁力線の向き（伏角・偏角）を立体で描いたものです。方位の判定には使っていません。

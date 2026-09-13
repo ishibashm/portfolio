@@ -141,7 +141,7 @@ export function TacticalMagneticMapComponent({
                   onClick={() =>
                     setActiveLayerMode && setActiveLayerMode("final")
                   }
-                  className={`px-2 py-1 transition-colors ${activeLayerMode === "final" || !activeLayerMode ? "bg-emerald-50 text-emerald-700 font-bold" : "text-stone-600 hover:text-stone-800"} border-r border-stone-200 cursor-pointer`}
+                  className={`inline-flex min-h-[24px] items-center justify-center px-2 py-1 transition-colors ${activeLayerMode === "final" || !activeLayerMode ? "bg-emerald-50 text-emerald-700 font-bold" : "text-stone-600 hover:text-stone-800"} border-r border-stone-200 cursor-pointer`}
                 >
                   🪐 全統合(年+月+日)
                 </button>
@@ -149,7 +149,7 @@ export function TacticalMagneticMapComponent({
                   onClick={() =>
                     setActiveLayerMode && setActiveLayerMode("year_month")
                   }
-                  className={`px-2 py-1 transition-colors ${activeLayerMode === "year_month" ? "bg-purple-50 text-purple-700 font-bold" : "text-stone-600 hover:text-stone-800"} border-r border-stone-200 cursor-pointer`}
+                  className={`inline-flex min-h-[24px] items-center justify-center px-2 py-1 transition-colors ${activeLayerMode === "year_month" ? "bg-purple-50 text-purple-700 font-bold" : "text-stone-600 hover:text-stone-800"} border-r border-stone-200 cursor-pointer`}
                 >
                   📅 年+月
                 </button>
@@ -157,7 +157,7 @@ export function TacticalMagneticMapComponent({
                   onClick={() =>
                     setActiveLayerMode && setActiveLayerMode("month_day")
                   }
-                  className={`px-2 py-1 transition-colors ${activeLayerMode === "month_day" ? "bg-blue-50 text-blue-700 font-bold" : "text-stone-600 hover:text-stone-800"} border-r border-stone-200 cursor-pointer`}
+                  className={`inline-flex min-h-[24px] items-center justify-center px-2 py-1 transition-colors ${activeLayerMode === "month_day" ? "bg-blue-50 text-blue-700 font-bold" : "text-stone-600 hover:text-stone-800"} border-r border-stone-200 cursor-pointer`}
                 >
                   🌓 月+日
                 </button>
@@ -165,7 +165,7 @@ export function TacticalMagneticMapComponent({
                   onClick={() =>
                     setActiveLayerMode && setActiveLayerMode("year_day")
                   }
-                  className={`px-2 py-1 transition-colors ${activeLayerMode === "year_day" ? "bg-amber-50 text-amber-700 font-bold" : "text-stone-600 hover:text-stone-800"} border-r border-stone-200 cursor-pointer`}
+                  className={`inline-flex min-h-[24px] items-center justify-center px-2 py-1 transition-colors ${activeLayerMode === "year_day" ? "bg-amber-50 text-amber-700 font-bold" : "text-stone-600 hover:text-stone-800"} border-r border-stone-200 cursor-pointer`}
                 >
                   ☀️ 年+日
                 </button>
@@ -173,7 +173,7 @@ export function TacticalMagneticMapComponent({
                   onClick={() =>
                     setActiveLayerMode && setActiveLayerMode("year")
                   }
-                  className={`px-2 py-1 transition-colors ${activeLayerMode === "year" ? "bg-indigo-50 text-indigo-600 font-bold" : "text-stone-600 hover:text-stone-800"} border-r border-stone-200 cursor-pointer`}
+                  className={`inline-flex min-h-[24px] items-center justify-center px-2 py-1 transition-colors ${activeLayerMode === "year" ? "bg-indigo-50 text-indigo-600 font-bold" : "text-stone-600 hover:text-stone-800"} border-r border-stone-200 cursor-pointer`}
                 >
                   年
                 </button>
@@ -181,7 +181,7 @@ export function TacticalMagneticMapComponent({
                   onClick={() =>
                     setActiveLayerMode && setActiveLayerMode("month")
                   }
-                  className={`px-2 py-1 transition-colors ${activeLayerMode === "month" ? "bg-purple-50 text-purple-700 font-bold" : "text-stone-600 hover:text-stone-800"} border-r border-stone-200 cursor-pointer`}
+                  className={`inline-flex min-h-[24px] items-center justify-center px-2 py-1 transition-colors ${activeLayerMode === "month" ? "bg-purple-50 text-purple-700 font-bold" : "text-stone-600 hover:text-stone-800"} border-r border-stone-200 cursor-pointer`}
                 >
                   月
                 </button>
@@ -189,7 +189,7 @@ export function TacticalMagneticMapComponent({
                   onClick={() =>
                     setActiveLayerMode && setActiveLayerMode("day")
                   }
-                  className={`px-2 py-1 transition-colors ${activeLayerMode === "day" ? "bg-cyan-50 text-cyan-700 font-bold" : "text-stone-600 hover:text-stone-800"} cursor-pointer`}
+                  className={`inline-flex min-h-[24px] items-center justify-center px-2 py-1 transition-colors ${activeLayerMode === "day" ? "bg-cyan-50 text-cyan-700 font-bold" : "text-stone-600 hover:text-stone-800"} cursor-pointer`}
                 >
                   日
                 </button>

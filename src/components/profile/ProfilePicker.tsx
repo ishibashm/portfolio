@@ -83,9 +83,12 @@ export function ProfilePicker({
   const selectClass = small
     ? "px-2 py-1.5 bg-white border border-stone-200 rounded-lg text-[10px] text-stone-700 outline-none focus:border-indigo-200"
     : "bg-white border border-slate-300 rounded-xl px-3 py-2 text-sm text-slate-900 outline-none focus:border-rose-400";
+  /* 押し所は 24px 角より小さくしない（WCAG 2.2 の Target Size (Minimum)）。
+     実測で 110 × 16px と 61 × 16px だった。字の大きさは変えず、縦に 24px を
+     確保して中央に置く */
   const linkClass = small
-    ? "text-[10px] font-semibold text-indigo-600 underline"
-    : "text-xs font-semibold text-indigo-600 underline";
+    ? "inline-flex min-h-[24px] items-center text-[10px] font-semibold text-indigo-600 underline"
+    : "inline-flex min-h-[24px] items-center text-xs font-semibold text-indigo-600 underline";
 
   return (
     <div className={`flex flex-wrap items-center gap-2 ${className}`}>

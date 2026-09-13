@@ -68,8 +68,8 @@ export const TenchusatsuVisualizer: React.FC<TenchusatsuVisualizerProps> = ({
       列で幅を決める。
     */
     <div className="bg-white/80 rounded-sm shadow-lg border border-stone-200 p-4 mt-4 w-full h-full">
-      <h3 className="text-xs tracking-widest text-stone-500 mb-4 border-b border-stone-200 pb-2 flex items-center gap-2">
-        <span className="text-red-500 blur-[0.5px]">◆</span> 天中殺の周期
+      <h3 className="text-xs tracking-widest text-stone-600 mb-4 border-b border-stone-200 pb-2 flex items-center gap-2">
+        <span className="text-red-700 blur-[0.5px]">◆</span> 天中殺の周期
       </h3>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -130,7 +130,7 @@ export const TenchusatsuVisualizer: React.FC<TenchusatsuVisualizerProps> = ({
             </span>
             {data.isYearTenchusatsu ? (
               <>
-                <span className="text-xl md:text-2xl font-bold tracking-[0.2em] text-red-500">
+                <span className="text-xl md:text-2xl font-bold tracking-[0.2em] text-red-700">
                   年の天中殺
                 </span>
                 {/* 以前は red-400/80。赤地（red-50）に対して約 1.9:1 で

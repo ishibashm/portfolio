@@ -104,7 +104,10 @@ function Card({
         {onDetail && (
           <button
             onClick={onDetail}
-            className="text-[10px] text-indigo-700 hover:text-indigo-700 hover:underline shrink-0"
+            /* 押し所は 24px 角より小さくしない（WCAG 2.2 の Target Size
+               (Minimum)）。実測で 43〜63 × 15px だった。字の大きさは変えず、
+               縦に 24px を確保して中央に置く */
+            className="inline-flex min-h-[24px] shrink-0 items-center text-[10px] text-indigo-700 hover:text-indigo-700 hover:underline"
           >
             {detailLabel} →
           </button>
@@ -444,7 +447,7 @@ export default function HomePortal({
             <li>
               <Link
                 href="/relocation/arbitrage"
-                className="text-indigo-700 hover:underline"
+                className="inline-flex min-h-[24px] items-center text-indigo-700 hover:underline"
               >
                 物件を方位で探す →
               </Link>
@@ -458,7 +461,7 @@ export default function HomePortal({
               */}
               <Link
                 href="/calendar"
-                className="text-indigo-700 hover:underline"
+                className="inline-flex min-h-[24px] items-center text-indigo-700 hover:underline"
               >
                 引越しの日取りを選ぶ →
               </Link>
@@ -471,7 +474,7 @@ export default function HomePortal({
               */}
               <Link
                 href="/relocation/appraisal"
-                className="text-indigo-700 hover:underline"
+                className="inline-flex min-h-[24px] items-center text-indigo-700 hover:underline"
               >
                 検討中の物件を査定する →
               </Link>
@@ -480,14 +483,17 @@ export default function HomePortal({
                 ナビから外した（OFF_THEME。siteStructure の註を参照）。
                 URL 直打ちでは従来どおり使える。 */}
             <li>
-              <Link href="/houi" className="text-indigo-700 hover:underline">
+              <Link
+                href="/houi"
+                className="inline-flex min-h-[24px] items-center text-indigo-700 hover:underline"
+              >
                 方位の読みもの →
               </Link>
             </li>
             <li>
               <button
                 onClick={() => onOpenTab("history")}
-                className="text-indigo-700 hover:underline"
+                className="inline-flex min-h-[24px] items-center text-indigo-700 hover:underline"
               >
                 過去の引越しを振り返る →
               </button>

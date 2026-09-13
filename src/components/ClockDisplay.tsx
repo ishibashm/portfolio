@@ -98,8 +98,8 @@ export function ClockDisplay({
   const lunarDateString = `旧暦 ${lunarMonthLabel}月${lunarDay}日`;
 
   const getRokuyoColor = (r: string) => {
-    if (r.startsWith("大安")) return "text-emerald-600 font-bold";
-    if (r.startsWith("友引")) return "text-blue-600 font-bold";
+    if (r.startsWith("大安")) return "text-emerald-700 font-bold";
+    if (r.startsWith("友引")) return "text-blue-700 font-bold";
     if (r.startsWith("仏滅") || r.startsWith("赤口"))
       return "text-red-600 font-bold";
     return "text-stone-600";
@@ -127,18 +127,18 @@ export function ClockDisplay({
           </span>
         </div>
         <div
-          className={`text-4xl sm:text-5xl font-serif font-thin tracking-widest ${isVoidTime ? "text-red-500 text-glow-red md:animate-pulse" : "text-emerald-500 text-glow"}`}
+          className={`text-4xl sm:text-5xl font-serif font-thin tracking-widest ${isVoidTime ? "text-red-700 text-glow-red md:animate-pulse" : "text-emerald-700 text-glow"}`}
         >
           {kimon?.japanese || "--"}
         </div>
-        <div className="text-xs md:text-sm tracking-widest text-stone-500 font-serif">
+        <div className="text-xs md:text-sm tracking-widest text-stone-600 font-serif">
           {kimon ? (isVoidTime ? "天中殺の刻" : "の刻") : "--"}
         </div>
       </div>
 
       {/* 2. Lunar Phase & Rokuyo */}
       <div className="text-center space-y-1 border-x border-stone-200 px-4 w-1/3">
-        <div className="text-xs tracking-[0.2em] text-purple-500 mb-1">
+        <div className="text-xs tracking-[0.2em] text-purple-700 mb-1">
           六曜・旧暦
           <span className="hidden sm:block text-xs tracking-normal text-stone-600 mt-1 font-sans whitespace-nowrap">
             （日本時間の暦日で引く）
@@ -149,7 +149,7 @@ export function ClockDisplay({
         >
           {rokuyoName.split(" ")[0]}
         </div>
-        <div className="text-xs tracking-widest text-stone-500 font-mono mt-2">
+        <div className="text-xs tracking-widest text-stone-600 font-mono mt-2">
           {lunarDateString} / {yueXiang}
         </div>
       </div>
@@ -160,7 +160,7 @@ export function ClockDisplay({
           <div className="text-xs tracking-widest text-emerald-900/80">
             真太陽時
           </div>
-          <div className="text-2xl sm:text-3xl font-mono font-light text-emerald-600">
+          <div className="text-2xl sm:text-3xl font-mono font-light text-emerald-700">
             {formatTime(new Date(now.getTime() + (eot + longOffset) * 60000))}
           </div>
         </div>

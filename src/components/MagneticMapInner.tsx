@@ -559,6 +559,11 @@ export default function MagneticMapInner({
                 iconAnchor: [20, 10],
               })}
               interactive={false}
+              /* 飾りの札。`interactive={false}` だけでは足りない。Leaflet は
+                 `keyboard`（既定 true）で tabindex="0" と role="button" を
+                 付けるので、押せない札がキーボードでは押し所として並び、
+                 読み上げにも「ボタン」と読まれる（地図 1 つにつき 8 個）。 */
+              keyboard={false}
             />
           )}
         </React.Fragment>
@@ -728,8 +733,9 @@ export default function MagneticMapInner({
           onInspect={onSelectTarget}
         />
 
+        {/* 吹き出しを持つので押せる。押せるものには名前が要る。 */}
         {clickedPos && (
-          <Marker position={clickedPos}>
+          <Marker position={clickedPos} alt="選んだ地点">
             <Tooltip permanent direction="top" offset={[0, -10]}>
               <div className="font-mono text-[10px] text-zinc-800 font-bold">
                 選んだ地点
@@ -738,7 +744,10 @@ export default function MagneticMapInner({
           </Marker>
         )}
 
-        <Marker position={center} />
+        {/* 出発地の目印。押しても何も起きないので、キーボードの巡回からは
+            外す（外さないと名前の無いボタンとして読み上げられる）。代わりに
+            `alt` で何の印かを伝える。 */}
+        <Marker position={center} alt="出発地" keyboard={false} />
 
         {/* Draw Dynamic Sectors (Stars/Vectors) */}
         {vectorLayer}
