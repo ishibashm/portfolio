@@ -1447,7 +1447,7 @@ export function ConsultPanel({
                 onClick={() =>
                   setShowAstrophysicalLogic(!showAstrophysicalLogic)
                 }
-                className="text-[9px] font-mono text-stone-600 hover:text-stone-900 bg-stone-50 px-2 py-1 border border-stone-300 hover:border-zinc-500 transition-colors uppercase tracking-widest"
+                className="inline-flex min-h-[24px] items-center justify-center text-[9px] font-mono text-stone-600 hover:text-stone-900 bg-stone-50 px-2 py-1 border border-stone-300 hover:border-zinc-500 transition-colors uppercase tracking-widest"
               >
                 {showAstrophysicalLogic ? "計算式を閉じる" : "計算式を見る"}
               </button>

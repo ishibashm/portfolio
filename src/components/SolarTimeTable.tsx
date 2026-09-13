@@ -277,7 +277,7 @@ export function SolarTimeTableComponent({
           {isAuthorized && (
             <button
               onClick={openPreview}
-              className="px-3 py-1 bg-white border border-stone-300 text-stone-600 text-[9px] uppercase tracking-widest hover:bg-stone-100 transition-colors"
+              className="inline-flex min-h-[24px] items-center justify-center px-3 py-1 bg-white border border-stone-300 text-stone-600 text-[9px] uppercase tracking-widest hover:bg-stone-100 transition-colors"
             >
               記録を確認して書き出す
             </button>

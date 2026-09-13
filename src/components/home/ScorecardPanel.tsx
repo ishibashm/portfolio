@@ -355,7 +355,7 @@ export default function ScorecardPanel({
                   aria-label="対象県"
                   value={scorecardPrefecture}
                   onChange={(e) => setScorecardPrefecture(e.target.value)}
-                  className="bg-white text-stone-700 border-0 text-[10px] font-mono focus:outline-none focus:ring-0 cursor-pointer"
+                  className="min-h-[24px] bg-white text-stone-700 border-0 text-[10px] font-mono focus:outline-none focus:ring-0 cursor-pointer"
                 >
                   <option value="all">全国 (すべて)</option>
                   <option value="愛知県">愛知県</option>
@@ -912,7 +912,7 @@ export default function ScorecardPanel({
                 <div className="flex bg-stone-50 p-1 rounded-md border border-stone-200 text-[10px] font-mono">
                   <button
                     onClick={() => setScorecardActiveGridTab("dates")}
-                    className={`px-3 py-1 rounded transition-all ${
+                    className={`inline-flex min-h-[24px] items-center justify-center px-3 py-1 rounded transition-all ${
                       scorecardActiveGridTab === "dates"
                         ? "bg-emerald-600 text-stone-900 font-bold"
                         : "text-stone-600 hover:text-stone-700"
@@ -922,7 +922,7 @@ export default function ScorecardPanel({
                   </button>
                   <button
                     onClick={() => setScorecardActiveGridTab("stars")}
-                    className={`px-3 py-1 rounded transition-all ${
+                    className={`inline-flex min-h-[24px] items-center justify-center px-3 py-1 rounded transition-all ${
                       scorecardActiveGridTab === "stars"
                         ? "bg-emerald-600 text-stone-900 font-bold"
                         : "text-stone-600 hover:text-stone-700"
@@ -965,7 +965,7 @@ export default function ScorecardPanel({
                 {/* CSV Export Button */}
                 <button
                   onClick={handleExportGridCsv}
-                  className="px-3 py-1 bg-stone-100 hover:bg-stone-200 text-stone-600 border border-stone-300 font-mono text-[9px] uppercase tracking-wider rounded transition-all"
+                  className="inline-flex min-h-[24px] items-center justify-center px-3 py-1 bg-stone-100 hover:bg-stone-200 text-stone-600 border border-stone-300 font-mono text-[9px] uppercase tracking-wider rounded transition-all"
                 >
                   CSV で書き出す
                 </button>
