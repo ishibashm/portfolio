@@ -2,7 +2,6 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import type { Prisma } from "@prisma/client";
 import prisma from "@/lib/prisma";
-import { decrypt, encrypt } from "@/utils/encryption";
 import { findUserConfig, getAuthUser, toUserId } from "@/lib/userConfig";
 
 /*
@@ -28,7 +27,6 @@ const profilePresetFields = z
     birthLabel: z.string().max(200).optional(),
     baseLabel: z.string().max(200).optional(),
     voidZodiacOverride: z.string().optional(),
-    geminiKey: z.string().optional(),
     baselineHrvMean: z.number().finite().optional(),
     baselineHrvStd: z.number().finite().optional(),
     baselineGsrMean: z.number().finite().optional(),
@@ -57,9 +55,13 @@ const profilePresetSchema = profilePresetFields.refine(birthPlacePaired, {
   message: BIRTH_PLACE_PAIR_MESSAGE,
 });
 
+/*
+  保存側の形。以前は Gemini API キーを暗号化した encryptedGeminiKey を
+  持っていたが、読む機能がサイトに無い（#1253 で入力欄を消した）ので
+  受け口ごと外した。古い控えに残っている encryptedGeminiKey は .strip()
+  で落ちる（DB の中身は消さない。読まないだけ）。
+*/
 const storedProfilePresetSchema = profilePresetFields
-  .omit({ geminiKey: true })
-  .extend({ encryptedGeminiKey: z.string().optional() })
   .strip()
   .refine(birthPlacePaired, { message: BIRTH_PLACE_PAIR_MESSAGE });
 
@@ -70,11 +72,7 @@ const requestSchema = z.object({
 function encodePreset(
   preset: z.infer<typeof profilePresetSchema>,
 ): Prisma.InputJsonObject {
-  const { geminiKey, ...safeFields } = preset;
-  return {
-    ...safeFields,
-    ...(geminiKey ? { encryptedGeminiKey: encrypt(geminiKey) } : {}),
-  };
+  return { ...preset };
 }
 
 function decodePresets(value: Prisma.JsonValue | null) {
@@ -83,16 +81,7 @@ function decodePresets(value: Prisma.JsonValue | null) {
   return value.flatMap((candidate) => {
     const parsed = storedProfilePresetSchema.safeParse(candidate);
     if (!parsed.success) return [];
-
-    const { encryptedGeminiKey, ...safeFields } = parsed.data;
-    const geminiKey = encryptedGeminiKey ? decrypt(encryptedGeminiKey) : null;
-
-    return [
-      {
-        ...safeFields,
-        ...(geminiKey ? { geminiKey } : {}),
-      },
-    ];
+    return [parsed.data];
   });
 }
 
