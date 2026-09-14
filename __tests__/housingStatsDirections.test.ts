@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   DEFAULT_MAX_KM,
   DEFAULT_MIN_KM,
+  DEFAULT_PER_DIRECTION,
   TATAMI_SQM,
   housingStatsByDirection,
   type HousingPoint,
@@ -226,5 +227,154 @@ describe("方位の切り方を呼ぶ側から渡せる", () => {
     expect(p.find((d) => d.direction === "N")!.medianRentPerSqm).toBe(
       Math.round(3240 / TATAMI_SQM),
     );
+  });
+});
+
+/**
+ * 方位ごとに**街を 1 件ずつ**返す（2026-09-14）。
+ *
+ * それまでは集計（何件・中央値）と上位 3 件の名前しか返しておらず、
+ * 「その方位にどの街があるか」を画面に出せなかった。賃貸の巡回を止めた
+ * ので（backlog 29 節）、並べる先を部屋から街へ移すのが移行の本体。
+ *
+ * ## 気にしていること
+ *
+ * 1. **`count` は切らない。**一覧を 12 件で切っても、数は全部のまま。
+ *    食い違うと「12 件のはずなのに 30 市区町村」と読める
+ * 2. **名前は県名込み。**統計の行の `area_name` は県名を持たないので、
+ *    「中央区」だけでは全国のどこか分からない
+ * 3. **並びが実行ごとに変わらない。**同じ距離の街が入れ替わると、画面の
+ *    差分が読めない
+ */
+describe("方位ごとに街を並べる", () => {
+  /** 代表点に県名・市区町村名を付けた町。 */
+  function named(
+    bearing: number,
+    km: number,
+    pref: string,
+    city: string,
+    stat: Partial<HousingStatRow> = {},
+  ) {
+    const t = town(bearing, km, stat);
+    return { row: t.row, point: { ...t.point, pref, city } };
+  }
+
+  it("近い順に並び、コード・距離・方位角を持つ", () => {
+    const items = [
+      named(0, 40, "東京都", "遠い区"),
+      named(0, 10, "東京都", "近い区"),
+      named(0, 25, "東京都", "中くらい区"),
+    ];
+    const north = run(items).find((s) => s.direction === "N")!;
+    expect(north.municipalities.map((m) => m.name)).toEqual([
+      "東京都近い区",
+      "東京都中くらい区",
+      "東京都遠い区",
+    ]);
+    expect(north.municipalities.map((m) => m.distanceKm)).toEqual([10, 25, 40]);
+    /* コードは JIS の 5 桁のまま返す（CityPortalLinks と /houi/area が使う） */
+    for (const m of north.municipalities) {
+      expect(m.code).toMatch(/^\d{5}$/);
+      expect(m.bearing).toBeGreaterThanOrEqual(0);
+      expect(m.bearing).toBeLessThan(360);
+    }
+  });
+
+  it("名前は県名込み（代表点を優先し、無ければ統計の行に落ちる）", () => {
+    const withPref = run([named(0, 20, "新潟県", "東区")]).find(
+      (s) => s.direction === "N",
+    )!;
+    expect(withPref.municipalities[0].name).toBe("新潟県東区");
+
+    /* 代表点に県名が無いときは統計の行の名前。`town` は pref/city を
+       付けないので、そのまま落ちることを見る */
+    const plain = run([town(0, 20)]).find((s) => s.direction === "N")!;
+    expect(plain.municipalities[0].name).toMatch(/^町\d+$/);
+  });
+
+  it("count は切らない（一覧だけ perDirection で切る）", () => {
+    const many = Array.from({ length: DEFAULT_PER_DIRECTION + 8 }, (_, i) =>
+      named(0, 10 + i, "東京都", `区${i}`),
+    );
+    const north = run(many).find((s) => s.direction === "N")!;
+    expect(north.count).toBe(DEFAULT_PER_DIRECTION + 8);
+    expect(north.municipalities).toHaveLength(DEFAULT_PER_DIRECTION);
+    expect(north.truncated).toBe(true);
+  });
+
+  it("切っていないときは truncated が立たない", () => {
+    const north = run([named(0, 20, "東京都", "区")]).find(
+      (s) => s.direction === "N",
+    )!;
+    expect(north.truncated).toBe(false);
+    expect(north.municipalities).toHaveLength(1);
+  });
+
+  it("perDirection を渡せる", () => {
+    const many = Array.from({ length: 5 }, (_, i) =>
+      named(0, 10 + i, "東京都", `区${i}`),
+    );
+    const north = run(many, { perDirection: 2 }).find(
+      (s) => s.direction === "N",
+    )!;
+    expect(north.municipalities).toHaveLength(2);
+    expect(north.count).toBe(5);
+    expect(north.truncated).toBe(true);
+  });
+
+  it("同じ距離でも並びが変わらない（名前で安定させている）", () => {
+    const items = [
+      named(0, 20, "東京都", "い区"),
+      named(0, 20, "東京都", "あ区"),
+      named(0, 20, "東京都", "う区"),
+    ];
+    const once = run(items).find((s) => s.direction === "N")!;
+    const twice = run(items).find((s) => s.direction === "N")!;
+    expect(once.municipalities.map((m) => m.name)).toEqual(
+      twice.municipalities.map((m) => m.name),
+    );
+    expect(once.municipalities.map((m) => m.name)).toEqual([
+      "東京都あ区",
+      "東京都い区",
+      "東京都う区",
+    ]);
+  });
+
+  it("街ごとの家賃と空き家率は、集計と同じ式で出している", () => {
+    const north = run([
+      named(0, 20, "東京都", "区", {
+        rent_per_tatami_yen: 3240,
+        tatami_per_rental: 18,
+        total_dwellings: 50000,
+        vacant_dwellings: 5000,
+      }),
+    ]).find((s) => s.direction === "N")!;
+    const m = north.municipalities[0];
+    expect(m.rentPerSqm).toBe(Math.round(3240 / TATAMI_SQM));
+    expect(m.vacancyRate).toBeCloseTo(0.1, 10);
+    expect(m.totalDwellings).toBe(50000);
+    /* 方位の集計と食い違わない */
+    expect(north.medianRentPerSqm).toBe(m.rentPerSqm);
+    expect(north.vacancyRate).toBeCloseTo(m.vacancyRate!, 10);
+  });
+
+  it("欠測は null のまま（0 に倒さない）", () => {
+    const north = run([named(0, 20, "東京都", "区")]).find(
+      (s) => s.direction === "N",
+    )!;
+    const m = north.municipalities[0];
+    expect(m.rentPerSqm).toBeNull();
+    expect(m.vacancyRate).toBeNull();
+    expect(m.totalDwellings).toBeNull();
+  });
+
+  it("材料の無い方位は空の一覧を返す（行ごと消さない）", () => {
+    const stats = run([named(0, 20, "東京都", "区")]);
+    expect(stats).toHaveLength(8);
+    for (const s of stats) {
+      if (s.direction === "N") continue;
+      expect(s.municipalities, s.direction).toEqual([]);
+      expect(s.truncated, s.direction).toBe(false);
+    }
   });
 });

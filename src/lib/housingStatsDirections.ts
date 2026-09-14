@@ -40,11 +40,48 @@ export interface HousingStatRow {
   floor_area_per_rental: number | null;
 }
 
-/** 市区町村の代表点。`areaContent` / `municipalityCoords` と同じ形。 */
+/**
+ * 市区町村の代表点。`areaContent` / `municipalityCoords` と同じ形。
+ *
+ * `pref` / `city` は `mergeWithListed` が返す点には入っている。名前の出どころを
+ * **統計の行（`area_name`）ではなく代表点**に取るのは、`area_name` が県名を
+ * 持たないため（「中央区」だけでは全国のどこか分からない）。
+ */
 export interface HousingPoint {
   code: string;
   lat: number;
   lon: number;
+  pref?: string;
+  city?: string;
+}
+
+/**
+ * 方位に入った市区町村 1 件。
+ *
+ * **街を 1 件ずつ並べるために足した**（2026-09-14）。それまでは方位ごとの
+ * 集計（何件・中央値）と上位 3 件の名前しか返しておらず、「その方位に
+ * どの街があるか」を画面で出せなかった。
+ *
+ * 賃貸の巡回を止めたので（backlog 29 節）、物件検索は 10 月中旬に掲載が
+ * 0 件になる。並べる先を**部屋から街へ**移すのが移行の本体で、ここはその
+ * 材料（利用者の判断 A、2026-09-14）。
+ *
+ * `code` は JIS の 5 桁。`CityPortalLinks`（募集を見に行く導線）と
+ * `/houi/area/{code}` がそのまま使える。
+ */
+export interface DirectionMunicipality {
+  code: string;
+  /** 県名込みの表示名。代表点に無ければ統計の行の名前に落ちる。 */
+  name: string;
+  distanceKm: number;
+  /** 真北からの方位角（度）。境目の近さを画面で断るのに使う。 */
+  bearing: number;
+  /** 借家の家賃（円/㎡・月）。1 畳当たり家賃 ÷ 1.62。無ければ null。 */
+  rentPerSqm: number | null;
+  /** 空き家率（0〜1）。無ければ null。 */
+  vacancyRate: number | null;
+  /** 総住宅数。街の規模の目安。 */
+  totalDwellings: number | null;
 }
 
 /**
@@ -74,14 +111,32 @@ export interface HousingDirectionStat {
   nearestKm: number | null;
   /** 総住宅数の多い順の市区町村名（最大 3 つ）。どこの話かを示す。 */
   topMunicipalities: string[];
+  /**
+   * その方位に入った市区町村。**近い順**（市区町村ページと同じ並び）。
+   *
+   * `count` は全部の数で、こちらは `perDirection` で切った分だけ。数と
+   * 一覧が食い違って見えないよう、切ったときは `truncated` が立つ。
+   */
+  municipalities: DirectionMunicipality[];
+  /** 一覧を `perDirection` で切ったか。画面が「ほかにも◯件」と書ける。 */
+  truncated: boolean;
 }
 
 export const DEFAULT_MIN_KM = 5;
 export const DEFAULT_MAX_KM = 150;
+/** 1 方位あたりに返す市区町村の数の既定。市区町村ページの表と同じ 12。 */
+export const DEFAULT_PER_DIRECTION = 12;
 
 export interface HousingDirectionOptions {
   minKm?: number;
   maxKm?: number;
+  /**
+   * 1 方位あたりに返す市区町村の数。既定 12（市区町村ページの表と同じ）。
+   *
+   * 150km 圏でも 100 件を超える方位があるので、全部返すと応答が膨らむ。
+   * **`count` は切らない**ので、数と一覧が食い違うことはない。
+   */
+  perDirection?: number;
   /**
    * 方位角を八方位に落とす規則。**判定と同じものを渡すこと。**
    *
@@ -107,6 +162,7 @@ function quantile(sorted: number[], q: number): number | null {
 }
 
 interface Bucket {
+  items: DirectionMunicipality[];
   rentPerSqm: number[];
   monthly: number[];
   vacant: number;
@@ -136,11 +192,16 @@ export function housingStatsByDirection(
   const minKm = options.minKm ?? DEFAULT_MIN_KM;
   const maxKm = options.maxKm ?? DEFAULT_MAX_KM;
   const nodeMapping = options.nodeMapping ?? "traditional";
+  const perDirection = Math.max(
+    0,
+    options.perDirection ?? DEFAULT_PER_DIRECTION,
+  );
   const pointByCode = new Map(points.map((p) => [p.code, p]));
 
   const buckets = new Map<CompassDirection, Bucket>();
   for (const d of COMPASS_DIRECTIONS) {
     buckets.set(d, {
+      items: [],
       rentPerSqm: [],
       monthly: [],
       vacant: 0,
@@ -162,10 +223,8 @@ export function housingStatsByDirection(
     /* 判定と同じ真北の方位角で、**判定と同じ規則**で切る。磁北は使わない
        （CLAUDE.md 3 節）。規則を決め打ちにすると、独自モデルを選んだ人の
        画面で物件と統計が別の方位を指す（`nodeMapping` の註） */
-    const direction = directionFromBearing(
-      bearingBetween(baseLat, baseLon, p.lat, p.lon),
-      nodeMapping,
-    );
+    const bearing = bearingBetween(baseLat, baseLon, p.lat, p.lon);
+    const direction = directionFromBearing(bearing, nodeMapping);
     const b = buckets.get(direction)!;
     b.count += 1;
     if (b.nearest === null || km < b.nearest) b.nearest = km;
@@ -197,6 +256,35 @@ export function housingStatsByDirection(
     if (row.area_name) {
       b.names.push({ name: row.area_name, size: total ?? 0 });
     }
+
+    /* 街 1 件ぶん。**名前は代表点（県名込み）を優先する。**統計の行の
+       `area_name` は県名を持たないので、「中央区」だけでは全国のどこか
+       分からない */
+    const rentPerSqm =
+      rent !== null && Number.isFinite(rent) && rent > 0
+        ? Math.round(rent / TATAMI_SQM)
+        : null;
+    const vacancyRate =
+      total !== null &&
+      vacant !== null &&
+      Number.isFinite(total) &&
+      Number.isFinite(vacant) &&
+      total > 0 &&
+      vacant >= 0
+        ? vacant / total
+        : null;
+    b.items.push({
+      code: row.area_code,
+      name:
+        p.pref && p.city
+          ? `${p.pref}${p.city}`
+          : (row.area_name ?? row.area_code),
+      distanceKm: Math.round(km),
+      bearing: Math.round(bearing),
+      rentPerSqm,
+      vacancyRate,
+      totalDwellings: total !== null && Number.isFinite(total) ? total : null,
+    });
   }
 
   return COMPASS_DIRECTIONS.map((direction) => {
@@ -219,6 +307,16 @@ export function housingStatsByDirection(
         medianMonthly === null ? null : Math.round(medianMonthly),
       vacancyRate: b.total > 0 ? b.vacant / b.total : null,
       vacancyCount: b.vacancyCount,
+      /* 近い順。市区町村ページの表と同じ並び。同距離は名前で安定させる
+         （並びが実行ごとに変わると、画面の差分が読めない） */
+      municipalities: b.items
+        .slice()
+        .sort(
+          (x, y) =>
+            x.distanceKm - y.distanceKm || x.name.localeCompare(y.name, "ja"),
+        )
+        .slice(0, perDirection),
+      truncated: b.items.length > perDirection,
       nearestKm: b.nearest === null ? null : Math.round(b.nearest * 10) / 10,
       topMunicipalities,
     };
