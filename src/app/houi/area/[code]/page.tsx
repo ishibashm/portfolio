@@ -25,6 +25,7 @@ import { prefCodeByName } from "@/lib/prefContent";
 import { metaDescriptionFromIntro } from "@/lib/editorialMeta";
 import { INDEXED_ROBOTS, NOINDEX_ROBOTS } from "@/lib/siteStructure";
 import { CityPortalLinks } from "@/components/portal/CityPortalLinks";
+import { listingSnapshotNote } from "@/lib/listingFreshness";
 
 /**
  * 「○○市から見た方位別のエリアと相場」。
@@ -170,6 +171,20 @@ export default async function Page({
      （いちばん近い街が小笠原村 1,958km）が「街はあるが掲載が無い」に
      入って名前が 1 つも出なかった（2026-09-06 に 73 + 88 方位）。 */
   const notListed = empty.filter((e) => e.hasWithinRangeMunicipality);
+
+  /*
+    掲載から作った数字が凍結していることの断り（2026-09-14）。
+
+    `areaDirections.json` を焼く `build_area_dataset` は
+    `scrape-rentals.yml` の中にしか無い。巡回を止めた時点で焼き直され
+    なくなったので、**0 件にはならず、その日の値のまま止まっている。**
+    頁は集計日を出しているが、日付だけでは「取り込みが遅れているのかな」
+    としか読めない。
+
+    日数は出さない（この頁は静的生成なので `new Date()` はビルド時刻に
+    なる。詳しくは `listingSnapshotNote` の註）。
+  */
+  const snapshotNote = listingSnapshotNote(areaAsOf(area));
   /* 150km 以内には無く、どこかにはある＝先にしか無い。掲載の有無を
      問わない母集団（hasAnyMunicipality）で見る */
   const farOnly = empty.filter(
@@ -282,6 +297,15 @@ export default async function Page({
             })}
             ／ 掲載中の物件は入れ替わるため、最新の相場とは差が出ることがあります。
           </p>
+          {/* 集計日が古いときは、**もう動かない**ことまで書く。日付だけ
+              では「取り込みが遅れているのかな」としか読めない。巡回を
+              止めたので（backlog 29 節）、この数字は凍結している。
+              再開すれば `asOf` が進んで次のデプロイで消える。 */}
+          {snapshotNote && (
+            <p className="mt-2 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-[11px] leading-relaxed text-amber-900">
+              {snapshotNote}
+            </p>
+          )}
           {/*
             この数字がどう作られているかへの導線。
             「◯◯市 家賃相場」で来た人が最初に見るのがこの札で、

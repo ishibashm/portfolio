@@ -95,3 +95,38 @@ export function listingFreshnessMessage(f: ListingFreshness): string | null {
       return `掲載の取り込みは ${f.daysSince} 日前で止まっており、${LIVE_LISTING_MAX_AGE_DAYS} 日を過ぎた掲載は表示していません。方位の判定と地図は今までどおり使えます。`;
   }
 }
+
+/**
+ * 掲載から作った**静止した数字**に添える断り（市区町村ページ・県ページ）。
+ *
+ * ## 物件検索とは事情が違う
+ *
+ * 物件検索は DB を毎回引くので、30 日の窓から外れて**件数が 0 に向かって
+ * 減っていく**。こちらが読むのは `areaDirections.json`（`build_area_dataset`
+ * が焼いた静的ファイル）で、**そのスクリプトは `scrape-rentals.yml` の中に
+ * しか無い。**巡回を止めた時点で焼き直されなくなったので、0 件にはならず
+ * **その日の値のまま凍結している。**
+ *
+ * 頁は「集計日: 2026/09/13」を出しているが、日付だけでは「取り込みが
+ * 遅れているのかな」としか読めない。**もう動かない**ことを書く。
+ *
+ * ## 日数を出さない
+ *
+ * 市区町村ページは静的生成（`generateStaticParams`）なので、ここで
+ * `new Date()` を取ると**ビルド時刻**になる。「3 日前」と焼かれた頁が
+ * 3 か月後も「3 日前」と言い続ける。**絶対の日付は頁が既に出している**
+ * ので、ここでは日数に触れない。
+ *
+ * 判定そのものはビルド時の比較で正しく働く。巡回を再開すれば
+ * `build_area_dataset` が回って `asOf` が進み、次のデプロイでこの断りは
+ * 消える。
+ */
+export function listingSnapshotNote(
+  /** その市区町村の集計日（ISO 文字列）。 */
+  asOf: string | null | undefined,
+  now: Date = new Date(),
+): string | null {
+  const f = describeListingFreshness(asOf, now);
+  if (f.kind === "unknown" || f.kind === "fresh") return null;
+  return "掲載の取り込みは、提供元の規約に従って止めています。この相場と一覧はその時点のもので、以降は更新していません。方位・距離・公的な統計は今までどおりです。";
+}
