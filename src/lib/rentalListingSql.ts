@@ -12,12 +12,24 @@
  *   lat / lon        地図に出せない行は数えない（俯瞰の件数なので）
  *   rent / size_sqm  ㎡単価が出せない行は候補にならない
  *   last_seen_at     30 日見かけていない行は掲載終了とみなす
+ *                    （日数は LIVE_LISTING_MAX_AGE_DAYS。**画面の断りが
+ *                    同じ窓を見るので、数字はここ 1 つに置く**）
  *   expire_date      掲載期限を過ぎた行はリンクが 404 になる
  *
  * 列名は修飾していない。呼ぶ側が rental_properties に別名を付けても、
  * これらの列を持つ表が 1 つなら曖昧にならない。
  */
+/**
+ * 何日見かけなければ掲載終了とみなすか。
+ *
+ * **この窓は、巡回が止まったときに「あと何日で 0 件になるか」でもある。**
+ * 画面の断り（`lib/listingFreshness`）が同じ数字を見るので、SQL の中に
+ * 直接書かず、ここから組み立てる。2 か所に書くと、片方だけ直したときに
+ * 「もう 0 件のはずなのに『あと 5 日』と出る」という形でずれる。
+ */
+export const LIVE_LISTING_MAX_AGE_DAYS = 30;
+
 export const LIVE_LISTING_SQL = `lat IS NOT NULL AND lon IS NOT NULL
       AND rent IS NOT NULL AND size_sqm > 0
-      AND last_seen_at > now() - interval '30 days'
+      AND last_seen_at > now() - interval '${LIVE_LISTING_MAX_AGE_DAYS} days'
       AND (expire_date IS NULL OR expire_date >= now())`;
