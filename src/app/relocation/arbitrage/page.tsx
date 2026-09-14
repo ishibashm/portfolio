@@ -1695,13 +1695,11 @@ export default function ArbitrageScannerPage() {
     固定でよい。
   */
   const [freshnessNow] = useState(() => new Date());
-  const listingFreshnessNote = useMemo(
-    () =>
-      listingFreshnessMessage(
-        describeListingFreshness(metadata?.dataUpdatedAt, freshnessNow),
-      ),
+  const listingFreshness = useMemo(
+    () => describeListingFreshness(metadata?.dataUpdatedAt, freshnessNow),
     [metadata?.dataUpdatedAt, freshnessNow],
   );
+  const listingFreshnessNote = listingFreshnessMessage(listingFreshness);
 
   // 検索範囲の表示値とAPI条件は、変更経路にかかわらず一緒に保存する。
   const applySearchAreaState = (newSearchArea: string) => {
@@ -2680,6 +2678,29 @@ export default function ArbitrageScannerPage() {
             <p className="mt-1 text-[11px] leading-relaxed text-amber-800">
               掲載の取り込みは、提供元の規約に従って止めています。方位の判定・地図・暦、および公的なデータ（成約価格・地価公示・住宅統計）は今までどおりです。
             </p>
+            {/* 掲載が尽きたら、**代わりの行き先をその場に出す。**「もう
+                無い」だけで終えると、読む側は次に何もできない。
+
+                出発地の市区町村ページ（/houi/area/{code}）は、方位ごとに
+                街と相場を並べ、その街の募集を見に行く導線（#1296 の
+                CityPortalLinks）まで持っている。**代わりは既にある**ので、
+                作らずに繋ぐ。
+
+                `empty` のときだけ出す。減っている途中（`stopped`）は
+                まだ物件が出るので、そちらを先に見てもらう。 */}
+            {listingFreshness.kind === "empty" && basePlace && (
+              <p className="mt-2 text-[11px] leading-relaxed text-amber-900">
+                <Link
+                  href={`/houi/area/${basePlace.code}`}
+                  className="inline-flex min-h-[24px] items-center font-bold underline hover:text-amber-950"
+                >
+                  {`${basePlaceLabel ?? "出発地"}から見た方位ごとの街を見る`}
+                </Link>
+                {
+                  " — 八方位それぞれにどの街があり、家賃の水準がいくらかが出ます。募集中の部屋は各社のサイトへ繋いでいます。"
+                }
+              </p>
+            )}
           </div>
         )}
 
