@@ -20,11 +20,23 @@
  */
 
 import React, { useEffect, useState } from "react";
+import Link from "next/link";
 import {
   DIRECTION_LABELS,
   type CompassDirection,
   type NodeMapping,
 } from "@/utils/directionGeo";
+
+/** 方位に入った街 1 件（API の `DirectionMunicipality`）。 */
+interface DirectionMunicipality {
+  code: string;
+  name: string;
+  distanceKm: number;
+  bearing: number;
+  rentPerSqm: number | null;
+  vacancyRate: number | null;
+  totalDwellings: number | null;
+}
 
 interface DirectionStat {
   direction: CompassDirection;
@@ -36,6 +48,8 @@ interface DirectionStat {
   vacancyCount: number;
   nearestKm: number | null;
   topMunicipalities: string[];
+  municipalities: DirectionMunicipality[];
+  truncated: boolean;
 }
 
 interface HousingStatsData {
@@ -89,6 +103,21 @@ export function HousingStatsByDirection({
    */
   nodeMapping: NodeMapping;
 }) {
+  /*
+    どの方位の街を開いているか（2026-09-14）。
+
+    賃貸の巡回を止めたので（backlog 29 節）、物件検索の掲載は 10 月中旬に
+    0 件になる。**並べる先を部屋から街へ移す**のがこの移行の本体で、
+    ここがその入口。
+
+    **畳んで置く。**8 方位 × 12 件を常に開くと 96 行が積み上がり、上の
+    集計が読めなくなる。**新しい要求は出さない。**街の一覧は同じ応答に
+    入っている（#1300）ので、開閉は描画だけの話。
+  */
+  const [openDirection, setOpenDirection] = useState<CompassDirection | null>(
+    null,
+  );
+
   /* LandPriceByDirection と同じ形。読み込み中かは条件の一致から導出する
      （effect の中で setLoading(true) を呼ばない。CLAUDE.md 4 節）。 */
   const [result, setResult] = useState<{
@@ -155,7 +184,7 @@ export function HousingStatsByDirection({
 
       <p className="text-[10px] text-stone-600 dark:text-stone-500 leading-relaxed">
         {
-          "国の住宅・土地統計調査から、方位ごとの借家の家賃（円/㎡・月）と空き家率を出しています。個別の物件ではなく、街ごとの水準です。"
+          "国の住宅・土地統計調査から、方位ごとの借家の家賃（円/㎡・月）と空き家率を出しています。個別の物件ではなく街ごとの水準で、各方位から市区町村の一覧へ降りられます。"
         }
       </p>
 
@@ -208,6 +237,66 @@ export function HousingStatsByDirection({
                   <p className="mt-0.5 text-[9px] text-stone-500 truncate">
                     {d.topMunicipalities.join("・")}
                   </p>
+                )}
+                {/* その方位の街を開く。**行き先はこのサイトの市区町村
+                    ページ。**外部への導線はその頁が持っている
+                    （`CityPortalLinks`）。ここに直接置くと 1 画面で
+                    最大 96 本の外部リンクになる（#1296 と同じ判断）。 */}
+                {d.municipalities.length > 0 && (
+                  <>
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setOpenDirection((cur) =>
+                          cur === d.direction ? null : d.direction,
+                        )
+                      }
+                      aria-expanded={openDirection === d.direction}
+                      className="mt-1 inline-flex min-h-[24px] items-center text-[10px] font-bold text-indigo-700 underline hover:text-indigo-900"
+                    >
+                      {openDirection === d.direction
+                        ? "街を閉じる"
+                        : `この方位の街を見る（${d.municipalities.length}${d.truncated ? "／" + d.count.toLocaleString() : ""}）`}
+                    </button>
+                    {openDirection === d.direction && (
+                      <ul className="mt-1 space-y-0.5 border-t border-stone-200 pt-1">
+                        {d.municipalities.map((m) => (
+                          <li key={m.code} className="text-[10px]">
+                            <Link
+                              prefetch={false}
+                              href={`/houi/area/${m.code}`}
+                              className="font-semibold text-stone-800 underline hover:text-indigo-700"
+                            >
+                              {m.name}
+                            </Link>
+                            {/* 名前と数字の間に区切りを入れる。`ml-1` の
+                                余白だけだと「東京都N区010km」と読めて
+                                しまった（実測。名前が数字で終わる街は
+                                実在する） */}
+                            <span className="ml-1 text-stone-400">／</span>
+                            <span className="ml-1 font-mono text-stone-600">
+                              {[
+                                `${m.distanceKm}km`,
+                                m.rentPerSqm === null
+                                  ? null
+                                  : `${m.rentPerSqm.toLocaleString()}円/㎡`,
+                                m.vacancyRate === null
+                                  ? null
+                                  : `空き家${(m.vacancyRate * 100).toFixed(1)}%`,
+                              ]
+                                .filter(Boolean)
+                                .join(" ・ ")}
+                            </span>
+                          </li>
+                        ))}
+                        {d.truncated && (
+                          <li className="text-[9px] leading-relaxed text-stone-500">
+                            {`近い順に ${d.municipalities.length} 件まで出しています（この方位は全部で ${d.count.toLocaleString()} 市区町村）。`}
+                          </li>
+                        )}
+                      </ul>
+                    )}
+                  </>
                 )}
               </div>
             ))}
