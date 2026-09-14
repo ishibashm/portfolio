@@ -152,6 +152,20 @@ export function parseNodeMapping(
 }
 
 /**
+ * 盤の種類から方位の切り方を決める。
+ *
+ * 「古典盤なら伝統区分、独自モデルなら 45 度等分」という対応は、この
+ * 1 か所だけに置く。同じ三項演算子が `api/rentals/arbitrage`・
+ * `api/municipalities-wealth`・`ArbitrageMapInner` に写されていて、
+ * **統計だけがこの対応を持たず traditional の決め打ちだった**ために、
+ * 独自モデルの利用者は同じ画面で 2 通りの方位割り当てを見ていた
+ * （#1297・#1298）。写しが増えると、また 1 つだけ取り残される。
+ */
+export function nodeMappingForBoard(useClassicalBoard: boolean): NodeMapping {
+  return useClassicalBoard ? "traditional" : "physical";
+}
+
+/**
  * 方位角を八方位に落とす。
  *
  * traditional（気学の伝統的な区切り）は四隅を 60 度、四正を 30 度に取る。
