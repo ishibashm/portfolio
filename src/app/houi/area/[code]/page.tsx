@@ -24,6 +24,7 @@ import { AREA_EDITORIAL } from "@/lib/areaEditorial";
 import { prefCodeByName } from "@/lib/prefContent";
 import { metaDescriptionFromIntro } from "@/lib/editorialMeta";
 import { INDEXED_ROBOTS, NOINDEX_ROBOTS } from "@/lib/siteStructure";
+import { CityPortalLinks } from "@/components/portal/CityPortalLinks";
 
 /**
  * 「○○市から見た方位別のエリアと相場」。
@@ -298,6 +299,17 @@ export default async function Page({
             ：平均ではなく中央値を使う理由と、割安度の測り方。
           </p>
         </div>
+
+        {/* 相場の札のすぐ下。**この頁は「いくらか」までしか答えない。**
+            賃貸の巡回は規約に従って止めたので（backlog 29 節）、募集中の
+            部屋は持っていない。次に読む人がやりたいのは「その街の部屋を
+            見る」ことなので、そこで渡す。1 頁 1 か所だけに置く（方位ごと
+            の表の各行に貼ると 1 頁 96 本の外部リンクになる）。 */}
+        <CityPortalLinks
+          code={area.code}
+          cityName={area.full}
+          className="mt-3"
+        />
 
         <section className="mt-10">
           <h2 className="text-xl font-bold font-serif border-b border-slate-300 pb-2">
