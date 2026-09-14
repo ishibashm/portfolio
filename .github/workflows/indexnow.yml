@@ -1,0 +1,67 @@
+# IndexNow へ URL を知らせる。**人が起動する。**
+#
+# ## なぜ別のワークフローにしたか（2026-09-14）
+#
+# 呼び口が `scrape-rentals.yml` の中にしか無かった。#1289 でその
+# ワークフローの `schedule:` を外した（規約。backlog 29 節）ので、
+# **2026-09-13 以降 1 件も送られていない。**巡回を止めたこと自体は正しい
+# のに、**関係の無い SEO の仕組みが巻き添えで止まった。**
+#
+# CLAUDE.md 3 節「待ち行列にワークフローを足すときは、触る表を見る」と
+# 同じ構図で、別の関心事が 1 つのワークフローに同居していた。切り離す。
+#
+# ## 定時では回さない
+#
+# `scripts/submit_indexnow.ts` の註のとおり、**変わっていない頁を毎晩
+# 1,000 件送ると無視されるか悪印象になる。**送ってよいのは本当に中身が
+# 変わったときだけで、それは人が判断する。だから `workflow_dispatch`
+# だけにしてある。**`schedule:` を足さないこと。**
+#
+# 巡回の側の口（集計の差分を送る経路）は `scrape-rentals.yml` に残して
+# ある。巡回を再開すればそちらが自動で動く。
+#
+# ## 使い方
+#
+#   urls  … 送る URL をカンマ区切りで。https で、このサイトのホストのみ
+#   apply … 既定は dry-run（候補を出すだけ）。送るときだけ true
+name: Notify IndexNow
+
+on:
+  workflow_dispatch:
+    inputs:
+      urls:
+        description: "送る URL（カンマ区切り。例: https://cloud-palette.com/houi/area/23102）"
+        required: true
+        type: string
+      apply:
+        description: "実際に送る（既定は dry-run）"
+        required: false
+        default: false
+        type: boolean
+
+# 同時に走らせない。同じ URL を二重に送らない。
+concurrency:
+  group: indexnow
+  cancel-in-progress: false
+
+jobs:
+  notify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      # 鍵は Cloud Run と同じ値。/indexnow-key.txt がこれをそのまま返し、
+      # 食い違うと IndexNow 側が 403 で弾く。未設定ならスクリプトが
+      # 候補だけ出して終わる（落とさない）。
+      - name: Submit
+        env:
+          INDEXNOW_KEY: ${{ secrets.INDEXNOW_KEY }}
+        run: |
+          npx -y tsx scripts/submit_indexnow.ts \
+            --urls "${{ inputs.urls }}" \
+            ${{ inputs.apply && '--apply' || '' }}
