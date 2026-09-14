@@ -194,6 +194,10 @@ import {
 } from "@/utils/arbitrageSearchArea";
 import { ActiveProfileBadge } from "@/components/profile/ActiveProfileBadge";
 import { nearestMunicipality, nearestPlaceLabel } from "@/lib/nearestPlace";
+import {
+  describeListingFreshness,
+  listingFreshnessMessage,
+} from "@/lib/listingFreshness";
 
 /**
  * スキャナーで選べる都道府県と、選択時に地図を寄せる代表座標。
@@ -1676,6 +1680,28 @@ export default function ArbitrageScannerPage() {
   const areaExcludesBase =
     prefecture !== "all" && basePlace !== null && basePlace.pref !== prefecture;
 
+  /*
+    掲載の取り込みが止まっているかどうか（2026-09-14）。
+
+    巡回は規約に従って止めた（backlog 29 節）。掲載の条件は
+    `last_seen_at > now() - interval '30 days'` なので、**止めた日から
+    30 日で件数が 0 になる。**その途中、件数は毎日減っていくのに、画面は
+    理由を言わない。日時（物件データ最終取込）は右上に出ているが、
+    それが古いことの**意味**は書いていなかった。
+
+    「今」は 1 回だけ取る。render のたびに `new Date()` を呼ぶと純粋で
+    なくなる（react-hooks/purity）。日の単位の話なので、開いているあいだ
+    固定でよい。
+  */
+  const [freshnessNow] = useState(() => new Date());
+  const listingFreshnessNote = useMemo(
+    () =>
+      listingFreshnessMessage(
+        describeListingFreshness(metadata?.dataUpdatedAt, freshnessNow),
+      ),
+    [metadata?.dataUpdatedAt, freshnessNow],
+  );
+
   // 検索範囲の表示値とAPI条件は、変更経路にかかわらず一緒に保存する。
   const applySearchAreaState = (newSearchArea: string) => {
     const nextFilters = filtersForSearchArea(newSearchArea);
@@ -2642,6 +2668,19 @@ export default function ArbitrageScannerPage() {
             </button>
           </div>
         </div>
+
+        {/* 掲載の取り込みが止まっていることを、そう書く。日時は右上に
+            出ているが、それが古いことの意味までは伝わらない（「今日は
+            遅れているのかな」としか読めない）。止まっていない間は何も
+            出さないので、巡回を再開すればこの帯は自然に消える。 */}
+        {listingFreshnessNote && (
+          <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-amber-900">
+            <p className="text-xs leading-relaxed">{listingFreshnessNote}</p>
+            <p className="mt-1 text-[11px] leading-relaxed text-amber-800">
+              掲載の取り込みは、提供元の規約に従って止めています。方位の判定・地図・暦、および公的なデータ（成約価格・地価公示・住宅統計）は今までどおりです。
+            </p>
+          </div>
+        )}
 
         {/*
           算出方法の切替（古典 / 独自モデル）と、対象日・判定の絞り込み・目的。
