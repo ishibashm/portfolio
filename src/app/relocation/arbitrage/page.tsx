@@ -194,6 +194,7 @@ import {
 } from "@/utils/arbitrageSearchArea";
 import { ActiveProfileBadge } from "@/components/profile/ActiveProfileBadge";
 import { nearestMunicipality, nearestPlaceLabel } from "@/lib/nearestPlace";
+import { nodeMappingForBoard } from "@/utils/directionGeo";
 import {
   describeListingFreshness,
   listingFreshnessMessage,
@@ -2944,11 +2945,16 @@ export default function ArbitrageScannerPage() {
                         どちらの切り替えでも出す。#1199 では購入の側にしか
                         置いておらず、賃貸を選んだ人に家賃の統計が見えて
                         いなかった。 */}
+                    {/* 方位の切り方は、この頁の物件一覧と同じものを渡す。
+                        以前は統計だけが traditional の決め打ちで、独自
+                        モデルを選ぶと物件と統計が別の方位を指していた
+                        （#1297・#1298）。 */}
                     <HousingStatsByDirection
                       lat={hasBaseLocation ? parseFloat(baseLat) : 0}
                       lon={hasBaseLocation ? parseFloat(baseLon) : 0}
                       radiusKm={radiusKm === "all" ? null : Number(radiusKm)}
                       hasBase={hasBaseLocation}
+                      nodeMapping={nodeMappingForBoard(useClassical)}
                     />
 
                     {/* Search Area Selection */}

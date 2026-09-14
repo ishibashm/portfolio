@@ -1,3 +1,5 @@
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 import { describe, it, expect } from "vitest";
 import {
   COMPASS_DIRECTIONS,
@@ -9,6 +11,7 @@ import {
   destinationForDirection,
   directionForDestination,
   directionFromBearing,
+  nodeMappingForBoard,
   directionWedgeHalfWidth,
   directionWedgePoints,
   distanceKmBetween,
@@ -542,5 +545,59 @@ describe("月交点の方位の区切り", () => {
         directionFromBearing(b, "traditional"),
     );
     expect(differing.length).toBeGreaterThan(0);
+  });
+});
+
+/**
+ * 盤の種類 → 方位の切り方。**対応を 1 か所に置いたことの見張り。**
+ *
+ * 同じ三項演算子が `api/rentals/arbitrage`・`api/municipalities-wealth`・
+ * `ArbitrageMapInner` に写されていて、**統計だけがこの対応を持たず
+ * traditional の決め打ちだった**。その結果、独自モデルを選んでいる利用者は
+ * 同じ画面で 2 通りの方位割り当てを見ていた（#1297・#1298）。
+ *
+ * 写しが増えると、また 1 つだけ取り残される。
+ */
+describe("盤の種類から方位の切り方を決める", () => {
+  it("古典盤は伝統区分、独自モデルは 45 度等分", () => {
+    expect(nodeMappingForBoard(true)).toBe("traditional");
+    expect(nodeMappingForBoard(false)).toBe("physical");
+  });
+
+  it("空回りしていない: 2 つの切り方で答えが割れる方位角が実在する", () => {
+    /* 割れないなら、この対応をどう間違えても画面は変わらない＝
+       この検査は何も守っていない */
+    let differ = 0;
+    for (let b = 0; b < 360; b++) {
+      if (
+        directionFromBearing(b, nodeMappingForBoard(true)) !==
+        directionFromBearing(b, nodeMappingForBoard(false))
+      ) {
+        differ += 1;
+      }
+    }
+    /* 1 度刻みの実測。境目 8 か所 × 7.5 度（#1297 の註） */
+    expect(differ).toBe(60);
+  });
+
+  it("画面が独自の三項演算子を持っていない", () => {
+    /* 対応を写すと、また 1 つだけ取り残される。物件検索の頁と統計の部品は
+       この関数を通す */
+    const page = readFileSync(
+      join(process.cwd(), "src/app/relocation/arbitrage/page.tsx"),
+      "utf8",
+    );
+    expect(page).toContain("nodeMappingForBoard(useClassical)");
+
+    const panel = readFileSync(
+      join(
+        process.cwd(),
+        "src/components/relocation/HousingStatsByDirection.tsx",
+      ),
+      "utf8",
+    );
+    /* 部品は受け取るだけ。自分で決めない */
+    expect(panel).not.toMatch(/\?\s*"traditional"\s*:\s*"physical"/);
+    expect(panel).toContain("nodeMapping=${nodeMapping}");
   });
 });

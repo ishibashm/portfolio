@@ -20,7 +20,11 @@
  */
 
 import React, { useEffect, useState } from "react";
-import { DIRECTION_LABELS, type CompassDirection } from "@/utils/directionGeo";
+import {
+  DIRECTION_LABELS,
+  type CompassDirection,
+  type NodeMapping,
+} from "@/utils/directionGeo";
 
 interface DirectionStat {
   direction: CompassDirection;
@@ -41,6 +45,7 @@ interface HousingStatsData {
     dataYear: number | null;
     minKm: number;
     maxKm: number;
+    nodeMapping: NodeMapping;
     source: string;
     credit: string;
   };
@@ -66,12 +71,23 @@ export function HousingStatsByDirection({
   lon,
   radiusKm,
   hasBase,
+  nodeMapping,
 }: {
   lat: number;
   lon: number;
   /** null は全国モード。API の上限（500km）で切る。 */
   radiusKm: number | null;
   hasBase: boolean;
+  /**
+   * 方位の切り方。**同じ画面の物件一覧と同じものを渡すこと。**
+   *
+   * ここは長らく API 側の決め打ち（traditional）だった。物件一覧は
+   * 独自モデルなら physical（45 度等分）で切るので、**独自モデルの
+   * 利用者は同じ画面で 2 通りの方位割り当てを見ていた。**大阪駅から
+   * 100km 以内だけで 29 市区町村が規則によって方位を変える
+   * （#1297・#1298）。
+   */
+  nodeMapping: NodeMapping;
 }) {
   /* LandPriceByDirection と同じ形。読み込み中かは条件の一致から導出する
      （effect の中で setLoading(true) を呼ばない。CLAUDE.md 4 節）。 */
@@ -86,7 +102,8 @@ export function HousingStatsByDirection({
      いた。TransactionsPanel が null → 自分の上限（300）にしているのと
      同じ形にそろえる。 */
   const effectiveRadius = radiusKm ?? 500;
-  const requestKey = `${lat},${lon},${effectiveRadius}`;
+  /* 切り方も鍵に入れる。入れないと、盤を切り替えても前の答えが残る */
+  const requestKey = `${lat},${lon},${effectiveRadius},${nodeMapping}`;
   const data = result?.key === requestKey ? result.data : null;
   const error = result?.key === requestKey ? result.error : null;
   const loading = hasBase && result?.key !== requestKey;
@@ -95,7 +112,7 @@ export function HousingStatsByDirection({
     if (!hasBase) return;
     let alive = true;
     fetch(
-      `/api/housing-stats/by-direction?baseLat=${lat}&baseLon=${lon}&maxKm=${effectiveRadius}`,
+      `/api/housing-stats/by-direction?baseLat=${lat}&baseLon=${lon}&maxKm=${effectiveRadius}&nodeMapping=${nodeMapping}`,
     )
       .then(async (res) => {
         const body = await res.json();
@@ -122,7 +139,7 @@ export function HousingStatsByDirection({
     return () => {
       alive = false;
     };
-  }, [hasBase, lat, lon, effectiveRadius, requestKey]);
+  }, [hasBase, lat, lon, effectiveRadius, nodeMapping, requestKey]);
 
   if (!hasBase) return null;
 
