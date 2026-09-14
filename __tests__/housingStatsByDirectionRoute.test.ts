@@ -90,4 +90,72 @@ describe("/api/housing-stats/by-direction", () => {
     expect(res.status).toBe(500);
     expect((await res.json()).error).toBe("HOUSING_STATS_QUERY_FAILED");
   });
+
+  /*
+    方位の切り方（nodeMapping）。
+
+    ここは長らく集計側の決め打ち（traditional）だった。物件一覧
+    （api/rentals/arbitrage）は古典盤なら traditional、独自モデルなら
+    physical で切るので、**独自モデルの利用者は同じ画面で 2 通りの方位
+    割り当てを見ていた**（#1297 で lib 側を直し、ここで入口を繋ぐ）。
+
+    実物で確かめた例（大阪駅から）:
+
+      27203 大阪府豊中市        8.9km  方位角 344.9  trad=NW  phys=N
+      29203 奈良県大和郡山市   26.4km  方位角 106.3  trad=SE  phys=E
+      27202 大阪府岸和田市     28.2km  方位角 199.4  trad=SW  phys=S
+
+    100km 以内だけで 29 市区町村が規則によって方位を変える。
+  */
+  describe("方位の切り方", () => {
+    /** その市区町村が入った方位を 1 つ返す。 */
+    async function directionOf(code: string, params = "") {
+      queryRawUnsafe.mockResolvedValue([rowFor(code, 3240, 60000, 6000)]);
+      const res = await GET(
+        request(`baseLat=${OSAKA.lat}&baseLon=${OSAKA.lon}&maxKm=100${params}`),
+      );
+      const body = await res.json();
+      const hit = body.directions.find((d: { count: number }) => d.count === 1);
+      return { direction: hit?.direction as string, meta: body.meta };
+    }
+
+    it("渡さないときは今までどおり（伝統区分）", async () => {
+      expect((await directionOf("27203")).direction).toBe("NW");
+      expect((await directionOf("29203")).direction).toBe("SE");
+      expect((await directionOf("27202")).direction).toBe("SW");
+    });
+
+    it("physical を渡すと 45 度等分になる（決め打ちに戻すと落ちる）", async () => {
+      const p = "&nodeMapping=physical";
+      expect((await directionOf("27203", p)).direction).toBe("N");
+      expect((await directionOf("29203", p)).direction).toBe("E");
+      expect((await directionOf("27202", p)).direction).toBe("S");
+    });
+
+    it("空回りしていない: 3 件とも規則で答えが割れる", async () => {
+      for (const code of ["27203", "29203", "27202"]) {
+        const t = await directionOf(code);
+        const ph = await directionOf(code, "&nodeMapping=physical");
+        expect(t.direction, code).not.toBe(ph.direction);
+      }
+    });
+
+    it("知らない値は既定に倒す（綴り違いを黙って physical にしない）", async () => {
+      /* `as` で押し通していると "phys" がそのまま渡り、
+         directionFromBearing の physical 以外＝traditional に落ちるので
+         たまたま同じ答えになる。meta で「何で切ったか」まで見る */
+      for (const bad of ["phys", "PHYSICAL", "", "1", "traditional "]) {
+        const r = await directionOf("27203", `&nodeMapping=${bad}`);
+        expect(r.direction, bad).toBe("NW");
+        expect(r.meta.nodeMapping, bad).toBe("traditional");
+      }
+    });
+
+    it("何で切ったかを meta で返す", async () => {
+      expect((await directionOf("27203")).meta.nodeMapping).toBe("traditional");
+      expect(
+        (await directionOf("27203", "&nodeMapping=physical")).meta.nodeMapping,
+      ).toBe("physical");
+    });
+  });
 });
