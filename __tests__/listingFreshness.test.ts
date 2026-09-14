@@ -191,6 +191,14 @@ describe("静止した数字の断り", () => {
     expect(listingSnapshotNote("こわれた値", NOW)).toBeNull();
   });
 
+  it("県ページも同じ断りを出している", () => {
+    const page = readFileSync(
+      join(process.cwd(), "src/app/houi/pref/[code]/page.tsx"),
+      "utf8",
+    );
+    expect(page).toContain("listingSnapshotNote(stats.asOf)");
+  });
+
   it("市区町村ページが集計日を見て出している", () => {
     const page = readFileSync(
       join(process.cwd(), "src/app/houi/area/[code]/page.tsx"),
