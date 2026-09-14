@@ -122,6 +122,36 @@ export function distanceKmBetween(
 }
 
 /**
+ * 方位角を八方位に落とす規則。
+ *
+ * - `traditional` … 気学の伝統的な区切り。四隅 60 度・四正 30 度
+ * - `physical` … 45 度の等分
+ *
+ * **同じ地点でも規則が違えば方位が変わる**（1 度刻みで全周を回すと 60 度
+ * ぶん割れる。`housingStatsDirections.test.ts` の実測）。判定と表示で
+ * 別の規則を使うと、同じ画面の地図と行が食い違う。
+ *
+ * 字面の `"traditional" | "physical"` が各所に写されていたので名前を付けた。
+ * **素の文字列は `parseNodeMapping` を通してから渡すこと**（CLAUDE.md 4 節。
+ * union を受け取る所を string のままにしない）。
+ */
+export type NodeMapping = "traditional" | "physical";
+
+/**
+ * 検索パラメータなどの素の文字列を `NodeMapping` にする。
+ *
+ * **`as` で押し通さない。**知らない値は既定（`traditional`）に倒す。
+ * `?nodeMapping=phys` のような綴り違いを黙って physical として扱うと、
+ * 利用者の設定と無関係に方位が変わる。
+ */
+export function parseNodeMapping(
+  value: string | null | undefined,
+  fallback: NodeMapping = "traditional",
+): NodeMapping {
+  return value === "traditional" || value === "physical" ? value : fallback;
+}
+
+/**
  * 方位角を八方位に落とす。
  *
  * traditional（気学の伝統的な区切り）は四隅を 60 度、四正を 30 度に取る。
@@ -130,7 +160,7 @@ export function distanceKmBetween(
  */
 export function directionFromBearing(
   bearing: number,
-  nodeMapping: "traditional" | "physical" = "traditional",
+  nodeMapping: NodeMapping = "traditional",
 ): CompassDirection {
   // 有限でない入力（NaN・±Infinity）は「方位を出せない」。kigakuUtils の
   // getKigakuSector が持つガードと同じ規則で北に倒す。以前は traditional で

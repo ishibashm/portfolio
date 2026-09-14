@@ -4,6 +4,7 @@ import { toLogMessage } from "@/lib/errorMessage";
 import { ESTAT_API_CREDIT } from "@/lib/estatCredit";
 import { AREAS } from "@/lib/areaContent";
 import { mergeWithListed } from "@/lib/municipalityCoords";
+import { parseNodeMapping } from "@/utils/directionGeo";
 import {
   DEFAULT_MAX_KM,
   DEFAULT_MIN_KM,
@@ -66,6 +67,19 @@ export async function GET(request: Request) {
     0,
   );
 
+  /*
+    方位の切り方。**判定と同じものを使う。**
+
+    ここは長らく集計側の決め打ち（traditional）だった。物件一覧
+    （api/rentals/arbitrage）は古典盤なら traditional、独自モデルなら
+    physical で切るので、**独自モデルの利用者は同じ画面で 2 通りの方位
+    割り当てを見ていた**（#1297）。
+
+    知らない値は traditional に倒す（`parseNodeMapping`）。`as` で押し通すと
+    綴り違いが黙って physical になり、設定と無関係に方位が動く。
+  */
+  const nodeMapping = parseNodeMapping(searchParams.get("nodeMapping"));
+
   try {
     /* 最新の調査年だけ。住調は 5 年ごとなので、次の調査を取り込んだら
        自動でそちらに切り替わる */
@@ -84,7 +98,7 @@ export async function GET(request: Request) {
       allPoints(),
       baseLat,
       baseLon,
-      { minKm, maxKm },
+      { minKm, maxKm, nodeMapping },
     );
 
     return NextResponse.json({
@@ -95,6 +109,9 @@ export async function GET(request: Request) {
         dataYear: rows[0]?.data_year ?? null,
         minKm,
         maxKm,
+        /* どの規則で切ったか。画面が「物件一覧と同じ規則か」を言えるように
+           返す。綴り違いを倒した結果もここに出る */
+        nodeMapping,
         source:
           "「統計でみる市区町村のすがた」（総務省）を加工して作成。出典：政府統計の総合窓口(e-Stat)（https://www.e-stat.go.jp/）",
         credit: ESTAT_API_CREDIT,
