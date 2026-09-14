@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useCallback, useEffect, useState } from "react";
+import { SampleProfileNotice } from "@/components/profile/SampleProfileNotice";
 import { Loader2, CalendarCheck, ArrowRight } from "lucide-react";
 import Link from "next/link";
 import { saveWorkingDate } from "@/lib/workingDate";
@@ -102,6 +103,8 @@ interface Summary {
  * 自分の生年月日と現住地に直せば結果もそのぶん正確になる。
  */
 const DEFAULT_BIRTH_DATE = "2000-01-01";
+/** 断りに出す表示。ホームの帯と同じ書き方にそろえる。 */
+const SAMPLE_BIRTH_LABEL = "2000 年 1 月 1 日";
 /**
  * 保存済みの座標を入力欄に入れる形にする。
  *
@@ -401,16 +404,21 @@ export function AuspiciousDayFinder() {
         </p>
       )}
 
-      {summaries && usingDefaults && (
-        <div className="mt-6 rounded-2xl border border-amber-200 bg-amber-50 p-4">
-          <h3 className="text-sm font-bold text-amber-900">
-            いまの結果は仮の設定によるものです
-          </h3>
-          <p className="mt-1 text-xs leading-relaxed text-amber-800">
-            生年月日「{DEFAULT_BIRTH_DATE}」・現住地「東京」を仮に置いて計算しています。本命星は生年で変わり、方位は現住地から見た向きで決まるため、
-            <b>このままではあなたの吉日ではありません</b>。上の入力欄をご自身の生年月日と現住地に変えて、もう一度お試しください。
-          </p>
-        </div>
+      {/* 未登録のまま出した結果の断り。**文言は 1 つの部品に寄せてある**
+          （2026-09-14）。以前はここだけ「いまの結果は仮の設定による
+          ものです」という独自の言い方で、ホームの帯（「これは見本です」）
+          と食い違っていた。同じ状況に 3 通りの言い方があると「別のことを
+          言っているのか」と読める（CLAUDE.md 4 節）。
+
+          **押す前から出す。**以前は `summaries &&` で結果が出てから
+          しか出ておらず、既定値のまま押す瞬間には何も断っていなかった。 */}
+      {usingDefaults && (
+        <SampleProfileNotice
+          className="mt-4"
+          birthLabel={SAMPLE_BIRTH_LABEL}
+          what="吉日と方位の判定"
+          unaffected="暦そのもの（二十四節気・干支）は誰が見ても同じです。上の欄をご自身の生年月日と現住地に変えると、あなたの吉日になります。"
+        />
       )}
 
       {summaries && (

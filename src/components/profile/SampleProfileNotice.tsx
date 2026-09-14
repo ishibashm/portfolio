@@ -23,16 +23,36 @@ import { UserRound } from "lucide-react";
  * - **どこが見本なのかを書く。**画面の一部（地図と刻）だけが見本で、
  *   暦や宇宙天気は誰にとっても同じ
  * - 登録への入口をその場に置く
+ *
+ * ## 同じ状況に 3 通りの言い方があった（2026-09-14）
+ *
+ * `/calendar` の吉日（`AuspiciousDayFinder`）は「いまの結果は仮の設定に
+ * よるものです」、`QuickProfileBar` は「仮の値（2000-01-01・東京）で計算
+ * した結果です」と、**画面ごとに別の文言を持っていた。**言い方が違うと
+ * 「これは別のことを言っているのか」と読める。CLAUDE.md 4 節「サイトの
+ * 言葉と評価の一貫性」。
+ *
+ * 見本なのが何かは画面ごとに違うので、`what` / `unaffected` で受け取る。
+ * **文の骨格は 1 つ**にして、差し替えるのは中身だけにする。
  */
 export function SampleProfileNotice({
   /** 見本に使っている生年月日の表示（例: 2000 年 1 月 1 日）。 */
   birthLabel,
   /** 見本の本命星（例: 一白水星）。出せないときは省く。 */
   starLabel,
+  /** 何が見本の値で出ているか（例: 方位の吉凶と刻の判定）。 */
+  what = "方位の吉凶と刻の判定",
+  /**
+   * 誰が見ても同じもの。**空文字なら出さない。**「全部が見本」の画面で
+   * 無理に書くと嘘になる。
+   */
+  unaffected = "暦・宇宙天気・地図そのものは誰が見ても同じです。",
   className = "",
 }: {
   birthLabel: string;
   starLabel?: string;
+  what?: string;
+  unaffected?: string;
   className?: string;
 }) {
   return (
@@ -42,11 +62,11 @@ export function SampleProfileNotice({
       <UserRound className="h-3.5 w-3.5 shrink-0" aria-hidden />
       <span>
         <b className="text-indigo-950">これは見本です。</b>
-        生年月日が未登録のため、方位の吉凶と刻の判定は
+        {`生年月日が未登録のため、${what}は`}
         <b className="mx-1">
           {birthLabel}生まれ{starLabel ? `（${starLabel}）` : ""}
         </b>
-        の例で出しています。暦・宇宙天気・地図そのものは誰が見ても同じです。
+        {`の例で出しています。${unaffected}`}
       </span>
       <Link
         href="/profile"
