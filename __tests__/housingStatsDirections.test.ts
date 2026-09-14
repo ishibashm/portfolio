@@ -41,13 +41,25 @@ function town(
   };
 }
 
-function run(items: { row: HousingStatRow; point: HousingPoint }[]) {
+function run(
+  items: { row: HousingStatRow; point: HousingPoint }[],
+  options?: Parameters<typeof housingStatsByDirection>[4],
+) {
   return housingStatsByDirection(
     items.map((i) => i.row),
     items.map((i) => i.point),
     BASE_LAT,
     BASE_LON,
+    options,
   );
+}
+
+/** その方位に入った市区町村の数。 */
+function countIn(
+  stats: ReturnType<typeof housingStatsByDirection>,
+  d: string,
+): number {
+  return stats.find((s) => s.direction === d)!.count;
 }
 
 describe("housingStatsByDirection", () => {
@@ -114,5 +126,105 @@ describe("housingStatsByDirection", () => {
     const t = town(0, 30, { rent_per_tatami_yen: 3000 });
     const stats = housingStatsByDirection([t.row], [], BASE_LAT, BASE_LON);
     expect(stats.every((s) => s.count === 0)).toBe(true);
+  });
+});
+
+/**
+ * 方位の切り方（`nodeMapping`）を呼ぶ側から渡せるようにした（2026-09-14）。
+ *
+ * ## 何が問題だったか
+ *
+ * ここは長らく `"traditional"` の決め打ちだった。スキャナー
+ * （`api/rentals/arbitrage`）は古典盤なら `traditional`、独自モデルなら
+ * **`physical`（45 度等分）**で切る。**独自モデルを選んでいる利用者は、
+ * 同じ画面で 2 通りの方位割り当てを見ていた。**
+ *
+ * ## 検査の組み方（CLAUDE.md 3 節）
+ *
+ * 1. 変更前の挙動（= 決め打ちの `traditional`）を、既定として写す
+ * 2. 広い方位角の範囲で、旧と新の答えを突き合わせる
+ * 3. **旧挙動に戻すと落ちる**ことを示す。`physical` を渡したときに
+ *    `physical` の答えになることを見ているので、決め打ちへ戻せば必ず落ちる
+ */
+describe("方位の切り方を呼ぶ側から渡せる", () => {
+  /*
+    伝統区分は四正 30 度・四隅 60 度（N は 345〜15、NE は 15〜75）、
+    physical は 45 度等分（N は 337.5〜22.5、NE は 22.5〜67.5）。
+    下の 2 つはどちらの規則かで答えが変わる方位角。
+  */
+  const SPLIT: { bearing: number; traditional: string; physical: string }[] = [
+    { bearing: 20, traditional: "NE", physical: "N" },
+    { bearing: 70, traditional: "NE", physical: "E" },
+    { bearing: 200, traditional: "SW", physical: "S" },
+    { bearing: 250, traditional: "SW", physical: "W" },
+  ];
+
+  it("渡さないときは今までどおり（伝統区分）", () => {
+    for (const c of SPLIT) {
+      const stats = run([town(c.bearing, 30)]);
+      expect(countIn(stats, c.traditional), `${c.bearing}度`).toBe(1);
+      expect(countIn(stats, c.physical), `${c.bearing}度`).toBe(0);
+    }
+  });
+
+  it("traditional を明示しても同じ（既定と食い違わない）", () => {
+    for (const c of SPLIT) {
+      const stats = run([town(c.bearing, 30)], { nodeMapping: "traditional" });
+      expect(countIn(stats, c.traditional), `${c.bearing}度`).toBe(1);
+    }
+  });
+
+  it("physical を渡すと 45 度等分になる（決め打ちに戻すとここが落ちる）", () => {
+    for (const c of SPLIT) {
+      const stats = run([town(c.bearing, 30)], { nodeMapping: "physical" });
+      expect(countIn(stats, c.physical), `${c.bearing}度`).toBe(1);
+      expect(countIn(stats, c.traditional), `${c.bearing}度`).toBe(0);
+    }
+  });
+
+  it("空回りしていない: 2 つの規則で答えが割れる方位角が実在する", () => {
+    /* 上の 4 件が「たまたま同じ」になっていたら、この検査は何も見ていない */
+    for (const c of SPLIT) {
+      expect(c.traditional, `${c.bearing}度`).not.toBe(c.physical);
+    }
+    /* 1 度刻みで全周を回し、割れる角度が十分あることも確かめる */
+    let differ = 0;
+    for (let b = 0; b < 360; b++) {
+      const t = run([town(b, 30)], { nodeMapping: "traditional" });
+      const p = run([town(b, 30)], { nodeMapping: "physical" });
+      const td = COMPASS_DIRECTIONS.find((d) => countIn(t, d) === 1);
+      const pd = COMPASS_DIRECTIONS.find((d) => countIn(p, d) === 1);
+      if (td !== pd) differ += 1;
+    }
+    /*
+      実測 60（1 度刻み）。当て推量で 120 と書いて落ちたので測り直した。
+
+      四隅 60 度・四正 30 度と 45 度等分の境目は 8 か所あり、1 か所につき
+      7.5 度ずれる（例: NE の始まりが 15 度 と 22.5 度）。8 × 7.5 = 60。
+      「1 方位あたり 15 度 × 8 方位」と数えると**同じずれを両隣で二重に
+      数える**ことになる。
+    */
+    expect(differ).toBe(60);
+  });
+
+  it("方位以外は変わらない（集計の式に手を付けていない）", () => {
+    const items = [
+      town(20, 30, { rent_per_tatami_yen: 3240, tatami_per_rental: 10 }),
+      town(200, 40, { rent_per_tatami_yen: 1620, tatami_per_rental: 20 }),
+    ];
+    const t = run(items, { nodeMapping: "traditional" });
+    const p = run(items, { nodeMapping: "physical" });
+    const sum = (s: ReturnType<typeof housingStatsByDirection>) =>
+      s.reduce((n, d) => n + d.count, 0);
+    /* 入る先が変わるだけで、落ちる件数も拾う件数も同じ */
+    expect(sum(p)).toBe(sum(t));
+    expect(sum(t)).toBe(2);
+    /* 円/㎡ は畳から直した値。規則を変えても数字は同じ */
+    expect(t.find((d) => d.direction === "NE")!.medianRentPerSqm).toBe(
+      Math.round(3240 / TATAMI_SQM),
+    );
+    expect(p.find((d) => d.direction === "N")!.medianRentPerSqm).toBe(
+      Math.round(3240 / TATAMI_SQM),
+    );
   });
 });

@@ -82,6 +82,22 @@ export const DEFAULT_MAX_KM = 150;
 export interface HousingDirectionOptions {
   minKm?: number;
   maxKm?: number;
+  /**
+   * 方位角を八方位に落とす規則。**判定と同じものを渡すこと。**
+   *
+   * ここは長らく `"traditional"` の決め打ちだった。ところがスキャナー
+   * （`api/rentals/arbitrage`）は古典盤なら `traditional`、独自モデルなら
+   * **`physical`（45 度等分）**で切っている。つまり**独自モデルを選んで
+   * いる利用者は、同じ画面で 2 通りの方位割り当てを見ていた。**物件は
+   * 45 度等分、この統計は伝統区分（四正 30 度・四隅 60 度）。四正と四隅の
+   * 境目にある街は、物件一覧では東なのに統計では北東になる。
+   *
+   * CLAUDE.md 3 節の「同じ画面で地図は合成、スコアカードは全統合」
+   * （#1118〜#1121）と同じ形の食い違い。
+   *
+   * **既定は `"traditional"`**。渡さない呼び出しの答えは 1 件も変わらない。
+   */
+  nodeMapping?: "traditional" | "physical";
 }
 
 function quantile(sorted: number[], q: number): number | null {
@@ -119,6 +135,7 @@ export function housingStatsByDirection(
 ): HousingDirectionStat[] {
   const minKm = options.minKm ?? DEFAULT_MIN_KM;
   const maxKm = options.maxKm ?? DEFAULT_MAX_KM;
+  const nodeMapping = options.nodeMapping ?? "traditional";
   const pointByCode = new Map(points.map((p) => [p.code, p]));
 
   const buckets = new Map<CompassDirection, Bucket>();
@@ -142,10 +159,12 @@ export function housingStatsByDirection(
     const km = distanceKmBetween(baseLat, baseLon, p.lat, p.lon);
     if (km < minKm || km > maxKm) continue;
 
-    /* 判定と同じ真北の方位角で切る。磁北は使わない（CLAUDE.md 3 節） */
+    /* 判定と同じ真北の方位角で、**判定と同じ規則**で切る。磁北は使わない
+       （CLAUDE.md 3 節）。規則を決め打ちにすると、独自モデルを選んだ人の
+       画面で物件と統計が別の方位を指す（`nodeMapping` の註） */
     const direction = directionFromBearing(
       bearingBetween(baseLat, baseLon, p.lat, p.lon),
-      "traditional",
+      nodeMapping,
     );
     const b = buckets.get(direction)!;
     b.count += 1;
