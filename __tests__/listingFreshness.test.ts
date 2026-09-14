@@ -5,6 +5,7 @@ import {
   LISTING_STALE_AFTER_DAYS,
   describeListingFreshness,
   listingFreshnessMessage,
+  listingSnapshotNote,
 } from "@/lib/listingFreshness";
 import {
   LIVE_LISTING_MAX_AGE_DAYS,
@@ -144,5 +145,59 @@ describe("掲載が尽きたときの行き先", () => {
   it("出発地が分からないときは出さない（東京へ落とさない）", () => {
     /* 既定値に落とすと、名古屋の人に東京の街を出す。#1100 の系統 */
     expect(SRC).toMatch(/kind === "empty" && basePlace &&/);
+  });
+});
+
+/**
+ * 掲載から作った**静止した数字**に添える断り（市区町村ページ・県ページ）。
+ *
+ * 物件検索とは事情が違う。あちらは DB を毎回引くので 30 日の窓から外れて
+ * **0 件に向かって減る**。市区町村ページが読む `areaDirections.json` を焼く
+ * `build_area_dataset` は `scrape-rentals.yml` の中にしか無いので、巡回を
+ * 止めた時点で**その日の値のまま凍結している。**
+ */
+describe("静止した数字の断り", () => {
+  it("巡回が続いていれば何も言わない", () => {
+    for (const d of [0, 1, LISTING_STALE_AFTER_DAYS - 1]) {
+      expect(listingSnapshotNote(daysAgo(d), NOW), `${d} 日前`).toBeNull();
+    }
+  });
+
+  it("止まっていれば「以降は更新していません」と書く", () => {
+    const note = listingSnapshotNote(daysAgo(LISTING_STALE_AFTER_DAYS), NOW);
+    expect(note).toContain("以降は更新していません");
+    expect(note).toContain("規約に従って止めています");
+  });
+
+  it("窓を越えても文言は変わらない（0 件にはならないので）", () => {
+    /* 物件検索は 30 日で 0 件になるが、こちらは凍結するだけ。
+       「0 件になります」と書くと嘘になる */
+    const a = listingSnapshotNote(daysAgo(LISTING_STALE_AFTER_DAYS), NOW);
+    const b = listingSnapshotNote(daysAgo(365), NOW);
+    expect(b).toBe(a);
+    expect(b).not.toContain("0 件");
+  });
+
+  it("日数を出さない（静的生成なのでビルド時刻が焼き込まれる）", () => {
+    /* この頁は generateStaticParams で焼くので、`new Date()` はビルド
+       時刻になる。「3 日前」と焼かれた頁が 3 か月後も「3 日前」と言う */
+    const note = listingSnapshotNote(daysAgo(200), NOW) ?? "";
+    expect(note).not.toMatch(/\d+\s*日前/);
+    expect(note).not.toMatch(/あと\s*\d+/);
+  });
+
+  it("日時が無ければ何も言わない", () => {
+    expect(listingSnapshotNote(null, NOW)).toBeNull();
+    expect(listingSnapshotNote("こわれた値", NOW)).toBeNull();
+  });
+
+  it("市区町村ページが集計日を見て出している", () => {
+    const page = readFileSync(
+      join(process.cwd(), "src/app/houi/area/[code]/page.tsx"),
+      "utf8",
+    );
+    expect(page).toContain("listingSnapshotNote(areaAsOf(area))");
+    /* 頁の側で日数を作っていない */
+    expect(page).not.toMatch(/snapshotNote[^\n]*日前/);
   });
 });
