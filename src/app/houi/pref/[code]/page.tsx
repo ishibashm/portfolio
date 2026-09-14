@@ -17,6 +17,7 @@ import {
   regionSiblings,
 } from "@/lib/prefContent";
 import { PREF_EDITORIAL } from "@/lib/prefEditorial";
+import { listingSnapshotNote } from "@/lib/listingFreshness";
 import { DIRECTION_LABELS } from "@/lib/kigakuContent";
 import { metaDescriptionFromIntro } from "@/lib/editorialMeta";
 import { AREA_EDITORIAL } from "@/lib/areaEditorial";
@@ -119,6 +120,15 @@ export default async function Page({
   const siblings = regionSiblings(code).filter((s) => PREF_EDITORIAL[s.code]);
 
   const cheapest = stats.municipalities.slice(0, 5);
+
+  /*
+    掲載から作った数字が凍結していることの断り（2026-09-14）。市区町村
+    ページ（#1303）と同じ helper。`stats.asOf` は "YYYY-MM-DD" の日付
+    だけなので、UTC の 0 時＝日本時間の 9 時として読まれる（CLAUDE.md
+    3 節。日付だけの扱いは変えていない）。猶予が 3 日あるので、この
+    9 時間の差で判定が変わることはない。
+  */
+  const snapshotNote = listingSnapshotNote(stats.asOf);
   const priciest = stats.municipalities.slice(-5).reverse();
   const path = `/houi/pref/${code}`;
 
@@ -190,6 +200,16 @@ export default async function Page({
             <b>{stats.medianOfMedians.toLocaleString()}円</b>です。
             {stats.asOf ? `（${stats.asOf} 時点）` : null}
           </p>
+          {/* 「◯月◯日時点」だけでは、取り込みが遅れているのか止まって
+              いるのかが読めない。巡回を止めたので（backlog 29 節）、この
+              相場は凍結している。市区町村ページ（#1303）と同じ断り。
+              日数は出さない（静的生成なので `new Date()` はビルド時刻に
+              なる。`listingSnapshotNote` の註）。 */}
+          {snapshotNote && (
+            <p className="mt-2 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-[11px] leading-relaxed text-amber-900">
+              {snapshotNote}
+            </p>
+          )}
           <div className="mt-4 grid gap-4 sm:grid-cols-2">
             <div>
               <h3 className="text-xs font-bold text-slate-600">
