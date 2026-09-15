@@ -3299,8 +3299,12 @@ export default function ArbitrageScannerPage() {
                           {smartBusy ? "解釈中…" : "検索"}
                         </button>
                       </div>
-                      <p className="text-[9px] text-stone-600 leading-relaxed">
+                      <p className="text-xs text-stone-600 leading-relaxed">
                         家賃・間取り・徒歩分・築年数・広さ・方位・「吉方位のみ」を1行で。残りは物件名・住所の検索語になります。
+                        <br />
+                        ふつうはこの端末の中だけで解釈します。上のどれにも当てはまらない言い回し（「静かで広めの部屋」など）のときだけ、
+                        <b>入力した文を外部の言語モデルに送って</b>
+                        条件に読み替えます。送りたくないときは、金額や間取りなど上の言葉を使って書いてください。
                       </p>
                     </div>
 
