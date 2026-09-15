@@ -216,7 +216,7 @@ export function HousingStatsByDirection({
                     <span className="block text-[11px] font-mono text-stone-700">
                       {rentPerSqm(d.medianRentPerSqm)}
                     </span>
-                    <span className="block text-[9px] text-stone-600">
+                    <span className="block text-[10px] text-stone-600">
                       {d.count === 0
                         ? "統計のある街なし"
                         : `${d.count.toLocaleString()} 市区町村`}
@@ -224,7 +224,7 @@ export function HousingStatsByDirection({
                   </span>
                 </div>
                 {d.count > 0 && (
-                  <p className="mt-0.5 text-[9px] text-stone-600">
+                  <p className="mt-0.5 text-[10px] text-stone-600">
                     {[
                       monthly(d.medianMonthlyRentEstimate),
                       vacancy(d.vacancyRate),
@@ -234,7 +234,7 @@ export function HousingStatsByDirection({
                   </p>
                 )}
                 {d.topMunicipalities.length > 0 && (
-                  <p className="mt-0.5 text-[9px] text-stone-500 truncate">
+                  <p className="mt-0.5 text-[10px] text-stone-500 truncate">
                     {d.topMunicipalities.join("・")}
                   </p>
                 )}
@@ -290,7 +290,7 @@ export function HousingStatsByDirection({
                           </li>
                         ))}
                         {d.truncated && (
-                          <li className="text-[9px] leading-relaxed text-stone-500">
+                          <li className="text-xs leading-relaxed text-stone-500">
                             {`近い順に ${d.municipalities.length} 件まで出しています（この方位は全部で ${d.count.toLocaleString()} 市区町村）。`}
                           </li>
                         )}
@@ -302,10 +302,10 @@ export function HousingStatsByDirection({
             ))}
           </div>
 
-          <p className="text-[9px] text-stone-500 leading-relaxed">
+          <p className="text-xs text-stone-500 leading-relaxed">
             {`${data.meta.source}${data.meta.dataYear ? `（${data.meta.dataYear} 年調査）` : ""}。家賃は 1 畳当たり家賃を 1 畳 = 1.62㎡ で㎡に直したもの。月額は平均畳数との積で目安。${data.meta.minKm}km 未満の市区町村は方位が定まらないため除いています。`}
           </p>
-          <p className="text-[9px] text-stone-500 leading-relaxed">
+          <p className="text-xs text-stone-500 leading-relaxed">
             {data.meta.credit}
           </p>
         </>
