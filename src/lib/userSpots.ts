@@ -47,6 +47,15 @@ export interface UserSpot {
   name: string;
   lat: number;
   lon: number;
+  /**
+   * その物件のページへの印（https のみ）。**取りに行かない。**
+   *
+   * 取りに行けばスクレイピングで、nifty の特約が名指しで禁じている
+   * （backlog 29 節）。画面で開くだけ。綴りの検証は `normalizeSpotUrl`。
+   */
+  url?: string | null;
+  /** 利用者の覚え書き（間取り・家賃など。手で書く）。 */
+  memo?: string | null;
   /** 登録した日時（ISO）。並びに使う */
   createdAt: string;
 }
@@ -87,6 +96,10 @@ export function parseUserSpots(raw: string | null): UserSpot[] {
       name: o.name,
       lat,
       lon,
+      /* 印は**あってもなくてもよい欄**。文字列でなければ落とすだけで、
+         地点そのものは捨てない（名前と座標が読めていれば使える） */
+      url: typeof o.url === "string" ? o.url : null,
+      memo: typeof o.memo === "string" ? o.memo : null,
       createdAt: typeof o.createdAt === "string" ? o.createdAt : "",
     });
   }
@@ -110,7 +123,13 @@ export function sameSpot(
  */
 export function withUserSpot(
   list: readonly UserSpot[],
-  spot: { name: string; lat: number; lon: number },
+  spot: {
+    name: string;
+    lat: number;
+    lon: number;
+    url?: string | null;
+    memo?: string | null;
+  },
   now: Date = new Date(),
 ): { list: UserSpot[]; added: boolean; reason?: "full" | "renamed" } {
   /* 整え方は API と同じ関数を通す（片方だけ緩い、という穴を作らない） */
@@ -120,7 +139,15 @@ export function withUserSpot(
   const idx = list.findIndex((s) => sameSpot(s, spot));
   if (idx >= 0) {
     const next = list.slice();
-    next[idx] = { ...next[idx], name };
+    /* 同じ地点は重ねず、名前と印を差し替える。**渡されていない欄は
+       今の値を残す**（名前だけ直したいときに URL が消えると、入れ直しに
+       なる）。空文字を渡せば消せる、は API 側と同じ意味 */
+    next[idx] = {
+      ...next[idx],
+      name,
+      ...(spot.url !== undefined ? { url: spot.url || null } : {}),
+      ...(spot.memo !== undefined ? { memo: spot.memo || null } : {}),
+    };
     return { list: next, added: false, reason: "renamed" };
   }
   if (list.length >= MAX_USER_SPOTS) {
@@ -130,7 +157,15 @@ export function withUserSpot(
   return {
     list: [
       ...list,
-      { id, name, lat: spot.lat, lon: spot.lon, createdAt: now.toISOString() },
+      {
+        id,
+        name,
+        lat: spot.lat,
+        lon: spot.lon,
+        url: spot.url || null,
+        memo: spot.memo || null,
+        createdAt: now.toISOString(),
+      },
     ],
     added: true,
   };
@@ -180,7 +215,13 @@ export function readUserSpots(): readonly UserSpot[] {
   return readSnapshot();
 }
 
-export function addUserSpot(spot: { name: string; lat: number; lon: number }) {
+export function addUserSpot(spot: {
+  name: string;
+  lat: number;
+  lon: number;
+  url?: string | null;
+  memo?: string | null;
+}) {
   const r = withUserSpot(readUserSpots(), spot);
   write(r.list);
   /* 端末に書けたものだけ送る（上限で入らなかったものは送らない） */
@@ -191,6 +232,8 @@ export function addUserSpot(spot: { name: string; lat: number; lon: number }) {
       name: normalizeSpotName(spot.name),
       lat: spot.lat,
       lon: spot.lon,
+      url: spot.url ?? null,
+      memo: spot.memo ?? null,
     });
   }
   return r;
@@ -254,6 +297,8 @@ interface ServerSpot {
   name: unknown;
   lat: unknown;
   lon: unknown;
+  url: unknown;
+  memo: unknown;
   createdAt: unknown;
 }
 
@@ -273,6 +318,8 @@ function parseServerSpots(data: unknown): UserSpot[] {
           name: o.name,
           lat: o.lat,
           lon: o.lon,
+          url: o.url,
+          memo: o.memo,
           createdAt: o.createdAt,
         })),
     ),
@@ -291,13 +338,23 @@ async function pushSpot(spot: {
   name: string;
   lat: number;
   lon: number;
+  url?: string | null;
+  memo?: string | null;
 }): Promise<UserSpot | null> {
   if (remote === "off") return null;
   try {
     const res = await fetch("/api/spots", {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({ name: spot.name, lat: spot.lat, lon: spot.lon }),
+      /* 印も一緒に送る。**空で送れば消える**（API 側で null になる）ので、
+         「消すための別の口」を作らない */
+      body: JSON.stringify({
+        name: spot.name,
+        lat: spot.lat,
+        lon: spot.lon,
+        url: spot.url ?? "",
+        memo: spot.memo ?? "",
+      }),
     });
     if (res.status === 401) {
       remote = "off";

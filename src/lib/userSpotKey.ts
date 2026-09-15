@@ -38,3 +38,65 @@ export function normalizeSpotName(raw: string): string {
     .trim()
     .slice(0, 60);
 }
+
+/**
+ * 覚え書きから落とす制御文字。**改行だけ残す**（`\u000A` を範囲から外す）。
+ */
+const MEMO_CONTROL_CHARS =
+  /[\u0000-\u0009\u000B-\u001F\u007F-\u009F\u200B-\u200F\u2028\u2029\u202A-\u202E\uFEFF]/g;
+
+/** URL の長さの上限。ポータルの URL は長いので余裕を取る。 */
+export const MAX_SPOT_URL_LENGTH = 2000;
+/** 覚え書きの長さの上限。 */
+export const MAX_SPOT_MEMO_LENGTH = 500;
+
+/**
+ * 物件ページへの印にしてよい URL か。**https だけ。**
+ *
+ * ## なぜ綴りを絞るか
+ *
+ * この値は画面でリンクとして描く。javascript: や data: を通すと、保存した
+ * 本人の画面で任意のコードが走る。**入口で落とす**（描く側でも落とすが、
+ * そもそも保存しないほうが確実）。
+ *
+ * http: も落とす。物件のポータルはどこも https で、平文で開く理由が無い。
+ *
+ * ## ここでは取りに行かない
+ *
+ * 検証は**綴りを見るだけ**。URL の中身は取得しない。取りに行けば
+ * スクレイピングで、nifty の特約が名指しで禁じている（backlog 29 節。
+ * 見張りは `__tests__/userSpotUrlNeverFetched.test.ts`）。
+ *
+ * @returns 正規化した URL。印にしてよくないものは null。
+ */
+export function normalizeSpotUrl(raw: unknown): string | null {
+  if (typeof raw !== "string") return null;
+  const trimmed = raw.trim();
+  if (!trimmed || trimmed.length > MAX_SPOT_URL_LENGTH) return null;
+  let u: URL;
+  try {
+    u = new URL(trimmed);
+  } catch {
+    return null;
+  }
+  if (u.protocol !== "https:") return null;
+  /* ホストの無い https を弾く */
+  if (!u.hostname) return null;
+  const out = u.toString();
+  return out.length > MAX_SPOT_URL_LENGTH ? null : out;
+}
+
+/**
+ * 覚え書きを保存してよい形に整える。名前と同じ扱いで制御文字を落とす。
+ *
+ * **改行だけは残す。**間取りや家賃を数行で書くのが自然なので、名前のように
+ * 1 行へ潰さない。
+ */
+export function normalizeSpotMemo(raw: unknown): string | null {
+  if (typeof raw !== "string") return null;
+  const cleaned = raw
+    .replace(MEMO_CONTROL_CHARS, "")
+    .trim()
+    .slice(0, MAX_SPOT_MEMO_LENGTH);
+  return cleaned || null;
+}
