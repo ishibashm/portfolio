@@ -348,7 +348,7 @@ export default function ScorecardPanel({
             <div className="flex flex-wrap items-center gap-3">
               {/* Prefecture Filter */}
               <div className="flex items-center gap-1.5 bg-stone-50 px-2 py-1.5 rounded-md border border-stone-200">
-                <span className="text-stone-600 font-mono text-[9px] uppercase tracking-wider">
+                <span className="text-stone-600 font-mono text-[10px] uppercase tracking-wider">
                   対象県:
                 </span>
                 <select
@@ -373,7 +373,7 @@ export default function ScorecardPanel({
               {/* Visibility Toggle */}
               <button
                 onClick={() => setShowNoiseDirections(!showNoiseDirections)}
-                className={`px-3 py-1.5 text-[9px] font-mono rounded-md border transition-all flex items-center gap-1.5 ${
+                className={`px-3 py-1.5 text-[10px] font-mono rounded-md border transition-all flex items-center gap-1.5 ${
                   showNoiseDirections
                     ? "bg-stone-100 text-stone-600 border-stone-300"
                     : "bg-emerald-50 text-emerald-700 border-emerald-200"
@@ -388,7 +388,7 @@ export default function ScorecardPanel({
               <button
                 onClick={handleExportForGemini}
                 disabled={isExporting}
-                className="px-4 py-1.5 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-stone-900 font-mono text-[9px] uppercase tracking-widest rounded-md transition-all shadow-[0_0_15px_rgba(16,185,129,0.3)] disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                className="px-4 py-1.5 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-stone-900 font-mono text-[10px] uppercase tracking-widest rounded-md transition-all shadow-[0_0_15px_rgba(16,185,129,0.3)] disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
               >
                 {isExporting ? (
                   <>
@@ -406,7 +406,7 @@ export default function ScorecardPanel({
               <button
                 onClick={handleDownloadUnifiedDataset}
                 disabled={isExporting}
-                className="px-4 py-1.5 bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 text-stone-900 font-mono text-[9px] uppercase tracking-widest rounded-md transition-all shadow-[0_0_15px_rgba(124,58,237,0.3)] disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                className="px-4 py-1.5 bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 text-stone-900 font-mono text-[10px] uppercase tracking-widest rounded-md transition-all shadow-[0_0_15px_rgba(124,58,237,0.3)] disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
               >
                 {isExporting ? (
                   <>
@@ -536,7 +536,7 @@ export default function ScorecardPanel({
                             >
                               {directionLabelName(bd.kigaku)}
                             </div>
-                            <div className="text-[9px] text-stone-600">
+                            <div className="text-[10px] text-stone-600">
                               ベース: {bd.kigakuScore}点
                             </div>
                           </div>
@@ -551,7 +551,7 @@ export default function ScorecardPanel({
                                 ? bd.astro.join(", ")
                                 : "ラインなし"}
                             </div>
-                            <div className="text-[9px] text-stone-600">
+                            <div className="text-[10px] text-stone-600">
                               加算: +{bd.astroScore}点
                             </div>
                           </div>
@@ -566,7 +566,7 @@ export default function ScorecardPanel({
                                 ? bd.timeGate.join(", ")
                                 : "通常時間"}
                             </div>
-                            <div className="text-[9px] text-stone-600">
+                            <div className="text-[10px] text-stone-600">
                               調整: {bd.timeGateScore > 0 ? "+" : ""}
                               {bd.timeGateScore}点
                             </div>
@@ -631,7 +631,7 @@ export default function ScorecardPanel({
                   */}
                 <table className="w-full min-w-[1120px] text-left border-collapse">
                   <thead>
-                    <tr className="border-b border-stone-200 bg-white/80 text-[9px] font-mono text-stone-600 uppercase tracking-wider whitespace-nowrap">
+                    <tr className="border-b border-stone-200 bg-white/80 text-[10px] font-mono text-stone-600 uppercase tracking-wider whitespace-nowrap">
                       <th className="p-3 w-24">方位</th>
                       <th className="p-3 w-20">古典</th>
                       <th className="p-3 w-20">物理独立</th>
@@ -764,7 +764,7 @@ export default function ScorecardPanel({
                                 >
                                   {directionLabelName(bd.kigaku)}
                                 </span>
-                                <span className="text-[9px] text-stone-600">
+                                <span className="text-[10px] text-stone-600">
                                   ベース: {bd.kigakuScore}点
                                 </span>
                               </div>
@@ -780,7 +780,7 @@ export default function ScorecardPanel({
                                     ? bd.astro.join(", ")
                                     : "ラインなし"}
                                 </span>
-                                <span className="text-[9px] text-stone-600">
+                                <span className="text-[10px] text-stone-600">
                                   加算: +{bd.astroScore}点
                                 </span>
                               </div>
@@ -796,7 +796,7 @@ export default function ScorecardPanel({
                                     ? bd.timeGate.join(", ")
                                     : "通常時間"}
                                 </span>
-                                <span className="text-[9px] text-stone-600 border-t border-stone-200 mt-0.5 pt-0.5">
+                                <span className="text-[10px] text-stone-600 border-t border-stone-200 mt-0.5 pt-0.5">
                                   調整: {bd.timeGateScore > 0 ? "+" : ""}
                                   {bd.timeGateScore}点
                                 </span>
@@ -965,7 +965,7 @@ export default function ScorecardPanel({
                 {/* CSV Export Button */}
                 <button
                   onClick={handleExportGridCsv}
-                  className="inline-flex min-h-[24px] items-center justify-center px-3 py-1 bg-stone-100 hover:bg-stone-200 text-stone-600 border border-stone-300 font-mono text-[9px] uppercase tracking-wider rounded transition-all"
+                  className="inline-flex min-h-[24px] items-center justify-center px-3 py-1 bg-stone-100 hover:bg-stone-200 text-stone-600 border border-stone-300 font-mono text-[10px] uppercase tracking-wider rounded transition-all"
                 >
                   CSV で書き出す
                 </button>
@@ -973,7 +973,7 @@ export default function ScorecardPanel({
             </div>
 
             {/* Legend for Grid */}
-            <div className="flex flex-wrap gap-3 text-[9px] font-mono text-stone-600 bg-white/80 p-2.5 rounded border border-stone-200">
+            <div className="flex flex-wrap gap-3 text-[10px] font-mono text-stone-600 bg-white/80 p-2.5 rounded border border-stone-200">
               {/* しきい値を凡例に直書きしない。lib/scoreTier から引く。 */}
               <span className="flex items-center gap-1">
                 <span className="w-2.5 h-2.5 rounded bg-emerald-50 border border-emerald-200"></span>
@@ -1004,7 +1004,7 @@ export default function ScorecardPanel({
               <div className="overflow-x-auto">
                 <table className="w-full text-center border-collapse">
                   <thead>
-                    <tr className="border-b border-zinc-850 bg-white/80 text-[9px] font-mono text-stone-600 uppercase tracking-wider">
+                    <tr className="border-b border-zinc-850 bg-white/80 text-[10px] font-mono text-stone-600 uppercase tracking-wider">
                       <th className="p-2.5 text-left w-28">
                         {scorecardActiveGridTab === "dates" ? "日付" : "本命星"}
                       </th>
@@ -1052,7 +1052,7 @@ export default function ScorecardPanel({
                               key={day.dateStr}
                               className="hover:bg-white/80 transition-colors"
                             >
-                              <td className="p-2 text-left text-[9px] text-stone-600 border-r border-stone-200 whitespace-nowrap">
+                              <td className="p-2 text-left text-[10px] text-stone-600 border-r border-stone-200 whitespace-nowrap">
                                 {day.dateStr}{" "}
                                 <span className={wdayColor}>({wdayJa})</span>
                               </td>
@@ -1240,7 +1240,7 @@ export default function ScorecardPanel({
                               key={star.star}
                               className={`hover:bg-white/80 transition-colors ${isUserStar ? "bg-emerald-50 border-y border-emerald-200" : ""}`}
                             >
-                              <td className="p-2 text-left text-[9px] text-stone-600 font-bold border-r border-stone-200 whitespace-nowrap flex items-center gap-1.5">
+                              <td className="p-2 text-left text-[10px] text-stone-600 font-bold border-r border-stone-200 whitespace-nowrap flex items-center gap-1.5">
                                 {isUserStar && (
                                   <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse"></span>
                                 )}
@@ -1550,7 +1550,7 @@ export default function ScorecardPanel({
                           方位の判定
                         </span>
                         <span
-                          className={`inline-flex items-center self-start px-2.5 py-0.5 rounded-full text-[9px] font-mono font-bold border uppercase tracking-wider ${statusBadgeClass(detail.status)}`}
+                          className={`inline-flex items-center self-start px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold border uppercase tracking-wider ${statusBadgeClass(detail.status)}`}
                         >
                           {directionLabelName(detail.status)}
                         </span>
@@ -1575,7 +1575,7 @@ export default function ScorecardPanel({
                         <h4 className="text-[11px] font-mono text-stone-600 uppercase tracking-wider flex items-center gap-1.5">
                           <span>📅 直近 30 日の吉凶</span>
                         </h4>
-                        <span className="text-[9px] text-stone-600 font-mono">
+                        <span className="text-[10px] text-stone-600 font-mono">
                           動ける日（凶でない日）: {detail.luckyDays}日
                         </span>
                       </div>
@@ -1608,10 +1608,10 @@ export default function ScorecardPanel({
                               className={`border p-1 text-center rounded flex flex-col items-center justify-center transition-all ${bg}`}
                               title={`${d.dateStr}: ${directionLabelName(d.status)}`}
                             >
-                              <span className="text-[9px] opacity-70 font-mono">
+                              <span className="text-[10px] opacity-70 font-mono">
                                 {mMonth}/{mDay}
                               </span>
-                              <span className="text-[9px] font-bold font-mono">
+                              <span className="text-[10px] font-bold font-mono">
                                 {d.score}
                               </span>
                             </div>
@@ -1640,7 +1640,7 @@ export default function ScorecardPanel({
                                   <span className="text-stone-700 font-bold">
                                     {area.areaName}
                                   </span>
-                                  <span className="text-[9px] text-stone-600 font-mono mt-0.5">
+                                  <span className="text-[10px] text-stone-600 font-mono mt-0.5">
                                     コード: {area.areaCode}
                                   </span>
                                 </div>
@@ -1655,7 +1655,7 @@ export default function ScorecardPanel({
                                     ? `${(area.incomePerCapita / 10000).toFixed(1)}万円`
                                     : "—"}
                                 </span>
-                                <span className="text-[9px] text-stone-600 font-sans mt-0.5">
+                                <span className="text-[10px] text-stone-600 font-sans mt-0.5">
                                   一人当たり平均所得
                                 </span>
                               </div>
@@ -1691,7 +1691,7 @@ export default function ScorecardPanel({
                                       >
                                         {rental.property_name}
                                       </span>
-                                      <span className="text-[9px] text-stone-600 font-mono">
+                                      <span className="text-[10px] text-stone-600 font-mono">
                                         {/* 応答の項目は building_age。
                                               age_years は存在せず、ここは
                                               ずっと「築年数: 年」と空欄で
