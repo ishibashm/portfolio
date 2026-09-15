@@ -1,5 +1,6 @@
 import type { Pool } from "pg";
 import { normalize } from "@geolonia/normalize-japanese-addresses";
+import { lookupGsi, type GeoResult } from "../src/lib/gsiGeocode";
 
 /**
  * 住所から座標を引く。**賃貸と売地で共通。**
@@ -13,27 +14,25 @@ import { normalize } from "@geolonia/normalize-japanese-addresses";
  * 売地にしか無い町丁目のぶんだけで済む（CLAUDE.md 3 節）。
  */
 
-/**
- * Geolonia の normalize() は町名までは正しく分解するが、返す point が
- * 町丁目ごとの座標とは限らない。岡崎市では 706 種類の町名がすべて level=3 と
- * 判定されながら同一の点（＝市の代表点）を返していた。level を見ても防げない。
- * 実際に 157,116 件中 72,527 件が「50件以上が完全に同一座標」の塊に入っていた。
- *
- * 方位は基準点からこの座標への方角で決まるため、市の中心に固まると
- * 同じ市の物件がすべて同じ方位・同じ距離になり、吉凶判定が意味を成さない。
- *
- * そこで座標は国土地理院の住所検索を正とする。上の岡崎市の例でも
- * 字レベルまでばらけた座標が返ることを確認済み。
- * normalize() は住所の表記ゆれを整えるためだけに使う。
- */
-export const GSI_ENDPOINT =
-  "https://msearch.gsi.go.jp/address-search/AddressSearch";
+/*
+  国土地理院に問い合わせる部分（`GSI_ENDPOINT` / `lookupGsi` / 座標の型）は
+  `src/lib/gsiGeocode.ts` へ出した。**画面側（`/api/geocode`）も同じものを
+  読む。**以前はここにしか無く、画面は geolonia の `point` を使ったままで、
+  利用者が住所を正確に写しても市の中心が返りうる状態だった
+  （CLAUDE.md 3 節「同じことを 2 か所に書かない」）。
 
-export type GeoPoint = { lat: number; lon: number };
-export type GeoResult =
-  | { kind: "ok"; point: GeoPoint }
-  | { kind: "not_found" }
-  | { kind: "error" };
+  ここに残すのは**巡回の都合**だけ ― 町丁目単位への丸めと `geocode_towns`
+  の永続キャッシュ。画面側は番地を落とさない。
+
+  `@/` の別名は使わない。この経路は `npx tsx scripts/...` で走り、
+  path alias の解決に頼らない相対 import のほうが確実。
+*/
+export {
+  GSI_ENDPOINT,
+  type GeoPoint,
+  type GeoResult,
+  lookupGsi,
+} from "../src/lib/gsiGeocode";
 
 // 同じ町丁目の物件が大量にあるため、町単位で引いて使い回す。
 // これが無いと 1 物件 1 リクエストになり、公共APIに対して過剰な負荷になる。
@@ -44,28 +43,6 @@ export type GeoResult =
 // 国土地理院への負荷はワンタイムで済む。
 const townCache = new Map<string, GeoResult>();
 let gsiCalls = 0;
-
-export async function lookupGsi(query: string): Promise<GeoResult> {
-  try {
-    const res = await fetch(`${GSI_ENDPOINT}?q=${encodeURIComponent(query)}`, {
-      signal: AbortSignal.timeout(15000),
-    });
-    if (!res.ok) return { kind: "error" };
-    const json = (await res.json()) as Array<{
-      geometry?: { coordinates?: [number, number] };
-    }>;
-    const top = json?.[0];
-    const coords = top?.geometry?.coordinates;
-    if (!coords || coords.length < 2) return { kind: "not_found" };
-    const [lon, lat] = coords;
-    if (typeof lat !== "number" || typeof lon !== "number") {
-      return { kind: "not_found" };
-    }
-    return { kind: "ok", point: { lat, lon } };
-  } catch {
-    return { kind: "error" };
-  }
-}
 
 export async function geocodeAddress(
   pool: Pool,
