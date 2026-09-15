@@ -4133,27 +4133,6 @@ export const SolarTimeClock = () => {
           </div>
         )}
 
-        {/* --- TAB CONTENT: 2. DESTINATION --- */}
-        {activeTab === "destination" && (
-          <div className="w-full flex flex-col items-center space-y-8">
-            {/* 外部環境の実測値（KP 指数・X 線・気圧・地磁気）。
-                生体側の札は畳んだ（#684）。理由はそちらの本文に書いた。 */}
-            <div className="w-full max-w-[1700px]">
-              <BioMagneticDashboard
-                kpIndex={spaceWeather?.kpIndex || null}
-                xrayFlux={spaceWeather?.xrayFlux || null}
-                magneticF={geoData?.intensity || null}
-                magneticD={geoData?.declination || null}
-                magneticI={geoData?.inclination || null}
-                eot={solarData.equationOfTime}
-                pressure={pressureData}
-                timingDetails={timingOptimization?.details}
-                timingRecommendation={timingOptimization?.recommendationText}
-              />
-            </div>
-          </div>
-        )}
-
         {/* --- TAB CONTENT: 3. TIMING --- */}
         {activeTab === "timing" && (
           <div className="w-full flex flex-col items-center space-y-8 animate-fade-in">
@@ -4317,6 +4296,38 @@ export const SolarTimeClock = () => {
             hudLayers={hudLayers}
             setHudLayers={setHudLayers}
           />
+        )}
+
+        {/* --- TAB CONTENT: 2. DESTINATION（末尾・環境） --- */}
+        {/*
+          **タブ名の順序に合わせる。**「目的地と環境」なのに、以前はここが
+          先頭にあって、開いて最初に出るのが環境だった。400px の実測で
+          「目的地の方位を評価する」は**上から 1,889px**（約 2 画面下）。
+
+          しかも地磁気 Kp・太陽 X 線・気圧は取得できていないことが多く、
+          **空の計器を 2 画面ぶん眺めてから目的地の地図に着く**状態だった。
+
+          環境は目的地を決めたあとに添える話なので、後ろへ回す。**中身は
+          何も変えていない**（判定にも計算にも触れていない）。
+        */}
+        {activeTab === "destination" && (
+          <div className="w-full flex flex-col items-center space-y-8">
+            {/* 外部環境の実測値（KP 指数・X 線・気圧・地磁気）。
+                生体側の札は畳んだ（#684）。理由はそちらの本文に書いた。 */}
+            <div className="w-full max-w-[1700px]">
+              <BioMagneticDashboard
+                kpIndex={spaceWeather?.kpIndex || null}
+                xrayFlux={spaceWeather?.xrayFlux || null}
+                magneticF={geoData?.intensity || null}
+                magneticD={geoData?.declination || null}
+                magneticI={geoData?.inclination || null}
+                eot={solarData.equationOfTime}
+                pressure={pressureData}
+                timingDetails={timingOptimization?.details}
+                timingRecommendation={timingOptimization?.recommendationText}
+              />
+            </div>
+          </div>
         )}
 
         {/* --- TAB CONTENT: 6. INSIGHTS (HISTORY) --- */}
