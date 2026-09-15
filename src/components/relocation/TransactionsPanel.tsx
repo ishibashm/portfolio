@@ -178,7 +178,7 @@ export function TransactionsPanel({
           <option value="0.7">建物比率 7割以上</option>
         </select>
         {minRatio && (
-          <p className="text-[9px] text-stone-600 leading-relaxed mt-1">
+          <p className="text-xs text-stone-600 leading-relaxed mt-1">
             {
               "比率は積算（延床×再調達単価×残存年数比）による推定です。戸建てのみ計算でき、マンション・土地の事例はこの絞り込みでは表示されません。"
             }
@@ -222,7 +222,7 @@ export function TransactionsPanel({
                         <span className="block text-[11px] font-mono text-stone-700">
                           {unitManYen(d.medianUnitPriceSqm)}
                         </span>
-                        <span className="block text-[9px] text-stone-600">
+                        <span className="block text-[10px] text-stone-600">
                           {d.count.toLocaleString()} 件
                         </span>
                       </span>
@@ -268,7 +268,7 @@ export function TransactionsPanel({
                       {manYen(r.tradePrice)}
                     </span>
                   </div>
-                  <div className="flex flex-wrap gap-x-2 text-[9px] text-stone-600 mt-0.5">
+                  <div className="flex flex-wrap gap-x-2 text-[10px] text-stone-600 mt-0.5">
                     <span>{r.propertyType ?? "種別不明"}</span>
                     {r.areaSqm !== null && <span>{r.areaSqm}㎡</span>}
                     <span>{unitManYen(r.unitPriceSqm)}</span>
@@ -292,7 +292,7 @@ export function TransactionsPanel({
             </ul>
           </section>
 
-          <p className="text-[9px] text-stone-600 leading-relaxed">
+          <p className="text-xs text-stone-600 leading-relaxed">
             範囲内 {data.totalInRadius.toLocaleString()} 件
             {data.truncated ? "（多いため新しい順に切っています）" : ""}。
             {data.pendingCoords > 0
