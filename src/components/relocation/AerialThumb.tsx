@@ -90,7 +90,7 @@ export function AerialThumb({
           style={{ left: `${point.fx * 100}%`, top: "50%" }}
         />
       </div>
-      <figcaption className="mt-1 text-[9px] leading-tight text-stone-500">
+      <figcaption className="mt-1 text-xs leading-tight text-stone-500">
         出典: 地理院タイル（国土地理院）／撮影時期は場所によって異なります
       </figcaption>
     </figure>

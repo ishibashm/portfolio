@@ -230,7 +230,7 @@ export function SpotVerdict({
           {busy ? <Loader2 className="w-3 h-3 animate-spin" /> : "調べる"}
         </button>
       </div>
-      <p className="text-[9px] text-stone-600 leading-relaxed">
+      <p className="text-xs text-stone-600 leading-relaxed">
         一覧に無い場所でも、出発地から見た方位とその日の吉凶を出します。地図をクリックすると、その地点がここに入ります。
         <br />
         物件サイトで市区町村を絞った一覧の URL を貼ると、その街として調べます（
