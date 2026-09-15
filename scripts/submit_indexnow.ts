@@ -32,6 +32,31 @@
  * 鍵は INDEXNOW_KEY（Cloud Run と同じ値。鍵ファイルは /indexnow-key.txt）。
  * 未設定なら候補を出して終わる。夜間の巡回を道連れにしないため、送信の
  * 失敗以外では落ちない。
+ *
+ * ## いまこの差分の経路は眠っている（2026-09-14）
+ *
+ * **呼び口が `scrape-rentals.yml` の中にしか無かった。**#1289 でその
+ * ワークフローの `schedule:` を外した（規約。backlog 29 節）ので、
+ * **2026-09-13 以降 1 件も送られていない。**巡回を止めたこと自体は
+ * 正しいが、**関係の無い SEO の仕組みが巻き添えで止まった。**
+ * CLAUDE.md 3 節「待ち行列にワークフローを足すときは、触る表を見る」と
+ * 同じ構図で、別の関心事が 1 つのワークフローに同居していた。
+ *
+ * さらに `areaDirections.json` は焼き直されなくなったので**凍結して
+ * いる。**差分は今後 0 件のままで、巡回を再開しない限りこの経路は
+ * 何も送らない（それが正しい。動いていない頁を送らない）。
+ *
+ * ## 明示して送る口（`--urls`）
+ *
+ * 一方で、頁の中身は差分と無関係に変わる（#1303 は 1,022 頁、#1304 は
+ * 47 頁に断りを足した）。**送る手立てが 1 つも無い**状態だったので、
+ * URL を明示して送る口を足した。`indexnow.yml` から人が起動する。
+ *
+ *   npx -y tsx scripts/submit_indexnow.ts --urls "https://…/a,https://…/b" --apply
+ *
+ * **自動で全頁を送らない。**この註の冒頭に書いたとおり、変わっていない
+ * 頁を毎晩 1,000 件送ると無視されるか悪印象になる。1,000 頁を送ってよいのは
+ * 「本当に全頁の中身が変わった」ときだけで、それは人が判断する。
  */
 import { execFileSync } from "node:child_process";
 import { readFileSync } from "node:fs";
@@ -99,8 +124,85 @@ function baseRef(argv: readonly string[]): string {
   return i >= 0 && argv[i + 1] ? argv[i + 1] : "HEAD";
 }
 
+/**
+ * `--urls "a,b,c"` で明示された URL。**このサイトのものだけ**を通す。
+ *
+ * よそのホストを混ぜると、鍵の持ち主が保証していない URL を送ることに
+ * なる（IndexNow は host と key の対で受理する）。空白と空の要素は落とす。
+ */
+export function explicitUrls(argv: readonly string[], site = SITE): string[] {
+  const i = argv.indexOf("--urls");
+  if (i < 0 || !argv[i + 1]) return [];
+  const host = new URL(site).host;
+  const out: string[] = [];
+  for (const raw of argv[i + 1].split(",")) {
+    const v = raw.trim();
+    if (!v) continue;
+    let u: URL;
+    try {
+      u = new URL(v);
+    } catch {
+      continue;
+    }
+    if (u.protocol !== "https:" || u.host !== host) continue;
+    out.push(u.toString());
+  }
+  return [...new Set(out)].sort();
+}
+
+/**
+ * 実際に送る。鍵が無い・dry-run のときは送らずに理由を出す。
+ *
+ * 差分の経路と `--urls` の経路で同じ手順が要るので 1 つにまとめた
+ * （片方だけ直すと、明示して送ったときだけ鍵の確認が抜ける、といった
+ * 食い違いが出る）。
+ */
+async function submit(urls: readonly string[], apply: boolean): Promise<void> {
+  if (urls.length === 0) {
+    console.log("送る URL が無い。");
+    return;
+  }
+  const key = process.env.INDEXNOW_KEY?.trim();
+  if (!key) {
+    console.log("INDEXNOW_KEY が未設定。候補だけ出して終わる。");
+    return;
+  }
+  if (!apply) {
+    console.log("dry-run。--apply で送る。");
+    return;
+  }
+
+  const res = await fetch(ENDPOINT, {
+    method: "POST",
+    headers: { "Content-Type": "application/json; charset=utf-8" },
+    body: JSON.stringify({
+      host: new URL(SITE).host,
+      key,
+      keyLocation: KEY_LOCATION,
+      urlList: [...urls],
+    }),
+  });
+  /* 200 と 202 が受理。それ以外は理由ごと残す（鍵の不一致は 403） */
+  console.log(`IndexNow: HTTP ${res.status}`);
+  if (res.status !== 200 && res.status !== 202) {
+    console.error(await res.text());
+    process.exitCode = 1;
+  }
+}
+
 async function main() {
   const apply = process.argv.includes("--apply");
+
+  /* 明示された URL があればそちらを送る。集計の差分は見ない
+     （凍結しているので 0 件になる。上の註） */
+  const explicit = explicitUrls(process.argv);
+  if (explicit.length > 0) {
+    console.log(`明示された ${explicit.length} 件を送る:`);
+    for (const u of explicit) console.log(`  ${u}`);
+    await submit(explicit, apply);
+    return;
+  }
+
   const next = JSON.parse(readFileSync(DATASET, "utf-8")) as Dataset;
   const base = baseRef(process.argv);
   const prev = loadPrevious(base);
@@ -121,32 +223,7 @@ async function main() {
     console.log("送るものが無い。");
     return;
   }
-  const key = process.env.INDEXNOW_KEY?.trim();
-  if (!key) {
-    console.log("INDEXNOW_KEY が未設定。候補だけ出して終わる。");
-    return;
-  }
-  if (!apply) {
-    console.log("dry-run。--apply で送る。");
-    return;
-  }
-
-  const res = await fetch(ENDPOINT, {
-    method: "POST",
-    headers: { "Content-Type": "application/json; charset=utf-8" },
-    body: JSON.stringify({
-      host: new URL(SITE).host,
-      key,
-      keyLocation: KEY_LOCATION,
-      urlList: urls,
-    }),
-  });
-  /* 200 と 202 が受理。それ以外は理由ごと残す（鍵の不一致は 403） */
-  console.log(`IndexNow: HTTP ${res.status}`);
-  if (res.status !== 200 && res.status !== 202) {
-    console.error(await res.text());
-    process.exitCode = 1;
-  }
+  await submit(urls, apply);
 }
 
 /* 検査から import したときは走らせない */
