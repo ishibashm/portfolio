@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { normalize } from "@geolonia/normalize-japanese-addresses";
+import { lookupGsi } from "@/lib/gsiGeocode";
 import { municipalityCodeFromPortalUrl } from "@/lib/portalLinks";
 import { AREAS } from "@/lib/areaContent";
 import { mergeWithListed } from "@/lib/municipalityCoords";
@@ -67,16 +68,65 @@ export async function GET(request: Request) {
     );
   }
 
-  try {
-    const result = await normalize(q);
+  /*
+    住所は**国土地理院を先に引く。**
 
-    if (result.point && result.point.lat && result.point.lng) {
+    `normalize()` が返す `point` は町丁目ごとの座標とは限らない。岡崎市では
+    706 種類の町名がすべて level=3 と判定されながら**同一の点（市の代表点）**
+    を返しており、巡回の実測で 157,116 件中 72,527 件が「50 件以上が完全に
+    同一座標」の塊に入っていた（`src/lib/gsiGeocode.ts` の註）。
+
+    巡回はこれを理由に国土地理院へ切り替えたが、**選んだ文字列を点に落とす
+    この口は取り残されていた。**物件ページから住所を正確に写して入れても、
+    市の中心が返りうる状態だった。
+
+    **番地は落とさない。**巡回（`scripts/geocodeGsi.ts`）は町丁目単位の
+    キャッシュを作るために番地を捨てるが、あれは公共 API への負荷を
+    「行数」ではなく「町丁目の数」で頭打ちにするための都合。ここは
+    1 回の操作に 1 回引くだけなので、捨てると精度をただ失う。
+
+    `normalize()` は**表記ゆれを整えるためだけ**に使う（"字６丁目" →
+    "字六丁目" など）。点は見ない。
+  */
+  try {
+    let normalized: Awaited<ReturnType<typeof normalize>> | null = null;
+    try {
+      normalized = await normalize(q);
+    } catch {
+      /* 正規化に失敗しても生の住所で引けることがあるので、そのまま進む */
+    }
+
+    const tidy =
+      normalized?.pref && normalized?.city
+        ? `${normalized.pref}${normalized.city}${normalized.town ?? ""}${normalized.addr ?? ""}`
+        : null;
+    const name = tidy || q;
+
+    for (const query of tidy && tidy !== q ? [tidy, q] : [q]) {
+      /* 整えた綴りで見つからないことがある（過剰に整うことがある）ので、
+         元の綴りでも 1 度試す。**落ちた（error）ときは次へ回さない** —
+         通信が落ちただけの回で「無い」と答えないため */
+      const gsi = await lookupGsi(query);
+      if (gsi.kind === "ok") {
+        return NextResponse.json({
+          lat: gsi.point.lat,
+          lon: gsi.point.lon,
+          name,
+          /* 番地まで当たった点。呼ぶ側が粗さを見分けられるようにする */
+          source: "gsi",
+        });
+      }
+      if (gsi.kind === "error") break;
+    }
+
+    if (normalized?.point && normalized.point.lat && normalized.point.lng) {
       return NextResponse.json({
-        lat: result.point.lat,
-        lon: result.point.lng,
-        name:
-          `${result.pref || ""}${result.city || ""}${result.town || ""}${result.addr || ""}` ||
-          q,
+        lat: normalized.point.lat,
+        lon: normalized.point.lng,
+        name,
+        /* **市の中心に潰れていることがある。**黙って番地の点として
+           扱わせない（CLAUDE.md 3 節「黙って別のものに落ちる」） */
+        source: "normalize",
       });
     }
 
@@ -99,6 +149,8 @@ export async function GET(request: Request) {
           lat: parseFloat(item.lat),
           lon: parseFloat(item.lon),
           name: item.display_name.split(",")[0] || q,
+          /* 日本の住所に強くない。最後の手段 */
+          source: "nominatim",
         });
       }
     } else {
