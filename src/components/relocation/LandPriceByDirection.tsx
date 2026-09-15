@@ -166,7 +166,7 @@ export function LandPriceByDirection({
                     <span className="block text-[11px] font-mono text-stone-700">
                       {unitManYen(d.medianPricePerSqm)}
                     </span>
-                    <span className="block text-[9px] text-stone-600">
+                    <span className="block text-[10px] text-stone-600">
                       {d.count === 0
                         ? "標準地なし"
                         : `${d.count.toLocaleString()} 地点`}
@@ -174,7 +174,7 @@ export function LandPriceByDirection({
                   </span>
                 </div>
                 {d.topMunicipalities.length > 0 && (
-                  <p className="mt-0.5 text-[9px] text-stone-500 truncate">
+                  <p className="mt-0.5 text-[10px] text-stone-500 truncate">
                     {d.topMunicipalities.join("・")}
                   </p>
                 )}
@@ -182,7 +182,7 @@ export function LandPriceByDirection({
             ))}
           </div>
 
-          <p className="text-[9px] text-stone-500 leading-relaxed">
+          <p className="text-xs text-stone-500 leading-relaxed">
             {`出典: ${data.meta.source}。${data.meta.minKm}km 未満の地点は方位が定まらないため除いています。`}
           </p>
         </>
