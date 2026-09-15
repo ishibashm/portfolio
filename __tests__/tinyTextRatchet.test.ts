@@ -27,8 +27,8 @@ import { describe, expect, it } from "vitest";
   12px 以上なので対象外。
 */
 
-/** 実測（2026-09-15。物件検索の側が片付いた時点）。**直したら下げること。** */
-const BASELINE = { 8: 1, 9: 261 };
+/** 実測（2026-09-15。物件検索と ScorecardPanel が片付いた時点）。**直したら下げること。** */
+const BASELINE = { 8: 1, 9: 238 };
 
 function tsxFiles(dir: string): string[] {
   const out: string[] = [];
@@ -122,6 +122,7 @@ describe("小さすぎる字を増やさない", () => {
       "src/components/relocation/HousingStatsByDirection.tsx",
       "src/components/relocation/TransactionsPanel.tsx",
       "src/components/relocation/PlaceInput.tsx",
+      "src/components/home/ScorecardPanel.tsx",
     ]) {
       expect(byFile.get(done) ?? 0, done).toBe(0);
     }
