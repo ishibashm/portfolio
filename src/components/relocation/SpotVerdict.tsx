@@ -14,6 +14,11 @@ import { TIER_BADGE_CLASS } from "@/utils/tierDisplay";
    値で import すると、この部品を載せる頁にエンジン一式が乗る。 */
 import { TIER_LABELS, type DayTier } from "@/utils/dayTier";
 import { addUserSpot } from "@/lib/userSpots";
+import {
+  geocodePrecisionNote,
+  parseGeocodeSource,
+  type GeocodeSource,
+} from "@/lib/geocodeSource";
 
 /**
  * 指定した1地点の吉凶を、そのまま画面で見る。
@@ -49,7 +54,16 @@ export type DirectionCell = {
   doyouSatsu?: boolean;
 };
 
-export type SpotTarget = { lat: number; lon: number; name: string };
+export type SpotTarget = {
+  lat: number;
+  lon: number;
+  name: string;
+  /**
+   * 点の出どころ。**座標を直接入れた・地図をクリックしたときは付かない**
+   * （利用者が指した点そのものなので、粗さの断りが要らない）。
+   */
+  source?: GeocodeSource | null;
+};
 
 /**
  * 入力を座標として読めるか。
@@ -168,7 +182,12 @@ export function SpotVerdict({
         );
         return;
       }
-      setTarget({ lat: body.lat, lon: body.lon, name: body.name || text });
+      setTarget({
+        lat: body.lat,
+        lon: body.lon,
+        name: body.name || text,
+        source: parseGeocodeSource(body.source),
+      });
     } catch {
       setTarget(null);
       setError("住所を調べられませんでした。通信を確かめてください。");
@@ -196,6 +215,12 @@ export function SpotVerdict({
   const cell = direction ? dirKigaku?.[direction] : undefined;
   const unstableNote =
     distanceKm === null ? null : directionUnstableNote(distanceKm);
+  /*
+    点の粗さ。**距離の注意（unstableNote）とは別の話。**あちらは「近すぎて
+    方位が定まらない」、こちらは「そもそも指した点が住所の点ではない」。
+    どちらも出うるので、畳まずに並べる。
+  */
+  const precisionNote = geocodePrecisionNote(target?.source ?? null);
 
   return (
     <div className="space-y-1.5">
@@ -291,6 +316,16 @@ export function SpotVerdict({
               {
                 "土用殺の方位です。土用の期間中はこの方位が塞がります（間日を除く）。年盤・月盤・日盤が吉でも避ける扱いです。"
               }
+            </p>
+          )}
+
+          {/* 点そのものが粗いとき。方位は出発地からこの座標への方角で
+              決まるので、市の中心に潰れていると同じ市のどこを指しても
+              同じ答えになる。**判定の答えが変わるのに画面は何も変わらない**
+              ので、黙って出さない（lib/geocodeSource）。 */}
+          {precisionNote && (
+            <p className="text-[10px] text-amber-700 leading-relaxed">
+              {precisionNote}
             </p>
           )}
 
