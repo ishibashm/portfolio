@@ -28,7 +28,7 @@ import { describe, expect, it } from "vitest";
 */
 
 /** 実測（2026-09-15。物件検索の側が片付いた時点）。**直したら下げること。** */
-const BASELINE = { 8: 1, 9: 263 };
+const BASELINE = { 8: 1, 9: 261 };
 
 function tsxFiles(dir: string): string[] {
   const out: string[] = [];
@@ -121,6 +121,7 @@ describe("小さすぎる字を増やさない", () => {
       "src/components/relocation/LandPriceByDirection.tsx",
       "src/components/relocation/HousingStatsByDirection.tsx",
       "src/components/relocation/TransactionsPanel.tsx",
+      "src/components/relocation/PlaceInput.tsx",
     ]) {
       expect(byFile.get(done) ?? 0, done).toBe(0);
     }

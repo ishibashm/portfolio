@@ -61,7 +61,7 @@ export interface PlaceInputProps {
 const VARIANT_STYLES = {
   compact: {
     label: "text-[10px] uppercase font-bold text-stone-500",
-    optionalBadge: "ml-1.5 text-[9px] font-normal text-stone-600",
+    optionalBadge: "ml-1.5 text-[10px] font-normal text-stone-600",
     currentLocation:
       "text-[10px] text-emerald-600 hover:text-emerald-700 hover:underline shrink-0",
     input:
@@ -76,7 +76,7 @@ const VARIANT_STYLES = {
     /* 押し所は 24px 角より小さくしない（WCAG 2.2 の Target Size
        (Minimum)）。実測 102 × 14px。字は変えず高さだけ確保する */
     coordsToggle:
-      "inline-flex min-h-[24px] items-center self-start text-[9px] text-stone-600 hover:text-stone-800",
+      "inline-flex min-h-[24px] items-center self-start text-[10px] text-stone-600 hover:text-stone-800",
     coordInput:
       "px-2 py-1.5 bg-white border border-stone-200 rounded-lg text-[11px] font-mono text-stone-700",
   },
