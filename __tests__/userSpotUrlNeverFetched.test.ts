@@ -53,16 +53,32 @@ describe("印の URL を取りに行かない", () => {
     expect(files.length).toBeGreaterThan(100);
   });
 
+  /*
+    **取りに行く先が URL 自身**のときだけを見る（第 1 引数）。
+
+    最初 `[^)]*` で書いたら、`fetch("/api/spots", { body: … url … })` を
+    拾って落ちた。こちらの API へ「印を送る」呼び出しで、取りに行っては
+    いない。**カンマの手前まで**に絞ると第 1 引数だけを見られる。
+  */
+  const FETCHES_SPOT_URL =
+    /(?:fetch|axios(?:\.\w+)?|got|request)\s*\(\s*[^,)]*\b(?:spot|userSpot)\w*\.url\b/i;
+
+  it("見張りの形が正しい（拾うものと拾わないもの）", () => {
+    /* 空回り防止。取りに行く形を拾い、送るだけの形を拾わないこと */
+    expect(FETCHES_SPOT_URL.test("await fetch(spot.url)")).toBe(true);
+    expect(FETCHES_SPOT_URL.test("fetch(`${userSpot.url}`)")).toBe(true);
+    expect(FETCHES_SPOT_URL.test("axios.get(spot.url, {})")).toBe(true);
+    expect(
+      FETCHES_SPOT_URL.test(
+        'fetch("/api/spots", { body: j({ url: spot.url }) })',
+      ),
+    ).toBe(false);
+  });
+
   it("地点の URL を取得している所が無い", () => {
     const offenders: string[] = [];
     for (const f of files) {
-      const src = readFileSync(f, "utf8");
-      /* 地点の url を fetch / axios / got などに渡している形 */
-      if (
-        /(?:fetch|axios(?:\.\w+)?|got|request)\s*\(\s*[^)]*\b(?:spot|userSpot)\w*\.url\b/i.test(
-          src,
-        )
-      ) {
+      if (FETCHES_SPOT_URL.test(readFileSync(f, "utf8"))) {
         offenders.push(relative(process.cwd(), f));
       }
     }
