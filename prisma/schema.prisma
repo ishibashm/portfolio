@@ -833,6 +833,13 @@ model UserSpot {
   /// 座標を 5 桁に丸めた文字列。画面側の `sameSpot` と同じ規則で
   /// 同じ地点を重ねないための鍵（浮動小数に一意を張らない）。
   point_key  String
+  /// その物件のページへの印（https のみ）。**取りに行かない。**
+  /// 取りに行けばスクレイピングで、nifty の特約が名指しで禁じている
+  /// （利用者が 1 件ずつ押すのだとしても、取りに行くのはこちらの
+  /// プログラム）。画面で開くだけ。backlog 29 節・CLAUDE.md 3 節。
+  url        String?
+  /// 利用者の覚え書き（間取り・家賃など。手で書く）。
+  memo       String?
   created_at DateTime @default(now()) @db.Timestamptz(6)
 
   @@unique([user_id, point_key])
