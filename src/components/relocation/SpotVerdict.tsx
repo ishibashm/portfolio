@@ -155,8 +155,16 @@ export function SpotVerdict({
       const body = await res.json();
       if (!res.ok || typeof body?.lat !== "number") {
         setTarget(null);
+        /*
+          **API の文言を捨てない。**以前はどんな失敗でも「その住所は
+          見つかりませんでした」に丸めていたので、URL を貼った人にも
+          住所の話が返っていた（何を直せばよいか分からない）。
+          文言を持って返す口だけ、そのまま出す。
+        */
         setError(
-          "その住所は見つかりませんでした。市区町村から入れてみてください。",
+          typeof body?.error === "string" && body.error
+            ? body.error
+            : "その住所は見つかりませんでした。市区町村から入れてみてください。",
         );
         return;
       }
@@ -202,7 +210,7 @@ export function SpotVerdict({
         <input
           id="arb-spot-query"
           type="text"
-          placeholder="住所、または 35.0116, 135.7681"
+          placeholder="住所、物件サイトの一覧の URL、または 35.0116, 135.7681"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           onKeyDown={(e) => {
@@ -224,6 +232,11 @@ export function SpotVerdict({
       </div>
       <p className="text-[9px] text-stone-600 leading-relaxed">
         一覧に無い場所でも、出発地から見た方位とその日の吉凶を出します。地図をクリックすると、その地点がここに入ります。
+        <br />
+        物件サイトで市区町村を絞った一覧の URL を貼ると、その街として調べます（
+        <b>URL は開きに行きません。</b>
+        綴りに入っている市区町村だけを読みます）。物件ごとのページの URL
+        には市区町村が入っていないので、そのときは地名でお願いします。
       </p>
 
       {error && <p className="text-[10px] text-rose-600">{error}</p>}
