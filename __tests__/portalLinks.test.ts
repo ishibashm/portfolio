@@ -5,8 +5,10 @@ import {
   PORTAL_LINK_DISCLAIMER,
   portalLinksForPref,
   suumoCitySearchUrl,
+  municipalityCodeFromPortalUrl,
 } from "@/lib/portalLinks";
 import { PREF_REGION, prefNameByCode } from "@/lib/prefContent";
+import { AREAS } from "@/lib/areaContent";
 
 /*
   ## 何を守る検査か
@@ -184,5 +186,92 @@ describe("外部サイトへのリンクは規約の範囲を出ない", () => {
     expect(src).toContain("https://suumo.jp/help/link.html");
     expect(src).toContain("https://www.homes.co.jp/linkpolicy/");
     expect(src).toContain("2026-09-13");
+  });
+});
+
+/*
+  貼られた URL の**綴りから**市区町村コードを読む（2026-09-15。利用者の依頼）。
+
+  ## これは取得ではない
+
+  **URL を開きに行かない。**文字列を読むだけ。取りに行けばスクレイピングで、
+  nifty の特約が名指しで禁じている（backlog 29 節）。取得しないことは
+  `userSpotUrlNeverFetched` が母集団ごと見張っている。
+
+  ## 気にしていること
+
+  1. **組み立てと読み取りが往復する。**`suumoCitySearchUrl` が作った URL から
+     同じコードが読めること。片方だけ直すと、貼っても場所が決まらなくなる
+  2. **物件詳細の URL からは読めない。**id しか入っていないので、当てずっぽう
+     で決めない（違う街の方位を出すほうが害が大きい）
+  3. **知らないホストの綴りを推測しない**
+*/
+describe("URL の綴りから市区町村を読む", () => {
+  it("組み立てた URL から同じコードが読める（往復する）", () => {
+    for (const code of ["13103", "23106", "01100", "47201", "26104"]) {
+      const url = suumoCitySearchUrl(code);
+      expect(url, code).not.toBeNull();
+      expect(municipalityCodeFromPortalUrl(url), code).toBe(code);
+    }
+  });
+
+  it("実在する市区町村を広く通しても往復する", () => {
+    /* 空回り防止。1 件だけ通して満足しない */
+    let checked = 0;
+    for (const a of AREAS.slice(0, 120)) {
+      const url = suumoCitySearchUrl(a.code);
+      if (!url) continue;
+      expect(municipalityCodeFromPortalUrl(url), a.full).toBe(a.code);
+      checked += 1;
+    }
+    expect(checked).toBeGreaterThan(50);
+  });
+
+  it("物件詳細の URL からは読めない（当てずっぽうで決めない）", () => {
+    /* id しか入っていない。違う街の方位を出すほうが害が大きい */
+    expect(
+      municipalityCodeFromPortalUrl("https://suumo.jp/chintai/jnc_000012345/"),
+    ).toBeNull();
+    expect(
+      municipalityCodeFromPortalUrl(
+        "https://suumo.jp/chintai/bc_100123456789/",
+      ),
+    ).toBeNull();
+  });
+
+  it("知らないホスト・https 以外・壊れた値は読まない", () => {
+    for (const bad of [
+      "https://example.com/?sc=13103",
+      "https://www.homes.co.jp/?sc=13103",
+      "http://suumo.jp/?sc=13103",
+      "javascript:alert(1)",
+      "suumo.jp/?sc=13103",
+      "",
+      "   ",
+      null,
+      13103,
+    ]) {
+      expect(
+        municipalityCodeFromPortalUrl(bad as never),
+        String(bad),
+      ).toBeNull();
+    }
+  });
+
+  it("5 桁でない sc と、県として成り立たない先頭 2 桁は落とす", () => {
+    for (const sc of ["1310", "131030", "abcde", "00100", "48201", "99999"]) {
+      expect(
+        municipalityCodeFromPortalUrl(
+          `https://suumo.jp/jj/chintai/ichiran/FR301FC001/?sc=${sc}`,
+        ),
+        sc,
+      ).toBeNull();
+    }
+  });
+
+  it("www つきでも読める", () => {
+    expect(
+      municipalityCodeFromPortalUrl("https://www.suumo.jp/x/?sc=13103"),
+    ).toBe("13103");
   });
 });

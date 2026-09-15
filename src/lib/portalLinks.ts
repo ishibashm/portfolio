@@ -170,6 +170,50 @@ export function suumoCitySearchUrl(code: string): string | null {
 }
 
 /**
+ * 貼られた URL の**綴りから**市区町村コードを読む。
+ *
+ * ## これは取得ではない
+ *
+ * **URL を開きに行かない。**文字列を読むだけ。取りに行けばスクレイピング
+ * で、nifty の特約が名指しで禁じている（backlog 29 節。見張りは
+ * `__tests__/userSpotUrlNeverFetched.test.ts`）。
+ *
+ * 綴りを読むこと自体は、貼った本人が既に見ている情報を手で写す代わりに
+ * しているだけで、相手のサーバーに 1 回も触らない。
+ *
+ * ## 読めるのは検索一覧の URL だけ
+ *
+ * SUUMO の**検索一覧**には `sc=13103` のように JIS の 5 桁が入っている
+ * （`suumoCitySearchUrl` が組み立てているのと同じ欄）。ここから市区町村が
+ * 決まるので、**貼るだけで方位・距離・相場が出せる。**
+ *
+ * **物件詳細の URL には入っていない。**`/chintai/jnc_000012345/` のように
+ * 物件の id しか持たないので、場所は地図か地名で指してもらう。無理に
+ * 当てずっぽうで決めない（違う街の方位を出すほうが害が大きい）。
+ *
+ * @returns JIS の市区町村コード 5 桁。読めなければ null。
+ */
+export function municipalityCodeFromPortalUrl(raw: unknown): string | null {
+  if (typeof raw !== "string" || !raw.trim()) return null;
+  let u: URL;
+  try {
+    u = new URL(raw.trim());
+  } catch {
+    return null;
+  }
+  /* 綴りを読むだけとはいえ、知らないホストの綴りを推測しない */
+  if (u.protocol !== "https:") return null;
+  if (u.host !== "suumo.jp" && u.host !== "www.suumo.jp") return null;
+
+  const sc = u.searchParams.get("sc");
+  if (!sc || !/^\d{5}$/.test(sc)) return null;
+  /* 県のコードとして成り立たない先頭 2 桁は落とす（01〜47） */
+  const pref = Number(sc.slice(0, 2));
+  if (!Number.isInteger(pref) || pref < 1 || pref > 47) return null;
+  return sc;
+}
+
+/**
  * 規約で名指しされている URL の全体。**ここに無い URL は作らない。**
  * 検査がこの集合の外を弾く。
  */
