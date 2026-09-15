@@ -128,8 +128,20 @@ export function TacticalMagneticMapComponent({
               className="text-blue-700 md:animate-pulse mt-1"
             />
             <div className="flex flex-col">
-              <h2 className="text-xs uppercase font-mono tracking-widest text-stone-600 drop-shadow-md">
-                [稼働環境] 地磁気・太陽風ベクター観測
+              {/*
+                見出しは**この地図が実際に出しているもの**を言う。
+
+                以前は「[稼働環境] 地磁気・太陽風ベクター観測」だった。
+                **地磁気も太陽風も、この地図は表示していない**（出している
+                のは出発地から見た八方位の扇形と、その吉凶）。何ができる
+                地図なのか読んでも分からず、疑似物理の言い方を増やさない
+                という決め（CLAUDE.md 4 節）にも触れていた。
+
+                `uppercase` と `font-mono` も外す。日本語に効かないうえ、
+                計器の表示めいた見た目が「測っている」という誤解を足す。
+              */}
+              <h2 className="text-xs font-bold tracking-wide text-stone-700 drop-shadow-md">
+                目的地の方位
               </h2>
 
               {/* Layer Mode Switcher with Combinations */}
