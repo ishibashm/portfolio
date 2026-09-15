@@ -14,6 +14,7 @@ import { TIER_BADGE_CLASS } from "@/utils/tierDisplay";
    値で import すると、この部品を載せる頁にエンジン一式が乗る。 */
 import { TIER_LABELS, type DayTier } from "@/utils/dayTier";
 import { addUserSpot } from "@/lib/userSpots";
+import { hasUsableBase, isInJapan } from "@/lib/japanBounds";
 import {
   geocodePrecisionNote,
   parseGeocodeSource,
@@ -86,7 +87,7 @@ export function parseCoordinates(
   const lat = Number(m[1]);
   const lon = Number(m[2]);
   if (!Number.isFinite(lat) || !Number.isFinite(lon)) return null;
-  if (lat < 20 || lat > 46 || lon < 122 || lon > 154) return null;
+  if (!isInJapan(lat, lon)) return null;
   return { lat, lon };
 }
 
@@ -136,7 +137,16 @@ export function SpotVerdict({
   const [markUrl, setMarkUrl] = useState("");
   const [markMemo, setMarkMemo] = useState("");
 
-  const hasBase = Number.isFinite(baseLat) && Number.isFinite(baseLon);
+  /*
+    **`Number.isFinite` では足りない。**呼び出し側は `Number(baseLat)` で
+    渡してくるが、`baseLat` の初期値は空文字で `Number("")` は `NaN` では
+    なく **`0`**。有限なので素通りし、緯度 0・経度 0（ギニア湾）から方位と
+    距離を出していた（実機で「愛知県名古屋市中区 NE 約14083.5km」）。
+
+    距離が桁違いなのは目で分かるが、**方位は一見それらしく気付けない。**
+    日本の範囲で見る（`lib/japanBounds`）。
+  */
+  const hasBase = hasUsableBase(baseLat, baseLon);
 
   // 地図でクリックされたら、住所を引かずにそのまま判定へ入れる。
   // 座標は既に分かっているので、ジオコーディングを挟む理由が無い。
