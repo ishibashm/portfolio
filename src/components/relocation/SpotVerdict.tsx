@@ -108,6 +108,19 @@ export function SpotVerdict({
   const [target, setTarget] = useState<SpotTarget | null>(null);
   /* 「保存」の結果。端末に置いただけなので、成否を 1 行返せば足りる */
   const [savedNote, setSavedNote] = useState<string | null>(null);
+  /*
+    物件ページへの印（2026-09-15。利用者の依頼）。
+
+    **畳んでおく。**大半の保存は名前だけで足りるので、欄を常に出すと
+    「★ この地点を保存」の 1 押しが 3 つの空欄に変わる。押してから開く。
+
+    **取りに行かない。**URL は控えとして持つだけで、中身は取得しない
+    （取りに行けばスクレイピングで、nifty の特約が名指しで禁じている。
+    backlog 29 節。見張りは `userSpotUrlNeverFetched`）。
+  */
+  const [showMark, setShowMark] = useState(false);
+  const [markUrl, setMarkUrl] = useState("");
+  const [markMemo, setMarkMemo] = useState("");
 
   const hasBase = Number.isFinite(baseLat) && Number.isFinite(baseLon);
 
@@ -292,8 +305,9 @@ export function SpotVerdict({
                 地図でこの地点を見る →
               </button>
             )}
-            {/* 端末の localStorage に置く（lib/userSpots）。サーバーには
-                送らない。地図の UserSpotLayer が購読して ★ で出す。 */}
+            {/* 端末の localStorage に置き、ログイン中はクラウドにも同期する
+                （lib/userSpots。#25 で DB 保存を足した）。地図の
+                UserSpotLayer が購読して ★ で出す。 */}
             <button
               type="button"
               onClick={() => {
@@ -301,23 +315,67 @@ export function SpotVerdict({
                   name: target.name,
                   lat: target.lat,
                   lon: target.lon,
+                  url: markUrl,
+                  memo: markMemo,
                 });
                 setSavedNote(
                   r.added
-                    ? "この端末に保存しました（地図に ★ で出ます）"
+                    ? "保存しました（地図に ★ で出ます）"
                     : r.reason === "full"
                       ? "保存できる地点は 50 件までです"
-                      : "同じ地点が保存済みです（名前を更新しました）",
+                      : "同じ地点が保存済みです（内容を更新しました）",
                 );
               }}
-              className="text-[10px] font-bold text-violet-700 hover:underline"
+              className="min-h-[24px] text-[10px] font-bold text-violet-700 hover:underline"
             >
               ★ この地点を保存
+            </button>
+            <button
+              type="button"
+              onClick={() => setShowMark((v) => !v)}
+              aria-expanded={showMark}
+              className="min-h-[24px] text-[10px] font-bold text-stone-600 hover:underline"
+            >
+              {showMark ? "物件の印を閉じる" : "物件のページを控える"}
             </button>
             {savedNote && (
               <span className="text-[10px] text-stone-500">{savedNote}</span>
             )}
           </div>
+
+          {/* 物件のページを控える欄。**入れてから「★ この地点を保存」を
+              押す。**保存の押し口を増やすと、どちらを押せばよいか分からない
+              （同じ地点をもう一度保存すれば内容は差し替わる）。 */}
+          {showMark && (
+            <div className="mt-2 space-y-1.5 rounded-xl border border-stone-200 bg-stone-50 p-2">
+              <label className="block text-[10px] font-bold text-stone-700">
+                物件のページ（https のみ）
+                <input
+                  type="url"
+                  inputMode="url"
+                  value={markUrl}
+                  onChange={(e) => setMarkUrl(e.target.value)}
+                  placeholder="https://..."
+                  className="mt-0.5 w-full rounded border border-stone-300 px-2 py-1 text-[11px] font-normal"
+                />
+              </label>
+              <label className="block text-[10px] font-bold text-stone-700">
+                覚え書き
+                <textarea
+                  value={markMemo}
+                  onChange={(e) => setMarkMemo(e.target.value)}
+                  rows={2}
+                  placeholder="2LDK / 8.5万円 / 駅8分 など"
+                  className="mt-0.5 w-full rounded border border-stone-300 px-2 py-1 text-[11px] font-normal"
+                />
+              </label>
+              <p className="text-[10px] leading-relaxed text-stone-500">
+                {
+                  "貼った URL は控えとして残すだけで、こちらから中身を読みに行くことはありません。家賃や間取りは手で書いてください。入れたら「★ この地点を保存」を押します。"
+                }
+              </p>
+            </div>
+          )}
         </div>
       )}
     </div>
