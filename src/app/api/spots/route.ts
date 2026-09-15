@@ -4,7 +4,13 @@ import prisma from "@/lib/prisma";
 import { getAuthUser, toUserId } from "@/lib/userConfig";
 import { toLogMessage } from "@/lib/errorMessage";
 import { TokenBucket, isSameOrigin } from "@/lib/apiGuard";
-import { MAX_USER_SPOTS, normalizeSpotName, pointKey } from "@/lib/userSpotKey";
+import {
+  MAX_USER_SPOTS,
+  normalizeSpotMemo,
+  normalizeSpotName,
+  normalizeSpotUrl,
+  pointKey,
+} from "@/lib/userSpotKey";
 
 /**
  * 利用者が登録した地点（お気に入りの場所）の出し入れ。
@@ -48,6 +54,19 @@ const spotSchema = z.object({
   name: z.string().transform(normalizeSpotName).pipe(z.string().min(1).max(60)),
   lat: z.number().finite().min(-90).max(90),
   lon: z.number().finite().min(-180).max(180),
+  /*
+    物件ページへの印（2026-09-15。利用者の依頼）。**https だけ。**
+
+    画面でリンクとして描くので、javascript: や data: を入口で落とす
+    （`normalizeSpotUrl`）。**中身は取りに行かない。**取りに行けば
+    スクレイピングで、nifty の特約が名指しで禁じている（backlog 29 節）。
+
+    省略・空・不正はどれも null にする。**400 で断らない。**URL は
+    おまけの欄で、綴りが違うだけで地点の保存ごと失敗させると、名前と
+    座標まで入れ直しになる。
+  */
+  url: z.unknown().optional().transform(normalizeSpotUrl),
+  memo: z.unknown().optional().transform(normalizeSpotMemo),
 });
 
 const idSchema = z.string().min(1).max(64);
@@ -99,7 +118,15 @@ export async function GET() {
       take: MAX_USER_SPOTS,
       /* 返すのは画面が要る欄だけ。user_id は本人にも返さない（使い道が
          無く、漏れる面だけが増える） */
-      select: { id: true, name: true, lat: true, lon: true, created_at: true },
+      select: {
+        id: true,
+        name: true,
+        lat: true,
+        lon: true,
+        url: true,
+        memo: true,
+        created_at: true,
+      },
     });
 
     return NextResponse.json(
@@ -109,6 +136,8 @@ export async function GET() {
           name: r.name,
           lat: r.lat,
           lon: r.lon,
+          url: r.url,
+          memo: r.memo,
           createdAt: r.created_at.toISOString(),
         })),
       },
@@ -145,7 +174,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const { name, lat, lon } = parsed.data;
+    const { name, lat, lon, url, memo } = parsed.data;
     const key = pointKey(lat, lon);
 
     /* 上限はサーバー側でも見る。**既にある地点の名前を変えるだけなら上限に
@@ -168,11 +197,21 @@ export async function POST(req: NextRequest) {
 
     const saved = await prisma.userSpot.upsert({
       where: { user_id_point_key: { user_id: userId, point_key: key } },
-      create: { user_id: userId, name, lat, lon, point_key: key },
-      /* 同じ地点は重ねず名前だけ差し替える（画面側の `withUserSpot` と同じ
-         規則）。座標は鍵と同じものなので触らない */
-      update: { name },
-      select: { id: true, name: true, lat: true, lon: true, created_at: true },
+      create: { user_id: userId, name, lat, lon, url, memo, point_key: key },
+      /* 同じ地点は重ねず、名前と印だけ差し替える（画面側の `withUserSpot` と
+         同じ規則）。座標は鍵と同じものなので触らない。
+         **url / memo は送られたとおりに置く。**空で送れば消せる、という
+         一貫した意味にする（消すために別の口を作らない） */
+      update: { name, url, memo },
+      select: {
+        id: true,
+        name: true,
+        lat: true,
+        lon: true,
+        url: true,
+        memo: true,
+        created_at: true,
+      },
     });
 
     return NextResponse.json(
@@ -182,6 +221,8 @@ export async function POST(req: NextRequest) {
           name: saved.name,
           lat: saved.lat,
           lon: saved.lon,
+          url: saved.url,
+          memo: saved.memo,
           createdAt: saved.created_at.toISOString(),
         },
       },
