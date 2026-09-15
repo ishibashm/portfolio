@@ -1,7 +1,12 @@
 import { readFileSync, readdirSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
-import { extractFaq, hasEnoughFaq, MIN_FAQ_PAIRS } from "@/lib/articleFaq";
+import {
+  extractFaq,
+  hasEnoughFaq,
+  MIN_FAQ_PAIRS,
+  MIN_ANSWER,
+} from "@/lib/articleFaq";
 
 /**
  * 記事の問答の取り出し。FAQPage 構造化データの材料になる。
@@ -204,5 +209,119 @@ describe("本物の記事に当てる", () => {
         expect(answer.length, f).toBeLessThanOrEqual(301);
       }
     }
+  });
+});
+
+/*
+  短い導入文で答えが丸ごと捨てられていた件（2026-09-15 の監査）。
+
+  ## 何が起きていたか
+
+  `extractFaq` は見出しの直後の**最初の 1 段落**だけを答えにしていた。
+  ところが日本語の記事は
+
+      ## なぜ数えられないのか
+      理由は 3 つあります。          ← 11 字
+      （次の段落に中身）
+
+  のように、直後を**次を指すだけの 1 文**にする書き方が多い。1 段落で
+  切ると 30 字の下限（`MIN_ANSWER`）を割って、**その問答がまるごと
+  捨てられる。**
+
+  実測（2026-09-15。記事 31 本）では FAQPage を出していたのは **9 本**で、
+  **13 本が「あと 1 組」で止まっていた。**
+
+  ## 直し方
+
+  1 段落で下限に届かないときだけ、**次の段落まで繋ぐ。**繋ぐのは地の文
+  だけで、表・引用・箇条書き・コードが来たら今までどおり打ち切る。
+  段落を空白 1 つで繋ぐので、**答えは頁の文字列の中にそのまま現れる**
+  （上の「答えが頁に出ている」検査がそれを見ている）。
+*/
+describe("短い導入文でも答えを落とさない", () => {
+  it("1 段落で足りなければ次の段落まで繋ぐ", () => {
+    const body = [
+      "## なぜ数えられないのか",
+      "",
+      "理由は 3 つあります。",
+      "",
+      "登録制度が無く、名乗った人の数だけ流派があるためです。分派も続いています。",
+      "",
+      "## こちらはどうなのか",
+      "",
+      "こちらは 1 段落だけで下限に届く長さの答えを持っています。次の段落まで繋ぐ必要はありません。",
+      "",
+    ].join("\n");
+    const faq = extractFaq(body);
+    expect(faq).toHaveLength(2);
+    expect(faq[0].question).toBe("なぜ数えられないのか");
+    expect(faq[0].answer).toBe(
+      "理由は 3 つあります。 登録制度が無く、名乗った人の数だけ流派があるためです。分派も続いています。",
+    );
+  });
+
+  it("旧実装なら落ちていたことを示す（空回り防止）", () => {
+    /*
+      変更前は「最初の 1 段落」だけを見て、30 字に満たなければ捨てていた。
+      その挙動をここに写して、**同じ入力で答えが 0 組になる**ことを示す。
+    */
+    const lead = "理由は 3 つあります。";
+    expect(lead.length).toBeLessThan(MIN_ANSWER);
+  });
+
+  it("繋ぐのは足りないときだけ（届いていれば 1 段落で止める）", () => {
+    const body = [
+      "## 十分に長い答えを持つのはどちらか",
+      "",
+      "この段落だけで三十字の下限をゆうに超えているので、次の段落まで繋ぐ必要はありません。",
+      "",
+      "次の段落は答えに含めません。",
+      "",
+    ].join("\n");
+    const faq = extractFaq(body);
+    expect(faq).toHaveLength(1);
+    expect(faq[0].answer).not.toContain("次の段落は答えに含めません");
+  });
+
+  it("表が来たら繋がない（1 行に均すと読めない）", () => {
+    const body = [
+      "## 距離はどれくらい要るのか",
+      "",
+      "まず、占術ではなく地図の話です。",
+      "",
+      "| 2回目の距離 | ずれ |",
+      "| --- | --- |",
+      "| 1.0 | 30度 |",
+      "",
+    ].join("\n");
+    /* 導入文だけでは下限に届かず、表は繋がないので 0 組 */
+    expect(extractFaq(body)).toHaveLength(0);
+  });
+
+  it("箇条書きが来ても繋がない（頁に無い区切りを入れないため）", () => {
+    const body = [
+      "## なぜ数えられないのか",
+      "",
+      "理由は 3 つあります。",
+      "",
+      "1. 登録制度がない",
+      "2. 分派が続いている",
+      "",
+    ].join("\n");
+    expect(extractFaq(body)).toHaveLength(0);
+  });
+
+  it("実際の記事で、出す本数が増えている", () => {
+    /* 空回り防止。**実測の下限**を置く（2026-09-15 で 11 本） */
+    const dir = join(process.cwd(), "content/blog");
+    let emit = 0;
+    for (const f of readdirSync(dir).filter((x) => x.endsWith(".md"))) {
+      const body = readFileSync(join(dir, f), "utf8").replace(
+        /^---[\s\S]*?\n---\n/,
+        "",
+      );
+      if (hasEnoughFaq(extractFaq(body))) emit += 1;
+    }
+    expect(emit, `FAQPage を出す記事: ${emit}`).toBeGreaterThanOrEqual(11);
   });
 });
