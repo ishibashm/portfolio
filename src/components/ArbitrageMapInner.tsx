@@ -1352,7 +1352,22 @@ export default function ArbitrageMapInner({
             一覧の「候補のうち範囲内」と必ず一致する。通信も減る。 */}
         {hasBase && zoom >= 10 && (
           <div
-            className={`absolute bottom-4 lg:bottom-auto lg:top-4 left-1/2 -translate-x-1/2 z-[1000] pointer-events-none bg-white/85 backdrop-blur shadow-lg border border-stone-200 px-3.5 py-1.5 text-center max-w-[min(90%,22rem)] ${
+            /*
+              **狭い画面では下に置かない。**右下の「方位の吉凶」の凡例と
+              同じ高さになり、札がその裏に隠れていた（利用者の実機。
+              400px で実測すると **142 × 34px が重なって**、左の 31px しか
+              見えていなかった）。どちらも `bottom-4` なので、凡例が横に
+              広い狭幅では必ずぶつかる。
+
+              上へ移して左に寄せる。**中央のままだと右上の「全画面／設定」
+              に当たり、`top-14` へ下げると今度は設定を開いたときの操作の
+              列に当たる**（実測: 全画面は x=233〜348 / y=19〜45、列は
+              x≥218 で y≈62 から）。左上なら両方を避けられる。
+
+              幅も狭幅だけ抑える。`max-w-[min(90%,22rem)]` のままだと
+              右へ伸びて全画面の札に届く。
+            */
+            className={`absolute top-4 left-4 lg:left-1/2 lg:-translate-x-1/2 z-[1000] pointer-events-none bg-white/85 backdrop-blur shadow-lg border border-stone-200 px-3.5 py-1.5 text-center max-w-[11.5rem] lg:max-w-[min(90%,22rem)] ${
               truncation ? "rounded-2xl" : "rounded-full"
             }`}
           >
@@ -1401,7 +1416,7 @@ export default function ArbitrageMapInner({
             無い」に見えていた（利用者の指摘）。器の中（isolate）の
             z-[1000] で、操作の列とは重ならない位置に出す。 */}
         {isLoading && (
-          <div className="absolute bottom-14 lg:bottom-auto lg:top-14 left-1/2 -translate-x-1/2 z-[1000] pointer-events-none flex items-center gap-2 rounded-full border border-indigo-200 bg-white/90 px-3 py-1 text-[11px] font-bold text-indigo-700 shadow-lg">
+          <div className="absolute top-16 left-4 lg:left-1/2 lg:-translate-x-1/2 lg:top-14 z-[1000] pointer-events-none flex items-center gap-2 rounded-full border border-indigo-200 bg-white/90 px-3 py-1 text-[11px] font-bold text-indigo-700 shadow-lg">
             <span className="inline-block h-3 w-3 animate-spin rounded-full border-2 border-indigo-500 border-t-transparent" />
             この範囲の物件を読み込み中…
           </div>
