@@ -325,3 +325,128 @@ describe("短い導入文でも答えを落とさない", () => {
     expect(emit, `FAQPage を出す記事: ${emit}`).toBeGreaterThanOrEqual(11);
   });
 });
+
+/*
+  題が問いの記事は、題と「先に結論」も 1 組にする（2026-09-16 の監査）。
+
+  ## なぜ足りなかったか
+
+  実測すると、FAQPage を出せていたのは 31 本中 **11 本**。落ちている
+  20 本のうち 12 本は「本文の問いの見出しが 1 本しかない」で、あと 1 組
+  足りずに止まっていた。
+
+  ところがこの記事群は**題そのものが問いの形**であることが多く（31 本中
+  11 本）、その答えは冒頭の「先に結論」に書いてある。**問いは h1、答えは
+  本文**なので、どちらも頁に出ている。組にしてよい。
+
+  ## 効いたのは 2 本だけ
+
+  11 → **13 本**。題が問いで 1 組しか無い記事は 5 本あったが、うち 3 本は
+  「先に結論」が**箇条書き**で、#1325 と同じ理由（1 行に均すと頁に無い
+  区切りを混ぜることになる）で組にならない。**見込みの 5 本ではなく、
+  実測の 2 本が答え。**
+*/
+describe("題が問いなら、題と「先に結論」を組にする", () => {
+  const LEAD = [
+    "# みだし",
+    "",
+    "## 先に結論",
+    "",
+    "取り消す計算はありません。判定は今いる場所からの方位で出るので、次に動くときの起点が変わります。",
+    "",
+    "## 注記",
+    "",
+    "ここは問いではないので拾わない。",
+    "",
+  ].join("\n");
+
+  it("題が問いなら、先に結論が答えになる", () => {
+    const faq = extractFaq(LEAD, "凶方位へ移ってしまった。挽回できるのか");
+    expect(faq).toHaveLength(1);
+    expect(faq[0].question).toBe("凶方位へ移ってしまった。挽回できるのか");
+    expect(faq[0].answer).toContain("取り消す計算はありません");
+  });
+
+  it("題が問いでなければ、先に結論は拾わない", () => {
+    expect(extractFaq(LEAD, "本命殺の調べ方")).toHaveLength(0);
+    /* 題を渡さない呼び方も、今までどおり拾わない */
+    expect(extractFaq(LEAD)).toHaveLength(0);
+  });
+
+  it("先に結論が箇条書きなら組にしない（#1325 と同じ理由）", () => {
+    const listed = [
+      "## 先に結論",
+      "",
+      "- 取り消す計算はありません。判定は今いる場所からの方位で出ます",
+      "- 年盤には期限がありますが、待てば良くなるとは限りません",
+      "",
+    ].join("\n");
+    expect(extractFaq(listed, "挽回できるのか")).toHaveLength(0);
+  });
+
+  it("題を当てるのは最初の「先に結論」だけ", () => {
+    const twice = [
+      "## 先に結論",
+      "",
+      "一つ目の段落です。ここが題への答えとして拾われるのが正しい並びになります。",
+      "",
+      "## 先に結論",
+      "",
+      "二つ目の段落です。ここは題の答えではないので拾ってはいけません。",
+      "",
+    ].join("\n");
+    const faq = extractFaq(twice, "拾われるのはどちらか");
+    expect(faq).toHaveLength(1);
+    expect(faq[0].answer).toContain("一つ目");
+  });
+});
+
+describe("本物の記事に題を渡す", () => {
+  const files = readdirSync(DIR).filter((f) => f.endsWith(".md"));
+  const titleOf = (md: string) => md.match(/^title:\s*"?(.+?)"?\s*$/m)?.[1];
+
+  it("FAQPage を出せる記事が 11 → 13 本になる", () => {
+    const count = (withTitle: boolean) =>
+      files.filter((f) => {
+        const md = readFileSync(join(DIR, f), "utf8");
+        return hasEnoughFaq(
+          extractFaq(md, withTitle ? titleOf(md) : undefined),
+        );
+      }).length;
+    /*
+      本数そのものを固定する。記事を足したり書き換えたりすれば動くので、
+      動いたら**測り直してこの数字を直す**（増える側で落ちるのは正しい）。
+    */
+    expect(count(false)).toBe(11);
+    expect(count(true)).toBe(13);
+  });
+
+  it("題から作った問いは、記事の題そのもの（言い換えない）", () => {
+    for (const f of files) {
+      const md = readFileSync(join(DIR, f), "utf8");
+      const title = titleOf(md);
+      if (!title) continue;
+      const added = extractFaq(md, title).filter(
+        (p) => !extractFaq(md).some((q) => q.question === p.question),
+      );
+      for (const p of added) {
+        expect(p.question, f).toBe(title);
+      }
+    }
+  });
+
+  it("題を渡しても、答えは本文にそのまま出ている", () => {
+    for (const f of files) {
+      const body = readFileSync(join(DIR, f), "utf8");
+      const flat = body
+        .replace(/!\[[^\]]*\]\([^)]*\)/g, "")
+        .replace(/\[([^\]]*)\]\([^)]*\)/g, "$1")
+        .replace(/[*`]/g, "")
+        .replace(/\s+/g, " ");
+      for (const { answer } of extractFaq(body, titleOf(body))) {
+        const head = answer.replace(/…$/, "").slice(0, 20);
+        expect(flat, `${f}: ${head}`).toContain(head);
+      }
+    }
+  });
+});
