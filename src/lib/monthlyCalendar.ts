@@ -1,4 +1,4 @@
-import { getRokuyo, getLuckyDays } from "@/utils/lunar";
+import { getRokuyo, getLuckyDays, plainRokuyo } from "@/utils/lunar";
 import {
   AstroEngine,
   DOYOU_MABI,
@@ -71,14 +71,6 @@ export interface MonthlyCalendar {
 }
 
 const WEEKDAY_JP = ["日", "月", "火", "水", "木", "金", "土"];
-
-/**
- * 六曜からローマ字の併記を落とす。
- * ROKUYO は "大安 (Taian)" の形で持っており、画面では日本語だけでよい。
- */
-function plainRokuyo(value: string): string {
-  return value.replace(/\s*\([^)]*\)\s*$/, "").trim();
-}
 
 export function weekdayLabel(weekday: number): string {
   return WEEKDAY_JP[weekday] ?? "";
