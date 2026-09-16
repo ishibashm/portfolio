@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { Clock3 } from "lucide-react";
 import { BlogArticleBody } from "@/components/blog/BlogArticleBody";
+import { ArticleToolCta } from "@/components/blog/ArticleToolCta";
 import {
   ArticleJsonLd,
   BreadcrumbJsonLd,
@@ -189,6 +190,14 @@ export default async function BlogPostPage({
             <div className="mt-8">
               <BlogArticleBody body={post.body} />
             </div>
+
+            {/*
+              本文を読み終えた場所に道具への入口を置く。以前はここから
+              「記事一覧へ戻る」しか無く、記事は行き止まりだった。
+              広告の上に置く。広告の下だと、本文の終わりで離脱した人に
+              は見えない。
+            */}
+            <ArticleToolCta tags={post.tags} />
 
             <div className="mt-12">
               <AdBanner />
