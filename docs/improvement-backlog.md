@@ -3256,7 +3256,20 @@ master へ入れ、DB への取り込みまで済ませていた。同じ題が 
 
 ### 取り込み（blog-import.yml）
 
-（記入待ち）
+#1334 のマージ直後に `mode=apply / overwrite=false /
+only=tensha-and-ichiryumanbai-for-moving-day` で流した（run #49。
+2026-09-16 23:40 UTC）。ログ:
+
+    Markdown の公開記事: 33 本
+    モード: APPLY（入っていないものだけ） / 対象を 1 本に絞る
+      + tensha-and-ichiryumanbai-for-moving-day: 追加
+    追加 1 / 上書き 0 / 飛ばした 0
+    DB の記事: 34 本（うち公開 34 本）
+
+DB が 34 本で Markdown が 33 本なのは、管理画面から書いた 1 本ぶん
+（3 節「逆向きは失敗にしない」の例）。#1333 の記事は別のセッションが
+run #48 で取り込み済み。翌晩の `site-audit.yml`（記事の取り込み漏れ）が
+0 件で通ることを確かめる。
 
 ### 残り
 
