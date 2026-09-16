@@ -163,6 +163,17 @@ export default async function Page({
           <h2 className="text-xl font-bold font-serif border-b border-slate-300 pb-2">
             方位ごとの判定
           </h2>
+          <p className="mt-4 text-xs leading-relaxed text-slate-600">
+            五黄殺・暗剣殺は本命星に関係なく盤だけで決まり、年・月・日で動きます。決まり方と
+            2026〜2032 年の位置は
+            <Link
+              href="/blog/gouosatsu-and-ankensatsu"
+              className="underline hover:text-rose-600"
+            >
+              五黄殺・暗剣殺とはどの方位か
+            </Link>
+            に書いています。
+          </p>
           <div className="mt-5 grid gap-3 sm:grid-cols-2">
             {verdicts.map((v) => (
               <div
