@@ -26,6 +26,16 @@
  * 見出しに「5. 盤はなぜ逆に回るのか」のような通し番号が付くことがある。
  * 番号は頁の中での順序であって問いの一部ではないので落とす。
  *
+ * ## 題が問いなら、題と「先に結論」も 1 組にする
+ *
+ * この記事群は**題そのものが問いの形**であることが多い（「凶方位への
+ * 移動を、吉が上回ることはできるのか」など）。そういう記事は冒頭に
+ * 「先に結論」の節を置いて、そこで題に答えている。**問いも答えも頁に
+ * 出ている**ので、組にしてよい（題は h1、結論は本文）。
+ *
+ * 実測（2026-09-16）では、題が問いの形の記事が 31 本中 11 本。本文の
+ * 見出しだけでは 1 組しか取れず落ちていた記事が、これで 2 組に届く。
+ *
  * ## 出すのは 2 組以上そろったときだけ
  *
  * 1 組だけの FAQPage は情報として薄く、体裁を作っただけになる。
@@ -47,6 +57,13 @@ export const MIN_FAQ_PAIRS = 2;
  * 「はい。」のような相槌は落ちて、1 文の答えは残る。
  */
 export const MIN_ANSWER = 30;
+/**
+ * 題への答えを置いてある節の見出し。
+ *
+ * 記事の書き方の決めごとで、問いの形の題を持つ記事はここで先に答える。
+ * この見出しが無い記事では、題は組にしない（答えがどこか分からない）。
+ */
+const LEAD_HEADING = "先に結論";
 /** 答えの長さの上限。長すぎるものは頭だけ取る。 */
 const MAX_ANSWER = 300;
 
@@ -92,7 +109,15 @@ function plainText(md: string): string {
  * 見出しの直後にある**最初の段落**だけを答えにする。表や箇条書きが先に
  * 来る見出しは飛ばす。答えになる 1 文が無いということなので。
  */
-export function extractFaq(body: string): ArticleFaq[] {
+export function extractFaq(body: string, title?: string): ArticleFaq[] {
+  /*
+    題が問いの形なら、「先に結論」の節をその答えとして扱う。題でない
+    見出しに題の問いを当てないよう、使うのは最初の 1 回だけ。
+  */
+  const titleQuestion =
+    title && isQuestion(cleanHeading(title)) ? cleanHeading(title) : null;
+  let titleUsed = false;
+
   const lines = body.split("\n");
   const out: ArticleFaq[] = [];
   let inFence = false;
@@ -136,7 +161,14 @@ export function extractFaq(body: string): ArticleFaq[] {
     if (heading) {
       flush();
       const text = cleanHeading(heading[2]);
-      pending = isQuestion(text) ? text : null;
+      if (isQuestion(text)) {
+        pending = text;
+      } else if (titleQuestion && !titleUsed && text === LEAD_HEADING) {
+        pending = titleQuestion;
+        titleUsed = true;
+      } else {
+        pending = null;
+      }
       continue;
     }
 

@@ -98,8 +98,11 @@ export default async function BlogPostPage({
     問いの形の見出しと直後の段落を組にして FAQPage に出す。**本文から
     取るだけ**で、構造化データのために書き足さない（lib/articleFaq）。
     2 組そろわない記事では出さない。
+
+    題も渡す。題が問いの形なら「先に結論」の節をその答えにする。どちらも
+    頁に出ている（題は下の h1、結論は本文）。
   */
-  const faq = extractFaq(post.body);
+  const faq = extractFaq(post.body, post.title);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#faf7f5] via-[#f5efe9] to-[#f0e9e1] text-slate-900">
