@@ -88,3 +88,90 @@ describe("節気表の時刻帯", () => {
     }
   });
 });
+
+/**
+ * 12 の節入りを全部、ライブラリの表と突き合わせる。
+ *
+ * 上の検査は立春 1 つだけを見ている。判定が使うのは
+ * `solarTermMonthAnchor` で、**12 の節入りすべて**を自前の黄経から解く。
+ * どれか 1 つの区切りが動けば、その節月に当たる人の月盤が丸ごと変わる。
+ *
+ * ライブラリの表は独立した実装なので、**突き合わせる相手として使える**
+ * （時刻帯を +8 に直せば、同じ瞬間を指しているはず）。2026-09-16 の実測で
+ * 2020〜2035 の 192 件すべてが **1 分以内**で一致した（最大は
+ * 2026 年の芒種で 0.76 分）。
+ *
+ * 秒の丸めと二分探索の打ち切りでこのくらいはぶれる。**2 分を超えたら
+ * 黄経のモデルかライブラリのどちらかが動いている。**
+ */
+describe("12 の節入りが、ライブラリの表と一致する", () => {
+  /*
+    節入りの名前と、その瞬間の太陽黄経。
+
+    **表の鍵は簡体字。**中国のライブラリなので「啓蟄」ではなく「惊蛰」、
+    「芒種」ではなく「芒种」で引く。日本語の字で引くと `undefined` が
+    返り、**黙って 2 つ飛ばして 10 節入りしか比べない。**下の
+    `expect(compared).toBe(192)` はそのための歯止め（実際に踏んだ）。
+  */
+  const TERMS: ReadonlyArray<readonly [string, string, number]> = [
+    ["立春", "立春", 315],
+    ["惊蛰", "啓蟄", 345],
+    ["清明", "清明", 15],
+    ["立夏", "立夏", 45],
+    ["芒种", "芒種", 75],
+    ["小暑", "小暑", 105],
+    ["立秋", "立秋", 135],
+    ["白露", "白露", 165],
+    ["寒露", "寒露", 195],
+    ["立冬", "立冬", 225],
+    ["大雪", "大雪", 255],
+    ["小寒", "小寒", 285],
+  ];
+
+  /** 目標黄経を跨ぐ瞬間。`around` の前後 20 日を二分探索する。 */
+  function crossing(targetLon: number, around: number): number {
+    const ahead = (t: number) =>
+      (AstroEngine.getSolarLongitude(new Date(t)) - targetLon + 360) % 360 <
+      180;
+    let lo = around - 20 * 86400000;
+    let hi = around + 20 * 86400000;
+    for (let i = 0; i < 60; i++) {
+      const mid = (lo + hi) / 2;
+      if (ahead(mid)) hi = mid;
+      else lo = mid;
+    }
+    return hi;
+  }
+
+  it("2020〜2035 の 192 件が 2 分以内で一致する（表は UTC+8）", () => {
+    let compared = 0;
+    let worst = 0;
+    let worstLabel = "";
+    for (let y = 2020; y <= 2035; y++) {
+      const table = Solar.fromYmdHms(y, 6, 1, 12, 0, 0)
+        .getLunar()
+        .getJieQiTable();
+      for (const [key, name, lon] of TERMS) {
+        const t = table[key];
+        expect(t, `${y} ${name}（${key}）が表に無い`).toBeTruthy();
+        /* 表の数字は中国標準時。UTC+8 として瞬間に直す */
+        const ref = Date.UTC(
+          t.getYear(),
+          t.getMonth() - 1,
+          t.getDay(),
+          t.getHour() - 8,
+          t.getMinute(),
+          t.getSecond(),
+        );
+        const diffMin = Math.abs(crossing(lon, ref) - ref) / 60000;
+        if (diffMin > worst) {
+          worst = diffMin;
+          worstLabel = `${y} ${name}`;
+        }
+        compared++;
+      }
+    }
+    expect(compared).toBe(192);
+    expect(worst, `いちばんずれたのは ${worstLabel}`).toBeLessThan(2);
+  });
+});

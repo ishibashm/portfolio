@@ -38,6 +38,8 @@ declare module "lunar-javascript" {
     getDay(): number;
     getHour(): number;
     getMinute(): number;
+    /** 秒。節入りの時刻を分より細かく突き合わせるのに要る */
+    getSecond(): number;
   }
 
   /** 大運 1 期ぶん。 */
