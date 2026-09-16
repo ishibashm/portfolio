@@ -405,7 +405,7 @@ describe("本物の記事に題を渡す", () => {
   const files = readdirSync(DIR).filter((f) => f.endsWith(".md"));
   const titleOf = (md: string) => md.match(/^title:\s*"?(.+?)"?\s*$/m)?.[1];
 
-  it("FAQPage を出せる記事が 12 → 14 本になる", () => {
+  it("FAQPage を出せる記事が 13 → 15 本になる", () => {
     const count = (withTitle: boolean) =>
       files.filter((f) => {
         const md = readFileSync(join(DIR, f), "utf8");
@@ -417,8 +417,8 @@ describe("本物の記事に題を渡す", () => {
       本数そのものを固定する。記事を足したり書き換えたりすれば動くので、
       動いたら**測り直してこの数字を直す**（増える側で落ちるのは正しい）。
     */
-    expect(count(false)).toBe(12);
-    expect(count(true)).toBe(14);
+    expect(count(false)).toBe(13);
+    expect(count(true)).toBe(15);
   });
 
   it("題から作った問いは、記事の題そのもの（言い換えない）", () => {

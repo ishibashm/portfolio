@@ -163,6 +163,16 @@ export default async function Page({
           <h2 className="text-xl font-bold font-serif border-b border-slate-300 pb-2">
             方位ごとの判定
           </h2>
+          <p className="mt-4 text-xs leading-relaxed text-slate-600">
+            五黄殺・暗剣殺は本命星に関係なく盤だけで決まり、立春で切り替わります。決まり方と年ごとの位置は
+            <Link
+              href="/blog/five-yellow-and-anken-satsu"
+              className="underline hover:text-rose-600"
+            >
+              五黄殺と暗剣殺とはどの方位で、なぜ引越しで避けるとされるのか
+            </Link>
+            に書いています。
+          </p>
           <div className="mt-5 grid gap-3 sm:grid-cols-2">
             {verdicts.map((v) => (
               <div
