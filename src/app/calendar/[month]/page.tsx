@@ -116,7 +116,14 @@ export default async function Page({
             <>
               {year}年{month}月で引越しに向くのは
               <b>{cal.recommended.map((d) => `${d.day}日`).join("・")}</b>
-              です。六曜で避けられる仏滅・赤口を外し、大安あるいは天赦日・一粒万倍日が重なる日を挙げています。
+              です。六曜で避けられる仏滅・赤口を外し、大安あるいは天赦日・一粒万倍日が重なる日を挙げています。天赦日・一粒万倍日の決まり方と、方位の凶を打ち消さない理由は
+              <Link
+                href="/blog/tensha-and-ichiryumanbai-for-moving-day"
+                className="underline hover:text-rose-600"
+              >
+                天赦日・一粒万倍日は引越しの日取りにどう関係するのか
+              </Link>
+              に書いています。
             </>
           ) : (
             <>
