@@ -1,7 +1,10 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { createElement } from "react";
+import { renderToStaticMarkup } from "react-dom/server";
 import { fetchSurfacePressure } from "@/utils/surfacePressure";
+import { BioMagneticDashboard } from "@/components/BioMagneticDashboard";
 
 /**
  * 気圧（気象病モデルの入力）。
@@ -185,9 +188,27 @@ describe("画面への配線", () => {
   });
 
   it("取れていないときに 0 を「変化なし」として見せない", () => {
-    const src = read("src", "components", "BioMagneticDashboard.tsx");
-    expect(src).toContain(
-      "気圧を取得できていません。この項目は負荷の計算に入っていません。",
+    // 以前は「--」を 3 つ並べた欄を描いたうえで、その下に断りを 1 行
+    // 添えていた。#1329 で**欄そのものを描かない**ようにしたので、
+    // 字面ではなく描いて確かめる（断りが消えていないことが要点で、
+    // 文言そのものは要点ではない）。
+    const html = renderToStaticMarkup(
+      createElement(BioMagneticDashboard, {
+        kpIndex: 3.1,
+        xrayFlux: "B5.0",
+        magneticF: 46890,
+        magneticD: -7.94,
+        magneticI: 49.56,
+        eot: 0,
+        pressure: null,
+      }),
     );
+    // 0 を「変化なし」として見せない — 欄ごと出さない
+    expect(html).not.toContain("自律神経負荷");
+    expect(html).not.toContain("3時間変化");
+    // 取れていないことは消さない。負荷に入っていないことも言う
+    const text = html.replace(/<[^>]*>/g, "");
+    expect(text).toContain("地上気圧");
+    expect(text).toContain("負荷の計算に入っていません");
   });
 });
