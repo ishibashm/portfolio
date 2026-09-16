@@ -164,13 +164,12 @@ export default async function Page({
             方位ごとの判定
           </h2>
           <p className="mt-4 text-xs leading-relaxed text-slate-600">
-            五黄殺・暗剣殺は本命星に関係なく盤だけで決まり、年・月・日で動きます。決まり方と
-            2026〜2032 年の位置は
+            五黄殺・暗剣殺は本命星に関係なく盤だけで決まり、立春で切り替わります。決まり方と年ごとの位置は
             <Link
-              href="/blog/gouosatsu-and-ankensatsu"
+              href="/blog/five-yellow-and-anken-satsu"
               className="underline hover:text-rose-600"
             >
-              五黄殺・暗剣殺とはどの方位か
+              五黄殺と暗剣殺とはどの方位で、なぜ引越しで避けるとされるのか
             </Link>
             に書いています。
           </p>
