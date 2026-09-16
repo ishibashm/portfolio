@@ -62,6 +62,27 @@ export function BioMagneticDashboard({
     return { type: match[1], value: parseFloat(match[2]) };
   };
 
+  /*
+    取れていない実測値は、空の計器を並べない。
+
+    Kp・太陽 X 線・気圧はどれも外部の配信で、取れていないことが珍しく
+    ない。以前はそのときも枠・目盛り・円グラフをそのまま描いて中身だけ
+    「-」「--」にしていたので、**何も分からない計器を 2 画面ぶん眺めてから
+    目的地の地図に着く**状態だった（#1327 で順序は直したが、空の計器は
+    そのまま残っていた）。
+
+    取れていないものは描かず、末尾の 1 行にまとめる。「取れていない」こと
+    自体は消さない — 消すと「その日は静かだった」と読めてしまう。
+  */
+  const missing: string[] = [];
+  if (kpIndex === null) missing.push("地磁気 Kp");
+  if (!xrayFlux) missing.push("太陽 X 線");
+  if (!pressure) missing.push("地上気圧");
+  /** 外部の配信が 1 つでも届いているか。全部欠けていれば「実測」ではない。 */
+  const hasFeed = missing.length < 3;
+  /** 片方だけ残ったときは、半分の幅で置き去りにせず横いっぱいに使う。 */
+  const gaugeSpan = kpIndex !== null && xrayFlux ? "" : "col-span-2 ";
+
   const xrayData = parseXrayClass(xrayFlux);
   const xrayPct =
     xrayData.type === "X"
@@ -102,151 +123,164 @@ export function BioMagneticDashboard({
             外部環境の実測値
           </h2>
           <div className="ml-auto flex items-center gap-1">
-            <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse"></span>
-            <span className="text-[9px] text-emerald-700 font-mono tracking-widest">
-              実測
+            <span
+              className={`w-1.5 h-1.5 rounded-full ${hasFeed ? "bg-emerald-500 animate-pulse" : "bg-stone-400"}`}
+            ></span>
+            <span
+              className={`text-[9px] font-mono tracking-widest ${hasFeed ? "text-emerald-700" : "text-stone-600"}`}
+            >
+              {hasFeed ? "実測" : "計算値のみ"}
             </span>
           </div>
         </div>
 
         <div className="grid grid-cols-2 gap-3 text-xs font-mono relative z-10">
           {/* KP Index Circular Gauge */}
-          <div className="flex flex-col p-3 bg-white/70 border border-stone-200 rounded-sm relative overflow-hidden">
-            <span className="text-[10px] text-stone-600 font-bold uppercase tracking-wider mb-2 flex items-center gap-1">
-              <Orbit size={10} className="text-stone-600" /> 地磁気 Kp（NOAA）
-            </span>
-            <div className="flex items-center justify-between">
-              <div className="relative w-14 h-14">
-                <svg className="w-full h-full transform -rotate-90">
-                  <circle
-                    cx="28"
-                    cy="28"
-                    r="24"
-                    stroke="currentColor"
-                    strokeWidth="4"
-                    fill="transparent"
-                    className="text-zinc-900"
-                  />
-                  <circle
-                    cx="28"
-                    cy="28"
-                    r="24"
-                    stroke="currentColor"
-                    strokeWidth="4"
-                    fill="transparent"
-                    strokeDasharray={24 * 2 * Math.PI}
-                    strokeDashoffset={
-                      24 * 2 * Math.PI -
-                      ((kpIndex || 0) / 9) * (24 * 2 * Math.PI)
-                    }
-                    strokeLinecap="round"
-                    className={`${getKpColor(kpIndex)} transition-all duration-1000`}
-                  />
-                </svg>
-                <div className="absolute inset-0 flex items-center justify-center flex-col">
-                  <span
-                    className={`text-sm font-bold tracking-tighter ${getKpColor(kpIndex)} leading-none`}
-                  >
-                    {kpIndex !== null ? kpIndex.toFixed(1) : "-"}
-                  </span>
+          {kpIndex !== null && (
+            <div
+              className={`${gaugeSpan}flex flex-col p-3 bg-white/70 border border-stone-200 rounded-sm relative overflow-hidden`}
+            >
+              <span className="text-[10px] text-stone-600 font-bold uppercase tracking-wider mb-2 flex items-center gap-1">
+                <Orbit size={10} className="text-stone-600" /> 地磁気 Kp（NOAA）
+              </span>
+              <div className="flex items-center justify-between">
+                <div className="relative w-14 h-14">
+                  <svg className="w-full h-full transform -rotate-90">
+                    <circle
+                      cx="28"
+                      cy="28"
+                      r="24"
+                      stroke="currentColor"
+                      strokeWidth="4"
+                      fill="transparent"
+                      className="text-zinc-900"
+                    />
+                    <circle
+                      cx="28"
+                      cy="28"
+                      r="24"
+                      stroke="currentColor"
+                      strokeWidth="4"
+                      fill="transparent"
+                      strokeDasharray={24 * 2 * Math.PI}
+                      strokeDashoffset={
+                        24 * 2 * Math.PI -
+                        ((kpIndex || 0) / 9) * (24 * 2 * Math.PI)
+                      }
+                      strokeLinecap="round"
+                      className={`${getKpColor(kpIndex)} transition-all duration-1000`}
+                    />
+                  </svg>
+                  <div className="absolute inset-0 flex items-center justify-center flex-col">
+                    <span
+                      className={`text-sm font-bold tracking-tighter ${getKpColor(kpIndex)} leading-none`}
+                    >
+                      {kpIndex !== null ? kpIndex.toFixed(1) : "-"}
+                    </span>
+                  </div>
+                </div>
+                <div className="flex flex-col gap-0.5 w-1/3">
+                  {[...Array(9)].map((_, i) => (
+                    <div
+                      key={i}
+                      className={`h-[2px] w-full rounded-sm ${kpIndex !== null && 9 - i <= kpIndex ? getKpBgColor(kpIndex) : "bg-white"}`}
+                    ></div>
+                  ))}
                 </div>
               </div>
-              <div className="flex flex-col gap-0.5 w-1/3">
-                {[...Array(9)].map((_, i) => (
-                  <div
-                    key={i}
-                    className={`h-[2px] w-full rounded-sm ${kpIndex !== null && 9 - i <= kpIndex ? getKpBgColor(kpIndex) : "bg-white"}`}
-                  ></div>
-                ))}
+              <div className="mt-2 text-[9px] text-stone-600 text-right">
+                Kp 指数（0〜9）
               </div>
             </div>
-            <div className="mt-2 text-[9px] text-stone-600 text-right">
-              Kp 指数（0〜9）
-            </div>
-          </div>
+          )}
 
           {/* XRAY FLUX Linear Gauge */}
-          <div className="flex flex-col p-3 bg-white/70 border border-stone-200 rounded-sm relative overflow-hidden">
-            <span className="text-[10px] text-stone-600 font-bold uppercase tracking-wider mb-2 flex items-center gap-1">
-              <Zap size={10} className="text-stone-600" /> 太陽 X 線
-            </span>
-            <div className="flex flex-col grow justify-center gap-2">
-              <div
-                className={`text-2xl font-bold tracking-tight text-center ${xrayData.type === "M" || xrayData.type === "X" ? "text-red-700 animate-pulse" : "text-stone-600"}`}
-              >
-                {xrayFlux || "--"}
-              </div>
-              <div className="w-full relative h-1.5 bg-white rounded-sm overflow-hidden">
+          {xrayFlux && (
+            <div
+              className={`${gaugeSpan}flex flex-col p-3 bg-white/70 border border-stone-200 rounded-sm relative overflow-hidden`}
+            >
+              <span className="text-[10px] text-stone-600 font-bold uppercase tracking-wider mb-2 flex items-center gap-1">
+                <Zap size={10} className="text-stone-600" /> 太陽 X 線
+              </span>
+              <div className="flex flex-col grow justify-center gap-2">
                 <div
-                  className={`absolute top-0 left-0 bottom-0 transition-all duration-1000 ${xrayData.type === "X" ? "bg-red-500 shadow-[0_0_8px_rgba(239,68,68,1)]" : xrayData.type === "M" ? "bg-amber-500" : "bg-blue-500"}`}
-                  style={{ width: `${xrayPct}%` }}
-                ></div>
-              </div>
-              <div className="flex justify-between text-[9px] text-stone-600 mt-0.5">
-                <span>A</span>
-                <span>B</span>
-                <span>C</span>
-                <span>M</span>
-                <span>X</span>
+                  className={`text-2xl font-bold tracking-tight text-center ${xrayData.type === "M" || xrayData.type === "X" ? "text-red-700 animate-pulse" : "text-stone-600"}`}
+                >
+                  {xrayFlux || "--"}
+                </div>
+                <div className="w-full relative h-1.5 bg-white rounded-sm overflow-hidden">
+                  <div
+                    className={`absolute top-0 left-0 bottom-0 transition-all duration-1000 ${xrayData.type === "X" ? "bg-red-500 shadow-[0_0_8px_rgba(239,68,68,1)]" : xrayData.type === "M" ? "bg-amber-500" : "bg-blue-500"}`}
+                    style={{ width: `${xrayPct}%` }}
+                  ></div>
+                </div>
+                <div className="flex justify-between text-[9px] text-stone-600 mt-0.5">
+                  <span>A</span>
+                  <span>B</span>
+                  <span>C</span>
+                  <span>M</span>
+                  <span>X</span>
+                </div>
               </div>
             </div>
-          </div>
+          )}
 
           {/* 気圧（気象病モデルの入力） */}
-          <div className="col-span-2 mt-2 pt-2 border-t border-stone-200">
-            <div className="flex items-center gap-1.5 mb-2">
-              <Waves size={12} className="text-sky-700" />
-              <span className="text-[9px] text-sky-700 font-bold uppercase tracking-wider">
-                地上気圧（3 時間の変化）
-              </span>
+          {pressure && (
+            <div className="col-span-2 mt-2 pt-2 border-t border-stone-200">
+              <div className="flex items-center gap-1.5 mb-2">
+                <Waves size={12} className="text-sky-700" />
+                <span className="text-[9px] text-sky-700 font-bold uppercase tracking-wider">
+                  地上気圧（3 時間の変化）
+                </span>
+              </div>
+              <div className="grid grid-cols-3 gap-1">
+                <div className="bg-white/80 p-2 flex flex-col items-center justify-center border-r border-stone-200">
+                  <div className="text-[9px] text-sky-700 mb-1 uppercase tracking-widest">
+                    現在
+                  </div>
+                  <div className="text-sm text-stone-700 font-mono font-bold tracking-tight">
+                    {pressure ? pressure.current.toFixed(1) : "--"}
+                    <span className="text-[10px] text-stone-600 ml-0.5">
+                      hPa
+                    </span>
+                  </div>
+                </div>
+                <div className="bg-white/80 p-2 flex flex-col items-center justify-center border-r border-stone-200">
+                  <div className="text-[9px] text-sky-700 mb-1 uppercase tracking-widest">
+                    3時間変化
+                  </div>
+                  <div
+                    className={`text-sm font-mono font-bold tracking-tight ${
+                      pressure && pressure.drop <= -3
+                        ? "text-red-700"
+                        : pressure && pressure.drop < 0
+                          ? "text-amber-700"
+                          : "text-stone-700"
+                    }`}
+                  >
+                    {pressure
+                      ? `${pressure.drop > 0 ? "+" : ""}${pressure.drop.toFixed(1)}`
+                      : "--"}
+                    <span className="text-[10px] text-stone-600 ml-0.5">
+                      hPa
+                    </span>
+                  </div>
+                </div>
+                <div className="bg-white/80 p-2 flex flex-col items-center justify-center">
+                  <div className="text-[9px] text-sky-700 mb-1 uppercase tracking-widest">
+                    自律神経負荷
+                  </div>
+                  <div className="text-sm text-stone-700 font-mono font-bold tracking-tight">
+                    {pressure
+                      ? `+${(pressure.drop < 0 ? Math.min(30, Math.abs(pressure.drop) * 3) : 0).toFixed(0)}`
+                      : "--"}
+                    <span className="text-[10px] text-stone-600 ml-0.5">%</span>
+                  </div>
+                </div>
+              </div>
             </div>
-            <div className="grid grid-cols-3 gap-1">
-              <div className="bg-white/80 p-2 flex flex-col items-center justify-center border-r border-stone-200">
-                <div className="text-[9px] text-sky-700 mb-1 uppercase tracking-widest">
-                  現在
-                </div>
-                <div className="text-sm text-stone-700 font-mono font-bold tracking-tight">
-                  {pressure ? pressure.current.toFixed(1) : "--"}
-                  <span className="text-[10px] text-stone-600 ml-0.5">hPa</span>
-                </div>
-              </div>
-              <div className="bg-white/80 p-2 flex flex-col items-center justify-center border-r border-stone-200">
-                <div className="text-[9px] text-sky-700 mb-1 uppercase tracking-widest">
-                  3時間変化
-                </div>
-                <div
-                  className={`text-sm font-mono font-bold tracking-tight ${
-                    pressure && pressure.drop <= -3
-                      ? "text-red-700"
-                      : pressure && pressure.drop < 0
-                        ? "text-amber-700"
-                        : "text-stone-700"
-                  }`}
-                >
-                  {pressure
-                    ? `${pressure.drop > 0 ? "+" : ""}${pressure.drop.toFixed(1)}`
-                    : "--"}
-                  <span className="text-[10px] text-stone-600 ml-0.5">hPa</span>
-                </div>
-              </div>
-              <div className="bg-white/80 p-2 flex flex-col items-center justify-center">
-                <div className="text-[9px] text-sky-700 mb-1 uppercase tracking-widest">
-                  自律神経負荷
-                </div>
-                <div className="text-sm text-stone-700 font-mono font-bold tracking-tight">
-                  {pressure
-                    ? `+${(pressure.drop < 0 ? Math.min(30, Math.abs(pressure.drop) * 3) : 0).toFixed(0)}`
-                    : "--"}
-                  <span className="text-[10px] text-stone-600 ml-0.5">%</span>
-                </div>
-              </div>
-            </div>
-            {!pressure && (
-              <div className="mt-1 text-xs text-stone-600">
-                気圧を取得できていません。この項目は負荷の計算に入っていません。
-              </div>
-            )}
-          </div>
+          )}
 
           {/* WMM Output Data Matrix */}
           <div className="col-span-2 mt-2 pt-2 border-t border-stone-200">
@@ -284,7 +318,7 @@ export function BioMagneticDashboard({
                   偏角 D
                 </div>
                 <div className="text-sm text-stone-700 font-mono font-bold tracking-tight">
-                  {magneticD ? `${magneticD.toFixed(2)}` : "--"}
+                  {magneticD !== null ? `${magneticD.toFixed(2)}` : "--"}
                   <span className="text-[10px] text-stone-600 ml-0.5">°</span>
                 </div>
               </div>
@@ -293,12 +327,19 @@ export function BioMagneticDashboard({
                   伏角 I
                 </div>
                 <div className="text-sm text-stone-700 font-mono font-bold tracking-tight">
-                  {magneticI ? `${magneticI.toFixed(2)}` : "--"}
+                  {magneticI !== null ? `${magneticI.toFixed(2)}` : "--"}
                   <span className="text-[10px] text-stone-600 ml-0.5">°</span>
                 </div>
               </div>
             </div>
           </div>
+
+          {missing.length > 0 && (
+            <div className="col-span-2 mt-2 pt-2 border-t border-stone-200 text-xs text-stone-600">
+              取得できていません: {missing.join("・")}
+              。取れていない項目は負荷の計算に入っていません。
+            </div>
+          )}
         </div>
       </div>
     </div>
