@@ -517,7 +517,7 @@ export default function MagneticMapInner({
                       {formatLayer(dLayer)}
                     </span>
                   </div>
-                  <div className="mt-1 pt-1 border-t border-stone-200 text-[9px] flex flex-col gap-1">
+                  <div className="mt-1 pt-1 border-t border-stone-200 text-[10px] flex flex-col gap-1">
                     <div className="flex gap-2">
                       <span className="text-stone-600">判定: </span>
                       <span
@@ -672,7 +672,7 @@ export default function MagneticMapInner({
             type="button"
             onClick={() => setMapMenuOpen((v) => !v)}
             aria-expanded={mapMenuOpen}
-            className="lg:hidden flex items-center px-2.5 py-1.5 rounded border font-mono text-[11px] font-bold bg-white/80 text-stone-700 border-stone-200 hover:bg-white shadow-lg cursor-pointer"
+            className="lg:hidden flex items-center px-2.5 py-1.5 rounded border font-mono text-[10px] font-bold bg-white/80 text-stone-700 border-stone-200 hover:bg-white shadow-lg cursor-pointer"
           >
             {mapMenuOpen ? "地図 ▴" : "地図 ▾"}
           </button>
@@ -681,7 +681,7 @@ export default function MagneticMapInner({
           >
             <button
               onClick={toggleMapTheme}
-              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded border font-mono text-[9px] font-bold bg-white/80 text-stone-700 border-stone-200 hover:bg-white transition-colors shadow-lg active:scale-95 cursor-pointer"
+              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded border font-mono text-[10px] font-bold bg-white/80 text-stone-700 border-stone-200 hover:bg-white transition-colors shadow-lg active:scale-95 cursor-pointer"
             >
               {mapTheme === "dark" ? "☀️ ライトマップ" : "🌙 ダークマップ"}
             </button>
@@ -698,7 +698,7 @@ export default function MagneticMapInner({
                   : "名所（一宮・名勝）を出す。押すと現在地からの方位と段階が見られます"
               }
               aria-pressed={showSpots}
-              className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded border font-mono text-[9px] font-bold transition-colors shadow-lg active:scale-95 cursor-pointer ${
+              className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded border font-mono text-[10px] font-bold transition-colors shadow-lg active:scale-95 cursor-pointer ${
                 showSpots
                   ? "bg-amber-600 text-white border-amber-600 hover:bg-amber-700"
                   : "bg-white/80 text-stone-700 border-stone-200 hover:bg-white"
@@ -719,7 +719,7 @@ export default function MagneticMapInner({
                   : "駅を出す。押すと現在地からの方位と段階が見られます（国土数値情報 N02）"
               }
               aria-pressed={showStations}
-              className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded border font-mono text-[9px] font-bold transition-colors shadow-lg active:scale-95 cursor-pointer ${
+              className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded border font-mono text-[10px] font-bold transition-colors shadow-lg active:scale-95 cursor-pointer ${
                 showStations
                   ? "bg-blue-700 text-white border-blue-700 hover:bg-blue-800"
                   : "bg-white/80 text-stone-700 border-stone-200 hover:bg-white"
@@ -904,7 +904,7 @@ export default function MagneticMapInner({
       </div>
 
       <div className="absolute bottom-4 right-4 z-[1000] pointer-events-none">
-        <div className="bg-white/80 md:backdrop-blur-md px-3 py-2 border border-stone-200 rounded-sm text-[9px] flex flex-col gap-1.5 shadow-xl">
+        <div className="bg-white/80 md:backdrop-blur-md px-3 py-2 border border-stone-200 rounded-sm text-[10px] flex flex-col gap-1.5 shadow-xl">
           <div className="text-stone-600 font-mono uppercase tracking-widest border-b border-stone-200 pb-1 flex justify-between gap-4">
             <span>凡例</span>
             <span className="text-emerald-700">
@@ -970,7 +970,7 @@ export default function MagneticMapInner({
       {clickedPos && (
         <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-[1000] pointer-events-auto">
           <div className="bg-white/80 md:backdrop-blur-md px-3 py-2 border border-emerald-200 rounded-sm shadow-xl flex flex-col gap-1.5 animate-fade-in-up">
-            <div className="text-[9px] font-mono text-emerald-700 uppercase tracking-widest border-b border-stone-200 pb-1 flex justify-between gap-4">
+            <div className="text-[10px] font-mono text-emerald-700 uppercase tracking-widest border-b border-stone-200 pb-1 flex justify-between gap-4">
               <span>選んだ地点の座標</span>
               <button
                 onClick={() => setClickedPos(null)}
@@ -994,7 +994,7 @@ export default function MagneticMapInner({
                     `座標をコピーしました: ${clickedPos[0].toFixed(5)},${clickedPos[1].toFixed(5)}`,
                   );
                 }}
-                className="bg-emerald-50 text-emerald-700 border border-emerald-200 px-2 py-1.5 text-[9px] uppercase tracking-widest hover:bg-emerald-800/60 transition-colors"
+                className="bg-emerald-50 text-emerald-700 border border-emerald-200 px-2 py-1.5 text-[10px] uppercase tracking-widest hover:bg-emerald-800/60 transition-colors"
               >
                 📋 コピー
               </button>
