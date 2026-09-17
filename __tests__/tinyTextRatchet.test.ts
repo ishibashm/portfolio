@@ -27,8 +27,8 @@ import { describe, expect, it } from "vitest";
   12px 以上なので対象外。
 */
 
-/** 実測（2026-09-17。資産マップの頁 が片付いた時点。8px は 0）。**直したら下げること。** */
-const BASELINE = { 8: 0, 9: 34 };
+/** 実測（2026-09-17。名所と登録地点の層（PowerSpotLayer・UserSpotLayer） が片付いた時点。8px は 0）。**直したら下げること。** */
+const BASELINE = { 8: 0, 9: 31 };
 
 function tsxFiles(dir: string): string[] {
   const out: string[] = [];
@@ -137,6 +137,8 @@ describe("小さすぎる字を増やさない", () => {
       "src/components/layout/MetaphysicalConfigBar.tsx",
       "src/components/SolarTimeTable.tsx",
       "src/app/relocation/wealth/page.tsx",
+      "src/components/map/PowerSpotLayer.tsx",
+      "src/components/map/UserSpotLayer.tsx",
     ]) {
       expect(byFile.get(done) ?? 0, done).toBe(0);
     }
