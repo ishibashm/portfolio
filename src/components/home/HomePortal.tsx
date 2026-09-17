@@ -312,7 +312,7 @@ export default function HomePortal({
         >
           {timing ? (
             <div className="flex flex-col gap-2">
-              <p className="text-[11px] text-stone-600">
+              <p className="text-xs text-stone-600">
                 今日は{" "}
                 <strong className="text-emerald-700">
                   {timing.goCount} つ
