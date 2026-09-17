@@ -1473,7 +1473,7 @@ export default function RegionalWealthPage() {
                         <line x1="10" x2="21" y1="14" y2="3" />
                       </svg>
                     </div>
-                    <p className="text-[10px] text-stone-600 leading-tight">
+                    <p className="text-xs text-stone-600 leading-tight">
                       国土交通省の不動産取引価格情報と地価公示・都道府県地価調査（いずれも公的統計）を読み込んで集計しています。地価は市区町村の中心部にある公示地点の平均で、市域全体の平均ではありません。
                     </p>
                   </div>
@@ -1507,7 +1507,7 @@ export default function RegionalWealthPage() {
                         <line x1="10" x2="21" y1="14" y2="3" />
                       </svg>
                     </div>
-                    <p className="text-[10px] text-stone-600 leading-tight">
+                    <p className="text-xs text-stone-600 leading-tight">
                       「コスパ指数」は 1人あたり平均所得 ÷ 中心部の地価（円/㎡）です。地価は中心部の公示地点から取っているため、市域が広い自治体ほど実態とずれます。
                     </p>
                   </div>
@@ -1545,12 +1545,12 @@ export default function RegionalWealthPage() {
                         <line x1="10" x2="21" y1="14" y2="3" />
                       </svg>
                     </div>
-                    <p className="text-[10px] text-stone-600 leading-tight">
+                    <p className="text-xs text-stone-600 leading-tight">
                       {
                         "「富裕度」の 1 人あたり所得は、「統計でみる市区町村のすがた」（総務省）の課税対象所得と納税義務者数を加工して作成しています。出典：政府統計の総合窓口(e-Stat)（https://www.e-stat.go.jp/）"
                       }
                     </p>
-                    <p className="mt-1 text-[10px] text-stone-600 leading-tight">
+                    <p className="mt-1 text-xs text-stone-600 leading-tight">
                       {
                         "このサービスは、政府統計総合窓口(e-Stat)のAPI機能を使用していますが、サービスの内容は国によって保証されたものではありません。"
                       }
