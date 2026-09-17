@@ -2518,7 +2518,7 @@ export default function ArbitrageScannerPage() {
                 中なので、食い違っていることが頁の上からは分からなかった
                 （利用者の報告、2026-09-13）。食い違うときだけ、ここに書く。 */}
             {areaExcludesBase && (
-              <p className="mt-2 flex flex-wrap items-center gap-x-1 gap-y-1 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-[11px] leading-relaxed text-amber-900">
+              <p className="mt-2 flex flex-wrap items-center gap-x-1 gap-y-1 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs leading-relaxed text-amber-900">
                 {/* 文の途中で改行すると、prettier が `{" "}` を挟んで日本語の
                     文中に半角スペースが入る（jsxJapaneseLinebreak が拾う）。
                     文字列は 1 つの式にまとめて渡す。 */}
@@ -2643,7 +2643,7 @@ export default function ArbitrageScannerPage() {
         {listingFreshnessNote && (
           <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-amber-900">
             <p className="text-xs leading-relaxed">{listingFreshnessNote}</p>
-            <p className="mt-1 text-[11px] leading-relaxed text-amber-800">
+            <p className="mt-1 text-xs leading-relaxed text-amber-800">
               掲載の取り込みは、提供元の規約に従って止めています。方位の判定・地図・暦、および公的なデータ（成約価格・地価公示・住宅統計）は今までどおりです。
             </p>
             {/* 掲載が尽きたら、**代わりの行き先をその場に出す。**「もう
@@ -2657,7 +2657,7 @@ export default function ArbitrageScannerPage() {
                 `empty` のときだけ出す。減っている途中（`stopped`）は
                 まだ物件が出るので、そちらを先に見てもらう。 */}
             {listingFreshness.kind === "empty" && basePlace && (
-              <p className="mt-2 text-[11px] leading-relaxed text-amber-900">
+              <p className="mt-2 text-xs leading-relaxed text-amber-900">
                 <Link
                   href={`/houi/area/${basePlace.code}`}
                   className="inline-flex min-h-[24px] items-center font-bold underline hover:text-amber-950"
@@ -3648,7 +3648,7 @@ export default function ArbitrageScannerPage() {
                         </select>
                       </div>
                     </PartyMembersEditor>
-                    <p className="text-[11px] text-stone-600 leading-relaxed">
+                    <p className="text-xs text-stone-600 leading-relaxed">
                       2 年先まで「いつなら全員で動けるか」を見るときは
                       <Link
                         href="/relocation/timing"
