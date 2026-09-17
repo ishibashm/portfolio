@@ -162,7 +162,7 @@ export function MagneticSpatialHUD({
         <div className="text-[10px] font-mono text-blue-700 border-t border-blue-200 px-2 bg-white/70 md:backdrop-blur-sm">
           磁力線の立体表示
         </div>
-        <div className="flex gap-4 text-[9px] font-mono text-stone-600 mt-0.5">
+        <div className="flex gap-4 text-[10px] font-mono text-stone-600 mt-0.5">
           <span>D: {declination.toFixed(1)}°</span>
           <span>I: {inclination.toFixed(1)}°</span>
           <span className={kpIndex >= 4 ? "text-red-700" : "text-emerald-700"}>
@@ -172,7 +172,7 @@ export function MagneticSpatialHUD({
       </div>
 
       {/* Hover Info */}
-      <div className="absolute top-0 left-0 w-full h-full bg-white/70 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col justify-center items-center p-4 text-[9px] font-mono pointer-events-none text-stone-600 md:backdrop-blur-sm border border-blue-200">
+      <div className="absolute top-0 left-0 w-full h-full bg-white/70 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col justify-center items-center p-4 text-[10px] font-mono pointer-events-none text-stone-600 md:backdrop-blur-sm border border-blue-200">
         <div className="text-blue-700 mb-2 border-b border-blue-200 w-full text-center pb-1">
           磁力線の向き
         </div>

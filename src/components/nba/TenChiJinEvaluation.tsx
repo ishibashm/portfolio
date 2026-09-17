@@ -437,7 +437,7 @@ export function TenChiJinEvaluation({
         </div>
         <div className="flex items-center gap-3">
           <div className="text-right">
-            <span className="text-[9px] font-mono text-stone-600 block">
+            <span className="text-[10px] font-mono text-stone-600 block">
               総合
             </span>
             <div className="flex items-baseline gap-1">
