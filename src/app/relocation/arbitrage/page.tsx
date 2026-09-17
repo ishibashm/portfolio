@@ -3058,7 +3058,7 @@ export default function ArbitrageScannerPage() {
                       </div>
                       {/* 数字だけでは、どこを基準にしているのか分からない */}
                       {basePlaceLabel && (
-                        <p className="text-[10px] text-stone-600 dark:text-stone-500">
+                        <p className="text-xs text-stone-600 dark:text-stone-500">
                           いまの出発地: {basePlaceLabel}
                         </p>
                       )}
@@ -3136,7 +3136,7 @@ export default function ArbitrageScannerPage() {
                         />
                       </div>
                       {!birthLat && (
-                        <p className="text-[10px] text-stone-600 dark:text-stone-500">
+                        <p className="text-xs text-stone-600 dark:text-stone-500">
                           未入力です。天体ライン（太陽・金星・木星）は出生地から決まるため、この加点は付きません。他の判定には影響しません。
                         </p>
                       )}
@@ -3615,7 +3615,7 @@ export default function ArbitrageScannerPage() {
                         : "本人のみ"
                     }
                   >
-                    <p className="text-[10px] text-stone-500 leading-relaxed">
+                    <p className="text-xs text-stone-500 leading-relaxed">
                       出発地が違えば同じ物件でも方位が変わります。登録すると、全員にとっての方位と「いつなら全員で動けるか」を合わせて判定します。
                     </p>
 
@@ -3729,7 +3729,7 @@ export default function ArbitrageScannerPage() {
                           </option>
                         ))}
                       </select>
-                      <p className="text-[10px] text-stone-600 leading-relaxed">
+                      <p className="text-xs text-stone-600 leading-relaxed">
                         {
                           TENCHUSATSU_MODES.find(
                             (m) => m.id === tenchusatsuMode,

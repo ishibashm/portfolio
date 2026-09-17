@@ -54,7 +54,7 @@ function KpiCard({
       className="rounded-2xl border border-gray-200 bg-white p-4 shadow-xs"
       title={hint}
     >
-      <p className="text-[10px] font-semibold uppercase tracking-wider text-stone-600">
+      <p className="text-xs font-semibold uppercase tracking-wider text-stone-600">
         {label}
       </p>
       <p className="mt-1 text-xl font-bold text-stone-800">{value}</p>
@@ -618,7 +618,7 @@ export default function MarketAnalyticsPage() {
                     ))}
                   </tbody>
                 </table>
-                <p className="mt-2 text-[10px] text-stone-600">
+                <p className="mt-2 text-xs text-stone-600">
                   ※天中殺グループ6通りの平均。個人の値は物件スキャナーの「引っ越し時期を探す」で自分の命式に対して表示される。
                 </p>
               </div>
