@@ -292,7 +292,7 @@ export function NewsCards({
                   {e.title}
                 </a>
                 {e.summary && (
-                  <p className="line-clamp-2 text-[11px] leading-relaxed text-stone-500">
+                  <p className="line-clamp-2 text-xs leading-relaxed text-stone-500">
                     {e.summary}
                   </p>
                 )}
