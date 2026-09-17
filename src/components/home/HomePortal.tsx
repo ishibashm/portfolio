@@ -387,20 +387,20 @@ export default function HomePortal({
         >
           <dl className="grid grid-cols-3 gap-2 text-center">
             <div>
-              <dt className="text-[9px] text-stone-600">地磁気 Kp</dt>
+              <dt className="text-[10px] text-stone-600">地磁気 Kp</dt>
               <dd className="text-sm font-bold text-stone-700">
                 {kpIndex !== null ? kpIndex.toFixed(1) : "—"}
               </dd>
             </div>
             <div>
-              <dt className="text-[9px] text-stone-600">気圧</dt>
+              <dt className="text-[10px] text-stone-600">気圧</dt>
               <dd className="text-sm font-bold text-stone-700">
                 {pressure ? `${pressure.current.toFixed(0)}` : "—"}
-                <span className="text-[9px] text-stone-600 ml-0.5">hPa</span>
+                <span className="text-[10px] text-stone-600 ml-0.5">hPa</span>
               </dd>
             </div>
             <div>
-              <dt className="text-[9px] text-stone-600">偏角</dt>
+              <dt className="text-[10px] text-stone-600">偏角</dt>
               <dd className="text-sm font-bold text-stone-700">
                 {declination !== null ? `${declination.toFixed(1)}°` : "—"}
               </dd>
