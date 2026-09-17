@@ -1200,32 +1200,40 @@ export default function DestinationMapPanel({
                 </p>
               )}
 
+              {/*
+                凡例の言葉は地図の凡例（MagneticMapInner）と同じにする。
+                以前は「OPTIMAL (大吉)」「SAFE (吉)」「TYPE I (Gou/Anken/Ha)」
+                「VOID/NODE」と内部の値と英語のまま出ていて、しかも SAFE を
+                「吉」と書いていた（共有の名前は「平穏」。同じ画面の地図の
+                凡例と食い違う）。#1275〜#1277 の日本語化で、この帯だけが
+                取りこぼされていた。
+              */}
               {/* Legend Bar */}
               <div className="flex gap-3 mt-3 text-[10px] font-mono text-stone-600 justify-center flex-wrap">
                 <span className="flex items-center gap-1 bg-white/80 px-1.5 py-0.5 rounded border border-stone-200">
-                  <span className="text-amber-700 font-bold">✨</span> 天道
-                  (Tendou) 回座
+                  <span className="text-amber-700 font-bold">✨</span> 天道回座
                 </span>
                 <span className="flex items-center gap-1 bg-white/80 px-1.5 py-0.5 rounded border border-stone-200">
-                  <div className="w-2 h-2 bg-emerald-500/80"></div> OPTIMAL
-                  (大吉)
+                  <div className="w-2 h-2 bg-emerald-500/80"></div> 大吉
                 </span>
                 <span className="flex items-center gap-1 bg-white/80 px-1.5 py-0.5 rounded border border-stone-200">
                   <div className="w-2 h-2 bg-blue-500/20 border border-stone-300"></div>{" "}
-                  SAFE (吉)
+                  平穏
                 </span>
                 <span className="flex items-center gap-1 bg-white/80 px-1.5 py-0.5 rounded border border-stone-200">
-                  <div className="w-2 h-2 bg-red-500/80"></div> TYPE I
-                  (Gou/Anken/Ha)
+                  <div className="w-2 h-2 bg-red-500/80"></div>{" "}
+                  五黄・暗剣・破（大凶）
                 </span>
                 <span className="flex items-center gap-1 bg-white/80 px-1.5 py-0.5 rounded border border-stone-200">
-                  <div className="w-2 h-2 bg-purple-500/80"></div> TYPE II (Bio)
+                  <div className="w-2 h-2 bg-purple-500/80"></div>{" "}
+                  本命・的殺（本命星から）
                 </span>
                 <span className="flex items-center gap-1 bg-white/80 px-1.5 py-0.5 rounded border border-stone-200">
-                  <div className="w-2 h-2 bg-amber-500/80"></div> VOID/NODE
+                  <div className="w-2 h-2 bg-amber-500/80"></div>{" "}
+                  天中殺方位・羅睺／計都
                 </span>
                 <span className="flex items-center gap-1 bg-white/80 px-1.5 py-0.5 rounded border border-stone-200">
-                  <div className="w-2 h-2 bg-orange-500/80"></div> WARNING
+                  <div className="w-2 h-2 bg-orange-500/80"></div> 注意
                 </span>
                 {directionFilterMode === "exclude_noise" && (
                   <span className="flex items-center gap-1 bg-white/80 px-1.5 py-0.5 rounded border border-stone-300">
@@ -1235,7 +1243,7 @@ export default function DestinationMapPanel({
                 )}
                 {directionFilterMode === "optimal_only" && (
                   <span className="flex items-center gap-1 bg-white/80 px-1.5 py-0.5 rounded border border-amber-300">
-                    🌟 大吉絞込中: OPTIMAL 以外は淡色化
+                    🌟 大吉絞込中: 大吉以外は淡色化
                   </span>
                 )}
               </div>
@@ -1330,7 +1338,7 @@ export default function DestinationMapPanel({
                   {selectedTrendCell.isTendo && (
                     <div className="bg-amber-50 border border-amber-500/60 p-3 rounded-xl text-amber-700 space-y-1">
                       <div className="font-bold text-amber-700 flex items-center gap-1.5">
-                        <span>✨</span> 天道 (Tendou) 補正が適用されています
+                        <span>✨</span> 天道の補正が適用されています
                       </div>
                       <p className="text-[10px] leading-relaxed text-amber-800">
                         この時期、<strong>{selectedTrendCell.dir} 方位</strong>{" "}

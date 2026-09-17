@@ -45,3 +45,45 @@ describe("dashboard は判定コードを directionLabels の日本語で出す"
     });
   }
 });
+
+/*
+  予報の升目の凡例（2026-09-17）。上の見張りは「変数を直に出す形」を見て
+  いて、**凡例に手で書いた英語**は素通りしていた。
+
+      OPTIMAL (大吉) / SAFE (吉) / TYPE I (Gou/Anken/Ha) / TYPE II (Bio) /
+      VOID/NODE / WARNING / 天道 (Tendou) 回座
+
+  しかも SAFE を「吉」と書いていた。共有の名前は「平穏」で、同じ画面の
+  地図の凡例（MagneticMapInner）と食い違っていた。凡例は地図の凡例と
+  同じ言葉にした。
+
+  コメントに経緯として同じ語を書くので、**コメントを落としてから**見る。
+*/
+describe("目的地タブの予報の凡例は日本語", () => {
+  const body = readFileSync(
+    "src/components/home/DestinationMapPanel.tsx",
+    "utf8",
+  )
+    .replace(/\{\/\*[\s\S]*?\*\/\}/g, "")
+    .replace(/\/\*[\s\S]*?\*\//g, "")
+    .replace(/^\s*\/\/.*$/gm, "");
+
+  it.each([
+    "OPTIMAL (",
+    "SAFE (",
+    "TYPE I",
+    "TYPE II",
+    "VOID/NODE",
+    "(Tendou)",
+    "> WARNING",
+    "OPTIMAL 以外",
+  ])("%s を画面の文言に出していない", (token) => {
+    expect(body).not.toContain(token);
+  });
+
+  it("凡例は地図の凡例と同じ言葉（平穏・五黄・暗剣・破）", () => {
+    expect(body).toContain("平穏");
+    expect(body).toContain("五黄・暗剣・破（大凶）");
+    expect(body).toContain("本命・的殺（本命星から）");
+  });
+});
