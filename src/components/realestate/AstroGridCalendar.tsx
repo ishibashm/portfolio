@@ -4,6 +4,7 @@ import React from "react";
 
 import { directionLabelName } from "@/lib/directionLabels";
 import { isNoise } from "@/utils/noiseSeverity";
+import { plainRokuyo } from "@/lib/rokuyoLabel";
 
 /*
   凶要素の解説。**鍵は状態コード。**
@@ -344,7 +345,7 @@ export function AstroGridCalendar({
 
           const tooltipTitle = `${day.date} (${WEEKDAYS[day.weekday]}${day.holiday.isHoliday ? `・${day.holiday.name}` : ""})`;
           const lucksList = [
-            day.rokuyo,
+            plainRokuyo(day.rokuyo),
             ...(day.luckyDays.isIchiryumanbai ? ["一粒万倍日"] : []),
             ...(day.luckyDays.isTensho ? ["天赦日"] : []),
             ...(day.luckyDays.isTendo ? ["天道方位"] : []),
