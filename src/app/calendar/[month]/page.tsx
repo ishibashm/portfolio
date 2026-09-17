@@ -174,7 +174,7 @@ export default async function Page({
                     </p>
                   )}
                   {d.inDoyou && d.isMabi && (
-                    <p className="mt-1 text-[11px] text-emerald-800">
+                    <p className="mt-1 text-xs text-emerald-800">
                       土用の期間ですが間日にあたるため、障りは無いとされます。
                     </p>
                   )}
@@ -229,7 +229,7 @@ export default async function Page({
               </tbody>
             </table>
           </div>
-          <p className="mt-3 text-[11px] text-slate-500">
+          <p className="mt-3 text-xs text-slate-500">
             本命星が分からないときは
             <Link href="/houi" className="text-rose-600 hover:underline">
               生まれ年から引ける早見表
