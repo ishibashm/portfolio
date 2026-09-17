@@ -427,7 +427,7 @@ export function AstroGridCalendar({
               <div className="space-y-2 border-t border-stone-200 pt-2 mt-2">
                 {/* 算出内訳 */}
                 <div>
-                  <div className="text-stone-600 font-bold uppercase text-[9px] tracking-wider mb-0.5">
+                  <div className="text-stone-600 font-bold uppercase text-[10px] tracking-wider mb-0.5">
                     吉凶の内訳式:
                   </div>
                   <div className="text-[9.5px] font-mono text-stone-600 leading-normal">
@@ -438,7 +438,7 @@ export function AstroGridCalendar({
                 {/* 凶要素の解説 */}
                 {badFactors.length > 0 && (
                   <div className="space-y-1 pt-1.5 border-t border-stone-200">
-                    <div className="text-red-600 font-bold text-[9px] tracking-wider mb-0.5">
+                    <div className="text-red-600 font-bold text-[10px] tracking-wider mb-0.5">
                       注意すべき凶兆:
                     </div>
                     {badFactors.map((factor) => (
@@ -468,7 +468,7 @@ export function AstroGridCalendar({
             >
               {/* マスの真上の ▼ インジケーター */}
               {isToday && !isTransitioning && (
-                <div className="absolute -top-3.5 left-1/2 -translate-x-1/2 text-indigo-500 text-[9px] leading-none animate-bounce font-bold">
+                <div className="absolute -top-3.5 left-1/2 -translate-x-1/2 text-indigo-500 text-[10px] leading-none animate-bounce font-bold">
                   ▼
                 </div>
               )}
@@ -477,7 +477,7 @@ export function AstroGridCalendar({
               <div className={getBoxStyle(day, isToday)}>
                 {/* 1. 日付の数字 (曜日カラー) */}
                 <div
-                  className={`text-[9px] font-bold ${getWeekdayColor(day)} leading-none`}
+                  className={`text-[10px] font-bold ${getWeekdayColor(day)} leading-none`}
                 >
                   {dayNum}
                 </div>
@@ -493,7 +493,7 @@ export function AstroGridCalendar({
                   ) : (
                     <span />
                   )}
-                  <span className="text-[9px] font-extrabold text-right leading-none self-end">
+                  <span className="text-[10px] font-extrabold text-right leading-none self-end">
                     {getLuckyLabel(day)}
                   </span>
                 </div>
@@ -505,7 +505,7 @@ export function AstroGridCalendar({
                 <div className="font-bold text-stone-900 border-b border-stone-200 pb-1.5 mb-1.5 flex justify-between items-center text-xs">
                   <span>{tooltipTitle}</span>
                   {isToday && (
-                    <span className="text-[9px] bg-indigo-500/20 text-indigo-600 px-1.5 py-0.5 rounded border border-indigo-200">
+                    <span className="text-[10px] bg-indigo-500/20 text-indigo-600 px-1.5 py-0.5 rounded border border-indigo-200">
                       指定日
                     </span>
                   )}
@@ -513,7 +513,7 @@ export function AstroGridCalendar({
 
                 {/* 暦情報 */}
                 <div className="mb-2 text-stone-600">
-                  <div className="text-stone-600 font-bold uppercase text-[9px] tracking-wider mb-0.5">
+                  <div className="text-stone-600 font-bold uppercase text-[10px] tracking-wider mb-0.5">
                     当日の暦注:
                   </div>
                   <div className="font-semibold text-stone-900">
@@ -552,7 +552,7 @@ export function AstroGridCalendar({
                     </div>
                   )}
                   {day.isUltraLucky && (
-                    <div className="flex gap-1 text-yellow-400 font-bold border border-yellow-500/25 bg-yellow-500/5 rounded p-1 text-[9px] mt-1.5">
+                    <div className="flex gap-1 text-yellow-400 font-bold border border-yellow-500/25 bg-yellow-500/5 rounded p-1 text-xs mt-1.5">
                       <span>※複数の大吉兆が重なる「超ウルトラ吉日」です！</span>
                     </div>
                   )}
