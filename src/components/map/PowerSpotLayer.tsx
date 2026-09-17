@@ -166,7 +166,7 @@ export function PowerSpotLayer({
                       </li>
                     ))}
                   </ul>
-                  <div className="text-[9px] text-stone-500 mt-2 leading-snug">
+                  <div className="text-xs text-stone-500 mt-2 leading-snug">
                     {"ズームすると 1 件ずつ選べます。"}
                   </div>
                 </div>
@@ -275,7 +275,7 @@ function SpotMarker({
               この地点を判定へ
             </button>
           )}
-          <div className="text-[9px] text-stone-500 mt-2 leading-snug">
+          <div className="text-xs text-stone-500 mt-2 leading-snug">
             {
               "一覧は Wikidata（CC0）の指定（一宮・名勝）。所在地は座標から引いた最寄りの市区町村です。"
             }
