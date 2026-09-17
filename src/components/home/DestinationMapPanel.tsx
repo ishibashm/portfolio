@@ -35,6 +35,7 @@ import { getZonedDateTimeFields } from "@/utils/solarTime";
 import {
   directionFilterModeLabel,
   parseDirectionFilterMode,
+  type DashboardFilterMode,
 } from "@/utils/directionFilterMode";
 
 /**
@@ -96,8 +97,10 @@ export interface DestinationMapPanelProps {
   >;
   activeLayerMode: LayerMode;
   setActiveLayerMode: React.Dispatch<React.SetStateAction<LayerMode>>;
-  directionFilterMode: string;
-  setDirectionFilterMode: React.Dispatch<React.SetStateAction<string>>;
+  directionFilterMode: DashboardFilterMode;
+  setDirectionFilterMode: React.Dispatch<
+    React.SetStateAction<DashboardFilterMode>
+  >;
   heatmapMode: "none" | "30days" | "12months";
   toggleHeatmapMode: (mode: "30days" | "12months") => void;
   heatmapData: HeatmapColumn[];
