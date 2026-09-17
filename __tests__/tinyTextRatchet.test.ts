@@ -27,8 +27,8 @@ import { describe, expect, it } from "vitest";
   12px 以上なので対象外。
 */
 
-/** 実測（2026-09-17。駅の層と現在地の押し口（StationLayer・CurrentLocationControl） が片付いた時点。8px は 0）。**直したら下げること。** */
-const BASELINE = { 8: 0, 9: 28 };
+/** 実測（2026-09-17。シミュレータの地図（SimulatorMap・PastMoveMap） が片付いた時点。8px は 0）。**直したら下げること。** */
+const BASELINE = { 8: 0, 9: 24 };
 
 function tsxFiles(dir: string): string[] {
   const out: string[] = [];
@@ -141,6 +141,8 @@ describe("小さすぎる字を増やさない", () => {
       "src/components/map/UserSpotLayer.tsx",
       "src/components/map/StationLayer.tsx",
       "src/components/map/CurrentLocationControl.tsx",
+      "src/components/nba/SimulatorMap.tsx",
+      "src/components/nba/PastMoveMap.tsx",
     ]) {
       expect(byFile.get(done) ?? 0, done).toBe(0);
     }
