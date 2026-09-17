@@ -474,7 +474,7 @@ export function AccountPanel() {
           </ul>
         )}
 
-        <p className="mt-3 text-[10px] leading-relaxed text-stone-500">
+        <p className="mt-3 text-xs leading-relaxed text-stone-500">
           {cloudSynced
             ? "アカウントに保存されています（ほかの端末でも同じ一覧になります）。"
             : "この端末にだけ保存されています。ログインすると、ほかの端末でも同じ一覧になります。"}
