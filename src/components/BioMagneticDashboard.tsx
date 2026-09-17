@@ -127,7 +127,7 @@ export function BioMagneticDashboard({
               className={`w-1.5 h-1.5 rounded-full ${hasFeed ? "bg-emerald-500 animate-pulse" : "bg-stone-400"}`}
             ></span>
             <span
-              className={`text-[9px] font-mono tracking-widest ${hasFeed ? "text-emerald-700" : "text-stone-600"}`}
+              className={`text-[10px] font-mono tracking-widest ${hasFeed ? "text-emerald-700" : "text-stone-600"}`}
             >
               {hasFeed ? "実測" : "計算値のみ"}
             </span>
@@ -188,7 +188,7 @@ export function BioMagneticDashboard({
                   ))}
                 </div>
               </div>
-              <div className="mt-2 text-[9px] text-stone-600 text-right">
+              <div className="mt-2 text-[10px] text-stone-600 text-right">
                 Kp 指数（0〜9）
               </div>
             </div>
@@ -214,7 +214,7 @@ export function BioMagneticDashboard({
                     style={{ width: `${xrayPct}%` }}
                   ></div>
                 </div>
-                <div className="flex justify-between text-[9px] text-stone-600 mt-0.5">
+                <div className="flex justify-between text-[10px] text-stone-600 mt-0.5">
                   <span>A</span>
                   <span>B</span>
                   <span>C</span>
@@ -230,13 +230,13 @@ export function BioMagneticDashboard({
             <div className="col-span-2 mt-2 pt-2 border-t border-stone-200">
               <div className="flex items-center gap-1.5 mb-2">
                 <Waves size={12} className="text-sky-700" />
-                <span className="text-[9px] text-sky-700 font-bold uppercase tracking-wider">
+                <span className="text-[10px] text-sky-700 font-bold uppercase tracking-wider">
                   地上気圧（3 時間の変化）
                 </span>
               </div>
               <div className="grid grid-cols-3 gap-1">
                 <div className="bg-white/80 p-2 flex flex-col items-center justify-center border-r border-stone-200">
-                  <div className="text-[9px] text-sky-700 mb-1 uppercase tracking-widest">
+                  <div className="text-[10px] text-sky-700 mb-1 uppercase tracking-widest">
                     現在
                   </div>
                   <div className="text-sm text-stone-700 font-mono font-bold tracking-tight">
@@ -247,7 +247,7 @@ export function BioMagneticDashboard({
                   </div>
                 </div>
                 <div className="bg-white/80 p-2 flex flex-col items-center justify-center border-r border-stone-200">
-                  <div className="text-[9px] text-sky-700 mb-1 uppercase tracking-widest">
+                  <div className="text-[10px] text-sky-700 mb-1 uppercase tracking-widest">
                     3時間変化
                   </div>
                   <div
@@ -268,7 +268,7 @@ export function BioMagneticDashboard({
                   </div>
                 </div>
                 <div className="bg-white/80 p-2 flex flex-col items-center justify-center">
-                  <div className="text-[9px] text-sky-700 mb-1 uppercase tracking-widest">
+                  <div className="text-[10px] text-sky-700 mb-1 uppercase tracking-widest">
                     自律神経負荷
                   </div>
                   <div className="text-sm text-stone-700 font-mono font-bold tracking-tight">
@@ -287,14 +287,14 @@ export function BioMagneticDashboard({
             <div className="flex justify-between items-center mb-2">
               <div className="flex items-center gap-1.5">
                 <Compass size={12} className="text-emerald-700" />
-                <span className="text-[9px] text-emerald-700 font-bold uppercase tracking-wider">
+                <span className="text-[10px] text-emerald-700 font-bold uppercase tracking-wider">
                   地磁気（WMM）
                 </span>
               </div>
               {/* 以前は「V.2020-2025」と版の期間を書いていたが、geomagnetism
                   0.2.0 は wmm-2025 を持ち、2026 年は WMM2025 で計算している。
                   年を書くと次の版でまた嘘になるので、出典だけにする。 */}
-              <span className="text-[9px] text-stone-600 px-1 py-0.5 bg-white rounded-sm">
+              <span className="text-xs text-stone-600 px-1 py-0.5 bg-white rounded-sm">
                 出典: NOAA WMM
               </span>
             </div>
@@ -305,7 +305,7 @@ export function BioMagneticDashboard({
               <div className="absolute top-0 right-0 w-1 h-full border-y border-r border-stone-200 pointer-events-none"></div>
 
               <div className="bg-white/80 p-2 flex flex-col items-center justify-center border-r border-stone-200 last:border-0">
-                <div className="text-[9px] text-emerald-700 mb-1 uppercase tracking-widest">
+                <div className="text-[10px] text-emerald-700 mb-1 uppercase tracking-widest">
                   全磁力 F
                 </div>
                 <div className="text-sm text-stone-700 font-mono font-bold tracking-tight">
@@ -314,7 +314,7 @@ export function BioMagneticDashboard({
                 </div>
               </div>
               <div className="bg-white/80 p-2 flex flex-col items-center justify-center border-r border-stone-200 last:border-0">
-                <div className="text-[9px] text-emerald-700 mb-1 uppercase tracking-widest">
+                <div className="text-[10px] text-emerald-700 mb-1 uppercase tracking-widest">
                   偏角 D
                 </div>
                 <div className="text-sm text-stone-700 font-mono font-bold tracking-tight">
@@ -323,7 +323,7 @@ export function BioMagneticDashboard({
                 </div>
               </div>
               <div className="bg-white/80 p-2 flex flex-col items-center justify-center border-r border-stone-200 last:border-0">
-                <div className="text-[9px] text-emerald-700 mb-1 uppercase tracking-widest">
+                <div className="text-[10px] text-emerald-700 mb-1 uppercase tracking-widest">
                   伏角 I
                 </div>
                 <div className="text-sm text-stone-700 font-mono font-bold tracking-tight">

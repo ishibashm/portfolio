@@ -27,8 +27,8 @@ import { describe, expect, it } from "vitest";
   12px 以上なので対象外。
 */
 
-/** 実測（2026-09-17。目的地タブの 3 ファイルが片付いた時点）。**直したら下げること。** */
-const BASELINE = { 8: 1, 9: 198 };
+/** 実測（2026-09-17。目的地タブの 4 ファイルが片付いた時点）。**直したら下げること。** */
+const BASELINE = { 8: 1, 9: 186 };
 
 function tsxFiles(dir: string): string[] {
   const out: string[] = [];
@@ -126,6 +126,7 @@ describe("小さすぎる字を増やさない", () => {
       "src/components/TacticalMagneticMap.tsx",
       "src/components/MagneticMapInner.tsx",
       "src/components/home/DestinationMapPanel.tsx",
+      "src/components/BioMagneticDashboard.tsx",
     ]) {
       expect(byFile.get(done) ?? 0, done).toBe(0);
     }
