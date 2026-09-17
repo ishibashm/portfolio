@@ -1,3 +1,5 @@
+import { SCRAPE_TARGETS } from "@/lib/scrapeTargets";
+import { prefCodeByName } from "@/lib/prefContent";
 import { describe, it, expect } from "vitest";
 import { readFileSync } from "fs";
 import {
@@ -6,6 +8,7 @@ import {
   portalLinksForPref,
   suumoCitySearchUrl,
   municipalityCodeFromPortalUrl,
+  prefCodeFromPortalUrl,
 } from "@/lib/portalLinks";
 import { PREF_REGION, prefNameByCode } from "@/lib/prefContent";
 import { AREAS } from "@/lib/areaContent";
@@ -273,5 +276,68 @@ describe("URL の綴りから市区町村を読む", () => {
     expect(
       municipalityCodeFromPortalUrl("https://www.suumo.jp/x/?sc=13103"),
     ).toBe("13103");
+  });
+});
+
+/*
+  県までしか指していない URL（2026-09-17）。
+
+  HOME'S の県の一覧 `https://www.homes.co.jp/chintai/aichi/` を貼った人が
+  「読み取れませんでした」で止まった。市区町村は読めなくても、県まで
+  読めれば「愛知県までしか指していない」と言える。
+*/
+describe("URL の綴りから都道府県を読む", () => {
+  it("HOME'S の県の一覧から県コードが読める", () => {
+    expect(
+      prefCodeFromPortalUrl("https://www.homes.co.jp/chintai/aichi/"),
+    ).toBe("23");
+    expect(
+      prefCodeFromPortalUrl("https://www.homes.co.jp/chintai/tokyo/list/"),
+    ).toBe("13");
+  });
+
+  it("HOME'S の市区町村の綴りは読まない（県までで止める）", () => {
+    /* 市区町村のローマ字の表を持っていない。当てずっぽうで別の街を出さない */
+    expect(
+      prefCodeFromPortalUrl(
+        "https://www.homes.co.jp/chintai/aichi/nagoya-city/",
+      ),
+    ).toBe("23");
+    expect(
+      municipalityCodeFromPortalUrl(
+        "https://www.homes.co.jp/chintai/aichi/nagoya-city/",
+      ),
+    ).toBeNull();
+  });
+
+  it("47 県のローマ字がすべて県コードに戻る", () => {
+    for (const t of SCRAPE_TARGETS) {
+      const url = `https://www.homes.co.jp/chintai/${t.slug}/`;
+      expect(prefCodeFromPortalUrl(url), t.name).toBe(prefCodeByName(t.name));
+    }
+  });
+
+  it("SUUMO は ta= から読む（sc が無い県の一覧でも）", () => {
+    expect(
+      prefCodeFromPortalUrl(
+        "https://suumo.jp/jj/chintai/ichiran/FR301FC001/?ar=050&bs=040&ta=23",
+      ),
+    ).toBe("23");
+  });
+
+  it("知らないローマ字・知らないホスト・https 以外・壊れた値は読まない", () => {
+    for (const bad of [
+      "https://www.homes.co.jp/chintai/narnia/",
+      "https://www.homes.co.jp/mansion/aichi/",
+      "https://example.com/chintai/aichi/",
+      "http://www.homes.co.jp/chintai/aichi/",
+      "https://suumo.jp/jj/chintai/ichiran/FR301FC001/?ta=99",
+      "not a url",
+      "",
+      null,
+      42,
+    ]) {
+      expect(prefCodeFromPortalUrl(bad as never), String(bad)).toBeNull();
+    }
   });
 });
