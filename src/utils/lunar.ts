@@ -55,6 +55,20 @@ function getApproximateLunarDateOriginal(date: Date): { month: number, day: numb
  * Standard:
  * 0=Taian, 1=Shakku, 2=Sensho, 3=Tomobiki, 4=Sakimake, 5=Butsumetsu
  */
+/**
+ * 六曜からローマ字の併記を落とす。
+ *
+ * `ROKUYO` は `"大安 (Taian)"` の形で持っている。**内部で持つのはこの形の
+ * まま**でよい（`rokuyo.includes("大安")` で判定している所が複数ある）が、
+ * **画面に出すときは日本語だけ**にする。
+ *
+ * 落とす所が 2 か所になっていたので、持ち主であるここへ寄せた
+ * （`lib/monthlyCalendar` が同じ式を自前で持っていた）。
+ */
+export function plainRokuyo(value: string): string {
+  return value.replace(/\s*\([^)]*\)\s*$/, "").trim();
+}
+
 export function getRokuyo(date: Date): string {
   const { month, day } = getLunarDate(date);
   // lunar-javascript は閏月を負の月番号で返す（例: 閏6月 → -6）。
