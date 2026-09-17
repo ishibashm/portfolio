@@ -27,8 +27,8 @@ import { describe, expect, it } from "vitest";
   12px 以上なので対象外。
 */
 
-/** 実測（2026-09-17。管理画面とログイン（admin/metrics・login） が片付いた時点。8px は 0）。**直したら下げること。** */
-const BASELINE = { 8: 0, 9: 6 };
+/** 実測（2026-09-17。側欄と地点の選択（GlobalSidebar・LocationPickerInner） が片付いた時点。8px は 0）。**直したら下げること。** */
+const BASELINE = { 8: 0, 9: 3 };
 
 function tsxFiles(dir: string): string[] {
   const out: string[] = [];
@@ -149,6 +149,8 @@ describe("小さすぎる字を増やさない", () => {
       "src/app/relocation/timing/page.tsx",
       "src/app/admin/metrics/page.tsx",
       "src/app/login/page.tsx",
+      "src/components/GlobalSidebar.tsx",
+      "src/components/LocationPickerInner.tsx",
     ]) {
       expect(byFile.get(done) ?? 0, done).toBe(0);
     }
