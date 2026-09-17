@@ -103,6 +103,28 @@ describe("貼られた URL を外へ出さない", () => {
     expect(fetchSpy).not.toHaveBeenCalled();
   });
 
+  it("県までしか指していない URL は、何が足りないかを言う（外には出さない）", async () => {
+    /*
+      HOME'S の県の一覧を貼った人が「読み取れませんでした」で止まった
+      （2026-09-17）。市区町村は綴りに無いが県は読めるので、
+      「愛知県までしか指していない」と、その県の市区町村名の例を返す。
+      県の代表点は返さない（県の真ん中からの方位はその人の街の方位ではない）。
+    */
+    for (const url of [
+      "https://www.homes.co.jp/chintai/aichi/",
+      "https://www.homes.co.jp/chintai/aichi/nagoya-city/",
+      "https://suumo.jp/jj/chintai/ichiran/FR301FC001/?ar=050&bs=040&ta=23",
+    ]) {
+      const res = await GET(req(url));
+      expect(res.status, url).toBe(404);
+      const body = await res.json();
+      expect(body.error, url).toContain("愛知県までしか指していません");
+      expect(body.error, url).toMatch(/例: .+[市区町村]/);
+      expect(body.lat, url).toBeUndefined();
+    }
+    expect(fetchSpy).not.toHaveBeenCalled();
+  });
+
   it("q が無いときは今までどおり 400", async () => {
     const res = await GET(new Request("https://cloud-palette.com/api/geocode"));
     expect(res.status).toBe(400);
