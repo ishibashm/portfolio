@@ -1294,7 +1294,7 @@ export default function DestinationMapPanel({
                       {selectedTrendCell.label} 【方位: {selectedTrendCell.dir}
                       】
                     </h3>
-                    <p className="text-[11px] text-stone-600 font-mono">
+                    <p className="text-xs text-stone-600 font-mono">
                       総合判定:{" "}
                       <strong className="text-emerald-700 font-bold">
                         {directionLabelName(selectedTrendCell.status)}

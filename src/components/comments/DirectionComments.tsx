@@ -159,7 +159,7 @@ export function DirectionComments({
             </button>
           )}
           {prompt && (
-            <p className="mt-2 text-[11px] leading-relaxed text-stone-500">
+            <p className="mt-2 text-xs leading-relaxed text-stone-500">
               {prompt}
             </p>
           )}
