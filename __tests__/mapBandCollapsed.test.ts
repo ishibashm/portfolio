@@ -62,3 +62,25 @@ describe("目的地の地図の帯", () => {
     expect(src).toMatch(/aria-expanded=\{controlsOpen\}/);
   });
 });
+
+/*
+  層の切り替え（地形・宇宙天気・本命星・災害域）は全幅で押せる（2026-09-17）。
+
+  以前は `hidden lg:flex` で携帯では押せなかった。帯が常時表示だった頃の
+  幅の都合で、帯を「設定」に畳んだ今は要らない。災害域（洪水・土砂）は
+  携帯で現地を見ながら使う層。
+*/
+describe("層の切り替えは携帯でも押せる", () => {
+  it("4 つのボタンを包む div に hidden が付いていない", () => {
+    const at = src.indexOf('toggleLayer?.("terrain")');
+    expect(at).toBeGreaterThan(0);
+    /* 直前の <div className="..."> がその器 */
+    const before = src.slice(0, at);
+    const m = before.match(/<div className="([^"]*)">\s*<button[^]*$/);
+    expect(m, "器の div が見つからない").toBeTruthy();
+    expect(m![1]).not.toMatch(/\bhidden\b/);
+    for (const layer of ["terrain", "weather", "bio", "hazard"]) {
+      expect(src).toContain(`toggleLayer?.("${layer}")`);
+    }
+  });
+});

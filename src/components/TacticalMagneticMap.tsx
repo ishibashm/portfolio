@@ -244,8 +244,16 @@ export function TacticalMagneticMapComponent({
                     </button>
                   </div>
                   <div className="flex flex-wrap items-center gap-2">
-                    {/* Layer Toggles */}
-                    <div className="pointer-events-auto flex items-center bg-white/80 border border-stone-200 p-0.5 rounded-sm mr-2 hidden lg:flex">
+                    {/*
+                      層の切り替え（地形・宇宙天気・本命星・災害域）。
+
+                      以前は `hidden lg:flex` で、**携帯では押せなかった**。
+                      帯が常時表示だった頃の幅の都合で、理由はどこにも
+                      書かれていない。#1338 で帯を「設定」に畳んだので幅の
+                      都合は無くなった。災害域（洪水・土砂）は携帯で現地を
+                      見ながら使う層なので、全幅で出す。
+                    */}
+                    <div className="pointer-events-auto flex items-center bg-white/80 border border-stone-200 p-0.5 rounded-sm mr-2">
                       <button
                         onClick={() => toggleLayer?.("terrain")}
                         className={`px-1.5 py-0.5 text-[10px] font-mono border-r border-stone-200 transition-colors ${hudLayers.terrain ? "text-blue-700 bg-blue-500/10" : "text-stone-600"}`}
