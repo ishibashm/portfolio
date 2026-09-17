@@ -1531,6 +1531,24 @@ export default function TimingAnalyticsPage() {
               subtitle="この分析が何を言っていて、何を言っていないか。"
             >
               <ul className="list-disc space-y-1.5 pl-4 text-[11px] leading-relaxed text-stone-600">
+                {/*
+                  この画面は「日取りを選ぶ」道具なので、先に日付を決めて
+                  から方位を探す読み方をされやすい。**年盤で塞がった方位は
+                  月日をどう選んでも段階が上がらない**ので、その順序では
+                  候補が 1 日も出ない方位に入り込む。順序の理由と実測
+                  （365 日 × 8 方位）は記事に分けてある。
+                */}
+                <li>
+                  <b>方位が先、日取りが後です。</b>
+                  年盤で塞がった方位は、月日をどう選んでも段階が上がりません。順序の理由と実測は
+                  <Link
+                    href="/blog/direction-or-timing-which-matters"
+                    className="mx-1 font-semibold text-indigo-600 underline"
+                  >
+                    方位と日取りはどちらが重いのか
+                  </Link>
+                  に書きました。
+                </li>
                 <li>
                   段階は S（三盤吉）→ A（吉2盤）→ B（吉1盤）→ C（凶なし）→
                   D（軽い凶）の順。
