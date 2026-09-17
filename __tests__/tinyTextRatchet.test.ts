@@ -92,6 +92,25 @@ describe("小さすぎる字を増やさない", () => {
     });
   }
 
+  it("説明の段落（<p>）を 10px 以下で書いていない", () => {
+    /*
+      規則の 1 つ目「説明の段落は 12px 以上」を、<p> の字面で見張る。
+      9px を 0 にしたあと、<p className="… text-[10px] …"> が 80 か所
+      （27 ファイル）残っていた（2026-09-17 実測）。どれも説明・注記・
+      出典で、札の添え字ではない。全部 text-xs に上げたので 0 を要求する。
+      className が 1 行に収まる <p> だけを見る（テンプレート literal の
+      className は見ない。増やさないこと）。
+    */
+    let count = 0;
+    for (const f of tsxFiles("src")) {
+      const src = readFileSync(f, "utf8");
+      count += (
+        src.match(/<p className="[^"]*text-\[(?:[0-9]|10)px\][^"]*"/g) ?? []
+      ).length;
+    }
+    expect(count).toBe(0);
+  });
+
   it("直したら BASELINE を下げている（緩いまま放置しない）", () => {
     /*
       減らしたのに BASELINE を下げないと、そのぶん静かに増やせる幅が
