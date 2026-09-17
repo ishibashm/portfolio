@@ -3918,7 +3918,7 @@ export const SolarTimeClock = () => {
                   <strong className="text-stone-700 bg-white px-2 py-1 border border-stone-200 text-[10px] sm:text-[11px] font-mono">
                     手順 1: 出発地とあなたの星を決める
                   </strong>
-                  <p className="text-[10px] sm:text-xs">
+                  <p className="text-xs sm:text-xs">
                     プロフィールのタブで、生年月日と出発地を入れます（地名で探せます）。生年月日からあなたの「本命星」と、伝統的に大きな決断を避けるとされる「天中殺」の期間が決まります。出発地は、すべての方位を測る原点になります。
                   </p>
                 </div>
@@ -3926,7 +3926,7 @@ export const SolarTimeClock = () => {
                   <strong className="text-stone-700 bg-white px-2 py-1 border border-stone-200 text-[10px] sm:text-[11px] font-mono">
                     手順 2: 凶方位を除外する（年・月・日の重ね合わせ）
                   </strong>
-                  <p className="text-[10px] sm:text-xs">
+                  <p className="text-xs sm:text-xs">
                     目的地のタブで、出発地から見た八方位を評価します。年盤・月盤・日盤の 3 つを同時に重ね、五黄殺や本命殺などの凶が 1 つでも含まれる方位を凶（赤）として外します。
                   </p>
                 </div>
@@ -3934,7 +3934,7 @@ export const SolarTimeClock = () => {
                   <strong className="text-stone-700 bg-white px-2 py-1 border border-stone-200 text-[10px] sm:text-[11px] font-mono">
                     手順 3: 相性の良い方位から目的地を決める
                   </strong>
-                  <p className="text-[10px] sm:text-xs">
+                  <p className="text-xs sm:text-xs">
                     凶の無い方位（青）の中から、さらにその方位の星とあなたの本命星が陰陽五行（木火土金水）で「相生」または「比和」の関係にある方位（緑）を探し、目的地を決めます。
                   </p>
                 </div>
@@ -3942,7 +3942,7 @@ export const SolarTimeClock = () => {
                   <strong className="text-stone-700 bg-white px-2 py-1 border border-stone-200 text-[10px] sm:text-[11px] font-mono">
                     手順 4: 動き出す日時を決める（刻と天中殺）
                   </strong>
-                  <p className="text-[10px] sm:text-xs">
+                  <p className="text-xs sm:text-xs">
                     タイミングのタブで、その日の 2 時間ごとの刻を見ます。天中殺の刻を避け、時盤の九星があなたの本命星と相生・比和にあたる刻を「家を出る・契約印を押す」時間として選びます。刻の境目は出発地の真太陽時で切ります。日ごとの一覧は「時期の分析」の頁へ。
                   </p>
                 </div>
@@ -4074,7 +4074,7 @@ export const SolarTimeClock = () => {
                 <option value="BUSINESS">交渉・ビジネスを目的とした移動</option>
                 <option value="MIGRATION">引越し・長期移住・拠点の変更</option>
               </select>
-              <p className="text-[10px] text-stone-600 mt-3 leading-relaxed">
+              <p className="text-xs text-stone-600 mt-3 leading-relaxed">
                 「引越し」や「療養」など、目的に応じて方位の吉凶の重みづけ（どの層を重く見るか）が自動的に切り替わります。
               </p>
             </div>

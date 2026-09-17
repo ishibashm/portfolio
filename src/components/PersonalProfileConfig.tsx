@@ -320,7 +320,7 @@ export function PersonalProfileConfig({
           <div className="mt-4 p-2 bg-blue-50 border border-blue-200 rounded-xl">
             <div className="flex gap-2 items-start">
               <MapPin size={10} className="text-blue-700 mt-0.5 min-w-[10px]" />
-              <p className="text-[10px] text-stone-600 leading-relaxed text-justify">
+              <p className="text-xs text-stone-600 leading-relaxed text-justify">
                 生年月日・現在地・生まれたところは、
                 <strong className="text-stone-700">
                   頁の上の「まずここを入れる」
