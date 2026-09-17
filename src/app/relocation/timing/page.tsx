@@ -185,7 +185,7 @@ function Section({
   return (
     <section className="rounded-3xl border border-gray-200 bg-white p-5 shadow-sm">
       <h2 className="text-sm font-bold text-stone-800">{title}</h2>
-      <p className="mt-0.5 mb-4 text-[11px] leading-relaxed text-stone-500">
+      <p className="mt-0.5 mb-4 text-xs leading-relaxed text-stone-500">
         {subtitle}
       </p>
       {children}
@@ -841,7 +841,7 @@ export default function TimingAnalyticsPage() {
               </button>
             </div>
           )}
-          {error && <p className="mt-2 text-[11px] text-rose-600">{error}</p>}
+          {error && <p className="mt-2 text-xs text-rose-600">{error}</p>}
         </section>
 
         {/* 同行者・合流する人。走査の前でも人を足せるように、結果の外に置く */}
@@ -898,7 +898,7 @@ export default function TimingAnalyticsPage() {
               {days &&
                 memberTimelines.length > 0 &&
                 allTimelines.length === 0 && (
-                  <p className="text-[11px] leading-relaxed text-rose-600">
+                  <p className="text-xs leading-relaxed text-rose-600">
                     あなたの出発地の緯度が未設定なので、合流先への方位が出せません。物件スキャナーで出発地を入れ直してください。
                   </p>
                 )}
@@ -909,7 +909,7 @@ export default function TimingAnalyticsPage() {
               )}
               {partyReport && (
                 <div className="space-y-3" data-party-report>
-                  <p className="text-[11px] leading-relaxed text-stone-600">
+                  <p className="text-xs leading-relaxed text-stone-600">
                     {allTimelines
                       .filter((m) => !m.stationary)
                       .map(
@@ -958,7 +958,7 @@ export default function TimingAnalyticsPage() {
                     </div>
                   </div>
                   {partyReport.alwaysBlockedBy.length > 0 && (
-                    <p className="rounded-xl border border-rose-200 bg-rose-50 p-2.5 text-[11px] leading-relaxed text-rose-900">
+                    <p className="rounded-xl border border-rose-200 bg-rose-50 p-2.5 text-xs leading-relaxed text-rose-900">
                       {partyReport.alwaysBlockedBy
                         .map(
                           (b) => `${b.name}は走査した全ての日で「${b.status}」`,
@@ -967,7 +967,7 @@ export default function TimingAnalyticsPage() {
                       。期間を延ばしても変わらないので、合流先の県を変えるか、年を改めるかの判断になります。
                     </p>
                   )}
-                  <p className="text-[11px] leading-relaxed text-stone-500">
+                  <p className="text-xs leading-relaxed text-stone-500">
                     「全員で動ける日」は、移動する全員が凶なし（C
                     以上）で天中殺にも当たらない日。まとめ方は日ごとの段階（下の地図の塗り）に効き、この日数には効きません。
                   </p>
@@ -1230,7 +1230,7 @@ export default function TimingAnalyticsPage() {
                 </div>
 
                 {filtering && matchedCount === 0 && (
-                  <p className="rounded-lg bg-stone-100 p-3 text-[11px] text-stone-500">
+                  <p className="rounded-lg bg-stone-100 p-3 text-xs text-stone-500">
                     該当なし。選んだ段階の日がこの期間にありません。
                   </p>
                 )}
