@@ -789,7 +789,7 @@ function OptOutToggle() {
           <h2 className="text-sm font-bold text-stone-800">
             この端末を計測から除外する
           </h2>
-          <p className="text-[11px] leading-relaxed text-stone-600 mt-1">
+          <p className="text-xs leading-relaxed text-stone-600 mt-1">
             自分の閲覧が数に混ざらないようにします。
             <strong>これから送る分にだけ効きます</strong>
             （既に記録された分は変わりません）。ログインしていなくても効きます。かわりに、別の端末やブラウザでは改めて設定が要ります。
@@ -808,7 +808,7 @@ function OptOutToggle() {
         </button>
       </div>
       {unavailable && (
-        <p className="text-[11px] text-amber-700">
+        <p className="text-xs text-amber-700">
           このブラウザでは設定を保存できませんでした（プライベートウィンドウ、または保存を止める設定）。管理者としてログインしている間は、サーバ側の判定で除外されます。
         </p>
       )}

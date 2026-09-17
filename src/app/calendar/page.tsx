@@ -128,7 +128,7 @@ export default function CalendarPage() {
               物件を方位で探す
             </Link>
           </div>
-          <p className="mt-4 text-[11px] text-slate-500 leading-relaxed">
+          <p className="mt-4 text-xs text-slate-500 leading-relaxed">
             六曜や天赦日は暦の考え方であり、科学的に効果が確認されたものではありません。引越し業者の料金は大安や土日に上がる傾向があるため、費用を優先するか暦を優先するかは分けて考えてください。
           </p>
         </section>
