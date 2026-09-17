@@ -591,7 +591,7 @@ export const MetaphysicalConfigBar: React.FC<MetaphysicalConfigBarProps> = ({
               {/* Sub-option for Physical Month Star Calculation */}
               {!config.useClassicalBoard && (
                 <div className="pt-1 space-y-1">
-                  <span className="text-[9px] text-stone-600 block">
+                  <span className="text-[10px] text-stone-600 block">
                     月盤の算出方法:
                   </span>
                   <div className="grid grid-cols-2 gap-1 p-0.5 bg-white rounded-lg border border-stone-200">
@@ -603,7 +603,7 @@ export const MetaphysicalConfigBar: React.FC<MetaphysicalConfigBarProps> = ({
                           physicalMonthMode: "independent",
                         })
                       }
-                      className={`py-1 rounded text-[9px] font-bold transition-all ${
+                      className={`py-1 rounded text-[10px] font-bold transition-all ${
                         config.physicalMonthMode === "independent" ||
                         !config.physicalMonthMode
                           ? "bg-stone-100 text-stone-900 shadow-sm"
@@ -618,7 +618,7 @@ export const MetaphysicalConfigBar: React.FC<MetaphysicalConfigBarProps> = ({
                       onClick={() =>
                         saveConfig({ ...config, physicalMonthMode: "coupled" })
                       }
-                      className={`py-1 rounded text-[9px] font-bold transition-all ${
+                      className={`py-1 rounded text-[10px] font-bold transition-all ${
                         config.physicalMonthMode === "coupled"
                           ? "bg-stone-100 text-stone-900 shadow-sm"
                           : "bg-transparent text-stone-600 hover:text-stone-800"
@@ -667,7 +667,7 @@ export const MetaphysicalConfigBar: React.FC<MetaphysicalConfigBarProps> = ({
                   真太陽時
                 </button>
               </div>
-              <p className="text-[9px] text-stone-600 leading-relaxed">
+              <p className="text-xs text-stone-600 leading-relaxed">
                 {config.zodiacTimeBasis === "solar"
                   ? "出発地の経度で時刻を補正します。時支と、真夜中付近では日支も変わります。年盤・月盤は変わりません。"
                   : "全国一律で日本標準時（東経135度）を使います。"}
@@ -690,7 +690,7 @@ export const MetaphysicalConfigBar: React.FC<MetaphysicalConfigBarProps> = ({
                     type="button"
                     onClick={() => handleFilterChange(mode)}
                     title={FILTER_LABELS[mode]}
-                    className={`py-1.5 rounded-lg text-[9px] font-bold transition-all border ${
+                    className={`py-1.5 rounded-lg text-[10px] font-bold transition-all border ${
                       config.directionFilterMode === mode
                         ? "bg-stone-100 text-stone-900 border-stone-300 shadow-sm"
                         : "bg-transparent text-stone-600 border-transparent hover:text-stone-800"
@@ -721,7 +721,7 @@ export const MetaphysicalConfigBar: React.FC<MetaphysicalConfigBarProps> = ({
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
               <div className="space-y-1">
-                <span className="text-[9px] text-stone-600 block">
+                <span className="text-[10px] text-stone-600 block">
                   {PROFILE_FIELDS.birthDate.label}
                 </span>
                 {/*
@@ -784,7 +784,7 @@ export const MetaphysicalConfigBar: React.FC<MetaphysicalConfigBarProps> = ({
                       key={intent}
                       type="button"
                       onClick={() => handleIntentChange(intent)}
-                      className={`py-1.5 rounded-lg text-[9px] font-bold transition-all border ${
+                      className={`py-1.5 rounded-lg text-[10px] font-bold transition-all border ${
                         config.actionIntent === intent
                           ? "bg-indigo-500/20 text-indigo-600 border-indigo-200"
                           : "bg-transparent text-stone-600 border-transparent hover:text-stone-800"
