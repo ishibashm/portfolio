@@ -100,7 +100,7 @@ export default function Error({
             短い識別子。問い合わせをもらったときに、どの例外かを探せる。
           */}
         {error.digest && (
-          <p className="mt-6 font-mono text-[10px] text-stone-500">
+          <p className="mt-6 font-mono text-xs text-stone-500">
             識別子: {error.digest}
           </p>
         )}
