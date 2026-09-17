@@ -1407,9 +1407,11 @@ export default function DestinationMapPanel({
               🪐 総合判定
             </button>
             <button
-              onClick={() => setDirectionFilterMode("kigaku_env")}
+              onClick={() =>
+                setDirectionFilterMode("personal_kigaku_environmental")
+              }
               className={`inline-flex min-h-[24px] items-center justify-center px-2 py-0.5 text-[9px] font-mono rounded-xs transition-all border cursor-pointer ${
-                directionFilterMode === "kigaku_env"
+                directionFilterMode === "personal_kigaku_environmental"
                   ? "bg-purple-50 text-purple-700 border-purple-200 shadow-[0_0_5px_rgba(168,85,247,0.2)]"
                   : "bg-white/80 text-stone-600 border-transparent hover:border-stone-300"
               }`}
@@ -1417,9 +1419,9 @@ export default function DestinationMapPanel({
               👤+🌍 吉凶+環境
             </button>
             <button
-              onClick={() => setDirectionFilterMode("kigaku_bazi")}
+              onClick={() => setDirectionFilterMode("personal_kigaku_bazi")}
               className={`inline-flex min-h-[24px] items-center justify-center px-2 py-0.5 text-[9px] font-mono rounded-xs transition-all border cursor-pointer ${
-                directionFilterMode === "kigaku_bazi"
+                directionFilterMode === "personal_kigaku_bazi"
                   ? "bg-indigo-50 text-indigo-600 border-indigo-200 shadow-[0_0_5px_rgba(99,102,241,0.2)]"
                   : "bg-white/80 text-stone-600 border-transparent hover:border-stone-300"
               }`}
@@ -1427,9 +1429,9 @@ export default function DestinationMapPanel({
               👤+☯ 吉凶+天中殺
             </button>
             <button
-              onClick={() => setDirectionFilterMode("bazi_env")}
+              onClick={() => setDirectionFilterMode("environmental_bazi")}
               className={`inline-flex min-h-[24px] items-center justify-center px-2 py-0.5 text-[9px] font-mono rounded-xs transition-all border cursor-pointer ${
-                directionFilterMode === "bazi_env"
+                directionFilterMode === "environmental_bazi"
                   ? "bg-amber-50 text-amber-700 border-amber-200 shadow-[0_0_5px_rgba(245,158,11,0.2)]"
                   : "bg-white/80 text-stone-600 border-transparent hover:border-stone-300"
               }`}
@@ -1539,7 +1541,7 @@ export default function DestinationMapPanel({
           >
             <span className="text-xs">⚠️</span>
             <div>
-              {directionFilterMode === "kigaku_env" && (
+              {directionFilterMode === "personal_kigaku_environmental" && (
                 <>
                   <span className="font-bold">
                     【個人吉凶 ＋ 環境方位 複合表示】
@@ -1547,7 +1549,7 @@ export default function DestinationMapPanel({
                   本命星・月命星による吉凶および空間環境凶殺（五黄/暗剣/破）を合成してマッピングしています。
                 </>
               )}
-              {directionFilterMode === "kigaku_bazi" && (
+              {directionFilterMode === "personal_kigaku_bazi" && (
                 <>
                   <span className="font-bold">
                     【個人吉凶 ＋ 天中殺 複合表示】
@@ -1555,7 +1557,7 @@ export default function DestinationMapPanel({
                   九星気学の個人吉凶と四柱推命の天中殺（空亡）を重ね合わせてマッピングしています。
                 </>
               )}
-              {directionFilterMode === "bazi_env" && (
+              {directionFilterMode === "environmental_bazi" && (
                 <>
                   <span className="font-bold">
                     【個人天中殺 ＋ 環境方位 複合表示】
