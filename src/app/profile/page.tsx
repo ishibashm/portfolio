@@ -92,7 +92,7 @@ export default function Page() {
 
         <ProfileForm />
 
-        <p className="text-[11px] leading-relaxed text-stone-500">
+        <p className="text-xs leading-relaxed text-stone-500">
           {
             "方位の吉凶は九星気学という古典的な考え方にもとづく参考情報です。医療・健康・法律・投資に関する助言ではありません。引越しは契約・費用・通勤など現実の条件が優先されます。"
           }
