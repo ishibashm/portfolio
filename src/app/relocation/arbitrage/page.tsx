@@ -464,12 +464,12 @@ export default function ArbitrageScannerPage() {
     return (
       <div className="mt-2.5 pt-2 border-t border-gray-100 dark:border-stone-200 space-y-1">
         <div className="flex items-center justify-between">
-          <span className="text-[9px] font-bold text-stone-500">
+          <span className="text-[10px] font-bold text-stone-500">
             全員の方位
           </span>
           {item.party.harmony !== null && (
             <span
-              className="text-[9px] font-mono text-stone-600"
+              className="text-[10px] font-mono text-stone-600"
               title="移動する人どうしで評価がどれだけ揃っているか。低いと片方だけに良い場所。"
             >
               一致度 {Math.round(item.party.harmony)}
@@ -2346,7 +2346,7 @@ export default function ArbitrageScannerPage() {
     <div className="bg-white dark:bg-stone-50 rounded-2xl border-2 border-indigo-200 shadow-md overflow-hidden">
       <div className="flex items-start justify-between gap-2 p-3.5 pb-2">
         <div className="min-w-0">
-          <div className="text-[9px] font-bold text-indigo-500 uppercase tracking-wider mb-0.5">
+          <div className="text-[10px] font-bold text-indigo-500 uppercase tracking-wider mb-0.5">
             物件の詳細
           </div>
           {selectedProperty.url ? (
@@ -2400,7 +2400,7 @@ export default function ArbitrageScannerPage() {
           {((selectedProperty.totalRent || 0) / 10000).toFixed(1)}
           <span className="text-xs">万円</span>
         </span>
-        <span className="text-[9px] text-stone-600">
+        <span className="text-[10px] text-stone-600">
           管理費込み
           {selectedProperty.size_sqm
             ? ` / ㎡単価 ${Math.round(
@@ -2475,7 +2475,7 @@ export default function ArbitrageScannerPage() {
         */}
         {typeof selectedProperty.distanceKm === "number" &&
           directionUnstableNote(selectedProperty.distanceKm) && (
-            <p className="mt-1.5 rounded-lg border border-amber-300 bg-amber-50 px-2 py-1.5 text-[9px] leading-relaxed text-amber-800">
+            <p className="mt-1.5 rounded-lg border border-amber-300 bg-amber-50 px-2 py-1.5 text-xs leading-relaxed text-amber-800">
               {directionUnstableNote(selectedProperty.distanceKm)}
             </p>
           )}
@@ -2984,7 +2984,7 @@ export default function ArbitrageScannerPage() {
                         className="text-[10px] font-semibold text-stone-600 dark:text-stone-500 block flex items-center justify-between"
                       >
                         <span>生年月日 (吉方位用)</span>
-                        <span className="text-[9px] text-stone-600 font-normal">
+                        <span className="text-[10px] text-stone-600 font-normal">
                           時間指定可
                         </span>
                       </label>
@@ -3736,7 +3736,7 @@ export default function ArbitrageScannerPage() {
                           )?.description
                         }
                       </p>
-                      <p className="text-[9px] text-stone-600 leading-relaxed">
+                      <p className="text-xs text-stone-600 leading-relaxed">
                         根拠:{" "}
                         {
                           TENCHUSATSU_MODES.find(
@@ -3913,13 +3913,13 @@ export default function ArbitrageScannerPage() {
                     <div className="flex items-center gap-1 bg-zinc-200 dark:bg-white p-0.5 rounded-lg shrink-0 select-none">
                       <button
                         onClick={() => setShowTableView(false)}
-                        className={`px-2.5 py-1 rounded-md text-[9px] font-bold transition-all ${!showTableView ? "bg-white dark:bg-stone-100 text-gray-900 dark:text-stone-900 shadow-xs" : "text-stone-600 hover:text-gray-700 dark:hover:text-stone-800"}`}
+                        className={`px-2.5 py-1 rounded-md text-[10px] font-bold transition-all ${!showTableView ? "bg-white dark:bg-stone-100 text-gray-900 dark:text-stone-900 shadow-xs" : "text-stone-600 hover:text-gray-700 dark:hover:text-stone-800"}`}
                       >
                         カード
                       </button>
                       <button
                         onClick={() => setShowTableView(true)}
-                        className={`px-2.5 py-1 rounded-md text-[9px] font-bold transition-all ${showTableView ? "bg-white dark:bg-stone-100 text-gray-900 dark:text-stone-900 shadow-xs" : "text-stone-600 hover:text-gray-700 dark:hover:text-stone-800"}`}
+                        className={`px-2.5 py-1 rounded-md text-[10px] font-bold transition-all ${showTableView ? "bg-white dark:bg-stone-100 text-gray-900 dark:text-stone-900 shadow-xs" : "text-stone-600 hover:text-gray-700 dark:hover:text-stone-800"}`}
                       >
                         テーブル
                       </button>
