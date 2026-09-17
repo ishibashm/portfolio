@@ -85,7 +85,7 @@ export default function Page() {
               "。足すと、どちらの流派の答えでもない数字ができるためです。両方をそのまま出すので、どちらを重く見るかは読む人が決めてください。"
             }
           </p>
-          <p className="mt-2 max-w-[70ch] text-[11px] leading-relaxed text-slate-500">
+          <p className="mt-2 max-w-[70ch] text-xs leading-relaxed text-slate-500">
             {
               "八宅は「住まいの向き」と「その人の本命卦」の組み合わせを見る考え方で、引越しの方位を測る九星気学とは、そもそも見ている対象が違います。同じ 8 方位に同じ名前が並ぶので同種に見えますが、由来は別です。"
             }
