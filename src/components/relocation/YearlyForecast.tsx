@@ -76,7 +76,7 @@ export function YearlyForecast({
         <h2 className="text-sm font-bold text-stone-800">
           月ごとの見通し（{directionLabel}）
         </h2>
-        <p className="text-[11px] text-stone-500">
+        <p className="text-xs text-stone-500">
           走査した日を月ごとに数えたものです。下のカレンダーと同じ判定です。
         </p>
       </div>

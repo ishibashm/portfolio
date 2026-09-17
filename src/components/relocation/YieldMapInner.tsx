@@ -137,7 +137,7 @@ export function YieldMapInner({ cells }: YieldMapProps) {
             <p className="text-sm font-bold text-stone-900">
               表面利回り {formatYield(hovered.grossYield)}
             </p>
-            <p className="text-[11px] text-stone-600">
+            <p className="text-xs text-stone-600">
               賃貸 {hovered.rental?.n ?? 0} 件（
               {Math.round(
                 hovered.rental?.medianPerSqm ?? 0,
@@ -148,12 +148,12 @@ export function YieldMapInner({ cells }: YieldMapProps) {
               ).toLocaleString()}{" "}
               円/㎡）
             </p>
-            <p className="text-[11px] font-mono text-stone-500">
+            <p className="text-xs font-mono text-stone-500">
               {hovered.lat.toFixed(3)}, {hovered.lon.toFixed(3)}
             </p>
           </div>
         ) : (
-          <p className="text-[11px] text-stone-500">
+          <p className="text-xs text-stone-500">
             升目に触れると、その区画の内訳（賃貸と中古マンションの件数・㎡単価）が出ます。
           </p>
         )}
