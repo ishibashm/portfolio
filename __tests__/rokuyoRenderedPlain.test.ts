@@ -29,6 +29,8 @@ const RAW_TEMPLATE = /\$\{[a-zA-Z.]*\.rokuyo\}/;
 describe.each([
   "src/components/relocation/DayCellPopover.tsx",
   "src/components/relocation/TargetDateAdvice.tsx",
+  /* 物件検索の暦。初回読み込みに乗るので、葉（lib/rokuyoLabel）から引く */
+  "src/components/realestate/AstroGridCalendar.tsx",
 ])("%s", (file) => {
   const src = read(file);
 
