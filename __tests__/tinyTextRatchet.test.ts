@@ -27,8 +27,8 @@ import { describe, expect, it } from "vitest";
   12px 以上なので対象外。
 */
 
-/** 実測（2026-09-17。物件検索の頁が片付いた時点。8px は 0）。**直したら下げること。** */
-const BASELINE = { 8: 0, 9: 61 };
+/** 実測（2026-09-17。AstroGridCalendar が片付いた時点。8px は 0）。**直したら下げること。** */
+const BASELINE = { 8: 0, 9: 53 };
 
 function tsxFiles(dir: string): string[] {
   const out: string[] = [];
@@ -133,6 +133,7 @@ describe("小さすぎる字を増やさない", () => {
       "src/components/PersonalProfileConfig.tsx",
       "src/app/relocation/simulator/page.tsx",
       "src/app/relocation/arbitrage/page.tsx",
+      "src/components/realestate/AstroGridCalendar.tsx",
     ]) {
       expect(byFile.get(done) ?? 0, done).toBe(0);
     }
