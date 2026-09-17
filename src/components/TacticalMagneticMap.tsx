@@ -182,7 +182,7 @@ export function TacticalMagneticMapComponent({
               {controlsOpen && (
                 <div className="flex flex-col items-start gap-1.5 mt-1.5 w-full">
                   {/* Layer Mode Switcher with Combinations */}
-                  <div className="pointer-events-auto flex items-center mt-1.5 bg-white/80 border border-stone-200 rounded-sm overflow-hidden text-[9px] font-mono flex-wrap max-w-full">
+                  <div className="pointer-events-auto flex items-center mt-1.5 bg-white/80 border border-stone-200 rounded-sm overflow-hidden text-[10px] font-mono flex-wrap max-w-full">
                     <span className="px-1.5 py-1 text-[10px] text-stone-600 bg-white border-r border-stone-200">
                       時間軸:
                     </span>
@@ -248,28 +248,28 @@ export function TacticalMagneticMapComponent({
                     <div className="pointer-events-auto flex items-center bg-white/80 border border-stone-200 p-0.5 rounded-sm mr-2 hidden lg:flex">
                       <button
                         onClick={() => toggleLayer?.("terrain")}
-                        className={`px-1.5 py-0.5 text-[9px] font-mono border-r border-stone-200 transition-colors ${hudLayers.terrain ? "text-blue-700 bg-blue-500/10" : "text-stone-600"}`}
+                        className={`px-1.5 py-0.5 text-[10px] font-mono border-r border-stone-200 transition-colors ${hudLayers.terrain ? "text-blue-700 bg-blue-500/10" : "text-stone-600"}`}
                         title="地形の陰影を重ねる"
                       >
                         地形
                       </button>
                       <button
                         onClick={() => toggleLayer?.("weather")}
-                        className={`px-1.5 py-0.5 text-[9px] font-mono border-r border-stone-200 transition-colors ${hudLayers.weather ? "text-amber-700 bg-amber-500/10" : "text-stone-600"}`}
+                        className={`px-1.5 py-0.5 text-[10px] font-mono border-r border-stone-200 transition-colors ${hudLayers.weather ? "text-amber-700 bg-amber-500/10" : "text-stone-600"}`}
                         title="宇宙天気（Kp 指数）の注意帯を重ねる"
                       >
                         宇宙天気
                       </button>
                       <button
                         onClick={() => toggleLayer?.("bio")}
-                        className={`px-1.5 py-0.5 text-[9px] font-mono transition-colors ${hudLayers.bio ? "text-purple-700 bg-purple-500/10" : "text-stone-600"}`}
+                        className={`px-1.5 py-0.5 text-[10px] font-mono transition-colors ${hudLayers.bio ? "text-purple-700 bg-purple-500/10" : "text-stone-600"}`}
                         title="本命星から見た個人の吉凶の線を重ねる"
                       >
                         本命星
                       </button>
                       <button
                         onClick={() => toggleLayer?.("hazard")}
-                        className={`px-1.5 py-0.5 text-[9px] font-mono transition-colors border-l border-stone-200 ${hudLayers.hazard ? "text-red-700 bg-red-500/10 font-bold" : "text-stone-600"}`}
+                        className={`px-1.5 py-0.5 text-[10px] font-mono transition-colors border-l border-stone-200 ${hudLayers.hazard ? "text-red-700 bg-red-500/10 font-bold" : "text-stone-600"}`}
                         title="洪水と土砂災害の想定区域を重ねる（出典: ハザードマップポータルサイト）"
                       >
                         災害域
@@ -389,7 +389,7 @@ export function TacticalMagneticMapComponent({
         </summary>
         <div className="p-3 sm:p-4 border-t border-stone-200 grid grid-cols-1 md:grid-cols-4 gap-3 bg-white/70 text-xs leading-relaxed font-sans">
           <div className="p-2 sm:p-3 border border-red-200 rounded-sm">
-            <strong className="text-red-600 block mb-1 font-mono text-[9px] uppercase">
+            <strong className="text-red-600 block mb-1 font-mono uppercase">
               ◆ 1. 凶殺ベクトル (NOISE)
             </strong>
             <p className="text-stone-600 text-justify mt-1">
@@ -400,7 +400,7 @@ export function TacticalMagneticMapComponent({
             </p>
           </div>
           <div className="p-2 sm:p-3 border border-yellow-900/30 rounded-sm">
-            <strong className="text-yellow-700 block mb-1 font-mono text-[9px] uppercase">
+            <strong className="text-yellow-700 block mb-1 font-mono uppercase">
               ◆ 2. 天中殺 (VOID)
             </strong>
             <p className="text-stone-600 text-justify mt-1">
@@ -409,7 +409,7 @@ export function TacticalMagneticMapComponent({
             </p>
           </div>
           <div className="p-2 sm:p-3 border border-amber-200 rounded-sm">
-            <strong className="text-amber-700 block mb-1 font-mono text-[9px] uppercase">
+            <strong className="text-amber-700 block mb-1 font-mono uppercase">
               ◆ 3. 月交点 (NODE)
             </strong>
             <p className="text-stone-600 text-justify mt-1">
@@ -420,7 +420,7 @@ export function TacticalMagneticMapComponent({
             </p>
           </div>
           <div className="p-2 sm:p-3 border border-emerald-200 rounded-sm">
-            <strong className="text-emerald-700 block mb-1 font-mono text-[9px] uppercase">
+            <strong className="text-emerald-700 block mb-1 font-mono uppercase">
               ◆ 4. 最適化ゾーン (OPTIMAL)
             </strong>
             <p className="text-stone-600 text-justify mt-1">
