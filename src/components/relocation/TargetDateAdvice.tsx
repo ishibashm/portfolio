@@ -12,6 +12,7 @@ import {
   type TargetDateRationale,
   type TimelineDay,
 } from "@/utils/targetDateRationale";
+import { plainRokuyo } from "@/lib/rokuyoLabel";
 
 /**
  * 目標日の根拠を出す。
@@ -161,7 +162,7 @@ export function TargetDateAdvice({
       {result?.target && (
         <p className="mt-1 text-[11px] text-stone-600">
           {targetDate}
-          {result.target.rokuyo ? `・${result.target.rokuyo}` : ""}
+          {result.target.rokuyo ? `・${plainRokuyo(result.target.rokuyo)}` : ""}
           {result.target.tags.length > 0
             ? `・${result.target.tags.join("・")}`
             : ""}
