@@ -137,7 +137,7 @@ export function LocalNewsPanel({
       <h2 className="text-sm font-bold text-stone-800">
         {placeName}に関するニュース
       </h2>
-      <p className="mt-0.5 text-[10px] leading-relaxed text-stone-500">
+      <p className="mt-0.5 text-xs leading-relaxed text-stone-500">
         {
           "不動産・建築の配信元から、地名の一致で拾った見出しです。方位の吉凶とは関係ありません。"
         }
@@ -171,7 +171,7 @@ export function LocalNewsPanel({
         ))}
       </ul>
       {!hideNewsLink && (
-        <p className="mt-3 text-[10px] text-stone-500">
+        <p className="mt-3 text-xs text-stone-500">
           {"ほかの見出しは "}
           <Link href={newsHref} className="text-indigo-600 underline">
             不動産・建築の情報
