@@ -176,7 +176,7 @@ export function AppraisalForm() {
           </label>
         </div>
 
-        <p className="max-w-[70ch] text-[11px] leading-relaxed text-stone-500">
+        <p className="max-w-[70ch] text-xs leading-relaxed text-stone-500">
           建築年を入れると、近い世代の建物だけで比べます。売出価格を入れると、その価格が近所の成約のどのあたりかを出します。どちらも空のままで相場だけ見られます。
         </p>
 
@@ -217,7 +217,7 @@ export function AppraisalForm() {
               子育て世帯・若者夫婦世帯
             </label>
           </div>
-          <p className="mt-2 max-w-[70ch] text-[11px] leading-relaxed text-stone-500">
+          <p className="mt-2 max-w-[70ch] text-xs leading-relaxed text-stone-500">
             <strong>認定されているかは、こちらでは調べられません。</strong>
             国土交通省の成約価格に認定の欄は無く、所管行政庁の認定情報も個別の物件では公開されていません。販売資料か重要事項説明書をご確認ください。書かれていなければ、まず認定なしと考えて差し支えありません（あれば売る側が必ず書きます）。
           </p>
@@ -249,7 +249,7 @@ export function AppraisalForm() {
             <strong>足りないまま出すより、出せないと言うほうがよい</strong>
             と考えています。
           </p>
-          <p className="mt-2 text-[11px] font-mono text-stone-500">
+          <p className="mt-2 text-xs font-mono text-stone-500">
             近所（区画 2 つぶんの範囲）にあった中古マンションの成約:{" "}
             {result.candidatesNearby} 件／対象年 {result.years.from}〜
             {result.years.to}
@@ -267,7 +267,7 @@ export function AppraisalForm() {
           {/* 結論 */}
           {a.asking && (
             <section className="rounded-2xl border border-stone-200 bg-white p-5">
-              <p className="text-[11px] font-bold text-stone-500">
+              <p className="text-xs font-bold text-stone-500">
                 入力した売出価格の位置づけ
               </p>
               <p className="mt-1 font-serif text-xl font-bold text-stone-900">
@@ -291,33 +291,33 @@ export function AppraisalForm() {
           {/* 根拠 */}
           <section className="grid gap-3 sm:grid-cols-3">
             <div className="rounded-2xl border border-stone-200 bg-white p-4">
-              <p className="text-[11px] font-bold text-stone-500">
+              <p className="text-xs font-bold text-stone-500">
                 安いほう（p25）
               </p>
               <p className="mt-1 font-mono text-xl font-bold text-stone-900">
                 {man(a.price.low)}
               </p>
-              <p className="mt-1 text-[11px] font-mono text-stone-500">
+              <p className="mt-1 text-xs font-mono text-stone-500">
                 {manPerSqm(a.perSqm.p25)}
               </p>
             </div>
             <div className="rounded-2xl border-2 border-stone-300 bg-white p-4">
-              <p className="text-[11px] font-bold text-stone-500">中央値</p>
+              <p className="text-xs font-bold text-stone-500">中央値</p>
               <p className="mt-1 font-mono text-xl font-bold text-stone-900">
                 {man(a.price.mid)}
               </p>
-              <p className="mt-1 text-[11px] font-mono text-stone-500">
+              <p className="mt-1 text-xs font-mono text-stone-500">
                 {manPerSqm(a.perSqm.median)}
               </p>
             </div>
             <div className="rounded-2xl border border-stone-200 bg-white p-4">
-              <p className="text-[11px] font-bold text-stone-500">
+              <p className="text-xs font-bold text-stone-500">
                 高いほう（p75）
               </p>
               <p className="mt-1 font-mono text-xl font-bold text-stone-900">
                 {man(a.price.high)}
               </p>
-              <p className="mt-1 text-[11px] font-mono text-stone-500">
+              <p className="mt-1 text-xs font-mono text-stone-500">
                 {manPerSqm(a.perSqm.p75)}
               </p>
             </div>
