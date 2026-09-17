@@ -295,7 +295,7 @@ export function SolarTimeTableComponent({
           {isAuthorized && (
             <button
               onClick={openPreview}
-              className="inline-flex min-h-[24px] items-center justify-center px-3 py-1 bg-white border border-stone-300 text-stone-600 text-[9px] uppercase tracking-widest hover:bg-stone-100 transition-colors"
+              className="inline-flex min-h-[24px] items-center justify-center px-3 py-1 bg-white border border-stone-300 text-stone-600 text-[10px] uppercase tracking-widest hover:bg-stone-100 transition-colors"
             >
               記録を確認して書き出す
             </button>
@@ -304,7 +304,7 @@ export function SolarTimeTableComponent({
       </div>
 
       {/* Global & Daily Phase Status */}
-      <div className="grid grid-cols-3 gap-2 mt-1 mb-2 font-mono text-[9px] sm:text-[10px]">
+      <div className="grid grid-cols-3 gap-2 mt-1 mb-2 font-mono text-[10px]">
         <div
           className={`p-2 sm:p-3 border rounded-xl flex flex-col gap-1 transition-colors ${isYearVoid ? "border-red-200 bg-red-50 shadow-inner" : "border-stone-200 bg-white/80"}`}
         >
@@ -439,7 +439,7 @@ export function SolarTimeTableComponent({
         </div>
       </div>
 
-      <details className="mb-4 bg-white/80 border border-stone-200 text-[9px] font-mono text-stone-600 group">
+      <details className="mb-4 bg-white/80 border border-stone-200 text-[10px] font-mono text-stone-600 group">
         <summary className="p-2 cursor-pointer hover:bg-white/80 list-none flex items-center justify-between uppercase tracking-widest">
           <div className="flex items-center gap-2">
             <span className="text-blue-700 blur-[0.5px]">◆</span>{" "}
@@ -449,7 +449,7 @@ export function SolarTimeTableComponent({
         </summary>
         <div className="p-3 border-t border-stone-200 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3 bg-white/70 text-[10px] leading-relaxed font-sans">
           <div className="p-2 border border-purple-200 rounded-xl">
-            <strong className="text-purple-700 block mb-1 font-mono text-[9px]">
+            <strong className="text-purple-700 block mb-1 font-mono text-[10px]">
               ◆ 1. 陰陽五行・四柱推命
             </strong>
             <p className="text-stone-600 text-xs text-justify">
@@ -457,7 +457,7 @@ export function SolarTimeTableComponent({
             </p>
           </div>
           <div className="p-2 border border-blue-200 rounded-xl">
-            <strong className="text-blue-700 block mb-1 font-mono text-[9px]">
+            <strong className="text-blue-700 block mb-1 font-mono text-[10px]">
               ◆ 2. 刻の切り方
             </strong>
             <p className="text-stone-600 text-xs text-justify">
@@ -466,7 +466,7 @@ export function SolarTimeTableComponent({
             </p>
           </div>
           <div className="p-2 border border-red-200 rounded-xl">
-            <strong className="text-red-600 block mb-1 font-mono text-[9px]">
+            <strong className="text-red-600 block mb-1 font-mono text-[10px]">
               ◆ 3. 天中殺の刻
             </strong>
             <p className="text-stone-600 text-xs text-justify">
@@ -474,7 +474,7 @@ export function SolarTimeTableComponent({
             </p>
           </div>
           <div className="p-2 border border-emerald-200 rounded-xl">
-            <strong className="text-emerald-700 block mb-1 font-mono text-[9px]">
+            <strong className="text-emerald-700 block mb-1 font-mono text-[10px]">
               ◆ 4. 動いてよい刻（相生・比和）
             </strong>
             <p className="text-stone-600 text-xs text-justify">
