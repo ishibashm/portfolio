@@ -620,7 +620,7 @@ const DEVICE_LABELS: Record<string, string> = {
 function FlagBadge({ on, label }: { on: boolean; label: string }) {
   return (
     <span
-      className={`inline-block px-1.5 py-0.5 rounded text-[9px] font-bold border ${
+      className={`inline-block px-1.5 py-0.5 rounded text-[10px] font-bold border ${
         on
           ? "bg-emerald-50 text-emerald-700 border-emerald-200"
           : "bg-stone-50 text-stone-300 border-stone-200"
@@ -1296,7 +1296,7 @@ export default function AdminMetricsPage() {
                         }}
                         title={`${h}時: ${pv} PV`}
                       >
-                        <div className="text-[9px] font-mono text-stone-500">
+                        <div className="text-[10px] font-mono text-stone-500">
                           {h}時
                         </div>
                         <div className="text-[11px] font-mono font-bold text-stone-700">
@@ -1417,7 +1417,7 @@ export default function AdminMetricsPage() {
                     直近7日の内訳
                   </h3>
                   <table className="w-full text-[11px] font-mono">
-                    <thead className="text-[9px] text-stone-600">
+                    <thead className="text-[10px] text-stone-600">
                       <tr className="border-b border-stone-200">
                         <th className="py-1 pr-2 text-left font-bold">日付</th>
                         <th className="py-1 px-1.5 text-right font-bold">
@@ -1466,7 +1466,7 @@ export default function AdminMetricsPage() {
                       ))}
                     </tbody>
                   </table>
-                  <p className="mt-2 text-[9px] text-stone-600 leading-relaxed">
+                  <p className="mt-2 text-xs text-stone-600 leading-relaxed">
                     列は直近7日で読まれた順に3本まで。残りは「他」です。
                   </p>
                 </div>

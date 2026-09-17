@@ -346,7 +346,7 @@ export default function LoginPage() {
               ⚡ 開発用バイパスでログイン
             </button>
             {!process.env.NEXT_PUBLIC_ADMIN_EMAIL && (
-              <p className="mt-2 text-[9px] text-stone-600 text-center leading-relaxed">
+              <p className="mt-2 text-xs text-stone-600 text-center leading-relaxed">
                 .env.local に NEXT_PUBLIC_ADMIN_EMAIL を設定すると使えます。
               </p>
             )}
