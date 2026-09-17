@@ -132,7 +132,7 @@ export function LandPriceByDirection({
         方位別の地価（更地・中央値）
       </h3>
 
-      <p className="text-[10px] text-stone-600 dark:text-stone-500 leading-relaxed">
+      <p className="text-xs text-stone-600 dark:text-stone-500 leading-relaxed">
         国が毎年出す標準地の価格です。上の成約相場が建物込みの取引額なのに対し、こちらは
         <strong className="font-bold">土地そのものの評価額</strong>
         にあたります。性質が違うので、2 つを割った数字には意味がありません。
@@ -174,7 +174,7 @@ export function LandPriceByDirection({
                   </span>
                 </div>
                 {d.topMunicipalities.length > 0 && (
-                  <p className="mt-0.5 text-[10px] text-stone-500 truncate">
+                  <p className="mt-0.5 text-xs text-stone-500 truncate">
                     {d.topMunicipalities.join("・")}
                   </p>
                 )}

@@ -182,7 +182,7 @@ export function HousingStatsByDirection({
         方位別の家賃相場と空き家率（市区町村の統計）
       </h3>
 
-      <p className="text-[10px] text-stone-600 dark:text-stone-500 leading-relaxed">
+      <p className="text-xs text-stone-600 dark:text-stone-500 leading-relaxed">
         {
           "国の住宅・土地統計調査から、方位ごとの借家の家賃（円/㎡・月）と空き家率を出しています。個別の物件ではなく街ごとの水準で、各方位から市区町村の一覧へ降りられます。"
         }
@@ -224,7 +224,7 @@ export function HousingStatsByDirection({
                   </span>
                 </div>
                 {d.count > 0 && (
-                  <p className="mt-0.5 text-[10px] text-stone-600">
+                  <p className="mt-0.5 text-xs text-stone-600">
                     {[
                       monthly(d.medianMonthlyRentEstimate),
                       vacancy(d.vacancyRate),
@@ -234,7 +234,7 @@ export function HousingStatsByDirection({
                   </p>
                 )}
                 {d.topMunicipalities.length > 0 && (
-                  <p className="mt-0.5 text-[10px] text-stone-500 truncate">
+                  <p className="mt-0.5 text-xs text-stone-500 truncate">
                     {d.topMunicipalities.join("・")}
                   </p>
                 )}
