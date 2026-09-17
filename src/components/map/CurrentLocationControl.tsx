@@ -127,7 +127,7 @@ export function CurrentLocationControl({
                   : "現在地の表示を消す"
             }
             aria-pressed={on}
-            className={`rounded-lg border px-3 py-1.5 font-mono text-[9px] font-bold shadow-lg transition-colors active:scale-95 ${
+            className={`rounded-lg border px-3 py-1.5 font-mono text-[10px] font-bold shadow-lg transition-colors active:scale-95 ${
               on &&
               (status === "unavailable" ||
                 status === "blocked" ||
@@ -145,7 +145,7 @@ export function CurrentLocationControl({
           {/* 取れないときの 1 行。黙って消えると、押したのに何も起きて
               いないように見える。 */}
           {on && message && (
-            <div className="max-w-56 rounded-lg border border-amber-200 bg-amber-50/95 px-3 py-1.5 text-[9px] leading-relaxed text-amber-800 shadow-lg">
+            <div className="max-w-56 rounded-lg border border-amber-200 bg-amber-50/95 px-3 py-1.5 text-xs leading-relaxed text-amber-800 shadow-lg">
               {message}
             </div>
           )}
