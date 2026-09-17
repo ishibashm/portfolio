@@ -61,7 +61,7 @@ export function CityPortalLinks({
       </p>
       {/* 文の途中で改行すると、日本語の文中に半角スペースが入る
           （jsxJapaneseLinebreak が拾う）。1 つの式にまとめて渡す。 */}
-      <p className="mt-1 text-[11px] leading-relaxed text-slate-600">
+      <p className="mt-1 text-xs leading-relaxed text-slate-600">
         {
           "このサイトは方位・暦・公的な統計を扱っていて、募集中の部屋そのものは持っていません。下の各社でご覧ください。"
         }
@@ -95,9 +95,7 @@ export function CityPortalLinks({
           </li>
         )}
       </ul>
-      <p className="mt-2 text-[11px] text-slate-500">
-        {PORTAL_LINK_DISCLAIMER}
-      </p>
+      <p className="mt-2 text-xs text-slate-500">{PORTAL_LINK_DISCLAIMER}</p>
     </div>
   );
 }
