@@ -67,7 +67,7 @@ function Section({
   return (
     <section className="rounded-3xl border border-gray-200 bg-white p-5 shadow-sm">
       <h2 className="text-sm font-bold text-stone-800">{title}</h2>
-      <p className="mt-0.5 mb-4 text-[11px] leading-relaxed text-stone-600">
+      <p className="mt-0.5 mb-4 text-xs leading-relaxed text-stone-600">
         {subtitle}
       </p>
       {children}
