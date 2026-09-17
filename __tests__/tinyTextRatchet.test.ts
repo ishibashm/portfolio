@@ -27,8 +27,8 @@ import { describe, expect, it } from "vitest";
   12px 以上なので対象外。
 */
 
-/** 実測（2026-09-17。ホームの入口と九星盤（HomePortal・KigakuBoard） が片付いた時点。8px は 0）。**直したら下げること。** */
-const BASELINE = { 8: 0, 9: 18 };
+/** 実測（2026-09-17。履歴と時期の頁（history・timing） が片付いた時点。8px は 0）。**直したら下げること。** */
+const BASELINE = { 8: 0, 9: 11 };
 
 function tsxFiles(dir: string): string[] {
   const out: string[] = [];
@@ -145,6 +145,8 @@ describe("小さすぎる字を増やさない", () => {
       "src/components/nba/PastMoveMap.tsx",
       "src/components/home/HomePortal.tsx",
       "src/components/KigakuBoard.tsx",
+      "src/app/relocation/history/page.tsx",
+      "src/app/relocation/timing/page.tsx",
     ]) {
       expect(byFile.get(done) ?? 0, done).toBe(0);
     }

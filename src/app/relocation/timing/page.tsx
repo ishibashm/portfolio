@@ -1054,7 +1054,7 @@ export default function TimingAnalyticsPage() {
                         <td className="py-1.5 pr-2">
                           {p.bestTier ? (
                             <span
-                              className="rounded px-1.5 py-0.5 text-[9px] font-bold text-white"
+                              className="rounded px-1.5 py-0.5 text-[10px] font-bold text-white"
                               style={{ background: TIER_FILL[p.bestTier] }}
                             >
                               {TIER_LABELS[p.bestTier]}
@@ -1358,7 +1358,7 @@ export default function TimingAnalyticsPage() {
                     />
                   )}
                 </div>
-                <div className="flex flex-wrap items-center gap-3 pt-2 text-[9px] text-stone-500">
+                <div className="flex flex-wrap items-center gap-3 pt-2 text-[10px] text-stone-500">
                   {TIERS.map((t) => (
                     <span key={t} className="flex items-center gap-1">
                       <span
@@ -1404,7 +1404,7 @@ export default function TimingAnalyticsPage() {
                             {DIRECTION_LABELS[dir]}
                           </span>
                           <span
-                            className="mt-1 rounded px-1.5 py-0.5 text-[9px] font-bold text-white"
+                            className="mt-1 rounded px-1.5 py-0.5 text-[10px] font-bold text-white"
                             style={{
                               background: selected.blocked
                                 ? BLOCKED_FILL
