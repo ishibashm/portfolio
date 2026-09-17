@@ -1224,7 +1224,7 @@ export function CosmicCalendar({
                   <Activity className="w-3.5 h-3.5 text-stone-500" />
                   Next Best Action Recommendation
                 </div>
-                <p className="text-[11px] text-stone-600 leading-relaxed font-mono font-medium">
+                <p className="text-xs text-stone-600 leading-relaxed font-mono font-medium">
                   {getActionAdvice(selectedDay)}
                 </p>
               </div>
