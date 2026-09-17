@@ -1,5 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { ROKUYO, getRokuyo, plainRokuyo } from "@/utils/lunar";
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
+import { ROKUYO, getRokuyo } from "@/utils/lunar";
+import { plainRokuyo } from "@/lib/rokuyoLabel";
+import { plainRokuyo as reexported } from "@/utils/lunar";
 
 /**
  * 六曜の札から、ローマ字の併記を落とす所を 1 つにする。
@@ -48,5 +52,24 @@ describe("plainRokuyo", () => {
     const raw = getRokuyo(new Date(Date.UTC(2026, 8, 20, 3, 0)));
     expect(raw).toContain("(");
     expect(plainRokuyo(raw)).not.toContain("(");
+  });
+});
+
+describe("plainRokuyo の置き場", () => {
+  it("lib/rokuyoLabel は何も import しない（暦エンジンを画面に乗せない）", () => {
+    /*
+      utils/lunar は lunar-javascript を値で import している。物件検索の
+      AstroGridCalendar が六曜の字面を整えるためだけに utils/lunar から
+      引いたら、arbitrageBundleLeaf の見張りが止めた。葉は葉のまま。
+    */
+    const src = readFileSync(
+      join(process.cwd(), "src/lib/rokuyoLabel.ts"),
+      "utf8",
+    );
+    expect(src).not.toMatch(/^\s*import /m);
+  });
+
+  it("utils/lunar からも同じ関数が引ける（既存の import 先を壊さない）", () => {
+    expect(reexported).toBe(plainRokuyo);
   });
 });
