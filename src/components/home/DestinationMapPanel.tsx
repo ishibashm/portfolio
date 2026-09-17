@@ -294,7 +294,7 @@ export default function DestinationMapPanel({
                 <button
                   onClick={handleAutoSearch}
                   disabled={isAutoSearching}
-                  className="inline-flex min-h-[24px] items-center justify-center text-[9px] text-emerald-700 border border-emerald-200 bg-emerald-50 px-2 py-1 rounded-xl hover:bg-emerald-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed uppercase tracking-widest shadow-[0_0_10px_rgba(16,185,129,0.1)]"
+                  className="inline-flex min-h-[24px] items-center justify-center text-[10px] text-emerald-700 border border-emerald-200 bg-emerald-50 px-2 py-1 rounded-xl hover:bg-emerald-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed uppercase tracking-widest shadow-[0_0_10px_rgba(16,185,129,0.1)]"
                 >
                   {isAutoSearching ? "検索中..." : "自動検索"}
                 </button>
@@ -397,11 +397,11 @@ export default function DestinationMapPanel({
               <div className="flex items-center justify-between">
                 <label className="text-[10px] text-stone-600 uppercase tracking-widest flex items-center gap-1">
                   目的地座標{" "}
-                  <span className="text-[9px] text-stone-600">緯度/経度</span>
+                  <span className="text-[10px] text-stone-600">緯度/経度</span>
                 </label>
                 <button
                   onClick={() => setShowMapPicker(!showMapPicker)}
-                  className={`inline-flex min-h-[24px] items-center justify-center text-[9px] px-1.5 py-0.5 rounded border transition-colors ${showMapPicker ? "bg-emerald-500/20 text-emerald-700 border-emerald-200" : "bg-stone-100 text-stone-600 border-stone-300 hover:bg-stone-200"}`}
+                  className={`inline-flex min-h-[24px] items-center justify-center text-[10px] px-1.5 py-0.5 rounded border transition-colors ${showMapPicker ? "bg-emerald-500/20 text-emerald-700 border-emerald-200" : "bg-stone-100 text-stone-600 border-stone-300 hover:bg-stone-200"}`}
                 >
                   [ 地図検索 ]
                 </button>
@@ -526,7 +526,7 @@ export default function DestinationMapPanel({
                         "座標をコピーしました: " + `${targetLat},${targetLon}`,
                       );
                     }}
-                    className="flex-1 bg-stone-100 text-stone-600 hover:bg-stone-200 hover:text-stone-900 border border-stone-300 text-[9px] uppercase tracking-widest px-2 py-1.5 rounded-xl transition-colors"
+                    className="flex-1 bg-stone-100 text-stone-600 hover:bg-stone-200 hover:text-stone-900 border border-stone-300 text-[10px] uppercase tracking-widest px-2 py-1.5 rounded-xl transition-colors"
                   >
                     📋 座標をコピー
                   </button>
@@ -534,7 +534,7 @@ export default function DestinationMapPanel({
                     href={`https://www.google.com/maps/search/?api=1&query=${targetLat},${targetLon}`}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="flex-1 bg-blue-50 text-blue-700 hover:bg-blue-800/50 border border-blue-800/50 text-[9px] uppercase tracking-widest px-2 py-1.5 rounded-xl transition-colors text-center block"
+                    className="flex-1 bg-blue-50 text-blue-700 hover:bg-blue-800/50 border border-blue-800/50 text-[10px] uppercase tracking-widest px-2 py-1.5 rounded-xl transition-colors text-center block"
                   >
                     🗺️ Googleマップで開く
                   </a>
@@ -586,7 +586,7 @@ export default function DestinationMapPanel({
                       if (!isTargetTendo) return null;
                       return (
                         <span
-                          className="text-[9px] text-amber-700 border border-amber-200 px-1.5 py-0.5 rounded bg-amber-500/20 font-bold font-mono shadow-[0_0_8px_rgba(245,158,11,0.3)] animate-pulse cursor-help"
+                          className="text-[10px] text-amber-700 border border-amber-200 px-1.5 py-0.5 rounded bg-amber-500/20 font-bold font-mono shadow-[0_0_8px_rgba(245,158,11,0.3)] animate-pulse cursor-help"
                           title="【天道回座】目標方位に暦上の吉神・天道が巡っています。本命殺・本命的殺・月命殺・月命的殺の凶は相殺されます。五黄殺・暗剣殺・破・天中殺は対象外です。"
                         >
                           ✨天道回座中
@@ -596,7 +596,7 @@ export default function DestinationMapPanel({
                     {targetDirInfo.trueDirection !==
                       targetDirInfo.magneticDirection && (
                       <span
-                        className="text-[9px] text-amber-700 border border-amber-200 px-1 py-0.5 rounded bg-amber-50 animate-pulse cursor-help font-bold font-mono"
+                        className="text-[10px] text-amber-700 border border-amber-200 px-1 py-0.5 rounded bg-amber-50 animate-pulse cursor-help font-bold font-mono"
                         title="【境界線偏角アラート】真北と磁北で方位セクターが異なります。判定は真北で行っています。方位磁針で測ると隣のセクターに見えるので、現地で確かめるときは偏角ぶんを補正してください。"
                       >
                         ⚠️偏角ズレ
@@ -618,19 +618,19 @@ export default function DestinationMapPanel({
               <span className="text-stone-600 animate-pulse">◆</span>
               <h3 className="text-xs text-stone-600 font-bold uppercase tracking-widest">
                 ゾーン分類{" "}
-                <span className="text-[9px] text-stone-600 font-normal ml-1">
+                <span className="text-[10px] text-stone-600 font-normal ml-1">
                   / 空間分類
                 </span>
               </h3>
             </div>
             <div className="flex flex-col gap-1.5 mb-2 bg-white/70 p-2.5 rounded-xl border border-stone-200 shadow-inner">
-              <div className="text-[9px] text-stone-600 font-mono flex justify-between items-center border-b border-stone-200 pb-1">
+              <div className="text-[10px] text-stone-600 font-mono flex justify-between items-center border-b border-stone-200 pb-1">
                 <span>基準地</span>
                 <span className="text-stone-600 font-bold">
                   {lat?.toFixed(4)}N, {lon?.toFixed(4)}E
                 </span>
               </div>
-              <div className="text-[9px] text-stone-600 font-mono flex justify-between items-center border-b border-stone-200 pb-1">
+              <div className="text-[10px] text-stone-600 font-mono flex justify-between items-center border-b border-stone-200 pb-1">
                 <span>目標日</span>
                 <span className="text-emerald-700 font-bold">
                   {jstDateInputValue(evalDate)}{" "}
@@ -641,7 +641,7 @@ export default function DestinationMapPanel({
                   </span>
                 </span>
               </div>
-              <div className="text-[9px] text-stone-600 font-mono flex justify-between items-center">
+              <div className="text-[10px] text-stone-600 font-mono flex justify-between items-center">
                 <span>本命星</span>
                 <span className="text-purple-700 font-bold">
                   {honmeiStar
@@ -741,7 +741,7 @@ export default function DestinationMapPanel({
                                   {map[dir]}
                                 </span>
                               </div>
-                              <span className="text-[9px] font-mono mt-0.5 whitespace-nowrap">
+                              <span className="text-[10px] font-mono mt-0.5 whitespace-nowrap">
                                 {statusLabel}
                               </span>
                             </div>
@@ -1001,7 +1001,7 @@ export default function DestinationMapPanel({
                       return (
                         <th
                           key={i}
-                          className={`p-1.5 border border-stone-200 text-[9px] font-mono whitespace-nowrap cursor-pointer hover:bg-rose-50 transition-colors ${
+                          className={`p-1.5 border border-stone-200 text-[10px] font-mono whitespace-nowrap cursor-pointer hover:bg-rose-50 transition-colors ${
                             isActiveCol
                               ? "text-rose-700 bg-rose-50 font-bold border-rose-300"
                               : d.isVoid
@@ -1067,7 +1067,7 @@ export default function DestinationMapPanel({
                           >
                             {targetDirection === dir && (
                               <span
-                                className="text-[9px]"
+                                className="text-[10px]"
                                 title="地図で選んだ目的地の方位"
                               >
                                 📍
@@ -1192,7 +1192,7 @@ export default function DestinationMapPanel({
               </table>
 
               {heatmapMode === "12months" && (
-                <p className="mt-3 text-center text-[9px] text-stone-600 leading-relaxed">
+                <p className="mt-3 text-center text-xs text-stone-600 leading-relaxed">
                   12ヶ月表示は<b>節入り基準の月</b>
                   （暦の1日ではなく立春・啓蟄などで替わる月）で刻み、「その月の傾向」を見るため
                   <b>日盤を含めずに年盤＋月盤で判定</b>
@@ -1201,7 +1201,7 @@ export default function DestinationMapPanel({
               )}
 
               {/* Legend Bar */}
-              <div className="flex gap-3 mt-3 text-[9px] font-mono text-stone-600 justify-center flex-wrap">
+              <div className="flex gap-3 mt-3 text-[10px] font-mono text-stone-600 justify-center flex-wrap">
                 <span className="flex items-center gap-1 bg-white/80 px-1.5 py-0.5 rounded border border-stone-200">
                   <span className="text-amber-700 font-bold">✨</span> 天道
                   (Tendou) 回座
@@ -1319,7 +1319,7 @@ export default function DestinationMapPanel({
                       この方位へ目的地を移す
                     </button>
                   )}
-                  <span className="text-[9px] text-stone-600">
+                  <span className="text-[10px] text-stone-600">
                     {targetLat !== null && targetLon !== null
                       ? "距離は保ったまま向きだけ変わります"
                       : "目的地が未設定のため、出発地から 50km の地点に置きます"}
@@ -1437,7 +1437,7 @@ export default function DestinationMapPanel({
               <>
                 <button
                   onClick={() => setDirectionFilterMode("composite")}
-                  className={`inline-flex min-h-[24px] items-center justify-center px-2 py-0.5 text-[9px] font-mono rounded-xs transition-all border cursor-pointer ${
+                  className={`inline-flex min-h-[24px] items-center justify-center px-2 py-0.5 text-[10px] font-mono rounded-xs transition-all border cursor-pointer ${
                     directionFilterMode === "composite"
                       ? "bg-emerald-50 text-emerald-700 border-emerald-200 shadow-[0_0_5px_rgba(16,185,129,0.2)]"
                       : "bg-white/80 text-stone-600 border-transparent hover:border-stone-300"
@@ -1449,7 +1449,7 @@ export default function DestinationMapPanel({
                   onClick={() =>
                     setDirectionFilterMode("personal_kigaku_environmental")
                   }
-                  className={`inline-flex min-h-[24px] items-center justify-center px-2 py-0.5 text-[9px] font-mono rounded-xs transition-all border cursor-pointer ${
+                  className={`inline-flex min-h-[24px] items-center justify-center px-2 py-0.5 text-[10px] font-mono rounded-xs transition-all border cursor-pointer ${
                     directionFilterMode === "personal_kigaku_environmental"
                       ? "bg-purple-50 text-purple-700 border-purple-200 shadow-[0_0_5px_rgba(168,85,247,0.2)]"
                       : "bg-white/80 text-stone-600 border-transparent hover:border-stone-300"
@@ -1459,7 +1459,7 @@ export default function DestinationMapPanel({
                 </button>
                 <button
                   onClick={() => setDirectionFilterMode("personal_kigaku_bazi")}
-                  className={`inline-flex min-h-[24px] items-center justify-center px-2 py-0.5 text-[9px] font-mono rounded-xs transition-all border cursor-pointer ${
+                  className={`inline-flex min-h-[24px] items-center justify-center px-2 py-0.5 text-[10px] font-mono rounded-xs transition-all border cursor-pointer ${
                     directionFilterMode === "personal_kigaku_bazi"
                       ? "bg-indigo-50 text-indigo-600 border-indigo-200 shadow-[0_0_5px_rgba(99,102,241,0.2)]"
                       : "bg-white/80 text-stone-600 border-transparent hover:border-stone-300"
@@ -1469,7 +1469,7 @@ export default function DestinationMapPanel({
                 </button>
                 <button
                   onClick={() => setDirectionFilterMode("environmental_bazi")}
-                  className={`inline-flex min-h-[24px] items-center justify-center px-2 py-0.5 text-[9px] font-mono rounded-xs transition-all border cursor-pointer ${
+                  className={`inline-flex min-h-[24px] items-center justify-center px-2 py-0.5 text-[10px] font-mono rounded-xs transition-all border cursor-pointer ${
                     directionFilterMode === "environmental_bazi"
                       ? "bg-amber-50 text-amber-700 border-amber-200 shadow-[0_0_5px_rgba(245,158,11,0.2)]"
                       : "bg-white/80 text-stone-600 border-transparent hover:border-stone-300"
@@ -1479,7 +1479,7 @@ export default function DestinationMapPanel({
                 </button>
                 <button
                   onClick={() => setDirectionFilterMode("personal_kigaku")}
-                  className={`inline-flex min-h-[24px] items-center justify-center px-2 py-0.5 text-[9px] font-mono rounded-xs transition-all border cursor-pointer ${
+                  className={`inline-flex min-h-[24px] items-center justify-center px-2 py-0.5 text-[10px] font-mono rounded-xs transition-all border cursor-pointer ${
                     directionFilterMode === "personal_kigaku"
                       ? "bg-purple-50 text-purple-700 border-purple-200 shadow-[0_0_5px_rgba(168,85,247,0.2)]"
                       : "bg-white/80 text-stone-600 border-transparent hover:border-stone-300"
@@ -1489,7 +1489,7 @@ export default function DestinationMapPanel({
                 </button>
                 <button
                   onClick={() => setDirectionFilterMode("personal_bazi")}
-                  className={`inline-flex min-h-[24px] items-center justify-center px-2 py-0.5 text-[9px] font-mono rounded-xs transition-all border cursor-pointer ${
+                  className={`inline-flex min-h-[24px] items-center justify-center px-2 py-0.5 text-[10px] font-mono rounded-xs transition-all border cursor-pointer ${
                     directionFilterMode === "personal_bazi"
                       ? "bg-amber-100 text-amber-800 border-amber-300 shadow-[0_0_5px_rgba(180,83,9,0.2)]"
                       : "bg-white/80 text-stone-600 border-transparent hover:border-stone-300"
@@ -1499,7 +1499,7 @@ export default function DestinationMapPanel({
                 </button>
                 <button
                   onClick={() => setDirectionFilterMode("environmental")}
-                  className={`inline-flex min-h-[24px] items-center justify-center px-2 py-0.5 text-[9px] font-mono rounded-xs transition-all border cursor-pointer ${
+                  className={`inline-flex min-h-[24px] items-center justify-center px-2 py-0.5 text-[10px] font-mono rounded-xs transition-all border cursor-pointer ${
                     directionFilterMode === "environmental"
                       ? "bg-rose-50 text-rose-700 border-rose-200 shadow-[0_0_5px_rgba(244,63,94,0.2)]"
                       : "bg-white/80 text-stone-600 border-transparent hover:border-stone-300"
