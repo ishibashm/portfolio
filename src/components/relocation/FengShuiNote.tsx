@@ -176,7 +176,7 @@ export function FengShuiNote({
         </button>
       </div>
 
-      <p className="mt-1.5 text-[11px] leading-relaxed text-stone-700">
+      <p className="mt-1.5 text-xs leading-relaxed text-stone-700">
         {reading.meaning}
       </p>
 

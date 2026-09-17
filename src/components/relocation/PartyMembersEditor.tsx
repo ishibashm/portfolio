@@ -126,7 +126,7 @@ export function PartyMembersEditor({
           </label>
 
           {member.stationary ? (
-            <p className="text-[11px] leading-relaxed text-stone-500">
+            <p className="text-xs leading-relaxed text-stone-500">
               移動しない人は方位が発生しないので、出発地は要りません。
             </p>
           ) : (
@@ -203,7 +203,7 @@ export function PartyMembersEditor({
         {children}
       </div>
 
-      <p className="text-[11px] leading-relaxed text-stone-600">
+      <p className="text-xs leading-relaxed text-stone-600">
         {PARTY_POLICIES.find((p) => p.id === policy)?.description}
       </p>
     </div>
