@@ -92,12 +92,13 @@ describe("小さすぎる字を増やさない", () => {
     });
   }
 
-  it("説明の段落（<p>）を 10px 以下で書いていない", () => {
+  it("説明の段落（<p>）を 11px 以下で書いていない", () => {
     /*
       規則の 1 つ目「説明の段落は 12px 以上」を、<p> の字面で見張る。
       9px を 0 にしたあと、<p className="… text-[10px] …"> が 80 か所
       （27 ファイル）残っていた（2026-09-17 実測）。どれも説明・注記・
       出典で、札の添え字ではない。全部 text-xs に上げたので 0 を要求する。
+      11px も同じ（96 か所 / 40 ファイル。#1390〜）。規則は 12px 以上。
       className が 1 行に収まる <p> だけを見る（テンプレート literal の
       className は見ない。増やさないこと）。
     */
@@ -105,7 +106,7 @@ describe("小さすぎる字を増やさない", () => {
     for (const f of tsxFiles("src")) {
       const src = readFileSync(f, "utf8");
       count += (
-        src.match(/<p className="[^"]*text-\[(?:[0-9]|10)px\][^"]*"/g) ?? []
+        src.match(/<p className="[^"]*text-\[(?:[0-9]|1[01])px\][^"]*"/g) ?? []
       ).length;
     }
     expect(count).toBe(0);
