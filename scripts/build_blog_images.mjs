@@ -1010,6 +1010,64 @@ const FIGURES = [
           .join("")}
       </div>`,
   },
+  {
+    /* 記事の実測表から。2027 年・六白金星・名古屋、立春から翌立春の
+       前日まで 365 日 × 8 方位。年盤で塞がった方位は 0 日になる。 */
+    slug: "direction-or-timing-which-matters",
+    kicker:
+      "\u65b9\u4f4d\u3068\u65e5\u53d6\u308a\u3001\u3069\u3061\u3089\u304c\u91cd\u3044\u306e\u304b",
+    title:
+      "\u5e74\u76e4\u3067\u585e\u304c\u3063\u305f\u65b9\u4f4d\u306f<br>\u65e5\u53d6\u308a\u3067\u306f\u623b\u3089\u306a\u3044",
+    sub: "2027 \u5e74\u30fb\u516d\u767d\u91d1\u661f\u30fb\u540d\u53e4\u5c4b\u304b\u3089\u3002\u7acb\u6625\u304b\u3089\u7fcc\u7acb\u6625\u306e\u524d\u65e5\u307e\u3067 365 \u65e5 \u00d7 8 \u65b9\u4f4d\u3092\u6570\u3048\u307e\u3057\u305f\u3002",
+    body: `<div style="display:flex;gap:36px;align-items:center">
+      ${(() => {
+        /* 記事の表そのもの。[方位, 年盤, 三盤が吉になる日]。
+           盤の並びは北西・北・北東 / 西・中・東 / 南西・南・南東。 */
+        const days = {
+          北: ["\u4e94\u9ec4\u6bba", 0],
+          北東: ["\u6b73\u7834", 0],
+          東: ["\u5e73", 31],
+          南東: ["\u5409\u65b9\u4f4d", 76],
+          南: ["\u6697\u5263\u6bba", 0],
+          南西: ["\u672c\u547d\u6bba", 0],
+          西: ["\u5409\u65b9\u4f4d", 93],
+          北西: ["\u5409\u65b9\u4f4d", 56],
+        };
+        const cells = [
+          "\u5317\u897f",
+          "\u5317",
+          "\u5317\u6771",
+          "\u897f",
+          "\u4e2d",
+          "\u6771",
+          "\u5357\u897f",
+          "\u5357",
+          "\u5357\u6771",
+        ]
+          .map((d) => {
+            if (d === "\u4e2d")
+              return `<div class="c mid" style="font-size:15px">\u516d\u767d</div>`;
+            const [, n] = days[d];
+            /* 0 日は「日取りでは戻らない」側。塗って区別する。 */
+            const cls = n === 0 ? "c hit" : "c";
+            return `<div class="${cls}" style="flex-direction:column;gap:1px;font-size:13px${
+              n === 0 ? "" : ";color:#0f172a"
+            }">
+              <div>${d}</div>
+              <div style="font-size:15px;font-weight:800">${n}</div>
+            </div>`;
+          })
+          .join("");
+        return `<figure><div class="g" style="grid-template-columns:repeat(3,76px);grid-template-rows:repeat(3,76px)">${cells}</div><figcaption>\u4e09\u76e4\u304c\u5409\u306b\u306a\u308b\u65e5\u6570</figcaption></figure>`;
+      })()}
+      <div class="note">
+        \u5e74\u76e4\u3067\u585e\u304c\u3063\u305f <b>4 \u65b9\u4f4d</b>\uff08\u4e94\u9ec4\u6bba\u30fb\u6697\u5263\u6bba\u30fb\u6b73\u7834\u30fb\u672c\u547d\u6bba\uff09\u306f\u3001
+        <b>365 \u65e5\u3059\u3079\u3066\u304c\u6700\u4f4e\u8a55\u4fa1</b>\u3067\u3057\u305f\u3002\u6708\u76e4\u3068\u65e5\u76e4\u3092\u3069\u3046\u9078\u3093\u3067\u3082\u52d5\u304d\u307e\u305b\u3093\u3002
+        \u7a7a\u3044\u3066\u3044\u308b 4 \u65b9\u4f4d\u3067\u3082 <b>31\u301c93 \u65e5</b>\u306b\u7d5e\u3089\u308c\u307e\u3059\u3002
+        <b>\u65b9\u4f4d\u304c\u5148\u3001\u65e5\u53d6\u308a\u304c\u5f8c</b>\u3067\u3059\u3002
+      </div>
+    </div>`,
+  },
 ];
 
 function html(fig) {
@@ -1021,6 +1079,27 @@ function html(fig) {
 <div class="brand">cloud-palette.com ／ 九星気学の方位と日取り</div>`;
 }
 
+/**
+ * 作る対象。**既定は全部だが、記事を 1 本足したときに全部を作り直すと、
+ * 中身の変わっていない 31 枚まで差分に乗る**（PNG は同じ入力でも
+ * 同じバイト列になるとは限らない）。ONLY に slug を並べるとそれだけ作る。
+ *
+ *   ONLY=<slug>[,<slug>] node scripts/build_blog_images.mjs
+ */
+function selected() {
+  const only = (process.env.ONLY || "")
+    .split(",")
+    .map((s) => s.trim())
+    .filter(Boolean);
+  if (only.length === 0) return FIGURES;
+  const picked = FIGURES.filter((f) => only.includes(f.slug));
+  const missing = only.filter((s) => !FIGURES.some((f) => f.slug === s));
+  if (missing.length > 0) {
+    throw new Error(`ONLY に図の無い slug がある: ${missing.join(", ")}`);
+  }
+  return picked;
+}
+
 async function main() {
   checkFonts();
   await mkdir(OUT_DIR, { recursive: true });
@@ -1029,7 +1108,7 @@ async function main() {
       ? { executablePath: process.env.CHROMIUM_PATH }
       : {},
   );
-  for (const fig of FIGURES) {
+  for (const fig of selected()) {
     const page = await browser.newPage({
       viewport: { width: WIDTH, height: HEIGHT },
       deviceScaleFactor: SCALE,
