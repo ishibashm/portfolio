@@ -90,6 +90,28 @@ export function filterLayersOf(
   return LAYERS[mode] ?? LAYERS.composite;
 }
 
+/**
+ * 見方の呼び名。**表はここ 1 つ。**
+ *
+ * 目的地タブの観点ボタンと、畳んだときの 1 行（「観点: 本命星＋環境方位」）
+ * で同じ言葉を使う。MetaphysicalConfigBar は別の表を持っていて英語の
+ * 併記（"総合 (ALL)" など）が残っている。あちらを寄せるのは別の PR。
+ */
+export const DIRECTION_FILTER_MODE_LABELS: Record<DirectionFilterMode, string> =
+  {
+    composite: "総合判定",
+    personal_kigaku: "本命星のみ",
+    environmental: "環境方位のみ",
+    personal_bazi: "天中殺のみ",
+    personal_kigaku_environmental: "本命星＋環境方位",
+    personal_kigaku_bazi: "本命星＋天中殺",
+    environmental_bazi: "環境方位＋天中殺",
+  };
+
+export function directionFilterModeLabel(mode: DirectionFilterMode): string {
+  return DIRECTION_FILTER_MODE_LABELS[mode];
+}
+
 /** 見方の一覧（画面の並び順）。 */
 export const DIRECTION_FILTER_MODES: readonly DirectionFilterMode[] = [
   "composite",

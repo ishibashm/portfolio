@@ -32,6 +32,10 @@ import { directionLabelName } from "@/lib/directionLabels";
 import type { Layers } from "./ConsultPanel";
 import type { HeatmapColumn, TrendCell } from "../SolarTimeClock";
 import { getZonedDateTimeFields } from "@/utils/solarTime";
+import {
+  directionFilterModeLabel,
+  parseDirectionFilterMode,
+} from "@/utils/directionFilterMode";
 
 /**
  * 地図と地点選択。移動元（SolarTimeClock）と同じく、描画されるまで
@@ -208,6 +212,8 @@ export default function DestinationMapPanel({
   hudLayers,
   setHudLayers,
 }: DestinationMapPanelProps) {
+  /** 観点の 7 つのボタンを開いているか。既定は畳む。 */
+  const [filterMenuOpen, setFilterMenuOpen] = React.useState(false);
   /*
     升目の詳細を Esc で閉じる。画面ぜんぶを覆うモーダルなので、閉じ方が
     × だけだと逃げ場が無い。timing のヒートマップの吹き出しと同じ閉じ方に
@@ -1393,81 +1399,113 @@ export default function DestinationMapPanel({
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-2 w-full gap-2">
           {/* Cyberpunk Filter Selector */}
           <div className="flex items-center gap-1.5 bg-stone-50 p-1 border border-stone-200 rounded-xl flex-wrap">
-            <span className="text-[10px] font-mono text-stone-600 uppercase tracking-wider px-1">
-              観点Filter:
+            {/*
+              既定は 1 行。いま選んでいる観点だけを出し、7 つのボタンは
+              「変える」で開く（地図の帯の「設定」と同じ形。#1338）。
+              押し口 7 つが常に並んでいて、400px では 3 段に折れていた。
+
+              名前は directionFilterMode.ts の表から引く（この画面が自前の
+              表を持って地図の凡例と食い違った経緯が LAYER_MODE_LABELS に
+              ある。観点でも同じことをしない）。
+
+              「大吉絞込」「凶除外」は見方ではなく表示の重ね札で、層は
+              総合判定のまま通る（SolarTimeClock の filterVectors の註）。
+              そのときは「総合判定」に添えて出す。
+            */}
+            <span className="text-[11px] text-stone-700 px-1">
+              観点:{" "}
+              <b>
+                {directionFilterModeLabel(
+                  parseDirectionFilterMode(directionFilterMode),
+                )}
+              </b>
+              {directionFilterMode === "optimal_only" && "（大吉を強調中）"}
+              {directionFilterMode === "exclude_noise" && "（大凶を除外中）"}
             </span>
             <button
-              onClick={() => setDirectionFilterMode("composite")}
-              className={`inline-flex min-h-[24px] items-center justify-center px-2 py-0.5 text-[9px] font-mono rounded-xs transition-all border cursor-pointer ${
-                directionFilterMode === "composite"
-                  ? "bg-emerald-50 text-emerald-700 border-emerald-200 shadow-[0_0_5px_rgba(16,185,129,0.2)]"
-                  : "bg-white/80 text-stone-600 border-transparent hover:border-stone-300"
-              }`}
+              type="button"
+              onClick={() => setFilterMenuOpen((v) => !v)}
+              aria-expanded={filterMenuOpen}
+              className="inline-flex min-h-[24px] items-center px-2 text-[11px] font-bold rounded-lg border border-stone-300 bg-white hover:bg-stone-100 text-stone-700 cursor-pointer"
             >
-              🪐 総合判定
+              {filterMenuOpen ? "閉じる ▴" : "変える ▾"}
             </button>
-            <button
-              onClick={() =>
-                setDirectionFilterMode("personal_kigaku_environmental")
-              }
-              className={`inline-flex min-h-[24px] items-center justify-center px-2 py-0.5 text-[9px] font-mono rounded-xs transition-all border cursor-pointer ${
-                directionFilterMode === "personal_kigaku_environmental"
-                  ? "bg-purple-50 text-purple-700 border-purple-200 shadow-[0_0_5px_rgba(168,85,247,0.2)]"
-                  : "bg-white/80 text-stone-600 border-transparent hover:border-stone-300"
-              }`}
-            >
-              👤+🌍 吉凶+環境
-            </button>
-            <button
-              onClick={() => setDirectionFilterMode("personal_kigaku_bazi")}
-              className={`inline-flex min-h-[24px] items-center justify-center px-2 py-0.5 text-[9px] font-mono rounded-xs transition-all border cursor-pointer ${
-                directionFilterMode === "personal_kigaku_bazi"
-                  ? "bg-indigo-50 text-indigo-600 border-indigo-200 shadow-[0_0_5px_rgba(99,102,241,0.2)]"
-                  : "bg-white/80 text-stone-600 border-transparent hover:border-stone-300"
-              }`}
-            >
-              👤+☯ 吉凶+天中殺
-            </button>
-            <button
-              onClick={() => setDirectionFilterMode("environmental_bazi")}
-              className={`inline-flex min-h-[24px] items-center justify-center px-2 py-0.5 text-[9px] font-mono rounded-xs transition-all border cursor-pointer ${
-                directionFilterMode === "environmental_bazi"
-                  ? "bg-amber-50 text-amber-700 border-amber-200 shadow-[0_0_5px_rgba(245,158,11,0.2)]"
-                  : "bg-white/80 text-stone-600 border-transparent hover:border-stone-300"
-              }`}
-            >
-              ☯+🌍 天中殺+環境
-            </button>
-            <button
-              onClick={() => setDirectionFilterMode("personal_kigaku")}
-              className={`inline-flex min-h-[24px] items-center justify-center px-2 py-0.5 text-[9px] font-mono rounded-xs transition-all border cursor-pointer ${
-                directionFilterMode === "personal_kigaku"
-                  ? "bg-purple-50 text-purple-700 border-purple-200 shadow-[0_0_5px_rgba(168,85,247,0.2)]"
-                  : "bg-white/80 text-stone-600 border-transparent hover:border-stone-300"
-              }`}
-            >
-              👤 個人吉凶
-            </button>
-            <button
-              onClick={() => setDirectionFilterMode("personal_bazi")}
-              className={`inline-flex min-h-[24px] items-center justify-center px-2 py-0.5 text-[9px] font-mono rounded-xs transition-all border cursor-pointer ${
-                directionFilterMode === "personal_bazi"
-                  ? "bg-amber-100 text-amber-800 border-amber-300 shadow-[0_0_5px_rgba(180,83,9,0.2)]"
-                  : "bg-white/80 text-stone-600 border-transparent hover:border-stone-300"
-              }`}
-            >
-              ☯ 個人天中殺
-            </button>
-            <button
-              onClick={() => setDirectionFilterMode("environmental")}
-              className={`inline-flex min-h-[24px] items-center justify-center px-2 py-0.5 text-[9px] font-mono rounded-xs transition-all border cursor-pointer ${
-                directionFilterMode === "environmental"
-                  ? "bg-rose-50 text-rose-700 border-rose-200 shadow-[0_0_5px_rgba(244,63,94,0.2)]"
-                  : "bg-white/80 text-stone-600 border-transparent hover:border-stone-300"
-              }`}
-            >
-              🌍 環境方位のみ
-            </button>
+            {filterMenuOpen && (
+              <>
+                <button
+                  onClick={() => setDirectionFilterMode("composite")}
+                  className={`inline-flex min-h-[24px] items-center justify-center px-2 py-0.5 text-[9px] font-mono rounded-xs transition-all border cursor-pointer ${
+                    directionFilterMode === "composite"
+                      ? "bg-emerald-50 text-emerald-700 border-emerald-200 shadow-[0_0_5px_rgba(16,185,129,0.2)]"
+                      : "bg-white/80 text-stone-600 border-transparent hover:border-stone-300"
+                  }`}
+                >
+                  🪐 総合判定
+                </button>
+                <button
+                  onClick={() =>
+                    setDirectionFilterMode("personal_kigaku_environmental")
+                  }
+                  className={`inline-flex min-h-[24px] items-center justify-center px-2 py-0.5 text-[9px] font-mono rounded-xs transition-all border cursor-pointer ${
+                    directionFilterMode === "personal_kigaku_environmental"
+                      ? "bg-purple-50 text-purple-700 border-purple-200 shadow-[0_0_5px_rgba(168,85,247,0.2)]"
+                      : "bg-white/80 text-stone-600 border-transparent hover:border-stone-300"
+                  }`}
+                >
+                  👤+🌍 吉凶+環境
+                </button>
+                <button
+                  onClick={() => setDirectionFilterMode("personal_kigaku_bazi")}
+                  className={`inline-flex min-h-[24px] items-center justify-center px-2 py-0.5 text-[9px] font-mono rounded-xs transition-all border cursor-pointer ${
+                    directionFilterMode === "personal_kigaku_bazi"
+                      ? "bg-indigo-50 text-indigo-600 border-indigo-200 shadow-[0_0_5px_rgba(99,102,241,0.2)]"
+                      : "bg-white/80 text-stone-600 border-transparent hover:border-stone-300"
+                  }`}
+                >
+                  👤+☯ 吉凶+天中殺
+                </button>
+                <button
+                  onClick={() => setDirectionFilterMode("environmental_bazi")}
+                  className={`inline-flex min-h-[24px] items-center justify-center px-2 py-0.5 text-[9px] font-mono rounded-xs transition-all border cursor-pointer ${
+                    directionFilterMode === "environmental_bazi"
+                      ? "bg-amber-50 text-amber-700 border-amber-200 shadow-[0_0_5px_rgba(245,158,11,0.2)]"
+                      : "bg-white/80 text-stone-600 border-transparent hover:border-stone-300"
+                  }`}
+                >
+                  ☯+🌍 天中殺+環境
+                </button>
+                <button
+                  onClick={() => setDirectionFilterMode("personal_kigaku")}
+                  className={`inline-flex min-h-[24px] items-center justify-center px-2 py-0.5 text-[9px] font-mono rounded-xs transition-all border cursor-pointer ${
+                    directionFilterMode === "personal_kigaku"
+                      ? "bg-purple-50 text-purple-700 border-purple-200 shadow-[0_0_5px_rgba(168,85,247,0.2)]"
+                      : "bg-white/80 text-stone-600 border-transparent hover:border-stone-300"
+                  }`}
+                >
+                  👤 個人吉凶
+                </button>
+                <button
+                  onClick={() => setDirectionFilterMode("personal_bazi")}
+                  className={`inline-flex min-h-[24px] items-center justify-center px-2 py-0.5 text-[9px] font-mono rounded-xs transition-all border cursor-pointer ${
+                    directionFilterMode === "personal_bazi"
+                      ? "bg-amber-100 text-amber-800 border-amber-300 shadow-[0_0_5px_rgba(180,83,9,0.2)]"
+                      : "bg-white/80 text-stone-600 border-transparent hover:border-stone-300"
+                  }`}
+                >
+                  ☯ 個人天中殺
+                </button>
+                <button
+                  onClick={() => setDirectionFilterMode("environmental")}
+                  className={`inline-flex min-h-[24px] items-center justify-center px-2 py-0.5 text-[9px] font-mono rounded-xs transition-all border cursor-pointer ${
+                    directionFilterMode === "environmental"
+                      ? "bg-rose-50 text-rose-700 border-rose-200 shadow-[0_0_5px_rgba(244,63,94,0.2)]"
+                      : "bg-white/80 text-stone-600 border-transparent hover:border-stone-300"
+                  }`}
+                >
+                  🌍 環境方位のみ
+                </button>
+              </>
+            )}
           </div>
 
           <div className="flex flex-wrap gap-2 self-stretch md:self-auto justify-end">
