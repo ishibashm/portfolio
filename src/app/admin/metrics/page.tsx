@@ -1070,7 +1070,7 @@ export default function AdminMetricsPage() {
                       ))}
                     </div>
 
-                    <p className="mt-3 text-[10px] leading-relaxed text-stone-600">
+                    <p className="mt-3 text-xs leading-relaxed text-stone-600">
                       金額は <code>src/lib/operatingCosts.ts</code>{" "}
                       に書いてあります。実額が分かったものから埋めてください。
                       <strong className="text-amber-600">
@@ -1089,7 +1089,7 @@ export default function AdminMetricsPage() {
                 <Wallet className="w-4 h-4 text-stone-600" />
                 外部 API の従量（当月）
               </h2>
-              <p className="text-[10px] text-stone-600 mb-3">
+              <p className="text-xs text-stone-600 mb-3">
                 {s.externalApi.sinceDay} 以降。成功して usage
                 が返った呼び出しを集計。
               </p>
@@ -1178,7 +1178,7 @@ export default function AdminMetricsPage() {
                 </div>
               ) : null}
 
-              <p className="mt-3 text-[10px] leading-relaxed text-stone-600">
+              <p className="mt-3 text-xs leading-relaxed text-stone-600">
                 単価は <code>src/lib/apiUsage.ts</code>
                 {
                   " に置きます。価格表と円換算を確認できるまでは未設定のままにし、推測額は出しません。"
@@ -1191,7 +1191,7 @@ export default function AdminMetricsPage() {
                 <Wallet className="w-4 h-4 text-stone-600" />
                 GCP 請求実額（当月）
               </h2>
-              <p className="text-[10px] text-stone-600 mb-3">
+              <p className="text-xs text-stone-600 mb-3">
                 請求月 {s.gcpBilling.invoiceMonth.slice(0, 4)}/
                 {s.gcpBilling.invoiceMonth.slice(4)}。Billing Export の cost
                 から credits を差し引いた対象プロジェクトの実額。
@@ -1251,7 +1251,7 @@ export default function AdminMetricsPage() {
                 </div>
               )}
 
-              <p className="mt-3 text-[10px] leading-relaxed text-stone-600">
+              <p className="mt-3 text-xs leading-relaxed text-stone-600">
                 Cloud Billing API は実額を返さないため、Standard usage cost の
                 BigQuery export を読みます。未設定時は通信せず、0
                 円とは区別します。
@@ -1264,7 +1264,7 @@ export default function AdminMetricsPage() {
                 <h2 className="text-sm font-bold text-stone-700 mb-1">
                   日別の PV / UV（30日）
                 </h2>
-                <p className="text-[10px] text-stone-600 mb-3">
+                <p className="text-xs text-stone-600 mb-3">
                   升目に触れるとその日の値が出ます。
                 </p>
                 {s.daily.length === 0 ? (
@@ -1280,7 +1280,7 @@ export default function AdminMetricsPage() {
                 <h2 className="text-sm font-bold text-stone-700 mb-1">
                   時間帯別（JST・直近7日）
                 </h2>
-                <p className="text-[10px] text-stone-600 mb-3">
+                <p className="text-xs text-stone-600 mb-3">
                   濃いほど多い。いつ見られているか。
                 </p>
                 <div className="grid grid-cols-6 gap-1">
@@ -1317,7 +1317,7 @@ export default function AdminMetricsPage() {
               <h2 className="text-sm font-bold text-stone-700 mb-1">
                 今日の時間別（JST・昨日と比較）
               </h2>
-              <p className="text-[10px] text-stone-600 mb-3">
+              <p className="text-xs text-stone-600 mb-3">
                 {
                   "濃い棒が今日、薄い棒が昨日の同じ時刻。下の数字は昨日との差。まだ来ていない時刻は棒を描きません。"
                 }
@@ -1334,7 +1334,7 @@ export default function AdminMetricsPage() {
               <h2 className="text-sm font-bold text-stone-700 mb-1">
                 曜日 × 時間帯（JST・直近30日）
               </h2>
-              <p className="text-[10px] text-stone-600 mb-3">
+              <p className="text-xs text-stone-600 mb-3">
                 濃いほど多い。左の 24 枠は 7 日ぶんなので「今」を、こちらは 30
                 日ぶんなので「平日の昼か週末の夜か」を見るためのもの。
               </p>
@@ -1347,7 +1347,7 @@ export default function AdminMetricsPage() {
                 <BookOpen className="w-4 h-4 text-stone-600" />
                 ブログの効果検証（30日）
               </h2>
-              <p className="text-[10px] text-stone-600 mb-4">
+              <p className="text-xs text-stone-600 mb-4">
                 記事は読まれているか、読んだ人が道具まで来ているか。
                 <span className="text-amber-600">
                   到達率は同じ日に両方を見た割合です。
@@ -1514,7 +1514,7 @@ export default function AdminMetricsPage() {
                       ))}
                     </div>
                   )}
-                  <p className="mt-2 text-[10px] text-stone-600">
+                  <p className="mt-2 text-xs text-stone-600">
                     公開中の記事は PV が 0
                     でも並びます。一覧から消すと「読まれていない」が見えなくなるためです。
                   </p>
@@ -1538,7 +1538,7 @@ export default function AdminMetricsPage() {
                       />
                     ))
                   )}
-                  <p className="mt-2 text-[10px] text-stone-600">
+                  <p className="mt-2 text-xs text-stone-600">
                     サイト内の移動は記録していないので、ここに出るのは外部からの流入だけです。
                   </p>
                 </div>
@@ -1593,7 +1593,7 @@ export default function AdminMetricsPage() {
                   <Monitor className="w-4 h-4 text-stone-600" />
                   デバイス別（30日）
                 </h2>
-                <p className="text-[10px] text-stone-600 mb-3">
+                <p className="text-xs text-stone-600 mb-3">
                   UA から PC / スマホ / タブレットの3値だけを記録。UA
                   そのものは保存していません。
                 </p>
@@ -1652,7 +1652,7 @@ export default function AdminMetricsPage() {
                     <dd className="font-mono">{s.usersSaved30d}</dd>
                   </div>
                 </dl>
-                <p className="text-[10px] text-stone-600 mt-3 leading-relaxed">
+                <p className="text-xs text-stone-600 mt-3 leading-relaxed">
                   Supabase Auth
                   の全アカウント数ではなく、設定を保存したことのある人の数です。ログイン履歴・プラン・権限のような項目はこのサイトにはありません（データを持たないことを選んでいます）。
                 </p>
@@ -1664,7 +1664,7 @@ export default function AdminMetricsPage() {
               <h2 className="text-sm font-bold text-stone-700 mb-1">
                 登録ユーザーの一覧
               </h2>
-              <p className="text-[10px] text-stone-600 mb-3">
+              <p className="text-xs text-stone-600 mb-3">
                 自分以外のアカウントが居るかを確かめるための一覧です。設定の中身（生年月日・座標・APIキー）はサーバが返さず、有無だけをバッジで出します。
               </p>
               {usersError && (

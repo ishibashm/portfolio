@@ -206,7 +206,7 @@ export default function LoginPage() {
           <br />
           他の端末でも引き継げます。
         </p>
-        <p className="text-stone-600 text-[10px] text-center mb-6 leading-relaxed">
+        <p className="text-stone-600 text-xs text-center mb-6 leading-relaxed">
           ログインしなくても、方位の判定・物件検索・カレンダーはそのままご利用いただけます。
         </p>
 
@@ -289,7 +289,7 @@ export default function LoginPage() {
         {/* よくある新規登録と同じく、押す前に規約の在り処を示す。
             チェックボックスは置かない（Google のボタンは押した時点で
             認証が始まるので、押させない状態を作るとボタンが死ぬ）。 */}
-        <p className="mt-4 text-center text-[10px] leading-relaxed text-stone-500">
+        <p className="mt-4 text-center text-xs leading-relaxed text-stone-500">
           ログインすると、
           <Link
             href="/terms"
@@ -353,7 +353,7 @@ export default function LoginPage() {
           </div>
         )}
 
-        <p className="text-[10px] text-stone-600 text-center mt-6 font-mono leading-relaxed max-w-[280px]">
+        <p className="text-xs text-stone-600 text-center mt-6 font-mono leading-relaxed max-w-[280px]">
           {process.env.NODE_ENV === "development"
             ? "ローカル開発環境で動作しています。"
             : ""}
