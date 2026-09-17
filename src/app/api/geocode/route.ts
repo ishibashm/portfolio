@@ -1,7 +1,11 @@
 import { NextResponse } from "next/server";
 import { normalize } from "@geolonia/normalize-japanese-addresses";
 import { lookupGsi } from "@/lib/gsiGeocode";
-import { municipalityCodeFromPortalUrl } from "@/lib/portalLinks";
+import {
+  municipalityCodeFromPortalUrl,
+  prefCodeFromPortalUrl,
+} from "@/lib/portalLinks";
+import { prefNameByCode } from "@/lib/prefContent";
 import { AREAS } from "@/lib/areaContent";
 import { mergeWithListed } from "@/lib/municipalityCoords";
 
@@ -13,6 +17,14 @@ import { mergeWithListed } from "@/lib/municipalityCoords";
  * （同じ画面の一覧と方位が食い違わないため）。
  */
 const POINT_BY_CODE = new Map(mergeWithListed(AREAS).map((m) => [m.code, m]));
+
+/** その県の市区町村名を 1 つ、入力の例として出す（読めた県に合わせる）。 */
+function exampleCityIn(prefCode: string): string {
+  for (const m of POINT_BY_CODE.values()) {
+    if (m.code.startsWith(prefCode)) return m.city;
+  }
+  return "市区町村名";
+}
 
 /**
  * 入力が URL かどうか。**綴りだけを見る。開きに行かない。**
@@ -59,10 +71,19 @@ export async function GET(request: Request) {
         source: "municipality",
       });
     }
+    /*
+      市区町村まで読めなくても、県まで読めれば**何が足りないか**を言う。
+      HOME'S の県の一覧（/chintai/aichi/）を貼った人が「読み取れません
+      でした」で止まった。県の代表点を返して済ませない — 県の真ん中から
+      の方位は、その人が見ている街の方位ではない。
+    */
+    const prefCode = prefCodeFromPortalUrl(q);
+    const prefName = prefCode ? prefNameByCode(prefCode) : undefined;
     return NextResponse.json(
       {
-        error:
-          "その URL からは場所を読み取れませんでした。市区町村名で入れてみてください。",
+        error: prefName
+          ? `この URL は${prefName}までしか指していません。市区町村名（例: ${exampleCityIn(prefCode!)}）で入れてください。`
+          : "その URL からは場所を読み取れませんでした。市区町村名で入れてみてください。",
       },
       { status: 404 },
     );
