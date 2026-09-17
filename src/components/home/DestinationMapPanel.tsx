@@ -1340,7 +1340,7 @@ export default function DestinationMapPanel({
                       <div className="font-bold text-amber-700 flex items-center gap-1.5">
                         <span>✨</span> 天道の補正が適用されています
                       </div>
-                      <p className="text-[10px] leading-relaxed text-amber-800">
+                      <p className="text-xs leading-relaxed text-amber-800">
                         この時期、<strong>{selectedTrendCell.dir} 方位</strong>{" "}
                         には天道が回座しています。伝統的に、天道は本命殺・月命殺などの個人の凶を打ち消すとされ、このサイトの総合判定でも
                         <strong>大吉</strong>に上げています。

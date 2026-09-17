@@ -1517,7 +1517,7 @@ export function ConsultPanel({
                     <span className="text-[10px] text-purple-700 font-bold border-l-2 border-purple-500 pl-2 bg-purple-50 py-0.5">
                       年盤: 木星の黄経
                     </span>
-                    <p className="text-[10px] text-stone-600 leading-relaxed">
+                    <p className="text-xs text-stone-600 leading-relaxed">
                       木星の公転周期（約11.86年）を黄経30度ごとの12区画に分け、区画の番号から年盤の星（1〜9）を決めます。木星の黄経が区画の境を越えた瞬間に年盤が切り替わります。太陽黄経による位相反転（陽遁・陰遁）を適用。
                     </p>
                     <div className="bg-white/70 p-2 border border-stone-200 font-mono text-[10px] shadow-inner overflow-x-auto whitespace-nowrap custom-scrollbar">
@@ -1536,7 +1536,7 @@ export function ConsultPanel({
                     <span className="text-[10px] text-amber-700 font-bold border-l-2 border-amber-500 pl-2 bg-amber-50 py-0.5">
                       月盤: 太陽黄経と月相
                     </span>
-                    <p className="text-[10px] text-stone-600 leading-relaxed">
+                    <p className="text-xs text-stone-600 leading-relaxed">
                       月盤の星を、太陽黄経と月相の組み合わせから決めています。
                     </p>
                     <div className="bg-white/70 p-2 border border-stone-200 font-mono text-[10px] shadow-inner overflow-x-auto whitespace-nowrap custom-scrollbar">
@@ -1555,7 +1555,7 @@ export function ConsultPanel({
                     <span className="text-[10px] text-blue-700 font-bold border-l-2 border-blue-500 pl-2 bg-blue-50 py-0.5">
                       日盤: ユリウス日
                     </span>
-                    <p className="text-[10px] text-stone-600 leading-relaxed">
+                    <p className="text-xs text-stone-600 leading-relaxed">
                       日盤はユリウス日（JD）を基に数え、太陽黄経から求めた夏至・冬至を境に九星の巡り（陽遁/陰遁）を反転させます。
                     </p>
                     <div className="bg-white/70 p-2 border border-stone-200 font-mono text-[10px] shadow-inner overflow-x-auto whitespace-nowrap custom-scrollbar">
