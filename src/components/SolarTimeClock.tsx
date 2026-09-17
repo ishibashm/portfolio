@@ -89,6 +89,10 @@ import {
   vectorsForLayerMode,
   type LayerMode,
 } from "@/utils/directionStatus";
+import {
+  parseDashboardFilterMode,
+  type DashboardFilterMode,
+} from "@/utils/directionFilterMode";
 
 /**
  * 書き出し用の 1 セル。オブジェクトや配列を "[object Object]" に
@@ -743,7 +747,8 @@ export const SolarTimeClock = () => {
    * 応答ではない。形はそこで確定している。
    */
   const [heatmapData, setHeatmapData] = useState<HeatmapColumn[]>([]);
-  const [directionFilterMode, setDirectionFilterMode] = useState<string>("composite");
+  const [directionFilterMode, setDirectionFilterMode] =
+    useState<DashboardFilterMode>("composite");
   /** ヒートマップで押した升目。押した列と方位を覚えて詳細を出す。 */
   const [selectedTrendCell, setSelectedTrendCell] =
     useState<TrendCell | null>(null);
@@ -1043,7 +1048,14 @@ export const SolarTimeClock = () => {
         applyBool("lunar_phase_modifier", setLunarPhaseModifier);
         if (data.layer_mode !== undefined)
           setActiveLayerMode(parseLayerMode(settingString(data, "layer_mode")));
-        applyStr("direction_filter_mode", setDirectionFilterMode);
+        // 古い id（kigaku_env など）は正規の名前に写す（#1337 の続き）。
+        // 一度読んで保存し直せば、他の頁も正規の名前を読める。
+        if (data.direction_filter_mode !== undefined)
+          setDirectionFilterMode(
+            parseDashboardFilterMode(
+              settingString(data, "direction_filter_mode"),
+            ),
+          );
         isLoaded = true;
       } catch (e) {
         console.error("Settings apply error", e);
