@@ -18,6 +18,7 @@ import {
   TenchusatsuMode,
   isTenchusatsuMode,
 } from "@/utils/tenchusatsuPolicy";
+import { parsePartyParam, type PartyMember } from "@/utils/arbitrageParty";
 
 /**
  * 年盤・月盤・日盤がすべて吉になる日を列挙する。
@@ -31,6 +32,137 @@ function parseSafeDate(value: string | null, fallback: Date): Date {
   if (!value) return fallback;
   const d = new Date(value.includes("T") ? value : `${value}T12:00:00+09:00`);
   return isNaN(d.getTime()) ? fallback : d;
+}
+
+/** 生年月日の文字列を日本時間で読む。壊れていれば null。 */
+function parseBirthDate(raw: string): Date | null {
+  const d = new Date(
+    raw.includes("T")
+      ? `${raw}${/[+-]\d{2}:?\d{2}$|Z$/.test(raw) ? "" : "+09:00"}`
+      : `${raw}T12:00:00+09:00`,
+  );
+  return isNaN(d.getTime()) ? null : d;
+}
+
+/**
+ * 同行者を何人まで走査するか。
+ *
+ * 1 人の 730 日走査が約 3 秒（この環境の実測。90 日 0.47 秒・365 日
+ * 1.5 秒・730 日 2.9 秒）で、人数ぶん線形に増える。本人＋4 人で
+ * 15 秒程度が 1 リクエストの上限になる。
+ */
+const MAX_PARTY_MEMBERS = 4;
+
+interface TimelineRow {
+  date: string;
+  weekday: number;
+  rokuyo: string;
+  tags: string[];
+  blocked: boolean;
+  tiers: Record<string, string>;
+}
+
+type TimelineBase = Parameters<typeof judgeDayAllDirections>[1];
+
+/**
+ * 全日 × 全方位の格付け。日付ごとの行にして、8 方位を 1 文字の段階
+ * コードに畳んで転送量を抑える（730 日 × 8 方位でも 30KB 程度）。
+ */
+function timelineRows(from: Date, to: Date, base: TimelineBase): TimelineRow[] {
+  const days: TimelineRow[] = [];
+  // 走査の起点と終点は日本時間の正午に寄せる。`setHours` は実行環境の
+  // タイムゾーンで動くので、本番（UTC）とブラウザ（JST）で範囲の端が
+  // 1 日ずれることがあった。判定は元から日本時間の正午で出している
+  // （`forecastAnchorMs`）ので、範囲もそこに合わせる。
+  let cursor = new Date(forecastAnchorMs(from));
+  const end = new Date(forecastAnchorMs(to));
+  let guard = 0;
+  while (cursor <= end && guard < 800) {
+    const all = judgeDayAllDirections(cursor, base);
+    guard++;
+    const tiers: Record<string, string> = {};
+    for (const dir of ALL_DIRECTIONS) tiers[dir] = gradeVerdict(all[dir]);
+    const any = all[ALL_DIRECTIONS[0]];
+    days.push({
+      date: any.date,
+      weekday: any.weekday,
+      rokuyo: any.rokuyo,
+      // 天赦日・一粒万倍日などは日の札だが、「天道」は方位ごとの札
+      // （その月の天道の方位に当たっているか）。北の判定から写すと、
+      // 天道が北の月は全日に付き、他の月は 1 日も付かない
+      tags: any.tags.filter((t) => t !== "天道"),
+      blocked: any.blockedByTenchusatsu,
+      tiers,
+    });
+    cursor = new Date(cursor.getTime() + 86400000);
+  }
+  return days;
+}
+
+/**
+ * 同行者 1 人ぶんの走査結果。
+ *
+ * 出発地が違えば同じ合流先でも方位が違うので、方位への割り当ては
+ * 画面側が各人の baseLat/baseLon から行う。ここは「その人の本命星・
+ * 天中殺・出発地の経度で見た日 × 方位」を返すだけ。移動しない人
+ * （stationary）は方位が発生しないので days を空で返す。
+ */
+interface PartyMemberTimeline {
+  id: string;
+  name: string;
+  stationary: boolean;
+  weight: number;
+  baseLat: number;
+  baseLon: number;
+  honmeiStar: number | null;
+  voidZodiacs: string[];
+  days: TimelineRow[];
+}
+
+function partyTimelines(
+  members: PartyMember[],
+  from: Date,
+  to: Date,
+  base: TimelineBase,
+): PartyMemberTimeline[] {
+  const out: PartyMemberTimeline[] = [];
+  for (const m of members.slice(0, MAX_PARTY_MEMBERS)) {
+    const birth = parseBirthDate(m.birthDate);
+    if (!birth) continue;
+    if (m.stationary) {
+      out.push({
+        id: m.id,
+        name: m.name,
+        stationary: true,
+        weight: m.weight,
+        baseLat: m.baseLat,
+        baseLon: m.baseLon,
+        honmeiStar: null,
+        voidZodiacs: [],
+        days: [],
+      });
+      continue;
+    }
+    const honmei = getHonmeiStar(birth);
+    const voids = getPersonalVoidZodiac(birth);
+    out.push({
+      id: m.id,
+      name: m.name,
+      stationary: false,
+      weight: m.weight,
+      baseLat: m.baseLat,
+      baseLon: m.baseLon,
+      honmeiStar: honmei.classical,
+      voidZodiacs: voids,
+      days: timelineRows(from, to, {
+        ...base,
+        honmeiStar: honmei.classical,
+        voidZodiacs: voids,
+        lon: m.baseLon,
+      }),
+    });
+  }
+  return out;
 }
 
 export async function GET(request: Request) {
@@ -48,12 +180,8 @@ export async function GET(request: Request) {
         { status: 400 },
       );
     }
-    const birthDate = new Date(
-      birthDateStr.includes("T")
-        ? `${birthDateStr}${/[+-]\d{2}:?\d{2}$|Z$/.test(birthDateStr) ? "" : "+09:00"}`
-        : `${birthDateStr}T12:00:00+09:00`,
-    );
-    if (isNaN(birthDate.getTime())) {
+    const birthDate = parseBirthDate(birthDateStr);
+    if (!birthDate) {
       return NextResponse.json(
         { error: "INVALID_BIRTH_DATE" },
         { status: 400 },
@@ -122,40 +250,17 @@ export async function GET(request: Request) {
     // 行にして、8 方位を 1 文字の段階コードに畳んで転送量を抑える
     // （730 日 × 8 方位でも 30KB 程度）。
     if (searchParams.get("mode") === "timeline") {
-      const days: {
-        date: string;
-        weekday: number;
-        rokuyo: string;
-        tags: string[];
-        blocked: boolean;
-        tiers: Record<string, string>;
-      }[] = [];
-      // 走査の起点と終点は日本時間の正午に寄せる。`setHours` は実行環境の
-      // タイムゾーンで動くので、本番（UTC）とブラウザ（JST）で範囲の端が
-      // 1 日ずれることがあった。判定は元から日本時間の正午で出している
-      // （`forecastAnchorMs`）ので、範囲もそこに合わせる。
-      let cursor = new Date(forecastAnchorMs(from));
-      const end = new Date(forecastAnchorMs(to));
-      let guard = 0;
-      while (cursor <= end && guard < 800) {
-        const all = judgeDayAllDirections(cursor, base);
-        guard++;
-        const tiers: Record<string, string> = {};
-        for (const dir of ALL_DIRECTIONS) tiers[dir] = gradeVerdict(all[dir]);
-        const any = all[ALL_DIRECTIONS[0]];
-        days.push({
-          date: any.date,
-          weekday: any.weekday,
-          rokuyo: any.rokuyo,
-          // 天赦日・一粒万倍日などは日の札だが、「天道」は方位ごとの札
-          // （その月の天道の方位に当たっているか）。北の判定から写すと、
-          // 天道が北の月は全日に付き、他の月は 1 日も付かない
-          tags: any.tags.filter((t) => t !== "天道"),
-          blocked: any.blockedByTenchusatsu,
-          tiers,
-        });
-        cursor = new Date(cursor.getTime() + 86400000);
-      }
+      const days = timelineRows(from, to, base);
+      /*
+        同行者・合流する人。物件検索と同じ JSON（`normalizeParty`）を
+        `party` で受け、人ごとに同じ範囲を走査して返す。物件検索の
+        「時期の走査」は 1 物件 × 人数 × 日数を候補ぶん回すので 90 日で
+        止めているが、こちらは合流先 1 つ分なので 730 日まで受ける
+        （利用者の要望 2026-09-17。「合流する人を選んで 2 年ぶん」）。
+      */
+      const party = parsePartyParam(searchParams.get("party"));
+      const members =
+        party.length > 0 ? partyTimelines(party, from, to, base) : undefined;
       return NextResponse.json({
         honmeiStar: honmeiStar.classical,
         voidZodiacs,
@@ -164,6 +269,7 @@ export async function GET(request: Request) {
         from: days[0]?.date ?? null,
         to: days[days.length - 1]?.date ?? null,
         days,
+        ...(members ? { members } : {}),
       });
     }
 
