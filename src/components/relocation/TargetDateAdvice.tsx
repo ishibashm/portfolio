@@ -228,7 +228,7 @@ export function TargetDateAdvice({
         </div>
       )}
 
-      <p className="mt-3 text-[10px] leading-relaxed text-stone-500">
+      <p className="mt-3 text-xs leading-relaxed text-stone-500">
         日付を押すとその日を目標日にします。天中殺で塞がる日は候補に入れていません（段階が良くても動けない日のため）。全期間を一望したいときは引越し時期を分析する画面へ。
       </p>
     </div>

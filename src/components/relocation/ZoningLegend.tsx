@@ -78,12 +78,12 @@ export function ZoningLegend({
 
       {!open ? null : (
         <>
-          <p className="mt-1 text-[10px] leading-relaxed text-stone-500">
+          <p className="mt-1 text-xs leading-relaxed text-stone-500">
             押すとその区分だけ残ります。区画を押すと建蔽率・容積率が出ます。
           </p>
 
           {notice && (
-            <p className="mt-2 rounded-lg bg-amber-50 px-2 py-1.5 text-[10px] leading-relaxed text-amber-900">
+            <p className="mt-2 rounded-lg bg-amber-50 px-2 py-1.5 text-xs leading-relaxed text-amber-900">
               {notice}
             </p>
           )}
@@ -117,7 +117,7 @@ export function ZoningLegend({
           </ul>
 
           {selected && (
-            <p className="mt-2 border-t border-stone-100 pt-2 text-[10px] leading-relaxed text-stone-600">
+            <p className="mt-2 border-t border-stone-100 pt-2 text-xs leading-relaxed text-stone-600">
               {ZONING_SUMMARY[selected]}
             </p>
           )}
