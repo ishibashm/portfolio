@@ -123,7 +123,7 @@ export default function ContactPage() {
               <input id="website" name="website" tabIndex={-1} autoComplete="off" />
             </div>
 
-            <p className="text-[11px] text-slate-500 leading-relaxed">
+            <p className="text-xs text-slate-500 leading-relaxed">
               送信することで
               <Link href="/privacy" className="underline hover:text-rose-600">
                 プライバシーポリシー
