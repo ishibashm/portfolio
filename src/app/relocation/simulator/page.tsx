@@ -2085,7 +2085,7 @@ export default function RelocationSimulatorPage() {
                       <Sliders className="w-4 h-4 text-indigo-700 animate-pulse" />{" "}
                       当日の体調・宇宙天気を仮定する（任意）
                     </h3>
-                    <p className="text-[10px] text-stone-600 mt-1">
+                    <p className="text-xs text-stone-600 mt-1">
                       移動当日の体調（心拍変動など）と宇宙天気の仮定値を設定します。ホームで表示している現在値を取り込むこともできます。
                     </p>
                   </div>
@@ -2572,7 +2572,7 @@ export default function RelocationSimulatorPage() {
                     */}
                       {step.directionNote && (
                         <div className="border-t border-stone-200/60 pt-3">
-                          <p className="rounded-xl border border-amber-300 bg-amber-50 p-2 text-[10px] leading-relaxed text-amber-800">
+                          <p className="rounded-xl border border-amber-300 bg-amber-50 p-2 text-xs leading-relaxed text-amber-800">
                             {step.directionNote}
                             <br />
                             {/*
@@ -2819,7 +2819,7 @@ export default function RelocationSimulatorPage() {
                       >
                         {evaluatedSteps[activeStepIndex].evaluation?.rating}
                       </span>
-                      <p className="text-[10px] text-stone-500 mt-2 font-medium px-2 leading-relaxed">
+                      <p className="text-xs text-stone-500 mt-2 font-medium px-2 leading-relaxed">
                         {directionLabelDetailed(
                           evaluatedSteps[activeStepIndex].evaluation?.status ||
                             "",
@@ -2936,7 +2936,7 @@ export default function RelocationSimulatorPage() {
                                     {meta.chineseMetasoft.qiMenGate.name}
                                   </span>
                                 </div>
-                                <p className="text-[10px] text-stone-500 leading-relaxed font-sans">
+                                <p className="text-xs text-stone-500 leading-relaxed font-sans">
                                   {meta.chineseMetasoft.qiMenGate.description}
                                 </p>
                               </div>
@@ -3014,7 +3014,7 @@ export default function RelocationSimulatorPage() {
                                   </div>
                                 )}
 
-                                <p className="text-[10px] text-zinc-450 leading-relaxed font-sans pt-1">
+                                <p className="text-xs text-zinc-450 leading-relaxed font-sans pt-1">
                                   {meta.roxyApi.ichingCast.interpretation}
                                 </p>
                               </div>
@@ -3045,7 +3045,7 @@ export default function RelocationSimulatorPage() {
                                     {meta.divineApi.tarot.name}
                                   </span>
                                 </div>
-                                <p className="text-[10px] text-stone-500 leading-relaxed font-sans">
+                                <p className="text-xs text-stone-500 leading-relaxed font-sans">
                                   {meta.divineApi.tarot.meaning}
                                 </p>
                                 <div className="text-[10px] text-stone-600 font-mono flex items-center justify-between pt-1.5 border-t border-stone-200">
@@ -3076,7 +3076,7 @@ export default function RelocationSimulatorPage() {
                                 <span className="text-[10px] font-bold text-stone-600 block">
                                   ⭐ 紫微斗数飛星 (Zi Wei Dou Shu)
                                 </span>
-                                <p className="text-[10px] text-stone-500 leading-relaxed font-sans">
+                                <p className="text-xs text-stone-500 leading-relaxed font-sans">
                                   {meta.ziWeiDouShu.dailyInsight}
                                 </p>
                               </div>

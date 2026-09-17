@@ -289,7 +289,7 @@ export default function PurchaseAnalyticsPage() {
             </TableWrap>
 
             <div>
-              <p className="mb-2 text-[10px] font-semibold tracking-wider text-stone-600">
+              <p className="mb-2 text-xs font-semibold tracking-wider text-stone-600">
                 建物比率の分布（0% = 全部が土地代、100% = 全部が建物代）
               </p>
               <Distribution
