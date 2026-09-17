@@ -339,7 +339,7 @@ export default function HomePortal({
                   </div>
                 </div>
               ) : (
-                <p className="text-[10px] text-stone-600">
+                <p className="text-xs text-stone-600">
                   今日はこの先「動いてよい」時間帯がありません。
                 </p>
               )}
@@ -407,7 +407,7 @@ export default function HomePortal({
             </div>
           </dl>
           {pressure && pressure.drop < -3 && (
-            <p className="text-[10px] text-amber-700 mt-2 leading-relaxed">
+            <p className="text-xs text-amber-700 mt-2 leading-relaxed">
               3 時間で {pressure.drop.toFixed(1)}
               hPa 下がっています。体調が出やすい人は無理をしないでください。
             </p>
