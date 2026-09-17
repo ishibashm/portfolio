@@ -191,7 +191,7 @@ export default function Page() {
           <AdBanner />
         </div>
 
-        <p className="mt-8 max-w-[70ch] text-[11px] leading-relaxed text-slate-500">
+        <p className="mt-8 max-w-[70ch] text-xs leading-relaxed text-slate-500">
           九星気学や六曜は暦の考え方であり、科学的に効果が確認されたものではありません。住まい選びの判断材料のひとつとしてお使いください。
         </p>
       </article>
