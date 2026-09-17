@@ -275,13 +275,13 @@ export function SpotVerdict({
         には市区町村が入っていないので、そのときは市区町村名でお願いします。
       </p>
 
-      {error && <p className="text-[10px] text-rose-600">{error}</p>}
+      {error && <p className="text-xs text-rose-600">{error}</p>}
 
       {/* 出発地が無いと方位が決まらない。判定を出さずに理由を言う。
           ここで既定の座標に落とすと、他人の出発地から見た方位を
           「自分の吉方位」として読ませることになる。 */}
       {target && !hasBase && (
-        <p className="text-[10px] text-amber-700">
+        <p className="text-xs text-amber-700">
           出発地を入れると、この地点の方位と吉凶を出します。
         </p>
       )}
@@ -317,13 +317,13 @@ export function SpotVerdict({
           </div>
 
           {cell?.blocked && (
-            <p className="text-[10px] text-rose-600">
+            <p className="text-xs text-rose-600">
               天中殺により、この期間の移動は避ける扱いになっています。
             </p>
           )}
 
           {cell?.doyouSatsu && (
-            <p className="text-[10px] text-rose-600">
+            <p className="text-xs text-rose-600">
               {
                 "土用殺の方位です。土用の期間中はこの方位が塞がります（間日を除く）。年盤・月盤・日盤が吉でも避ける扱いです。"
               }
@@ -335,7 +335,7 @@ export function SpotVerdict({
               同じ答えになる。**判定の答えが変わるのに画面は何も変わらない**
               ので、黙って出さない（lib/geocodeSource）。 */}
           {precisionNote && (
-            <p className="text-[10px] text-amber-700 leading-relaxed">
+            <p className="text-xs text-amber-700 leading-relaxed">
               {precisionNote}
             </p>
           )}
@@ -343,7 +343,7 @@ export function SpotVerdict({
           {/* 近すぎる移動は方位がピンの置き方で変わる。判定は出したまま、
               どれだけ当てになるかを添える（lib/directionDistance）。 */}
           {unstableNote && (
-            <p className="text-[10px] text-amber-700 leading-relaxed">
+            <p className="text-xs text-amber-700 leading-relaxed">
               {unstableNote}{" "}
               <Link
                 href="/blog/how-much-does-distance-matter"
@@ -428,7 +428,7 @@ export function SpotVerdict({
                   className="mt-0.5 w-full rounded border border-stone-300 px-2 py-1 text-[11px] font-normal"
                 />
               </label>
-              <p className="text-[10px] leading-relaxed text-stone-500">
+              <p className="text-xs leading-relaxed text-stone-500">
                 {
                   "貼った URL は控えとして残すだけで、こちらから中身を読みに行くことはありません。家賃や間取りは手で書いてください。入れたら「★ この地点を保存」を押します。"
                 }
