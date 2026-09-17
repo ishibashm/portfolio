@@ -27,8 +27,8 @@ import { describe, expect, it } from "vitest";
   12px 以上なので対象外。
 */
 
-/** 実測（2026-09-17。側欄と地点の選択（GlobalSidebar・LocationPickerInner） が片付いた時点。8px は 0）。**直したら下げること。** */
-const BASELINE = { 8: 0, 9: 3 };
+/** 実測（2026-09-17。天地人の評価と磁気の HUD（TenChiJinEvaluation・MagneticSpatialHUD） が片付いた時点。8px は 0）。**直したら下げること。** */
+const BASELINE = { 8: 0, 9: 0 };
 
 function tsxFiles(dir: string): string[] {
   const out: string[] = [];
@@ -151,6 +151,8 @@ describe("小さすぎる字を増やさない", () => {
       "src/app/login/page.tsx",
       "src/components/GlobalSidebar.tsx",
       "src/components/LocationPickerInner.tsx",
+      "src/components/nba/TenChiJinEvaluation.tsx",
+      "src/components/MagneticSpatialHUD.tsx",
     ]) {
       expect(byFile.get(done) ?? 0, done).toBe(0);
     }
