@@ -57,6 +57,25 @@ import {
 import { DEFAULT_TENCHUSATSU_MODE } from "@/utils/tenchusatsuPolicy";
 import { loadSettings } from "@/lib/userSettings";
 import { ActiveProfileBadge } from "@/components/profile/ActiveProfileBadge";
+import { PartyMembersEditor } from "@/components/relocation/PartyMembersEditor";
+import {
+  partyParam,
+  readSharedParty,
+  writeSharedParty,
+  type PartyMemberInput,
+} from "@/lib/partyMemberInput";
+import {
+  jointTimeline,
+  memberDirection,
+  partyTimingReport,
+  type MemberTimeline,
+} from "@/lib/partyTimeline";
+import { PREFECTURE_CENTERS } from "@/lib/prefectureDirection";
+import {
+  loadProfilePresets,
+  type ProfilePreset,
+} from "@/lib/profilePresetSync";
+import { DEFAULT_PARTY_POLICY, type PartyPolicy } from "@/utils/arbitrageParty";
 
 interface TimelineDay {
   date: string;
@@ -147,6 +166,9 @@ function modeInfo(id: string) {
   return FILTER_MODES.find((m) => m.id === id) ?? FILTER_MODES[0];
 }
 
+/** 合流先（県）の保存先。物件スキャナーには無い項目なので別の鍵。 */
+const DEST_PREF_KEY = "timing_dest_pref_v1";
+
 function iso(d: Date): string {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 }
@@ -210,6 +232,59 @@ export default function TimingAnalyticsPage() {
   // 段階と暦注は軸が違うので別々に持ち、AND で重ねる。
   const [tierFilter, setTierFilter] = useState<Set<DayCategory>>(allCategories);
   const [luckyOnly, setLuckyOnly] = useState(false);
+
+  /*
+    同行者・合流する人。物件スキャナーと同じ人を同じ鍵から読む
+    （lib/partyMemberInput）。合流先は県で選び、各人の出発地からその県の
+    代表点への方位で、人ごとの段階を引いて 1 本にまとめる
+    （lib/partyTimeline）。走査は本人と同じ範囲（2 年まで）を人数ぶん。
+    物件スキャナーの同行者は 90 日までなので、「合流する人と 2 年ぶん
+    見たい」（利用者の要望 2026-09-17）はこちらで受ける。
+  */
+  const [partyMembers, setPartyMembers] = useState<PartyMemberInput[]>([]);
+  const [partyPolicy, setPartyPolicy] =
+    useState<PartyPolicy>(DEFAULT_PARTY_POLICY);
+  const [savedProfiles, setSavedProfiles] = useState<ProfilePreset[]>([]);
+  const [destPref, setDestPref] = useState("");
+  /** API が返した同行者ぶんの走査。本人の days と同じ範囲。 */
+  const [memberTimelines, setMemberTimelines] = useState<MemberTimeline[]>([]);
+  /** 直近の走査に載せた同行者。変えたら走査し直しが要ることを出す。 */
+  const [scannedParty, setScannedParty] = useState("");
+
+  useEffect(() => {
+    try {
+      const shared = readSharedParty(localStorage);
+      setPartyMembers(shared.members);
+      setPartyPolicy(shared.policy);
+      setDestPref(localStorage.getItem(DEST_PREF_KEY) || "");
+    } catch {
+      // 読めなければ空のまま
+    }
+    loadProfilePresets(fetch, localStorage)
+      .then((r) => setSavedProfiles(r.presets))
+      .catch(() => {
+        /* 未ログイン・オフラインなら手入力してもらう */
+      });
+  }, []);
+
+  // 保存は変えた瞬間に。効果で書くと、読み込み前の空の値で一度
+  // 上書きしてしまう（物件スキャナーで足した人が消える）。
+  const changeParty = (members: PartyMemberInput[]) => {
+    setPartyMembers(members);
+    writeSharedParty(localStorage, { members, policy: partyPolicy });
+  };
+  const changePolicy = (policy: PartyPolicy) => {
+    setPartyPolicy(policy);
+    writeSharedParty(localStorage, { members: partyMembers, policy });
+  };
+  const changeDest = (pref: string) => {
+    setDestPref(pref);
+    try {
+      localStorage.setItem(DEST_PREF_KEY, pref);
+    } catch {
+      // 保存できなくても動作には影響しない
+    }
+  };
 
   const [settings, setSettings] = useState<{
     birthDate: string;
@@ -312,11 +387,15 @@ export default function TimingAnalyticsPage() {
         from: iso(from),
         to: iso(to),
       });
+      const party = partyParam(partyMembers);
+      if (party) params.set("party", party);
       const res = await fetch(`/api/relocation/auspicious-days?${params}`);
       if (!res.ok) throw new Error(String(res.status));
       const json = await res.json();
       if (!Array.isArray(json?.days)) throw new Error("empty");
       setDays(json.days);
+      setMemberTimelines(Array.isArray(json.members) ? json.members : []);
+      setScannedParty(party);
       setPastClippedDays(clipped);
       setProfile({
         honmeiStar: json.honmeiStar,
@@ -328,7 +407,7 @@ export default function TimingAnalyticsPage() {
     } finally {
       setBusy(false);
     }
-  }, [settings, pastMonths, futureMonths]);
+  }, [settings, pastMonths, futureMonths, partyMembers]);
 
   // 設定が読めたら自動で 1 回走らせる。このページは分析が主役なので、
   // ボタンを押させてから待たせる理由がない。
@@ -436,7 +515,7 @@ export default function TimingAnalyticsPage() {
    * 選択日の県別の吉凶。地図をその日の意思決定面にする。
    * 判定は timeline の結果を使い回すので追加計算は方位の割り当てだけ。
    */
-  const prefKigaku = useMemo(() => {
+  const soloPrefKigaku = useMemo(() => {
     if (!selected || !settings?.baseLat || !settings?.baseLon) return undefined;
     const lat = Number(settings.baseLat);
     const lon = Number(settings.baseLon);
@@ -496,6 +575,95 @@ export default function TimingAnalyticsPage() {
     }
     return out;
   }, [selected]);
+
+  /**
+   * 本人＋同行者の走査結果。本人は "self" として先頭に置く。
+   * 出発地の緯度が無ければ方位が出せないので空。
+   */
+  const allTimelines = useMemo<MemberTimeline[]>(() => {
+    if (!days || !settings) return [];
+    const lat = Number(settings.baseLat);
+    const lon = Number(settings.baseLon);
+    if (!settings.baseLat || !Number.isFinite(lat) || !Number.isFinite(lon)) {
+      return [];
+    }
+    return [
+      {
+        id: "self",
+        name: "あなた",
+        stationary: false,
+        weight: 1,
+        baseLat: lat,
+        baseLon: lon,
+        days,
+      },
+      ...memberTimelines,
+    ];
+  }, [days, settings, memberTimelines]);
+
+  const destination = destPref ? PREFECTURE_CENTERS[destPref] : undefined;
+  const partyStale = days !== null && partyParam(partyMembers) !== scannedParty;
+  // 同行者を変えたあとは、前の人たちで出した合成を出さない（走査し直す
+  // まで空にする）。消した人の名前が「次に全員で動ける日」に残っていた。
+  const partyActive =
+    memberTimelines.length > 0 && allTimelines.length > 0 && !partyStale;
+
+  /** 合流先に向けた日ごとの合成。合流先が未選択なら空。 */
+  const partyDaily = useMemo(
+    () =>
+      partyActive && destination
+        ? jointTimeline(allTimelines, destination, partyPolicy)
+        : [],
+    [partyActive, destination, allTimelines, partyPolicy],
+  );
+  const partyReport = useMemo(
+    () =>
+      partyDaily.length > 0 ? partyTimingReport(partyDaily, todayIso) : null,
+    [partyDaily, todayIso],
+  );
+  /** 月ごとの「全員で動ける日」の数と最初の日。2 年ぶんを一覧にする。 */
+  const partyMonths = useMemo(() => {
+    if (!partyReport) return [];
+    const map = new Map<string, { count: number; first: string }>();
+    for (const d of partyDaily) {
+      if (d.date < todayIso) continue;
+      const m = d.date.slice(0, 7);
+      const cur = map.get(m) ?? { count: 0, first: "" };
+      if (d.joint.everyoneSafe) {
+        cur.count++;
+        if (!cur.first) cur.first = d.date;
+      }
+      map.set(m, cur);
+    }
+    return [...map.entries()].map(([month, v]) => ({ month, ...v }));
+  }, [partyReport, partyDaily, todayIso]);
+
+  /**
+   * 選択日の県塗りを全員ぶんにする。県ごとに「各人の出発地からその県への
+   * 方位」で人ごとの段階を引き、まとめ方で 1 つにする。合流先を選んで
+   * いなくても出す（どの県なら全員で動けるか、を地図で探す用）。
+   */
+  const partyPrefKigaku = useMemo(() => {
+    if (!selected || !partyActive || !soloPrefKigaku) return undefined;
+    const narrowed = allTimelines.map((m) => ({
+      ...m,
+      days: m.days.filter((d) => d.date === selected.date),
+    }));
+    const out: typeof soloPrefKigaku = {};
+    for (const [name, center] of Object.entries(PREFECTURE_CENTERS)) {
+      const jd = jointTimeline(narrowed, center, partyPolicy)[0];
+      const mine = soloPrefKigaku[name];
+      if (!jd || !mine) continue;
+      out[name] = {
+        direction: mine.direction,
+        directionLabel: `${mine.directionLabel}（全員）`,
+        tier: jd.tier,
+        blocked: jd.blocked,
+      };
+    }
+    return out;
+  }, [selected, partyActive, soloPrefKigaku, allTimelines, partyPolicy]);
+  const prefKigaku = partyPrefKigaku ?? soloPrefKigaku;
 
   const climatology = useMemo(() => {
     if (!profile) return null;
@@ -675,6 +843,182 @@ export default function TimingAnalyticsPage() {
           )}
           {error && <p className="mt-2 text-[11px] text-rose-600">{error}</p>}
         </section>
+
+        {/* 同行者・合流する人。走査の前でも人を足せるように、結果の外に置く */}
+        <Section
+          title="同行者・合流する人（いつなら全員で動けるか）"
+          subtitle="別の場所に住む親族と合流するなど、一緒に動く人を足すと、合流先に向けた全員ぶんの方位を人数ぶん走査して重ねます。走査は本人と同じ範囲（2 年まで）。同行者は物件スキャナーと共有で、あちらの「時期の走査」は 90 日までです。"
+        >
+          <div className="grid gap-5 lg:grid-cols-[minmax(0,380px)_1fr]">
+            <PartyMembersEditor
+              members={partyMembers}
+              onChange={changeParty}
+              policy={partyPolicy}
+              onPolicyChange={changePolicy}
+              savedProfiles={savedProfiles}
+            />
+            <div className="space-y-3">
+              <label className="block text-[11px] font-semibold text-stone-600">
+                合流先（県）
+                <select
+                  value={destPref}
+                  onChange={(e) => changeDest(e.target.value)}
+                  className="ml-1.5 rounded-lg border border-gray-200 bg-gray-50 px-2 py-1 text-xs font-normal"
+                >
+                  <option value="">選んでください</option>
+                  {Object.keys(PREFECTURE_CENTERS).map((name) => (
+                    <option key={name} value={name}>
+                      {name}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              {partyMembers.length === 0 && (
+                <p className="text-xs leading-relaxed text-stone-500">
+                  左で同行者を足すと、ここに「次に全員で動ける日」と月ごとの日数が出ます。
+                </p>
+              )}
+              {partyStale && (
+                <p
+                  role="status"
+                  className="rounded-xl border border-amber-200 bg-amber-50 p-2.5 text-[11px] leading-relaxed text-amber-900"
+                >
+                  同行者を変えました。
+                  <button
+                    type="button"
+                    onClick={runScan}
+                    disabled={busy || !canScan}
+                    className="mx-1 font-bold text-indigo-700 underline disabled:text-stone-400"
+                  >
+                    {busy ? "走査中…" : "この範囲で走査し直す"}
+                  </button>
+                  と、同行者ぶんも同じ範囲で走査します。
+                </p>
+              )}
+              {days &&
+                memberTimelines.length > 0 &&
+                allTimelines.length === 0 && (
+                  <p className="text-[11px] leading-relaxed text-rose-600">
+                    あなたの出発地の緯度が未設定なので、合流先への方位が出せません。物件スキャナーで出発地を入れ直してください。
+                  </p>
+                )}
+              {partyActive && !destination && (
+                <p className="text-xs leading-relaxed text-stone-500">
+                  合流先の県を選ぶと、各人の出発地からその県への方位で全員ぶんを重ねます。地図（カレンダーの日を選ぶと出ます）は合流先を選ばなくても全員ぶんの塗りになります。
+                </p>
+              )}
+              {partyReport && (
+                <div className="space-y-3" data-party-report>
+                  <p className="text-[11px] leading-relaxed text-stone-600">
+                    {allTimelines
+                      .filter((m) => !m.stationary)
+                      .map(
+                        (m) =>
+                          `${m.name}: ${DIRECTION_LABELS[memberDirection(m, destination!)] ?? ""}`,
+                      )
+                      .join("　")}
+                    {allTimelines.some((m) => m.stationary) &&
+                      `　移動しない: ${allTimelines
+                        .filter((m) => m.stationary)
+                        .map((m) => m.name)
+                        .join("・")}`}
+                  </p>
+                  <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+                    <div className="rounded-xl border border-gray-200 bg-gray-50 p-3">
+                      <div className="text-[11px] text-stone-500">
+                        次に全員で動ける日
+                      </div>
+                      <div className="mt-0.5 font-mono text-sm font-bold text-stone-800">
+                        {partyReport.nextAllClearDate ?? "範囲内に無し"}
+                      </div>
+                    </div>
+                    <div className="rounded-xl border border-gray-200 bg-gray-50 p-3">
+                      <div className="text-[11px] text-stone-500">
+                        全員で動ける日数
+                      </div>
+                      <div className="mt-0.5 font-mono text-sm font-bold text-stone-800">
+                        {partyReport.allClearDays} / {partyReport.scannedDays}日
+                      </div>
+                    </div>
+                    <div className="rounded-xl border border-gray-200 bg-gray-50 p-3">
+                      <div className="text-[11px] text-stone-500">窓の数</div>
+                      <div className="mt-0.5 font-mono text-sm font-bold text-stone-800">
+                        {summarizeWindows(partyReport.clearDates)?.count ?? 0}回
+                      </div>
+                    </div>
+                    <div className="rounded-xl border border-gray-200 bg-gray-50 p-3">
+                      <div className="text-[11px] text-stone-500">
+                        窓の平均の長さ
+                      </div>
+                      <div className="mt-0.5 font-mono text-sm font-bold text-stone-800">
+                        {summarizeWindows(partyReport.clearDates)?.avgLen ??
+                          "—"}
+                        日
+                      </div>
+                    </div>
+                  </div>
+                  {partyReport.alwaysBlockedBy.length > 0 && (
+                    <p className="rounded-xl border border-rose-200 bg-rose-50 p-2.5 text-[11px] leading-relaxed text-rose-900">
+                      {partyReport.alwaysBlockedBy
+                        .map(
+                          (b) => `${b.name}は走査した全ての日で「${b.status}」`,
+                        )
+                        .join("。")}
+                      。期間を延ばしても変わらないので、合流先の県を変えるか、年を改めるかの判断になります。
+                    </p>
+                  )}
+                  <p className="text-[11px] leading-relaxed text-stone-500">
+                    「全員で動ける日」は、移動する全員が凶なし（C
+                    以上）で天中殺にも当たらない日。まとめ方は日ごとの段階（下の地図の塗り）に効き、この日数には効きません。
+                  </p>
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-[11px]">
+                      <thead>
+                        <tr className="border-b border-gray-200 text-left text-[10px] tracking-wider text-stone-600">
+                          <th className="py-1.5 pr-2">月</th>
+                          <th className="py-1.5 pr-2 text-right">
+                            全員で動ける日数
+                          </th>
+                          <th className="py-1.5 text-right">最初の日</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {partyMonths.map((m) => (
+                          <tr
+                            key={m.month}
+                            className="border-b border-gray-100 last:border-0"
+                          >
+                            <td className="py-1 pr-2 font-mono">{m.month}</td>
+                            <td className="py-1 pr-2 text-right font-mono">
+                              {m.count === 0 ? (
+                                <span className="text-stone-300">0日</span>
+                              ) : (
+                                `${m.count}日`
+                              )}
+                            </td>
+                            <td className="py-1 text-right font-mono">
+                              {m.first ? (
+                                <button
+                                  type="button"
+                                  onClick={() => setSelectedDate(m.first)}
+                                  className="font-semibold text-indigo-600 underline"
+                                >
+                                  {m.first.slice(5)}
+                                </button>
+                              ) : (
+                                "—"
+                              )}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        </Section>
 
         {days && days.length > 0 && (
           <>
@@ -1087,7 +1431,11 @@ export default function TimingAnalyticsPage() {
             {selected && prefKigaku && (
               <Section
                 title={`${selected.date} にどの県へ動けるか`}
-                subtitle="出発地から見た各県の方位に、選択日の判定を当てて塗り分けています。緑（三盤吉）から赤（五大凶殺）、灰は天中殺。カレンダーのマスを選び直すと塗りが変わります。"
+                subtitle={
+                  partyPrefKigaku
+                    ? "県ごとに、あなたと同行者それぞれの出発地からその県への方位で選択日の判定を引き、まとめ方で 1 つにして塗っています。緑（三盤吉）から赤（五大凶殺）、灰は誰かが天中殺。カレンダーのマスを選び直すと塗りが変わります。"
+                    : "出発地から見た各県の方位に、選択日の判定を当てて塗り分けています。緑（三盤吉）から赤（五大凶殺）、灰は天中殺。カレンダーのマスを選び直すと塗りが変わります。"
+                }
               >
                 <div className="h-[420px] overflow-hidden rounded-2xl border border-gray-200">
                   <ArbitrageMap
