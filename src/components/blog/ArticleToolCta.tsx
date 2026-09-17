@@ -48,7 +48,7 @@ export function ArticleToolCta({ tags }: { tags: readonly string[] }) {
           </li>
         ))}
       </ul>
-      <p className="mt-4 text-[11px] leading-relaxed text-slate-500">
+      <p className="mt-4 text-xs leading-relaxed text-slate-500">
         判定の考え方と出典、何を保証していないかは
         <Link href="/about" className="underline hover:text-rose-600">
           このサイトについて
