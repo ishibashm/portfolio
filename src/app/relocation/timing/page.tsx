@@ -806,7 +806,7 @@ export default function TimingAnalyticsPage() {
               </span>
             )}
           </div>
-          <p className="mt-2 text-[10px] leading-relaxed text-stone-600">
+          <p className="mt-2 text-xs leading-relaxed text-stone-600">
             {modeInfo(settings?.directionFilterMode ?? "composite").hint}
           </p>
           {pastClippedDays !== null && (
