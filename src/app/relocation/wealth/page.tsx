@@ -1094,7 +1094,7 @@ export default function RegionalWealthPage() {
                     </label>
                     <button
                       onClick={() => setShowBirthMapPicker(!showBirthMapPicker)}
-                      className={`text-[9px] px-1.5 py-0.5 rounded border transition-colors ${showBirthMapPicker ? "bg-indigo-50 dark:bg-indigo-50 text-indigo-600 dark:text-indigo-600 border-indigo-200 dark:border-indigo-800" : "bg-gray-50 dark:bg-white text-stone-600 dark:text-stone-500 border-gray-200 dark:border-stone-200"}`}
+                      className={`text-[10px] px-1.5 py-0.5 rounded border transition-colors ${showBirthMapPicker ? "bg-indigo-50 dark:bg-indigo-50 text-indigo-600 dark:text-indigo-600 border-indigo-200 dark:border-indigo-800" : "bg-gray-50 dark:bg-white text-stone-600 dark:text-stone-500 border-gray-200 dark:border-stone-200"}`}
                     >
                       {showBirthMapPicker ? "地図を閉じる" : "地図検索"}
                     </button>
@@ -1161,7 +1161,7 @@ export default function RegionalWealthPage() {
                   </label>
                   <button
                     onClick={() => setShowBaseMapPicker(!showBaseMapPicker)}
-                    className={`text-[9px] px-1.5 py-0.5 rounded border transition-colors ${showBaseMapPicker ? "bg-emerald-50 dark:bg-emerald-50 text-emerald-600 dark:text-emerald-600 border-emerald-200 dark:border-emerald-800" : "bg-gray-50 dark:bg-white text-stone-600 dark:text-stone-500 border-gray-200 dark:border-stone-200"}`}
+                    className={`text-[10px] px-1.5 py-0.5 rounded border transition-colors ${showBaseMapPicker ? "bg-emerald-50 dark:bg-emerald-50 text-emerald-600 dark:text-emerald-600 border-emerald-200 dark:border-emerald-800" : "bg-gray-50 dark:bg-white text-stone-600 dark:text-stone-500 border-gray-200 dark:border-stone-200"}`}
                   >
                     {showBaseMapPicker ? "地図を閉じる" : "地図検索"}
                   </button>
@@ -1373,7 +1373,7 @@ export default function RegionalWealthPage() {
                         {DIRECTION_LABELS[b.dir]}
                       </span>
                       <span
-                        className={`w-14 shrink-0 text-[9px] font-semibold ${
+                        className={`w-14 shrink-0 text-[10px] font-semibold ${
                           isNoise ? "text-rose-500" : "text-emerald-600"
                         }`}
                       >
@@ -1404,13 +1404,13 @@ export default function RegionalWealthPage() {
                       <span className="w-16 shrink-0 text-right font-mono text-[10px] text-stone-500">
                         {Math.round(b.median)}万
                       </span>
-                      <span className="w-8 shrink-0 text-right font-mono text-[9px] text-stone-600">
+                      <span className="w-8 shrink-0 text-right font-mono text-[10px] text-stone-600">
                         {b.areas}件
                       </span>
                     </div>
                   );
                 })}
-                <p className="mt-1 text-[9px] leading-relaxed text-stone-600">
+                <p className="mt-1 text-xs leading-relaxed text-stone-600">
                   棒は一人当たり所得の幅（左端が最小・右端が最大）、縦線が中央値です。物差しは全方位で共通。吉凶は方位から決まるので方位ごとに 1 つです。
                 </p>
               </div>
