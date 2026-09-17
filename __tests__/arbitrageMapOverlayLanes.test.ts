@@ -107,3 +107,43 @@ describe("狭い画面では、下の段は凡例のものにする", () => {
     }
   });
 });
+
+/*
+  右下の凡例は、狭い画面では「凡例 ▾」に畳む（Task #52。2026-09-17）。
+
+  400px では左下の俯瞰の段（198px）と右下の凡例（208px）が両方 bottom-4
+  で、368px の幅に収まらず 74px 重なっていた。上の見張りは「候補数の札を
+  下に置かない」ことしか見ておらず、凡例どうしの取り合いは素通りだった。
+
+  決め: sm 未満は押し口だけを出し、開いたときは俯瞰の段の上に重なってよい
+  （開いた人は凡例を見たい）。中身の 3 通りは変えない。
+*/
+describe("狭い画面では、右下の凡例を畳む", () => {
+  /* 上の describe の SRC はその中でしか見えないので、ここでも読む */
+  const SRC = readFileSync(
+    join(process.cwd(), "src/components/ArbitrageMapInner.tsx"),
+    "utf8",
+  );
+
+  it("押し口は sm 未満だけに出て、開閉が読み上げでも分かる", () => {
+    expect(SRC).toMatch(/aria-expanded=\{legendOpen\}/);
+    const toggle = SRC.match(
+      /aria-expanded=\{legendOpen\}\s*className="([^"]*)"/,
+    );
+    expect(toggle, "押し口の className が見つからない").toBeTruthy();
+    expect(toggle![1]).toMatch(/\bsm:hidden\b/);
+  });
+
+  it("中身は既定で畳み、sm 以上では常に出る", () => {
+    expect(SRC).toContain('legendOpen ? "block" : "hidden sm:block"');
+  });
+
+  it("3 通りの中身は、それぞれ absolute で独立に置かれていない（器が 1 つ）", () => {
+    const legends = [
+      ...SRC.matchAll(/className="(absolute bottom-4 right-4[^"]*)"/g),
+    ];
+    /* 器の 1 つだけ。以前は 3 通りがそれぞれ absolute だった */
+    expect(legends.length).toBe(1);
+    expect(legends[0][1]).toMatch(/\bflex-col\b/);
+  });
+});

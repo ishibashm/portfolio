@@ -477,6 +477,8 @@ export default function ArbitrageMapInner({
    */
   const isOverview = zoom < OVERVIEW_ZOOM_MAX;
   const [showHeatmap, setShowHeatmap] = useState(false);
+  /** sm 未満で右下の凡例を開いているか（Task #52）。既定は畳む。 */
+  const [legendOpen, setLegendOpen] = useState(false);
   const [geoData, setGeoData] = useState<FeatureCollection | null>(null);
   /**
    * 地の分布。毎晩の集計＝その日の掲載を全部数えた値（#935）。
@@ -2614,40 +2616,59 @@ export default function ArbitrageMapInner({
       {/* 吉凶の凡例（右下）。扇形・ピン・俯瞰の県塗り・時期パネルの
           すべてが同じ段階（S〜X）なので、凡例もこの一つだけ。
           命式が未入力で段階を出せないときだけ、従来の単盤の凡例に落ちる */}
-      {dirKigaku ? (
-        <div className="absolute bottom-4 right-4 bg-white/80 text-stone-900 px-3.5 py-3 rounded-xl shadow-lg border border-stone-200 backdrop-blur text-[10px] pointer-events-none z-[1000] flex flex-col gap-1.5">
-          <div className="font-bold border-b border-stone-200 pb-1 text-stone-600">
-            方位の吉凶
-            {targetDate
-              ? `（${targetDate.slice(5).replace("-", "/")} 時点）`
-              : ""}
-          </div>
-          <div className="grid grid-cols-2 gap-x-3 gap-y-1">
-            {(["S", "A", "B", "C", "D", "X"] as const).map((t) => (
-              <div key={t} className="flex items-center gap-1.5">
-                <span
-                  className="w-2.5 h-2.5 rounded-full border border-stone-300"
-                  style={{ background: TIER_FILL[t] }}
-                ></span>
-                <span>
-                  {t} {TIER_JP[t]}
-                </span>
+      {/*
+        右下の凡例。**狭い画面では「凡例 ▾」に畳む。**
+
+        400px では左下の俯瞰の段（198px）とこの凡例（208px）が両方
+        bottom-4 で、368px の幅に収まらず 74px 重なっていた（Task #52。
+        #1328 の候補数の札と同じ型の取り合い）。sm 未満では押し口だけ出し、
+        開いたときは俯瞰の段の上に重なってよい（開いた人は凡例を見たい）。
+        中身の 3 通り（段階の凡例／判定なし／単盤の凡例）は変えていない。
+      */}
+      <div className="absolute bottom-4 right-4 z-[1000] flex flex-col items-end gap-1.5 pointer-events-auto">
+        <button
+          type="button"
+          onClick={() => setLegendOpen((v) => !v)}
+          aria-expanded={legendOpen}
+          className="sm:hidden px-2.5 py-1.5 rounded-lg border border-stone-200 bg-white/85 text-[10px] font-bold text-stone-700 shadow-lg backdrop-blur cursor-pointer"
+        >
+          {legendOpen ? "凡例 ▴" : "凡例 ▾"}
+        </button>
+        <div className={legendOpen ? "block" : "hidden sm:block"}>
+          {dirKigaku ? (
+            <div className="bg-white/80 text-stone-900 px-3.5 py-3 rounded-xl shadow-lg border border-stone-200 backdrop-blur text-[10px] pointer-events-none z-[1000] flex flex-col gap-1.5">
+              <div className="font-bold border-b border-stone-200 pb-1 text-stone-600">
+                方位の吉凶
+                {targetDate
+                  ? `（${targetDate.slice(5).replace("-", "/")} 時点）`
+                  : ""}
               </div>
-            ))}
-            <div className="flex items-center gap-1.5">
-              <span
-                className="w-2.5 h-2.5 rounded-full border border-stone-300"
-                style={{ background: BLOCKED_FILL }}
-              ></span>
-              <span>天中殺</span>
+              <div className="grid grid-cols-2 gap-x-3 gap-y-1">
+                {(["S", "A", "B", "C", "D", "X"] as const).map((t) => (
+                  <div key={t} className="flex items-center gap-1.5">
+                    <span
+                      className="w-2.5 h-2.5 rounded-full border border-stone-300"
+                      style={{ background: TIER_FILL[t] }}
+                    ></span>
+                    <span>
+                      {t} {TIER_JP[t]}
+                    </span>
+                  </div>
+                ))}
+                <div className="flex items-center gap-1.5">
+                  <span
+                    className="w-2.5 h-2.5 rounded-full border border-stone-300"
+                    style={{ background: BLOCKED_FILL }}
+                  ></span>
+                  <span>天中殺</span>
+                </div>
+              </div>
+              <span className="block text-[10px] text-stone-600 max-w-48 leading-relaxed">
+                年・月・日の三盤を合成した選択日の判定。扇形もピンも同じ段階で塗っています。物件ごとの違いは条件の良さ（スコア・星数）で見てください。
+              </span>
             </div>
-          </div>
-          <span className="block text-[10px] text-stone-600 max-w-48 leading-relaxed">
-            年・月・日の三盤を合成した選択日の判定。扇形もピンも同じ段階で塗っています。物件ごとの違いは条件の良さ（スコア・星数）で見てください。
-          </span>
-        </div>
-      ) : !hasPersonalVerdict ? (
-        /*
+          ) : !hasPersonalVerdict ? (
+            /*
           個人の判定が無いとき。以前はここで「アストロ吉凶（凡例）」を
           出し、超大吉／吉／注意／大凶／平穏を並べていた。生年月日が
           未入力でも API が「今日生まれ」で計算した値を返していたため、
@@ -2656,59 +2677,61 @@ export default function ArbitrageMapInner({
           API 側は判定を作らないようにした（#205）。ここでは、色が
           何も意味していないことと、何を入れれば出るかだけを言う。
         */
-        <div className="absolute bottom-4 right-4 max-w-52 bg-white/85 text-stone-900 px-3.5 py-3 rounded-xl shadow-lg border border-stone-200 backdrop-blur text-[10px] pointer-events-none z-[1000] flex flex-col gap-1.5">
-          <div className="font-bold border-b border-stone-200 pb-1 text-stone-600">
-            方位の吉凶は出していません
-          </div>
-          <div className="flex items-center gap-1.5">
-            <span className="w-2.5 h-2.5 rounded-full bg-[#a8a29e] border border-[#57534e]"></span>
-            <span>判定なし（色に意味はありません）</span>
-          </div>
-          <span className="block text-[10px] leading-relaxed text-stone-500">
-            {kigakuUnavailableReason ??
-              "生年月日と出発地を入れると、その日の方位の吉凶で塗り分けます。"}
-            本命殺・天中殺は生年月日から決まるため、入力が無い状態では判定しません。
-          </span>
-        </div>
-      ) : (
-        <div className="absolute bottom-4 right-4 bg-white/80 text-stone-900 px-3.5 py-3 rounded-xl shadow-lg border border-stone-200 backdrop-blur text-[10px] pointer-events-none z-[1000] flex flex-col gap-2">
-          <div className="font-bold border-b border-stone-200 pb-1 mb-0.5 text-stone-600">
-            アストロ吉凶（凡例）
-          </div>
-          <div className="grid grid-cols-2 gap-x-3 gap-y-1">
-            <div className="flex items-center gap-1.5 col-span-2">
-              <span className="w-2.5 h-2.5 rounded-full bg-[#fbbf24] border border-[#b45309] shadow-[0_0_8px_rgba(251,191,36,0.6)]"></span>
-              <span className="font-bold text-amber-600">
-                超大吉 (木星ライン特選)
+            <div className="max-w-52 bg-white/85 text-stone-900 px-3.5 py-3 rounded-xl shadow-lg border border-stone-200 backdrop-blur text-[10px] pointer-events-none z-[1000] flex flex-col gap-1.5">
+              <div className="font-bold border-b border-stone-200 pb-1 text-stone-600">
+                方位の吉凶は出していません
+              </div>
+              <div className="flex items-center gap-1.5">
+                <span className="w-2.5 h-2.5 rounded-full bg-[#a8a29e] border border-[#57534e]"></span>
+                <span>判定なし（色に意味はありません）</span>
+              </div>
+              <span className="block text-[10px] leading-relaxed text-stone-500">
+                {kigakuUnavailableReason ??
+                  "生年月日と出発地を入れると、その日の方位の吉凶で塗り分けます。"}
+                本命殺・天中殺は生年月日から決まるため、入力が無い状態では判定しません。
               </span>
             </div>
-            <div className="flex items-center gap-1.5">
-              <span className="w-2.5 h-2.5 rounded-full bg-[#fbbf24] border border-[#b45309]"></span>
-              <span>超吉 (最上吉)</span>
+          ) : (
+            <div className="bg-white/80 text-stone-900 px-3.5 py-3 rounded-xl shadow-lg border border-stone-200 backdrop-blur text-[10px] pointer-events-none z-[1000] flex flex-col gap-2">
+              <div className="font-bold border-b border-stone-200 pb-1 mb-0.5 text-stone-600">
+                アストロ吉凶（凡例）
+              </div>
+              <div className="grid grid-cols-2 gap-x-3 gap-y-1">
+                <div className="flex items-center gap-1.5 col-span-2">
+                  <span className="w-2.5 h-2.5 rounded-full bg-[#fbbf24] border border-[#b45309] shadow-[0_0_8px_rgba(251,191,36,0.6)]"></span>
+                  <span className="font-bold text-amber-600">
+                    超大吉 (木星ライン特選)
+                  </span>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <span className="w-2.5 h-2.5 rounded-full bg-[#fbbf24] border border-[#b45309]"></span>
+                  <span>超吉 (最上吉)</span>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <span className="w-2.5 h-2.5 rounded-full bg-[#10b981] border border-[#065f46]"></span>
+                  <span>吉 (相性抜群)</span>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <span className="w-2.5 h-2.5 rounded-full bg-[#f97316] border border-[#7c2d12]"></span>
+                  <span>警告・調整方位</span>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <span className="w-2.5 h-2.5 rounded-full bg-[#f59e0b] border border-[#78350f]"></span>
+                  <span>注意 (軽い凶)</span>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <span className="w-2.5 h-2.5 rounded-full bg-[#ef4444] border border-[#7f1d1d]"></span>
+                  <span>大凶 (大凶方位)</span>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <span className="w-2.5 h-2.5 rounded-full bg-[#475569] border border-[#1e293b]"></span>
+                  <span>平穏 (凶方位ではない)</span>
+                </div>
+              </div>
             </div>
-            <div className="flex items-center gap-1.5">
-              <span className="w-2.5 h-2.5 rounded-full bg-[#10b981] border border-[#065f46]"></span>
-              <span>吉 (相性抜群)</span>
-            </div>
-            <div className="flex items-center gap-1.5">
-              <span className="w-2.5 h-2.5 rounded-full bg-[#f97316] border border-[#7c2d12]"></span>
-              <span>警告・調整方位</span>
-            </div>
-            <div className="flex items-center gap-1.5">
-              <span className="w-2.5 h-2.5 rounded-full bg-[#f59e0b] border border-[#78350f]"></span>
-              <span>注意 (軽い凶)</span>
-            </div>
-            <div className="flex items-center gap-1.5">
-              <span className="w-2.5 h-2.5 rounded-full bg-[#ef4444] border border-[#7f1d1d]"></span>
-              <span>大凶 (大凶方位)</span>
-            </div>
-            <div className="flex items-center gap-1.5">
-              <span className="w-2.5 h-2.5 rounded-full bg-[#475569] border border-[#1e293b]"></span>
-              <span>平穏 (凶方位ではない)</span>
-            </div>
-          </div>
+          )}
         </div>
-      )}
+      </div>
 
       {/* Toast Notification。framer-motion（gzip 39 KB）をこの 1 か所の
           ためだけに地図の塊へ乗せていたので、globals.css の fade-in-up に
