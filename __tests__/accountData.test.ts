@@ -50,10 +50,18 @@ describe("消す鍵", () => {
       "wealth_baseLat",
       "wealth_baseLon",
       "relocation_simulator_draft",
+      "arb_axis_prefs_v1",
+      "timing_dest_pref_v1",
       "dest_lat",
       "dest_lon",
       "dest_label",
     ]);
+  });
+
+  it("同行者の生年月日を持つ物件検索の設定は消す側にある", () => {
+    /* 鍵の名前に birth が無いので、下の「写しは必ず消す側」の検査を
+       すり抜けていた。partyMembers に同行者の生年月日と出発地が入る */
+    expect(ACCOUNT_LOCAL_KEYS).toContain("arb_axis_prefs_v1");
   });
 
   it("地図に自分で置いた地点は消さない", () => {
@@ -149,7 +157,6 @@ const KEPT: Record<string, string> = {
   arb_searchArea: "地図の表示範囲",
   arb_base_map: "下地の種類",
   arb_zoning_on: "用途地域を重ねるか",
-  arb_axis_prefs_v1: "一覧の並べ方",
   arbitrage_show_rings: "距離の輪を出すか",
   arbitrage_show_sectors: "方位の扇を出すか",
   arbitrage_show_spots: "名所を出すか",
