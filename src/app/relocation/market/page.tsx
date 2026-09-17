@@ -74,7 +74,7 @@ function Section({
   return (
     <section className="rounded-3xl border border-gray-200 bg-white p-5 shadow-sm">
       <h2 className="text-sm font-bold text-stone-800">{title}</h2>
-      <p className="mt-0.5 mb-4 text-[11px] leading-relaxed text-stone-500">
+      <p className="mt-0.5 mb-4 text-xs leading-relaxed text-stone-500">
         {subtitle}
       </p>
       {children}
@@ -242,7 +242,7 @@ export default function MarketAnalyticsPage() {
               </ResponsiveContainer>
             </div>
           ) : (
-            <p className="rounded-xl bg-stone-50 border border-stone-200 p-3 text-[11px] leading-relaxed text-stone-500">
+            <p className="rounded-xl bg-stone-50 border border-stone-200 p-3 text-xs leading-relaxed text-stone-500">
               蓄積中（現在 {stats.rentIndexSeries.length} 日ぶん）。毎晩の集計が 5 日ぶん貯まるとチャートが表示されます。
             </p>
           )}
@@ -506,7 +506,7 @@ export default function MarketAnalyticsPage() {
             </table>
           </div>
           {stats.volatilityRanking.length === 0 && (
-            <p className="text-[11px] text-stone-600">データ待ち</p>
+            <p className="text-xs text-stone-600">データ待ち</p>
           )}
         </Section>
 
@@ -533,7 +533,7 @@ export default function MarketAnalyticsPage() {
               ? new Date(`${clim.meta.from}T12:00:00+09:00`)
               : null;
             if (!from || Object.keys(profiles).length === 0) {
-              return <p className="text-[11px] text-stone-600">データ待ち</p>;
+              return <p className="text-xs text-stone-600">データ待ち</p>;
             }
             const idx = Math.min(
               8,

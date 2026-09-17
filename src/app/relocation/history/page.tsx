@@ -860,7 +860,7 @@ export default function RelocationHistoryPage() {
                             " ※エンジン改良により現在の評価と異なります"}
                         </span>
                       )}
-                      <p className="text-[11px] text-stone-500 mt-2 font-medium px-2 leading-relaxed">
+                      <p className="text-xs text-stone-500 mt-2 font-medium px-2 leading-relaxed">
                         {formatDirectionInfo(selectedItem.evaluation.status)}
                       </p>
                     </div>
