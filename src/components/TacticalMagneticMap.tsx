@@ -133,7 +133,8 @@ export function TacticalMagneticMapComponent({
               size={14}
               className="text-blue-700 md:animate-pulse mt-1"
             />
-            <div className="flex flex-col w-full min-w-0">
+            {/* 右上の「地図」（MagneticMapInner）のぶん、lg 未満は右を空ける */}
+            <div className="flex flex-col w-full min-w-0 pr-20 lg:pr-0">
               {/*
                 見出しは**この地図が実際に出しているもの**を言う。
 
