@@ -139,7 +139,7 @@ export function TargetDateAdvice({
 
   if (!birthDate || lon === null || !Number.isFinite(lon)) {
     return (
-      <p className="mt-2 text-[11px] text-stone-500">
+      <p className="mt-2 text-xs text-stone-500">
         生年月日と出発地を入れると、この目標日が方位ごとに何段階かを出します。
       </p>
     );
@@ -157,10 +157,10 @@ export function TargetDateAdvice({
         )}
       </div>
 
-      {error && <p className="mt-2 text-[11px] text-rose-700">{error}</p>}
+      {error && <p className="mt-2 text-xs text-rose-700">{error}</p>}
 
       {result?.target && (
-        <p className="mt-1 text-[11px] text-stone-600">
+        <p className="mt-1 text-xs text-stone-600">
           {targetDate}
           {result.target.rokuyo ? `・${plainRokuyo(result.target.rokuyo)}` : ""}
           {result.target.tags.length > 0
@@ -173,7 +173,7 @@ export function TargetDateAdvice({
       )}
 
       {result && !result.targetInRange && !loading && !error && (
-        <p className="mt-2 text-[11px] text-stone-600">
+        <p className="mt-2 text-xs text-stone-600">
           この目標日は判定できる範囲の外です。年盤が二度替わる先まで見ると、精度より不確かさが勝つため出していません。
         </p>
       )}
