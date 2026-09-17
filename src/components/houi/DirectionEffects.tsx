@@ -56,7 +56,7 @@ export function DirectionEffects({
                 {directionEffectSentence(v.direction, v.star, "good")}
               </p>
               {v.star !== null && (
-                <p className="mt-2 text-[11px] leading-relaxed text-emerald-800">
+                <p className="mt-2 text-xs leading-relaxed text-emerald-800">
                   {elementRelationSentence(personalStar, v.star)}
                 </p>
               )}
@@ -84,7 +84,7 @@ export function DirectionEffects({
         </div>
       )}
 
-      <p className="mt-5 text-[11px] leading-relaxed text-slate-500">
+      <p className="mt-5 text-xs leading-relaxed text-slate-500">
         ここに書いた働きは、後天定位盤における各星の象意にもとづく古典的な考え方です。方位が持つ意味と、そこに回座する星の意味が一致するとき（たとえば
         {STAR_MEANINGS[1].home === "N" ? "北に一白水星" : "定位と同じ配置"}
         ）は、同じ象意が重なるぶん働きが強く出るとされます。
