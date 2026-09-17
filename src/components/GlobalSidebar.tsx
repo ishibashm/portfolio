@@ -492,7 +492,7 @@ export function GlobalSidebar() {
 
           {/* Creator Signature */}
           <div
-            className={`text-[9px] text-stone-600 font-mono text-center tracking-wider mt-1 select-none ${hideWhenCollapsed}`}
+            className={`text-[10px] text-stone-600 font-mono text-center tracking-wider mt-1 select-none ${hideWhenCollapsed}`}
           >
             {/* 署名は略記にする。運営者としての正式な表記は /about の
                 「運営」に置いてあり、そちらは短くしない（誰が運営して

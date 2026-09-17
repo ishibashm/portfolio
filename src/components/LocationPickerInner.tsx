@@ -90,7 +90,7 @@ export default function LocationPickerInner({
         <CurrentLocationControl corner="bottomright" />
         {markerPos && <Marker position={markerPos} />}
       </MapContainer>
-      <div className="absolute top-2 left-2 z-[1000] pointer-events-none p-1 bg-white/70 border border-stone-200 text-[9px] font-mono text-emerald-600 backdrop-blur-sm">
+      <div className="absolute top-2 left-2 z-[1000] pointer-events-none p-1 bg-white/70 border border-stone-200 text-[10px] font-mono text-emerald-600 backdrop-blur-sm">
         [CLICK ON MAP TO SET TARGET]
       </div>
       <div className="absolute top-2 right-2 z-[1000] pointer-events-auto">
@@ -98,7 +98,7 @@ export default function LocationPickerInner({
           onClick={() => {
             toggleMapTheme();
           }}
-          className="flex items-center gap-1 px-1.5 py-1 rounded bg-white/70 text-stone-600 border border-stone-200 hover:bg-white transition-colors shadow-lg text-[9px] font-mono font-bold cursor-pointer"
+          className="flex items-center gap-1 px-1.5 py-1 rounded bg-white/70 text-stone-600 border border-stone-200 hover:bg-white transition-colors shadow-lg text-[10px] font-mono font-bold cursor-pointer"
         >
           {mapTheme === "dark" ? "☀️ ライト" : "🌙 ダーク"}
         </button>
