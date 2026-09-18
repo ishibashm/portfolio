@@ -1012,59 +1012,64 @@ const FIGURES = [
   },
   {
     /* 記事の実測表から。2027 年・六白金星・名古屋、立春から翌立春の
-       前日まで 365 日 × 8 方位。年盤で塞がった方位は 0 日になる。 */
+       前日まで 365 日 × 8 方位。年盤の状態が、その方位で届く段階の
+       範囲そのものを決める（凶 → 0 日、平 → 三盤吉が出ない、吉 → 出る）。 */
     slug: "direction-or-timing-which-matters",
-    kicker:
-      "\u65b9\u4f4d\u3068\u65e5\u53d6\u308a\u3001\u3069\u3061\u3089\u304c\u91cd\u3044\u306e\u304b",
-    title:
-      "\u5e74\u76e4\u3067\u585e\u304c\u3063\u305f\u65b9\u4f4d\u306f<br>\u65e5\u53d6\u308a\u3067\u306f\u623b\u3089\u306a\u3044",
-    sub: "2027 \u5e74\u30fb\u516d\u767d\u91d1\u661f\u30fb\u540d\u53e4\u5c4b\u304b\u3089\u3002\u7acb\u6625\u304b\u3089\u7fcc\u7acb\u6625\u306e\u524d\u65e5\u307e\u3067 365 \u65e5 \u00d7 8 \u65b9\u4f4d\u3092\u6570\u3048\u307e\u3057\u305f\u3002",
-    body: `<div style="display:flex;gap:36px;align-items:center">
+    kicker: "方位と日取り、どちらが重いのか",
+    title: "年盤が、届く段階の<br>上限まで決めている",
+    sub: "2027 年・六白金星・名古屋から。立春から翌立春の前日まで 365 日 × 8 方位を数えました。",
+    body: `<div style="display:flex;gap:34px;align-items:center">
       ${(() => {
-        /* 記事の表そのもの。[方位, 年盤, 三盤が吉になる日]。
+        /* 記事の表そのもの。[年盤, 三盤吉(S), 吉を含む日(S+A+B)]。
            盤の並びは北西・北・北東 / 西・中・東 / 南西・南・南東。 */
-        const days = {
-          北: ["\u4e94\u9ec4\u6bba", 0],
-          北東: ["\u6b73\u7834", 0],
-          東: ["\u5e73", 31],
-          南東: ["\u5409\u65b9\u4f4d", 76],
-          南: ["\u6697\u5263\u6bba", 0],
-          南西: ["\u672c\u547d\u6bba", 0],
-          西: ["\u5409\u65b9\u4f4d", 93],
-          北西: ["\u5409\u65b9\u4f4d", 56],
+        const d = {
+          北: ["五黄殺", 0, 0],
+          北東: ["歳破", 0, 0],
+          東: ["平", 0, 31],
+          南東: ["吉方位", 29, 76],
+          南: ["暗剣殺", 0, 0],
+          南西: ["本命殺", 0, 0],
+          西: ["吉方位", 11, 93],
+          北西: ["吉方位", 12, 56],
         };
         const cells = [
-          "\u5317\u897f",
-          "\u5317",
-          "\u5317\u6771",
-          "\u897f",
-          "\u4e2d",
-          "\u6771",
-          "\u5357\u897f",
-          "\u5357",
-          "\u5357\u6771",
+          "北西",
+          "北",
+          "北東",
+          "西",
+          "中",
+          "東",
+          "南西",
+          "南",
+          "南東",
         ]
-          .map((d) => {
-            if (d === "\u4e2d")
-              return `<div class="c mid" style="font-size:15px">\u516d\u767d</div>`;
-            const [, n] = days[d];
-            /* 0 日は「日取りでは戻らない」側。塗って区別する。 */
-            const cls = n === 0 ? "c hit" : "c";
-            return `<div class="${cls}" style="flex-direction:column;gap:1px;font-size:13px${
-              n === 0 ? "" : ";color:#0f172a"
-            }">
-              <div>${d}</div>
-              <div style="font-size:15px;font-weight:800">${n}</div>
+          .map((k) => {
+            if (k === "中")
+              return `<div class="c mid" style="font-size:15px">六白</div>`;
+            const [, s, open] = d[k];
+            /* 3 つに塗り分ける。塞がった方位（吉が 0 日）は赤、
+               年盤が平で三盤吉が出ない方位は地色のまま、
+               三盤吉が出る方位は白地に数字。 */
+            const blocked = open === 0;
+            const flat = !blocked && s === 0;
+            const bg = blocked ? "#e11d48" : flat ? "#efe7e0" : "#fff";
+            const border = blocked ? "#be123c" : flat ? "#ded4ca" : "#e2d9d1";
+            const ink = blocked ? "#fff" : flat ? "#94a3b8" : "#0f172a";
+            return `<div class="c" style="background:${bg};border-color:${border};color:${ink};
+                flex-direction:column;gap:0;font-size:12px">
+              <div style="font-weight:700">${k}</div>
+              <div style="font-size:17px;font-weight:800">${s}</div>
+              <div style="font-size:11px;font-weight:600;opacity:.8">${blocked ? "—" : `吉 ${open}`}</div>
             </div>`;
           })
           .join("");
-        return `<figure><div class="g" style="grid-template-columns:repeat(3,76px);grid-template-rows:repeat(3,76px)">${cells}</div><figcaption>\u4e09\u76e4\u304c\u5409\u306b\u306a\u308b\u65e5\u6570</figcaption></figure>`;
+        return `<figure><div class="g" style="grid-template-columns:repeat(3,82px);grid-template-rows:repeat(3,82px)">${cells}</div><figcaption>大きい数字が三盤吉の日数</figcaption></figure>`;
       })()}
       <div class="note">
-        \u5e74\u76e4\u3067\u585e\u304c\u3063\u305f <b>4 \u65b9\u4f4d</b>\uff08\u4e94\u9ec4\u6bba\u30fb\u6697\u5263\u6bba\u30fb\u6b73\u7834\u30fb\u672c\u547d\u6bba\uff09\u306f\u3001
-        <b>365 \u65e5\u3059\u3079\u3066\u304c\u6700\u4f4e\u8a55\u4fa1</b>\u3067\u3057\u305f\u3002\u6708\u76e4\u3068\u65e5\u76e4\u3092\u3069\u3046\u9078\u3093\u3067\u3082\u52d5\u304d\u307e\u305b\u3093\u3002
-        \u7a7a\u3044\u3066\u3044\u308b 4 \u65b9\u4f4d\u3067\u3082 <b>31\u301c93 \u65e5</b>\u306b\u7d5e\u3089\u308c\u307e\u3059\u3002
-        <b>\u65b9\u4f4d\u304c\u5148\u3001\u65e5\u53d6\u308a\u304c\u5f8c</b>\u3067\u3059\u3002
+        <b>塞がった 4 方位</b>（赤）は 365 日すべて最低評価。<b>東</b>は
+        年盤が平なので、31 日残っても<b>三盤吉は 1 日も出ません</b>。
+        三盤吉が出るのは年盤が吉の 3 方位だけで、<b>29・12・11 日</b>。
+        <b>方位が先、日取りが後</b>です。
       </div>
     </div>`,
   },
