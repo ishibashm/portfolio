@@ -18,7 +18,12 @@
  * 回しても軽いよう、依存は方位の計算と合成の 2 つだけにしてある。
  */
 import { TIER_LABELS, TIER_ORDER, type DayTier } from "@/utils/dayTier";
-import { bearingBetween, directionFromBearing } from "@/utils/directionGeo";
+import {
+  bearingBetween,
+  directionFromBearing,
+  distanceKmBetween,
+} from "@/utils/directionGeo";
+import { isDirectionUnstable } from "@/lib/directionDistance";
 import {
   combineOutcomes,
   summarizeTiming,
@@ -186,30 +191,61 @@ export function jointTimeline(
   destination: Destination,
   policy: PartyPolicy,
 ): JointDay[] {
-  const movers = members.filter((m) => !m.stationary && m.days.length > 0);
-  if (movers.length === 0) return [];
-  const directions = new Map<string, EightDirection>();
+  return jointFromIndex(indexMembers(members), destination, policy);
+}
+
+/**
+ * 日付で引ける形に組み直したもの。**合流先が変わっても作り直さない部分。**
+ *
+ * 合流先ごとに変わるのは方位だけで、各人の「日 → 行」の対応は変わらない。
+ * 47 県ぶんの候補を出すとき（`destinationCandidates`）にここを作り直すと、
+ * 730 日 × 人数 × 47 回の詰め直しになる。1 回で済ませる。
+ */
+interface MemberIndex {
+  members: MemberTimeline[];
+  movers: MemberTimeline[];
+  rowsByDate: Map<string, Map<string, TimelineRow>>;
+  weights: Record<string, number>;
+}
+
+function indexMembers(members: MemberTimeline[]): MemberIndex {
   const rowsByDate = new Map<string, Map<string, TimelineRow>>();
   for (const m of members) {
-    directions.set(m.id, memberDirection(m, destination));
     rowsByDate.set(m.id, new Map(m.days.map((d) => [d.date, d])));
   }
-  const weights = weightsOf(members);
+  return {
+    members,
+    movers: members.filter((m) => !m.stationary && m.days.length > 0),
+    rowsByDate,
+    weights: weightsOf(members),
+  };
+}
+
+function jointFromIndex(
+  idx: MemberIndex,
+  destination: Destination,
+  policy: PartyPolicy,
+): JointDay[] {
+  if (idx.movers.length === 0) return [];
+  const directions = new Map<string, EightDirection>();
+  for (const m of idx.members) {
+    directions.set(m.id, memberDirection(m, destination));
+  }
   const out: JointDay[] = [];
-  for (const anchor of movers[0].days) {
-    const outcomes = members.map((m) =>
+  for (const anchor of idx.movers[0].days) {
+    const outcomes = idx.members.map((m) =>
       outcomeFor(
         m,
-        rowsByDate.get(m.id)?.get(anchor.date),
+        idx.rowsByDate.get(m.id)?.get(anchor.date),
         directions.get(m.id) ?? "N",
       ),
     );
-    const joint = combineOutcomes(outcomes, policy, weights);
+    const joint = combineOutcomes(outcomes, policy, idx.weights);
     out.push({
       date: anchor.date,
       tier: tierFromScore(joint.score),
-      blocked: movers.some(
-        (m) => rowsByDate.get(m.id)?.get(anchor.date)?.blocked === true,
+      blocked: idx.movers.some(
+        (m) => idx.rowsByDate.get(m.id)?.get(anchor.date)?.blocked === true,
       ),
       joint,
     });
@@ -251,5 +287,117 @@ export function partyTimingReport(
   return {
     ...summary,
     clearDates: future.filter((d) => d.joint.everyoneSafe).map((d) => d.date),
+  };
+}
+
+/** 候補 1 件ぶんの、人ごとの向き。誰がどちらへ動くかを画面に出すため。 */
+export interface CandidateLeg {
+  memberId: string;
+  name: string;
+  /** その人の出発地から見た合流先の方位。移動しない人は null。 */
+  direction: EightDirection | null;
+  distanceKm: number | null;
+  /** 近すぎて方位が定まらない距離か（`DIRECTION_UNSTABLE_KM` 未満）。 */
+  unstable: boolean;
+}
+
+/** 合流先の候補 1 件。 */
+export interface DestinationCandidate extends PartyTimingReport {
+  /** 合流先の呼び名（県名）。 */
+  name: string;
+  /** 今日以降で届く最良の段階。 */
+  bestTier: DayTier;
+  legs: CandidateLeg[];
+  /** 移動する人の誰かが近すぎて、方位が定まらない。 */
+  hasUnstableLeg: boolean;
+}
+
+/**
+ * **どこで合流できるかを、選ばせずに出す。**
+ *
+ * 合流先を選ばせる作りだと、利用者は 47 回選び直さないと「どこなら
+ * 全員で動けるのか」が分からない。人ごとに出発地が違うので、
+ * 同じ合流先でも方位が違い、答えは選んでみるまで予想できない。
+ * 候補の側から出す。
+ *
+ * 走査（日 × 方位の段階）は既に人ごとに持っているので、合流先が
+ * 増えても暦は引き直さない。変わるのは「その人の出発地からその県への
+ * 方位」だけで、あとは同じ段階表を別の列で引くだけ。
+ *
+ * 並びは**今日以降で全員が動ける日数**の多い順。同数なら最良の段階、
+ * さらに同じなら最も早い日で決める。日数が 0 の県も返す（「どこも
+ * 0 日」を隠すと、期間を延ばすか人を減らすかの判断ができない）。
+ *
+ * @param centers 合流先の候補。県の代表点（`PREFECTURE_CENTERS`）を想定。
+ * @param todayIso 今日（YYYY-MM-DD）。これより前の日は数えない。
+ */
+export function destinationCandidates(
+  members: MemberTimeline[],
+  centers: Record<string, Destination>,
+  policy: PartyPolicy,
+  todayIso: string,
+): DestinationCandidate[] {
+  const idx = indexMembers(members);
+  if (idx.movers.length === 0) return [];
+  const out: DestinationCandidate[] = [];
+  for (const [name, center] of Object.entries(centers)) {
+    const daily = jointFromIndex(idx, center, policy);
+    if (daily.length === 0) continue;
+    const report = partyTimingReport(daily, todayIso);
+    const legs = idx.members.map((m) => legFor(m, center));
+    out.push({
+      ...report,
+      name,
+      bestTier: report.bestDate ? tierFromScore(report.bestScore) : "X",
+      legs,
+      hasUnstableLeg: legs.some((l) => l.unstable),
+    });
+  }
+  out.sort(
+    (a, b) =>
+      b.allClearDays - a.allClearDays ||
+      TIER_ORDER.indexOf(a.bestTier) - TIER_ORDER.indexOf(b.bestTier) ||
+      compareFirstDate(a.nextAllClearDate, b.nextAllClearDate) ||
+      a.name.localeCompare(b.name, "ja"),
+  );
+  return out;
+}
+
+/** 早い日が先。無い側は後ろへ。 */
+function compareFirstDate(a: string | null, b: string | null): number {
+  if (a === b) return 0;
+  if (a === null) return 1;
+  if (b === null) return -1;
+  return a < b ? -1 : 1;
+}
+
+function legFor(
+  member: MemberTimeline,
+  destination: Destination,
+): CandidateLeg {
+  if (member.stationary) {
+    return {
+      memberId: member.id,
+      name: member.name,
+      direction: null,
+      distanceKm: null,
+      unstable: false,
+    };
+  }
+  const distanceKm = distanceKmBetween(
+    member.baseLat,
+    member.baseLon,
+    destination.lat,
+    destination.lon,
+  );
+  return {
+    memberId: member.id,
+    name: member.name,
+    direction: memberDirection(member, destination),
+    distanceKm,
+    /* 近すぎる移動では方位がピンの置き方で決まる（lib/directionDistance）。
+       判定は変えず、当てにならないことだけを画面へ渡す。県の代表点は
+       県庁所在地あたりなので、同じ県に住んでいる人で実際に起きる。 */
+    unstable: isDirectionUnstable(distanceKm),
   };
 }
