@@ -65,6 +65,7 @@ import {
   type PartyMemberInput,
 } from "@/lib/partyMemberInput";
 import {
+  destinationCandidates,
   jointTimeline,
   memberDirection,
   partyTimingReport,
@@ -639,6 +640,31 @@ export default function TimingAnalyticsPage() {
   }, [partyReport, partyDaily, todayIso]);
 
   /**
+   * **どこで合流できるか。**合流先を選ばせる前に候補を出す。
+   *
+   * 利用者の指摘（2026-09-18）。人ごとに出発地が違うので、同じ合流先でも
+   * 方位が違って答えが予想できない。選ばせる作りだと、どこなら全員で
+   * 動けるかを知るのに 47 回選び直すことになる。
+   *
+   * 暦は引き直さない（人ごとの「日 × 方位」は走査済み）。県ごとに変わる
+   * のは各人の方位だけ。47 県 × 2 年で 4 人でも 46ms（lib 側で実測）。
+   */
+  const partyCandidates = useMemo(
+    () =>
+      partyActive
+        ? destinationCandidates(
+            allTimelines,
+            PREFECTURE_CENTERS,
+            partyPolicy,
+            todayIso,
+          )
+        : [],
+    [partyActive, allTimelines, partyPolicy, todayIso],
+  );
+  /** 候補を全部出すか（既定は上位だけ）。 */
+  const [showAllCandidates, setShowAllCandidates] = useState(false);
+
+  /**
    * 選択日の県塗りを全員ぶんにする。県ごとに「各人の出発地からその県への
    * 方位」で人ごとの段階を引き、まとめ方で 1 つにする。合流先を選んで
    * いなくても出す（どの県なら全員で動けるか、を地図で探す用）。
@@ -902,9 +928,94 @@ export default function TimingAnalyticsPage() {
                     あなたの出発地の緯度が未設定なので、合流先への方位が出せません。物件スキャナーで出発地を入れ直してください。
                   </p>
                 )}
+              {/*
+                **選ばせる前に候補を出す。**利用者の指摘（2026-09-18）。
+                人ごとに出発地が違うので、同じ合流先でも方位が違って
+                答えが予想できない。選ばせる作りだと「どこなら全員で
+                動けるか」を知るのに 47 回選び直すことになる。
+
+                並びは lib（destinationCandidates）が決める。ここでは
+                出す本数だけを絞る。
+              */}
+              {partyCandidates.length > 0 && (
+                <div
+                  className="rounded-xl border border-stone-200 bg-white p-2.5"
+                  data-party-candidates
+                >
+                  <p className="text-xs font-bold text-stone-700">
+                    どこで合流できるか
+                  </p>
+                  <p className="mt-0.5 text-xs leading-relaxed text-stone-500">
+                    今日以降で、移動する全員が避けるべき判定に当たらない日数の多い順です。押すと合流先に入ります。
+                  </p>
+                  {partyCandidates[0].allClearDays === 0 ? (
+                    /* どこも 0 日。隠すと「期間を延ばすか人を減らすか」の
+                       判断ができないので、一覧の前に言い切る。 */
+                    <p className="mt-1.5 text-xs leading-relaxed text-amber-800">
+                      この範囲では、<b>全員で動ける日がどの県にもありません</b>
+                      。期間を延ばすか、まとめ方を変えるか、同行者を分けて動くかの判断になります。
+                    </p>
+                  ) : null}
+                  <ul className="mt-1.5 space-y-1">
+                    {(showAllCandidates
+                      ? partyCandidates
+                      : partyCandidates.slice(0, 8)
+                    ).map((c) => (
+                      <li key={c.name}>
+                        <button
+                          type="button"
+                          onClick={() => changeDest(c.name)}
+                          aria-pressed={destPref === c.name}
+                          className={`flex min-h-[24px] w-full items-baseline gap-2 rounded-lg px-1.5 py-1 text-left text-xs hover:bg-indigo-50 ${
+                            destPref === c.name
+                              ? "bg-indigo-50 font-bold text-indigo-900"
+                              : "text-stone-700"
+                          }`}
+                        >
+                          <span className="w-16 shrink-0">{c.name}</span>
+                          <span className="w-12 shrink-0 text-right font-bold">
+                            {c.allClearDays} 日
+                          </span>
+                          <span className="w-20 shrink-0 text-stone-500">
+                            {c.nextAllClearDate ?? "—"}
+                          </span>
+                          <span className="truncate text-stone-500">
+                            {TIER_LABELS[c.bestTier]}
+                          </span>
+                        </button>
+                        <p className="px-1.5 text-xs leading-relaxed text-stone-500">
+                          {c.legs
+                            .filter((l) => l.direction)
+                            .map(
+                              (l) =>
+                                `${l.name}は${DIRECTION_LABELS[l.direction!] ?? l.direction}`,
+                            )
+                            .join("・")}
+                          {c.hasUnstableLeg && (
+                            <b className="ml-1 text-amber-700">
+                              近すぎて方位が定まりません
+                            </b>
+                          )}
+                        </p>
+                      </li>
+                    ))}
+                  </ul>
+                  {partyCandidates.length > 8 && (
+                    <button
+                      type="button"
+                      onClick={() => setShowAllCandidates((v) => !v)}
+                      className="mt-1 inline-flex min-h-[24px] items-center text-xs font-bold text-indigo-700 underline"
+                    >
+                      {showAllCandidates
+                        ? "上位だけ表示"
+                        : `47 県すべて見る（残り ${partyCandidates.length - 8}）`}
+                    </button>
+                  )}
+                </div>
+              )}
               {partyActive && !destination && (
                 <p className="text-xs leading-relaxed text-stone-500">
-                  合流先の県を選ぶと、各人の出発地からその県への方位で全員ぶんを重ねます。地図（カレンダーの日を選ぶと出ます）は合流先を選ばなくても全員ぶんの塗りになります。
+                  上の候補を押すか、県を選ぶと、各人の出発地からその県への方位で全員ぶんを重ねます。地図（カレンダーの日を選ぶと出ます）は合流先を選ばなくても全員ぶんの塗りになります。
                 </p>
               )}
               {partyReport && (

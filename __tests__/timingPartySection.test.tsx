@@ -184,11 +184,41 @@ describe("時期ツールの同行者", () => {
     expect(saved.candidateStrategy).toBe("top");
   });
 
-  it("合流先を選んでいなければ、県を選ぶ案内だけを出す", async () => {
+  it("合流先を選んでいなくても、どこで合流できるかの候補を出す", async () => {
+    /*
+      **選ばせる前に候補を出す**（利用者の指摘。2026-09-18）。
+      人ごとに出発地が違うので、同じ合流先でも方位が違って答えが
+      予想できない。選ばせるだけだと 47 回選び直すことになる。
+
+      合流先を選ぶまで合成の結果（data-party-report）は出さない、
+      という元からの決めはそのまま。
+    */
     localStorage.removeItem("timing_dest_pref_v1");
     await render();
     const text = container.textContent ?? "";
-    expect(text).toContain("合流先の県を選ぶと");
+    expect(text).toContain("どこで合流できるか");
+    expect(container.querySelector("[data-party-candidates]")).not.toBeNull();
     expect(container.querySelector("[data-party-report]")).toBeNull();
+    /* 候補は押せる。押せないと「選ばせない」と言いながら選べない。 */
+    const list = container.querySelector("[data-party-candidates]")!;
+    expect(list.querySelectorAll("button").length).toBeGreaterThan(1);
+    /* 誰がどちらへ動くかを添える。方位が人ごとに違うことがこの機能の
+       理由なので、県名だけ並べても判断できない。 */
+    expect(text).toMatch(/あなたは[東西南北]/);
+  });
+
+  it("候補を押すと合流先に入り、合成の結果が出る", async () => {
+    localStorage.removeItem("timing_dest_pref_v1");
+    await render();
+    const list = container.querySelector("[data-party-candidates]")!;
+    const first = list.querySelector("button")!;
+    const name = first.textContent ?? "";
+    await act(async () => {
+      first.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    });
+    expect(container.querySelector("[data-party-report]")).not.toBeNull();
+    /* 押した県が保存され、次に開いたときも同じ合流先で出る。 */
+    expect(localStorage.getItem("timing_dest_pref_v1")).toBeTruthy();
+    expect(name).toContain(localStorage.getItem("timing_dest_pref_v1")!);
   });
 });
