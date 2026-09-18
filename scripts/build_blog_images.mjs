@@ -1068,6 +1068,88 @@ const FIGURES = [
       </div>
     </div>`,
   },
+  {
+    /* 記事の年表から。五黄殺と暗剣殺は常に向かい合わせで、五黄土星が
+       中宮に入る年（2031）はどちらも無い。blogGouosatsuClaims が照合。 */
+    slug: "five-yellow-and-anken-satsu",
+    kicker: "五黄殺と暗剣殺",
+    title: "常に向かい合わせ。<br>9 年に 1 度、どちらも無い",
+    sub: "年盤の五黄土星が入った方位が五黄殺、その正反対が暗剣殺。本命星に関係なく、全員に同じ方位で掛かります。",
+    body: `<div style="display:flex;gap:30px;align-items:center">
+      <div style="display:flex;flex-direction:column;gap:6px">
+        ${[
+          ["2026", "南", "北", false],
+          ["2027", "北", "南", false],
+          ["2028", "南西", "北東", false],
+          ["2029", "東", "西", false],
+          ["2030", "南東", "北西", false],
+          ["2031", "なし", "なし", true],
+        ]
+          .map(
+            ([
+              year,
+              gou,
+              anken,
+              none,
+            ]) => `<div style="display:flex;align-items:center;gap:10px;
+              background:${none ? "#fff" : "transparent"};border:1px solid ${none ? "#e11d48" : "#e2d9d1"};
+              border-radius:10px;padding:6px 12px">
+            <div style="width:62px;font-size:18px;font-weight:800;color:#0f172a">${year}</div>
+            <div style="width:118px;font-size:17px;color:${none ? "#94a3b8" : "#e11d48"};font-weight:700">五黄殺 ${gou}</div>
+            <div style="width:118px;font-size:17px;color:${none ? "#94a3b8" : "#475569"};font-weight:700">暗剣殺 ${anken}</div>
+          </div>`,
+          )
+          .join("")}
+      </div>
+      <div class="note">
+        <b>2031 年は五黄土星が中宮</b>に入ります。中宮は方位を持たないので、
+        その年はどちらも存在しません。<b>9 年に 1 度</b>めぐります。
+        2026 と 2027 は南と北が<b>入れ替わるだけ</b>で、避けたい方位の数は減りません。
+      </div>
+    </div>`,
+  },
+  {
+    /* 記事の 2026 年の一覧から。天赦日 6 日のうち、六曜と土用を
+       くぐるのは 3 日。日取りだけで決めると仏滅の天赦日を選ぶ。 */
+    slug: "tensha-and-ichiryumanbai-for-moving-day",
+    kicker: "天赦日・一粒万倍日と引越し",
+    title: "天赦日 6 日のうち、<br>残るのは 3 日",
+    sub: "2026 年の天赦日。六曜で仏滅・赤口を外し、土用の間日でない日を外すと、半分が落ちます。",
+    body: `<div style="display:flex;gap:30px;align-items:center">
+      <div style="display:flex;flex-direction:column;gap:6px">
+        ${[
+          ["3/5", "大安", "", true],
+          ["5/4", "友引", "春土用", false],
+          ["5/20", "先勝", "", true],
+          ["7/19", "大安", "", true],
+          ["10/1", "仏滅", "", false],
+          ["12/16", "赤口", "", false],
+        ]
+          .map(
+            ([
+              day,
+              rokuyo,
+              doyou,
+              keep,
+            ]) => `<div style="display:flex;align-items:center;gap:10px;
+              background:${keep ? "#fff" : "transparent"};border:1px solid ${keep ? "#e11d48" : "#e2d9d1"};
+              border-radius:10px;padding:6px 12px">
+            <div style="width:62px;font-size:18px;font-weight:800;color:${keep ? "#0f172a" : "#94a3b8"}">${day}</div>
+            <div style="width:74px;font-size:17px;color:${keep ? "#475569" : "#94a3b8"};font-weight:700">${rokuyo}</div>
+            <div style="width:126px;font-size:16px;color:${keep ? "#e11d48" : "#94a3b8"};font-weight:700">${
+              keep ? "残る" : doyou || "外れる"
+            }</div>
+          </div>`,
+          )
+          .join("")}
+      </div>
+      <div class="note">
+        天赦日は<b>日そのものの吉</b>です。<b>方位の凶は打ち消しません。</b>
+        五黄殺や本命殺の方位へ動く日が天赦日でも、方位の側は変わりません。
+        <b>日付だけを先に決める</b>と、仏滅の天赦日を選んでいることがあります。
+      </div>
+    </div>`,
+  },
 ];
 
 function html(fig) {
