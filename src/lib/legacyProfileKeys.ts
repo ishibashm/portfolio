@@ -65,10 +65,21 @@ export interface LegacyStorage {
   getItem(key: string): string | null;
 }
 
-/** その欄に「利用者の値」が既に入っているか。 */
-function hasValue(settings: Settings, field: string): boolean {
+/**
+ * その欄が**決着しているか**（引き上げなくてよいか）。
+ *
+ * 利用者の値が入っていれば決着。**null も決着**で、これは「クラウドで
+ * 消した跡」（`userSettings` が端末に残す）。値は無いが、利用者が消したと
+ * 分かっているので拾い直さない。**欄ごと無いとき（undefined）だけ**
+ * 引き上げる。
+ *
+ * null を「無い」と同じに扱っていたころは、別の端末で消した生年月日が
+ * 読み込みのたびに旧い鍵から戻ってきた。
+ */
+function isSettled(settings: Settings, field: string): boolean {
   const v = settings[field];
-  if (v === undefined || v === null) return false;
+  if (v === null) return true;
+  if (v === undefined) return false;
   if (typeof v === "string") return v.trim() !== "";
   if (typeof v === "number") return Number.isFinite(v);
   return true;
@@ -88,7 +99,7 @@ export function legacyProfilePatch(
   const patch: Settings = {};
   for (const [key, field] of LEGACY_PROFILE_KEYS) {
     /* 既に正の設定にあるか、この走査で既に埋めた欄は触らない */
-    if (hasValue(current, field) || patch[field] !== undefined) continue;
+    if (isSettled(current, field) || patch[field] !== undefined) continue;
     let raw: string | null = null;
     try {
       raw = storage.getItem(key);

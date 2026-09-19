@@ -79,7 +79,19 @@ export function readLocalSettings(): Settings {
  * 差分だけ書く。丸ごと置き換えると、その画面が扱っていない項目
  * （別画面で保存した出発地など）を巻き添えで消してしまう。
  */
-export function writeLocalSettings(patch: Settings): Settings {
+export function writeLocalSettings(
+  patch: Settings,
+  /**
+   * `_savedAt`（クラウドと比べるための時刻）を進めるか。
+   *
+   * **利用者が保存したときだけ true。**端末に元からあった値を拾い直す
+   * だけのとき（旧い鍵からの引き上げ）や、クラウドの状態を端末に写す
+   * だけのときは false にする。進めると「クラウドより新しい保存」と
+   * 見なされ、**別の端末で消した項目を追い越して復活させる**
+   * （2026-09-19 に再現。引き上げの側の穴）。
+   */
+  touchSavedAt = true,
+): Settings {
   if (typeof window === "undefined") return patch;
   /*
     _savedAt は「クラウドと比べるための時刻」なので、**同期する項目を
@@ -88,7 +100,8 @@ export function writeLocalSettings(patch: Settings): Settings {
     _savedAt を進めると、別の端末で新しく保存した出発地がクラウドに
     あっても「端末のほうが新しい」と見なして永久に取り込まなかった。
   */
-  const touchesSynced = Object.keys(pickSynced(patch)).length > 0;
+  const touchesSynced =
+    touchSavedAt && Object.keys(pickSynced(patch)).length > 0;
   const merged = {
     ...readLocalSettings(),
     ...patch,
@@ -119,13 +132,35 @@ export function migrateLegacyProfileKeys(): Settings {
     return current; /* 読めない端末では何もしない */
   }
   if (Object.keys(patch).length === 0) return current;
-  return writeLocalSettings(patch);
+  /*
+    **引き上げは「新しい保存」ではない。**`_savedAt` を進めると、別の
+    端末で消した生年月日を追い越して復活させる（1 回目の読み込みで
+    そうなっていた。2026-09-19 に再現）。旧い鍵の写しがいつ書かれたかは
+    分からないので、いちばん古いものとして扱う — クラウドに言い分が
+    あれば必ずそちらが勝つ。
+  */
+  return writeLocalSettings(patch, false);
 }
 
 function pickSynced(settings: Settings): Settings {
   const out: Settings = {};
   for (const key of SYNCED_FIELDS) {
     if (settings[key] !== undefined) out[key] = settings[key];
+  }
+  return out;
+}
+
+/**
+ * 「消した跡」（null）を落として返す。
+ *
+ * クラウドで消された項目は**端末には null で残す** — 鍵ごと消すと旧い鍵
+ * からの引き上げが「まだ埋めていない欄」と見なして拾い直すため。ただし
+ * 読み手にとっては「無い」と同じなので、返り値では欄ごと落として揃える。
+ */
+function withoutTombstones(settings: Settings): Settings {
+  const out: Settings = {};
+  for (const [key, value] of Object.entries(settings)) {
+    if (value !== null) out[key] = value;
   }
   return out;
 }
@@ -158,7 +193,7 @@ export async function loadSettings(): Promise<LoadResult> {
 
   try {
     const res = await fetch("/api/user-config");
-    if (!res.ok) return { settings: local, synced: false }; // 401 = 未ログイン
+    if (!res.ok) return { settings: withoutTombstones(local), synced: false }; // 401 = 未ログイン
     const remote = await res.json();
 
     const savedAt = settingString(local, SAVED_AT);
@@ -183,13 +218,30 @@ export async function loadSettings(): Promise<LoadResult> {
     if (remoteAt > localAt) {
       settings = { ...local, ...remoteFields };
       for (const key of remoteCleared) delete settings[key];
+      /*
+        **消えた項目は端末にも書く。**以前は返り値から消すだけで
+        localStorage には残っており、その端末で何か保存して _savedAt が
+        クラウドを追い越した瞬間に、消したはずの値が戻っていた
+        （2026-09-19 に再現。上のコメントの「端末からも外す」と実装が
+        食い違っていた）。
+
+        鍵ごと消さずに null を置く。「消した跡」を残しておかないと、
+        旧い画面の写し（legacyProfileKeys）が「まだ引き上げていない欄」
+        と見なして拾い直す。
+      */
+      const stale = remoteCleared.filter((key) => local[key] != null);
+      if (stale.length > 0) {
+        const tombstones: Settings = {};
+        for (const key of stale) tombstones[key] = null;
+        writeLocalSettings(tombstones, false);
+      }
     } else {
       settings = { ...remoteFields, ...local };
     }
 
-    return { settings, synced: true };
+    return { settings: withoutTombstones(settings), synced: true };
   } catch {
-    return { settings: local, synced: false };
+    return { settings: withoutTombstones(local), synced: false };
   }
 }
 
