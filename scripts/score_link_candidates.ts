@@ -52,6 +52,7 @@ import { getBlogPost, getBlogPosts } from "../src/lib/blog";
 import {
   buildRequest,
   candidatePairs,
+  costOf,
   estimateTokens,
   mockScore,
   parseAnswer,
@@ -171,6 +172,9 @@ console.log(
         : ""),
 );
 
+/** 応答の usage.cost の合計（USD）。概算ではなく実費。 */
+let spentUsd = 0;
+
 async function scoreLive(c: (typeof calls)[number]): Promise<Scored[]> {
   const req = buildRequest(c.source, c.paragraph, c.dests, provider.model);
   for (let attempt = 0; attempt < 2; attempt++) {
@@ -191,6 +195,8 @@ async function scoreLive(c: (typeof calls)[number]): Promise<Scored[]> {
       throw new Error(`Jev ${res.status}: ${(await res.text()).slice(0, 300)}`);
     }
     const json: unknown = await res.json();
+    const cost = costOf(json);
+    if (cost !== null) spentUsd += cost;
     return c.dests.map((d) => {
       const a = parseAnswer(json, d.slug);
       if (!a) {
@@ -248,6 +254,8 @@ async function main() {
   };
   await Promise.all(Array.from({ length: mode === "live" ? 4 : 1 }, worker));
 
+  if (mode === "live")
+    console.log(`\n実費（usage.cost の合計）: $${spentUsd.toFixed(4)}`);
   scored.sort((a, b) => b.probability - a.probability);
   if (out) {
     const lines = ["source\tparagraph\tdest\tprobability\tconfidence\texcerpt"];

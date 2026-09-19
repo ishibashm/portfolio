@@ -4,6 +4,7 @@ import { describe, expect, it } from "vitest";
 import {
   buildRequest,
   candidatePairs,
+  costOf,
   linkedSlugs,
   mockScore,
   paragraphsOf,
@@ -111,6 +112,21 @@ describe("問いと答え", () => {
     expect(req.questions["dest-1"].type).toBe("noul");
     expect(req.questions["dest-1"].instructions).toContain("宛先");
     expect(req.questions["dest-1"].instructions).toContain("説明");
+  });
+
+  it("実測の形（OpenRouter の Decisions API）を読める", () => {
+    // 2026-09-19 の run #1 が返した応答そのまま（id だけ差し替え）
+    const real = {
+      model: "typesafe/jev-1.13-20260917",
+      answers: { "dest-1": { type: "noul", noul: 0.78 } },
+      usage: { input_tokens: 723, output_tokens: 28, cost: 0.000030366 },
+    };
+    expect(parseAnswer(real, "dest-1")).toEqual({
+      probability: 0.78,
+      confidence: null,
+    });
+    expect(costOf(real)).toBeCloseTo(0.000030366, 9);
+    expect(costOf({ answers: {} })).toBeNull();
   });
 
   it("答えの項目名の揺れを吸収する", () => {

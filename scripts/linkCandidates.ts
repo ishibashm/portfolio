@@ -200,10 +200,10 @@ export function buildRequest(
 }
 
 /**
- * 答えを読む。**応答の項目名は公式の仕様書をこの環境から読めていない**
- * （出口の proxy が弾く）。検索で分かっている範囲では answers[id] に
- * 確率と confidence が入る。項目名の揺れを 1 か所で吸収し、読めなければ
- * null を返して呼ぶ側で止める（黙って 0 にしない）。
+ * 答えを読む。最初の実測（2026-09-19、OpenRouter 経由）では noul の
+ * 確率が `answers[id].noul` に入っていた。TypeSafe 直の形は未確認なので
+ * 他の名前も残してある。読めなければ null を返して呼ぶ側で止める
+ * （黙って 0 にしない）。
  */
 export function parseAnswer(
   response: unknown,
@@ -218,7 +218,9 @@ export function parseAnswer(
   if (typeof raw === "number") return { probability: raw, confidence: null };
   if (typeof raw !== "object" || raw === null) return null;
   const a = raw as Record<string, unknown>;
-  const prob = [a.probability, a.p, a.yes, a.value, a.answer].find(
+  // 実測の形（OpenRouter Decisions API、2026-09-19）:
+  //   { answers: { "<id>": { type: "noul", noul: 0.78 } }, usage: { cost } }
+  const prob = [a.noul, a.probability, a.p, a.yes, a.value, a.answer].find(
     (v) => typeof v === "number",
   );
   if (typeof prob !== "number") return null;
@@ -242,6 +244,13 @@ export function mockScore(
   const shared = dest.tags.filter((t) => source.tags.includes(t)).length;
   const score = 0.15 + 0.6 * (hits / Math.max(1, words.length)) + 0.05 * shared;
   return Math.min(0.99, Number(score.toFixed(3)));
+}
+
+/** 応答の usage.cost（USD）。無ければ null。 */
+export function costOf(response: unknown): number | null {
+  if (typeof response !== "object" || response === null) return null;
+  const usage = (response as { usage?: { cost?: unknown } }).usage;
+  return typeof usage?.cost === "number" ? usage.cost : null;
 }
 
 /** 日本語は 1 文字 ≒ 1〜2 トークン。安全側に 1 文字 1.5 トークンで見る。 */
