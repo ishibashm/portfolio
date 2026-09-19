@@ -30,6 +30,8 @@ import { FavoriteButton } from "@/components/relocation/FavoriteButton";
 import { SpotVerdict } from "@/components/relocation/SpotVerdict";
 import {
   loadSettings,
+  readSettingsSync,
+  settingBoolean,
   settingNumber,
   settingString,
   type Settings,
@@ -109,6 +111,21 @@ interface ScanMetadata extends ScanCountsInput {
  * metaphysical-config-updated が運んでくる中身。出し手によって
  * camelCase と snake_case が混在しているので、読む側は両方を見る。
  */
+/**
+ * 設定の座標を文字列にする。**数でなければ「無い」ことにする。**
+ *
+ * 以前は `!== undefined` を「値がある」と見て `.toString()` を呼んでいた。
+ * null・文字列・NaN をそのまま通し、null では TypeError で落ちる。呼び出し
+ * 側の `catch {}` が飲み込むので、その後ろに並ぶ欄が読まれないまま既定値に
+ * 落ちていた（#1426）。型が number を名乗っていても、素の JSON から来る
+ * 値なので実際には何でも入りうる。
+ */
+function coordText(value: unknown): string | undefined {
+  return typeof value === "number" && Number.isFinite(value)
+    ? String(value)
+    : undefined;
+}
+
 type ConfigUpdateDetail = Partial<{
   targetDate: string;
   target_date: string;
@@ -768,80 +785,88 @@ export default function ArbitrageScannerPage() {
     let layer = "year";
     let trueNorth = false;
 
-    // Load from unified tactical config
-    const tacticalConfig = localStorage.getItem("tactical_config_v1");
     /* ここも設定ファイル由来の素通しだった。知らない値は composite（#540）。 */
     let filter: DirectionFilterMode = "composite";
     let intent = "MIGRATION";
-    if (tacticalConfig) {
-      try {
-        const config = JSON.parse(tacticalConfig);
-        if (config.birth_date) {
-          bDate = config.birth_date;
-        }
-        if (config.birth_lat !== undefined) bLat = config.birth_lat.toString();
-        if (config.birth_lon !== undefined) bLon = config.birth_lon.toString();
-        // 出発地は「どの県を見るか」とは独立した設定。
-        // 以前は prefecture が "all" のときに保存済みの出発地を捨てていた。
-        // 既定が "all" なので常に捨てられ、プロフィールで設定していても
-        // 「出発地を設定してください」から先に進めなかった。
-        if (config.base_lat !== undefined && config.base_lat !== null)
-          bsLat = config.base_lat.toString();
-        if (config.base_lon !== undefined && config.base_lon !== null)
-          bsLon = config.base_lon.toString();
-        if (config.use_classical_board !== undefined)
-          classical = config.use_classical_board;
-        if (config.use_true_north !== undefined)
-          trueNorth = config.use_true_north;
-        if (config.layer_mode !== undefined) layer = config.layer_mode;
-        if (config.target_date) tDate = config.target_date;
-        if (config.direction_filter_mode !== undefined)
-          filter = parseDirectionFilterMode(config.direction_filter_mode);
-        if (config.action_intent !== undefined) intent = config.action_intent;
-        // 旧設定の都道府県指定は維持する。all/all は旧既定値と利用者の
-        // 明示選択を区別できないので、下の新しい保存キーが無ければ50kmにする。
-        if (
-          typeof config.prefecture === "string" &&
-          config.prefecture !== "all"
-        ) {
-          pref = config.prefecture;
-          rKm = "all";
-        } else if (config.radius_km && config.radius_km !== "all") {
-          rKm = String(config.radius_km);
-        }
-      } catch {}
-    } else {
-      // Fallback to legacy isolated keys
-      const storedLat = localStorage.getItem("arb_baseLat");
-      const storedLon = localStorage.getItem("arb_baseLon");
-      const storedBirth = localStorage.getItem("arb_birthDate");
-      const storedTarget = localStorage.getItem("arb_targetDate");
-      const storedRadius = localStorage.getItem("arb_radiusKm");
-      const storedPrefecture = localStorage.getItem("arb_prefecture");
-      const storedLayer = localStorage.getItem("arb_layerMode");
-      const storedTrueNorth = localStorage.getItem("arb_useTrueNorth");
 
-      if (storedPrefecture) pref = storedPrefecture;
+    /*
+      設定は 1 か所から読む。**素の JSON を手で読まない。**
+
+      以前は `config.birth_lat !== undefined` を「値がある」と読んで
+      `.toString()` を呼んでいた。消された欄が null で入っていた端末では
+      例外になり、`catch {}` がそれを飲み込むので、**その後ろに並ぶ欄が
+      丸ごと読まれないまま既定値に落ちていた**（#1426）。
+
+      旧い鍵への落ち込みは**項目ごと**にする。以前は「設定の塊が無いとき
+      だけ」旧い鍵をまとめて読む作りで、#1420 の引き上げが塊を作るように
+      なってからはその枝に入らず、**この頁だけが持つ項目（県・半径・
+      検討日・時間軸・真北）が既定値に戻っていた。**生年月日と座標は
+      引き上げが正の設定へ移すので、旧い鍵からは読まない（読むと別の端末で
+      消した値をこの頁だけが拾い直す）。
+    */
+    const config = readSettingsSync();
+    const ls = (key: string) => {
+      try {
+        return localStorage.getItem(key);
+      } catch {
+        return null;
+      }
+    };
+    const coord = (key: string) => {
+      const n = settingNumber(config, key);
+      return n === undefined ? undefined : n.toString();
+    };
+
+    bDate = settingString(config, "birth_date") || bDate;
+    bLat = coord("birth_lat") ?? bLat;
+    bLon = coord("birth_lon") ?? bLon;
+    // 出発地は「どの県を見るか」とは独立した設定。
+    // 以前は prefecture が "all" のときに保存済みの出発地を捨てていた。
+    // 既定が "all" なので常に捨てられ、プロフィールで設定していても
+    // 「出発地を設定してください」から先に進めなかった。
+    bsLat = coord("base_lat") ?? bsLat;
+    bsLon = coord("base_lon") ?? bsLon;
+
+    const savedClassical = settingBoolean(config, "use_classical_board");
+    if (savedClassical !== undefined) classical = savedClassical;
+
+    const savedTrueNorth = settingBoolean(config, "use_true_north");
+    const legacyTrueNorth = ls("arb_useTrueNorth");
+    if (savedTrueNorth !== undefined) trueNorth = savedTrueNorth;
+    else if (legacyTrueNorth) trueNorth = legacyTrueNorth === "true";
+
+    const savedLayer =
+      settingString(config, "layer_mode") ?? ls("arb_layerMode");
+    if (savedLayer) layer = savedLayer;
+
+    const savedTarget =
+      settingString(config, "target_date") ?? ls("arb_targetDate");
+    if (savedTarget) tDate = savedTarget;
+
+    const savedFilter = settingString(config, "direction_filter_mode");
+    if (savedFilter) filter = parseDirectionFilterMode(savedFilter);
+
+    const savedIntent = settingString(config, "action_intent");
+    if (savedIntent) intent = savedIntent;
+
+    // 旧設定の都道府県指定は維持する。all/all は旧既定値と利用者の
+    // 明示選択を区別できないので、下の新しい保存キーが無ければ50kmにする。
+    const savedPref =
+      settingString(config, "prefecture") ?? ls("arb_prefecture") ?? "all";
+    const savedRadiusNum = settingNumber(config, "radius_km");
+    const savedRadius =
+      settingString(config, "radius_km") ??
+      (savedRadiusNum === undefined ? null : String(savedRadiusNum)) ??
+      ls("arb_radiusKm");
+    if (savedPref !== "all") {
+      pref = savedPref;
+      rKm = "all";
+    } else if (savedRadius && savedRadius !== "all") {
       // 半径を選ぶ UI は無いので、保存値の "all" は旧既定値の残骸か、
       // 県を選んだときに連動で入った値のどちらか。県が無いのに "all" が
       // 残っている組み合わせは誰も選んでおらず、これを復元すると全国
       // 45 万行のスキャン（実測 18.4 秒）に戻るので、既定値に置き換える。
-      if (storedRadius && !(storedRadius === "all" && pref === "all")) {
-        rKm = storedRadius;
-      }
-
-      // 出発地は「どの県を見るか」とは独立した設定。以前は pref === "all" のとき
-      // 保存済みの出発地を捨てていたため、全国表示にした瞬間に方位の基準が
-      // 既定値へ戻り、判定が変わっていた。
-      if (storedLat) bsLat = storedLat;
-      if (storedLon) bsLon = storedLon;
-
-      if (storedBirth) bDate = storedBirth;
-      if (storedTarget) tDate = storedTarget;
-      /* arb_useClassical はどこも書いていない鍵だった（書く側は
-         tactical_config_v1 の use_classical）。読んでも常に空なので消した */
-      if (storedLayer) layer = storedLayer;
-      if (storedTrueNorth) trueNorth = storedTrueNorth === "true";
+      rKm = savedRadius;
     }
 
     // 新しい検索範囲の選択値があれば、都道府県と半径を必ずそこから一緒に
@@ -1009,30 +1034,10 @@ export default function ArbitrageScannerPage() {
         );
         const newIntent = detail.actionIntent || detail.action_intent;
         const newBirthDate = detail.birthDate || detail.birth_date;
-        const newBirthLat =
-          detail.birthLat !== undefined
-            ? detail.birthLat.toString()
-            : detail.birth_lat !== undefined
-              ? detail.birth_lat.toString()
-              : undefined;
-        const newBirthLon =
-          detail.birthLon !== undefined
-            ? detail.birthLon.toString()
-            : detail.birth_lon !== undefined
-              ? detail.birth_lon.toString()
-              : undefined;
-        const newBaseLat =
-          detail.baseLat !== undefined
-            ? detail.baseLat.toString()
-            : detail.base_lat !== undefined
-              ? detail.base_lat.toString()
-              : undefined;
-        const newBaseLon =
-          detail.baseLon !== undefined
-            ? detail.baseLon.toString()
-            : detail.base_lon !== undefined
-              ? detail.base_lon.toString()
-              : undefined;
+        const newBirthLat = coordText(detail.birthLat ?? detail.birth_lat);
+        const newBirthLon = coordText(detail.birthLon ?? detail.birth_lon);
+        const newBaseLat = coordText(detail.baseLat ?? detail.base_lat);
+        const newBaseLon = coordText(detail.baseLon ?? detail.base_lon);
 
         if (newTargetDate) {
           setTargetDate(newTargetDate);
