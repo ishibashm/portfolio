@@ -255,7 +255,7 @@ async function main() {
   await Promise.all(Array.from({ length: mode === "live" ? 4 : 1 }, worker));
 
   if (mode === "live")
-    console.log(`\n実費（usage.cost の合計）: $${spentUsd.toFixed(4)}`);
+    console.log(`\n実費（usage.cost の合計）: $${spentUsd.toFixed(6)}`);
   scored.sort((a, b) => b.probability - a.probability);
   if (out) {
     const lines = ["source\tparagraph\tdest\tprobability\tconfidence\texcerpt"];
