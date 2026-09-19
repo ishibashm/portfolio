@@ -147,6 +147,11 @@ describe("userSettings", () => {
 
     const { settings } = await loadSettings();
     expect(settings.birth_date).toBeUndefined();
+
+    // 2 回目も戻らない。消した跡（null）が残るので引き上げが拾い直さない。
+    expect(readLocalSettings().birth_date).toBeNull();
+    const again = await loadSettings();
+    expect(again.settings.birth_date).toBeUndefined();
   });
 
   it("端末だけの項目を書いても _savedAt は進めない（クラウドを取り込めなくなる）", async () => {
