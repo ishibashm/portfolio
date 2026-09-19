@@ -56,18 +56,15 @@ export function HonmeiLookup({ starNames, linkYear }: Props) {
 
   const loadFromProfile = async () => {
     setNotice("");
-    // スキャナーが即時保存する localStorage を土台に、共有設定
-    // （ログイン中はクラウド同期）があれば上書きする。timing と同じ形。
-    let stored = "";
-    try {
-      stored = localStorage.getItem("arb_birthDate") || "";
-    } catch {
-      /* プライベートモード等。共有設定だけで続行 */
-    }
+    /*
+      **共有設定だけを読む。**以前は旧い鍵（arb_birthDate）を土台にして
+      共有設定で上書きしていたが、旧い鍵は `loadSettings` が正の設定へ
+      引き上げるので、ここで直に読む必要が無い。読んでいると、別の端末で
+      消した生年月日をこの画面だけが拾い直す。
+    */
     const { settings } = await loadSettings();
-    const fromConfig =
+    const next =
       typeof settings.birth_date === "string" ? settings.birth_date : "";
-    const next = fromConfig || stored;
     if (!next) {
       setNotice(
         "プロフィールに生年月日が見つかりませんでした。「生年月日と場所を登録」で保存すると、ここから呼び出せます。",
