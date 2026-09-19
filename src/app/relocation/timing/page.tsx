@@ -62,6 +62,7 @@ import {
 import {
   loadSettings,
   readSettingsSync,
+  settingBoolean,
   settingNumber,
   settingString,
 } from "@/lib/userSettings";
@@ -206,6 +207,23 @@ function Section({
   );
 }
 
+/** API に渡す判定の入力を 1 本の文字列にする。これが変わったら走査し直す。 */
+function scanInputsOf(s: {
+  birthDate: string;
+  baseLon: string;
+  tenchusatsuMode: string;
+  involuntaryMove: boolean;
+  directionFilterMode: string;
+}): string {
+  return [
+    s.birthDate,
+    s.baseLon,
+    s.tenchusatsuMode,
+    String(s.involuntaryMove),
+    s.directionFilterMode,
+  ].join("|");
+}
+
 export default function TimingAnalyticsPage() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -332,9 +350,20 @@ export default function TimingAnalyticsPage() {
       birthDate: settingString(local, "birth_date") || "",
       baseLat: numText("base_lat"),
       baseLon: numText("base_lon"),
-      tenchusatsuMode: DEFAULT_TENCHUSATSU_MODE as string,
-      involuntaryMove: false,
-      directionFilterMode: "composite",
+      /*
+        判定の設定も端末から読む。以前はここが既定値（composite）固定で、
+        端末に保存してある「本命星＋環境方位」は下の loadSettings が返る
+        まで効かなかった。最初の走査はその前に始まるので、**走査は
+        composite、select は本命星＋環境方位**という食い違いが毎回の
+        初回表示で起きていた（利用者報告 2026-09-19。同行者の欄に
+        「天中殺」が出ていた）。
+      */
+      tenchusatsuMode:
+        settingString(local, "tenchusatsu_mode") ||
+        (DEFAULT_TENCHUSATSU_MODE as string),
+      involuntaryMove: settingBoolean(local, "involuntary_move") ?? false,
+      directionFilterMode:
+        settingString(local, "direction_filter_mode") || "composite",
     };
     setSettings(base);
     loadSettings()
@@ -372,6 +401,9 @@ export default function TimingAnalyticsPage() {
     .filter(Boolean)
     .join("と");
 
+  /** 直近の走査に使った入力。走らせる前に記録する。 */
+  const scannedInputs = useRef<string | null>(null);
+
   const runScan = useCallback(async () => {
     if (!settings?.baseLon || !settings?.birthDate) {
       setError(
@@ -379,6 +411,7 @@ export default function TimingAnalyticsPage() {
       );
       return;
     }
+    scannedInputs.current = scanInputsOf(settings);
     setBusy(true);
     setError(null);
     try {
@@ -425,14 +458,25 @@ export default function TimingAnalyticsPage() {
     }
   }, [settings, pastMonths, futureMonths, partyMembers]);
 
-  // 設定が読めたら自動で 1 回走らせる。このページは分析が主役なので、
-  // ボタンを押させてから待たせる理由がない。
+  /*
+    設定が読めたら自動で走らせる。このページは分析が主役なので、ボタンを
+    押させてから待たせる理由がない。
+
+    **走らせた設定と今の設定が違えば、もう一度走らせる。**以前は
+    `days === null` のときしか走らせなかったので、最初の走査が返る前に
+    クラウドの設定（別の判定モード）が届くと、走査は古い設定のまま・
+    select だけが新しい設定、という食い違いで止まっていた（利用者報告
+    2026-09-19）。走査中は始めず、終わってから比べ直す。同時に 2 本
+    走らせないので、古い応答が新しい応答を上書きする経路も無い。
+
+    比べるのは**入力**だけで、結果の有無（days）は見ない。失敗した走査を
+    同じ入力で繰り返すと止まらなくなる（見張りで実際に起きた）。
+  */
   useEffect(() => {
-    if (settings?.baseLon && settings?.birthDate && days === null && !busy) {
-      runScan();
-    }
+    if (!settings?.baseLon || !settings?.birthDate || busy) return;
+    if (scanInputsOf(settings) !== scannedInputs.current) runScan();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [settings]);
+  }, [settings, busy]);
 
   const todayIso = iso(new Date());
 
