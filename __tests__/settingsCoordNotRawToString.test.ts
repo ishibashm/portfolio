@@ -18,8 +18,8 @@ import { join } from "path";
   **残りは減らす一方**にする。ここに足すのではなく、ここから消すこと。
 */
 
-/** まだ直していないファイル。**増やさない。** */
-const REMAINING = new Set(["src/app/relocation/arbitrage/page.tsx"]);
+/** まだ直していないファイル。**空のまま保つ。** */
+const REMAINING: ReadonlySet<string> = new Set<string>();
 
 const COORD_TO_STRING = /\.(birth_lat|birth_lon|base_lat|base_lon)\.toString\(/;
 
@@ -37,7 +37,7 @@ describe("設定の座標の読み方", () => {
     .filter((path) => COORD_TO_STRING.test(readFileSync(path, "utf-8")))
     .sort();
 
-  it("素の .toString() で読んでいるのは、残っている分だけ", () => {
+  it("素の .toString() で読んでいる所はもう無い", () => {
     expect(offenders).toEqual([...REMAINING].sort());
   });
 
