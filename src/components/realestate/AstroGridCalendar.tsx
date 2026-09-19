@@ -35,8 +35,6 @@ const DISASTER_EXPLANATIONS: Record<string, string> = {
     "天中殺（てんちゅうさつ）：運気が停滞し、新しい行動（引っ越し・契約）を慎むべきとされる時期的な凶。",
   NOISE_TENCHU:
     "天中殺（てんちゅうさつ）：この期間そのものが移転を避ける扱いです。",
-  NOISE_NODE:
-    "月交点（ノード）：月の軌道と黄道の交点にあたる方位。このサイトでは参考として印を付けるだけで、磁気などの測定に基づく判定ではありません。",
   DOYOU_SATSU:
     "土用（どよう）：季節の変わり目の土用期間中。伝統的に、引っ越しや土いじりは避けるとされる時期。",
   /*
@@ -232,12 +230,7 @@ export function AstroGridCalendar({
 
     const hasAnyBad =
       (details && (details.doyouPenalty < 0 || details.voidPenalty < 0)) ||
-      [
-        "NOISE_VOID",
-        "NOISE_NODE",
-        "NOISE_GETSUMEI",
-        "NOISE_GETSUTEKI",
-      ].includes(status);
+      ["NOISE_VOID", "NOISE_GETSUMEI", "NOISE_GETSUTEKI"].includes(status);
 
     if (hasLucky && !hasAnyBad) {
       return (
@@ -356,12 +349,9 @@ export function AstroGridCalendar({
           const hasLightBad =
             (details &&
               (details.doyouPenalty < 0 || details.voidPenalty < 0)) ||
-            [
-              "NOISE_VOID",
-              "NOISE_NODE",
-              "NOISE_GETSUMEI",
-              "NOISE_GETSUTEKI",
-            ].includes(day.status);
+            ["NOISE_VOID", "NOISE_GETSUMEI", "NOISE_GETSUTEKI"].includes(
+              day.status,
+            );
 
           const isHeavyBad = [
             "NOISE_GOU",
