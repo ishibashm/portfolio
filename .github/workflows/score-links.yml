@@ -1,0 +1,92 @@
+name: Score internal link candidates with Jev
+
+# 記事どうしの内部リンク候補を Jev（OpenRouter の Decisions API 経由）で
+# 採点し、表を Summary に、全件を TSV の artifact に出す。
+#
+# ## なぜワークフローか
+#
+# 開発セッションの環境は出口のポリシーで openrouter.ai を弾く
+# （CONNECT 403。2026-09-19 実測）。ランナーからなら届く。鍵は
+# secrets.OPENROUTER_API_KEY に置き、チャットにもコードにも出さない。
+#
+# ## 何もしない
+#
+# 本文は書き換えない。出るのは候補の表だけで、張るかどうかは人が
+# 決めて PR にする（scripts/score_link_candidates.ts の頭を読むこと）。
+#
+# ## 費用
+#
+# 入力 $0.042/1M トークン。全記事で約 670 万トークン ≒ $0.28（2026-09-19
+# の実測）。limit が天井。**最初は limit=1 で応答の形を確かめる**
+# （応答の項目名は公式の仕様書を読めていない。読めなければ止まる）。
+
+on:
+  workflow_dispatch:
+    inputs:
+      dest:
+        description: "宛先を絞る slug（カンマ区切り）。新しい記事へ張る先を探すときに指定。空なら全記事"
+        required: false
+        default: ""
+      source:
+        description: "元の記事を絞る slug（カンマ区切り）。空なら全記事"
+        required: false
+        default: ""
+      limit:
+        description: "API を呼ぶ段落数の上限（費用の天井）。最初は 1"
+        required: true
+        default: "1"
+      threshold:
+        description: "表に出す確率の下限"
+        required: false
+        default: "0.6"
+      top:
+        description: "表に出す件数"
+        required: false
+        default: "40"
+
+jobs:
+  score:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Guard
+        env:
+          KEY: ${{ secrets.OPENROUTER_API_KEY }}
+        run: |
+          if [ -z "$KEY" ]; then
+            echo "::error::secrets.OPENROUTER_API_KEY が無い。Settings → Secrets → Actions に置く。"
+            exit 1
+          fi
+
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci --legacy-peer-deps
+
+      - name: Score
+        env:
+          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+          DEST: ${{ inputs.dest }}
+          SOURCE: ${{ inputs.source }}
+          LIMIT: ${{ inputs.limit }}
+          THRESHOLD: ${{ inputs.threshold }}
+          TOP: ${{ inputs.top }}
+        run: |
+          set -o pipefail
+          ARGS=(--provider openrouter --limit "$LIMIT" --threshold "$THRESHOLD" --top "$TOP" --out "$RUNNER_TEMP/link-candidates.tsv")
+          [ -n "$DEST" ] && ARGS+=(--dest "$DEST")
+          [ -n "$SOURCE" ] && ARGS+=(--source "$SOURCE")
+          npx -y tsx scripts/score_link_candidates.ts "${ARGS[@]}" | tee -a "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload TSV
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: link-candidates
+          path: ${{ runner.temp }}/link-candidates.tsv
+          if-no-files-found: ignore
