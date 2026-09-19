@@ -1477,12 +1477,10 @@ export const SolarTimeClock = () => {
           mB,
           dB,
           personalVoidZodiac,
-          testEnv.raw.lunarNode,
           actionIntent,
           testDate,
           lon || 139.6917,
           useClassicalBoard && getsuMeiStar ? getsuMeiStar : undefined,
-          useClassicalBoard ? "traditional" : "physical",
         );
 
         if (targetDirInfo) {
@@ -1707,12 +1705,10 @@ export const SolarTimeClock = () => {
       mB,
       dB,
       voidZodiacArray,
-      boardEnv.raw.lunarNode,
       actionIntent,
       tDate,
       lon || 139.6917,
       useClassicalBoard && getsuMeiStar ? getsuMeiStar : undefined,
-      useClassicalBoard ? "traditional" : "physical",
     );
 
     const physicalVectorData = calculateVectorCollision(
@@ -1721,12 +1717,10 @@ export const SolarTimeClock = () => {
       pmB,
       pdB,
       voidZodiacArray,
-      boardEnv.raw.lunarNode,
       actionIntent,
       tDate,
       lon || 139.6917,
       undefined,
-      "physical",
     );
 
     const classicalVectorData = calculateVectorCollision(
@@ -1735,12 +1729,10 @@ export const SolarTimeClock = () => {
       cmB,
       cdB,
       voidZodiacArray,
-      boardEnv.raw.lunarNode,
       actionIntent,
       tDate,
       lon || 139.6917,
       getsuMeiStar || undefined,
-      "traditional",
     );
 
     const physicalIndepVectorData = calculateVectorCollision(
@@ -1749,12 +1741,10 @@ export const SolarTimeClock = () => {
       pmB_indep,
       pdB,
       voidZodiacArray,
-      boardEnv.raw.lunarNode,
       actionIntent,
       tDate,
       lon || 139.6917,
       undefined,
-      "physical",
     );
 
     const physicalCoupledVectorData = calculateVectorCollision(
@@ -1763,12 +1753,10 @@ export const SolarTimeClock = () => {
       pmB_coupled,
       pdB,
       voidZodiacArray,
-      boardEnv.raw.lunarNode,
       actionIntent,
       tDate,
       lon || 139.6917,
       undefined,
-      "physical",
     );
 
     return {
@@ -2008,12 +1996,10 @@ export const SolarTimeClock = () => {
         mB,
         dB,
         voidZodiacArray,
-        testEnv.raw.lunarNode,
         "MIGRATION",
         testDate,
         lon || 139.6917,
         useClassicalBoard && getsuMeiStar ? getsuMeiStar : undefined,
-        useClassicalBoard ? "traditional" : "physical",
       );
 
       const filteredV = filterVectors(
@@ -2160,12 +2146,10 @@ export const SolarTimeClock = () => {
         mB_class,
         dB_class,
         voidZodiacArray,
-        testEnv.raw.lunarNode,
         "MIGRATION",
         testDate,
         lon || 139.6917,
         getsuMeiStar || undefined,
-        "traditional",
       );
       const filtered_class = filterVectors(
         vec_class,
@@ -2199,12 +2183,10 @@ export const SolarTimeClock = () => {
         mB_indep,
         dB_indep,
         voidZodiacArray,
-        testEnv.raw.lunarNode,
         "MIGRATION",
         testDate,
         lon || 139.6917,
         undefined,
-        "physical",
       );
       const filtered_indep = filterVectors(
         vec_indep,
@@ -2233,12 +2215,10 @@ export const SolarTimeClock = () => {
         mB_coupled,
         dB_coupled,
         voidZodiacArray,
-        testEnv.raw.lunarNode,
         "MIGRATION",
         testDate,
         lon || 139.6917,
         undefined,
-        "physical",
       );
       const filtered_coupled = filterVectors(
         vec_coupled,
@@ -2416,12 +2396,10 @@ export const SolarTimeClock = () => {
         mB_class,
         dB_class,
         dummyVoidZodiac,
-        testEnv.raw.lunarNode,
         "MIGRATION",
         testDate,
         lon || 139.6917,
         undefined,
-        "traditional",
       );
       const filtered_class = filterVectors(
         vec_class,
@@ -2446,12 +2424,10 @@ export const SolarTimeClock = () => {
         mB_indep,
         dB_indep,
         dummyVoidZodiac,
-        testEnv.raw.lunarNode,
         "MIGRATION",
         testDate,
         lon || 139.6917,
         undefined,
-        "physical",
       );
       const filtered_indep = filterVectors(
         vec_indep,
@@ -2477,12 +2453,10 @@ export const SolarTimeClock = () => {
         mB_coupled,
         dB_coupled,
         dummyVoidZodiac,
-        testEnv.raw.lunarNode,
         "MIGRATION",
         testDate,
         lon || 139.6917,
         undefined,
-        "physical",
       );
       const filtered_coupled = filterVectors(
         vec_coupled,
@@ -3009,12 +2983,10 @@ export const SolarTimeClock = () => {
           mB,
           dB,
           voidZodiacArray,
-          testEnv.raw.lunarNode,
           actionIntent,
           testDate,
           lon || 139.6917,
           useClassicalBoard && getsuMeiStar ? getsuMeiStar : undefined,
-          useClassicalBoard ? "traditional" : "physical",
         );
 
         const filteredV = filterVectors(
@@ -3093,12 +3065,10 @@ export const SolarTimeClock = () => {
           mB,
           dB,
           voidZodiacArray,
-          testEnv.raw.lunarNode,
           actionIntent,
           testDate,
           lon || 139.6917,
           useClassicalBoard && getsuMeiStar ? getsuMeiStar : undefined,
-          useClassicalBoard ? "traditional" : "physical",
           // 12 ヶ月表示は「その月の傾向」なので日盤を外す。判定そのものは
           // エンジンに任せる（以前はここで finalVectors を組み直しており、
           // 天道の上書きが失われて、地図が「大吉」の方位を「個人不調」と

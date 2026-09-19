@@ -102,7 +102,6 @@ describe("知らない値の扱いが、受け取り口とエンジンで揃っ�
       monthBoard,
       dayBoard,
       ["午", "未"],
-      null,
       "MIGRATION",
       date,
       135.7,

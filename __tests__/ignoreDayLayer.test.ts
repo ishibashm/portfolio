@@ -19,8 +19,8 @@ describe("12ヶ月表示の日盤除外 (ignoreDayLayer)", () => {
   it("日盤を外すと dayLayer がすべて SAFE になる", () => {
     const [y, m, d] = boards(6, 5, 7);
     const off = calculateVectorCollision(
-      personal, y, m, d, [], null, "MIGRATION", target, 139.6917,
-      undefined, "traditional", true,
+      personal, y, m, d, [], "MIGRATION", target, 139.6917,
+      undefined, true,
     );
     for (const dir of DIRS) {
       expect(off.dayLayer[dir], dir).toBe("SAFE");
@@ -30,12 +30,12 @@ describe("12ヶ月表示の日盤除外 (ignoreDayLayer)", () => {
   it("年盤・月盤の判定は日盤を外しても変わらない", () => {
     const [y, m, d] = boards(6, 5, 7);
     const on = calculateVectorCollision(
-      personal, y, m, d, [], null, "MIGRATION", target, 139.6917,
-      undefined, "traditional", false,
+      personal, y, m, d, [], "MIGRATION", target, 139.6917,
+      undefined, false,
     );
     const off = calculateVectorCollision(
-      personal, y, m, d, [], null, "MIGRATION", target, 139.6917,
-      undefined, "traditional", true,
+      personal, y, m, d, [], "MIGRATION", target, 139.6917,
+      undefined, true,
     );
     for (const dir of DIRS) {
       expect(off.yearLayer[dir], dir).toBe(on.yearLayer[dir]);
@@ -49,8 +49,8 @@ describe("12ヶ月表示の日盤除外 (ignoreDayLayer)", () => {
     // 出す原因。
     const [y, m, d] = boards(6, 5, 7);
     const off = calculateVectorCollision(
-      personal, y, m, d, [], null, "MIGRATION", target, 139.6917,
-      undefined, "traditional", true,
+      personal, y, m, d, [], "MIGRATION", target, 139.6917,
+      undefined, true,
     );
     const tendo = off.tendoDirection;
     expect(tendo).toBeTruthy();
@@ -84,13 +84,13 @@ describe("12ヶ月表示の日盤除外 (ignoreDayLayer)", () => {
 
     const [y, m, d] = boards(6, 5, 7);
     const on = calculateVectorCollision(
-      personal, y, m, d, [], null, "DEFAULT", target, 139.6917,
-      undefined, "traditional", false,
+      personal, y, m, d, [], "DEFAULT", target, 139.6917,
+      undefined, false,
     );
     const [y2, m2, d2] = boards(6, 5, 7);
     const off = calculateVectorCollision(
-      personal, y2, m2, d2, [], null, "DEFAULT", target, 139.6917,
-      undefined, "traditional", true,
+      personal, y2, m2, d2, [], "DEFAULT", target, 139.6917,
+      undefined, true,
     );
     for (const dir of DIRS) {
       expect(
@@ -105,8 +105,8 @@ describe("12ヶ月表示の日盤除外 (ignoreDayLayer)", () => {
     // 呼び出し側で finalVectors を組み直すとこれも消える。
     const [y, m, d] = boards(6, 5, 7);
     const off = calculateVectorCollision(
-      personal, y, m, d, [], null, "DEFAULT", target, 139.6917,
-      undefined, "traditional", true,
+      personal, y, m, d, [], "DEFAULT", target, 139.6917,
+      undefined, true,
     );
     // 2026-08-07 は夏土用。土用殺の南西は、年盤・月盤が凶でなくても大凶。
     expect(off.yearLayer.SW).not.toContain("NOISE_GOU");
@@ -117,12 +117,12 @@ describe("12ヶ月表示の日盤除外 (ignoreDayLayer)", () => {
   it("既定では日盤を外さない（後方互換）", () => {
     const [y, m, d] = boards(6, 5, 7);
     const explicit = calculateVectorCollision(
-      personal, y, m, d, [], null, "MIGRATION", target, 139.6917,
-      undefined, "traditional", false,
+      personal, y, m, d, [], "MIGRATION", target, 139.6917,
+      undefined, false,
     );
     const implicit = calculateVectorCollision(
-      personal, y, m, d, [], null, "MIGRATION", target, 139.6917,
-      undefined, "traditional",
+      personal, y, m, d, [], "MIGRATION", target, 139.6917,
+      undefined,
     );
     for (const dir of DIRS) {
       expect(implicit.finalVectors[dir], dir).toBe(explicit.finalVectors[dir]);

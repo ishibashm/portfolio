@@ -182,12 +182,10 @@ function computeDayLayers(
     mB,
     dB,
     p.voidZodiacs,
-    env.raw.lunarNode,
     "MIGRATION",
     instant,
     p.lon,
     undefined,
-    "traditional",
   );
   const layers = filterCollisionByMode(
     raw,

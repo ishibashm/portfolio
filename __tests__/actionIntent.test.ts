@@ -65,7 +65,6 @@ describe("エンジンは知らない用途を DEFAULT として扱っている"
       monthBoard,
       dayBoard,
       ["午", "未"],
-      null,
       intent as ActionIntent,
       date,
       135.7,

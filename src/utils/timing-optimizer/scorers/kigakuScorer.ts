@@ -126,19 +126,16 @@ export class KigakuScorer implements TimingScorer {
       const voidZodiacs = ctx.userBirthDate
         ? getPersonalVoidZodiac(ctx.userBirthDate)
         : [];
-      const lunarNodeLon = AstroEngine.getLunarNodeLongitude(ctx.targetDate);
       const collision = calculateVectorCollision(
         ctx.userKigakuStar as StarFrequency,
         yB,
         mB,
         dB,
         voidZodiacs,
-        lunarNodeLon,
         ctx.actionIntent || "DEFAULT",
         ctx.targetDate,
         ctx.longitude || 139.6917,
         undefined,
-        ctx.useClassical ? "traditional" : "physical",
       );
       const status = collision.finalVectors[ctx.targetDirection];
       // 五大凶殺の集合をここに直接書いていた。値は noiseSeverity と同じだが、

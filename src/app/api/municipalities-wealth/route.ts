@@ -199,12 +199,10 @@ export async function GET(request: Request) {
       mB,
       dB,
       voidZodiacs,
-      env.raw.lunarNode,
       "MIGRATION", // Action intent for relocation
       targetDate,
       baseLon,
       undefined,
-      nodeMapping,
     );
 
     // 利用者が選んだ絞り込み（本命星のみ／環境要因のみ など）を通す。

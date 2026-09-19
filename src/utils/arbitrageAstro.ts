@@ -198,12 +198,10 @@ export function buildDailyAstroStates(
       mB,
       dB,
       p.voidZodiacs,
-      env_d.raw.lunarNode,
       p.actionIntent,
       d,
       p.baseLon,
       undefined,
-      p.nodeMapping,
     );
 
     const vectorData = filterCollisionByMode(
