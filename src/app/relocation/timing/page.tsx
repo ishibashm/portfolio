@@ -69,6 +69,7 @@ import {
   type PartyMemberInput,
 } from "@/lib/partyMemberInput";
 import {
+  blockingReasons,
   destinationCandidates,
   jointTimeline,
   memberDirection,
@@ -626,6 +627,20 @@ export default function TimingAnalyticsPage() {
       partyDaily.length > 0 ? partyTimingReport(partyDaily, todayIso) : null,
     [partyDaily, todayIso],
   );
+  /**
+   * **最初の 1 日が出るまで、誰が何で塞いでいたか。**
+   *
+   * 利用者の指摘（2026-09-19）。合流できる日が 1 年半先になっていても
+   * 理由がどこにも出ておらず、天中殺が入っているのではと推測させて
+   * しまった。`alwaysBlockedBy` は「走査した全日で塞がっていた人」しか
+   * 出さないので、途中で開く場合は空になる。
+   */
+  const partyBlocking = useMemo(
+    () =>
+      partyDaily.length > 0 ? blockingReasons(partyDaily, todayIso) : null,
+    [partyDaily, todayIso],
+  );
+
   /** 月ごとの「全員で動ける日」の数と最初の日。2 年ぶんを一覧にする。 */
   const partyMonths = useMemo(() => {
     if (!partyReport) return [];
@@ -1125,6 +1140,31 @@ export default function TimingAnalyticsPage() {
                       </>
                     )}
                   </p>
+                  {partyBlocking &&
+                    partyBlocking.reasons.length > 0 &&
+                    partyBlocking.scanned > 0 && (
+                      <p className="rounded-xl border border-amber-200 bg-amber-50 p-2.5 text-xs leading-relaxed text-amber-900">
+                        <b>
+                          {partyBlocking.until
+                            ? `${partyBlocking.until} まで ${partyBlocking.scanned} 日ぶん、全員では動けません。`
+                            : `走査した ${partyBlocking.scanned} 日のあいだ、全員では動ける日がありません。`}
+                        </b>
+                        <span className="ml-1">
+                          {partyBlocking.reasons
+                            .map(
+                              (r) =>
+                                `${r.name}（${r.direction ? (DIRECTION_LABELS[r.direction] ?? r.direction) : "方位なし"}）が ${r.days} 日「${r.status}」`,
+                            )
+                            .join("、")}
+                          。
+                        </span>
+                        <span className="ml-1">
+                          年盤で塞がった方位は、その気学年のあいだ日取りでは戻りません。
+                          <b>合流先を変える</b>
+                          と各人の方位が変わるので、上の候補も見てください。
+                        </span>
+                      </p>
+                    )}
                   <div className="overflow-x-auto">
                     <table className="w-full text-[11px]">
                       <thead>

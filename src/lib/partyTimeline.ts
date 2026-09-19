@@ -410,3 +410,93 @@ function legFor(
     unstable: isDirectionUnstable(distanceKm),
   };
 }
+
+/** 「最初の 1 日が出るまで」を塞いでいた人と理由。 */
+export interface BlockingReason {
+  memberId: string;
+  name: string;
+  direction: EightDirection | null;
+  /** その期間でいちばん多かった理由（段階の名前、または「天中殺」）。 */
+  status: string;
+  /** 避けるべきと判定された日数。 */
+  days: number;
+}
+
+export interface BlockingSummary {
+  /** 最初に全員で動ける日。無ければ null（走査の最後まで出なかった）。 */
+  until: string | null;
+  /** 調べた日数（今日から `until` の前日まで。`until` が無ければ最後まで）。 */
+  scanned: number;
+  /** 塞いでいた人。多い順。 */
+  reasons: BlockingReason[];
+}
+
+/**
+ * **なぜ最初の日がそこまで出ないのか**を人ごとに分けて返す。
+ *
+ * 利用者の指摘（2026-09-19）。合流できる日が 1 年半先になっていて、
+ * **画面がその理由を何も出していなかった。**「天中殺が入っているのでは」
+ * と推測させてしまい、実際には別の理由だった、ということが起きる。
+ *
+ * `summarizeTiming` の `alwaysBlockedBy` は**走査した全日で塞がっていた人**
+ * しか出さない。途中で開く場合（2028 年に開く、など）は 1 件も出ないので、
+ * いちばん知りたい「それまで何が塞いでいたのか」が空になる。
+ *
+ * ここでは**今日から最初の 1 日の前日まで**を見て、人ごとにいちばん多かった
+ * 理由を返す。理由は既に `MemberOutcome.status` に入っている（段階の名前か
+ * 「天中殺」）ので、新しく判定はしない。
+ */
+export function blockingReasons(
+  daily: JointDay[],
+  todayIso: string,
+): BlockingSummary {
+  const future = daily.filter((d) => d.date >= todayIso);
+  const firstClear = future.find((d) => d.joint.everyoneSafe) ?? null;
+  const until = firstClear?.date ?? null;
+  const window = until ? future.filter((d) => d.date < until) : future;
+
+  const counts = new Map<
+    string,
+    {
+      name: string;
+      direction: EightDirection | null;
+      days: number;
+      byStatus: Map<string, number>;
+    }
+  >();
+  for (const day of window) {
+    for (const m of day.joint.members) {
+      if (!m.isAvoid) continue;
+      const cur = counts.get(m.memberId) ?? {
+        name: m.name,
+        direction: m.direction as EightDirection | null,
+        days: 0,
+        byStatus: new Map<string, number>(),
+      };
+      cur.days++;
+      cur.byStatus.set(m.status, (cur.byStatus.get(m.status) ?? 0) + 1);
+      counts.set(m.memberId, cur);
+    }
+  }
+
+  const reasons: BlockingReason[] = [];
+  for (const [memberId, c] of counts) {
+    let status = "";
+    let top = 0;
+    for (const [s, n] of c.byStatus) {
+      if (n > top) {
+        top = n;
+        status = s;
+      }
+    }
+    reasons.push({
+      memberId,
+      name: c.name,
+      direction: c.direction,
+      status,
+      days: c.days,
+    });
+  }
+  reasons.sort((a, b) => b.days - a.days || a.name.localeCompare(b.name, "ja"));
+  return { until, scanned: window.length, reasons };
+}
