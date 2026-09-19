@@ -51,6 +51,7 @@ describe("消す鍵", () => {
       "wealth_baseLon",
       "relocation_simulator_draft",
       "arb_axis_prefs_v1",
+      "timing_party_v1",
       "timing_dest_pref_v1",
       "dest_lat",
       "dest_lon",

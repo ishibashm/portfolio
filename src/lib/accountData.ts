@@ -80,6 +80,8 @@ export const ACCOUNT_LOCAL_KEYS = [
     天中殺の扱いも一緒に消えるが、どれも「登録した内容」の側。
   */
   "arb_axis_prefs_v1",
+  /* 時期ツールの同行者（生年月日と出発地が入る）。物件検索とは別の鍵 */
+  "timing_party_v1",
   /* 時期ツールの合流先（県）。目的地と同じ扱い */
   "timing_dest_pref_v1",
   /*
