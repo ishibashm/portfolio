@@ -127,3 +127,62 @@ export function joinCoverage(
   const unmatched = rows.filter((r) => !codes.has(r.areaCode));
   return { matched: rows.length - unmatched.length, unmatched };
 }
+
+/**
+ * 静的な頁が読む写し（`src/data/housingStats.json`）の形。
+ *
+ * 市区町村ページ（/houi/area/{code}）は DB を引かずに焼く。相場の札は
+ * 掲載（巡回を止めたので凍結）から出していたので、公開統計に置き換える
+ * （利用者の依頼 2026-09-19。「部屋から街へ」の続き）。表と同じく
+ * **元の値だけ**を積み、割り算は読む側（`housingStatsDirections` と
+ * 同じ定数）で行う。丸めた値を積むと出どころに戻れない。
+ */
+export interface HousingSnapshot {
+  /** 住宅・土地統計調査の調査年。 */
+  year: number;
+  /** 焼いた時刻（ISO）。頁の「出典」に出す。 */
+  generatedAt: string;
+  /** 地域コード → 元の値。欠測は null。値の無い行（全部 null）は入れない。 */
+  areas: Record<
+    string,
+    {
+      name: string;
+      totalDwellings: number | null;
+      vacantDwellings: number | null;
+      rentPerTatamiYen: number | null;
+      tatamiPerRental: number | null;
+      floorAreaPerRental: number | null;
+    }
+  >;
+}
+
+/** 取り込んだ行を写しの形にする。並びは JSON.stringify に任せる（決定的）。 */
+export function toHousingSnapshot(
+  rows: HousingRow[],
+  year: number,
+  generatedAt: string,
+): HousingSnapshot {
+  const areas: HousingSnapshot["areas"] = {};
+  for (const r of [...rows].sort((a, b) =>
+    a.areaCode.localeCompare(b.areaCode),
+  )) {
+    if (
+      r.totalDwellings === null &&
+      r.vacantDwellings === null &&
+      r.rentPerTatamiYen === null &&
+      r.tatamiPerRental === null &&
+      r.floorAreaPerRental === null
+    ) {
+      continue;
+    }
+    areas[r.areaCode] = {
+      name: r.areaName,
+      totalDwellings: r.totalDwellings,
+      vacantDwellings: r.vacantDwellings,
+      rentPerTatamiYen: r.rentPerTatamiYen,
+      tatamiPerRental: r.tatamiPerRental,
+      floorAreaPerRental: r.floorAreaPerRental,
+    };
+  }
+  return { year, generatedAt, areas };
+}
