@@ -28,7 +28,7 @@ export type ActionIntent = "DEFAULT" | "REST" | "BUSINESS" | "MIGRATION";
  * 中身は独立した 3 つの層で、id はその**組み合わせの名前**でしかない。
  *
  * - `kigaku` … 本命星（本命殺・本命的殺・本命星との相生）
- * - `env`    … 環境方位（五黄殺・暗剣殺・破・ノード）
+ * - `env`    … 環境方位（五黄殺・暗剣殺・破）
  * - `bazi`   … 天中殺（空亡。方位の禁忌と期間の禁忌の両方）
  *
  * 以前は 4 つの排他モードしか無く、**本命星と環境方位を一緒に見ることが
@@ -55,7 +55,7 @@ export type DirectionFilterMode =
 export interface DirectionFilterLayers {
   /** 本命星（本命殺・本命的殺・相生） */
   honmei: boolean;
-  /** 環境方位（五黄殺・暗剣殺・破・ノード） */
+  /** 環境方位（五黄殺・暗剣殺・破） */
   environmental: boolean;
   /** 天中殺（空亡） */
   tenchusatsu: boolean;

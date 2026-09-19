@@ -12,7 +12,6 @@
 
 import React, { useState } from "react";
 import dynamic from "next/dynamic";
-import { directionFromBearing } from "../../utils/directionGeo";
 import { directionLabelBadge, directionLabelName } from "@/lib/directionLabels";
 import type {
   BoardLayout,
@@ -77,7 +76,6 @@ const getVectorBreakdown = (
     dayZodiac: string;
     hourZodiac: string;
   },
-  lunarNodeLon: number | null,
 ): { environmental: string; personal: string } => {
   const getOpposite = (d: Direction): Direction => {
     const opposites: Record<string, Direction> = {
@@ -177,21 +175,6 @@ const getVectorBreakdown = (
   }
   if (layerType === "day" || layerType === "final") {
     if (checkHa(currentZodiac.dayZodiac)) envFactors.push("日破");
-  }
-
-  if (lunarNodeLon !== null) {
-    const getBearing = (lon: number) => {
-      let b = (lon - 90) % 360;
-      if (b < 0) b += 360;
-      b = 360 - b;
-      // 区切りは伝統区分で固定。ephemerisEngine 側の月交点判定と揃える。
-      return directionFromBearing(((b % 360) + 360) % 360, "traditional");
-    };
-    const nodeDir = getBearing(lunarNodeLon);
-    const oppNodeDir = getBearing((lunarNodeLon + 180) % 360);
-    if (dir === nodeDir || dir === oppNodeDir) {
-      envFactors.push("月交点");
-    }
   }
 
   const environmental =
@@ -332,12 +315,6 @@ export function ConsultPanel({
         return "text-purple-700 font-bold bg-[#a855f7]/10 border-[#a855f7]/30";
       if (s.startsWith("NOISE_VOID"))
         return "text-stone-600 bg-white border-stone-300";
-      if (s.startsWith("NOISE_NODE"))
-        // 以前は文字が yellow-400、地が yellow-950/30 だった。暗い地に
-        // 明るい黄色というダークテーマの組み合わせで、明るい地の
-        // この画面では**白地に乗って 1.53:1** しか無く読めなかった。
-        // amber-700 は 5.02:1（本文に要る 4.5:1 を満たす）。
-        return "text-amber-700 font-bold bg-amber-50 border-amber-200";
       if (s === "OPTIMAL")
         return "text-emerald-700 font-bold bg-emerald-50 border-emerald-200 shadow-[0_0_8px_rgba(16,185,129,0.2)]";
       if (s === "OPTIMAL_REGULAR")
@@ -403,8 +380,6 @@ export function ConsultPanel({
         return "text-purple-700 font-bold";
       if (s === "NOISE_VOID")
         return "text-stone-600 font-bold drop-shadow-[0_0_3px_rgba(0,0,0,1)] bg-stone-50 px-1 border border-stone-200";
-      // 1.53:1 で読めなかった 黄色 を amber-700（5.02:1）へ。
-      if (s === "NOISE_NODE") return "text-amber-700 font-bold";
       if (s === "NOISE_HA") return "text-rose-700 font-bold";
       if (s === "OPTIMAL")
         return "text-emerald-700 font-bold drop-shadow-[0_0_5px_rgba(16,185,129,0.8)]";
@@ -454,10 +429,6 @@ export function ConsultPanel({
       title = `⬛ ${label}`;
       desc =
         "あなたの天中殺（空亡）の十二支に当たる方位。盤の吉凶に関わらず避ける扱いにしています。";
-    } else if (status === "NOISE_NODE") {
-      title = `🟨 ${label}`;
-      desc =
-        "月の軌道と黄道の交点（羅睺・計都）に当たる方位。インド占星術で避けるとされる軸で、当サイトでは凶として扱います。";
     } else if (status === "NOISE_HA") {
       title = `🟥 ${label}`;
       desc =
@@ -516,7 +487,6 @@ export function ConsultPanel({
               personalVoidZodiac,
               layerType,
               currentZodiac,
-              env?.raw?.lunarNode ?? null,
             );
             return (
               <div className="text-[7.5px] text-stone-600 font-mono mt-1.5 pt-1.5 border-t border-stone-200 space-y-0.5">
@@ -844,8 +814,7 @@ export function ConsultPanel({
                 <span className="text-red-600 font-bold">赤</span>{" "}
                 は凶方位（五黄殺・暗剣殺・破・本命殺・的殺など）に当たっているマスです。
                 <br />
-                <span className="text-amber-700 font-bold">黄</span>{" "}
-                は月交点（羅睺・計都軸）に当たるマスです。天中殺方位のマスは白抜きで出します。どちらも当サイトでは避ける扱いにしています。
+                天中殺方位のマスは白抜きで出します。
                 <br />
                 <span className="text-emerald-700 font-bold">緑</span>{" "}
                 は本命星と相生・比和になる吉方位、
@@ -1262,7 +1231,7 @@ export function ConsultPanel({
                 <span>年・月・日の盤の重ね合わせ</span>
                 <span className="text-stone-600 text-xs font-normal normal-case tracking-normal">
                   {
-                    "（重い順: 五黄殺・暗剣殺・破・本命殺・本命的殺 ＞ 天中殺方位 ＞ 月命殺・月命的殺 ＞ 月交点。凶が無ければ吉、吉も無ければ平）"
+                    "（重い順: 五黄殺・暗剣殺・破・本命殺・本命的殺 ＞ 天中殺方位 ＞ 月命殺・月命的殺。凶が無ければ吉、吉も無ければ平）"
                   }
                 </span>
               </div>
