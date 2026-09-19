@@ -230,9 +230,23 @@ async function main() {
     return;
   }
   const targets = calls.slice(0, limit);
+  const planned = targets.length;
   let done = 0;
+  /**
+   * **途中で落ちても、採点済みは捨てない。**
+   *
+   * run #4（2026-09-19。全宛先 897 段落）は 700 段落まで採点したところで
+   * OpenRouter が 402（残高切れ）を返し、例外がそのまま main を抜けて
+   * TSV も表も出なかった。約 $0.2 ぶんの答えが全部消えた。
+   *
+   * 1 本の worker が致命的な誤りを受けたら、他の worker も次の段落を
+   * 取らずに止まり、そこまでの結果を書き出してから失敗で終える
+   * （終了コードは 1 のまま。緑にはしない）。
+   */
+  // 閉包の中で代入するので、tsc の絞り込みが効かない形（入れ物）で持つ
+  const halt: { fatal: Error | null } = { fatal: null };
   const worker = async () => {
-    while (targets.length) {
+    while (targets.length && !halt.fatal) {
       const c = targets.shift()!;
       if (mode === "mock") {
         for (const d of c.dests) {
@@ -245,15 +259,25 @@ async function main() {
           });
         }
       } else {
-        scored.push(...(await scoreLive(c)));
+        try {
+          scored.push(...(await scoreLive(c)));
+        } catch (e) {
+          halt.fatal ??= e instanceof Error ? e : new Error(String(e));
+          return;
+        }
       }
       done++;
-      if (done % 20 === 0)
-        console.log(`  ${done} / ${Math.min(calls.length, limit)}`);
+      if (done % 20 === 0) console.log(`  ${done} / ${planned}`);
     }
   };
   await Promise.all(Array.from({ length: mode === "live" ? 4 : 1 }, worker));
 
+  if (halt.fatal) {
+    console.log(
+      `\n**途中で止まった: ${done} / ${planned} 段落まで採点。**残りは未採点（候補なしではない）。` +
+        `\n${halt.fatal.message}`,
+    );
+  }
   if (mode === "live")
     console.log(`\n実費（usage.cost の合計）: $${spentUsd.toFixed(6)}`);
   scored.sort((a, b) => b.probability - a.probability);
@@ -285,6 +309,8 @@ async function main() {
       `| ${s.source} | ${s.paragraph.index} | ${s.dest} | ${s.probability.toFixed(2)} | ${s.paragraph.text.slice(0, 40)}… |`,
     );
   }
+  // 書き出しと表を出し切ってから失敗にする（Summary に途中までが残る）
+  if (halt.fatal) process.exit(1);
 }
 
 main().catch((e) => {
