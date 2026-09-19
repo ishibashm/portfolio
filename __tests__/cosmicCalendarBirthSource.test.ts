@@ -36,13 +36,31 @@ describe("CosmicCalendar の生年月日の読み書き", () => {
     });
   });
 
-  it("設定に無ければ旧キーを読む（ホームの手動保存がまだ書く）", () => {
+  it("設定に無ければ旧キーから引き上げて読む（直には読まない）", () => {
+    /*
+      旧キー（wealth_*）を直に読むのはやめた。`readSettingsSync` が正の
+      設定へ引き上げたうえで返すので、この経路が生きていることを見る。
+      直に読んでいると、別の端末で消した生年月日をこの画面だけが拾い直す。
+    */
     localStorage.setItem("wealth_birthDate", "1985-02-04T05:00");
     localStorage.setItem("wealth_birthLon", "139.7");
     expect(readBirthConfig()).toEqual({
       birthDate: "1985-02-04T05:00",
       birthLon: "139.7",
     });
+  });
+
+  it("別の端末で消した生年月日は、旧キーがあっても戻らない", () => {
+    /*
+      旧キーを直に読んでいたころは、消したはずの生年月日をこの画面だけが
+      拾い直していた。引き上げは「消された欄」（_cleared）を見るので戻らない。
+    */
+    localStorage.setItem(
+      SETTINGS_KEY,
+      JSON.stringify({ _cleared: "birth_date" }),
+    );
+    localStorage.setItem("wealth_birthDate", "1985-02-04T05:00");
+    expect(readBirthConfig().birthDate).toBe("");
   });
 
   it("両方あれば設定が勝つ", () => {
