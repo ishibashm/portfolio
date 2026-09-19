@@ -13,6 +13,8 @@
  * 見せられなくなると、検索の索引にも広告の審査にも通らなくなる。
  */
 
+import { legacyProfilePatch } from "@/lib/legacyProfileKeys";
+
 export const SETTINGS_KEY = "tactical_config_v1";
 
 /** クラウドにも保存する項目。これ以外は端末だけに残る画面の状態。 */
@@ -100,6 +102,26 @@ export function writeLocalSettings(patch: Settings): Settings {
   return merged;
 }
 
+/**
+ * 旧い画面ごとの写しを、正の設定へ 1 回だけ引き上げる。
+ *
+ * **引き上げるだけで、旧い鍵は消さない。**まだ読んでいる画面があるため
+ * （消すのは読み手を寄せ切ってから）。正の設定に既にある欄は触らないので、
+ * 何度走らせても同じ。
+ */
+export function migrateLegacyProfileKeys(): Settings {
+  if (typeof window === "undefined") return {};
+  const current = readLocalSettings();
+  let patch: Settings;
+  try {
+    patch = legacyProfilePatch(localStorage, current);
+  } catch {
+    return current; /* 読めない端末では何もしない */
+  }
+  if (Object.keys(patch).length === 0) return current;
+  return writeLocalSettings(patch);
+}
+
 function pickSynced(settings: Settings): Settings {
   const out: Settings = {};
   for (const key of SYNCED_FIELDS) {
@@ -121,6 +143,17 @@ export type LoadResult = {
  * 古い値が残り続けて同期にならない。時刻で新しいほうを採る。
  */
 export async function loadSettings(): Promise<LoadResult> {
+  /*
+    **旧い写しを先に引き上げる**（2026-09-19。lib/legacyProfileKeys）。
+    生年月日と座標は画面ごとの鍵（arb_* / wealth_*）にも入っていて、
+    正の設定に無い人がいる。読む前に引き上げておくと、以後の画面は
+    正の設定だけを見れば済む。
+
+    **クラウドと突き合わせる前に置く。**別の端末で出発地を消した人は
+    クラウド側が null で降りてくる。あとから引き上げると、消したはずの
+    値が旧い鍵から復活する。
+  */
+  migrateLegacyProfileKeys();
   const local = readLocalSettings();
 
   try {
