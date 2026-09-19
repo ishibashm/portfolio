@@ -76,6 +76,31 @@ describe("シミュレータの入口", () => {
     vi.clearAllMocks();
   });
 
+  it("旧い鍵しか無い端末でも、生年月日が埋まる", async () => {
+    /*
+      この画面は以前 `arb_birthDate` を直に読んでいた。読み手を正の設定へ
+      寄せたので、旧い鍵は `loadSettings` の引き上げ（migrateLegacyProfileKeys）
+      経由でしか入ってこない。**その経路が生きていること**を固定する。
+
+      直に読むのをやめた理由は、別の端末で消した生年月日をこの画面だけが
+      拾い直してしまうため。
+    */
+    localStorage.clear();
+    localStorage.setItem("arb_birthDate", "1985-05-20T09:00");
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue({ ok: false, status: 401 }), // 未ログイン
+    );
+
+    const { container } = await setup();
+    const birth = [...container.querySelectorAll("label")]
+      .find((l) => l.textContent?.includes("生年月日"))
+      ?.querySelector("input") as HTMLInputElement;
+    // 入力欄は date なので日付だけ
+    expect(birth.value).toBe("1985-05-20");
+    localStorage.clear();
+  });
+
   it("聞くのは 4 つ（行き先を含む）", async () => {
     const { container } = await setup();
     expect(container.querySelectorAll("input").length).toBe(4);

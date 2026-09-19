@@ -65,23 +65,26 @@ export function SimulatorStart({
 
   /*
     保存済みのものは自動で埋める。「設定するところが多すぎる」という
-    利用者の指摘への対応。生年月日はスキャナーの保存値（arb_birthDate）を
-    土台に、共有設定（ログイン中はクラウド同期）があれば上書き —
-    timing・/houi と同じ読み方。場所はこの画面の下書きの出発地名。
-    埋めるだけで保存はしない。空欄のときだけ埋め、打ちかけは消さない。
+    利用者の指摘への対応。
+
+    **生年月日は共有設定だけを読む。**以前は旧い鍵（arb_birthDate）を
+    土台にして共有設定で上書きしていたが、旧い鍵は `loadSettings` が
+    正の設定へ引き上げるので、ここで直に読む必要が無い。読んでいると、
+    別の端末で消した生年月日をこの画面だけが拾い直す。
+
+    場所はこの画面の下書きの出発地名。埋めるだけで保存はしない。
+    空欄のときだけ埋め、打ちかけは消さない。
   */
   useEffect(() => {
     let cancelled = false;
     (async () => {
       let draftName = "";
-      let storedBirth = "";
       try {
         const raw = localStorage.getItem("relocation_simulator_draft");
         if (raw) {
           const draft = JSON.parse(raw);
           if (typeof draft.startName === "string") draftName = draft.startName;
         }
-        storedBirth = localStorage.getItem("arb_birthDate") || "";
       } catch {
         /* プライベートモード等。共有設定だけで続行 */
       }
@@ -90,7 +93,7 @@ export function SimulatorStart({
       const fromConfig =
         typeof settings.birth_date === "string" ? settings.birth_date : "";
       // 共有設定は "T12:00" 付きのことがある。date 入力は日付だけ受ける。
-      const birth = (fromConfig || storedBirth).slice(0, 10);
+      const birth = fromConfig.slice(0, 10);
       if (/^\d{4}-\d{2}-\d{2}$/.test(birth)) {
         setBirthDate((prev) => prev || birth);
       }
