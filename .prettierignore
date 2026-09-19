@@ -9,6 +9,10 @@
 # 正しくて、除外の宣言が無かっただけ。
 public/municipalityListings.json
 public/prefectures.geojson
+# e-Stat の住宅の統計の写し。取り込みのワークフローが書いて bot が
+# コミットする（import-estat-housing.yml）。整形すると pre-commit で
+# bot のコミットが止まる（run 35472346972 で実際に止まった）。
+src/data/housingStats.json
 
 # prettier はこのファイル自体を整形できない（対応する parser が無く、
 # --check が失敗する）。自分自身も除く。
