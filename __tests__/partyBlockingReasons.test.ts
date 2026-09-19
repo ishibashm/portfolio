@@ -23,10 +23,27 @@ const DIRS = ["N", "NE", "E", "SE", "S", "SW", "W", "NW"];
 const TOKYO = { baseLat: 35.6895, baseLon: 139.6917 };
 const DEST = { lat: 43.0618, lon: 141.3545 }; // 東京から見て北
 
-function row(date: string, tier: string, blocked = false): TimelineRow {
+function row(
+  date: string,
+  tier: string,
+  blocked = false,
+  cause?: string,
+): TimelineRow {
   const tiers: Record<string, string> = {};
-  for (const d of DIRS) tiers[d] = tier;
-  return { date, weekday: 1, rokuyo: "大安 (Taian)", tags: [], blocked, tiers };
+  const causes: Record<string, string> = {};
+  for (const d of DIRS) {
+    tiers[d] = tier;
+    if (cause !== undefined) causes[d] = cause;
+  }
+  return {
+    date,
+    weekday: 1,
+    rokuyo: "大安 (Taian)",
+    tags: [],
+    blocked,
+    tiers,
+    ...(cause !== undefined ? { causes } : {}),
+  };
 }
 
 function member(
@@ -140,5 +157,51 @@ describe("塞いでいた理由", () => {
     expect(got.until).toBe(DATES[0]);
     expect(got.scanned).toBe(0);
     expect(got.reasons).toEqual([]);
+  });
+
+  it("凶の名前（年盤の本命的殺 など）を、段階の名前とは別に出す", () => {
+    /*
+      段階の名前は「五大凶殺あり」までで、本命殺か五黄殺かを言えない。
+      走査の応答が運ぶ符号（lib/blockCause）から名前に戻し、いちばん多い
+      ものを cause に入れる。status（段階の名前）はそのまま残す。
+    */
+    const a = member(
+      "A",
+      DATES.map((d, i) => row(d, i < 3 ? "X" : "S", false, i < 3 ? "yT" : "")),
+    );
+    const b = member(
+      "B",
+      DATES.map((d, i) =>
+        row(d, i < 2 ? "X" : "S", false, i === 0 ? "mG" : i === 1 ? "yM" : ""),
+      ),
+    );
+    const got = blockingReasons(
+      jointTimeline([a, b], DEST, "everyone"),
+      DATES[0],
+    );
+    expect(got.reasons.map((r) => [r.name, r.status, r.cause])).toEqual([
+      ["A", "五大凶殺あり", "年盤の本命的殺"],
+      // B は月盤の五黄殺 1 日・年盤の本命殺 1 日で同数。先に数えたほうが残る
+      ["B", "五大凶殺あり", "月盤の五黄殺"],
+    ]);
+  });
+
+  it("符号の無い古い応答では cause は空（status は今までどおり）", () => {
+    const a = member(
+      "A",
+      DATES.map((d, i) => row(d, i < 3 ? "X" : "S")),
+    );
+    const got = blockingReasons(jointTimeline([a], DEST, "everyone"), DATES[0]);
+    expect(got.reasons[0].status).toBe("五大凶殺あり");
+    expect(got.reasons[0].cause).toBe("");
+  });
+
+  it("天中殺で塞がった日の cause は「天中殺」", () => {
+    const a = member(
+      "A",
+      DATES.map((d, i) => row(d, "C", i < 2, i < 2 ? "" : undefined)),
+    );
+    const got = blockingReasons(jointTimeline([a], DEST, "everyone"), DATES[0]);
+    expect(got.reasons[0].cause).toBe("天中殺");
   });
 });
