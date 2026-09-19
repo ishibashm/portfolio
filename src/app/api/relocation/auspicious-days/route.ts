@@ -19,6 +19,7 @@ import {
   isTenchusatsuMode,
 } from "@/utils/tenchusatsuPolicy";
 import { parsePartyParam, type PartyMember } from "@/utils/arbitrageParty";
+import { encodeBlockCause } from "@/lib/blockCause";
 
 /**
  * 年盤・月盤・日盤がすべて吉になる日を列挙する。
@@ -60,6 +61,12 @@ interface TimelineRow {
   tags: string[];
   blocked: boolean;
   tiers: Record<string, string>;
+  /**
+   * 方位ごとの「なぜ塞がっているか」の符号（`lib/blockCause`）。凶が無い
+   * 方位は空文字。段階だけだと「五大凶殺あり」までしか言えず、年盤の
+   * 本命殺（その気学年は待っても戻らない）だと画面が伝えられなかった。
+   */
+  causes: Record<string, string>;
 }
 
 type TimelineBase = Parameters<typeof judgeDayAllDirections>[1];
@@ -81,7 +88,12 @@ function timelineRows(from: Date, to: Date, base: TimelineBase): TimelineRow[] {
     const all = judgeDayAllDirections(cursor, base);
     guard++;
     const tiers: Record<string, string> = {};
-    for (const dir of ALL_DIRECTIONS) tiers[dir] = gradeVerdict(all[dir]);
+    const causes: Record<string, string> = {};
+    for (const dir of ALL_DIRECTIONS) {
+      const v = all[dir];
+      tiers[dir] = gradeVerdict(v);
+      causes[dir] = encodeBlockCause(v.yearLayer, v.monthLayer, v.dayLayer);
+    }
     const any = all[ALL_DIRECTIONS[0]];
     days.push({
       date: any.date,
@@ -93,6 +105,7 @@ function timelineRows(from: Date, to: Date, base: TimelineBase): TimelineRow[] {
       tags: any.tags.filter((t) => t !== "天道"),
       blocked: any.blockedByTenchusatsu,
       tiers,
+      causes,
     });
     cursor = new Date(cursor.getTime() + 86400000);
   }

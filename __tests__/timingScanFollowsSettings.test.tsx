@@ -93,7 +93,7 @@ describe("走査は画面の判定の設定と同じ設定で走る", () => {
     localStorage.setItem(
       "tactical_config_v1",
       JSON.stringify({
-        birth_date: "1957-09-22T12:00",
+        birth_date: "1966-09-22T12:00",
         base_lat: 35.0116,
         base_lon: 135.7681,
         direction_filter_mode: "personal_kigaku_environmental",
@@ -123,7 +123,7 @@ describe("走査は画面の判定の設定と同じ設定で走る", () => {
     localStorage.setItem(
       "tactical_config_v1",
       JSON.stringify({
-        birth_date: "1957-09-22T12:00",
+        birth_date: "1966-09-22T12:00",
         base_lat: 35.0116,
         base_lon: 135.7681,
       }),
@@ -183,7 +183,7 @@ describe("走査は画面の判定の設定と同じ設定で走る", () => {
     localStorage.setItem(
       "tactical_config_v1",
       JSON.stringify({
-        birth_date: "1957-09-22T12:00",
+        birth_date: "1966-09-22T12:00",
         base_lat: 35.0116,
         base_lon: 135.7681,
         direction_filter_mode: "composite",
