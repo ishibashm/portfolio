@@ -315,10 +315,6 @@ export default function MagneticMapInner({
           style = { color: "#eab308", opacity: 0.4 };
           dashArray = "1,5";
           break;
-        case "NOISE_NODE":
-          style = { color: "#f59e0b", opacity: 0.4 };
-          dashArray = "4,4";
-          break;
         case "NOISE":
           style = { color: "#ef4444", opacity: 0.6 };
           dashArray = "10,10";
@@ -439,8 +435,6 @@ export default function MagneticMapInner({
           return "【警戒】本命殺・的殺: 健康面や目的に凶とされる方位です";
         if (status.includes("VOID"))
           return "【警告】天中殺: 物事が定まらないとされる方位。大きな決断は控えるのが良いとされます";
-        if (status.includes("NODE"))
-          return "【警告】羅睺・計都軸: インド占星術で凶とされる軸です";
         if (status === "OPTIMAL")
           return "【推奨】大吉方位。伝統的に運気を後押しするとされる方位です";
         if (status === "OPTIMAL_REGULAR")
@@ -898,7 +892,7 @@ export default function MagneticMapInner({
             {Math.abs(declination).toFixed(2)}°
           </div>
           <div className="text-[10px] text-stone-600 mt-0.5 leading-tight max-w-[220px]">
-            ※方位の吉凶は真北を基準に判定しています。磁北の表示は、方位磁針で測ったときにどれだけずれるかを示す参考です。月交点（空間方位）と月相（時間補正）は別個に評価されています。
+            ※方位の吉凶は真北を基準に判定しています。磁北の表示は、方位磁針で測ったときにどれだけずれるかを示す参考です。
           </div>
         </div>
       </div>
@@ -944,12 +938,6 @@ export default function MagneticMapInner({
               <span className="w-2 h-2 rounded-full bg-[#eab308]"></span>
               <span className="text-stone-600">
                 {directionLabelName("NOISE_VOID")}
-              </span>
-            </div>
-            <div className="flex items-center gap-1.5">
-              <span className="w-2 h-2 rounded-full bg-[#f59e0b]"></span>
-              <span className="text-stone-600">
-                {directionLabelName("NOISE_NODE")}
               </span>
             </div>
             <div className="flex items-center gap-1.5">

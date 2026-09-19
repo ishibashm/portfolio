@@ -416,20 +416,9 @@ export function TacticalMagneticMapComponent({
               は、あなたの天中殺（空亡）の十二支に当たる方向です。伝統的に、この期間・方位での大きな決断は避けるとされるため、当サイトでは保留を勧める表示にしています。
             </p>
           </div>
-          <div className="p-2 sm:p-3 border border-amber-200 rounded-sm">
-            <strong className="text-amber-700 block mb-1 font-mono uppercase">
-              ◆ 3. 月交点 (NODE)
-            </strong>
-            <p className="text-stone-600 text-justify mt-1">
-              <strong className="text-amber-700 font-bold">
-                オレンジの破線
-              </strong>
-              は、月の軌道と黄道の交点「羅睺・計都軸（月交点）」の方向です。日食・月食が起こる軸で、インド占星術で避けるとされるため、当サイトでは凶として扱います（※全方位に効く「月相」と違い、方位の偏りを持つ要因です）。
-            </p>
-          </div>
           <div className="p-2 sm:p-3 border border-emerald-200 rounded-sm">
             <strong className="text-emerald-700 block mb-1 font-mono uppercase">
-              ◆ 4. 最適化ゾーン (OPTIMAL)
+              ◆ 3. 最適化ゾーン (OPTIMAL)
             </strong>
             <p className="text-stone-600 text-justify mt-1">
               <strong className="text-emerald-700 font-bold">緑の実線</strong>
