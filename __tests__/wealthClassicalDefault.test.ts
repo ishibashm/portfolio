@@ -35,9 +35,11 @@ describe("移住先の比較の既定エンジン", () => {
       'const [engineType, setEngineType] = useState("classical");',
     );
     expect(PAGE).toContain('let engine = "classical";');
-    // 設定バーの通知（use_classical_board が無い）→ 古典
+    /* 設定バーの通知（use_classical_board が無い）→ 古典。
+       素の JSON を手で読むのはやめたので（#1426）、型付きの取り出しで
+       「false のときだけ天体軌道モデル」と書いてある形を見る。 */
     expect(PAGE).toMatch(
-      /config\.use_classical_board !== undefined\s*\?\s*config\.use_classical_board\s*\?\s*"classical"\s*:\s*"physical"\s*:\s*"classical"/,
+      /settingBoolean\(config, "use_classical_board"\) === false\s*\?\s*"physical"\s*:\s*"classical"/,
     );
   });
 

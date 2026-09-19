@@ -2,7 +2,13 @@
 
 import { useEffect, useRef, useState } from "react";
 import { toUserMessage } from "@/lib/errorMessage";
-import type { Settings } from "@/lib/userSettings";
+import {
+  readSettingsSync,
+  settingBoolean,
+  settingNumber,
+  settingString,
+  type Settings,
+} from "@/lib/userSettings";
 import { ProfilePicker } from "@/components/profile/ProfilePicker";
 import { ALL_DIRECTIONS, DIRECTION_LABELS } from "@/utils/auspiciousDays";
 import { parseWealthStatus } from "@/lib/wealthMapPresentation";
@@ -483,34 +489,37 @@ export default function RegionalWealthPage() {
       let trueNorth = false;
       let lunarPhase = true;
 
-      // 1. Try to load from unified tactical config (Sync with SolarTimeClock)
-      const tacticalConfig = localStorage.getItem("tactical_config_v1");
-      if (tacticalConfig) {
-        try {
-          const config = JSON.parse(tacticalConfig);
-          if (config.birth_date) bDate = config.birth_date;
-          if (config.birth_lat !== undefined)
-            bLat = config.birth_lat.toString();
-          if (config.birth_lon !== undefined)
-            bLon = config.birth_lon.toString();
-          if (config.base_lat !== undefined) bsLat = config.base_lat.toString();
-          if (config.base_lon !== undefined) bsLon = config.base_lon.toString();
-          if (config.use_classical_board !== undefined)
-            engine = config.use_classical_board ? "classical" : "physical";
-          if (config.use_true_north !== undefined)
-            trueNorth = config.use_true_north;
-          if (config.lunar_phase_modifier !== undefined)
-            lunarPhase = config.lunar_phase_modifier;
-          if (config.layer_mode !== undefined) layer = config.layer_mode;
-        } catch {}
-      }
+      /*
+        設定は 1 か所から読む。**素の JSON を手で読まない。**
 
-      // 2. Fallback to specific slots if unified config doesn't have them
-      if (!bDate) bDate = localStorage.getItem("wealth_birthDate") || "";
-      if (!bLat) bLat = localStorage.getItem("wealth_birthLat") || "";
-      if (!bLon) bLon = localStorage.getItem("wealth_birthLon") || "";
-      if (!bsLat) bsLat = localStorage.getItem("wealth_baseLat") || "";
-      if (!bsLon) bsLon = localStorage.getItem("wealth_baseLon") || "";
+        以前は `config.birth_lat !== undefined` を「値がある」と読んで
+        `.toString()` を呼んでいた。消された欄が null で入っていた端末では
+        例外になり、`catch {}` がそれを飲み込むので、**その後ろに並ぶ欄
+        （出発地・盤の種類・真北・月相）が丸ごと読まれないまま既定値に
+        落ちていた**（#1426）。型付きの取り出しはこの取り違えをしない。
+
+        旧キー（wealth_*）も直に読まない。`readSettingsSync` が正の設定へ
+        引き上げるので、別の端末で消した値を自分だけ拾い直すことがなくなる。
+      */
+      const config = readSettingsSync();
+      const coord = (key: string) => {
+        const n = settingNumber(config, key);
+        return n === undefined ? "" : n.toString();
+      };
+      bDate = settingString(config, "birth_date") || "";
+      bLat = coord("birth_lat");
+      bLon = coord("birth_lon");
+      bsLat = coord("base_lat");
+      bsLon = coord("base_lon");
+      const classicalBoard = settingBoolean(config, "use_classical_board");
+      if (classicalBoard !== undefined)
+        engine = classicalBoard ? "classical" : "physical";
+      const savedTrueNorth = settingBoolean(config, "use_true_north");
+      if (savedTrueNorth !== undefined) trueNorth = savedTrueNorth;
+      const savedLunarPhase = settingBoolean(config, "lunar_phase_modifier");
+      if (savedLunarPhase !== undefined) lunarPhase = savedLunarPhase;
+      const savedLayer = settingString(config, "layer_mode");
+      if (savedLayer) layer = savedLayer;
 
       if (bDate) setBirthDate(normalizeDateTimeLocal(bDate));
       if (bLat) setBirthLat(bLat);
@@ -541,65 +550,57 @@ export default function RegionalWealthPage() {
     }
 
     const handleGlobalConfigUpdate = () => {
-      const tacticalConfig = localStorage.getItem("tactical_config_v1");
-      if (tacticalConfig) {
-        try {
-          const config = JSON.parse(tacticalConfig);
-          const bDate = config.birth_date || "";
-          const bLat =
-            config.birth_lat !== undefined ? config.birth_lat.toString() : "";
-          const bLon =
-            config.birth_lon !== undefined ? config.birth_lon.toString() : "";
-          const bsLat =
-            config.base_lat !== undefined ? config.base_lat.toString() : "";
-          const bsLon =
-            config.base_lon !== undefined ? config.base_lon.toString() : "";
-          const engine =
-            config.use_classical_board !== undefined
-              ? config.use_classical_board
-                ? "classical"
-                : "physical"
-              : "classical";
-          const layer = config.layer_mode || "final";
-          const filterMode = config.direction_filter_mode || "composite";
-          const trueNorth = config.use_true_north || false;
-          const lunarPhase =
-            config.lunar_phase_modifier !== undefined
-              ? config.lunar_phase_modifier
-              : true;
-          const tDate =
-            config.target_date || todayInJapan();
+      /* 上の読み込みと同じ。型付きの取り出しで読む（#1426）。 */
+      const config = readSettingsSync();
+      const coord = (key: string) => {
+        const n = settingNumber(config, key);
+        return n === undefined ? "" : n.toString();
+      };
+      const bDate = settingString(config, "birth_date") || "";
+      const bLat = coord("birth_lat");
+      const bLon = coord("birth_lon");
+      const bsLat = coord("base_lat");
+      const bsLon = coord("base_lon");
+      const engine =
+        settingBoolean(config, "use_classical_board") === false
+          ? "physical"
+          : "classical";
+      const layer = settingString(config, "layer_mode") || "final";
+      const filterMode =
+        settingString(config, "direction_filter_mode") || "composite";
+      const trueNorth = settingBoolean(config, "use_true_north") || false;
+      const lunarPhase =
+        settingBoolean(config, "lunar_phase_modifier") !== false;
+      const tDate = settingString(config, "target_date") || todayInJapan();
 
-          setBirthDate(normalizeDateTimeLocal(bDate));
-          setBirthLat(bLat);
-          setBirthLon(bLon);
-          setBaseLat(bsLat);
-          setBaseLon(bsLon);
-          setEngineType(engine);
-          setLayerMode(layer);
-          setDirectionFilterMode(filterMode);
-          setUseTrueNorth(trueNorth);
-          setLunarPhaseModifier(lunarPhase);
-          setTargetDate(tDate);
+      setBirthDate(normalizeDateTimeLocal(bDate));
+      setBirthLat(bLat);
+      setBirthLon(bLon);
+      setBaseLat(bsLat);
+      setBaseLon(bsLon);
+      setEngineType(engine);
+      setLayerMode(layer);
+      setDirectionFilterMode(filterMode);
+      setUseTrueNorth(trueNorth);
+      setLunarPhaseModifier(lunarPhase);
+      setTargetDate(tDate);
 
-          fetchData(
-            {
-              targetDate: tDate,
-              birthDate: bDate,
-              birthLat: bLat,
-              birthLon: bLon,
-              baseLat: bsLat,
-              baseLon: bsLon,
-              engineType: engine,
-              layerMode: layer,
-              directionFilterMode: filterMode,
-              useTrueNorth: trueNorth,
-              lunarPhaseModifier: lunarPhase,
-            },
-            false,
-          );
-        } catch {}
-      }
+      fetchData(
+        {
+          targetDate: tDate,
+          birthDate: bDate,
+          birthLat: bLat,
+          birthLon: bLon,
+          baseLat: bsLat,
+          baseLon: bsLon,
+          engineType: engine,
+          layerMode: layer,
+          directionFilterMode: filterMode,
+          useTrueNorth: trueNorth,
+          lunarPhaseModifier: lunarPhase,
+        },
+        false,
+      );
     };
 
     window.addEventListener(
