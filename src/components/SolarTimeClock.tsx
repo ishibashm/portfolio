@@ -1284,8 +1284,16 @@ export const SolarTimeClock = () => {
           localStorage.setItem("wealth_birthLat", birthLat.toString());
           localStorage.setItem("wealth_birthLon", birthLon.toString());
         }
-        localStorage.setItem("wealth_baseLat", lat.toString());
-        localStorage.setItem("wealth_baseLon", lon.toString());
+        /* **出発地も旗の内側へ**（2026-09-19）。ここだけ素通しだった。
+           生年月日と出生地は #1100・#1126 で包んだのに、出発地は
+           包み忘れていて、画面の初期値（東京駅 35.6895 / 139.6917）が
+           保存のたびに書かれていた。相場マップは tactical_config_v1 に
+           出発地が無いときこの鍵を読むので、**出発地を入れていない人の
+           地図が東京駅を基準に出ていた。**同じ事故の 4 件目。 */
+        if (basePlaceOwned) {
+          localStorage.setItem("wealth_baseLat", lat.toString());
+          localStorage.setItem("wealth_baseLon", lon.toString());
+        }
       }
 
       alert(
