@@ -55,6 +55,10 @@ import {
   type DayCategory,
 } from "@/lib/timingFilter";
 import { DEFAULT_TENCHUSATSU_MODE } from "@/utils/tenchusatsuPolicy";
+import {
+  filterLayersOf,
+  parseDirectionFilterMode,
+} from "@/utils/directionFilterMode";
 import { loadSettings } from "@/lib/userSettings";
 import { ActiveProfileBadge } from "@/components/profile/ActiveProfileBadge";
 import { PartyMembersEditor } from "@/components/relocation/PartyMembersEditor";
@@ -661,6 +665,15 @@ export default function TimingAnalyticsPage() {
         : [],
     [partyActive, allTimelines, partyPolicy, todayIso],
   );
+  /**
+   * いまの判定モードが天中殺を見るか。**説明文の書き分けに使う。**
+   * 判定そのものはエンジン側がモードを見ている（`filterModeUsesTenchusatsu`）。
+   * ここは `directionFilterMode` の表（import の無い葉）を引くだけ。
+   */
+  const partyUsesTenchusatsu = filterLayersOf(
+    parseDirectionFilterMode(settings?.directionFilterMode ?? "composite"),
+  ).tenchusatsu;
+
   /** 候補を全部出すか（既定は上位だけ）。 */
   const [showAllCandidates, setShowAllCandidates] = useState(false);
 
@@ -1078,9 +1091,39 @@ export default function TimingAnalyticsPage() {
                       。期間を延ばしても変わらないので、合流先の県を変えるか、年を改めるかの判断になります。
                     </p>
                   )}
+                  {/*
+                    **「天中殺にも当たらない日」と無条件に書いていた**
+                    （利用者の指摘。2026-09-19）。天中殺を見るかどうかは
+                    判定モードで決まる。本命星 ＋ 環境方位・本命星のみ・
+                    環境要因のみの 3 つは天中殺を見ない（`filterLayersOf`）
+                    ので、その 3 つでは説明が事実と違っていた。
+
+                    判定そのものは正しかった。**エンジンは
+                    `filterModeUsesTenchusatsu` でモードを見ており、実測でも
+                    本命星 ＋ 環境方位では天中殺で塞がる日が 0 日**
+                    （総合では同じ人で 190 日・142 日）。食い違っていたのは
+                    説明文だけ。数が少ない理由を取り違える材料になるので、
+                    モードに合わせて書き分ける。
+                  */}
                   <p className="text-xs leading-relaxed text-stone-500">
-                    「全員で動ける日」は、移動する全員が凶なし（C
-                    以上）で天中殺にも当たらない日。まとめ方は日ごとの段階（下の地図の塗り）に効き、この日数には効きません。
+                    「全員で動ける日」は、移動する全員が凶なし（C 以上）
+                    {partyUsesTenchusatsu ? "で天中殺にも当たらない日" : "の日"}
+                    。まとめ方は日ごとの段階（下の地図の塗り）に効き、この日数には効きません。
+                    {!partyUsesTenchusatsu && (
+                      <>
+                        {" "}
+                        <b>
+                          いまの判定モード（
+                          {
+                            modeInfo(
+                              settings?.directionFilterMode ?? "composite",
+                            ).label
+                          }
+                          ）は天中殺を見ていません。
+                        </b>
+                        天中殺の期間も候補に入ります。
+                      </>
+                    )}
                   </p>
                   <div className="overflow-x-auto">
                     <table className="w-full text-[11px]">

@@ -207,6 +207,66 @@ describe("時期ツールの同行者", () => {
     expect(text).toMatch(/あなたは[東西南北]/);
   });
 
+  it("天中殺を見ないモードでは、説明にそう書く", async () => {
+    /*
+      **「天中殺にも当たらない日」と無条件に書いていた**（利用者の指摘。
+      2026-09-19）。天中殺を見るかどうかは判定モードで決まり、
+      本命星 ＋ 環境方位・本命星のみ・環境要因のみの 3 つは見ない。
+
+      判定そのものは正しかった（エンジンは filterModeUsesTenchusatsu で
+      モードを見ている。実測でも本命星 ＋ 環境方位では天中殺で塞がる日が
+      0 日で、総合では同じ人が 190 日・142 日）。**食い違っていたのは
+      説明文だけ**だが、日数が少ない理由を取り違える材料になる。
+    */
+    loadSettings.mockResolvedValue({
+      settings: { direction_filter_mode: "personal_kigaku_environmental" },
+    });
+    await render();
+    const text = container.textContent ?? "";
+    expect(text).toContain("は天中殺を見ていません");
+    expect(text).toContain("天中殺の期間も候補に入ります");
+    expect(text).not.toContain("で天中殺にも当たらない日");
+  });
+
+  it("天中殺を見るモードでは、今までどおり書く", async () => {
+    loadSettings.mockResolvedValue({
+      settings: { direction_filter_mode: "composite" },
+    });
+    await render();
+    const text = container.textContent ?? "";
+    expect(text).toContain("で天中殺にも当たらない日");
+    expect(text).not.toContain("は天中殺を見ていません");
+  });
+
+  it("比重は「重み付き」のときだけ出し、つまみで動かす", async () => {
+    /*
+      比重を読むのは combineOutcomes の weighted の枝だけ。全員一致と
+      平均では触っても何も変わらないので、効く設定のときだけ出す。
+      数値欄からつまみに替えた（利用者の指摘。2026-09-19）。
+    */
+    await render();
+    /* 既定は全員一致。比重は出さない */
+    expect(container.textContent).not.toContain("比重");
+
+    localStorage.setItem(
+      "arb_axis_prefs_v1",
+      JSON.stringify({
+        candidateStrategy: "top",
+        partyMembers: [MOTHER],
+        partyPolicy: "weighted",
+      }),
+    );
+    /* 同じテストの中で描き直す（afterEach と同じ手順で畳んでから） */
+    await act(async () => root.unmount());
+    container.remove();
+    await render();
+    expect(container.textContent).toContain("比重");
+    const range = container.querySelector('input[type="range"]');
+    expect(range).not.toBeNull();
+    expect(range?.getAttribute("step")).toBe("0.5");
+    expect(container.querySelector('input[type="number"]')).toBeNull();
+  });
+
   it("候補を押すと合流先に入り、合成の結果が出る", async () => {
     localStorage.removeItem("timing_dest_pref_v1");
     await render();
