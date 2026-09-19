@@ -144,7 +144,9 @@ export function PartyMembersEditor({
             />
           )}
 
-          <div className="flex items-center justify-between gap-2">
+          {/* 携帯幅（390px）では「移動しない」とつまみが 1 行に収まらず、
+              「比重」が 2 文字で折れていた。行ごと折り返す。 */}
+          <div className="flex flex-wrap items-center justify-between gap-x-2 gap-y-1.5">
             <label
               className="flex cursor-pointer items-center gap-1.5 text-[11px] text-stone-500"
               title="既に移転先の側に住んでいて動かない人。方位が発生しないので判定から外し、同居する相手として一覧にだけ残す。"
@@ -159,23 +161,36 @@ export function PartyMembersEditor({
               />
               移動しない（現地在住）
             </label>
-            <label
-              className="flex items-center gap-1.5 text-[11px] text-stone-500"
-              title="「重み付き」でまとめるときの比重。"
-            >
-              比重
-              <input
-                type="number"
-                min={0.5}
-                max={10}
-                step={0.5}
-                value={member.weight}
-                onChange={(e) =>
-                  update(member.id, { weight: Number(e.target.value) || 1 })
-                }
-                className="w-14 rounded-lg border border-gray-200 bg-white px-1.5 py-1 font-mono text-xs outline-none dark:border-stone-200 dark:bg-stone-50"
-              />
-            </label>
+            {/*
+              **比重は「重み付き」でしか効かない**（`combineOutcomes` が
+              weights を読むのはその枝だけ）。全員一致と平均のときに出して
+              おくと、動かしても何も変わらない欄を触らせることになる。
+              効く設定のときだけ出す。
+
+              数値入力からつまみに替えた（利用者の指摘。2026-09-19）。
+              0.5 刻みの数値欄は、携帯だと数字キーボードが出たうえに
+              刻みを外した値も打ててしまう。
+            */}
+            {policy === "weighted" && (
+              <label className="flex items-center gap-1.5 text-[11px] text-stone-500">
+                <span className="whitespace-nowrap">比重</span>
+                <input
+                  type="range"
+                  min={0.5}
+                  max={10}
+                  step={0.5}
+                  value={member.weight}
+                  aria-label={`${member.name || "この人"}の比重`}
+                  onChange={(e) =>
+                    update(member.id, { weight: Number(e.target.value) || 1 })
+                  }
+                  className="h-6 w-24 cursor-pointer accent-indigo-600"
+                />
+                <span className="w-8 text-right font-mono text-xs text-stone-700">
+                  {member.weight.toFixed(1)}
+                </span>
+              </label>
+            )}
           </div>
         </div>
       ))}
