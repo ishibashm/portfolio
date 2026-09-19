@@ -163,7 +163,6 @@ const ASTRO_STATUS_LABELS: Record<string, string> = {
   NOISE_TEKI: "本命的殺",
   NOISE_GETSUMEI: "月命殺",
   NOISE_GETSUTEKI: "月命的殺",
-  NOISE_NODE: "月交点ノイズ",
 };
 
 /*
