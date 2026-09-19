@@ -9,7 +9,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
   なく 2 年くらいまで」。物件スキャナーの同行者は 90 日までなので、
   2 年ぶん見る入口を時期ツールに置いた。ここで固定するのは
 
-    1. 物件スキャナーで足した同行者（arb_axis_prefs_v1）が読み込まれ、
+    1. 物件スキャナーで足した同行者（arb_axis_prefs_v1）が最初の 1 回だけ読み込まれ、
        走査の API に `party` として載る
     2. 合流先の県を選ぶと、各人の方位と「次に全員で動ける日」が出る
     3. 同行者を変えたら「走査し直す」を促す（黙って古い結果を出さない）
@@ -172,13 +172,20 @@ describe("時期ツールの同行者", () => {
     expect(text).toContain("1 / 3日");
     // 走査し直しの案内は出ていない（載せた同行者と同じ）
     expect(text).not.toContain("同行者を変えました");
-    // 読み込みで保存を空にしていない
+    // 読み込みで保存を空にしていない（物件検索の鍵はそのまま。この頁の
+    // 鍵は利用者が触るまで作らない）
     const saved = JSON.parse(localStorage.getItem("arb_axis_prefs_v1") ?? "{}");
     expect(saved.partyMembers).toHaveLength(1);
     expect(saved.candidateStrategy).toBe("top");
+    expect(localStorage.getItem("timing_party_v1")).toBeNull();
   });
 
-  it("同行者を消すと走査し直しを促し、保存にも反映する（他の項目は残す）", async () => {
+  it("同行者を消すと走査し直しを促し、この頁の鍵に保存する（物件検索の同行者は残す）", async () => {
+    /*
+      当初は物件検索と同じ鍵に書き戻していた。走査の範囲が違う（90 日 /
+      2 年）ので分け、こちらで消しても物件検索の同行者は消えない
+      （利用者の依頼 2026-09-19）。
+    */
     await render();
     const remove = [...container.querySelectorAll("button")].find(
       (b) => b.textContent === "削除",
@@ -187,9 +194,13 @@ describe("時期ツールの同行者", () => {
       remove.dispatchEvent(new MouseEvent("click", { bubbles: true }));
     });
     expect(container.textContent).toContain("同行者を変えました");
-    const saved = JSON.parse(localStorage.getItem("arb_axis_prefs_v1") ?? "{}");
-    expect(saved.partyMembers).toEqual([]);
-    expect(saved.candidateStrategy).toBe("top");
+    const mine = JSON.parse(localStorage.getItem("timing_party_v1") ?? "{}");
+    expect(mine.members).toEqual([]);
+    const scanner = JSON.parse(
+      localStorage.getItem("arb_axis_prefs_v1") ?? "{}",
+    );
+    expect(scanner.partyMembers).toHaveLength(1);
+    expect(scanner.candidateStrategy).toBe("top");
   });
 
   it("合流先を選んでいなくても、どこで合流できるかの候補を出す", async () => {

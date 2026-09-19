@@ -70,8 +70,8 @@ import { ActiveProfileBadge } from "@/components/profile/ActiveProfileBadge";
 import { PartyMembersEditor } from "@/components/relocation/PartyMembersEditor";
 import {
   partyParam,
-  readSharedParty,
-  writeSharedParty,
+  readTimingParty,
+  writeTimingParty,
   type PartyMemberInput,
 } from "@/lib/partyMemberInput";
 import {
@@ -265,12 +265,14 @@ export default function TimingAnalyticsPage() {
   const [luckyOnly, setLuckyOnly] = useState(false);
 
   /*
-    同行者・合流する人。物件スキャナーと同じ人を同じ鍵から読む
-    （lib/partyMemberInput）。合流先は県で選び、各人の出発地からその県の
+    同行者・合流する人。**この頁専用の鍵**（lib/partyMemberInput の
+    timing_party_v1）に持つ。合流先は県で選び、各人の出発地からその県の
     代表点への方位で、人ごとの段階を引いて 1 本にまとめる
     （lib/partyTimeline）。走査は本人と同じ範囲（2 年まで）を人数ぶん。
-    物件スキャナーの同行者は 90 日までなので、「合流する人と 2 年ぶん
-    見たい」（利用者の要望 2026-09-17）はこちらで受ける。
+
+    当初は物件スキャナーと同じ鍵を読んでいたが、あちらの時期の走査は
+    90 日まで・こちらは 2 年で、同じ人を載せても条件が揃わない。利用者の
+    依頼（2026-09-19）で分けた。スキャナーで足した人は最初の 1 回だけ写す。
   */
   const [partyMembers, setPartyMembers] = useState<PartyMemberInput[]>([]);
   const [partyPolicy, setPartyPolicy] =
@@ -284,7 +286,7 @@ export default function TimingAnalyticsPage() {
 
   useEffect(() => {
     try {
-      const shared = readSharedParty(localStorage);
+      const shared = readTimingParty(localStorage);
       setPartyMembers(shared.members);
       setPartyPolicy(shared.policy);
       setDestPref(localStorage.getItem(DEST_PREF_KEY) || "");
@@ -302,11 +304,11 @@ export default function TimingAnalyticsPage() {
   // 上書きしてしまう（物件スキャナーで足した人が消える）。
   const changeParty = (members: PartyMemberInput[]) => {
     setPartyMembers(members);
-    writeSharedParty(localStorage, { members, policy: partyPolicy });
+    writeTimingParty(localStorage, { members, policy: partyPolicy });
   };
   const changePolicy = (policy: PartyPolicy) => {
     setPartyPolicy(policy);
-    writeSharedParty(localStorage, { members: partyMembers, policy });
+    writeTimingParty(localStorage, { members: partyMembers, policy });
   };
   const changeDest = (pref: string) => {
     setDestPref(pref);
@@ -987,7 +989,7 @@ export default function TimingAnalyticsPage() {
         {/* 同行者・合流する人。走査の前でも人を足せるように、結果の外に置く */}
         <Section
           title="同行者・合流する人（いつなら全員で動けるか）"
-          subtitle="別の場所に住む親族と合流するなど、一緒に動く人を足すと、合流先に向けた全員ぶんの方位を人数ぶん走査して重ねます。走査は本人と同じ範囲（2 年まで）。同行者は物件スキャナーと共有で、あちらの「時期の走査」は 90 日までです。"
+          subtitle="別の場所に住む親族と合流するなど、一緒に動く人を足すと、合流先に向けた全員ぶんの方位を人数ぶん走査して重ねます。走査は本人と同じ範囲（2 年まで）。ここで足した同行者はこの頁だけのもので、物件スキャナーの同行者とは別に持ちます。"
         >
           <div className="grid gap-5 lg:grid-cols-[minmax(0,380px)_1fr]">
             <PartyMembersEditor
