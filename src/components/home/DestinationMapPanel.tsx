@@ -1229,8 +1229,7 @@ export default function DestinationMapPanel({
                   本命・的殺（本命星から）
                 </span>
                 <span className="flex items-center gap-1 bg-white/80 px-1.5 py-0.5 rounded border border-stone-200">
-                  <div className="w-2 h-2 bg-amber-500/80"></div>{" "}
-                  天中殺方位・羅睺／計都
+                  <div className="w-2 h-2 bg-amber-500/80"></div> 天中殺方位
                 </span>
                 <span className="flex items-center gap-1 bg-white/80 px-1.5 py-0.5 rounded border border-stone-200">
                   <div className="w-2 h-2 bg-orange-500/80"></div> 注意
