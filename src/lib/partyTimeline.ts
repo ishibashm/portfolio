@@ -18,6 +18,7 @@
  * 回しても軽いよう、依存は方位の計算と合成の 2 つだけにしてある。
  */
 import { TIER_LABELS, TIER_ORDER, type DayTier } from "@/utils/dayTier";
+import { decodeBlockCause } from "@/lib/blockCause";
 import {
   bearingBetween,
   directionFromBearing,
@@ -42,6 +43,11 @@ export interface TimelineRow {
   tags: string[];
   blocked: boolean;
   tiers: Record<string, string>;
+  /**
+   * 方位ごとの「なぜ塞がっているか」の符号（`lib/blockCause`）。
+   * 古い応答には無いので任意。無ければ段階の名前だけで出す。
+   */
+  causes?: Record<string, string>;
 }
 
 /** 1 人ぶんの走査結果。API の `members[]` と本人の `days` を同じ形で受ける。 */
@@ -159,6 +165,13 @@ function outcomeFor(
   const tier = asTier(row.tiers[direction]);
   const blocked = row.blocked;
   const label = blocked ? "天中殺" : TIER_LABELS[tier];
+  /*
+    最も重い要因は**凶の名前**で持つ（「年盤の本命的殺」など）。段階の
+    名前（「五大凶殺あり」）では、本命殺なのか五黄殺なのかが画面で言えず、
+    天中殺が入っているのではと推測させた（利用者報告 2026-09-19）。
+    符号が無い古い応答では段階の名前に落ちる。
+  */
+  const cause = blocked ? "天中殺" : decodeBlockCause(row.causes?.[direction]);
   return {
     memberId: member.id,
     name: member.name,
@@ -168,7 +181,7 @@ function outcomeFor(
     score: blocked ? 0 : TIER_SCORE[tier],
     status: label,
     isAvoid: isAvoidTier(tier, blocked),
-    maxFactor: label,
+    maxFactor: cause || label,
   };
 }
 
@@ -418,6 +431,11 @@ export interface BlockingReason {
   direction: EightDirection | null;
   /** その期間でいちばん多かった理由（段階の名前、または「天中殺」）。 */
   status: string;
+  /**
+   * その期間でいちばん多かった**凶の名前**（「年盤の本命的殺」など。
+   * 天中殺なら「天中殺」）。走査の応答に符号が無ければ空。
+   */
+  cause: string;
   /** 避けるべきと判定された日数。 */
   days: number;
 }
@@ -462,8 +480,11 @@ export function blockingReasons(
       direction: EightDirection | null;
       days: number;
       byStatus: Map<string, number>;
+      byCause: Map<string, number>;
     }
   >();
+  const bump = (m: Map<string, number>, key: string) =>
+    m.set(key, (m.get(key) ?? 0) + 1);
   for (const day of window) {
     for (const m of day.joint.members) {
       if (!m.isAvoid) continue;
@@ -472,28 +493,40 @@ export function blockingReasons(
         direction: m.direction as EightDirection | null,
         days: 0,
         byStatus: new Map<string, number>(),
+        byCause: new Map<string, number>(),
       };
       cur.days++;
-      cur.byStatus.set(m.status, (cur.byStatus.get(m.status) ?? 0) + 1);
+      bump(cur.byStatus, m.status);
+      /* 凶の名前は maxFactor に入る。符号の無い古い応答では段階の名前と
+         同じ値に落ちるので、それは「名前なし」として数えない。天中殺は
+         段階の名前と同じ字面だが、それ自体が理由の名前なので数える。 */
+      if (m.maxFactor === "天中殺" || m.maxFactor !== m.status) {
+        bump(cur.byCause, m.maxFactor);
+      }
       counts.set(m.memberId, cur);
     }
   }
 
-  const reasons: BlockingReason[] = [];
-  for (const [memberId, c] of counts) {
-    let status = "";
+  const mostCommon = (m: Map<string, number>): string => {
+    let best = "";
     let top = 0;
-    for (const [s, n] of c.byStatus) {
+    for (const [key, n] of m) {
       if (n > top) {
         top = n;
-        status = s;
+        best = key;
       }
     }
+    return best;
+  };
+
+  const reasons: BlockingReason[] = [];
+  for (const [memberId, c] of counts) {
     reasons.push({
       memberId,
       name: c.name,
       direction: c.direction,
-      status,
+      status: mostCommon(c.byStatus),
+      cause: mostCommon(c.byCause),
       days: c.days,
     });
   }

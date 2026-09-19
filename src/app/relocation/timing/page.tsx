@@ -1261,7 +1261,11 @@ export default function TimingAnalyticsPage() {
                           {partyBlocking.reasons
                             .map(
                               (r) =>
-                                `${r.name}（${r.direction ? (DIRECTION_LABELS[r.direction] ?? r.direction) : "方位なし"}）が ${r.days} 日「${r.status}」`,
+                                /* 凶の名前（年盤の本命的殺 など）があればそれを。
+                                   段階の名前（五大凶殺あり）では、本命殺か
+                                   五黄殺かが分からず、天中殺が入っているのでは
+                                   と推測させた（利用者報告 2026-09-19）。 */
+                                `${r.name}（${r.direction ? (DIRECTION_LABELS[r.direction] ?? r.direction) : "方位なし"}）が ${r.days} 日「${r.cause || r.status}」`,
                             )
                             .join("、")}
                           。
