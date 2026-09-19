@@ -7,7 +7,10 @@ import {
   partyParam,
   partyPayload,
   readSharedParty,
+  readTimingParty,
+  TIMING_PARTY_KEY,
   writeSharedParty,
+  writeTimingParty,
   type PartyMemberInput,
 } from "@/lib/partyMemberInput";
 import { PartyMembersEditor } from "@/components/relocation/PartyMembersEditor";
@@ -240,5 +243,50 @@ describe("PartyMembersEditor", () => {
       remove.dispatchEvent(new MouseEvent("click", { bubbles: true }));
     });
     expect(onChange.mock.lastCall?.[0]).toEqual([]);
+  });
+});
+
+describe("readTimingParty / writeTimingParty（時期ツール専用の鍵）", () => {
+  beforeEach(() => localStorage.clear());
+
+  it("鍵がまだ無い端末では、物件検索の同行者を読んで返す（1 回だけ写す）", () => {
+    localStorage.setItem(
+      PARTY_PREFS_KEY,
+      JSON.stringify({ partyMembers: [member()], partyPolicy: "weighted" }),
+    );
+    const read = readTimingParty(localStorage);
+    expect(read.members.map((m) => m.id)).toEqual(["m1"]);
+    expect(read.policy).toBe("weighted");
+    // 読んだだけでは書かない（読み込み前の空で上書きする事故と同じ形を作らない）
+    expect(localStorage.getItem(TIMING_PARTY_KEY)).toBeNull();
+  });
+
+  it("自分の鍵があれば物件検索の鍵は見ない（空でも）", () => {
+    localStorage.setItem(
+      PARTY_PREFS_KEY,
+      JSON.stringify({ partyMembers: [member()], partyPolicy: "weighted" }),
+    );
+    writeTimingParty(localStorage, { members: [], policy: "everyone" });
+    expect(readTimingParty(localStorage)).toEqual({
+      members: [],
+      policy: "everyone",
+    });
+  });
+
+  it("書いても物件検索の鍵には触らない", () => {
+    localStorage.setItem(
+      PARTY_PREFS_KEY,
+      JSON.stringify({ partyMembers: [], partyPolicy: "everyone" }),
+    );
+    writeTimingParty(localStorage, { members: [member()], policy: "average" });
+    expect(readSharedParty(localStorage).members).toEqual([]);
+    expect(readTimingParty(localStorage).members.map((m) => m.id)).toEqual([
+      "m1",
+    ]);
+  });
+
+  it("壊れていれば空", () => {
+    localStorage.setItem(TIMING_PARTY_KEY, "{broken");
+    expect(readTimingParty(localStorage).members).toEqual([]);
   });
 });

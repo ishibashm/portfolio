@@ -4,9 +4,11 @@
  * 物件検索（/relocation/arbitrage）が同行者を持っていたが、型も保存も
  * 頁の中に閉じていた。時期ツール（/relocation/timing）にも同じ人を
  * 出したい（「合流する人を選んで 2 年ぶん」。利用者の要望 2026-09-17）
- * ので、形と保存の口をここに 1 つ置く。**同じ人を 2 つの頁で二重に
- * 登録させない**ため、保存先は物件検索が既に使っている
- * `arb_axis_prefs_v1` の `partyMembers` / `partyPolicy` をそのまま読む。
+ * ので、形と保存の口をここに 1 つ置く。
+ *
+ * 保存先は頁ごとに別（物件検索は `arb_axis_prefs_v1`、時期ツールは
+ * `timing_party_v1`）。当初は共有していたが、走査の範囲が違う
+ * （90 日 / 2 年）ので分けた（利用者の依頼 2026-09-19）。
  *
  * 座標や日付は入力途中の文字列で持ち、送信時に数値へ直す
  * （`partyPayload`）。API 側の `normalizeParty` が最終の検査をする。
@@ -123,6 +125,54 @@ export function readSharedParty(storage: Storage): SharedParty {
     return { members, policy };
   } catch {
     return empty;
+  }
+}
+
+/**
+ * **時期ツール専用**の同行者の鍵。物件検索とは共有しない。
+ *
+ * 当初は「同じ人を 2 つの頁で二重に登録させない」ために物件検索の鍵を
+ * 読んでいたが、あちらの時期の走査は 90 日まで・こちらは本人と同じ
+ * 2 年で、同じ人を載せても条件が揃わない。利用者の依頼（2026-09-19）で
+ * 分けた。物件検索で足した人は**最初の 1 回だけ**写す（`readTimingParty`）。
+ */
+export const TIMING_PARTY_KEY = "timing_party_v1";
+
+/**
+ * 時期ツールの同行者。鍵がまだ無い端末では、物件検索の同行者を 1 回だけ
+ * 写して返す（写した結果はまだ保存しない — 保存は利用者が触ったとき。
+ * 読んだだけで書くと、読み込み前の空の値で上書きする経路と同じ事故に
+ * なる）。
+ */
+export function readTimingParty(storage: Storage): SharedParty {
+  const empty: SharedParty = { members: [], policy: DEFAULT_PARTY_POLICY };
+  try {
+    const raw = storage.getItem(TIMING_PARTY_KEY);
+    if (raw === null) return readSharedParty(storage);
+    const saved = JSON.parse(raw);
+    if (!saved || typeof saved !== "object") return empty;
+    const members = Array.isArray(saved.members)
+      ? saved.members.filter(isMemberInput)
+      : [];
+    const policy =
+      typeof saved.policy === "string" && isPartyPolicy(saved.policy)
+        ? saved.policy
+        : DEFAULT_PARTY_POLICY;
+    return { members, policy };
+  } catch {
+    return empty;
+  }
+}
+
+/** 時期ツールの同行者とまとめ方を保存する。物件検索の鍵には触らない。 */
+export function writeTimingParty(storage: Storage, party: SharedParty): void {
+  try {
+    storage.setItem(
+      TIMING_PARTY_KEY,
+      JSON.stringify({ members: party.members, policy: party.policy }),
+    );
+  } catch {
+    // 保存できなくても動作には影響しない。
   }
 }
 
