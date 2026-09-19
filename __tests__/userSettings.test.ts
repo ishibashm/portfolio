@@ -3,6 +3,7 @@ import {
   SETTINGS_KEY,
   loadSettings,
   readLocalSettings,
+  readSettingsSync,
   saveSettings,
   writeLocalSettings,
 } from "@/lib/userSettings";
@@ -118,8 +119,13 @@ describe("userSettings", () => {
 
     const first = await loadSettings();
     expect(first.settings.birth_date).toBeUndefined();
-    // 消した跡は null で残す。鍵ごと消すと旧い鍵から拾い直される。
-    expect(readLocalSettings().birth_date).toBeNull();
+    /*
+      端末からは**欄ごと**外す。値の場所に null を置かない — 素の JSON を
+      手で読む画面が `!== undefined` を「値がある」と読んで `.toString()`
+      を呼び、その後ろの欄まで読まれなくなる。消したことは `_cleared` へ。
+    */
+    expect("birth_date" in readLocalSettings()).toBe(false);
+    expect(readLocalSettings()._cleared).toBe("birth_date");
 
     // 無関係な項目を保存すると端末のほうが新しくなる
     await saveSettings({ base_lat: 35.1 });
@@ -148,10 +154,30 @@ describe("userSettings", () => {
     const { settings } = await loadSettings();
     expect(settings.birth_date).toBeUndefined();
 
-    // 2 回目も戻らない。消した跡（null）が残るので引き上げが拾い直さない。
-    expect(readLocalSettings().birth_date).toBeNull();
+    // 2 回目も戻らない。`_cleared` に残るので引き上げが拾い直さない。
+    expect(readLocalSettings()._cleared).toBe("birth_date");
     const again = await loadSettings();
     expect(again.settings.birth_date).toBeUndefined();
+  });
+
+  it("#1423 が書いた null の跡は、次に読むときに欄ごと外れる", () => {
+    /*
+      短期間だけ「消した跡」を値の場所に null で置いていた。その端末が
+      残っているので、読むついでに欄ごと外して `_cleared` へ移す。
+      置いたままだと素の JSON を手で読む画面が落ちる。
+    */
+    localStorage.setItem(
+      SETTINGS_KEY,
+      JSON.stringify({ birth_date: null, base_lat: 35.1 }),
+    );
+
+    readSettingsSync();
+
+    const saved = readLocalSettings();
+    expect("birth_date" in saved).toBe(false);
+    expect(saved._cleared).toBe("birth_date");
+    // 生きている欄は残す
+    expect(saved.base_lat).toBe(35.1);
   });
 
   it("端末だけの項目を書いても _savedAt は進めない（クラウドを取り込めなくなる）", async () => {
