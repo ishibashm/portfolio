@@ -2912,7 +2912,7 @@ export const SolarTimeClock = () => {
         },
         prompt_suggestion: `あなたは九星気学・四柱推命に詳しいアドバイザーです。
 以下のJSONデータをもとに、目標日（${evalDate.toLocaleDateString()}）の判定を日本語で分かりやすく解説してください。
-九星の配置、目的（DEFAULT, MIGRATION, BUSINESS, REST）による判定の違い、天中殺や月交点の扱いを関連付けて説明してください。判定は伝統的な暦の解釈であり、健康や結果を保証するものではない、という前提で書いてください。`,
+九星の配置、目的（DEFAULT, MIGRATION, BUSINESS, REST）による判定の違い、天中殺の扱いを関連付けて説明してください。判定は伝統的な暦の解釈であり、健康や結果を保証するものではない、という前提で書いてください。`,
       };
 
       const jsonStr = JSON.stringify(unifiedPayload, null, 2);
