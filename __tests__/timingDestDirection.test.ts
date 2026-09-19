@@ -12,6 +12,7 @@
  * 3. 合流先への方位を同行者と同じ関数（memberDirection）で引き、
  *    それが表の 8 行のどれかに必ず当たること
  */
+import { describe, expect, it } from "vitest";
 import { readFileSync } from "node:fs";
 import { memberDirection } from "@/lib/partyTimeline";
 import { PREFECTURE_CENTERS } from "@/lib/prefectureDirection";
