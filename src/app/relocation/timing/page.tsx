@@ -82,6 +82,8 @@ import {
   type MemberTimeline,
 } from "@/lib/partyTimeline";
 import { PREFECTURE_CENTERS } from "@/lib/prefectureDirection";
+import { distanceKmBetween } from "@/utils/directionGeo";
+import { isDirectionUnstable } from "@/lib/directionDistance";
 import {
   loadProfilePresets,
   type ProfilePreset,
@@ -290,6 +292,8 @@ export default function TimingAnalyticsPage() {
   };
   const changeDest = (pref: string) => {
     setDestPref(pref);
+    // 表で押した方位が残っていると、合流先を変えても下の既定が動かない
+    setFocusDir(null);
     try {
       localStorage.setItem(DEST_PREF_KEY, pref);
     } catch {
@@ -614,6 +618,36 @@ export default function TimingAnalyticsPage() {
   }, [days, settings, memberTimelines]);
 
   const destination = destPref ? PREFECTURE_CENTERS[destPref] : undefined;
+  /**
+   * **出発地から合流先への方位（あなた 1 人ぶん）。**
+   *
+   * 利用者の指摘（2026-09-19）。合流先を神奈川県にしても、下の
+   * 方位別サマリー・帯グラフ・ヒートマップは「最良の方位」を既定にした
+   * ままで、合流先はページのどこにも効いていなかった（同行者を足す
+   * までは合成すら動かない）。判定には触らず、**既定の方位と印だけ**を
+   * 合流先に合わせる。方位は同行者と同じ関数（`memberDirection`）で
+   * 引くので、合流欄の「あなた: 南」と食い違わない。
+   *
+   * 近すぎる移動（同じ県に住んでいる人が自県を選んだとき）は方位が
+   * 定まらない。候補一覧と同じ規則（`isDirectionUnstable`）で印を変える。
+   */
+  const destLeg = useMemo(() => {
+    if (!destination || !settings?.baseLat || !settings?.baseLon) return null;
+    const lat = Number(settings.baseLat);
+    const lon = Number(settings.baseLon);
+    if (!Number.isFinite(lat) || !Number.isFinite(lon)) return null;
+    const distanceKm = distanceKmBetween(
+      lat,
+      lon,
+      destination.lat,
+      destination.lon,
+    );
+    return {
+      direction: memberDirection({ baseLat: lat, baseLon: lon }, destination),
+      unstable: isDirectionUnstable(distanceKm),
+    };
+  }, [destination, settings?.baseLat, settings?.baseLon]);
+  const destDir = destLeg?.direction ?? null;
   const partyStale = days !== null && partyParam(partyMembers) !== scannedParty;
   // 同行者を変えたあとは、前の人たちで出した合成を出さない（走査し直す
   // まで空にする）。消した人の名前が「次に全員で動ける日」に残っていた。
@@ -747,7 +781,9 @@ export default function TimingAnalyticsPage() {
     );
   }, [profile]);
 
-  const activeDir = focusDir ?? perDirection[0]?.dir ?? null;
+  /* 既定の方位は、合流先があればそこへの方位。無ければ最良の方位。
+     表で押した方位はどちらより優先。 */
+  const activeDir = focusDir ?? destDir ?? perDirection[0]?.dir ?? null;
 
   /** 絞り込みに残った日数。0 のときは「該当なし」と出す。 */
   const matchedCount = useMemo(() => {
@@ -933,6 +969,28 @@ export default function TimingAnalyticsPage() {
                   ))}
                 </select>
               </label>
+              {destLeg && destPref && (
+                <p
+                  className="text-xs leading-relaxed text-stone-600"
+                  data-dest-direction
+                >
+                  あなたの出発地から{destPref}は
+                  <b>{DIRECTION_LABELS[destLeg.direction]}</b>
+                  {destLeg.unstable ? (
+                    <>
+                      ですが、
+                      <b className="text-amber-700">
+                        近すぎて方位が定まりません
+                      </b>
+                      。下の表とカレンダーの既定もこの方位にしていますが、当てにしないでください。
+                    </>
+                  ) : (
+                    <>
+                      。下の方位別サマリー・帯グラフ・カレンダーはこの方位を既定にします（表の行を押すと変えられます）。
+                    </>
+                  )}
+                </p>
+              )}
               {partyMembers.length === 0 && (
                 <p className="text-xs leading-relaxed text-stone-500">
                   左で同行者を足すと、ここに「次に全員で動ける日」と月ごとの日数が出ます。
@@ -1225,7 +1283,11 @@ export default function TimingAnalyticsPage() {
             {/* 方位別サマリー */}
             <Section
               title="方位別サマリー（未来の候補）"
-              subtitle={`今日以降で到達できる最良の段階と、その日数・最速日・窓の統計。行をクリックすると下のカレンダーと帯グラフがその方位に切り替わります。判定モードは「${modeInfo(settings?.directionFilterMode ?? "composite").label}」です。`}
+              subtitle={`今日以降で到達できる最良の段階と、その日数・最速日・窓の統計。行をクリックすると下のカレンダーと帯グラフがその方位に切り替わります。判定モードは「${modeInfo(settings?.directionFilterMode ?? "composite").label}」です。${
+                partyActive
+                  ? "ここから下はあなた 1 人の判定です。全員ぶんは上の合流欄と、選択日の地図（全員）で見てください。"
+                  : ""
+              }`}
             >
               <div className="overflow-x-auto">
                 <table className="w-full text-[11px]">
@@ -1250,7 +1312,17 @@ export default function TimingAnalyticsPage() {
                           activeDir === p.dir ? "bg-indigo-50/60" : ""
                         }`}
                       >
-                        <td className="py-1.5 pr-2 font-semibold">{p.label}</td>
+                        <td className="py-1.5 pr-2 font-semibold">
+                          {p.label}
+                          {destDir === p.dir && destPref && (
+                            <span
+                              className="ml-1.5 rounded bg-indigo-100 px-1.5 py-0.5 text-[11px] font-bold text-indigo-800"
+                              data-dest-row
+                            >
+                              {destPref}へ
+                            </span>
+                          )}
+                        </td>
                         <td className="py-1.5 pr-2">
                           {p.bestTier ? (
                             <span
@@ -1361,8 +1433,12 @@ export default function TimingAnalyticsPage() {
             <Section
               title={`カレンダーヒートマップ（${
                 activeDir ? DIRECTION_LABELS[activeDir] : ""
+              }${
+                activeDir && activeDir === destDir && destPref
+                  ? `＝${destPref}への方位`
+                  : ""
               }）`}
-              subtitle="1 マスが 1 日。上の表で方位を選ぶと切り替わります。今日より前は薄く表示。マスを押すとその場に判定が出ます（全方位の一覧と地図はこの下）。"
+              subtitle="1 マスが 1 日。上の表で方位を選ぶと切り替わります。合流先を選ぶと、その県への方位が既定になります。今日より前は薄く表示。マスを押すとその場に判定が出ます（全方位の一覧と地図はこの下）。"
             >
               <div className="space-y-2">
                 {/* 段階の絞り込み。段階は既に計算済みなので、ここでやるのは
