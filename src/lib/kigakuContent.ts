@@ -211,7 +211,6 @@ export function getYearDirections(
     monthBoard,
     dayBoard,
     [],
-    null,
     "MIGRATION",
     d,
   );
@@ -347,7 +346,6 @@ export function getMonthDirections(
     monthBoard,
     dayBoard,
     [],
-    null,
     "MIGRATION",
     d,
   );

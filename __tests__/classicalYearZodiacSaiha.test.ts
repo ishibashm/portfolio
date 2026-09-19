@@ -56,7 +56,6 @@ function collisionOn(iso: string, star: number) {
     generateBoard(getClassicalMonthStar(d)),
     generateBoard(getClassicalDayStar(d)),
     [],
-    null,
     "MIGRATION",
     d,
   );

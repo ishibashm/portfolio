@@ -34,14 +34,16 @@ import { contentYears } from "@/lib/kigakuContent";
  * しかもエンジンは月交点を吉方位より先に当てるので、**記事が「吉方位」と
  * 書いた方位を道具は月交点と表示していた。**
  *
- * 利用者の判断で**年盤には月交点を入れない**ことにしたので（`ephemerisEngine`
- * の `processLayer(yearBoard, false)`）、均す理由が無くなった。
+ * 利用者の判断で**判定に月交点を入れない**ことにしたので（年盤は
+ * 2026-09-19 の #1416、月盤・日盤・最終判定はその日の続き。
+ * `calculateVectorCollision` から引数ごと外してある）、均す理由が
+ * 無くなった。
  *
  * **ただし、均しを外したことを「月交点の見張り」と思わないこと。**外した
  * 状態で旧実装に当ててもこの検査は通った（2026-09-19 に実測）。下の 5 つの
  * 代表日の間で月交点が区分を跨がなければ、年層に入っていても日付に依らない
  * ように見えるため。**月交点が年層に戻ったことを確実に捕まえるのは
- * `yearBoardHasNoLunarNode`** のほうで、こちらはあくまで「年層に日付依存の
+ * `lunarNodeNotInJudgement`** のほうで、こちらはあくまで「年層に日付依存の
  * 量が入っていないか」を代表日の比較で見る検査のまま。
  */
 
@@ -55,7 +57,6 @@ function yearLayerOn(iso: string, star: number) {
     generateBoard(getClassicalMonthStar(d)),
     generateBoard(getClassicalDayStar(d)),
     [],
-    null,
     "MIGRATION",
     d,
   );

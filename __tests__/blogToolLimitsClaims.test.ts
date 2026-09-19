@@ -200,15 +200,23 @@ describe("記事: この道具で決められること、決められないこ�
     expect(dirs).toBe(t.goodDirections.join("・"));
   });
 
-  it("北・北東・南・南西は4人とも0日（記事の主張）", () => {
-    const never = ["北", "北東", "南", "南西"];
+  it("北と南は4人とも0日（記事の主張）", () => {
+    /*
+      **2026-09-19 に 4 方位から 2 方位へ減った。**以前は北東と南西も
+      0 日で、記事はそう書いていた。どちらも月交点（羅睺・計都軸）が
+      月盤・日盤で塞いでいたためで、判定から月交点を外したら日が出た。
+
+      残る北と南は五黄殺・暗剣殺で、**盤の側の理由**なので誰にとっても
+      同じ。ここが 3 方位になったら記事の読みどころが変わる。
+    */
+    const never = ["北", "南"];
     for (const b of BIRTHS) {
       const got = TALLIES.get(b)!.goodDirections;
       for (const n of never) {
         expect(got, `${b} で ${n} に吉が出ている`).not.toContain(n);
       }
     }
-    expect(md).toContain("北・北東・南・南西は、4 人とも 365 日すべて 0 日");
+    expect(md).toContain("北と南だけは、4 人とも 365 日すべて 0 日");
   });
 
   it("2026 年盤の表が engine と一致する", () => {
@@ -233,16 +241,17 @@ describe("記事: この道具で決められること、決められないこ�
     }
   });
 
-  it("「年盤が大吉でも動ける日が無い」という記事の芯が engine と合っている", () => {
+  it("「年盤の札だけでは決まらない」という記事の芯が engine と合っている", () => {
     /*
-      **記事の芯が 2026-09-19 に変わった。**それまでは「二黒の人の
-      2026 年盤には大吉が 1 つも無い」だった。当時の年盤は南西に月交点を
-      出していて、月交点が吉方位を先取りして潰していたため。
+      **記事の芯が 2026-09-19 に向きを変えた。**それまでは「二黒の人は
+      年盤に大吉を 1 つ持っているのに、そこへ動ける日が 1 日も無い」
+      だった。当時は月交点（羅睺・計都軸）が月盤・日盤で南西を塞いで
+      いたため。
 
-      年盤から月交点を外したので（利用者の判断。backlog 6 節）、南西は
-      本来の大吉に戻った。**それでも南西は 365 日すべて 0 日**で、
-      記事の言いたいこと（年盤だけでは決まらない）はむしろ強くなった。
-      日ごとの段階は今回の変更で 1 件も動いていない。
+      判定から月交点を外したので（利用者の判断。backlog 6 節）、南西には
+      日が出るようになった。代わりに逆向きの事実が残る — **年盤が
+      「平穏」の方位にも吉の日は出る。**どちらの向きでも言っている
+      ことは同じで、年盤の札 1 枚では決まらない。
     */
     const board = judgeDayAllDirections(
       new Date(forecastAnchorMs(new Date(YEAR_BOARD_AT))),
@@ -254,18 +263,23 @@ describe("記事: この道具で決められること、決められないこ�
     expect(names.filter((n) => n === "大吉")).toHaveLength(1);
     expect(directionLabelName(board.SW.yearLayer)).toBe("大吉");
     expect(names).not.toContain("吉");
-    expect(names.filter((n) => n === "平穏")).toHaveLength(3);
-    // **月交点は年盤から消えている。**戻ると記事の表も主張も崩れる。
+    // **月交点は年盤にも月盤・日盤にも出ない。**戻ると記事の表も主張も崩れる。
     expect(names).not.toContain("羅睺・計都軸");
 
-    // それでも三盤吉の日は 1 日も無く、南西は 1 年ぶん 0 日。
-    const t = TALLIES.get("1990-01-02")!;
-    expect(t.tiers.S ?? 0).toBe(0);
-    expect(t.goodDirections).not.toContain("南西");
-
-    expect(md).toContain("2026 年に S（三盤吉）が 1 日もありません");
-    expect(md).toContain(
-      "年盤で大吉を 1 つ持っていても、動ける日がまったく無いことがあります",
+    // 年盤が「平穏」の 3 方位は、どれも 1 年のうちに吉の日が出ている。
+    const calm = ORDER.filter(
+      (d) => directionLabelName(board[d].yearLayer) === "平穏",
     );
+    expect(calm).toEqual(["NE", "E", "W"]);
+    const t = TALLIES.get("1990-01-02")!;
+    for (const d of calm) {
+      expect(
+        t.goodDirections,
+        `年盤が平穏の ${DIRECTION_LABELS[d]} に吉の日が無い`,
+      ).toContain(DIRECTION_LABELS[d]);
+    }
+
+    expect(md).toContain("**3. 年盤が「平穏」でも、吉の日は出る**");
+    expect(md).toContain("それ以外の方位は年盤の札を見ただけでは決まりません");
   });
 });

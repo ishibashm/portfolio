@@ -42,7 +42,6 @@ function collisionFor(date: Date) {
     generateBoard(1),
     generateBoard(1),
     [],
-    null,
     "DEFAULT",
     date,
     139.6917,

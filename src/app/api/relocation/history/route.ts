@@ -237,8 +237,6 @@ export async function GET(request: Request) {
       const dayBoard = generateBoard(
         useClassical ? env.classicalDayStar : env.dayStar,
       );
-      const lunarNode = env.raw.lunarNode;
-
       const evalIntent =
         actionIntent !== "DEFAULT"
           ? actionIntent
@@ -251,7 +249,6 @@ export async function GET(request: Request) {
         monthBoard,
         dayBoard,
         voidZodiacs,
-        lunarNode,
         evalIntent,
         depDate,
         item.fromLon,

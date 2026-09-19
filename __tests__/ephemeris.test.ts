@@ -84,8 +84,7 @@ describe("Kyusei Kigaku High-Precision Calculations", () => {
         yB,
         mB,
         dB,
-        [], // voidZodiacs
-        null, // lunarNodeLon
+        [], // lunarNodeLon
         "DEFAULT",
         targetDate,
         139.6917, // longitude
@@ -155,7 +154,6 @@ describe("Kyusei Kigaku High-Precision Calculations", () => {
         mB,
         dB,
         [],
-        null,
         "MIGRATION",
         new Date("2026-07-11T12:00:00+09:00"),
         139.6917,

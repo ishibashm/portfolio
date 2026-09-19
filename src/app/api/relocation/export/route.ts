@@ -285,12 +285,10 @@ export async function GET(request: Request) {
           cmB,
           cdB,
           voidZodiacs,
-          env.raw.lunarNode,
           intent,
           targetDate,
           baseLon,
           getsuMeiStar,
-          "traditional",
         ),
         honmeiStar.classical,
         getsuMeiStar,
@@ -308,12 +306,10 @@ export async function GET(request: Request) {
           pmB_indep,
           pdB,
           voidZodiacs,
-          env.raw.lunarNode,
           intent,
           targetDate,
           baseLon,
           undefined,
-          "physical",
         ),
         honmeiStar.physical,
         null,
@@ -331,12 +327,10 @@ export async function GET(request: Request) {
           pmB_coupled,
           pdB,
           voidZodiacs,
-          env.raw.lunarNode,
           intent,
           targetDate,
           baseLon,
           undefined,
-          "physical",
         ),
         honmeiStar.physical,
         null,
@@ -378,12 +372,10 @@ export async function GET(request: Request) {
       mB,
       dB,
       voidZodiacs,
-      env.raw.lunarNode,
       actionIntent, // Aligned with search param
       targetDate,
       baseLon,
       useClassical ? getsuMeiStar : undefined,
-      nodeMapping,
     );
 
     const vectorCollision = filterCollisionByMode(
@@ -427,12 +419,10 @@ export async function GET(request: Request) {
         tmB,
         tdB,
         voidZodiacs,
-        testEnv.raw.lunarNode,
         actionIntent, // Aligned with search param
         testDate,
         baseLon,
         useClassical ? getsuMeiStar : undefined,
-        nodeMapping,
       );
 
       const tc = filterCollisionByMode(

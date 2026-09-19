@@ -116,7 +116,6 @@ import {
 import { Solar } from "lunar-javascript";
 import { calculateSolarTime, getZonedDateTimeFields } from "./solarTime";
 import { jstNoonOf } from "./boardInstant";
-import { directionFromBearing } from "./directionGeo";
 import { worstNoise } from "./noiseSeverity";
 
 /**
@@ -854,12 +853,10 @@ export function calculateVectorCollision(
   monthBoard: BoardLayout,
   dayBoard: BoardLayout,
   voidZodiacs: string[] = [],
-  lunarNodeLon: number | null = null,
   actionIntent: ActionIntent = "DEFAULT",
   targetDate?: Date,
   lon: number = 139.6917,
   getsuMeiStar?: StarFrequency,
-  nodeMapping: "traditional" | "physical" = "traditional",
   /**
    * 日盤を判定から外す。12 ヶ月表示のように「その月の傾向」を見るときに使う。
    *
@@ -891,30 +888,6 @@ export function calculateVectorCollision(
   voidZodiacs.forEach((z) => {
     (z2d[z] || []).forEach((d) => voidDirs.add(d));
   });
-
-  // ドラゴンヘッド/テールの侵犯方向
-  const nodeDirs = new Set<Direction>();
-  if (lunarNodeLon !== null) {
-    const getBearing = (lon: number): Direction => {
-      let val = 0;
-      if (nodeMapping === "physical") {
-        let b = (lon - 90) % 360;
-        if (b < 0) b += 360;
-        b = 360 - b;
-        val = ((b % 360) + 360) % 360;
-      } else {
-        // 'traditional' model: Spring (0) = East (90), Summer (90) = South (180), Autumn (180) = West (270), Winter (270) = North (0)
-        val = (lon + 90) % 360;
-      }
-
-      // 区切りは nodeMapping に関わらず常に伝統区分（四正30度・四隅60度）。
-      // nodeMapping が切り替えるのは上の経度→方位角の変換だけで、
-      // ここに nodeMapping を渡すと判定が変わるので固定で "traditional"。
-      return directionFromBearing(val, "traditional");
-    };
-    nodeDirs.add(getBearing(lunarNodeLon));
-    nodeDirs.add(getBearing((lunarNodeLon + 180) % 360));
-  }
 
   let compatiblesHonmei = getCompatibleStars(personalStar);
 
@@ -995,10 +968,10 @@ export function calculateVectorCollision(
   /**
    * 1 つの盤を方位ごとの判定に畳む。
    *
-   * `useLunarNode` は**年盤だけ false**（利用者の判断。2026-09-19）。
-   * 理由は下の `yearLayer` の呼び出しに書いた。
+   * **月交点（羅睺・計都軸）はどの盤にも入れない。**理由は下の
+   * `yearLayer` の呼び出しに書いた。
    */
-  const processLayer = (board: BoardLayout, useLunarNode = true) => {
+  const processLayer = (board: BoardLayout) => {
     const res: Partial<Record<Direction, VectorStatus>> = {};
     directions.forEach((d) => (res[d] = "SAFE"));
 
@@ -1052,8 +1025,6 @@ export function calculateVectorCollision(
       if (res[dir] === "SAFE") {
         if (voidDirs.has(dir)) {
           res[dir] = "NOISE_VOID";
-        } else if (useLunarNode && nodeDirs.has(dir)) {
-          res[dir] = "NOISE_NODE";
         } else {
           const optStatus = getOptimalStatus(board[dir]);
           if (optStatus !== "SAFE") {
@@ -1087,28 +1058,39 @@ export function calculateVectorCollision(
   };
 
   /*
-    **年盤には月交点を入れない**（利用者の判断。2026-09-19。backlog 6 節）。
+    **月交点（羅睺・計都軸）は判定に入れない**（利用者の判断。2026-09-19。
+    backlog 6 節）。年盤・月盤・日盤・最終のどこにも出さない。
 
-    月交点は約 19 年で一巡し、1 年で 19 度ほど進む。**年の途中で八方位の
-    境目を跨ぐ**ので、年という粒度の盤に混ぜると年盤が日付に依存する。
+    月交点はインド占星術のラーフ／ケートゥの軸で、**九星気学の出自では
+    ない。**サイトの評価は段階（S〜X）の 1 系統だけと決めてあるのに、
+    出自の違う軸がそこに混ざっていた。
 
-    実害が出ていた。`/houi` の年別頁（`lib/kigakuContent` の
-    `getYearDirections`）は月交点を渡さないのに、道具の側は渡していて、
-    **同じエンジンに違う入力を渡していた。**しかも上の「3. グローバル
-    ノイズと最適化の適用」は月交点を吉方位より先に当てるため、
-    **月交点が吉方位を先取りして潰す。**2027 年の南西がそれで、頁が
-    「吉方位」と書く 4 星（一白・二黒・五黄・八白）に対し、道具は
-    365 日すべて D 以下しか出していなかった。
+    実害が 2 つあった。
+
+    1. **年盤が日付に依存していた。**月交点は約 19 年で一巡し、1 年で
+       19 度ほど進むので、年の途中で八方位の境目を跨ぐ。`/houi` の年別頁
+       （`lib/kigakuContent` の `getYearDirections`）は月交点を渡さないのに
+       道具の側は渡していて、**同じエンジンに違う入力を渡していた。**
+       上の「3. グローバルノイズと最適化の適用」は月交点を吉方位より先に
+       当てるため、**月交点が吉方位を先取りして潰す。**2027 年の南西が
+       それで、頁が「吉方位」と書く 4 星（一白・二黒・五黄・八白）に対し、
+       道具は 365 日すべて D 以下しか出していなかった。
+    2. **四隅は 60 度あるので、軸が 3 年近く同じ隅に居座る。**2025-11 から
+       2029 ごろまで北東と南西に掛かり続け、その 2 方位は月盤・日盤でも
+       ほぼ常に塞がっていた。実測で北東と南西は 4 人とも 365 日すべて
+       0 日で、記事にもそう書いていた（`blogToolLimitsClaims`）。
 
     `yearLayerDateInvariance` が落ちなかったのは、あの検査が比較の前に
     `NOISE_NODE` を `SAFE` へ均していたため。均しの理由（年の途中で動く
     天体量だから）は正しいが、**均した結果、年層が日付に依存している
     こと自体を見逃す検査になっていた。**この変更で均しは要らなくなる。
 
-    **月盤・日盤・最終判定には今までどおり入れる。**月交点そのものを
-    やめる話ではなく、年という粒度に混ぜないという整理。
+    外した影響の実測（2026-10-01〜2027-09-30・4 人・八方位）は
+    `lunarNodeNotInJudgement` に表で残してある。**大凶（X）の数は
+    1 件も動かない**（月交点は五大凶殺ではないので段階 X を作らない）。
+    動くのは D → C・B・A・S の側だけ。
   */
-  const yearLayer = processLayer(yearBoard, false);
+  const yearLayer = processLayer(yearBoard);
   applyHa(yearLayer, zodiacs?.yearZodiac); // 歳破 (Saiha)
 
   const monthLayer = processLayer(monthBoard);
@@ -1203,8 +1185,6 @@ export function calculateVectorCollision(
           finalVectors[dir] = "NOISE_GETSUMEI";
         } else if (criticalLayers.includes("NOISE_GETSUTEKI")) {
           finalVectors[dir] = "NOISE_GETSUTEKI";
-        } else if (criticalLayers.includes("NOISE_NODE")) {
-          finalVectors[dir] = "NOISE_NODE";
         } else {
           // No active noises on Year and Month. Now we can check if it is OPTIMAL.
           const hasOpt = criticalLayers.includes("OPTIMAL");
@@ -1242,8 +1222,6 @@ export function calculateVectorCollision(
         finalVectors[dir] = "NOISE_GETSUMEI";
       } else if (layers.includes("NOISE_GETSUTEKI")) {
         finalVectors[dir] = "NOISE_GETSUTEKI";
-      } else if (layers.includes("NOISE_NODE")) {
-        finalVectors[dir] = "NOISE_NODE";
       } else {
         // No noises. Determine if lucky.
         const hasOpt = layers.includes("OPTIMAL");
