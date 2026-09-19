@@ -2,6 +2,8 @@ import { describe, expect, it } from "vitest";
 import {
   HOUSING_ITEMS,
   aggregateHousing,
+  toHousingSnapshot,
+  type HousingRow,
   isMunicipalityCode,
   joinCoverage,
   parseEstatValue,
@@ -174,5 +176,58 @@ describe("joinCoverage", () => {
 
   it("空なら 0 / 0", () => {
     expect(joinCoverage([], new Set())).toEqual({ matched: 0, unmatched: [] });
+  });
+});
+
+describe("toHousingSnapshot（静的な頁が読む写し）", () => {
+  const row = (
+    areaCode: string,
+    over: Partial<HousingRow> = {},
+  ): HousingRow => ({
+    areaCode,
+    areaName: `市${areaCode}`,
+    totalDwellings: 100,
+    vacantDwellings: 10,
+    rentPerTatamiYen: 3000,
+    tatamiPerRental: 20,
+    floorAreaPerRental: 40,
+    ...over,
+  });
+
+  it("元の値をそのまま積む（並びは JSON.stringify が決める。整数に見える鍵は数の順）", () => {
+    const snap = toHousingSnapshot(
+      [row("13113"), row("01101")],
+      2023,
+      "2026-09-19T00:00:00.000Z",
+    );
+    expect(Object.keys(snap.areas).sort()).toEqual(["01101", "13113"]);
+    expect(snap.areas["13113"]).toEqual({
+      name: "市13113",
+      totalDwellings: 100,
+      vacantDwellings: 10,
+      rentPerTatamiYen: 3000,
+      tatamiPerRental: 20,
+      floorAreaPerRental: 40,
+    });
+    expect(snap.year).toBe(2023);
+  });
+
+  it("値が全部欠測の行は入れない。一部欠測は null のまま入れる", () => {
+    const snap = toHousingSnapshot(
+      [
+        row("01101", {
+          totalDwellings: null,
+          vacantDwellings: null,
+          rentPerTatamiYen: null,
+          tatamiPerRental: null,
+          floorAreaPerRental: null,
+        }),
+        row("01102", { rentPerTatamiYen: null }),
+      ],
+      2023,
+      "x",
+    );
+    expect(Object.keys(snap.areas)).toEqual(["01102"]);
+    expect(snap.areas["01102"].rentPerTatamiYen).toBeNull();
   });
 });

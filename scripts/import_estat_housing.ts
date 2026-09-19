@@ -17,6 +17,7 @@ import {
   HOUSING_TABLE_ID,
   aggregateHousing,
   joinCoverage,
+  toHousingSnapshot,
   type HousingRow,
 } from "./estatHousing";
 
@@ -188,6 +189,20 @@ async function main() {
   }
   const written = await saveRows(rows);
   console.log(`municipality_housing_stats に ${written} 件を upsert した。`);
+  /*
+    静的な頁が読む写しも同時に焼く。市区町村ページは DB を引かないので、
+    JSON に無いものは頁に出せない。ワークフローが差分をコミットする。
+  */
+  const snapshot = toHousingSnapshot(
+    rows,
+    Number(DATA_YEAR),
+    new Date().toISOString(),
+  );
+  const outPath = path.resolve(process.cwd(), "src/data/housingStats.json");
+  fs.writeFileSync(outPath, JSON.stringify(snapshot) + "\n");
+  console.log(
+    `${outPath} に ${Object.keys(snapshot.areas).length} 市区町村ぶんを書いた。`,
+  );
   const summary = process.env.GITHUB_STEP_SUMMARY;
   if (summary) {
     fs.appendFileSync(

@@ -61,3 +61,18 @@ jobs:
         env:
           ESTAT_HOUSING_YEAR: ${{ inputs.year }}
         run: npx tsx scripts/import_estat_housing.ts
+
+      # 市区町村ページ（/houi/area/*）は DB を引かずに焼くので、統計の写し
+      # （src/data/housingStats.json）を取り込みと同時に押し戻す。
+      # 巡回のワークフローが areaDirections.json でやっているのと同じ形。
+      - name: Commit housing snapshot if changed
+        run: |
+          if git diff --quiet -- src/data/housingStats.json && [ -z "$(git status --porcelain -- src/data/housingStats.json)" ]; then
+            echo "統計の写しに変化なし。コミットしない。"
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add src/data/housingStats.json
+          git commit -m "chore(data): 市区町村の住宅の統計（e-Stat）の写しを更新する"
+          git push origin HEAD:master
