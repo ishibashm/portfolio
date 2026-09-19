@@ -142,6 +142,19 @@ export function migrateLegacyProfileKeys(): Settings {
   return writeLocalSettings(patch, false);
 }
 
+/**
+ * 端末の設定を**同期的に**読む。最初の描画で使う入口。
+ *
+ * `readLocalSettings` との違いは、旧い画面の写し（`arb_*` / `wealth_*`）を
+ * 正の設定へ引き上げてから返すこと。**画面が旧い鍵の名前を知らずに済む。**
+ * 直に読んでいる画面は、別の端末で消した値を自分だけ拾い直してしまう。
+ *
+ * クラウドの値は `loadSettings`（非同期）が後から重ねる。
+ */
+export function readSettingsSync(): Settings {
+  return migrateLegacyProfileKeys();
+}
+
 function pickSynced(settings: Settings): Settings {
   const out: Settings = {};
   for (const key of SYNCED_FIELDS) {
