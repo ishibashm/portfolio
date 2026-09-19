@@ -25,6 +25,13 @@ on:
         required: true
         default: "2023"
 
+# 写し（src/data/housingStats.json）を master へ押し戻すので contents: write が
+# 要る。既定の GITHUB_TOKEN は読み取りだけで、無いと commit までは通って
+# push だけが 403 になる（run 35474385487）。**取り込み自体は成功して
+# いるので、ジョブが赤くても DB には入っている。**
+permissions:
+  contents: write
+
 concurrency:
   group: municipality-housing-stats-write
   cancel-in-progress: false
