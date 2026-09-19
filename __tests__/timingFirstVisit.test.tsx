@@ -29,7 +29,15 @@ vi.mock("recharts", () => {
 vi.mock("@/components/ArbitrageMap", () => ({ ArbitrageMap: () => null }));
 
 const { loadSettings } = vi.hoisted(() => ({ loadSettings: vi.fn() }));
-vi.mock("@/lib/userSettings", () => ({ loadSettings }));
+/*
+  差し替えるのは `loadSettings`（クラウドを見に行く）だけ。設定の読み取り
+  （`readSettingsSync` とその引き上げ）は**本物のまま**にする。ここを模造品に
+  すると、旧い鍵しか無い端末で値が拾えているかを見られなくなる。
+*/
+vi.mock("@/lib/userSettings", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/lib/userSettings")>()),
+  loadSettings,
+}));
 
 import TimingAnalyticsPage from "@/app/relocation/timing/page";
 

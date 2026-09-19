@@ -80,7 +80,11 @@ describe("時期ヒートマップ", () => {
   });
 
   it("生年月日が無ければ空のまま持つ", () => {
-    expect(src).toContain('birthDate: ls("arb_birthDate") || "",');
+    // 旧い鍵（arb_birthDate）を直に読むのはやめた。readSettingsSync が
+    // 正の設定へ引き上げたうえで返すので、この画面は正の設定だけを見る。
+    expect(src).toContain(
+      'birthDate: settingString(local, "birth_date") || "",',
+    );
   });
 
   it("揃っていないときは走査しない仕組みが残っている", () => {

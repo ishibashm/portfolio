@@ -59,7 +59,12 @@ import {
   filterLayersOf,
   parseDirectionFilterMode,
 } from "@/utils/directionFilterMode";
-import { loadSettings } from "@/lib/userSettings";
+import {
+  loadSettings,
+  readSettingsSync,
+  settingNumber,
+  settingString,
+} from "@/lib/userSettings";
 import { ActiveProfileBadge } from "@/components/profile/ActiveProfileBadge";
 import { PartyMembersEditor } from "@/components/relocation/PartyMembersEditor";
 import {
@@ -302,26 +307,27 @@ export default function TimingAnalyticsPage() {
   } | null>(null);
 
   useEffect(() => {
-    // 設定はスキャナーと共有する。ここに入力欄を二重に持つと、
-    // どちらが正か分からなくなる。
-    //
-    // 出発地と生年月日はスキャナーが localStorage に即時保存しており、
-    // 天中殺の扱いなどは共有設定（userSettings）側にある。まず
-    // localStorage で描き始め、共有設定が読めたら上書きする。
-    const ls = (k: string) => {
-      try {
-        return localStorage.getItem(k);
-      } catch {
-        return null;
-      }
+    /*
+      設定はスキャナーと共有する。ここに入力欄を二重に持つと、どちらが正か
+      分からなくなる。
+
+      まず端末の設定で描き始め、クラウドが読めたら下で上書きする。
+      **旧い鍵（arb_*）を直に読まない** — `readSettingsSync` が正の設定へ
+      引き上げたうえで返すので、写しの場所をこの画面が知る必要が無い。
+      直に読んでいると、別の端末で消した生年月日をこの画面だけが拾い直す。
+    */
+    const local = readSettingsSync();
+    const numText = (key: string) => {
+      const n = settingNumber(local, key);
+      return n === undefined ? "" : String(n);
     };
     const base = {
       // 既定値を置かない。以前は運営者の生年月日が入っていて、
       // 未設定の人にも本命殺・天中殺の判定が出ていた。空なら
       // canScan が false になり、下で「何が足りないか」を出す。
-      birthDate: ls("arb_birthDate") || "",
-      baseLat: ls("arb_baseLat") || "",
-      baseLon: ls("arb_baseLon") || "",
+      birthDate: settingString(local, "birth_date") || "",
+      baseLat: numText("base_lat"),
+      baseLon: numText("base_lon"),
       tenchusatsuMode: DEFAULT_TENCHUSATSU_MODE as string,
       involuntaryMove: false,
       directionFilterMode: "composite",
