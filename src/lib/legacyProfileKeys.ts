@@ -52,6 +52,29 @@ export const LEGACY_PROFILE_KEYS: readonly (readonly [string, string])[] = [
   ["wealth_baseLon", "base_lon"],
 ] as const;
 
+/**
+ * **クラウドで消された欄の名前**を覚えておく置き場（カンマ区切り）。
+ *
+ * 別の端末で消した値は、端末の設定からも欄ごと外す。ただし外しただけだと
+ * ここの引き上げが「まだ埋めていない欄」と見なして旧い鍵から拾い直すので、
+ * 「消した」ことを別に覚える。
+ *
+ * **設定の中に null を置いて跡にはしない。**素の JSON を手で読む画面が
+ * `!== undefined` を「値がある」と読んで `.toString()` を呼ぶ書き方を
+ * していて、null で例外になる。catch が飲み込むため、**その後ろの欄が
+ * 丸ごと読まれないまま既定値に落ちる**（2026-09-19 に踏んだ）。
+ *
+ * クラウドへは送らない（`SYNCED_FIELDS` に入れない）端末だけの欄。
+ */
+export const CLEARED_FIELD = "_cleared";
+
+/** 消された欄の一覧。壊れていれば空。 */
+export function clearedFields(settings: Settings): Set<string> {
+  const raw = settings[CLEARED_FIELD];
+  if (typeof raw !== "string" || !raw) return new Set();
+  return new Set(raw.split(",").filter(Boolean));
+}
+
 /** 座標の欄。旧い鍵は文字列だが、正の設定は数値で持つ。 */
 const COORD_FIELDS = new Set([
   "base_lat",
@@ -68,15 +91,22 @@ export interface LegacyStorage {
 /**
  * その欄が**決着しているか**（引き上げなくてよいか）。
  *
- * 利用者の値が入っていれば決着。**null も決着**で、これは「クラウドで
- * 消した跡」（`userSettings` が端末に残す）。値は無いが、利用者が消したと
- * 分かっているので拾い直さない。**欄ごと無いとき（undefined）だけ**
- * 引き上げる。
+ * 利用者の値が入っていれば決着。**クラウドで消された欄も決着**で、値は
+ * 無いが利用者が消したと分かっているので拾い直さない。それ以外で欄ごと
+ * 無いときだけ引き上げる。
  *
- * null を「無い」と同じに扱っていたころは、別の端末で消した生年月日が
+ * 消された欄を「無い」と同じに扱っていたころは、別の端末で消した生年月日が
  * 読み込みのたびに旧い鍵から戻ってきた。
+ *
+ * null も決着として扱う。#1423 が短期間だけ「消した跡」を null で置いて
+ * おり、その端末が残っているため。
  */
-function isSettled(settings: Settings, field: string): boolean {
+function isSettled(
+  settings: Settings,
+  field: string,
+  cleared: Set<string>,
+): boolean {
+  if (cleared.has(field)) return true;
   const v = settings[field];
   if (v === null) return true;
   if (v === undefined) return false;
@@ -97,9 +127,11 @@ export function legacyProfilePatch(
   current: Settings,
 ): Settings {
   const patch: Settings = {};
+  const cleared = clearedFields(current);
   for (const [key, field] of LEGACY_PROFILE_KEYS) {
     /* 既に正の設定にあるか、この走査で既に埋めた欄は触らない */
-    if (isSettled(current, field) || patch[field] !== undefined) continue;
+    if (isSettled(current, field, cleared) || patch[field] !== undefined)
+      continue;
     let raw: string | null = null;
     try {
       raw = storage.getItem(key);

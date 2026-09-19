@@ -24,20 +24,26 @@ function storage(values: Record<string, string>) {
 }
 
 describe("旧い写しの引き上げ", () => {
-  it("クラウドで消した跡（null）の欄は拾い直さない", () => {
+  it("クラウドで消された欄（_cleared）は拾い直さない", () => {
     /*
-      別の端末で消した生年月日は、正の設定に null で残る
-      （userSettings が「消した跡」として書く）。null を「無い」と同じに
-      扱っていたころは、読み込みのたびに旧い鍵から戻ってきた。
-      **欄ごと無いとき（undefined）だけ**引き上げる。
+      別の端末で消した生年月日は、端末の設定から欄ごと外れる。外しただけ
+      だと「まだ埋めていない欄」に見えて旧い鍵から戻ってくるので、消した
+      ことを `_cleared` に覚えてある。
     */
     const got = legacyProfilePatch(
       storage({ arb_birthDate: "1985-05-20T09:00", arb_baseLat: "35.1815" }),
-      { birth_date: null },
+      { _cleared: "birth_date" },
     );
     expect(got.birth_date).toBeUndefined();
     // 消していない欄は今までどおり引き上げる
     expect(got.base_lat).toBe(35.1815);
+  });
+
+  it("null の跡（#1423 が書いた端末）も拾い直さない", () => {
+    const got = legacyProfilePatch(storage({ arb_birthDate: "1985-05-20" }), {
+      birth_date: null,
+    });
+    expect(got.birth_date).toBeUndefined();
   });
 
   it("正の設定に無い欄を、旧い鍵から埋める", () => {

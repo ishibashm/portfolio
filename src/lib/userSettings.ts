@@ -13,7 +13,11 @@
  * 見せられなくなると、検索の索引にも広告の審査にも通らなくなる。
  */
 
-import { legacyProfilePatch } from "@/lib/legacyProfileKeys";
+import {
+  CLEARED_FIELD,
+  clearedFields,
+  legacyProfilePatch,
+} from "@/lib/legacyProfileKeys";
 
 export const SETTINGS_KEY = "tactical_config_v1";
 
@@ -116,6 +120,38 @@ export function writeLocalSettings(
 }
 
 /**
+ * クラウドで消された欄を、端末の設定からも**欄ごと**外す。
+ *
+ * 外した欄の名前は `_cleared` に残す。残さないと、旧い鍵からの引き上げが
+ * 「まだ埋めていない欄」と見なして拾い直す。
+ *
+ * **値の場所に null を置かない。**素の JSON を手で読む画面が
+ * `config.birth_lat !== undefined` を「値がある」と読んで `.toString()` を
+ * 呼んでおり、null で例外になる。catch が飲み込むので、**その後ろの欄が
+ * 丸ごと読まれないまま既定値に落ちる**（相場マップの初回読み込みと設定
+ * 更新、物件検索の 3 か所。2026-09-19 に踏んだ）。
+ *
+ * `_savedAt` は進めない。これは利用者の保存ではなく、クラウドの状態を
+ * 端末に写しているだけ。
+ */
+function markCleared(keys: string[]): Settings {
+  const current = readLocalSettings();
+  const merged: Settings = { ...current };
+  for (const key of keys) delete merged[key];
+  const memo = clearedFields(current);
+  for (const key of keys) memo.add(key);
+  merged[CLEARED_FIELD] = [...memo].sort().join(",");
+  if (typeof window !== "undefined") {
+    try {
+      localStorage.setItem(SETTINGS_KEY, JSON.stringify(merged));
+    } catch {
+      // 容量超過やプライベートモード。端末に残らないだけで操作は続行できる。
+    }
+  }
+  return merged;
+}
+
+/**
  * 旧い画面ごとの写しを、正の設定へ 1 回だけ引き上げる。
  *
  * **引き上げるだけで、旧い鍵は消さない。**まだ読んでいる画面があるため
@@ -124,7 +160,14 @@ export function writeLocalSettings(
  */
 export function migrateLegacyProfileKeys(): Settings {
   if (typeof window === "undefined") return {};
-  const current = readLocalSettings();
+  let current = readLocalSettings();
+  /*
+    #1423 が短期間だけ「消した跡」を null で値の場所に置いていた。その端末
+    では素の JSON を手で読む画面が落ちるので、読むついでに欄ごと外して
+    `_cleared` へ移す（markCleared の説明を見ること）。
+  */
+  const nulls = Object.keys(current).filter((key) => current[key] === null);
+  if (nulls.length > 0) current = markCleared(nulls);
   let patch: Settings;
   try {
     patch = legacyProfilePatch(localStorage, current);
@@ -238,16 +281,13 @@ export async function loadSettings(): Promise<LoadResult> {
         （2026-09-19 に再現。上のコメントの「端末からも外す」と実装が
         食い違っていた）。
 
-        鍵ごと消さずに null を置く。「消した跡」を残しておかないと、
-        旧い画面の写し（legacyProfileKeys）が「まだ引き上げていない欄」
-        と見なして拾い直す。
+        欄ごと外し、外したことは `_cleared` に覚える（markCleared）。
       */
-      const stale = remoteCleared.filter((key) => local[key] != null);
-      if (stale.length > 0) {
-        const tombstones: Settings = {};
-        for (const key of stale) tombstones[key] = null;
-        writeLocalSettings(tombstones, false);
-      }
+      const cleared = clearedFields(local);
+      const stale = remoteCleared.filter(
+        (key) => local[key] != null || !cleared.has(key),
+      );
+      if (stale.length > 0) markCleared(stale);
     } else {
       settings = { ...remoteFields, ...local };
     }
