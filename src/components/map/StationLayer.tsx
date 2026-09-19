@@ -194,7 +194,7 @@ export function StationLayer({
                     この地点を判定へ
                   </button>
                 )}
-                <div className="text-[9px] text-stone-500 mt-2 leading-snug">
+                <div className="text-xs text-stone-500 mt-2 leading-snug">
                   {
                     "出典: 国土数値情報（鉄道データ）（国土交通省）2025 年版。駅の位置は線分の中点です。"
                   }

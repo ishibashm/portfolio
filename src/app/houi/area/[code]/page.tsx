@@ -290,7 +290,7 @@ export default async function Page({
             いる（#533）ので、ファイルの日付だと更新していない相場に
             今日の日付が付く。
           */}
-          <p className="mt-2 text-[11px] text-slate-500">
+          <p className="mt-2 text-xs text-slate-500">
             集計日:{" "}
             {new Date(areaAsOf(area)).toLocaleDateString("ja-JP", {
               timeZone: "Asia/Tokyo",
@@ -302,7 +302,7 @@ export default async function Page({
               止めたので（backlog 29 節）、この数字は凍結している。
               再開すれば `asOf` が進んで次のデプロイで消える。 */}
           {snapshotNote && (
-            <p className="mt-2 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-[11px] leading-relaxed text-amber-900">
+            <p className="mt-2 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs leading-relaxed text-amber-900">
               {snapshotNote}
             </p>
           )}
@@ -313,7 +313,7 @@ export default async function Page({
             読みようがない。この頁は noindex（#379）なので、
             説明そのものは索引に載る記事の側に置いてある。
           */}
-          <p className="mt-1 text-[11px] text-slate-500">
+          <p className="mt-1 text-xs text-slate-500">
             <Link
               href="/blog/how-we-analyze-the-rental-market"
               className="font-semibold text-indigo-700 underline"
@@ -604,7 +604,7 @@ export default async function Page({
             </p>
             {/* 解説を書いた頁には印を付ける。一覧（/houi/area）と同じ規約。
                 雛形のままの頁と、方位ごとの街の並びまで書いた頁は中身が違う */}
-            <p className="mt-1 text-[11px] text-slate-500">
+            <p className="mt-1 text-xs text-slate-500">
               <span className="mr-1.5 inline-block h-2 w-2 rounded-full bg-rose-500 align-middle" />
               が付いているエリアには解説があります。
             </p>

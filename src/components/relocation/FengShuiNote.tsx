@@ -176,12 +176,12 @@ export function FengShuiNote({
         </button>
       </div>
 
-      <p className="mt-1.5 text-[11px] leading-relaxed text-stone-700">
+      <p className="mt-1.5 text-xs leading-relaxed text-stone-700">
         {reading.meaning}
       </p>
 
       {differs && (
-        <p className="mt-2 text-[10px] leading-relaxed text-stone-600">
+        <p className="mt-2 text-xs leading-relaxed text-stone-600">
           気学ではこの移動を
           <b>{kigakuLabel}</b>
           として扱っています。八宅は八卦に45度ずつ、気学の伝統的な区切りは四隅60度・四正30度と
@@ -190,7 +190,7 @@ export function FengShuiNote({
         </p>
       )}
 
-      <p className="mt-2 text-[10px] leading-relaxed text-stone-600">
+      <p className="mt-2 text-xs leading-relaxed text-stone-600">
         <b>気学の判定とは足し合わせていません。</b>
         別の流派の見立てを並べているだけです。どちらを重く見るかは決めていません。
       </p>

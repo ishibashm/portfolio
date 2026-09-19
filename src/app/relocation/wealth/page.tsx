@@ -1094,7 +1094,7 @@ export default function RegionalWealthPage() {
                     </label>
                     <button
                       onClick={() => setShowBirthMapPicker(!showBirthMapPicker)}
-                      className={`text-[9px] px-1.5 py-0.5 rounded border transition-colors ${showBirthMapPicker ? "bg-indigo-50 dark:bg-indigo-50 text-indigo-600 dark:text-indigo-600 border-indigo-200 dark:border-indigo-800" : "bg-gray-50 dark:bg-white text-stone-600 dark:text-stone-500 border-gray-200 dark:border-stone-200"}`}
+                      className={`text-[10px] px-1.5 py-0.5 rounded border transition-colors ${showBirthMapPicker ? "bg-indigo-50 dark:bg-indigo-50 text-indigo-600 dark:text-indigo-600 border-indigo-200 dark:border-indigo-800" : "bg-gray-50 dark:bg-white text-stone-600 dark:text-stone-500 border-gray-200 dark:border-stone-200"}`}
                     >
                       {showBirthMapPicker ? "地図を閉じる" : "地図検索"}
                     </button>
@@ -1161,7 +1161,7 @@ export default function RegionalWealthPage() {
                   </label>
                   <button
                     onClick={() => setShowBaseMapPicker(!showBaseMapPicker)}
-                    className={`text-[9px] px-1.5 py-0.5 rounded border transition-colors ${showBaseMapPicker ? "bg-emerald-50 dark:bg-emerald-50 text-emerald-600 dark:text-emerald-600 border-emerald-200 dark:border-emerald-800" : "bg-gray-50 dark:bg-white text-stone-600 dark:text-stone-500 border-gray-200 dark:border-stone-200"}`}
+                    className={`text-[10px] px-1.5 py-0.5 rounded border transition-colors ${showBaseMapPicker ? "bg-emerald-50 dark:bg-emerald-50 text-emerald-600 dark:text-emerald-600 border-emerald-200 dark:border-emerald-800" : "bg-gray-50 dark:bg-white text-stone-600 dark:text-stone-500 border-gray-200 dark:border-stone-200"}`}
                   >
                     {showBaseMapPicker ? "地図を閉じる" : "地図検索"}
                   </button>
@@ -1373,7 +1373,7 @@ export default function RegionalWealthPage() {
                         {DIRECTION_LABELS[b.dir]}
                       </span>
                       <span
-                        className={`w-14 shrink-0 text-[9px] font-semibold ${
+                        className={`w-14 shrink-0 text-[10px] font-semibold ${
                           isNoise ? "text-rose-500" : "text-emerald-600"
                         }`}
                       >
@@ -1404,13 +1404,13 @@ export default function RegionalWealthPage() {
                       <span className="w-16 shrink-0 text-right font-mono text-[10px] text-stone-500">
                         {Math.round(b.median)}万
                       </span>
-                      <span className="w-8 shrink-0 text-right font-mono text-[9px] text-stone-600">
+                      <span className="w-8 shrink-0 text-right font-mono text-[10px] text-stone-600">
                         {b.areas}件
                       </span>
                     </div>
                   );
                 })}
-                <p className="mt-1 text-[9px] leading-relaxed text-stone-600">
+                <p className="mt-1 text-xs leading-relaxed text-stone-600">
                   棒は一人当たり所得の幅（左端が最小・右端が最大）、縦線が中央値です。物差しは全方位で共通。吉凶は方位から決まるので方位ごとに 1 つです。
                 </p>
               </div>
@@ -1473,7 +1473,7 @@ export default function RegionalWealthPage() {
                         <line x1="10" x2="21" y1="14" y2="3" />
                       </svg>
                     </div>
-                    <p className="text-[10px] text-stone-600 leading-tight">
+                    <p className="text-xs text-stone-600 leading-tight">
                       国土交通省の不動産取引価格情報と地価公示・都道府県地価調査（いずれも公的統計）を読み込んで集計しています。地価は市区町村の中心部にある公示地点の平均で、市域全体の平均ではありません。
                     </p>
                   </div>
@@ -1507,7 +1507,7 @@ export default function RegionalWealthPage() {
                         <line x1="10" x2="21" y1="14" y2="3" />
                       </svg>
                     </div>
-                    <p className="text-[10px] text-stone-600 leading-tight">
+                    <p className="text-xs text-stone-600 leading-tight">
                       「コスパ指数」は 1人あたり平均所得 ÷ 中心部の地価（円/㎡）です。地価は中心部の公示地点から取っているため、市域が広い自治体ほど実態とずれます。
                     </p>
                   </div>
@@ -1545,12 +1545,12 @@ export default function RegionalWealthPage() {
                         <line x1="10" x2="21" y1="14" y2="3" />
                       </svg>
                     </div>
-                    <p className="text-[10px] text-stone-600 leading-tight">
+                    <p className="text-xs text-stone-600 leading-tight">
                       {
                         "「富裕度」の 1 人あたり所得は、「統計でみる市区町村のすがた」（総務省）の課税対象所得と納税義務者数を加工して作成しています。出典：政府統計の総合窓口(e-Stat)（https://www.e-stat.go.jp/）"
                       }
                     </p>
-                    <p className="mt-1 text-[10px] text-stone-600 leading-tight">
+                    <p className="mt-1 text-xs text-stone-600 leading-tight">
                       {
                         "このサービスは、政府統計総合窓口(e-Stat)のAPI機能を使用していますが、サービスの内容は国によって保証されたものではありません。"
                       }

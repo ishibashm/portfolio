@@ -12,6 +12,7 @@ import {
   type TargetDateRationale,
   type TimelineDay,
 } from "@/utils/targetDateRationale";
+import { plainRokuyo } from "@/lib/rokuyoLabel";
 
 /**
  * 目標日の根拠を出す。
@@ -138,7 +139,7 @@ export function TargetDateAdvice({
 
   if (!birthDate || lon === null || !Number.isFinite(lon)) {
     return (
-      <p className="mt-2 text-[11px] text-stone-500">
+      <p className="mt-2 text-xs text-stone-500">
         生年月日と出発地を入れると、この目標日が方位ごとに何段階かを出します。
       </p>
     );
@@ -156,12 +157,12 @@ export function TargetDateAdvice({
         )}
       </div>
 
-      {error && <p className="mt-2 text-[11px] text-rose-700">{error}</p>}
+      {error && <p className="mt-2 text-xs text-rose-700">{error}</p>}
 
       {result?.target && (
-        <p className="mt-1 text-[11px] text-stone-600">
+        <p className="mt-1 text-xs text-stone-600">
           {targetDate}
-          {result.target.rokuyo ? `・${result.target.rokuyo}` : ""}
+          {result.target.rokuyo ? `・${plainRokuyo(result.target.rokuyo)}` : ""}
           {result.target.tags.length > 0
             ? `・${result.target.tags.join("・")}`
             : ""}
@@ -172,7 +173,7 @@ export function TargetDateAdvice({
       )}
 
       {result && !result.targetInRange && !loading && !error && (
-        <p className="mt-2 text-[11px] text-stone-600">
+        <p className="mt-2 text-xs text-stone-600">
           この目標日は判定できる範囲の外です。年盤が二度替わる先まで見ると、精度より不確かさが勝つため出していません。
         </p>
       )}
@@ -227,7 +228,7 @@ export function TargetDateAdvice({
         </div>
       )}
 
-      <p className="mt-3 text-[10px] leading-relaxed text-stone-500">
+      <p className="mt-3 text-xs leading-relaxed text-stone-500">
         日付を押すとその日を目標日にします。天中殺で塞がる日は候補に入れていません（段階が良くても動けない日のため）。全期間を一望したいときは引越し時期を分析する画面へ。
       </p>
     </div>

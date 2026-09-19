@@ -167,7 +167,7 @@ export function UserSpotLayer({
                 {/* #25 でログイン中はクラウドにも保存するようになった。
                     以前ここは「端末だけに保存される」という趣旨の文言で、
                     実装と食い違っていたので直した（2026-09-15）。 */}
-                <div className="text-[9px] text-stone-500 mt-2 leading-snug">
+                <div className="text-xs text-stone-500 mt-2 leading-snug">
                   {
                     "この端末に保存されています。ログインしていれば、同じ内容が端末をまたいで残ります。"
                   }

@@ -992,7 +992,13 @@ export function calculateVectorCollision(
     };
   }
 
-  const processLayer = (board: BoardLayout) => {
+  /**
+   * 1 つの盤を方位ごとの判定に畳む。
+   *
+   * `useLunarNode` は**年盤だけ false**（利用者の判断。2026-09-19）。
+   * 理由は下の `yearLayer` の呼び出しに書いた。
+   */
+  const processLayer = (board: BoardLayout, useLunarNode = true) => {
     const res: Partial<Record<Direction, VectorStatus>> = {};
     directions.forEach((d) => (res[d] = "SAFE"));
 
@@ -1046,7 +1052,7 @@ export function calculateVectorCollision(
       if (res[dir] === "SAFE") {
         if (voidDirs.has(dir)) {
           res[dir] = "NOISE_VOID";
-        } else if (nodeDirs.has(dir)) {
+        } else if (useLunarNode && nodeDirs.has(dir)) {
           res[dir] = "NOISE_NODE";
         } else {
           const optStatus = getOptimalStatus(board[dir]);
@@ -1080,7 +1086,29 @@ export function calculateVectorCollision(
     });
   };
 
-  const yearLayer = processLayer(yearBoard);
+  /*
+    **年盤には月交点を入れない**（利用者の判断。2026-09-19。backlog 6 節）。
+
+    月交点は約 19 年で一巡し、1 年で 19 度ほど進む。**年の途中で八方位の
+    境目を跨ぐ**ので、年という粒度の盤に混ぜると年盤が日付に依存する。
+
+    実害が出ていた。`/houi` の年別頁（`lib/kigakuContent` の
+    `getYearDirections`）は月交点を渡さないのに、道具の側は渡していて、
+    **同じエンジンに違う入力を渡していた。**しかも上の「3. グローバル
+    ノイズと最適化の適用」は月交点を吉方位より先に当てるため、
+    **月交点が吉方位を先取りして潰す。**2027 年の南西がそれで、頁が
+    「吉方位」と書く 4 星（一白・二黒・五黄・八白）に対し、道具は
+    365 日すべて D 以下しか出していなかった。
+
+    `yearLayerDateInvariance` が落ちなかったのは、あの検査が比較の前に
+    `NOISE_NODE` を `SAFE` へ均していたため。均しの理由（年の途中で動く
+    天体量だから）は正しいが、**均した結果、年層が日付に依存している
+    こと自体を見逃す検査になっていた。**この変更で均しは要らなくなる。
+
+    **月盤・日盤・最終判定には今までどおり入れる。**月交点そのものを
+    やめる話ではなく、年という粒度に混ぜないという整理。
+  */
+  const yearLayer = processLayer(yearBoard, false);
   applyHa(yearLayer, zodiacs?.yearZodiac); // 歳破 (Saiha)
 
   const monthLayer = processLayer(monthBoard);

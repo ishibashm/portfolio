@@ -73,6 +73,16 @@ export const ACCOUNT_LOCAL_KEYS = [
   /* シミュレータの下書き（出発地の名前が入る） */
   "relocation_simulator_draft",
   /*
+    物件検索の設定。**同行者の生年月日と出発地が入る**（partyMembers）。
+    「一覧の並べ方」として残す側に置いていたが、同行者を足すと本人の
+    写しと同じ個人の値がここに残る（2026-09-17 に気付いた。鍵の名前に
+    birth が無いので、下の検査をすり抜けていた）。候補の切り出し方や
+    天中殺の扱いも一緒に消えるが、どれも「登録した内容」の側。
+  */
+  "arb_axis_prefs_v1",
+  /* 時期ツールの合流先（県）。目的地と同じ扱い */
+  "timing_dest_pref_v1",
+  /*
     目的地。**いまは tactical_config_v1 の中の項目**なので、上の 1 行目で
     既に消えている（destinationSetting は writeLocalSettings 経由で書く）。
     ここに残すのは、独立した鍵に移した日に消し忘れないための保険。

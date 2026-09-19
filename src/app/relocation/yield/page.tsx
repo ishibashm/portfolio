@@ -50,11 +50,11 @@ function Figure({
 }) {
   return (
     <div className="rounded-2xl border border-stone-200 bg-white p-4">
-      <p className="text-[11px] font-bold text-stone-500">{label}</p>
+      <p className="text-xs font-bold text-stone-500">{label}</p>
       <p className="mt-1 font-mono text-2xl font-bold text-stone-900">
         {value}
       </p>
-      {note && <p className="mt-1 text-[11px] text-stone-500">{note}</p>}
+      {note && <p className="mt-1 text-xs text-stone-500">{note}</p>}
     </div>
   );
 }
@@ -95,7 +95,7 @@ export default function YieldPage() {
             ポータルに出ている利回りは売主の希望価格を分母にしていることが多く、そのぶん高く見えます。ここでは国土交通省の成約価格（中古マンション）を分母に、自前で集めた賃貸の募集賃料を分子にしています。
           </p>
           {generated && (
-            <p className="mt-2 text-[11px] font-mono text-stone-500">
+            <p className="mt-2 text-xs font-mono text-stone-500">
               {generated} 時点／対象年 {stats.source.yearFrom}〜
               {stats.source.yearTo}／賃貸{" "}
               {stats.source.rentalRows.toLocaleString()} 件・成約{" "}
@@ -139,7 +139,7 @@ export default function YieldPage() {
             <h2 className="text-sm font-bold text-stone-800">
               都道府県ごとの中央値
             </h2>
-            <p className="mt-1 text-[11px] leading-relaxed text-stone-600">
+            <p className="mt-1 text-xs leading-relaxed text-stone-600">
               高い順。
               <strong>
                 区画が {MIN_CELLS_FOR_PREFECTURE} 未満の県は「参考」

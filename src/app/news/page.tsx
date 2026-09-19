@@ -162,7 +162,7 @@ export default async function Page() {
                   配信元を開く
                 </a>
               </div>
-              <p className="mt-0.5 max-w-[70ch] text-[10px] leading-relaxed text-stone-500">
+              <p className="mt-0.5 max-w-[70ch] text-xs leading-relaxed text-stone-500">
                 {card.group.note}
               </p>
               {members.map((f) => (
@@ -245,7 +245,7 @@ export default async function Page() {
                     配信元を開く
                   </a>
                 </div>
-                <p className="mt-0.5 text-[10px] leading-relaxed text-stone-500">
+                <p className="mt-0.5 text-xs leading-relaxed text-stone-500">
                   {feed.source.note}
                 </p>
                 <ul className="mt-2 space-y-2 border-t border-stone-100 pt-2">
@@ -268,7 +268,7 @@ export default async function Page() {
                           {/* 要約は配信元の description の先頭 120 字。
                               引用の範囲に収め、続きはリンク先で読む */}
                           {item.summary && (
-                            <p className="mt-0.5 text-[10px] leading-relaxed text-stone-500">
+                            <p className="mt-0.5 text-xs leading-relaxed text-stone-500">
                               {item.summary}
                             </p>
                           )}
@@ -323,7 +323,7 @@ export default async function Page() {
             <Library className="h-4 w-4 text-stone-500" aria-hidden />
             一次情報への入り口
           </h2>
-          <p className="mt-0.5 max-w-[70ch] text-[10px] leading-relaxed text-stone-500">
+          <p className="mt-0.5 max-w-[70ch] text-xs leading-relaxed text-stone-500">
             {
               "新着配信の無い媒体とデータベースです。競売・統計・雑誌はここから。"
             }

@@ -90,6 +90,75 @@ export function filterLayersOf(
   return LAYERS[mode] ?? LAYERS.composite;
 }
 
+/**
+ * 見方の呼び名。**表はここ 1 つ。**
+ *
+ * 目的地タブの観点ボタンと、畳んだときの 1 行（「観点: 本命星＋環境方位」）
+ * で同じ言葉を使う。MetaphysicalConfigBar は別の表を持っていて英語の
+ * 併記（"総合 (ALL)" など）が残っている。あちらを寄せるのは別の PR。
+ */
+export const DIRECTION_FILTER_MODE_LABELS: Record<DirectionFilterMode, string> =
+  {
+    composite: "総合判定",
+    personal_kigaku: "本命星のみ",
+    environmental: "環境方位のみ",
+    personal_bazi: "天中殺のみ",
+    personal_kigaku_environmental: "本命星＋環境方位",
+    personal_kigaku_bazi: "本命星＋天中殺",
+    environmental_bazi: "環境方位＋天中殺",
+  };
+
+export function directionFilterModeLabel(mode: DirectionFilterMode): string {
+  return DIRECTION_FILTER_MODE_LABELS[mode];
+}
+
+/**
+ * ダッシュボード（SolarTimeClock）が state に持つ値。
+ *
+ * 見方（DirectionFilterMode）に加えて、**表示だけの重ね札** 2 つを同じ
+ * state に持っている（大吉を強調する／大凶を灰色にする。層は総合判定の
+ * まま通る。SolarTimeClock の filterVectors の註）。
+ *
+ * 以前は `string` で、観点のボタンが古い id（`kigaku_env` など）を書いても
+ * tsc が何も言わなかった（#1337）。ここで名前を付けて狭める。
+ */
+export type DashboardFilterMode =
+  | DirectionFilterMode
+  | "optimal_only"
+  | "exclude_noise";
+
+/**
+ * 観点のボタンが以前書いていた古い id。#1337 で正規の名前に直したが、
+ * **クラウドに保存された値はそのまま残る。**読み込みで正規の名前に写す。
+ *
+ * 写すのはダッシュボードの読み込み口だけ。`parseDirectionFilterMode`
+ * （他の頁・API）は知らない値を総合判定に倒す決めごとのまま
+ * （MetaphysicalConfigBar のテストが固定している）。ダッシュボードが
+ * 一度読んで保存し直せば、他の頁も正規の名前を読めるようになる。
+ */
+const LEGACY_DASHBOARD_IDS: Record<string, DirectionFilterMode> = {
+  kigaku_env: "personal_kigaku_environmental",
+  kigaku_bazi: "personal_kigaku_bazi",
+  bazi_env: "environmental_bazi",
+};
+
+/**
+ * 素の文字列を DashboardFilterMode に落とす。
+ *
+ * 7 つの見方と重ね札 2 つはそのまま。古い id は正規の名前に写す。
+ * それ以外（壊れた保存値）は parseDirectionFilterMode と同じく
+ * 総合判定に倒す。
+ */
+export function parseDashboardFilterMode(
+  raw: string | null | undefined,
+): DashboardFilterMode {
+  if (raw === "optimal_only" || raw === "exclude_noise") return raw;
+  /* `in` は prototype まで見る（"toString" が写される）。own だけ */
+  if (raw && Object.hasOwn(LEGACY_DASHBOARD_IDS, raw))
+    return LEGACY_DASHBOARD_IDS[raw];
+  return parseDirectionFilterMode(raw);
+}
+
 /** 見方の一覧（画面の並び順）。 */
 export const DIRECTION_FILTER_MODES: readonly DirectionFilterMode[] = [
   "composite",

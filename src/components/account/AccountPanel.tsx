@@ -68,7 +68,7 @@ function PresetPlaces({ preset }: { preset: ProfilePreset }) {
     preset.birthLabel,
   );
   return (
-    <p className="text-[11px] text-stone-500">
+    <p className="text-xs text-stone-500">
       出発地 {base}
       {" ／ 出生地 "}
       {birth}
@@ -152,7 +152,7 @@ export function AccountPanel() {
             <p className="mt-3 break-all text-sm font-semibold text-stone-800">
               {email}
             </p>
-            <p className="mt-1 text-[11px] leading-relaxed text-stone-500">
+            <p className="mt-1 text-xs leading-relaxed text-stone-500">
               {
                 "登録した内容はこのアカウントに保存されます。別の端末で同じアカウントにログインすると、同じ設定で使えます。"
               }
@@ -206,7 +206,7 @@ export function AccountPanel() {
             </span>
           )}
         </h2>
-        <p className="max-w-[70ch] text-[11px] leading-relaxed text-stone-500">
+        <p className="max-w-[70ch] text-xs leading-relaxed text-stone-500">
           {
             "方位の判定・引越しの試算・物件検索は、すべてこのプロフィールで出しています。"
           }
@@ -220,27 +220,27 @@ export function AccountPanel() {
           <h2 className="text-sm font-bold text-stone-800">
             引越し先の候補（目的地）
           </h2>
-          <p className="text-[11px] text-stone-500">この端末にだけ</p>
+          <p className="text-xs text-stone-500">この端末にだけ</p>
         </div>
         {destination ? (
           <p className="mt-3 font-mono text-xs break-all text-stone-700">
             {destination}
           </p>
         ) : (
-          <p className="mt-3 text-[11px] leading-relaxed text-stone-600">
+          <p className="mt-3 text-xs leading-relaxed text-stone-600">
             {
               "まだ入れていません。入れておくと、シミュレータ・物件検索・時期の分析で同じ場所を打ち直さずに済みます。"
             }
           </p>
         )}
-        <p className="mt-2 max-w-[70ch] text-[11px] leading-relaxed text-stone-500">
+        <p className="mt-2 max-w-[70ch] text-xs leading-relaxed text-stone-500">
           {
             "「どこへ引越すつもりか」はアカウントに送っていません。ログインしていても、この端末の中だけに残ります。"
           }
         </p>
       </section>
 
-      <p className="text-[11px] leading-relaxed text-stone-500">
+      <p className="text-xs leading-relaxed text-stone-500">
         {"使用中のプロフィールを直すには "}
         <Link
           href="/profile"
@@ -270,7 +270,7 @@ export function AccountPanel() {
             新しいプロフィールを追加
           </Link>
         </div>
-        <p className="mt-1 max-w-[70ch] text-[11px] leading-relaxed text-stone-500">
+        <p className="mt-1 max-w-[70ch] text-xs leading-relaxed text-stone-500">
           {
             "家族ぶんなど、複数のプロフィールを持てます。使用中は 1 件で、「使う」で切り替えると、すべての道具がそのプロフィールで判定します。"
           }
@@ -286,7 +286,7 @@ export function AccountPanel() {
         )}
 
         {presets.length === 0 ? (
-          <p className="mt-4 rounded-xl border border-stone-200 bg-stone-50 p-3 text-[11px] leading-relaxed text-stone-600">
+          <p className="mt-4 rounded-xl border border-stone-200 bg-stone-50 p-3 text-xs leading-relaxed text-stone-600">
             {"まだありません。"}
             <Link href="/profile" className="font-semibold underline">
               プロフィールを登録
@@ -361,7 +361,7 @@ export function AccountPanel() {
                       </p>
                       {/* 中身を出す。名前だけだと、家族ぶんの控えが
                           並んだときにどれがどれだか分からない */}
-                      <p className="text-[11px] text-stone-500">
+                      <p className="text-xs text-stone-500">
                         生年月日 {preset.birthDate || "未設定"}
                       </p>
                       <PresetPlaces preset={preset} />
@@ -474,7 +474,7 @@ export function AccountPanel() {
           </ul>
         )}
 
-        <p className="mt-3 text-[10px] leading-relaxed text-stone-500">
+        <p className="mt-3 text-xs leading-relaxed text-stone-500">
           {cloudSynced
             ? "アカウントに保存されています（ほかの端末でも同じ一覧になります）。"
             : "この端末にだけ保存されています。ログインすると、ほかの端末でも同じ一覧になります。"}
@@ -487,12 +487,12 @@ export function AccountPanel() {
           <AlertTriangle className="h-4 w-4" aria-hidden />
           登録した内容を消す
         </h2>
-        <p className="mt-2 max-w-[70ch] text-[11px] leading-relaxed text-stone-600">
+        <p className="mt-2 max-w-[70ch] text-xs leading-relaxed text-stone-600">
           {
             "生年月日・出生地・いま住んでいる場所・目的地・プロフィールの一覧・設定バーの好みを、アカウントからもこの端末からも消します。元に戻せません。"
           }
         </p>
-        <p className="mt-2 max-w-[70ch] text-[11px] leading-relaxed text-stone-600">
+        <p className="mt-2 max-w-[70ch] text-xs leading-relaxed text-stone-600">
           {
             "Google のアカウントそのものは消えません。消したあとも同じアカウントでログインでき、何も登録していない状態から使い直せます。"
           }

@@ -23,13 +23,14 @@ const exists = (p: string) => existsSync(join(process.cwd(), p));
 
 const MARKET = "how-we-analyze-the-rental-market";
 const DISTANCE = "how-much-does-distance-matter";
+const ORDER = "direction-or-timing-which-matters";
 
 describe("記事の実体がある", () => {
-  it.each([MARKET, DISTANCE])("%s.md が置いてある", (slug) => {
+  it.each([MARKET, DISTANCE, ORDER])("%s.md が置いてある", (slug) => {
     expect(exists(`content/blog/${slug}.md`)).toBe(true);
   });
 
-  it.each([MARKET, DISTANCE])("%s は下書きではない", (slug) => {
+  it.each([MARKET, DISTANCE, ORDER])("%s は下書きではない", (slug) => {
     const src = read(`content/blog/${slug}.md`);
     expect(src).toContain("draft: false");
     // 説明が無いと検索結果に何も出ない。
@@ -47,6 +48,18 @@ describe("数字を出している画面から記事へ繋がっている", () =
   it("家賃市場の分析頁から、相場の記事へ", () => {
     const src = read("src/app/relocation/market/page.tsx");
     expect(src).toContain(`/blog/${MARKET}`);
+  });
+
+  it("時期ツールの「読み方と限界」から、順序の記事へ", () => {
+    // この画面は日取りを選ぶ道具なので、先に日付を決めてから方位を
+    // 探す読み方をされやすい。年盤で塞がった方位は月日をどう選んでも
+    // 段階が上がらない（実測で 365 日すべて X）ので、その順序に入ると
+    // 候補が 1 日も出ない。順序の理由は記事の側に置いてある。
+    const src = read("src/app/relocation/timing/page.tsx");
+    expect(src).toContain(`/blog/${ORDER}`);
+    // リンクだけ置いて結論を記事に預けない。この 1 行が無いと、記事を
+    // 開かなかった人には順序が伝わらない。
+    expect(src).toContain("方位が先、日取りが後です。");
   });
 
   it("近すぎる移動の注記から、距離の記事へ", () => {

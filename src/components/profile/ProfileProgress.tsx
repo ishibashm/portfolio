@@ -40,7 +40,7 @@ export function ProfileProgress({
     >
       <div className="flex flex-wrap items-baseline justify-between gap-2">
         <h2 className="text-sm font-bold text-stone-800">登録の進み具合</h2>
-        <p className="text-[11px] text-stone-500">
+        <p className="text-xs text-stone-500">
           {total} つのうち {done} つが入っています
         </p>
       </div>
@@ -91,7 +91,7 @@ export function ProfileProgress({
               {/* 埋まっているものに「無いと何ができないか」を出しても
                   読む理由が無い。空のものにだけ添える */}
               {!step.done && (
-                <p className="mt-0.5 max-w-[70ch] text-[11px] leading-relaxed text-stone-500">
+                <p className="mt-0.5 max-w-[70ch] text-xs leading-relaxed text-stone-500">
                   {step.need}
                 </p>
               )}
@@ -99,7 +99,7 @@ export function ProfileProgress({
                   「何を登録したか」は入力欄を開くまで分からない。座標は
                   桁が多いので等幅で出す（数字の位が縦にそろう） */}
               {step.done && step.value && (
-                <p className="mt-0.5 font-mono text-[11px] leading-relaxed break-all text-stone-600">
+                <p className="mt-0.5 font-mono text-xs leading-relaxed break-all text-stone-600">
                   {step.place ? <PlaceValue place={step.place} /> : step.value}
                 </p>
               )}

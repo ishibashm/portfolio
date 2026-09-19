@@ -206,7 +206,7 @@ export default async function Page({
               日数は出さない（静的生成なので `new Date()` はビルド時刻に
               なる。`listingSnapshotNote` の註）。 */}
           {snapshotNote && (
-            <p className="mt-2 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-[11px] leading-relaxed text-amber-900">
+            <p className="mt-2 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs leading-relaxed text-amber-900">
               {snapshotNote}
             </p>
           )}
@@ -368,7 +368,7 @@ export default async function Page({
           </nav>
         )}
 
-        <p className="mt-8 max-w-[70ch] text-[11px] leading-relaxed text-slate-500">
+        <p className="mt-8 max-w-[70ch] text-xs leading-relaxed text-slate-500">
           相場は当サイトが収集している賃貸掲載から集計した参考値で、毎晩更新されます。市区町村によって収集の網羅度に差があり、掲載件数の少ない街の数字は振れやすい点に注意してください。
         </p>
 

@@ -429,7 +429,7 @@ export function TenChiJinEvaluation({
             <BrainCircuit size={16} className="text-indigo-600" />
             天・地・人の総合評価
           </h3>
-          <p className="mt-1 text-[11px] text-stone-500">
+          <p className="mt-1 text-xs text-stone-500">
             {
               "方位（地）と時期（天）で総合を出し、心身と相性（人）は参考として並べます。"
             }
@@ -437,7 +437,7 @@ export function TenChiJinEvaluation({
         </div>
         <div className="flex items-center gap-3">
           <div className="text-right">
-            <span className="text-[9px] font-mono text-stone-600 block">
+            <span className="text-[10px] font-mono text-stone-600 block">
               総合
             </span>
             <div className="flex items-baseline gap-1">

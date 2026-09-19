@@ -164,12 +164,12 @@ export function DirectionTierOverview({
         </span>
       </button>
       <div id={contentId} hidden={!open}>
-        <p className="mt-1 text-[10px] leading-relaxed text-stone-500">
+        <p className="mt-1 text-xs leading-relaxed text-stone-500">
           棒の長さが物件数、色がその日の段階です。行を押すとその方位だけに絞れます。
         </p>
 
         {fengShui && (
-          <p className="mt-1 text-[10px] leading-relaxed text-stone-500">
+          <p className="mt-1 text-xs leading-relaxed text-stone-500">
             右端は風水（八宅）の遊星です（{fengShui.guaName}命・{fengShui.group}
             ）。
             <b>気学の段階とは足し合わせていません。</b>

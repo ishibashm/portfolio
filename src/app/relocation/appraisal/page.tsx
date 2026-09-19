@@ -34,7 +34,7 @@ export default function AppraisalPage() {
             <strong>近所で実際に成立した成約価格</strong>
             の分布のどこにあるかを出します。ポータルに出ている相場は売主の希望額を並べたもので、成立した額ではありません。
           </p>
-          <p className="mt-2 max-w-[70ch] text-[11px] leading-relaxed text-stone-500">
+          <p className="mt-2 max-w-[70ch] text-xs leading-relaxed text-stone-500">
             入力した内容は保存していません。この画面を閉じると残りません。
           </p>
         </header>

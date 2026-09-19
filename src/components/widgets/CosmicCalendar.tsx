@@ -658,7 +658,7 @@ export function CosmicCalendar({
         {WEEKDAYS.map((w, i) => (
           <div
             key={w}
-            className={`text-[9px] font-mono font-bold tracking-wider py-1 select-none ${
+            className={`text-[10px] font-mono font-bold tracking-wider py-1 select-none ${
               i === 0
                 ? "text-rose-500/80"
                 : i === 6
@@ -771,7 +771,7 @@ export function CosmicCalendar({
       {/* Legend & Monthly Summary */}
       <div className="mt-5 pt-4 border-t border-stone-200/60 space-y-4">
         <div>
-          <span className="text-[9px] font-mono text-stone-600 uppercase tracking-wider block mb-2">
+          <span className="text-[10px] font-mono text-stone-600 uppercase tracking-wider block mb-2">
             {"// 凡例"}
           </span>
           <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
@@ -782,7 +782,7 @@ export function CosmicCalendar({
                 >
                   {item.mark}
                 </span>
-                <span className="text-[9px] font-mono text-stone-500">
+                <span className="text-[10px] font-mono text-stone-500">
                   {item.label}
                 </span>
               </div>
@@ -793,7 +793,7 @@ export function CosmicCalendar({
                 <span
                   className={`w-1.5 h-1.5 rounded-full ${item.className}`}
                 />
-                <span className="text-[9px] font-mono text-stone-500">
+                <span className="text-[10px] font-mono text-stone-500">
                   {item.label}
                 </span>
               </div>
@@ -802,7 +802,7 @@ export function CosmicCalendar({
         </div>
 
         <div>
-          <span className="text-[9px] font-mono text-stone-600 uppercase tracking-wider block mb-2">
+          <span className="text-[10px] font-mono text-stone-600 uppercase tracking-wider block mb-2">
             {"// 月間集計"}
           </span>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
@@ -836,14 +836,14 @@ export function CosmicCalendar({
                 key={tile.label}
                 className="rounded-xl border border-stone-200/60 bg-white/70 px-3 py-2"
               >
-                <div className="text-[9px] font-mono text-stone-600 truncate">
+                <div className="text-[10px] font-mono text-stone-600 truncate">
                   {tile.label}
                 </div>
                 <div className="flex items-baseline gap-1">
                   <span className="text-base font-bold font-mono text-stone-900">
                     {tile.value}
                   </span>
-                  <span className="text-[9px] font-mono text-stone-600">
+                  <span className="text-[10px] font-mono text-stone-600">
                     {tile.unit}
                   </span>
                 </div>
@@ -870,7 +870,7 @@ export function CosmicCalendar({
                 <div>
                   <label
                     htmlFor="cosmic-birth"
-                    className="block text-[9px] text-stone-600 uppercase mb-1"
+                    className="block text-[10px] text-stone-600 uppercase mb-1"
                   >
                     生年月日・時刻 (JST)
                   </label>
@@ -887,7 +887,7 @@ export function CosmicCalendar({
                   />
                 </div>
                 <div>
-                  <label className="block text-[9px] text-stone-600 uppercase mb-1">
+                  <label className="block text-[10px] text-stone-600 uppercase mb-1">
                     出生地の経度
                   </label>
                   <input
@@ -904,7 +904,7 @@ export function CosmicCalendar({
                   />
                 </div>
               </div>
-              <p className="text-[9px] text-stone-600 leading-normal">
+              <p className="text-xs text-stone-600 leading-normal">
                 ※生年月日と経度を設定すると、あなたの宿命干支（日柱地支）と空亡（天中殺）を自動算出し、吉凶日と補正指数をカレンダーへ動的に投影します。
               </p>
             </div>
@@ -934,7 +934,7 @@ export function CosmicCalendar({
 
             {/* Title & Date */}
             <div className="border-b border-stone-200/60 pb-4 mb-4">
-              <span className="text-[9px] font-mono text-stone-600 uppercase tracking-wider block">
+              <span className="text-[10px] font-mono text-stone-600 uppercase tracking-wider block">
                 {"// 選択日の詳細"}
               </span>
               <h3 className="text-lg font-bold font-mono text-stone-900 mt-1">
@@ -959,7 +959,7 @@ export function CosmicCalendar({
               <div className="flex justify-between items-baseline mb-1.5">
                 <span className="text-[10px] font-mono text-stone-500 tracking-wider">
                   暦の日取り
-                  <span className="ml-1 text-[9px] text-stone-600">
+                  <span className="ml-1 text-[10px] text-stone-600">
                     誰にでも共通
                   </span>
                 </span>
@@ -1007,7 +1007,7 @@ export function CosmicCalendar({
               <div className="mt-3 border-t border-stone-200/70 pt-3">
                 <div className="mb-1.5 text-[10px] font-mono tracking-wider text-stone-500">
                   あなたの日
-                  <span className="ml-1 text-[9px] text-stone-600">
+                  <span className="ml-1 text-[10px] text-stone-600">
                     生年月日から
                   </span>
                 </div>
@@ -1029,7 +1029,7 @@ export function CosmicCalendar({
                           この日はとくに当たりも障りもありません。
                         </p>
                       )}
-                    <p className="text-[9px] text-stone-600">
+                    <p className="text-xs text-stone-600">
                       方位ごとの吉凶は出発地も要ります。
                       <a
                         href="/relocation/timing"
@@ -1040,7 +1040,7 @@ export function CosmicCalendar({
                     </p>
                   </div>
                 ) : (
-                  <p className="text-[10px] leading-relaxed text-stone-500">
+                  <p className="text-xs leading-relaxed text-stone-500">
                     生年月日を入れると、この日があなたにとって天中殺・日破・支合のどれに当たるかが出ます。
                   </p>
                 )}
@@ -1163,14 +1163,14 @@ export function CosmicCalendar({
                   <Radio className="w-3.5 h-3.5 text-stone-500" />
                   Planetary Retrogrades
                 </div>
-                <p className="mb-2 text-[9px] leading-relaxed text-stone-600">
+                <p className="mb-2 text-xs leading-relaxed text-stone-600">
                   参考情報です。日の点数には使っていません。
                 </p>
                 <div className="grid grid-cols-2 gap-2 text-[10.5px]">
                   <div className="flex justify-between items-center bg-white/70 p-1.5 rounded-lg border border-stone-200">
                     <span className="text-stone-600">水星 (Mercury)</span>
                     <span
-                      className={`px-1.5 py-0.5 rounded text-[9px] font-bold ${
+                      className={`px-1.5 py-0.5 rounded text-[10px] font-bold ${
                         selectedDay.retrogrades.mercury
                           ? "bg-rose-500/10 text-rose-600 border border-rose-200"
                           : "bg-emerald-500/10 text-emerald-600 border border-emerald-200"
@@ -1182,7 +1182,7 @@ export function CosmicCalendar({
                   <div className="flex justify-between items-center bg-white/70 p-1.5 rounded-lg border border-stone-200">
                     <span className="text-stone-600">金星 (Venus)</span>
                     <span
-                      className={`px-1.5 py-0.5 rounded text-[9px] font-bold ${
+                      className={`px-1.5 py-0.5 rounded text-[10px] font-bold ${
                         selectedDay.retrogrades.venus
                           ? "bg-rose-500/10 text-rose-600 border border-rose-200"
                           : "bg-emerald-500/10 text-emerald-600 border border-emerald-200"
@@ -1194,7 +1194,7 @@ export function CosmicCalendar({
                   <div className="flex justify-between items-center bg-white/70 p-1.5 rounded-lg border border-stone-200">
                     <span className="text-stone-600">火星 (Mars)</span>
                     <span
-                      className={`px-1.5 py-0.5 rounded text-[9px] font-bold ${
+                      className={`px-1.5 py-0.5 rounded text-[10px] font-bold ${
                         selectedDay.retrogrades.mars
                           ? "bg-rose-500/10 text-rose-600 border border-rose-200"
                           : "bg-emerald-500/10 text-emerald-600 border border-emerald-200"
@@ -1206,7 +1206,7 @@ export function CosmicCalendar({
                   <div className="flex justify-between items-center bg-white/70 p-1.5 rounded-lg border border-stone-200">
                     <span className="text-stone-600">木星 (Jupiter)</span>
                     <span
-                      className={`px-1.5 py-0.5 rounded text-[9px] font-bold ${
+                      className={`px-1.5 py-0.5 rounded text-[10px] font-bold ${
                         selectedDay.retrogrades.jupiter
                           ? "bg-rose-500/10 text-rose-600 border border-rose-200"
                           : "bg-emerald-500/10 text-emerald-600 border border-emerald-200"
@@ -1224,7 +1224,7 @@ export function CosmicCalendar({
                   <Activity className="w-3.5 h-3.5 text-stone-500" />
                   Next Best Action Recommendation
                 </div>
-                <p className="text-[11px] text-stone-600 leading-relaxed font-mono font-medium">
+                <p className="text-xs text-stone-600 leading-relaxed font-mono font-medium">
                   {getActionAdvice(selectedDay)}
                 </p>
               </div>

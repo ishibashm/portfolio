@@ -136,7 +136,7 @@ export function HonmeiLookup({ starNames, linkYear }: Props) {
             {starLine(result.dayStart.classical, result.dayStart.physical)}
           </p>
           {result.physicalChanges && (
-            <p className="mt-1 text-[11px] leading-relaxed text-slate-500">
+            <p className="mt-1 text-xs leading-relaxed text-slate-500">
               独自モデル（木星黄経）はこの日のうちに切り替わります。生まれた時刻が遅い場合は
               {starNames[result.dayEnd.physical]}
               になります。一般的な九星気学の本命星は変わりません。
@@ -181,7 +181,7 @@ export function HonmeiLookup({ starNames, linkYear }: Props) {
               </Link>
             </li>
           </ul>
-          <p className="mt-2 text-[11px] leading-relaxed text-amber-800">
+          <p className="mt-2 text-xs leading-relaxed text-amber-800">
             立春の時刻は年ごとに違います（2月3日〜4日ごろ）。母子手帳などで出生時刻を確認してください。
           </p>
         </div>

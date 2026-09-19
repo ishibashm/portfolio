@@ -439,14 +439,14 @@ export default function SimulatorMap({
             onClick={() => {
               toggleMapTheme();
             }}
-            className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-white/70 text-stone-700 border border-stone-200 hover:bg-white transition-colors shadow-lg text-[9px] font-mono font-bold cursor-pointer"
+            className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-white/70 text-stone-700 border border-stone-200 hover:bg-white transition-colors shadow-lg text-[10px] font-mono font-bold cursor-pointer"
           >
             {mapTheme === "dark" ? "☀️ ライトマップ" : "🌙 ダークマップ"}
           </button>
         </div>
 
         {/* Legend Overlay HUD */}
-        <div className="absolute bottom-4 left-4 z-[1000] p-3 bg-white/70 border border-stone-200 rounded-2xl backdrop-blur-md flex flex-col gap-1.5 shadow-2xl pointer-events-none text-[9px] font-mono leading-none text-stone-500">
+        <div className="absolute bottom-4 left-4 z-[1000] p-3 bg-white/70 border border-stone-200 rounded-2xl backdrop-blur-md flex flex-col gap-1.5 shadow-2xl pointer-events-none text-[10px] font-mono leading-none text-stone-500">
           <div className="flex items-center gap-2 font-bold text-amber-600">
             <span className="w-2.5 h-2.5 rounded-full bg-amber-500 shadow-sm shadow-amber-500/50"></span>{" "}
             出発起点 (ゴールド)

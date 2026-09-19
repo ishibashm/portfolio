@@ -178,6 +178,8 @@ export default function MagneticMapInner({
     null,
   );
   const [zoom, setZoom] = React.useState(13);
+  /** lg 未満で、右上の「地図」（明暗・名所・駅）を開いているか。 */
+  const [mapMenuOpen, setMapMenuOpen] = React.useState(false);
   const { mapTheme, toggleMapTheme } = useMapTheme();
   /* 名所（一宮・名勝）。既定は消えている。物件検索の地図と同じ作法で
      遅延初期化（マウント効果で setState すると set-state-in-effect を
@@ -515,7 +517,7 @@ export default function MagneticMapInner({
                       {formatLayer(dLayer)}
                     </span>
                   </div>
-                  <div className="mt-1 pt-1 border-t border-stone-200 text-[9px] flex flex-col gap-1">
+                  <div className="mt-1 pt-1 border-t border-stone-200 text-[10px] flex flex-col gap-1">
                     <div className="flex gap-2">
                       <span className="text-stone-600">判定: </span>
                       <span
@@ -653,56 +655,79 @@ export default function MagneticMapInner({
         />
         <StandardBaseTile />
 
-        {/* Theme Switcher Button */}
-        <div className="absolute top-4 left-4 z-[1000] pointer-events-auto flex flex-wrap gap-2">
+        {/*
+          地図の見た目（明暗・名所・駅）は右上。
+
+          以前は左上（top-4 left-4）で z-[1000] だったため、同じ角に
+          ある帯（見出し「目的地の方位」と、時間軸・基準の 1 行）の
+          **上に重なって隠していた**（実測: 400px・1280px とも 3 つの
+          ボタンが見出しと 1 行の両方に掛かっていた）。右上は #1338 で
+          帯の右側の束を畳んで以来、空いている。
+
+          lg 未満は幅が無いので 1 つの「地図 ▾」に畳む。帯の側は
+          この列ぶん右を空けて（pr-20 lg:pr-0）、1 行が下へ折り返す。
+        */}
+        <div className="absolute top-4 right-4 z-[1000] pointer-events-auto flex flex-col items-end gap-2">
           <button
-            onClick={toggleMapTheme}
-            className="flex items-center gap-1.5 px-2.5 py-1.5 rounded border font-mono text-[9px] font-bold bg-white/80 text-stone-700 border-stone-200 hover:bg-white transition-colors shadow-lg active:scale-95 cursor-pointer"
+            type="button"
+            onClick={() => setMapMenuOpen((v) => !v)}
+            aria-expanded={mapMenuOpen}
+            className="lg:hidden flex items-center px-2.5 py-1.5 rounded border font-mono text-[10px] font-bold bg-white/80 text-stone-700 border-stone-200 hover:bg-white shadow-lg cursor-pointer"
           >
-            {mapTheme === "dark" ? "☀️ ライトマップ" : "🌙 ダークマップ"}
+            {mapMenuOpen ? "地図 ▴" : "地図 ▾"}
           </button>
-          {/* 名所（一宮・名勝）。物件検索の地図と同じ層（共有部品）。 */}
-          <button
-            onClick={() => {
-              const next = !showSpots;
-              setShowSpots(next);
-              localStorage.setItem(SPOTS_STORAGE_KEY, next ? "1" : "0");
-            }}
-            title={
-              showSpots
-                ? "名所（一宮・名勝）を消す"
-                : "名所（一宮・名勝）を出す。押すと現在地からの方位と段階が見られます"
-            }
-            aria-pressed={showSpots}
-            className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded border font-mono text-[9px] font-bold transition-colors shadow-lg active:scale-95 cursor-pointer ${
-              showSpots
-                ? "bg-amber-600 text-white border-amber-600 hover:bg-amber-700"
-                : "bg-white/80 text-stone-700 border-stone-200 hover:bg-white"
-            }`}
+          <div
+            className={`${mapMenuOpen ? "flex" : "hidden lg:flex"} flex-col items-end gap-2 lg:flex-row lg:flex-wrap lg:justify-end`}
           >
-            ⛩ 名所 {showSpots ? "表示中" : "非表示"}
-          </button>
-          {/* 駅（国土数値情報 N02）。物件検索の地図と同じ層（共有部品）。 */}
-          <button
-            onClick={() => {
-              const next = !showStations;
-              setShowStations(next);
-              localStorage.setItem(STATIONS_STORAGE_KEY, next ? "1" : "0");
-            }}
-            title={
-              showStations
-                ? "駅を消す"
-                : "駅を出す。押すと現在地からの方位と段階が見られます（国土数値情報 N02）"
-            }
-            aria-pressed={showStations}
-            className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded border font-mono text-[9px] font-bold transition-colors shadow-lg active:scale-95 cursor-pointer ${
-              showStations
-                ? "bg-blue-700 text-white border-blue-700 hover:bg-blue-800"
-                : "bg-white/80 text-stone-700 border-stone-200 hover:bg-white"
-            }`}
-          >
-            🚉 駅 {showStations ? "表示中" : "非表示"}
-          </button>
+            <button
+              onClick={toggleMapTheme}
+              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded border font-mono text-[10px] font-bold bg-white/80 text-stone-700 border-stone-200 hover:bg-white transition-colors shadow-lg active:scale-95 cursor-pointer"
+            >
+              {mapTheme === "dark" ? "☀️ ライトマップ" : "🌙 ダークマップ"}
+            </button>
+            {/* 名所（一宮・名勝）。物件検索の地図と同じ層（共有部品）。 */}
+            <button
+              onClick={() => {
+                const next = !showSpots;
+                setShowSpots(next);
+                localStorage.setItem(SPOTS_STORAGE_KEY, next ? "1" : "0");
+              }}
+              title={
+                showSpots
+                  ? "名所（一宮・名勝）を消す"
+                  : "名所（一宮・名勝）を出す。押すと現在地からの方位と段階が見られます"
+              }
+              aria-pressed={showSpots}
+              className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded border font-mono text-[10px] font-bold transition-colors shadow-lg active:scale-95 cursor-pointer ${
+                showSpots
+                  ? "bg-amber-600 text-white border-amber-600 hover:bg-amber-700"
+                  : "bg-white/80 text-stone-700 border-stone-200 hover:bg-white"
+              }`}
+            >
+              ⛩ 名所 {showSpots ? "表示中" : "非表示"}
+            </button>
+            {/* 駅（国土数値情報 N02）。物件検索の地図と同じ層（共有部品）。 */}
+            <button
+              onClick={() => {
+                const next = !showStations;
+                setShowStations(next);
+                localStorage.setItem(STATIONS_STORAGE_KEY, next ? "1" : "0");
+              }}
+              title={
+                showStations
+                  ? "駅を消す"
+                  : "駅を出す。押すと現在地からの方位と段階が見られます（国土数値情報 N02）"
+              }
+              aria-pressed={showStations}
+              className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded border font-mono text-[10px] font-bold transition-colors shadow-lg active:scale-95 cursor-pointer ${
+                showStations
+                  ? "bg-blue-700 text-white border-blue-700 hover:bg-blue-800"
+                  : "bg-white/80 text-stone-700 border-stone-200 hover:bg-white"
+              }`}
+            >
+              🚉 駅 {showStations ? "表示中" : "非表示"}
+            </button>
+          </div>
         </div>
 
         {/* 名所と登録地点。判定は SpotVerdict と同じ経路（lib/powerSpots）。
@@ -879,7 +904,7 @@ export default function MagneticMapInner({
       </div>
 
       <div className="absolute bottom-4 right-4 z-[1000] pointer-events-none">
-        <div className="bg-white/80 md:backdrop-blur-md px-3 py-2 border border-stone-200 rounded-sm text-[9px] flex flex-col gap-1.5 shadow-xl">
+        <div className="bg-white/80 md:backdrop-blur-md px-3 py-2 border border-stone-200 rounded-sm text-[10px] flex flex-col gap-1.5 shadow-xl">
           <div className="text-stone-600 font-mono uppercase tracking-widest border-b border-stone-200 pb-1 flex justify-between gap-4">
             <span>凡例</span>
             <span className="text-emerald-700">
@@ -945,7 +970,7 @@ export default function MagneticMapInner({
       {clickedPos && (
         <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-[1000] pointer-events-auto">
           <div className="bg-white/80 md:backdrop-blur-md px-3 py-2 border border-emerald-200 rounded-sm shadow-xl flex flex-col gap-1.5 animate-fade-in-up">
-            <div className="text-[9px] font-mono text-emerald-700 uppercase tracking-widest border-b border-stone-200 pb-1 flex justify-between gap-4">
+            <div className="text-[10px] font-mono text-emerald-700 uppercase tracking-widest border-b border-stone-200 pb-1 flex justify-between gap-4">
               <span>選んだ地点の座標</span>
               <button
                 onClick={() => setClickedPos(null)}
@@ -969,7 +994,7 @@ export default function MagneticMapInner({
                     `座標をコピーしました: ${clickedPos[0].toFixed(5)},${clickedPos[1].toFixed(5)}`,
                   );
                 }}
-                className="bg-emerald-50 text-emerald-700 border border-emerald-200 px-2 py-1.5 text-[9px] uppercase tracking-widest hover:bg-emerald-800/60 transition-colors"
+                className="bg-emerald-50 text-emerald-700 border border-emerald-200 px-2 py-1.5 text-[10px] uppercase tracking-widest hover:bg-emerald-800/60 transition-colors"
               >
                 📋 コピー
               </button>

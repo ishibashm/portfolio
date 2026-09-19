@@ -169,7 +169,7 @@ export default function Page() {
             <b>独自モデル</b>も用意しており、設定で切り替えられます。独自モデルでは木星の公転周期（約11.86年）にもとづくため
             9年周期にならず、{differing.length}件の生まれ年で本命星が変わります。一般的な資料と照らし合わせる場合は上の表を使ってください。
           </p>
-          <p className="mt-2 text-[11px] text-slate-500 leading-relaxed">
+          <p className="mt-2 text-xs text-slate-500 leading-relaxed">
             例: 1980年生まれは一般的な九星気学で
             {STAR_NAMES[starForBirthYear(1980, "classical")]}、独自モデルでは{STAR_NAMES[starForBirthYear(1980, "physical")]}
             になります。

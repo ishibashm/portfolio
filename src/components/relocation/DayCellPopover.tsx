@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useRef } from "react";
 import { TIER_LABELS, type DayTier } from "@/utils/auspiciousDays";
 import { TIER_FILL, BLOCKED_FILL } from "@/utils/tierDisplay";
+import { plainRokuyo } from "@/lib/rokuyoLabel";
 
 /**
  * カレンダーヒートマップで選んだ日の吹き出し。
@@ -136,7 +137,7 @@ export function DayCellPopover({
       )}
 
       <div className="mt-2 text-[11px] leading-relaxed text-stone-600">
-        {day.rokuyo}
+        {plainRokuyo(day.rokuyo)}
         {day.tags.length ? ` / ${day.tags.join("・")}` : ""}
       </div>
       {filteredOut && (

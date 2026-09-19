@@ -50,7 +50,8 @@
  *   しない（両社とも「営業の手段にすることを禁じます」と書いている）
  */
 
-import { PREF_REGION } from "@/lib/prefContent";
+import { SCRAPE_TARGETS } from "@/lib/scrapeTargets";
+import { PREF_REGION, prefCodeByName } from "@/lib/prefContent";
 
 export interface PortalLink {
   /** 台帳の鍵。 */
@@ -211,6 +212,60 @@ export function municipalityCodeFromPortalUrl(raw: unknown): string | null {
   const pref = Number(sc.slice(0, 2));
   if (!Number.isInteger(pref) || pref < 1 || pref > 47) return null;
   return sc;
+}
+
+/**
+ * 貼られた URL の**綴りから**都道府県コード（JIS 2 桁）を読む。
+ *
+ * `municipalityCodeFromPortalUrl` が市区町村まで読めないとき用。何も
+ * 読めないと「読み取れませんでした」としか言えず、貼った人は何が
+ * 足りないのか分からない（実際に HOME'S の県の一覧
+ * `https://www.homes.co.jp/chintai/aichi/` を貼って止まった人がいる）。
+ * 県まで読めれば「愛知県までしか指していない」と言える。
+ *
+ * ## 読めるもの
+ *
+ * - SUUMO の検索一覧の `ta=23`（`suumoCitySearchUrl` が組み立てる欄）
+ * - HOME'S の `/chintai/<県のローマ字>/…`。ローマ字は `scrapeTargets` の
+ *   47 県の台帳と同じ綴り（HOME'S も nifty も同じ英語の県名を使う）
+ *
+ * ## 読まないもの
+ *
+ * HOME'S の**市区町村**の綴り（`nagoya-city` のような）は読まない。
+ * 市区町村のローマ字の表を持っておらず、綴りの規則も確かめられない
+ * （相手のページを開かずに確かめる手段が無い）。当てずっぽうで別の街を
+ * 出すより、県まで読んで「市区町村名で」と頼むほうがよい。
+ *
+ * **URL を開きに行かない**のは `municipalityCodeFromPortalUrl` と同じ。
+ *
+ * @returns JIS の都道府県コード 2 桁。読めなければ null。
+ */
+export function prefCodeFromPortalUrl(raw: unknown): string | null {
+  if (typeof raw !== "string" || !raw.trim()) return null;
+  let u: URL;
+  try {
+    u = new URL(raw.trim());
+  } catch {
+    return null;
+  }
+  if (u.protocol !== "https:") return null;
+
+  if (u.host === "suumo.jp" || u.host === "www.suumo.jp") {
+    const ta = u.searchParams.get("ta");
+    if (!ta || !/^\d{2}$/.test(ta)) return null;
+    const n = Number(ta);
+    return n >= 1 && n <= 47 ? ta : null;
+  }
+
+  if (u.host === "www.homes.co.jp" || u.host === "homes.co.jp") {
+    const m = u.pathname.match(/^\/chintai\/([a-z]+)\//);
+    if (!m) return null;
+    const target = SCRAPE_TARGETS.find((t) => t.slug === m[1]);
+    if (!target) return null;
+    return prefCodeByName(target.name) ?? null;
+  }
+
+  return null;
 }
 
 /**

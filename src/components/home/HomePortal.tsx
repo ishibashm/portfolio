@@ -312,7 +312,7 @@ export default function HomePortal({
         >
           {timing ? (
             <div className="flex flex-col gap-2">
-              <p className="text-[11px] text-stone-600">
+              <p className="text-xs text-stone-600">
                 今日は{" "}
                 <strong className="text-emerald-700">
                   {timing.goCount} つ
@@ -339,7 +339,7 @@ export default function HomePortal({
                   </div>
                 </div>
               ) : (
-                <p className="text-[10px] text-stone-600">
+                <p className="text-xs text-stone-600">
                   今日はこの先「動いてよい」時間帯がありません。
                 </p>
               )}
@@ -387,27 +387,27 @@ export default function HomePortal({
         >
           <dl className="grid grid-cols-3 gap-2 text-center">
             <div>
-              <dt className="text-[9px] text-stone-600">地磁気 Kp</dt>
+              <dt className="text-[10px] text-stone-600">地磁気 Kp</dt>
               <dd className="text-sm font-bold text-stone-700">
                 {kpIndex !== null ? kpIndex.toFixed(1) : "—"}
               </dd>
             </div>
             <div>
-              <dt className="text-[9px] text-stone-600">気圧</dt>
+              <dt className="text-[10px] text-stone-600">気圧</dt>
               <dd className="text-sm font-bold text-stone-700">
                 {pressure ? `${pressure.current.toFixed(0)}` : "—"}
-                <span className="text-[9px] text-stone-600 ml-0.5">hPa</span>
+                <span className="text-[10px] text-stone-600 ml-0.5">hPa</span>
               </dd>
             </div>
             <div>
-              <dt className="text-[9px] text-stone-600">偏角</dt>
+              <dt className="text-[10px] text-stone-600">偏角</dt>
               <dd className="text-sm font-bold text-stone-700">
                 {declination !== null ? `${declination.toFixed(1)}°` : "—"}
               </dd>
             </div>
           </dl>
           {pressure && pressure.drop < -3 && (
-            <p className="text-[10px] text-amber-700 mt-2 leading-relaxed">
+            <p className="text-xs text-amber-700 mt-2 leading-relaxed">
               3 時間で {pressure.drop.toFixed(1)}
               hPa 下がっています。体調が出やすい人は無理をしないでください。
             </p>

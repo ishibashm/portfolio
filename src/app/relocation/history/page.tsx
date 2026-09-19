@@ -577,7 +577,7 @@ export default function RelocationHistoryPage() {
                           if (name) setToName(name);
                         }}
                       />
-                      <div className="grid grid-cols-2 gap-4 mt-3 text-[9px] font-mono text-stone-600 leading-none">
+                      <div className="grid grid-cols-2 gap-4 mt-3 text-[10px] font-mono text-stone-600 leading-none">
                         <div>
                           出発地座標: {fromLat.toFixed(5)}, {fromLon.toFixed(5)}
                         </div>
@@ -809,7 +809,7 @@ export default function RelocationHistoryPage() {
                     {/* Header Details */}
                     <div className="flex justify-between items-start gap-4">
                       <div>
-                        <div className="inline-flex items-center gap-1.5 text-[9px] font-bold text-stone-600 tracking-wider uppercase mb-1">
+                        <div className="inline-flex items-center gap-1.5 text-[10px] font-bold text-stone-600 tracking-wider uppercase mb-1">
                           <MapPin className="w-3 h-3 text-indigo-400" />{" "}
                           方位鑑定詳細
                         </div>
@@ -828,7 +828,7 @@ export default function RelocationHistoryPage() {
                     {/* Auspice Rating Panel */}
                     <div className="mt-6 p-5 rounded-2xl bg-stone-100/80 border border-stone-200/80 text-center relative overflow-hidden shadow-inner">
                       <div className="absolute top-0 right-0 w-24 h-24 bg-stone-100/80 rounded-full blur-2xl"></div>
-                      <span className="text-[9px] uppercase tracking-widest text-stone-600 font-bold block mb-1">
+                      <span className="text-[10px] uppercase tracking-widest text-stone-600 font-bold block mb-1">
                         総合吉凶評価
                       </span>
                       <span
@@ -860,7 +860,7 @@ export default function RelocationHistoryPage() {
                             " ※エンジン改良により現在の評価と異なります"}
                         </span>
                       )}
-                      <p className="text-[11px] text-stone-500 mt-2 font-medium px-2 leading-relaxed">
+                      <p className="text-xs text-stone-500 mt-2 font-medium px-2 leading-relaxed">
                         {formatDirectionInfo(selectedItem.evaluation.status)}
                       </p>
                     </div>
@@ -960,7 +960,7 @@ export default function RelocationHistoryPage() {
 
                     {/* Metadata Coordinates List */}
                     <div className="mt-6 p-4 rounded-xl bg-white/80 border border-stone-200/80 text-[10px] font-mono space-y-2">
-                      <div className="text-stone-600 uppercase tracking-widest text-[9px] font-bold border-b border-stone-200 pb-1.5 mb-2">
+                      <div className="text-stone-600 uppercase tracking-widest text-[10px] font-bold border-b border-stone-200 pb-1.5 mb-2">
                         移動座標 (Coordinates)
                       </div>
                       <div className="flex justify-between">

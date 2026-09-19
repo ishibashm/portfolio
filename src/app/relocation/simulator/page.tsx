@@ -2043,7 +2043,7 @@ export default function RelocationSimulatorPage() {
                           <span className="text-xs font-bold text-stone-900">
                             {member.name}
                           </span>
-                          <span className="text-[9px] font-mono text-stone-600">
+                          <span className="text-[10px] font-mono text-stone-600">
                             生年月日: {member.birthDate} (
                             {isValidIsoDate(member.birthDate)
                               ? `${getClassicalYearStar(parseSafeDate(member.birthDate))}・空亡: ${getPersonalVoidZodiac(parseSafeDate(member.birthDate)).join("")}`
@@ -2085,7 +2085,7 @@ export default function RelocationSimulatorPage() {
                       <Sliders className="w-4 h-4 text-indigo-700 animate-pulse" />{" "}
                       当日の体調・宇宙天気を仮定する（任意）
                     </h3>
-                    <p className="text-[10px] text-stone-600 mt-1">
+                    <p className="text-xs text-stone-600 mt-1">
                       移動当日の体調（心拍変動など）と宇宙天気の仮定値を設定します。ホームで表示している現在値を取り込むこともできます。
                     </p>
                   </div>
@@ -2422,7 +2422,7 @@ export default function RelocationSimulatorPage() {
                       >
                         <div className="flex flex-col gap-1.5">
                           <div className="flex items-center justify-between gap-2">
-                            <label className="text-[9px] uppercase font-bold text-stone-600">
+                            <label className="text-[10px] uppercase font-bold text-stone-600">
                               目的地
                             </label>
                             {/*
@@ -2454,7 +2454,7 @@ export default function RelocationSimulatorPage() {
                         </div>
 
                         <div className="flex flex-col gap-1.5">
-                          <label className="text-[9px] uppercase font-bold text-stone-600">
+                          <label className="text-[10px] uppercase font-bold text-stone-600">
                             出発日
                           </label>
                           <input
@@ -2470,7 +2470,7 @@ export default function RelocationSimulatorPage() {
                         </div>
 
                         <div className="flex flex-col gap-1.5">
-                          <label className="text-[9px] uppercase font-bold text-stone-600">
+                          <label className="text-[10px] uppercase font-bold text-stone-600">
                             目的区分
                           </label>
                           <select
@@ -2510,7 +2510,7 @@ export default function RelocationSimulatorPage() {
                         )}
 
                         <div className="flex flex-col gap-1.5 col-span-1 sm:col-span-2 md:col-span-3 border-t border-stone-200/60 pt-3">
-                          <label className="text-[9px] uppercase font-bold text-stone-600">
+                          <label className="text-[10px] uppercase font-bold text-stone-600">
                             同行する同伴者 (ACCOMPANYING COMPANIONS FOR THIS
                             STEP)
                           </label>
@@ -2572,7 +2572,7 @@ export default function RelocationSimulatorPage() {
                     */}
                       {step.directionNote && (
                         <div className="border-t border-stone-200/60 pt-3">
-                          <p className="rounded-xl border border-amber-300 bg-amber-50 p-2 text-[10px] leading-relaxed text-amber-800">
+                          <p className="rounded-xl border border-amber-300 bg-amber-50 p-2 text-xs leading-relaxed text-amber-800">
                             {step.directionNote}
                             <br />
                             {/*
@@ -2596,7 +2596,7 @@ export default function RelocationSimulatorPage() {
                               自分
                             </span>
                             <span
-                              className={`px-2 py-0.5 rounded-lg text-[9px] font-black ${step.evaluation?.color}`}
+                              className={`px-2 py-0.5 rounded-lg text-[10px] font-black ${step.evaluation?.color}`}
                             >
                               {step.evaluation?.rating}
                             </span>
@@ -2610,7 +2610,7 @@ export default function RelocationSimulatorPage() {
                                 {mEval.name}
                               </span>
                               <span
-                                className={`px-2 py-0.5 rounded-lg text-[9px] font-black border ${mEval.color}`}
+                                className={`px-2 py-0.5 rounded-lg text-[10px] font-black border ${mEval.color}`}
                               >
                                 {mEval.rating}
                               </span>
@@ -2799,7 +2799,7 @@ export default function RelocationSimulatorPage() {
                 activeStepIndex < evaluatedSteps.length && (
                   <div className="p-6 rounded-[2rem] border border-stone-200/80 bg-white/80 backdrop-blur-xl shadow-xl shadow-rose-100/30 space-y-6">
                     <div>
-                      <div className="inline-flex items-center gap-1.5 text-[9px] font-bold text-stone-600 tracking-wider uppercase mb-1">
+                      <div className="inline-flex items-center gap-1.5 text-[10px] font-bold text-stone-600 tracking-wider uppercase mb-1">
                         <Compass className="w-3.5 h-3.5 text-indigo-700" />{" "}
                         ステップ {activeStepIndex + 1} 鑑定詳細
                       </div>
@@ -2811,7 +2811,7 @@ export default function RelocationSimulatorPage() {
 
                     {/* Rating score panel */}
                     <div className="p-4 rounded-2xl bg-stone-100/80 border border-stone-200/80 text-center relative overflow-hidden shadow-inner">
-                      <span className="text-[9px] uppercase tracking-widest text-stone-600 font-bold block mb-1">
+                      <span className="text-[10px] uppercase tracking-widest text-stone-600 font-bold block mb-1">
                         ステップ吉凶評価
                       </span>
                       <span
@@ -2819,7 +2819,7 @@ export default function RelocationSimulatorPage() {
                       >
                         {evaluatedSteps[activeStepIndex].evaluation?.rating}
                       </span>
-                      <p className="text-[10px] text-stone-500 mt-2 font-medium px-2 leading-relaxed">
+                      <p className="text-xs text-stone-500 mt-2 font-medium px-2 leading-relaxed">
                         {directionLabelDetailed(
                           evaluatedSteps[activeStepIndex].evaluation?.status ||
                             "",
@@ -2896,7 +2896,7 @@ export default function RelocationSimulatorPage() {
                               占術インサイト (Metaphysical Insights)
                             </h4>
                           </div>
-                          <p className="text-[9px] text-stone-500 leading-relaxed">
+                          <p className="text-xs text-stone-500 leading-relaxed">
                             {
                               "いずれも伝統的な占術の読みで、効果や結果を保証するものではありません。参考情報としてお使いください。"
                             }
@@ -2936,7 +2936,7 @@ export default function RelocationSimulatorPage() {
                                     {meta.chineseMetasoft.qiMenGate.name}
                                   </span>
                                 </div>
-                                <p className="text-[10px] text-stone-500 leading-relaxed font-sans">
+                                <p className="text-xs text-stone-500 leading-relaxed font-sans">
                                   {meta.chineseMetasoft.qiMenGate.description}
                                 </p>
                               </div>
@@ -2949,7 +2949,7 @@ export default function RelocationSimulatorPage() {
                                   <span className="text-[10px] font-bold text-stone-600">
                                     ☯ 易経得卦 (I-Ching Hexagram)
                                   </span>
-                                  <span className="text-[9px] font-mono text-indigo-700">
+                                  <span className="text-[10px] font-mono text-indigo-700">
                                     第 {meta.roxyApi.ichingCast.hexagramNumber}{" "}
                                     卦
                                   </span>
@@ -3014,7 +3014,7 @@ export default function RelocationSimulatorPage() {
                                   </div>
                                 )}
 
-                                <p className="text-[10px] text-zinc-450 leading-relaxed font-sans pt-1">
+                                <p className="text-xs text-zinc-450 leading-relaxed font-sans pt-1">
                                   {meta.roxyApi.ichingCast.interpretation}
                                 </p>
                               </div>
@@ -3045,7 +3045,7 @@ export default function RelocationSimulatorPage() {
                                     {meta.divineApi.tarot.name}
                                   </span>
                                 </div>
-                                <p className="text-[10px] text-stone-500 leading-relaxed font-sans">
+                                <p className="text-xs text-stone-500 leading-relaxed font-sans">
                                   {meta.divineApi.tarot.meaning}
                                 </p>
                                 <div className="text-[10px] text-stone-600 font-mono flex items-center justify-between pt-1.5 border-t border-stone-200">
@@ -3076,7 +3076,7 @@ export default function RelocationSimulatorPage() {
                                 <span className="text-[10px] font-bold text-stone-600 block">
                                   ⭐ 紫微斗数飛星 (Zi Wei Dou Shu)
                                 </span>
-                                <p className="text-[10px] text-stone-500 leading-relaxed font-sans">
+                                <p className="text-xs text-stone-500 leading-relaxed font-sans">
                                   {meta.ziWeiDouShu.dailyInsight}
                                 </p>
                               </div>
@@ -3148,7 +3148,7 @@ export default function RelocationSimulatorPage() {
                             <Clock className="w-3.5 h-3.5 text-indigo-700" />{" "}
                             出発日程の最適化推奨（時間的回避）
                           </strong>
-                          <p className="text-[9px] text-stone-600 leading-normal">
+                          <p className="text-xs text-stone-600 leading-normal">
                             {
                               "出発日を以下に変更すると、この移動の段階が良くなります。判定はカレンダー・時期分析と同じです。"
                             }

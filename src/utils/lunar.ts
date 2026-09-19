@@ -55,6 +55,14 @@ function getApproximateLunarDateOriginal(date: Date): { month: number, day: numb
  * Standard:
  * 0=Taian, 1=Shakku, 2=Sensho, 3=Tomobiki, 4=Sakimake, 5=Butsumetsu
  */
+/*
+  六曜からローマ字の併記を落とす口。実体は lib/rokuyoLabel（依存の無い
+  葉）。ここは lunar-javascript を値で import しているので、字面を
+  整えたいだけの画面がここから引くと暦エンジンが乗る。既存の import 先
+  を壊さないよう再輸出だけ残す。
+*/
+export { plainRokuyo } from "@/lib/rokuyoLabel";
+
 export function getRokuyo(date: Date): string {
   const { month, day } = getLunarDate(date);
   // lunar-javascript は閏月を負の月番号で返す（例: 閏6月 → -6）。

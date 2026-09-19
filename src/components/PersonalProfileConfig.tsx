@@ -154,7 +154,7 @@ export function PersonalProfileConfig({
         </div>
         <div className="flex items-center">
           <span
-            className={`text-[9px] font-mono tracking-widest flex items-center gap-1 ${
+            className={`text-[10px] font-mono tracking-widest flex items-center gap-1 ${
               storageMode.tone === "synced"
                 ? "text-emerald-700"
                 : storageMode.tone === "local"
@@ -187,7 +187,7 @@ export function PersonalProfileConfig({
         <div className="space-y-4">
           <div className="flex items-center gap-1.5 mb-2 border-b border-stone-200 pb-1">
             <CalendarClock size={12} className="text-stone-600" />
-            <span className="text-[9px] text-stone-600 tracking-wider">
+            <span className="text-[10px] text-stone-600 tracking-wider">
               生まれたとき（生年月日・出生地）
             </span>
           </div>
@@ -204,7 +204,7 @@ export function PersonalProfileConfig({
             <span className="text-sm text-stone-700 font-bold">
               {birthDate || "未設定"}
             </span>
-            <span className="text-[9px] text-stone-600 mt-0.5 text-justify">
+            <span className="text-xs text-stone-600 mt-0.5 text-justify">
               {
                 "変えるときは頁の上の「まずここを入れる」から。本命星と天中殺はここから決まります。"
               }
@@ -221,7 +221,7 @@ export function PersonalProfileConfig({
             </div>
             <div className="grid grid-cols-2 gap-2 mt-1">
               <div>
-                <span className="text-[9px] text-stone-600 block mb-0.5">
+                <span className="text-[10px] text-stone-600 block mb-0.5">
                   本命星（物理・天体基準）
                 </span>
                 <span className="text-sm text-emerald-700 font-bold">
@@ -229,7 +229,7 @@ export function PersonalProfileConfig({
                 </span>
               </div>
               <div>
-                <span className="text-[9px] text-stone-600 block mb-0.5">
+                <span className="text-[10px] text-stone-600 block mb-0.5">
                   本命星（古典・暦基準）
                 </span>
                 <span className="text-sm text-stone-600 font-bold">
@@ -237,7 +237,7 @@ export function PersonalProfileConfig({
                 </span>
               </div>
               <div className="col-span-2 border-t border-blue-200 pt-1 mt-1">
-                <span className="text-[9px] text-stone-600 block mb-0.5">
+                <span className="text-[10px] text-stone-600 block mb-0.5">
                   天中殺
                 </span>
                 <span className="text-xs text-red-700 font-bold tracking-widest">
@@ -270,7 +270,7 @@ export function PersonalProfileConfig({
                 <option value="寅卯">寅卯</option>
                 <option value="子丑">子丑</option>
               </select>
-              <span className="text-[9px] text-stone-600 mt-0.5 text-justify">
+              <span className="text-xs text-stone-600 mt-0.5 text-justify">
                 流派や自覚が自動算出と違うときだけ使います。通常は自動計算のままで構いません。
               </span>
             </div>
@@ -282,7 +282,7 @@ export function PersonalProfileConfig({
             <span className="text-xs text-stone-700 font-bold">
               {birthPlaceName}
             </span>
-            <span className="text-[9px] text-stone-600 mt-0.5 text-justify">
+            <span className="text-xs text-stone-600 mt-0.5 text-justify">
               {
                 "任意。天体ライン（補助的な判定）に使います。未入力でも方位の吉凶は出ます。変えるときは頁の上から。"
               }
@@ -301,7 +301,7 @@ export function PersonalProfileConfig({
         <div className="space-y-4">
           <div className="flex items-center gap-1.5 mb-2 border-b border-stone-200 pb-1">
             <Crosshair size={12} className="text-stone-600" />
-            <span className="text-[9px] text-stone-600 tracking-wider">
+            <span className="text-[10px] text-stone-600 tracking-wider">
               {PROFILE_FIELDS.base.label}
             </span>
           </div>
@@ -312,7 +312,7 @@ export function PersonalProfileConfig({
             <span className="text-xs text-stone-700 font-bold">
               {basePlaceName}
             </span>
-            <span className="text-[9px] text-stone-600 mt-0.5 text-justify">
+            <span className="text-xs text-stone-600 mt-0.5 text-justify">
               {PROFILE_FIELDS.base.help}
             </span>
           </div>
@@ -320,7 +320,7 @@ export function PersonalProfileConfig({
           <div className="mt-4 p-2 bg-blue-50 border border-blue-200 rounded-xl">
             <div className="flex gap-2 items-start">
               <MapPin size={10} className="text-blue-700 mt-0.5 min-w-[10px]" />
-              <p className="text-[10px] text-stone-600 leading-relaxed text-justify">
+              <p className="text-xs text-stone-600 leading-relaxed text-justify">
                 生年月日・現在地・生まれたところは、
                 <strong className="text-stone-700">
                   頁の上の「まずここを入れる」
@@ -336,10 +336,10 @@ export function PersonalProfileConfig({
           {showAdvanced && (
             <div className="mt-4 pt-4 border-t border-stone-200">
               <div className="flex items-center justify-between mb-2">
-                <span className="text-[9px] text-stone-600 tracking-wider font-bold">
+                <span className="text-[10px] text-stone-600 tracking-wider font-bold">
                   体調の基準値（HRV・GSR / 任意）
                 </span>
-                <span className="text-[9px] text-emerald-700">
+                <span className="text-[10px] text-emerald-700">
                   {baseSyncTimestamp
                     ? `同期: ${new Date(baseSyncTimestamp).toLocaleDateString(
                         "ja-JP",
@@ -423,7 +423,7 @@ export function PersonalProfileConfig({
                   />
                 </div>
               </div>
-              <p className="text-[9px] text-stone-600 mt-1 text-justify">
+              <p className="text-xs text-stone-600 mt-1 text-justify">
                 スマートウォッチ等で測った直近1ヶ月の平均・標準偏差を入れると、体調の異常検知があなた基準になります。無くても動きます。
               </p>
             </div>
@@ -433,7 +433,7 @@ export function PersonalProfileConfig({
           {showAdvanced && (
             <div className="mt-4 pt-4 border-t border-stone-200">
               <div className="flex items-center gap-1.5 mb-2">
-                <span className="text-[9px] text-purple-700 tracking-wider font-bold">
+                <span className="text-[10px] text-purple-700 tracking-wider font-bold">
                   日取りの判定に使う要素
                 </span>
               </div>
@@ -445,7 +445,7 @@ export function PersonalProfileConfig({
                     <span className="text-[10px] text-stone-600 font-bold">
                       行動心理（月初・月曜・誕生日）
                     </span>
-                    <span className="text-[9px] text-stone-600">
+                    <span className="text-xs text-stone-600">
                       月初や月曜、誕生日などのモチベーションブーストを加味します
                     </span>
                   </div>
@@ -468,7 +468,7 @@ export function PersonalProfileConfig({
                     <span className="text-[10px] text-stone-600 font-bold">
                       九星気学（五行と本命星）
                     </span>
-                    <span className="text-[9px] text-stone-600">
+                    <span className="text-xs text-stone-600">
                       五行の相性（相生・相剋）と本命星から方位の吉凶を判定します
                     </span>
                   </div>
@@ -489,7 +489,7 @@ export function PersonalProfileConfig({
                     <span className="text-[10px] text-stone-600 font-bold">
                       西洋占星術（月星座・ボイドタイム）
                     </span>
-                    <span className="text-[9px] text-stone-600">
+                    <span className="text-xs text-stone-600">
                       月星座やボイドタイムによる警告と適性を判定します
                     </span>
                   </div>

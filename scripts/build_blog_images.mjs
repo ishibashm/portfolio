@@ -124,26 +124,17 @@ const FIGURES = [
     /* 記事の 2026 年盤の表から。年盤の段階で 8 方位のうち 2〜3 しか残らない。 */
     slug: "what-this-tool-can-and-cannot-decide",
     kicker: "決められること、決められないこと",
-    title: "8 方位から選ぶのでは<br>ない。2〜3 から選ぶ",
-    sub: "2026 年盤。同じ年でも、大吉方位が 1 つも無い人がいます。",
+    title: "年盤が大吉でも、<br>動ける日は 0 のことがある",
+    sub: "2026 年盤。二黒の人は南西が大吉ですが、その南西は 365 日すべて 0 日でした。",
     body: `<div style="display:flex;gap:30px;align-items:center">
       ${[
-        [
-          "\u4e8c\u9ed2",
-          ["", "", "\u5e73", "\u7684", "", "", "\u5e73", "\u547d"],
-        ],
-        [
-          "\u516d\u767d",
-          ["", "", "\u5927\u5409", "\u5e73", "", "", "\u5e73", "\u5927\u5409"],
-        ],
-        [
-          "\u4e00\u767d",
-          ["", "", "", "\u5e73", "", "", "\u5927\u5409", "\u5e73"],
-        ],
-        [
-          "\u4e5d\u7d2b",
-          ["", "", "\u5927\u5409", "\u547d", "", "", "\u5927\u5409", "\u7684"],
-        ],
+        /* cells は 北・北東・東・南東・南・南西・西・北西 の順。
+           2026-09-19 に年盤から月交点を外したので、北東と南西が
+           「凶」から本来の札に戻った（backlog 6 節）。 */
+        ["二黒", ["", "平", "平", "的", "", "大吉", "平", "命"]],
+        ["六白", ["", "", "大吉", "平", "", "平", "平", "大吉"]],
+        ["一白", ["", "", "", "平", "", "大吉", "大吉", "平"]],
+        ["九紫", ["", "大吉", "大吉", "命", "", "平", "大吉", "的"]],
       ]
         .map(([star, cells]) => {
           /* 盤の並びは北西・北・北東 / 西・中・東 / 南西・南・南東。
@@ -165,8 +156,10 @@ const FIGURES = [
         .join("")}
       <div class="note">
         <b>北は暗剣殺・南は五黄殺</b>で、誰にとっても塞がります。
-        <b>本命殺</b>（命）と<b>本命的殺</b>（的）が人ごとに 2 つ消します。
-        <b>平</b>は平穏で、凶ではありませんが<b>吉でもありません</b>。
+        <b>本命殺</b>（命）と<b>本命的殺</b>（的）が人ごとに消します。
+        <b>平</b>は凶ではありませんが<b>吉でもありません</b>。
+        <b>年盤はいちばん下の層にすぎません。</b>大吉でも、月盤と日盤が
+        ふさがっていれば動ける日は出ません。
       </div>
     </div>`,
   },
@@ -1010,6 +1003,151 @@ const FIGURES = [
           .join("")}
       </div>`,
   },
+  {
+    /* 記事の実測表から。2027 年・六白金星・名古屋、立春から翌立春の
+       前日まで 365 日 × 8 方位。年盤の状態が、その方位で届く段階の
+       範囲そのものを決める（凶 → 0 日、平 → 三盤吉が出ない、吉 → 出る）。 */
+    slug: "direction-or-timing-which-matters",
+    kicker: "方位と日取り、どちらが重いのか",
+    title: "年盤が、届く段階の<br>上限まで決めている",
+    sub: "2027 年・六白金星・名古屋から。立春から翌立春の前日まで 365 日 × 8 方位を数えました。",
+    body: `<div style="display:flex;gap:34px;align-items:center">
+      ${(() => {
+        /* 記事の表そのもの。[年盤, 三盤吉(S), 吉を含む日(S+A+B)]。
+           盤の並びは北西・北・北東 / 西・中・東 / 南西・南・南東。 */
+        const d = {
+          北: ["五黄殺", 0, 0],
+          北東: ["歳破", 0, 0],
+          東: ["平", 0, 31],
+          南東: ["吉方位", 29, 76],
+          南: ["暗剣殺", 0, 0],
+          南西: ["本命殺", 0, 0],
+          西: ["吉方位", 11, 93],
+          北西: ["吉方位", 12, 56],
+        };
+        const cells = [
+          "北西",
+          "北",
+          "北東",
+          "西",
+          "中",
+          "東",
+          "南西",
+          "南",
+          "南東",
+        ]
+          .map((k) => {
+            if (k === "中")
+              return `<div class="c mid" style="font-size:15px">六白</div>`;
+            const [, s, open] = d[k];
+            /* 3 つに塗り分ける。塞がった方位（吉が 0 日）は赤、
+               年盤が平で三盤吉が出ない方位は地色のまま、
+               三盤吉が出る方位は白地に数字。 */
+            const blocked = open === 0;
+            const flat = !blocked && s === 0;
+            const bg = blocked ? "#e11d48" : flat ? "#efe7e0" : "#fff";
+            const border = blocked ? "#be123c" : flat ? "#ded4ca" : "#e2d9d1";
+            const ink = blocked ? "#fff" : flat ? "#94a3b8" : "#0f172a";
+            return `<div class="c" style="background:${bg};border-color:${border};color:${ink};
+                flex-direction:column;gap:0;font-size:12px">
+              <div style="font-weight:700">${k}</div>
+              <div style="font-size:17px;font-weight:800">${s}</div>
+              <div style="font-size:11px;font-weight:600;opacity:.8">${blocked ? "—" : `吉 ${open}`}</div>
+            </div>`;
+          })
+          .join("");
+        return `<figure><div class="g" style="grid-template-columns:repeat(3,82px);grid-template-rows:repeat(3,82px)">${cells}</div><figcaption>大きい数字が三盤吉の日数</figcaption></figure>`;
+      })()}
+      <div class="note">
+        <b>塞がった 4 方位</b>（赤）は 365 日すべて最低評価。<b>東</b>は
+        年盤が平なので、31 日残っても<b>三盤吉は 1 日も出ません</b>。
+        三盤吉が出るのは年盤が吉の 3 方位だけで、<b>29・12・11 日</b>。
+        <b>方位が先、日取りが後</b>です。
+      </div>
+    </div>`,
+  },
+  {
+    /* 記事の年表から。五黄殺と暗剣殺は常に向かい合わせで、五黄土星が
+       中宮に入る年（2031）はどちらも無い。blogGouosatsuClaims が照合。 */
+    slug: "five-yellow-and-anken-satsu",
+    kicker: "五黄殺と暗剣殺",
+    title: "常に向かい合わせ。<br>9 年に 1 度、どちらも無い",
+    sub: "年盤の五黄土星が入った方位が五黄殺、その正反対が暗剣殺。本命星に関係なく、全員に同じ方位で掛かります。",
+    body: `<div style="display:flex;gap:30px;align-items:center">
+      <div style="display:flex;flex-direction:column;gap:6px">
+        ${[
+          ["2026", "南", "北", false],
+          ["2027", "北", "南", false],
+          ["2028", "南西", "北東", false],
+          ["2029", "東", "西", false],
+          ["2030", "南東", "北西", false],
+          ["2031", "なし", "なし", true],
+        ]
+          .map(
+            ([
+              year,
+              gou,
+              anken,
+              none,
+            ]) => `<div style="display:flex;align-items:center;gap:10px;
+              background:${none ? "#fff" : "transparent"};border:1px solid ${none ? "#e11d48" : "#e2d9d1"};
+              border-radius:10px;padding:6px 12px">
+            <div style="width:62px;font-size:18px;font-weight:800;color:#0f172a">${year}</div>
+            <div style="width:118px;font-size:17px;color:${none ? "#94a3b8" : "#e11d48"};font-weight:700">五黄殺 ${gou}</div>
+            <div style="width:118px;font-size:17px;color:${none ? "#94a3b8" : "#475569"};font-weight:700">暗剣殺 ${anken}</div>
+          </div>`,
+          )
+          .join("")}
+      </div>
+      <div class="note">
+        <b>2031 年は五黄土星が中宮</b>に入ります。中宮は方位を持たないので、
+        その年はどちらも存在しません。<b>9 年に 1 度</b>めぐります。
+        2026 と 2027 は南と北が<b>入れ替わるだけ</b>で、避けたい方位の数は減りません。
+      </div>
+    </div>`,
+  },
+  {
+    /* 記事の 2026 年の一覧から。天赦日 6 日のうち、六曜と土用を
+       くぐるのは 3 日。日取りだけで決めると仏滅の天赦日を選ぶ。 */
+    slug: "tensha-and-ichiryumanbai-for-moving-day",
+    kicker: "天赦日・一粒万倍日と引越し",
+    title: "天赦日 6 日のうち、<br>残るのは 3 日",
+    sub: "2026 年の天赦日。六曜で仏滅・赤口を外し、土用の間日でない日を外すと、半分が落ちます。",
+    body: `<div style="display:flex;gap:30px;align-items:center">
+      <div style="display:flex;flex-direction:column;gap:6px">
+        ${[
+          ["3/5", "大安", "", true],
+          ["5/4", "友引", "春土用", false],
+          ["5/20", "先勝", "", true],
+          ["7/19", "大安", "", true],
+          ["10/1", "仏滅", "", false],
+          ["12/16", "赤口", "", false],
+        ]
+          .map(
+            ([
+              day,
+              rokuyo,
+              doyou,
+              keep,
+            ]) => `<div style="display:flex;align-items:center;gap:10px;
+              background:${keep ? "#fff" : "transparent"};border:1px solid ${keep ? "#e11d48" : "#e2d9d1"};
+              border-radius:10px;padding:6px 12px">
+            <div style="width:62px;font-size:18px;font-weight:800;color:${keep ? "#0f172a" : "#94a3b8"}">${day}</div>
+            <div style="width:74px;font-size:17px;color:${keep ? "#475569" : "#94a3b8"};font-weight:700">${rokuyo}</div>
+            <div style="width:126px;font-size:16px;color:${keep ? "#e11d48" : "#94a3b8"};font-weight:700">${
+              keep ? "残る" : doyou || "外れる"
+            }</div>
+          </div>`,
+          )
+          .join("")}
+      </div>
+      <div class="note">
+        天赦日は<b>日そのものの吉</b>です。<b>方位の凶は打ち消しません。</b>
+        五黄殺や本命殺の方位へ動く日が天赦日でも、方位の側は変わりません。
+        <b>日付だけを先に決める</b>と、仏滅の天赦日を選んでいることがあります。
+      </div>
+    </div>`,
+  },
 ];
 
 function html(fig) {
@@ -1021,6 +1159,27 @@ function html(fig) {
 <div class="brand">cloud-palette.com ／ 九星気学の方位と日取り</div>`;
 }
 
+/**
+ * 作る対象。**既定は全部だが、記事を 1 本足したときに全部を作り直すと、
+ * 中身の変わっていない 31 枚まで差分に乗る**（PNG は同じ入力でも
+ * 同じバイト列になるとは限らない）。ONLY に slug を並べるとそれだけ作る。
+ *
+ *   ONLY=<slug>[,<slug>] node scripts/build_blog_images.mjs
+ */
+function selected() {
+  const only = (process.env.ONLY || "")
+    .split(",")
+    .map((s) => s.trim())
+    .filter(Boolean);
+  if (only.length === 0) return FIGURES;
+  const picked = FIGURES.filter((f) => only.includes(f.slug));
+  const missing = only.filter((s) => !FIGURES.some((f) => f.slug === s));
+  if (missing.length > 0) {
+    throw new Error(`ONLY に図の無い slug がある: ${missing.join(", ")}`);
+  }
+  return picked;
+}
+
 async function main() {
   checkFonts();
   await mkdir(OUT_DIR, { recursive: true });
@@ -1029,7 +1188,7 @@ async function main() {
       ? { executablePath: process.env.CHROMIUM_PATH }
       : {},
   );
-  for (const fig of FIGURES) {
+  for (const fig of selected()) {
     const page = await browser.newPage({
       viewport: { width: WIDTH, height: HEIGHT },
       deviceScaleFactor: SCALE,

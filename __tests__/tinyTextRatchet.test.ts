@@ -27,8 +27,8 @@ import { describe, expect, it } from "vitest";
   12px 以上なので対象外。
 */
 
-/** 実測（2026-09-15。物件検索と ScorecardPanel が片付いた時点）。**直したら下げること。** */
-const BASELINE = { 8: 1, 9: 238 };
+/** 実測（2026-09-17。天地人の評価と磁気の HUD（TenChiJinEvaluation・MagneticSpatialHUD） が片付いた時点。8px は 0）。**直したら下げること。** */
+const BASELINE = { 8: 0, 9: 0 };
 
 function tsxFiles(dir: string): string[] {
   const out: string[] = [];
@@ -92,6 +92,26 @@ describe("小さすぎる字を増やさない", () => {
     });
   }
 
+  it("説明の段落（<p>）を 11px 以下で書いていない", () => {
+    /*
+      規則の 1 つ目「説明の段落は 12px 以上」を、<p> の字面で見張る。
+      9px を 0 にしたあと、<p className="… text-[10px] …"> が 80 か所
+      （27 ファイル）残っていた（2026-09-17 実測）。どれも説明・注記・
+      出典で、札の添え字ではない。全部 text-xs に上げたので 0 を要求する。
+      11px も同じ（96 か所 / 40 ファイル。#1390〜）。規則は 12px 以上。
+      className が 1 行に収まる <p> だけを見る（テンプレート literal の
+      className は見ない。増やさないこと）。
+    */
+    let count = 0;
+    for (const f of tsxFiles("src")) {
+      const src = readFileSync(f, "utf8");
+      count += (
+        src.match(/<p className="[^"]*text-\[(?:[0-9]|1[01])px\][^"]*"/g) ?? []
+      ).length;
+    }
+    expect(count).toBe(0);
+  });
+
   it("直したら BASELINE を下げている（緩いまま放置しない）", () => {
     /*
       減らしたのに BASELINE を下げないと、そのぶん静かに増やせる幅が
@@ -123,6 +143,36 @@ describe("小さすぎる字を増やさない", () => {
       "src/components/relocation/TransactionsPanel.tsx",
       "src/components/relocation/PlaceInput.tsx",
       "src/components/home/ScorecardPanel.tsx",
+      "src/components/TacticalMagneticMap.tsx",
+      "src/components/MagneticMapInner.tsx",
+      "src/components/home/DestinationMapPanel.tsx",
+      "src/components/BioMagneticDashboard.tsx",
+      "src/components/ArbitrageMapInner.tsx",
+      "src/components/home/ConsultPanel.tsx",
+      "src/components/widgets/CosmicCalendar.tsx",
+      "src/components/PersonalProfileConfig.tsx",
+      "src/app/relocation/simulator/page.tsx",
+      "src/app/relocation/arbitrage/page.tsx",
+      "src/components/realestate/AstroGridCalendar.tsx",
+      "src/components/layout/MetaphysicalConfigBar.tsx",
+      "src/components/SolarTimeTable.tsx",
+      "src/app/relocation/wealth/page.tsx",
+      "src/components/map/PowerSpotLayer.tsx",
+      "src/components/map/UserSpotLayer.tsx",
+      "src/components/map/StationLayer.tsx",
+      "src/components/map/CurrentLocationControl.tsx",
+      "src/components/nba/SimulatorMap.tsx",
+      "src/components/nba/PastMoveMap.tsx",
+      "src/components/home/HomePortal.tsx",
+      "src/components/KigakuBoard.tsx",
+      "src/app/relocation/history/page.tsx",
+      "src/app/relocation/timing/page.tsx",
+      "src/app/admin/metrics/page.tsx",
+      "src/app/login/page.tsx",
+      "src/components/GlobalSidebar.tsx",
+      "src/components/LocationPickerInner.tsx",
+      "src/components/nba/TenChiJinEvaluation.tsx",
+      "src/components/MagneticSpatialHUD.tsx",
     ]) {
       expect(byFile.get(done) ?? 0, done).toBe(0);
     }

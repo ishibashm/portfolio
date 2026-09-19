@@ -5,7 +5,11 @@ import dynamic from "next/dynamic";
 import { Crosshair, Download, Box } from "lucide-react";
 import { MagneticSpatialHUD } from "./MagneticSpatialHUD";
 import { downloadKML } from "../utils/kmlExport";
-import { vectorsForLayerMode, type LayerMode } from "@/utils/directionStatus";
+import {
+  layerModeLabel,
+  vectorsForLayerMode,
+  type LayerMode,
+} from "@/utils/directionStatus";
 import type { MapProperty } from "@/lib/mapProperty";
 
 // Because Leaflet needs the window object, we must dynamically import it with ssr: false
@@ -89,6 +93,8 @@ export function TacticalMagneticMapComponent({
   highlightDirection = null,
 }: MapProps) {
   const [showHUD, setShowHUD] = useState(true);
+  /** 帯の押し口（時間軸・層・基準・立体表示・KML・出発地）を開いているか。 */
+  const [controlsOpen, setControlsOpen] = useState(false);
   const [localUseTrueNorth, localSetUseTrueNorth] = useState(false);
   const useTrueNorth =
     propsUseTrueNorth !== undefined ? propsUseTrueNorth : localUseTrueNorth;
@@ -121,13 +127,14 @@ export function TacticalMagneticMapComponent({
         ref={mapContainerRef}
         className={`relative border ${borderColor} transition-all duration-500 shadow-2xl w-full flex flex-col h-[480px] md:h-[600px] lg:h-[700px]`}
       >
-        <div className="absolute top-0 left-0 w-full p-2 z-10 bg-linear-to-b from-black/80 to-transparent pointer-events-none flex flex-col sm:flex-row justify-between items-start gap-2">
-          <div className="flex items-center gap-2">
+        <div className="absolute top-0 left-0 w-full p-2 z-10 bg-linear-to-b from-black/80 to-transparent pointer-events-none flex flex-col items-start gap-1">
+          <div className="flex items-start gap-2 w-full">
             <Crosshair
               size={14}
               className="text-blue-700 md:animate-pulse mt-1"
             />
-            <div className="flex flex-col">
+            {/* 右上の「地図」（MagneticMapInner）のぶん、lg 未満は右を空ける */}
+            <div className="flex flex-col w-full min-w-0 pr-20 lg:pr-0">
               {/*
                 見出しは**この地図が実際に出しているもの**を言う。
 
@@ -144,139 +151,177 @@ export function TacticalMagneticMapComponent({
                 目的地の方位
               </h2>
 
-              {/* Layer Mode Switcher with Combinations */}
-              <div className="pointer-events-auto flex items-center mt-1.5 bg-white/80 border border-stone-200 rounded-sm overflow-hidden text-[9px] font-mono flex-wrap max-w-full">
-                <span className="px-1.5 py-1 text-[10px] text-stone-600 bg-white border-r border-stone-200">
-                  時間軸:
+              {/*
+                既定は 1 行。いま選んでいる時間軸と基準だけを出し、押し口は
+                「設定」で開く。
+
+                以前は時間軸 7 つ・層 4 つ・基準・立体表示・KML・出発地の札を
+                常に全部並べていて、400px では **4 段**に折れ、地図の上
+                4 分の 1 を帯が占めていた（docs/improvement-backlog.md 28 節
+                の実測）。押す回数で言えば、時間軸を変える人より地図を見る
+                人のほうが多い。**機能は 1 つも削っていない**（KML も残す）。
+                開いたときの中身は以前と同じボタン。
+              */}
+              <div className="pointer-events-auto mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-[11px] text-stone-700">
+                <span>
+                  時間軸: <b>{layerModeLabel(activeLayerMode)}</b>
+                </span>
+                <span>
+                  基準: <b>{useTrueNorth ? "真北" : "磁北"}</b>
                 </span>
                 <button
-                  onClick={() =>
-                    setActiveLayerMode && setActiveLayerMode("final")
-                  }
-                  className={`inline-flex min-h-[24px] items-center justify-center px-2 py-1 transition-colors ${activeLayerMode === "final" || !activeLayerMode ? "bg-emerald-50 text-emerald-700 font-bold" : "text-stone-600 hover:text-stone-800"} border-r border-stone-200 cursor-pointer`}
+                  type="button"
+                  onClick={() => setControlsOpen((v) => !v)}
+                  aria-expanded={controlsOpen}
+                  className="inline-flex min-h-[24px] items-center px-2 rounded-sm border border-stone-300 bg-white/80 hover:bg-stone-100 text-stone-700 font-bold"
                 >
-                  🪐 全統合(年+月+日)
-                </button>
-                <button
-                  onClick={() =>
-                    setActiveLayerMode && setActiveLayerMode("year_month")
-                  }
-                  className={`inline-flex min-h-[24px] items-center justify-center px-2 py-1 transition-colors ${activeLayerMode === "year_month" ? "bg-purple-50 text-purple-700 font-bold" : "text-stone-600 hover:text-stone-800"} border-r border-stone-200 cursor-pointer`}
-                >
-                  📅 年+月
-                </button>
-                <button
-                  onClick={() =>
-                    setActiveLayerMode && setActiveLayerMode("month_day")
-                  }
-                  className={`inline-flex min-h-[24px] items-center justify-center px-2 py-1 transition-colors ${activeLayerMode === "month_day" ? "bg-blue-50 text-blue-700 font-bold" : "text-stone-600 hover:text-stone-800"} border-r border-stone-200 cursor-pointer`}
-                >
-                  🌓 月+日
-                </button>
-                <button
-                  onClick={() =>
-                    setActiveLayerMode && setActiveLayerMode("year_day")
-                  }
-                  className={`inline-flex min-h-[24px] items-center justify-center px-2 py-1 transition-colors ${activeLayerMode === "year_day" ? "bg-amber-50 text-amber-700 font-bold" : "text-stone-600 hover:text-stone-800"} border-r border-stone-200 cursor-pointer`}
-                >
-                  ☀️ 年+日
-                </button>
-                <button
-                  onClick={() =>
-                    setActiveLayerMode && setActiveLayerMode("year")
-                  }
-                  className={`inline-flex min-h-[24px] items-center justify-center px-2 py-1 transition-colors ${activeLayerMode === "year" ? "bg-indigo-50 text-indigo-600 font-bold" : "text-stone-600 hover:text-stone-800"} border-r border-stone-200 cursor-pointer`}
-                >
-                  年
-                </button>
-                <button
-                  onClick={() =>
-                    setActiveLayerMode && setActiveLayerMode("month")
-                  }
-                  className={`inline-flex min-h-[24px] items-center justify-center px-2 py-1 transition-colors ${activeLayerMode === "month" ? "bg-purple-50 text-purple-700 font-bold" : "text-stone-600 hover:text-stone-800"} border-r border-stone-200 cursor-pointer`}
-                >
-                  月
-                </button>
-                <button
-                  onClick={() =>
-                    setActiveLayerMode && setActiveLayerMode("day")
-                  }
-                  className={`inline-flex min-h-[24px] items-center justify-center px-2 py-1 transition-colors ${activeLayerMode === "day" ? "bg-cyan-50 text-cyan-700 font-bold" : "text-stone-600 hover:text-stone-800"} cursor-pointer`}
-                >
-                  日
+                  {controlsOpen ? "設定を閉じる ▴" : "設定 ▾"}
                 </button>
               </div>
-            </div>
-          </div>
-          <div className="flex flex-col items-end gap-1">
-            <div className="flex items-center gap-2">
-              {/* Layer Toggles */}
-              <div className="pointer-events-auto flex items-center bg-white/80 border border-stone-200 p-0.5 rounded-sm mr-2 hidden lg:flex">
-                <button
-                  onClick={() => toggleLayer?.("terrain")}
-                  className={`px-1.5 py-0.5 text-[9px] font-mono border-r border-stone-200 transition-colors ${hudLayers.terrain ? "text-blue-700 bg-blue-500/10" : "text-stone-600"}`}
-                  title="地形の陰影を重ねる"
-                >
-                  地形
-                </button>
-                <button
-                  onClick={() => toggleLayer?.("weather")}
-                  className={`px-1.5 py-0.5 text-[9px] font-mono border-r border-stone-200 transition-colors ${hudLayers.weather ? "text-amber-700 bg-amber-500/10" : "text-stone-600"}`}
-                  title="宇宙天気（Kp 指数）の注意帯を重ねる"
-                >
-                  宇宙天気
-                </button>
-                <button
-                  onClick={() => toggleLayer?.("bio")}
-                  className={`px-1.5 py-0.5 text-[9px] font-mono transition-colors ${hudLayers.bio ? "text-purple-700 bg-purple-500/10" : "text-stone-600"}`}
-                  title="本命星から見た個人の吉凶の線を重ねる"
-                >
-                  本命星
-                </button>
-                <button
-                  onClick={() => toggleLayer?.("hazard")}
-                  className={`px-1.5 py-0.5 text-[9px] font-mono transition-colors border-l border-stone-200 ${hudLayers.hazard ? "text-red-700 bg-red-500/10 font-bold" : "text-stone-600"}`}
-                  title="洪水と土砂災害の想定区域を重ねる（出典: ハザードマップポータルサイト）"
-                >
-                  災害域
-                </button>
-              </div>
-              <button
-                onClick={() => setUseTrueNorth(!useTrueNorth)}
-                className={`pointer-events-auto bg-white/80 hover:bg-stone-100 text-stone-600 px-2 py-1 flex items-center gap-1 text-[11px] font-bold font-mono tracking-wider border rounded-sm transition-colors ${useTrueNorth ? "border-emerald-500 text-emerald-700" : "border-blue-500 text-blue-700"}`}
-                title="Toggle True/Magnetic North Base"
-              >
-                基準: {useTrueNorth ? "真北" : "磁北"}
-              </button>
-              <button
-                onClick={() => setShowHUD(!showHUD)}
-                className={`pointer-events-auto bg-white/80 hover:bg-stone-100 text-stone-600 px-2 py-1 hidden sm:flex items-center gap-1 text-[11px] uppercase font-mono tracking-wider border rounded-sm transition-colors ${showHUD ? "border-blue-500 text-blue-700" : "border-stone-300"}`}
-                title="磁力線の立体表示を出す・しまう"
-              >
-                <Box size={10} />
-                立体表示: {showHUD ? "出す" : "しまう"}
-              </button>
-              <button
-                onClick={() =>
-                  downloadKML(
-                    lat,
-                    lon,
-                    declination || 0,
-                    useTrueNorth,
-                    activeVectors as Record<string, string>,
-                    isPhysical ? "physical" : "traditional",
-                    hudLayers,
-                  )
-                }
-                className="pointer-events-auto bg-white/80 hover:bg-stone-100 text-stone-600 px-2 py-1 flex items-center gap-1 text-[11px] uppercase font-mono tracking-wider border border-stone-300 rounded-sm transition-colors"
-              >
-                <Download size={10} />
-                KML で書き出す
-              </button>
-            </div>
-            <div className="text-[10px] font-mono text-stone-600 text-right bg-white/70 px-1 py-0.5 border border-stone-200">
-              出発地: {lat.toFixed(4)}N, {lon.toFixed(4)}E<br />
-              出発地の偏角: {declination ? declination.toFixed(2) : "--"}°
+
+              {controlsOpen && (
+                <div className="flex flex-col items-start gap-1.5 mt-1.5 w-full">
+                  {/* Layer Mode Switcher with Combinations */}
+                  <div className="pointer-events-auto flex items-center mt-1.5 bg-white/80 border border-stone-200 rounded-sm overflow-hidden text-[10px] font-mono flex-wrap max-w-full">
+                    <span className="px-1.5 py-1 text-[10px] text-stone-600 bg-white border-r border-stone-200">
+                      時間軸:
+                    </span>
+                    <button
+                      onClick={() =>
+                        setActiveLayerMode && setActiveLayerMode("final")
+                      }
+                      className={`inline-flex min-h-[24px] items-center justify-center px-2 py-1 transition-colors ${activeLayerMode === "final" || !activeLayerMode ? "bg-emerald-50 text-emerald-700 font-bold" : "text-stone-600 hover:text-stone-800"} border-r border-stone-200 cursor-pointer`}
+                    >
+                      🪐 全統合(年+月+日)
+                    </button>
+                    <button
+                      onClick={() =>
+                        setActiveLayerMode && setActiveLayerMode("year_month")
+                      }
+                      className={`inline-flex min-h-[24px] items-center justify-center px-2 py-1 transition-colors ${activeLayerMode === "year_month" ? "bg-purple-50 text-purple-700 font-bold" : "text-stone-600 hover:text-stone-800"} border-r border-stone-200 cursor-pointer`}
+                    >
+                      📅 年+月
+                    </button>
+                    <button
+                      onClick={() =>
+                        setActiveLayerMode && setActiveLayerMode("month_day")
+                      }
+                      className={`inline-flex min-h-[24px] items-center justify-center px-2 py-1 transition-colors ${activeLayerMode === "month_day" ? "bg-blue-50 text-blue-700 font-bold" : "text-stone-600 hover:text-stone-800"} border-r border-stone-200 cursor-pointer`}
+                    >
+                      🌓 月+日
+                    </button>
+                    <button
+                      onClick={() =>
+                        setActiveLayerMode && setActiveLayerMode("year_day")
+                      }
+                      className={`inline-flex min-h-[24px] items-center justify-center px-2 py-1 transition-colors ${activeLayerMode === "year_day" ? "bg-amber-50 text-amber-700 font-bold" : "text-stone-600 hover:text-stone-800"} border-r border-stone-200 cursor-pointer`}
+                    >
+                      ☀️ 年+日
+                    </button>
+                    <button
+                      onClick={() =>
+                        setActiveLayerMode && setActiveLayerMode("year")
+                      }
+                      className={`inline-flex min-h-[24px] items-center justify-center px-2 py-1 transition-colors ${activeLayerMode === "year" ? "bg-indigo-50 text-indigo-600 font-bold" : "text-stone-600 hover:text-stone-800"} border-r border-stone-200 cursor-pointer`}
+                    >
+                      年
+                    </button>
+                    <button
+                      onClick={() =>
+                        setActiveLayerMode && setActiveLayerMode("month")
+                      }
+                      className={`inline-flex min-h-[24px] items-center justify-center px-2 py-1 transition-colors ${activeLayerMode === "month" ? "bg-purple-50 text-purple-700 font-bold" : "text-stone-600 hover:text-stone-800"} border-r border-stone-200 cursor-pointer`}
+                    >
+                      月
+                    </button>
+                    <button
+                      onClick={() =>
+                        setActiveLayerMode && setActiveLayerMode("day")
+                      }
+                      className={`inline-flex min-h-[24px] items-center justify-center px-2 py-1 transition-colors ${activeLayerMode === "day" ? "bg-cyan-50 text-cyan-700 font-bold" : "text-stone-600 hover:text-stone-800"} cursor-pointer`}
+                    >
+                      日
+                    </button>
+                  </div>
+                  <div className="flex flex-wrap items-center gap-2">
+                    {/*
+                      層の切り替え（地形・宇宙天気・本命星・災害域）。
+
+                      以前は `hidden lg:flex` で、**携帯では押せなかった**。
+                      帯が常時表示だった頃の幅の都合で、理由はどこにも
+                      書かれていない。#1338 で帯を「設定」に畳んだので幅の
+                      都合は無くなった。災害域（洪水・土砂）は携帯で現地を
+                      見ながら使う層なので、全幅で出す。
+                    */}
+                    <div className="pointer-events-auto flex items-center bg-white/80 border border-stone-200 p-0.5 rounded-sm mr-2">
+                      <button
+                        onClick={() => toggleLayer?.("terrain")}
+                        className={`px-1.5 py-0.5 text-[10px] font-mono border-r border-stone-200 transition-colors ${hudLayers.terrain ? "text-blue-700 bg-blue-500/10" : "text-stone-600"}`}
+                        title="地形の陰影を重ねる"
+                      >
+                        地形
+                      </button>
+                      <button
+                        onClick={() => toggleLayer?.("weather")}
+                        className={`px-1.5 py-0.5 text-[10px] font-mono border-r border-stone-200 transition-colors ${hudLayers.weather ? "text-amber-700 bg-amber-500/10" : "text-stone-600"}`}
+                        title="宇宙天気（Kp 指数）の注意帯を重ねる"
+                      >
+                        宇宙天気
+                      </button>
+                      <button
+                        onClick={() => toggleLayer?.("bio")}
+                        className={`px-1.5 py-0.5 text-[10px] font-mono transition-colors ${hudLayers.bio ? "text-purple-700 bg-purple-500/10" : "text-stone-600"}`}
+                        title="本命星から見た個人の吉凶の線を重ねる"
+                      >
+                        本命星
+                      </button>
+                      <button
+                        onClick={() => toggleLayer?.("hazard")}
+                        className={`px-1.5 py-0.5 text-[10px] font-mono transition-colors border-l border-stone-200 ${hudLayers.hazard ? "text-red-700 bg-red-500/10 font-bold" : "text-stone-600"}`}
+                        title="洪水と土砂災害の想定区域を重ねる（出典: ハザードマップポータルサイト）"
+                      >
+                        災害域
+                      </button>
+                    </div>
+                    <button
+                      onClick={() => setUseTrueNorth(!useTrueNorth)}
+                      className={`pointer-events-auto bg-white/80 hover:bg-stone-100 text-stone-600 px-2 py-1 flex items-center gap-1 text-[11px] font-bold font-mono tracking-wider border rounded-sm transition-colors ${useTrueNorth ? "border-emerald-500 text-emerald-700" : "border-blue-500 text-blue-700"}`}
+                      title="Toggle True/Magnetic North Base"
+                    >
+                      基準: {useTrueNorth ? "真北" : "磁北"}
+                    </button>
+                    <button
+                      onClick={() => setShowHUD(!showHUD)}
+                      className={`pointer-events-auto bg-white/80 hover:bg-stone-100 text-stone-600 px-2 py-1 hidden sm:flex items-center gap-1 text-[11px] uppercase font-mono tracking-wider border rounded-sm transition-colors ${showHUD ? "border-blue-500 text-blue-700" : "border-stone-300"}`}
+                      title="磁力線の立体表示を出す・しまう"
+                    >
+                      <Box size={10} />
+                      立体表示: {showHUD ? "出す" : "しまう"}
+                    </button>
+                    <button
+                      onClick={() =>
+                        downloadKML(
+                          lat,
+                          lon,
+                          declination || 0,
+                          useTrueNorth,
+                          activeVectors as Record<string, string>,
+                          isPhysical ? "physical" : "traditional",
+                          hudLayers,
+                        )
+                      }
+                      className="pointer-events-auto bg-white/80 hover:bg-stone-100 text-stone-600 px-2 py-1 flex items-center gap-1 text-[11px] uppercase font-mono tracking-wider border border-stone-300 rounded-sm transition-colors"
+                    >
+                      <Download size={10} />
+                      KML で書き出す
+                    </button>
+                  </div>
+                  <div className="text-[10px] font-mono text-stone-600 text-right bg-white/70 px-1 py-0.5 border border-stone-200">
+                    出発地: {lat.toFixed(4)}N, {lon.toFixed(4)}E<br />
+                    出発地の偏角: {declination ? declination.toFixed(2) : "--"}°
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -352,7 +397,7 @@ export function TacticalMagneticMapComponent({
         </summary>
         <div className="p-3 sm:p-4 border-t border-stone-200 grid grid-cols-1 md:grid-cols-4 gap-3 bg-white/70 text-xs leading-relaxed font-sans">
           <div className="p-2 sm:p-3 border border-red-200 rounded-sm">
-            <strong className="text-red-600 block mb-1 font-mono text-[9px] uppercase">
+            <strong className="text-red-600 block mb-1 font-mono uppercase">
               ◆ 1. 凶殺ベクトル (NOISE)
             </strong>
             <p className="text-stone-600 text-justify mt-1">
@@ -363,7 +408,7 @@ export function TacticalMagneticMapComponent({
             </p>
           </div>
           <div className="p-2 sm:p-3 border border-yellow-900/30 rounded-sm">
-            <strong className="text-yellow-700 block mb-1 font-mono text-[9px] uppercase">
+            <strong className="text-yellow-700 block mb-1 font-mono uppercase">
               ◆ 2. 天中殺 (VOID)
             </strong>
             <p className="text-stone-600 text-justify mt-1">
@@ -372,7 +417,7 @@ export function TacticalMagneticMapComponent({
             </p>
           </div>
           <div className="p-2 sm:p-3 border border-amber-200 rounded-sm">
-            <strong className="text-amber-700 block mb-1 font-mono text-[9px] uppercase">
+            <strong className="text-amber-700 block mb-1 font-mono uppercase">
               ◆ 3. 月交点 (NODE)
             </strong>
             <p className="text-stone-600 text-justify mt-1">
@@ -383,7 +428,7 @@ export function TacticalMagneticMapComponent({
             </p>
           </div>
           <div className="p-2 sm:p-3 border border-emerald-200 rounded-sm">
-            <strong className="text-emerald-700 block mb-1 font-mono text-[9px] uppercase">
+            <strong className="text-emerald-700 block mb-1 font-mono uppercase">
               ◆ 4. 最適化ゾーン (OPTIMAL)
             </strong>
             <p className="text-stone-600 text-justify mt-1">

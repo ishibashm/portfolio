@@ -187,7 +187,7 @@ export default async function Page({
                   {v.note}
                 </p>
                 {v.star !== null && (
-                  <p className="text-[11px] mt-2 opacity-70">
+                  <p className="text-xs mt-2 opacity-70">
                     回座している星: {STAR_NAMES[v.star]}
                   </p>
                 )}

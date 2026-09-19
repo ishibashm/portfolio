@@ -105,7 +105,7 @@ export function FavoritePicker({ onPick, onClose }: FavoritePickerProps) {
       </div>
 
       {!synced && (
-        <p className="text-[10px] text-stone-500">
+        <p className="text-xs text-stone-500">
           この端末に保存したぶんです。ログインすると別の端末でも使えます。
         </p>
       )}

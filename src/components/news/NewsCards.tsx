@@ -197,7 +197,7 @@ export function NewsCards({
           <h2 className="text-sm font-bold text-stone-800">
             新着（全{sourceCount}媒体）
           </h2>
-          <p className="mt-0.5 text-[10px] leading-relaxed text-stone-500">
+          <p className="mt-0.5 text-xs leading-relaxed text-stone-500">
             取得できた配信元の見出しを日付順にまとめたものです。媒体ごとに読むなら下の一覧へ。
           </p>
         </div>
@@ -292,7 +292,7 @@ export function NewsCards({
                   {e.title}
                 </a>
                 {e.summary && (
-                  <p className="line-clamp-2 text-[11px] leading-relaxed text-stone-500">
+                  <p className="line-clamp-2 text-xs leading-relaxed text-stone-500">
                     {e.summary}
                   </p>
                 )}

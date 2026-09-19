@@ -408,7 +408,7 @@ export function ProfileForm() {
             プロフィールの名前
           </legend>
           {isNew && (
-            <p className="mt-1 max-w-[70ch] text-[11px] leading-relaxed text-indigo-800">
+            <p className="mt-1 max-w-[70ch] text-xs leading-relaxed text-indigo-800">
               {
                 "新しいプロフィールを作ります。保存すると、このプロフィールが使用中になります（前のプロフィールは一覧に残り、いつでも切り替えられます）。"
               }
@@ -438,7 +438,7 @@ export function ProfileForm() {
         <legend className="px-2 text-sm font-bold text-stone-800">
           1. 生まれたとき
         </legend>
-        <p className="mt-1 max-w-[70ch] text-[11px] leading-relaxed text-stone-500">
+        <p className="mt-1 max-w-[70ch] text-xs leading-relaxed text-stone-500">
           {
             "本命星と天中殺がここから決まります。生年月日だけでも道具は動きます。"
           }
@@ -510,7 +510,7 @@ export function ProfileForm() {
         <legend className="px-2 text-sm font-bold text-stone-800">
           2. いま住んでいるところ
         </legend>
-        <p className="mt-1 max-w-[70ch] text-[11px] leading-relaxed text-stone-500">
+        <p className="mt-1 max-w-[70ch] text-xs leading-relaxed text-stone-500">
           {
             "方位はここを起点に測ります。引越しの方位を見るなら、ここが入っていないと何も出ません。"
           }
@@ -542,7 +542,7 @@ export function ProfileForm() {
               任意
             </span>
           </legend>
-          <p className="mt-1 max-w-[70ch] text-[11px] leading-relaxed text-stone-500">
+          <p className="mt-1 max-w-[70ch] text-xs leading-relaxed text-stone-500">
             {
               "決まっていれば入れておくと、試算や時期の分析で入れ直さずに済みます。"
             }

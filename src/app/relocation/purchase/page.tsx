@@ -67,7 +67,7 @@ function Section({
   return (
     <section className="rounded-3xl border border-gray-200 bg-white p-5 shadow-sm">
       <h2 className="text-sm font-bold text-stone-800">{title}</h2>
-      <p className="mt-0.5 mb-4 text-[11px] leading-relaxed text-stone-600">
+      <p className="mt-0.5 mb-4 text-xs leading-relaxed text-stone-600">
         {subtitle}
       </p>
       {children}
@@ -289,7 +289,7 @@ export default function PurchaseAnalyticsPage() {
             </TableWrap>
 
             <div>
-              <p className="mb-2 text-[10px] font-semibold tracking-wider text-stone-600">
+              <p className="mb-2 text-xs font-semibold tracking-wider text-stone-600">
                 建物比率の分布（0% = 全部が土地代、100% = 全部が建物代）
               </p>
               <Distribution
