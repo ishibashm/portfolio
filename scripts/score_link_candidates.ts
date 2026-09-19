@@ -19,11 +19,21 @@
  *   --top N        表に出す件数（既定 30）
  *   --out path     全件を TSV に書く
  *   --threshold p  表に出す確率の下限（既定 0.6）
+ *   --provider p   typesafe / openrouter（省くと鍵のある方。両方なら typesafe）
  *
- * ## 鍵
+ * ## 鍵（2 つの入口）
  *
- * TYPESAFE_API_KEY を .env か環境変数で渡す。無ければ --dry-run と同じ
- * 動きになり、**外へは何も送らない**。コードに書かない（ANTHROPIC_API_KEY と同じ）。
+ *   OPENROUTER_API_KEY … OpenRouter の Decisions API 経由（待ち行列なし）。
+ *                        POST https://openrouter.ai/api/alpha/decisions、
+ *                        model は typesafe/jev-1.13。本文の形は TypeSafe 直と同じ
+ *   TYPESAFE_API_KEY   … TypeSafe 直（POST /v1/systemone、model jev-latest）
+ *
+ * 両方あれば TypeSafe 直を使う（--provider openrouter で切り替え）。
+ * どちらも無ければ --dry-run と同じ動きになり、**外へは何も送らない**。
+ * 鍵はコードに書かない（ANTHROPIC_API_KEY と同じ）。
+ *
+ * OpenRouter の chat/completions は Jev を受け付けない（decisions model と
+ * して弾かれる）。必ず decisions の口を使う。
  *
  * ## 費用
  *
@@ -52,7 +62,21 @@ import {
 dotenv.config();
 
 const PRICE_PER_MTOK_USD = 0.042;
-const ENDPOINT = `${process.env.TYPESAFE_BASE_URL ?? "https://api.typesafe.ai"}/v1/systemone`;
+
+/** どの口から Jev を呼ぶか。本文の形は同じで、URL・モデル名・鍵が違う。 */
+const PROVIDERS = {
+  typesafe: {
+    endpoint: `${process.env.TYPESAFE_BASE_URL ?? "https://api.typesafe.ai"}/v1/systemone`,
+    model: "jev-latest",
+    key: process.env.TYPESAFE_API_KEY,
+  },
+  openrouter: {
+    endpoint: `${process.env.OPENROUTER_BASE_URL ?? "https://openrouter.ai/api"}/alpha/decisions`,
+    model: "typesafe/jev-1.13",
+    key: process.env.OPENROUTER_API_KEY,
+  },
+} as const;
+type ProviderName = keyof typeof PROVIDERS;
 
 function arg(name: string): string | undefined {
   const i = process.argv.indexOf(`--${name}`);
@@ -69,7 +93,15 @@ const list = (v: string | undefined) =>
       )
     : undefined;
 
-const apiKey = process.env.TYPESAFE_API_KEY;
+const wanted = arg("provider") as ProviderName | undefined;
+if (wanted && !(wanted in PROVIDERS)) {
+  console.error(`--provider は typesafe か openrouter（${wanted} は不明）`);
+  process.exit(1);
+}
+const providerName: ProviderName =
+  wanted ?? (PROVIDERS.typesafe.key ? "typesafe" : "openrouter");
+const provider = PROVIDERS[providerName];
+const apiKey = provider.key;
 const mode: "dry-run" | "mock" | "live" = flag("mock")
   ? "mock"
   : flag("dry-run") || !apiKey
@@ -116,7 +148,11 @@ for (const c of pairs) {
 }
 const calls = [...byParagraph.values()];
 const tokens = calls.reduce(
-  (n, c) => n + estimateTokens(buildRequest(c.source, c.paragraph, c.dests)),
+  (n, c) =>
+    n +
+    estimateTokens(
+      buildRequest(c.source, c.paragraph, c.dests, provider.model),
+    ),
   0,
 );
 
@@ -127,13 +163,18 @@ console.log(
   `概算 ${tokens.toLocaleString()} トークン ≒ $${((tokens / 1e6) * PRICE_PER_MTOK_USD).toFixed(3)}`,
 );
 console.log(
-  `モード: ${mode}${mode === "dry-run" && !apiKey ? "（TYPESAFE_API_KEY が無い）" : ""}`,
+  `モード: ${mode}` +
+    (mode === "live"
+      ? `（${providerName}: ${provider.endpoint} / ${provider.model}）`
+      : mode === "dry-run" && !apiKey
+        ? "（TYPESAFE_API_KEY も OPENROUTER_API_KEY も無い）"
+        : ""),
 );
 
 async function scoreLive(c: (typeof calls)[number]): Promise<Scored[]> {
-  const req = buildRequest(c.source, c.paragraph, c.dests);
+  const req = buildRequest(c.source, c.paragraph, c.dests, provider.model);
   for (let attempt = 0; attempt < 2; attempt++) {
-    const res = await fetch(ENDPOINT, {
+    const res = await fetch(provider.endpoint, {
       method: "POST",
       headers: {
         "content-type": "application/json",
