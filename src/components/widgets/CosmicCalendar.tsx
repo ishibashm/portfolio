@@ -18,7 +18,7 @@ import { Solar } from "lunar-javascript";
 import { getZonedDateTimeFields } from "@/utils/solarTime";
 import { parseJapanDateTime } from "@/utils/japanDate";
 import {
-  readLocalSettings,
+  readSettingsSync,
   saveSettings,
   settingNumber,
   settingString,
@@ -294,21 +294,16 @@ type BirthConfigKey = "wealth_birthDate" | "wealth_birthLon";
  * 「未設定」で設定欄が開き、ここで入れ直した値は他の画面に伝わらず、
  * 同じ人が画面ごとに違う生年月日で判定されていた。
  *
- * 旧キーは、設定に無いときの読み替えとしてだけ残す（ホームの手動保存が
- * まだ書いている）。
+ * **旧キーを直に読むのはやめた。**`readSettingsSync` が正の設定へ
+ * 引き上げたうえで返すので、写しの場所をこの部品が知る必要が無い。
+ * 直に読んでいると、別の端末で消した生年月日をこの画面だけが拾い直す。
  */
 export function readBirthConfig(): { birthDate: string; birthLon: string } {
   if (typeof window === "undefined") return { birthDate: "", birthLon: "" };
-  const s = readLocalSettings();
-  const birthDate =
-    settingString(s, "birth_date") ||
-    localStorage.getItem("wealth_birthDate") ||
-    "";
+  const s = readSettingsSync();
+  const birthDate = settingString(s, "birth_date") || "";
   const lon = settingNumber(s, "birth_lon");
-  const birthLon =
-    lon !== undefined
-      ? String(lon)
-      : localStorage.getItem("wealth_birthLon") || "";
+  const birthLon = lon !== undefined ? String(lon) : "";
   return { birthDate, birthLon };
 }
 
