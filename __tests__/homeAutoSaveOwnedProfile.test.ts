@@ -204,3 +204,89 @@ describe("相場マップの保存", () => {
     expect(text).toContain("currentBaseLat ? parseFloat(currentBaseLat)");
   });
 });
+
+/**
+ * **object literal の外にも同じ穴があった**（2026-09-19）。
+ *
+ * 上の 2 つは保存に渡す object literal（`partialConfig` /
+ * `configToSave`）を見ている。だが `SolarTimeClock` は保存のあとで、
+ * 旧 `wealth_*` の鍵へ **localStorage.setItem を直に呼んで**同じ値を
+ * 写している。そちらは object literal ではないので、上の検査に
+ * 掛からない。
+ *
+ * 実際、生年月日と出生地は旗で包まれていたのに、**出発地だけ素通しで
+ * 書かれていた。**相場マップは `tactical_config_v1` に出発地が無いとき
+ * この鍵を読むので、出発地を入れていない人の地図が画面の初期値
+ * （東京駅 35.6895 / 139.6917）を基準に出ていた。#1100・#1114・#1126 と
+ * 同じ事故の 4 件目。
+ *
+ * ここでは**呼び出しが旗の `if` の内側にあるか**を構文木で見る。
+ * 字面だと、この説明の中の「basePlaceOwned」を拾ってしまう。
+ */
+describe("旧 wealth_* への直接の書き込み", () => {
+  /** 鍵 → その値を書いてよい条件の旗。 */
+  const FLAG_FOR: Record<string, string> = {
+    wealth_birthDate: "birthDateOwned",
+    wealth_birthLat: "birthPlaceOwned",
+    wealth_birthLon: "birthPlaceOwned",
+    wealth_baseLat: "basePlaceOwned",
+    wealth_baseLon: "basePlaceOwned",
+  };
+
+  /** `localStorage.setItem("<key>", …)` の呼び出しを全部拾う。 */
+  function setItemCalls(source: string): { key: string; node: ts.Node }[] {
+    const path = join(process.cwd(), source);
+    const sf = ts.createSourceFile(
+      path,
+      readFileSync(path, "utf8"),
+      ts.ScriptTarget.Latest,
+      true,
+    );
+    const out: { key: string; node: ts.Node }[] = [];
+    const visit = (node: ts.Node) => {
+      if (
+        ts.isCallExpression(node) &&
+        ts.isPropertyAccessExpression(node.expression) &&
+        node.expression.name.text === "setItem" &&
+        node.arguments.length > 0 &&
+        ts.isStringLiteral(node.arguments[0])
+      ) {
+        out.push({ key: node.arguments[0].text, node });
+      }
+      ts.forEachChild(node, visit);
+    };
+    visit(sf);
+    return out;
+  }
+
+  /** その呼び出しを囲む if の条件を、根まで辿って連結する。 */
+  function enclosingConditions(node: ts.Node): string {
+    const parts: string[] = [];
+    let cur: ts.Node | undefined = node.parent;
+    while (cur) {
+      if (ts.isIfStatement(cur)) parts.push(cur.expression.getText());
+      cur = cur.parent;
+    }
+    return parts.join(" && ");
+  }
+
+  const calls = setItemCalls(SOURCE);
+
+  it("見張りが空回りしていない（書き込みを読めている）", () => {
+    const keys = calls.map((c) => c.key);
+    for (const key of Object.keys(FLAG_FOR)) {
+      expect(keys, `${key} への書き込みが見つからない`).toContain(key);
+    }
+  });
+
+  it("個人の値は、利用者が入れたときだけ書く", () => {
+    for (const { key, node } of calls) {
+      const flag = FLAG_FOR[key];
+      if (!flag) continue;
+      expect(
+        enclosingConditions(node),
+        `${key} を ${flag} の外で書いている（画面の初期値が入る）`,
+      ).toContain(flag);
+    }
+  });
+});
