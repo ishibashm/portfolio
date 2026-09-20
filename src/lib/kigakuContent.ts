@@ -154,11 +154,6 @@ export const STATUS_INFO: Record<
     kind: "bad",
     note: "十二支の欠けにあたる方位です。",
   },
-  NOISE_NODE: {
-    label: "月交点",
-    kind: "bad",
-    note: "月の軌道交点にあたる方位です。",
-  },
 };
 
 export function statusInfo(status: string) {

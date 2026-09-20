@@ -20,8 +20,10 @@ describe("塞いでいる理由の符号", () => {
   });
 
   it("五大凶殺を軽い凶より先に採る（軽い凶が上の盤にあっても）", () => {
-    // 年盤は月交点（軽い凶）、日盤は暗剣殺（五大凶殺）→ 日盤の暗剣殺
-    expect(encodeBlockCause("NOISE_NODE", "SAFE", "NOISE_ANKEN")).toBe("dA");
+    // 年盤は月命殺（軽い凶）、日盤は暗剣殺（五大凶殺）→ 日盤の暗剣殺
+    expect(encodeBlockCause("NOISE_GETSUMEI", "SAFE", "NOISE_ANKEN")).toBe(
+      "dA",
+    );
   });
 
   it("破は盤で名前が変わる", () => {
@@ -51,7 +53,7 @@ describe("塞いでいる理由の符号", () => {
       ["mA", "月盤の暗剣殺"],
       ["yM", "年盤の本命殺"],
       ["dV", "日盤の天中殺方位"],
-      ["mN", "月盤の羅睺・計都軸"],
+      ["mE", "月盤の月命殺"],
     ]) {
       expect(decodeBlockCause(code)).toBe(name);
     }

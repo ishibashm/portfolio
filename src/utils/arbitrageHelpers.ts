@@ -13,11 +13,7 @@ import { tierPinColors } from "@/utils/tierDisplay";
  */
 export function isNoiseStatus(status: string): boolean {
   if (!status) return false;
-  return (
-    status.startsWith("NOISE") &&
-    status !== "NOISE_VOID" &&
-    status !== "NOISE_NODE"
-  );
+  return status.startsWith("NOISE") && status !== "NOISE_VOID";
 }
 
 /**
@@ -170,7 +166,7 @@ export const getPropertyPinColors = (
   const details = targetDay?.scoreDetails;
   const hasLightBad =
     (details && (details.doyouPenalty < 0 || details.voidPenalty < 0)) ||
-    ["NOISE_VOID", "NOISE_NODE", "NOISE_GETSUMEI", "NOISE_GETSUTEKI"].includes(
+    ["NOISE_VOID", "NOISE_GETSUMEI", "NOISE_GETSUTEKI"].includes(
       astrologyStatus,
     );
   // SAFE を吉に数えていた。SAFE は「凶方位ではない」であって吉ではなく、

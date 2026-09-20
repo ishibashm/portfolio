@@ -107,7 +107,6 @@ function getRatingLabel(status: string): {
     case "NOISE_TEKI":
     case "NOISE_GETSUMEI":
     case "NOISE_GETSUTEKI":
-    case "NOISE_NODE":
       return {
         rating: "凶",
         color: "text-orange-400 border border-orange-500/20 bg-orange-500/5",

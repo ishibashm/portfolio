@@ -109,10 +109,6 @@ const statusBadgeClass = (s: string) => {
     return "text-orange-700 bg-orange-500/10 border-orange-200";
   if (s.startsWith("NOISE_VOID"))
     return "text-stone-600 bg-stone-100 border-stone-300";
-  if (s.startsWith("NOISE_NODE"))
-    // 白地に 1.53:1 しか無く読めなかった（本文には 4.5:1 が要る）。
-    // amber-700 は 5.02:1。ConsultPanel と同じ扱いに揃える。
-    return "text-amber-700 bg-amber-50 border-amber-200";
   return "text-red-600 bg-red-500/10 border-red-200";
 };
 

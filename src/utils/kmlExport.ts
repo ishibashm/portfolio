@@ -67,7 +67,6 @@ function getStatusLabel(status: string): string {
   if (status === "NOISE_HONMEI") return "本命";
   if (status === "NOISE_TEKI") return "的殺";
   if (status === "NOISE_VOID") return "ボイド";
-  if (status === "NOISE_NODE") return "交点";
   if (status === "OPTIMAL") return "大吉";
   if (status === "OPTIMAL_REGULAR") return "吉";
   if (status === "WARNING") return "注意";
@@ -289,10 +288,6 @@ export function generateMagneticMapKML(
       <LineStyle><color>ff08b3ea</color><width>2</width></LineStyle>
       <PolyStyle><color>6608b3ea</color></PolyStyle>
     </Style>
-    <Style id="style_NOISE_NODE">
-      <LineStyle><color>ff0b9ef5</color><width>2</width></LineStyle>
-      <PolyStyle><color>660b9ef5</color></PolyStyle>
-    </Style>
     <Style id="style_NOISE">
       <LineStyle><color>ff4444ef</color><width>2</width></LineStyle>
       <PolyStyle><color>994444ef</color></PolyStyle>
@@ -355,10 +350,6 @@ export function generateMagneticMapKML(
     <Style id="label_NOISE_VOID">
       <IconStyle><scale>0</scale></IconStyle>
       <LabelStyle><color>ff08b3ea</color><scale>1.1</scale></LabelStyle>
-    </Style>
-    <Style id="label_NOISE_NODE">
-      <IconStyle><scale>0</scale></IconStyle>
-      <LabelStyle><color>ff0b9ef5</color><scale>1.1</scale></LabelStyle>
     </Style>
     <Style id="label_NOISE">
       <IconStyle><scale>0</scale></IconStyle>

@@ -71,7 +71,6 @@ describe("12ヶ月表示の日盤除外 (ignoreDayLayer)", () => {
         OPTIMAL_REGULAR: 1,
         SAFE: 2,
         WARNING: 3,
-        NOISE_NODE: 4,
         NOISE_GETSUTEKI: 5,
         NOISE_GETSUMEI: 5,
         NOISE_TEKI: 6,

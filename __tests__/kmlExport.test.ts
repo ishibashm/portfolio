@@ -12,7 +12,7 @@ describe("KML Export Validation and Inconsistency Tests", () => {
     SE: "NOISE_HONMEI",
     S: "NOISE_ANKEN",
     SW: "NOISE_VOID",
-    W: "NOISE_NODE",
+    W: "NOISE_TEKI",
     NW: "OPTIMAL_REGULAR",
   };
 
@@ -96,7 +96,7 @@ describe("KML Export Validation and Inconsistency Tests", () => {
     expect(kml).toContain("<name>本命</name>");
     expect(kml).toContain("<name>暗剣</name>");
     expect(kml).toContain("<name>ボイド</name>");
-    expect(kml).toContain("<name>交点</name>");
+    expect(kml).toContain("<name>的殺</name>");
     expect(kml).toContain("<name>吉</name>");
 
     // SAFE directions shouldn't have status labels to avoid clutter

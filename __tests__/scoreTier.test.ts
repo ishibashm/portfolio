@@ -261,8 +261,7 @@ function oldStatusScore(status: string): number {
   if (status === "OPTIMAL_REGULAR") return 90;
   if (status === "SAFE") return 80;
   if (status === "WARNING") return 60;
-  if (status.startsWith("NOISE_VOID") || status.startsWith("NOISE_NODE"))
-    return 40;
+  if (status.startsWith("NOISE_VOID")) return 40;
   if (
     status.startsWith("NOISE_HONMEI") ||
     status.startsWith("NOISE_TEKI") ||
@@ -289,7 +288,6 @@ function oldWealthScore(status: string): number {
     case "WARNING":
       return 60;
     case "NOISE_VOID":
-    case "NOISE_NODE":
       return 40;
     case "NOISE_HONMEI":
     case "NOISE_TEKI":

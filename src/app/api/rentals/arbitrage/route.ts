@@ -861,8 +861,7 @@ export async function GET(request: Request) {
       else if (targetDetails.doyouPenalty < 0) maxAstroFactor = "土用の期間";
       else if (
         astrologyStatus === "NOISE_GETSUMEI" ||
-        astrologyStatus === "NOISE_GETSUTEKI" ||
-        astrologyStatus === "NOISE_NODE"
+        astrologyStatus === "NOISE_GETSUTEKI"
       )
         maxAstroFactor = directionLabelName(astrologyStatus);
       else if (astroFlags.includes("DECLINATION_WARNING"))

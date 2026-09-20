@@ -28,7 +28,6 @@ const STATUSES = [
   "NOISE_VOID",
   "NOISE_GETSUMEI",
   "NOISE_GETSUTEKI",
-  "NOISE_NODE",
 ];
 
 /** 旧実装（municipalities-wealth / arbitrageAstro / SolarTimeClock と同じ形）。 */

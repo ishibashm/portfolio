@@ -2390,7 +2390,6 @@ export default function ArbitrageMapInner({
                             details.voidPenalty < 0)) ||
                         [
                           "NOISE_VOID",
-                          "NOISE_NODE",
                           "NOISE_GETSUMEI",
                           "NOISE_GETSUTEKI",
                         ].includes(p.astrologyStatus);

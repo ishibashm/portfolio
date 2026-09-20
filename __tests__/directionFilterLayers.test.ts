@@ -154,7 +154,6 @@ function legacyFilter(
       if (isGou) return "NOISE_GOU";
       if (isAnken) return "NOISE_ANKEN";
       if (status === "NOISE_HA") return "NOISE_HA";
-      if (status === "NOISE_NODE") return "NOISE_NODE";
       return "SAFE";
     }
   };
@@ -189,8 +188,6 @@ function legacyFilter(
         (s) => s === "NOISE_GOU" || s === "NOISE_ANKEN" || s === "NOISE_HA",
       );
       if (hasRed) newFinalVectors[d] = hasRed;
-      else if (list.find((s) => s === "NOISE_NODE"))
-        newFinalVectors[d] = "NOISE_NODE";
       else newFinalVectors[d] = "SAFE";
     }
   });
@@ -221,7 +218,6 @@ function board(center: number): BoardLayout {
 const RAW_STATUSES: VectorStatus[] = [
   "SAFE",
   "NOISE_HA",
-  "NOISE_NODE",
   "NOISE_GOU",
   "NOISE_ANKEN",
 ];
