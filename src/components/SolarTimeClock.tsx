@@ -62,7 +62,6 @@ import {
 } from "@/lib/userSettings";
 import type { MunicipalityWealthItem } from "@/lib/municipalityWealth";
 import type { MapProperty } from "@/lib/mapProperty";
-import type { ScoredProperty } from "@/lib/scoredProperty";
 // TenChiJinEvaluation・Loader2 は「総合スコア」タブと一緒に
 // home/ScorecardPanel へ移した。
 import { getStatusScore } from "@/lib/scoreTier";
@@ -793,7 +792,6 @@ export const SolarTimeClock = () => {
   // Scorecard Tab States
   const [scorecardLoading, setScorecardLoading] = useState(false);
   const [wealthData, setWealthData] = useState<MunicipalityWealthItem[]>([]);
-  const [propertiesData, setPropertiesData] = useState<ScoredProperty[]>([]);
   const [selectedDirection, setSelectedDirection] = useState<Direction | null>(
     null,
   );
@@ -849,33 +847,6 @@ export const SolarTimeClock = () => {
           );
           const wJson = await wRes.json();
           if (wJson.success) setWealthData(wJson.data || []);
-
-          // Fetch Rental Arbitrage data
-          const aParams = new URLSearchParams();
-          aParams.append("limit", "1000");
-          aParams.append("baseLat", lat.toString());
-          aParams.append("baseLon", lon.toString());
-          aParams.append("birthLat", birthLat.toString());
-          aParams.append("birthLon", birthLon.toString());
-          aParams.append("birthDate", birthDate);
-          aParams.append("targetDate", dateStr);
-          aParams.append("radiusKm", "all");
-          aParams.append("prefecture", scorecardPrefecture);
-          aParams.append("useClassical", useClassicalBoard.toString());
-          aParams.append(
-            "nodeMapping",
-            useClassicalBoard ? "traditional" : "physical",
-          );
-          aParams.append("layerMode", activeLayerMode);
-          aParams.append("useTrueNorth", useTrueNorth.toString());
-          aParams.append("lunarPhaseModifier", lunarPhaseModifier.toString());
-          aParams.append("maxBuildingAge", "5");
-
-          const aRes = await fetch(
-            `/api/rentals/arbitrage?${aParams.toString()}`,
-          );
-          const aJson = await aRes.json();
-          setPropertiesData(aJson.properties || []);
         } catch (e) {
           console.error("Failed to load scorecard data:", e);
         } finally {
@@ -2573,18 +2544,6 @@ export const SolarTimeClock = () => {
       );
       const topArea = topAreas[0] || null;
 
-      const rentalsForDir = propertiesData.filter((item) => {
-        // 真北で束ねる（上と同じ理由）。
-        const itemDir = item.direction;
-        return itemDir === dir;
-      });
-      // 総合スコアは廃止した（#304〜#308）。物件を方位で探す画面と同じく
-      // 家賃の安い順にする。ここは方位ごとの代表を 1 件出すだけ。
-      const topRentals = [...rentalsForDir].sort(
-        (a, b) => (a.totalRent || 0) - (b.totalRent || 0),
-      );
-      const topRental = topRentals[0] || null;
-
       // Comparative Model Calculations
       const classicalStatus = classicalLayers?.finalVectors[dir] || "SAFE";
       const classicalScore = getStatusScore(classicalStatus);
@@ -2621,8 +2580,6 @@ export const SolarTimeClock = () => {
         dates: forecast.dates,
         topArea,
         topAreas: topAreas.slice(0, 5),
-        topRental,
-        topRentals: topRentals.slice(0, 5),
 
         // Extended comparative fields
         classicalStatus,
@@ -2639,7 +2596,6 @@ export const SolarTimeClock = () => {
     activeVectors,
     scorecard30DaysForecast,
     wealthData,
-    propertiesData,
     classicalLayers,
     physicalIndepLayers,
     physicalCoupledLayers,
