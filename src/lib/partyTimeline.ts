@@ -20,6 +20,7 @@
 import { TIER_LABELS, TIER_ORDER, type DayTier } from "@/utils/dayTier";
 import { decodeBlockCause } from "@/lib/blockCause";
 import {
+  COMPASS_DIRECTIONS,
   bearingBetween,
   directionFromBearing,
   distanceKmBetween,
@@ -131,8 +132,28 @@ export function memberDirection(
  * （五黄殺など）と天中殺・空亡を避けるべきに倒す。段階で言えば
  * X（五大凶殺）と D（軽い凶のみ）が方位の凶、`blocked` が天中殺。
  */
-function isAvoidTier(tier: DayTier, blocked: boolean): boolean {
+export function isAvoidTier(tier: DayTier, blocked: boolean): boolean {
   return blocked || tier === "X" || tier === "D";
+}
+
+/**
+ * **その日に開いている方位**（1 人ぶん）。避けるべき段階（X・D）と
+ * 天中殺を外した残り。並びは八方位の定義順。
+ *
+ * 日付が先、方位が後（利用者の指摘 2026-09-20）。「先に方位を 1 つ決めて
+ * から日を探す」と、年盤で塞がった方位に入り込んで候補が 1 日も出ない。
+ * 日を選んで、その日に開いている方位の中から行き先を決める。
+ */
+export function openDirections(row: TimelineRow): EightDirection[] {
+  const out: EightDirection[] = [];
+  /* 八方位の並びは directionGeo（葉）から引く。ephemerisEngine を値で
+     import すると、この葉を読む画面に暦エンジンが乗る（CLAUDE.md 3 節）。 */
+  for (const dir of COMPASS_DIRECTIONS) {
+    const raw = row.tiers[dir];
+    if (!raw) continue;
+    if (!isAvoidTier(asTier(raw), row.blocked)) out.push(dir);
+  }
+  return out;
 }
 
 export interface JointDay {
@@ -383,6 +404,88 @@ export function destinationCandidates(
       a.name.localeCompare(b.name, "ja"),
   );
   return out;
+}
+
+/** 日付が先、場所が後。1 日ぶんの「全員で動ける合流先」。 */
+export interface JointDateOption {
+  date: string;
+  /**
+   * その日に、移動する全員が避けるべき判定に当たらない合流先の名前。
+   * 並びは `centers` の順（県コード順）。空なら、その日はどこへも
+   * 全員では動けない。
+   */
+  open: string[];
+}
+
+/**
+ * **いつなら全員で動けるかを、合流先を決めさせずに出す。**
+ *
+ * 利用者の指摘（2026-09-20）。方角が凶でない日付を選んでから移動する
+ * 方角を決めるのであって、合流先を先に決めるのは順序が逆。
+ * `destinationCandidates` は場所が先（県ごとに日数を数える）なので、
+ * ここは日が先（日ごとに県を数える）。**中身は同じ合成**
+ * （`jointFromIndex` → `everyoneSafe`）で、見る向きを変えただけ。
+ * どちらで見ても答えが一致することは検査で固定する。
+ *
+ * 今日より前の日は返さない（これから動ける日の話に混ぜない）。
+ * 開いている県が 0 の日も返す（「この月は 0 日」を数えるため）。
+ */
+export function jointDateOptions(
+  members: MemberTimeline[],
+  centers: Record<string, Destination>,
+  policy: PartyPolicy,
+  todayIso: string,
+): JointDateOption[] {
+  const idx = indexMembers(members);
+  if (idx.movers.length === 0) return [];
+  const openByDate = new Map<string, string[]>();
+  for (const anchor of idx.movers[0].days) {
+    if (anchor.date >= todayIso) openByDate.set(anchor.date, []);
+  }
+  for (const [name, center] of Object.entries(centers)) {
+    for (const day of jointFromIndex(idx, center, policy)) {
+      if (!day.joint.everyoneSafe) continue;
+      openByDate.get(day.date)?.push(name);
+    }
+  }
+  return [...openByDate.entries()]
+    .sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0))
+    .map(([date, open]) => ({ date, open }));
+}
+
+/** 月ごとの「動ける日」のまとめ。1 人（方位）にも全員（県）にも使う。 */
+export interface MonthlyOpenSummary {
+  /** YYYY-MM */
+  month: string;
+  /** 開いているものが 1 つ以上ある日の数。 */
+  days: number;
+  /** その月で最初に開く日。無ければ null。 */
+  first: string | null;
+  /** その月で最も多かった、開いているものの数。 */
+  most: number;
+}
+
+/**
+ * 日ごとの「開いているもの」を月にまとめる。`openDirections`（方位）と
+ * `jointDateOptions`（県）のどちらの並びも同じ形で受ける。
+ */
+export function summarizeOpenByMonth(
+  items: readonly { date: string; open: readonly unknown[] }[],
+): MonthlyOpenSummary[] {
+  const map = new Map<string, MonthlyOpenSummary>();
+  for (const item of items) {
+    const month = item.date.slice(0, 7);
+    const cur = map.get(month) ?? { month, days: 0, first: null, most: 0 };
+    if (item.open.length > 0) {
+      cur.days++;
+      if (cur.first === null || item.date < cur.first) cur.first = item.date;
+      if (item.open.length > cur.most) cur.most = item.open.length;
+    }
+    map.set(month, cur);
+  }
+  return [...map.values()].sort((a, b) =>
+    a.month < b.month ? -1 : a.month > b.month ? 1 : 0,
+  );
 }
 
 /** 早い日が先。無い側は後ろへ。 */
