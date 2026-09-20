@@ -110,7 +110,8 @@ export interface ModelPrice {
  *
  * 呼び出し箇所（2/3-b で計測を入れる）
  *   gemini-2.5-flash   api/rentals/webhook      メールから物件を取り込む
- *   claude-haiku-4-5   api/rentals/parse-query  スマート検索の解釈
+ *   claude-haiku-4-5   （api/rentals/parse-query スマート検索の解釈。2026-09-20 に
+ *                      頁ごと消した。単価の行は過去の実績のために残す）
  *
  * gemini-2.5-pro の呼び出し元（api/relocation-timing）は消した。サイトの
  * どこからも呼ばれておらず、成功時も決め打ちの値を返すだけだったため

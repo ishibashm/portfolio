@@ -85,8 +85,6 @@ describe("読み方を 1 か所に寄せた（写しを増やさない）", () =
     "src/app/api/nba/route.ts",
     "src/app/api/relocation/nba-evaluate/route.ts",
     "src/app/api/municipalities-wealth/route.ts",
-    "src/app/api/rentals/arbitrage/route.ts",
-    "src/app/api/rentals/arbitrage/timeline/route.ts",
     "src/app/api/relocation/history/route.ts",
     "src/app/api/relocation/export/route.ts",
   ];

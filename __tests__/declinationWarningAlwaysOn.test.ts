@@ -35,10 +35,7 @@ import {
 
 const ROOT = process.cwd();
 
-const ROUTES = [
-  "src/app/api/municipalities-wealth/route.ts",
-  "src/app/api/rentals/arbitrage/route.ts",
-];
+const ROUTES = ["src/app/api/municipalities-wealth/route.ts"];
 
 /**
  * DECLINATION_WARNING を push している if 文を取り出す。
