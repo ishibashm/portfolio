@@ -27,6 +27,8 @@ const PAGES_USING_ESTAT_API = [
      ㎡単価を、公開統計に置き換えた（2026-09-19）。巡回は止めてあり、
      掲載由来の数字は 2026-09-13 で凍結していた。 */
   "src/app/houi/area/[code]/page.tsx",
+  /* 県ページの家賃。市区町村ページと同じ出どころ・同じ読み口（2026-09-20）。 */
+  "src/app/houi/pref/[code]/page.tsx",
 ];
 
 describe("e-Stat の API のクレジット表示", () => {

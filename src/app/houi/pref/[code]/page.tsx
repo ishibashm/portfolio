@@ -16,7 +16,12 @@ import {
   regionSiblings,
 } from "@/lib/prefContent";
 import { PREF_EDITORIAL } from "@/lib/prefEditorial";
-import { listingSnapshotNote } from "@/lib/listingFreshness";
+import housingStats from "@/data/housingStats.json";
+import {
+  housingFiguresFor,
+  type HousingSnapshotData,
+} from "@/lib/housingSnapshot";
+import { ESTAT_API_CREDIT } from "@/lib/estatCredit";
 import { DIRECTION_LABELS } from "@/lib/kigakuContent";
 import { metaDescriptionFromIntro } from "@/lib/editorialMeta";
 import { AREA_EDITORIAL } from "@/lib/areaEditorial";
@@ -33,14 +38,30 @@ import { todayInJapan } from "@/utils/japanDate";
  * 一覧ページ（/houi/area）は同じ印を先に付けてある。**同じ意味の印を
  * 2 通りの見た目にしない**ため、丸の大きさと色をそちらに合わせる。
  */
+/*
+  **素の JSON を型として読むのはここ 1 か所。**市区町村ページ
+  （/houi/area/[code]）と同じ扱い。
+*/
+const HOUSING = housingStats as unknown as HousingSnapshotData;
+
+/** e-Stat の利用規約が求める出典と加工の明記。文言は規約の指定どおり。 */
+const ESTAT_SOURCE =
+  "「統計でみる市区町村のすがた」（総務省）を加工して作成。出典：政府統計の総合窓口(e-Stat)（https://www.e-stat.go.jp/）";
+
+/** 1 ㎡あたりの家賃（円/月）。公表値が無ければ null。 */
+function rentOf(code: string): number | null {
+  return housingFiguresFor(HOUSING, code)?.rentPerSqm ?? null;
+}
+
 function AreaLink({
   code,
   city,
-  medianRent,
+  rentPerSqm,
 }: {
   code: string;
   city: string;
-  medianRent: number;
+  /** 1 ㎡あたりの家賃（円/月）。公表値が無ければ null。 */
+  rentPerSqm: number | null;
 }) {
   return (
     <li className="flex justify-between gap-2">
@@ -54,8 +75,9 @@ function AreaLink({
         )}
         {city}
       </Link>
+      {/* **公表値が無い市区町村は「—」。**0 円と書くと家賃 0 に読める。 */}
       <span className="font-mono text-slate-600">
-        {medianRent.toLocaleString()}円
+        {rentPerSqm === null ? "—" : `${rentPerSqm.toLocaleString()}円/㎡`}
       </span>
     </li>
   );
@@ -118,17 +140,30 @@ export default async function Page({
   /* 同じ地方で、固有文章を書いて公開している県だけ並べる */
   const siblings = regionSiblings(code).filter((s) => PREF_EDITORIAL[s.code]);
 
-  const cheapest = stats.municipalities.slice(0, 5);
-
   /*
-    掲載から作った数字が凍結していることの断り（2026-09-14）。市区町村
-    ページ（#1303）と同じ helper。`stats.asOf` は "YYYY-MM-DD" の日付
-    だけなので、UTC の 0 時＝日本時間の 9 時として読まれる（CLAUDE.md
-    3 節。日付だけの扱いは変えていない）。猶予が 3 日あるので、この
-    9 時間の差で判定が変わることはない。
+    **家賃は掲載（賃貸の巡回）から公開統計へ移した**（利用者の依頼
+    2026-09-19）。市区町村ページ（#1454）と同じ出どころ・同じ読み口。
+    掲載から作った中央値は巡回を止めた 2026-09-13 で凍結していた。
+
+    並べ替えも公開統計で行う。**表示だけ差し替えて順序を掲載のまま
+    にしない**（安い順のはずが別の基準で並ぶ）。公表値の無い
+    市区町村は安い側にも高い側にも入れない。
   */
-  const snapshotNote = listingSnapshotNote(stats.asOf);
-  const priciest = stats.municipalities.slice(-5).reverse();
+  const ranked = stats.municipalities
+    .map((a) => ({ area: a, rent: rentOf(a.code) }))
+    .filter(
+      (r): r is { area: (typeof stats.municipalities)[0]; rent: number } =>
+        r.rent !== null,
+    )
+    .sort((x, y) => x.rent - y.rent);
+  const cheapest = ranked.slice(0, 5).map((r) => r.area);
+  const priciest = ranked
+    .slice(-5)
+    .reverse()
+    .map((r) => r.area);
+  /* 県全体の真ん中。**公表値のあるものだけ**で数える。 */
+  const medianRentPerSqm =
+    ranked.length > 0 ? ranked[Math.floor(ranked.length / 2)].rent : null;
   const path = `/houi/pref/${code}`;
 
   return (
@@ -141,9 +176,9 @@ export default async function Page({
       />
       <DatasetJsonLd
         name={`${pref}の市区町村別家賃相場`}
-        description={`${pref}の市区町村ごとに、掲載中の賃貸物件から集計した家賃（管理費込み）の中央値と専有面積あたりの単価をまとめたデータ。県の面積重心から見た八方位の区分つき。`}
+        description={`${pref}の市区町村ごとに、住宅・土地統計調査から作った借家の 1 ㎡あたりの家賃をまとめたデータ。県の面積重心から見た八方位の区分つき。`}
         path={path}
-        dateModified={stats.asOf ?? todayInJapan()}
+        dateModified={HOUSING.generatedAt ?? todayInJapan()}
       />
       {/* 市区町村ページ（/houi/area/[code]）と同じ並びにする。
           方位の早見表 → エリア別 → 県 → 市区町村 で 1 本に繋がる。 */}
@@ -168,7 +203,7 @@ export default async function Page({
         </nav>
 
         <h1 className="text-3xl md:text-4xl font-bold font-serif tracking-tight leading-snug">
-          {pref}の家賃相場と方位別の市区町村
+          {pref}の家賃と方位別の市区町村
         </h1>
 
         {editorial.intro.map((p, i) => (
@@ -182,33 +217,33 @@ export default async function Page({
 
         <section className="mt-8 rounded-2xl border border-slate-300 bg-white/90 p-5">
           <h2 className="text-sm font-bold">
-            {pref}の相場のいま（掲載 {stats.totalCount.toLocaleString()}{" "}
-            件から集計）
+            {pref}の借家の家賃（{HOUSING.year} 年 住宅・土地統計調査）
           </h2>
-          <p className="mt-3 text-xs leading-relaxed text-slate-700">
-            データのある市区町村は {stats.municipalities.length}{" "}
-            。家賃（管理費込み）の中央値は市区町村ごとに{" "}
-            <b>
-              {stats.municipalities[0].medianRent.toLocaleString()}円〜
-              {stats.municipalities[
-                stats.municipalities.length - 1
-              ].medianRent.toLocaleString()}
-              円
-            </b>
-            の幅があり、県全体の真ん中は{" "}
-            <b>{stats.medianOfMedians.toLocaleString()}円</b>です。
-            {stats.asOf ? `（${stats.asOf} 時点）` : null}
-          </p>
-          {/* 「◯月◯日時点」だけでは、取り込みが遅れているのか止まって
-              いるのかが読めない。巡回を止めたので（backlog 29 節）、この
-              相場は凍結している。市区町村ページ（#1303）と同じ断り。
-              日数は出さない（静的生成なので `new Date()` はビルド時刻に
-              なる。`listingSnapshotNote` の註）。 */}
-          {snapshotNote && (
-            <p className="mt-2 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs leading-relaxed text-amber-900">
-              {snapshotNote}
+          {ranked.length > 0 && medianRentPerSqm !== null ? (
+            <p className="mt-3 text-xs leading-relaxed text-slate-700">
+              この県で頁のある {stats.municipalities.length}{" "}
+              市区町村のうち、家賃の公表値があるのは <b>{ranked.length}</b>{" "}
+              件です。1 ㎡あたりの家賃は{" "}
+              <b>
+                {ranked[0].rent.toLocaleString()}円〜
+                {ranked[ranked.length - 1].rent.toLocaleString()}円
+              </b>
+              の幅があり、真ん中は{" "}
+              <b>{medianRentPerSqm.toLocaleString()}円/㎡</b>です。
+            </p>
+          ) : (
+            <p className="mt-3 text-xs leading-relaxed text-slate-700">
+              この県で頁のある {stats.municipalities.length}{" "}
+              市区町村には、家賃の公表値がありません。住宅・土地統計調査には、市区町村ごとに集計できない項目があります。
             </p>
           )}
+          {/* 出どころと調査年。数字そのものより先に、いつの何かを書く。 */}
+          <p className="mt-2 text-xs leading-relaxed text-slate-500">
+            {ESTAT_SOURCE}
+          </p>
+          <p className="mt-1 text-xs leading-relaxed text-slate-500">
+            {ESTAT_API_CREDIT}
+          </p>
           <div className="mt-4 grid gap-4 sm:grid-cols-2">
             <div>
               <h3 className="text-xs font-bold text-slate-600">
@@ -220,7 +255,7 @@ export default async function Page({
                     key={a.code}
                     code={a.code}
                     city={a.city}
-                    medianRent={a.medianRent}
+                    rentPerSqm={rentOf(a.code)}
                   />
                 ))}
               </ul>
@@ -235,7 +270,7 @@ export default async function Page({
                     key={a.code}
                     code={a.code}
                     city={a.city}
-                    medianRent={a.medianRent}
+                    rentPerSqm={rentOf(a.code)}
                   />
                 ))}
               </ul>
@@ -245,7 +280,7 @@ export default async function Page({
 
         <section className="mt-10">
           <h2 className="text-xl font-bold font-serif border-b border-slate-300 pb-2">
-            八方位ごとの市区町村と相場
+            八方位ごとの市区町村と家賃
           </h2>
           <p className="mt-3 max-w-[70ch] text-xs leading-relaxed text-slate-600">
             方位は{pref}の<b>面積重心</b>
@@ -287,7 +322,7 @@ export default async function Page({
                       key={a.code}
                       code={a.code}
                       city={a.city}
-                      medianRent={a.medianRent}
+                      rentPerSqm={rentOf(a.code)}
                     />
                   ))}
                 </ul>
@@ -302,7 +337,7 @@ export default async function Page({
                           key={a.code}
                           code={a.code}
                           city={a.city}
-                          medianRent={a.medianRent}
+                          rentPerSqm={rentOf(a.code)}
                         />
                       ))}
                     </ul>

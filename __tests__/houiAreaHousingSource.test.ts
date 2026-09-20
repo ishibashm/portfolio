@@ -32,6 +32,8 @@ import {
 
 const PAGE = join(process.cwd(), "src/app/houi/area/[code]/page.tsx");
 const source = readFileSync(PAGE, "utf8");
+const PREF_PAGE = join(process.cwd(), "src/app/houi/pref/[code]/page.tsx");
+const prefSource = readFileSync(PREF_PAGE, "utf8");
 const snapshot = housingStats as unknown as HousingSnapshotData;
 
 describe("市区町村ページの家賃は公開統計から出す", () => {
@@ -70,6 +72,17 @@ describe("市区町村ページの家賃は公開統計から出す", () => {
 
   it("写しに行が無い市区町村は null を返す", () => {
     expect(housingFiguresFor(snapshot, "99999")).toBeNull();
+  });
+
+  it("県ページも掲載由来の家賃を読んでいない", () => {
+    /* 県ページは安い側・高い側の 5 件を並べる。**表示だけ差し替えて
+       順序を掲載のままにすると**、安い順のはずが別の基準で並ぶ。
+       並べ替えも同じ公開統計で行っていることを見る。 */
+    expect(prefSource).not.toContain("a.medianRent");
+    expect(prefSource).not.toContain("medianOfMedians");
+    expect(prefSource).not.toContain("listingSnapshotNote");
+    expect(prefSource).toContain("housingFiguresFor");
+    expect(prefSource).toMatch(/\.sort\(\(x, y\) => x\.rent - y\.rent\)/);
   });
 
   it("差の計算は、どちらかが欠けたら null", () => {

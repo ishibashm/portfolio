@@ -191,12 +191,15 @@ describe("静止した数字の断り", () => {
     expect(listingSnapshotNote("こわれた値", NOW)).toBeNull();
   });
 
-  it("県ページも同じ断りを出している", () => {
+  it("県ページももう掲載の数字を出していない", () => {
+    /* 市区町村ページ（#1454）に続けて、県ページも公開統計へ移した
+       （2026-09-20）。凍結した数字を出さなくなったので断りも要らない。 */
     const page = readFileSync(
       join(process.cwd(), "src/app/houi/pref/[code]/page.tsx"),
       "utf8",
     );
-    expect(page).toContain("listingSnapshotNote(stats.asOf)");
+    expect(page).not.toContain("listingSnapshotNote");
+    expect(page).not.toContain("medianOfMedians");
   });
 
   it("市区町村ページはもう掲載の数字を出していない", () => {
