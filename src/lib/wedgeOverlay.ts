@@ -20,14 +20,14 @@
  *
  * 層を足すたびに条件式へ 1 つ足す形だと、また忘れる。**意味のある色を
  * 敷く層はここに集める。**
+ *
+ * 掲載件数のバブル（showHeatmap）は 2026-09-20 に物件の描画ごと外した。
  */
 
 /** 扇形の下に敷かれている、意味のある色。 */
 export interface WedgeUnderlay {
-  /** 俯瞰の県の塗り分け（方位の吉凶か掲載件数）。 */
+  /** 俯瞰の県の塗り分け（方位の吉凶）。 */
   isOverview: boolean;
-  /** 掲載件数のバブル。 */
-  showHeatmap: boolean;
   /** 用途地域（13 色の塗り分け）。 */
   zoningOn: boolean;
   /** ハザード（浸水深などの色）。"none" 以外なら敷かれている。 */
@@ -41,5 +41,5 @@ export interface WedgeUnderlay {
  * どこからどこまでが東かは境界線とラベルで分かる。
  */
 export function wedgeOutlineOnly(u: WedgeUnderlay): boolean {
-  return u.isOverview || u.showHeatmap || u.zoningOn || u.hazardOn;
+  return u.isOverview || u.zoningOn || u.hazardOn;
 }

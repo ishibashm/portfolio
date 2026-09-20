@@ -22,22 +22,22 @@ import { wedgeOutlineOnly, type WedgeUnderlay } from "@/lib/wedgeOverlay";
  */
 const NONE: WedgeUnderlay = {
   isOverview: false,
-  showHeatmap: false,
   zoningOn: false,
   hazardOn: false,
 };
 
-/** 旧実装。戻したら落ちることを示すために写してある。 */
-const oldOutlineOnly = (u: WedgeUnderlay) => u.isOverview || u.showHeatmap;
+/** 旧実装。戻したら落ちることを示すために写してある。
+    （件数バブル showHeatmap は 2026-09-20 に層ごと消えたので、旧の
+    条件からも外してある。当時は `isOverview || showHeatmap`。） */
+const oldOutlineOnly = (u: WedgeUnderlay) => u.isOverview;
 
 describe("扇形の塗りを外す条件", () => {
   it("下に何も無ければ塗る", () => {
     expect(wedgeOutlineOnly(NONE)).toBe(false);
   });
 
-  it("俯瞰と件数バブルでは境界線だけ（従来どおり）", () => {
+  it("俯瞰では境界線だけ（従来どおり）", () => {
     expect(wedgeOutlineOnly({ ...NONE, isOverview: true })).toBe(true);
-    expect(wedgeOutlineOnly({ ...NONE, showHeatmap: true })).toBe(true);
   });
 
   it("用途地域とハザードでも境界線だけ（ここが直したところ）", () => {
@@ -50,11 +50,9 @@ describe("扇形の塗りを外す条件", () => {
        用途地域を出しても塗ったままで、色が 2 枚重なる。 */
     expect(oldOutlineOnly({ ...NONE, zoningOn: true })).toBe(false);
     expect(oldOutlineOnly({ ...NONE, hazardOn: true })).toBe(false);
-    /* 俯瞰と件数バブルは旧でも新でも同じ（挙動を変えていない証拠） */
-    for (const key of ["isOverview", "showHeatmap"] as const) {
-      const u = { ...NONE, [key]: true };
-      expect(oldOutlineOnly(u)).toBe(wedgeOutlineOnly(u));
-    }
+    /* 俯瞰は旧でも新でも同じ（挙動を変えていない証拠） */
+    const u = { ...NONE, isOverview: true };
+    expect(oldOutlineOnly(u)).toBe(wedgeOutlineOnly(u));
   });
 
   it("条件式を画面側に書き戻していない", () => {

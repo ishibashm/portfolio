@@ -32,7 +32,6 @@ const SOURCES = [
   "src/components/SolarTimeClock.tsx",
   // 総合スコアの「推奨賃貸物件」はタブ分割（2/3）でこちらへ移った
   "src/components/home/ScorecardPanel.tsx",
-  "src/components/ArbitrageMapInner.tsx",
 ];
 
 /** 応答に存在しないのに、過去に読まれていた項目名。 */

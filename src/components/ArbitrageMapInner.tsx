@@ -13,7 +13,6 @@ import {
   Marker,
   Polygon,
   Circle,
-  CircleMarker,
   useMap,
   Popup,
   useMapEvents,
@@ -22,12 +21,9 @@ import {
 import { InvalidateMapSize } from "@/components/map/InvalidateMapSize";
 import { readMapViewport, type MapViewport } from "@/utils/mapViewport";
 import type { DayTier } from "@/utils/auspiciousDays";
-import type { ScoredProperty } from "@/lib/scoredProperty";
 import type { FeatureCollection } from "geojson";
 import { applyLeafletDefaultIcon } from "@/lib/leafletDefaultIcon";
 import { HazardTileOverlay } from "@/components/HazardTileOverlay";
-import { AerialThumb } from "@/components/relocation/AerialThumb";
-import { clusterByTile, shouldCluster } from "@/lib/mapClusters";
 import {
   BASE_MAPS,
   BASE_MAP_ORDER,
@@ -55,8 +51,6 @@ import L from "leaflet";
 import { Copy, Check } from "lucide-react";
 import { CurrentLocationLayer } from "@/components/map/CurrentLocationLayer";
 import { useMapTheme } from "@/lib/useMapTheme";
-import { AstroGridCalendar } from "./realestate/AstroGridCalendar";
-import { getPropertyPinColors } from "@/utils/arbitrageHelpers";
 import { OVERVIEW_CENTER, OVERVIEW_ZOOM } from "@/utils/arbitrageSearchArea";
 import {
   destinationAtBearing,
@@ -71,21 +65,14 @@ import {
   TIER_SECTOR_OPACITY,
   BLOCKED_FILL,
 } from "@/utils/tierDisplay";
-import prefecturesWithData from "@/data/prefecturesWithData.json";
 import { MapClickPicker } from "@/components/map/MapClickPicker";
-import { truncationNotice } from "@/lib/arbitrageCounts";
-import {
-  parseMunicipalityListings,
-  type MunicipalityListing,
-} from "@/utils/areaDatasetMerge";
-import { aggregateToGrid, cellDegreesForZoom } from "@/lib/listingGrid";
 
 // 既定アイコンの下ごしらえ。理由と型の話は @/lib/leafletDefaultIcon に集約。
 applyLeafletDefaultIcon();
 
 /**
- * 俯瞰と近景の境目のズーム。これ未満なら県の塗り分け、以上なら物件のピン。
- * 表示範囲が API の絞り込みに使われる下限（geographyParamsForSearch）と同じ値。
+ * 俯瞰と近景の境目のズーム。これ未満なら県の塗り分け、以上なら扇形と
+ * 起点の目印だけ。
  */
 const OVERVIEW_ZOOM_MAX = 10;
 
@@ -101,11 +88,8 @@ const STATIONS_STORAGE_KEY = "arbitrage_show_stations";
 /**
  * 検索半径から表示ズームを引く。初回表示と「出発地へ」ボタンで使う。
  *
- * フォーカスの初期値を物件の分布（fitBounds）で決めると、データの
- * 到着順で毎回違う画角になる。半径は利用者が選んだ確定値なので、
- * これだけから決めれば同じ条件では常に同じ画角になる。
- * 下限の 10 は俯瞰と近景の境目（OVERVIEW_ZOOM_MAX）。ここより引くと
- * 物件のピンが県の塗り分けに変わる。
+ * 半径は利用者が選んだ確定値なので、これだけから決めれば同じ条件では
+ * 常に同じ画角になる。下限の 10 は俯瞰と近景の境目（OVERVIEW_ZOOM_MAX）。
  */
 function zoomForRadius(radiusKm?: string): number {
   const km = Number(radiusKm);
@@ -120,11 +104,15 @@ function zoomForRadius(radiusKm?: string): number {
  *
  * 以前はここで座標をクリップボードへ写していた。地点の判定を見るには
  * それを絞り込み欄へ貼り直す必要があり、手が 1 つ余計に要る。判定へ
- * 直接送る（onPick）。座標を写したいときは、起点や物件のカードに
+ * 直接送る（onPick）。座標を写したいときは、起点の吹き出しに
  * 「座標をコピー」のボタンが別にある。
+ *
+ * **物件（掲載）は描かない。**2026-09-20 に掲載の取り込みを止めたことに
+ * 合わせて、物件のピン・件数バブル・升目・候補数の札・県の掲載件数の
+ * 塗りを外した。この地図が描くのは、出発地から見た方位の吉凶（扇形・
+ * 県塗り）と、参考の層（名所・駅・用途地域・ハザード）だけ。
  */
 interface ArbitrageMapInnerProps {
-  properties: ScoredProperty[];
   baseLat: number;
   baseLon: number;
   mapCenter?: [number, number];
@@ -157,44 +145,10 @@ interface ArbitrageMapInnerProps {
    * prefKigaku が無いときの理由（「生年月日を入れると…」）。
    *
    * 以前はここが空だと切り替えパネルごと消え、県塗りが「方位の吉凶」から
-   * 「掲載件数」へ無言で入れ替わっていた。どちらも同じ県を色で塗るので、
-   * 件数の色が吉凶に見える。理由を受け取って凡例に出す。
+   * 「掲載件数」へ無言で入れ替わっていた。掲載の塗りは外したが、
+   * 「塗っていない理由」は今も凡例に出す。
    */
   kigakuUnavailableReason?: string;
-  /**
-   * 県名 → 掲載件数。俯瞰の県ラベルと「件数」塗りが読む。
-   *
-   * 渡されないときは src/data/prefecturesWithData.json（静的な
-   * 値）に落ちる。**絞り込みを掛けているあいだはページ側が数え直した値を
-   * 渡す。**静的な値だけを見ていたころは、条件をどう変えても県の数字が
-   * 動かず、絞り込んだあとの分布を読み違えた。
-   */
-  prefCounts?: Record<string, number>;
-  /**
-   * 上の prefCounts が絞り込みを反映した値か。
-   *
-   * 反映できるのは SQL で表せる条件（家賃・間取り・築年・徒歩・広さ）
-   * だけで、方位や吉凶は含まれない。数字の意味が変わるので、凡例に
-   * 断りを出すためのフラグとして受け取る。
-   */
-  prefCountsFiltered?: boolean;
-  /**
-   * この検索範囲にある候補の総数（名寄せ後）。DB が数えた実数で、
-   * 地図が持っている 500 件の窓とは別。null なら出さない。
-   */
-  rangeUniqueCount?: number | null;
-  /** その総数のうち、実際に評価できた件数（窓の大きさ） */
-  rangeAnalyzedCount?: number | null;
-  /**
-   * 窓に当たって打ち切られたか。
-   *
-   * **true のとき、地図は範囲の一部しか描いていない。**候補の切り出しは
-   * 面積あたり家賃の安い順（既定の "value"）なので、広い範囲を映すほど
-   * 窓はその中でいちばん安い一角に埋まる。地図の大半が空に見えるのは
-   * そのためで、「そこに物件が無い」からではない。**その区別が画面に
-   * 出ていないと、利用者は空白を「無い」と読む**（利用者の報告）。
-   */
-  rangeTruncated?: boolean;
   /**
    * 地図の空きを押したときに、その地点を判定へ送る。
    *
@@ -206,7 +160,7 @@ interface ArbitrageMapInnerProps {
    *
    * prefKigaku と同じ 1 回の盤計算から切り出したもので、時期パネルの
    * 「選択日」列とも同じ値になる。undefined（生年月日や出発地が未入力）
-   * のときだけ、物件の status からの推定に落ちる。
+   * のときは塗らず、輪郭だけ描く。
    */
   dirKigaku?: Record<
     string,
@@ -221,30 +175,9 @@ interface ArbitrageMapInnerProps {
   targetDate?: string;
   /** 出発地が入力済みか。フォーカスの初期値と「出発地へ」ボタンに使う */
   hasBase?: boolean;
-  /** mapCenter の意味。area=検索の起点 / spot=個別の物件 */
+  /** mapCenter の意味。area=出発地 / spot=調べている地点 */
   focusKind?: "area" | "spot";
-  /** 詳細パネルで開いている物件。リングで強調する */
-  selectedPropertyId?: string | null;
-  isTransitioningDate?: boolean;
-  /**
-   * 頁が物件を取りに行っている最中か。地図を動かすと 0.5 秒待って
-   * から取りに行き、返るまで数秒かかる。その間、範囲の候補数が古い
-   * 値のまま静かに残るので「この範囲には無い」に見えていた（利用者の
-   * 指摘）。数字の横に「更新中」を出して、待てば変わると分かるように。
-   */
-  isLoading?: boolean;
-  /**
-   * 一覧が開いているか。**受け口は残す**（呼び出し側とずれるため。
-   * CLAUDE.md「未使用に見えても props を消さない」）。
-   *
-   * まとめ方の判断には使わなくなった。以前は「一覧が開いていたら
-   * まとめない」という枝があったが、**まとめるかどうかは件数だけで
-   * 決める**形に一本化した（地図の定石）。一覧の開閉で地図の
-   * 見え方が飛ぶほうが分かりにくい。
-   */
-  showListView?: boolean;
   useClassical?: boolean;
-  onDateChange?: (date: string) => void;
   onBoundsChange?: (bounds: {
     minLat: number;
     maxLat: number;
@@ -373,25 +306,6 @@ function BoundsListener({
   return null;
 }
 
-function getMunicipality(address: string | null): string {
-  if (!address) return "その他";
-  const cleanAddr = address.replace(
-    /^(東京都|北海道|京都府|大阪府|.{2,3}県)/,
-    "",
-  );
-  const cityDistrictMatch = cleanAddr.match(/^([^市]+市[^区]+区)/);
-  if (cityDistrictMatch) return cityDistrictMatch[1];
-  const cityMatch = cleanAddr.match(/^([^市]+市)/);
-  if (cityMatch) return cityMatch[1];
-  const gunMatch = cleanAddr.match(/^([^郡]+郡[^町]+町|[^郡]+郡[^村]+村)/);
-  if (gunMatch) return gunMatch[1];
-  const wardMatch = cleanAddr.match(/^([^区]+区)/);
-  if (wardMatch) return wardMatch[1];
-  const townMatch = cleanAddr.match(/^([^町]+町|[^村]+村)/);
-  if (townMatch) return townMatch[1];
-  return cleanAddr.substring(0, 8);
-}
-
 /** 用途地域を出すかどうかを端末に残す鍵。 */
 const ZONING_STORAGE_KEY = "arb_zoning_on";
 /** 下地（ベースマップ）の選択。ハザード・用途地域と同じく端末に残す。 */
@@ -401,7 +315,7 @@ const BASE_MAP_STORAGE_KEY = "arb_base_map";
  * レイヤーの目的プリセット。
  *
  * 重ねられる層が 10 あり、1 つずつ切り替えると目的の画面にするまで
- * 4〜5 押し掛かる（#34）。実際の使い方は「方位で物件を選ぶ」と
+ * 4〜5 押し掛かる（#34）。実際の使い方は「方位を見る」と
  * 「決めた場所の土地を調べる」の 2 通りに割れているので、その 2 通りを
  * 1 押しにする。**個別の切り替えは下にそのまま残す**（プリセットは
  * 出発点で、そこから微調整できる）。
@@ -413,7 +327,7 @@ const BASE_MAP_STORAGE_KEY = "arb_base_map";
  */
 const LAYER_PRESETS = {
   property: {
-    label: "🏠 物件を選ぶ",
+    label: "🧭 方位を見る",
     note: "地図と方位だけにする（ハザード・用途地域・地形を消す）",
     baseMap: "std" as BaseMapId,
     hillshade: false,
@@ -435,7 +349,6 @@ type LayerPresetId = keyof typeof LAYER_PRESETS;
 const LAYER_PRESET_ORDER: LayerPresetId[] = ["property", "land"];
 
 export default function ArbitrageMapInner({
-  properties,
   baseLat,
   baseLon,
   mapCenter,
@@ -447,20 +360,11 @@ export default function ArbitrageMapInner({
   prefKigaku,
   dirKigaku,
   kigakuUnavailableReason,
-  prefCounts: prefCountsProp,
-  prefCountsFiltered = false,
-  rangeUniqueCount = null,
-  rangeAnalyzedCount = null,
-  rangeTruncated = false,
   onInspectSpot,
   targetDate,
   hasBase = false,
   focusKind = "area",
-  selectedPropertyId = null,
-  isTransitioningDate = false,
-  isLoading = false,
   useClassical = false,
-  onDateChange,
   onBoundsChange,
 }: ArbitrageMapInnerProps) {
   const [mounted, setMounted] = useState(false);
@@ -472,26 +376,13 @@ export default function ArbitrageMapInner({
     maxLon: number;
   } | null>(null);
   /**
-   * 俯瞰（全国）か近景か。ズーム 10 を境に、県ごとの塗り分けと物件の
-   * ピンが入れ替わる。扇形は両方で描く。
+   * 俯瞰（全国）か近景か。ズーム 10 を境に、県ごとの塗り分けが出入りする。
+   * 扇形は両方で描く。
    */
   const isOverview = zoom < OVERVIEW_ZOOM_MAX;
-  const [showHeatmap, setShowHeatmap] = useState(false);
   /** sm 未満で右下の凡例を開いているか（Task #52）。既定は畳む。 */
   const [legendOpen, setLegendOpen] = useState(false);
   const [geoData, setGeoData] = useState<FeatureCollection | null>(null);
-  /**
-   * 地の分布。集計＝その日の掲載を全部数えた値（#935）。取り込みを
-   * 止めたので、この数は止まった日のまま動かない。
-   *
-   * **候補（安い順 500 件の窓）とは別物。**窓は広い範囲を映すほど
-   * いちばん安い一角に埋まるので、それだけを描くと残りが空白になり
-   * 「物件が無い」と読まれる（利用者の報告）。こちらは絞り込みとも
-   * 窓とも無関係なので、視界の全域が埋まる。
-   */
-  const [baseDistribution, setBaseDistribution] = useState<
-    MunicipalityListing[] | null
-  >(null);
   const { mapTheme, toggleMapTheme } = useMapTheme();
   /**
    * 扇形を描くか。
@@ -627,17 +518,6 @@ export default function ArbitrageMapInner({
     localStorage.setItem(SECTORS_STORAGE_KEY, p.showSectors ? "1" : "0");
   };
 
-  // 俯瞰の塗り分け。方位の吉凶（意思決定）か、掲載件数（データの厚み）か。
-  const [overviewTint, setOverviewTint] = useState<"kigaku" | "count">(
-    "kigaku",
-  );
-  /**
-   * 実際に塗っている側。判定が出せないときは選択に関わらず件数で塗るので、
-   * ボタンの強調・凡例・温度計はこちらを見る。既定が "kigaku" なので、
-   * overviewTint をそのまま見るとどのボタンも強調されないまま
-   * 件数の色を塗る、という食い違いが出る。
-   */
-  const effectiveTint: "kigaku" | "count" = prefKigaku ? overviewTint : "count";
   const [toast, setToast] = useState<{
     message: string;
     type: "success" | "info";
@@ -701,52 +581,6 @@ export default function ArbitrageMapInner({
     };
   }, [zoom, geoData]);
 
-  /*
-    地の分布（34.8 KB）はバブルの帯（zoom < 12）でしか要らない。県の輪郭
-    （141 KB）と同じく、そこに入って初めて読み、一度読んだら持ち続ける。
-    開いた時点で落とすと、出発地の周りを見るだけの利用者にも払わせる。
-  */
-  useEffect(() => {
-    if (zoom >= 12 || baseDistribution) return;
-    let alive = true;
-    fetch("/municipalityListings.json")
-      .then((res) => {
-        if (!res.ok) throw new Error("municipalityListings.json を読めない");
-        return res.json();
-      })
-      .then((data) => {
-        if (alive) setBaseDistribution(parseMunicipalityListings(data));
-      })
-      .catch((err) => {
-        // 読めなくても地図は壊さない。地の分布が出ないだけ。
-        console.error("地の分布を読めなかった:", err);
-        if (alive) setBaseDistribution([]);
-      });
-    return () => {
-      alive = false;
-    };
-  }, [zoom, baseDistribution]);
-
-  // 県別の色分けと件数ラベルの元。
-  //
-  // 以前は API が返した properties（安い順・最大 500 件）を県名で数えて
-  // いた。母数が 500 件では安い県だけが濃く出るうえ、俯瞰のためだけに
-  // 全国 45 万行の名寄せを走らせることになる。俯瞰に要るのは県ごとの
-  // 数字だけなので、build_area_dataset.ts が数えて静的に配る値を使う。
-  // 取り込みが進んで新しい県にデータが載れば、翌朝ここも自動で増える。
-  //
-  // 絞り込みが掛かっているあいだは、ページ側が数え直した値（prefCountsProp）
-  // を優先する。静的な値だけを見ていたころは依存配列も空で、条件をどう
-  // 変えても県の数字が動かなかった。
-  const prefCounts: Record<string, number> = useMemo(
-    () =>
-      prefCountsProp ??
-      (prefecturesWithData as { listingCounts?: Record<string, number> })
-        .listingCounts ??
-      {},
-    [prefCountsProp],
-  );
-
   const handleBoundsChange = useCallback(
     (b: {
       minLat: number;
@@ -768,81 +602,6 @@ export default function ArbitrageMapInner({
     },
     [onBoundsChange],
   );
-
-  const visibleProperties = useMemo(() => {
-    if (!currentBounds) return properties;
-    return properties.filter((p) => {
-      if (p.lat === null || p.lon === null) return false;
-      return (
-        p.lat >= currentBounds.minLat &&
-        p.lat <= currentBounds.maxLat &&
-        p.lon >= currentBounds.minLon &&
-        p.lon <= currentBounds.maxLon
-      );
-    });
-  }, [properties, currentBounds]);
-
-  const visibleCount = visibleProperties.length;
-
-  /* 窓に当たっているかの判定は lib に 1 つだけ置く（同じ条件を画面と
-     検査の 2 か所に書かない）。 */
-  const truncation = useMemo(
-    () =>
-      truncationNotice({
-        matched: rangeUniqueCount,
-        analyzed: rangeAnalyzedCount ?? 0,
-        truncated: rangeTruncated,
-        duplicatesHidden: 0,
-        staleHidden: 0,
-        staleDays: null,
-      }),
-    [rangeUniqueCount, rangeAnalyzedCount, rangeTruncated],
-  );
-
-  /*
-    個別ピンを描く対象。**画面の外の物件までピンを作っていた。**
-
-    3 つ目の枝（詳細表示）は properties をそのまま並べていたので、
-    候補の上限 500 件ぶんの Marker が、画面に入っていないものも含めて
-    作られる。Leaflet は 1 つずつ DOM を持つので、混んだ地域ほど
-    そのまま重くなる（利用者から「スマホだと地図の表示に時間がかかる」
-    と報告）。見えないものは作らない。
-
-    端は少し余分に見る。境界が更新されるのは moveend / zoomend なので、
-    指で動かしている最中は古い境界のままになる。ぴったりで切ると
-    その間に縁が空く。画面の 25% ぶん外まで含めておけば、動かし終える
-    前に穴が見えることはない。
-
-    **画面に入っている物件の見え方は 1 つも変えていない。**
-  */
-  const pinProperties = useMemo(() => {
-    if (!currentBounds) return properties;
-
-    const latPad = (currentBounds.maxLat - currentBounds.minLat) * 0.25;
-    const lonPad = (currentBounds.maxLon - currentBounds.minLon) * 0.25;
-
-    return properties.filter((p) => {
-      if (p.lat === null || p.lon === null) return false;
-      return (
-        p.lat >= currentBounds.minLat - latPad &&
-        p.lat <= currentBounds.maxLat + latPad &&
-        p.lon >= currentBounds.minLon - lonPad &&
-        p.lon <= currentBounds.maxLon + lonPad
-      );
-    });
-  }, [properties, currentBounds]);
-
-  useEffect(() => {
-    if (zoom >= 12) {
-      setShowHeatmap(false);
-      return;
-    }
-    if (visibleCount >= 120) {
-      setShowHeatmap(true);
-    } else if (visibleCount <= 80) {
-      setShowHeatmap(false);
-    }
-  }, [visibleCount, zoom]);
 
   const center = useMemo<[number, number]>(() => {
     if (mapCenter) return mapCenter;
@@ -874,145 +633,15 @@ export default function ArbitrageMapInner({
     ? "traditional"
     : "physical";
 
-  // 市区町村ごとの集計データ (広域表示用)
-  const municipalityData = useMemo(() => {
-    if (!showHeatmap && zoom >= 10) return [];
-
-    const groups: Record<
-      string,
-      {
-        name: string;
-        latSum: number;
-        lonSum: number;
-        count: number;
-        properties: ScoredProperty[];
-      }
-    > = {};
-
-    properties.forEach((p) => {
-      if (!p.lat || !p.lon) return;
-      const muni = getMunicipality(p.address);
-      if (!groups[muni]) {
-        groups[muni] = {
-          name: muni,
-          latSum: 0,
-          lonSum: 0,
-          count: 0,
-          properties: [],
-        };
-      }
-      groups[muni].latSum += p.lat;
-      groups[muni].lonSum += p.lon;
-      groups[muni].count += 1;
-      groups[muni].properties.push(p);
-    });
-
-    return Object.values(groups).map((g) => ({
-      name: g.name,
-      lat: g.latSum / g.count,
-      lon: g.lonSum / g.count,
-      count: g.count,
-      properties: g.properties,
-    }));
-  }, [properties, zoom]);
-
-  /**
-   * 画面に入る地の分布。バブルの帯（zoom 10〜11）でだけ描く。
-   *
-   * ズーム 12 以上は物件のピンが出るので、地の分布は要らない（下に
-   * 敷くと、どの丸が物件なのか読めなくなる）。10 未満は県の塗り分けに
-   * 変わるので、こちらも要らない。
-   */
-  const visibleBaseDistribution = useMemo(() => {
-    if (!baseDistribution || zoom < 10 || zoom >= 12) return [];
-    if (!currentBounds) return [];
-    const latPad = (currentBounds.maxLat - currentBounds.minLat) * 0.25;
-    const lonPad = (currentBounds.maxLon - currentBounds.minLon) * 0.25;
-    return baseDistribution.filter(
-      (m) =>
-        m.count > 0 &&
-        m.lat >= currentBounds.minLat - latPad &&
-        m.lat <= currentBounds.maxLat + latPad &&
-        m.lon >= currentBounds.minLon - lonPad &&
-        m.lon <= currentBounds.maxLon + lonPad,
-    );
-  }, [baseDistribution, currentBounds, zoom]);
-
-  /**
-   * 俯瞰の升目。**引くほど数が大きく、印が少なくなる。**
-   *
-   * 市区町村のまま引くと全国で 1,127 個の丸になり、数が細かすぎて読めず
-   * 画面も埋まる（利用者の要望：広いときは大きめの数で集約したい）。
-   *
-   * **県の塗りが「掲載件数」のときは出さない。**同じ画面で件数を 2 通りに
-   * 色分けすることになり、「この色は件数？」の取り違えになる。方位の
-   * 吉凶を塗っているときだけ、件数の印を重ねる。
-   */
-  const overviewCells = useMemo(() => {
-    if (!baseDistribution || zoom >= 10) return [];
-    if (effectiveTint !== "kigaku") return [];
-    if (!currentBounds) return [];
-    const deg = cellDegreesForZoom(zoom);
-    const latPad = (currentBounds.maxLat - currentBounds.minLat) * 0.25;
-    const lonPad = (currentBounds.maxLon - currentBounds.minLon) * 0.25;
-    const inView = baseDistribution.filter(
-      (m) =>
-        m.lat >= currentBounds.minLat - latPad &&
-        m.lat <= currentBounds.maxLat + latPad &&
-        m.lon >= currentBounds.minLon - lonPad &&
-        m.lon <= currentBounds.maxLon + lonPad,
-    );
-    return aggregateToGrid(inView, deg);
-  }, [baseDistribution, currentBounds, zoom, effectiveTint]);
-
-  const maxPrefOrBubbleCount = useMemo(() => {
-    let max = 0;
-    if (zoom < 10) {
-      Object.values(prefCounts).forEach((c) => {
-        if (c > max) max = c;
-      });
-    } else {
-      municipalityData.forEach((m) => {
-        if (m.count > max) max = m.count;
-      });
-    }
-    return Math.max(max, 20); // Minimum scale denominator of 20
-  }, [prefCounts, municipalityData, zoom]);
-
-  const getDensityColor = useCallback(
-    (count: number) => {
-      if (count === 0) return "#818cf8"; // Purple/Indigo
-      const ratio = Math.min(1, count / maxPrefOrBubbleCount);
-      // Gradient: Purple (260) -> Blue -> Teal -> Green -> Yellow -> Red (0)
-      const hue = (1 - ratio) * 260;
-      return `hsl(${hue}, 90%, 60%)`;
-    },
-    [maxPrefOrBubbleCount],
-  );
-
-  /**
-   * 個人の判定が 1 件でも届いているか。
-   *
-   * 生年月日が未入力のとき、API は astrologyStatus を返さない
-   * （本命殺・天中殺・空亡はそこから決まるので、無いものを作らない）。
-   * 扇形もピンも凡例も、この状態では吉凶を名乗らない。
-   */
-  const hasPersonalVerdict = useMemo(
-    () => properties.some((p) => Boolean(p.astrologyStatus)),
-    [properties],
-  );
-
   /**
    * 扇形（方位）の判定。
    *
    * dirKigaku があればそれを使う。三盤（年・月・日）を合成した段階で、
-   * 時期パネルの「選択日」列・俯瞰の県塗りと同じ値。物件が 0 件の方位
-   * でも正しく凶と出る。
+   * 時期パネルの「選択日」列・俯瞰の県塗りと同じ値。無いとき
+   * （生年月日・出発地が未入力）は段階なし＝塗らずに輪郭だけ残す。
    *
-   * 無いとき（生年月日・出発地が未入力）だけ、従来どおり物件の
-   * astrologyStatus からの推定に落ちる。こちらはサーバが layerMode
-   * （既定は年盤）で出した単盤の判定なので、三盤の段階とは一致しない。
-   * その旨は凡例に出す。
+   * 以前はここに「物件の astrologyStatus の多数決」への後退があった。
+   * 物件を描かなくなったので、判定の出どころは盤だけ。
    */
   const sectors = useMemo(() => {
     const dirMap: { dir: CompassDirection; deg: number }[] = [
@@ -1025,64 +654,15 @@ export default function ArbitrageMapInner({
       { dir: "W", deg: 270 },
       { dir: "NW", deg: 315 },
     ];
-
     return dirMap.map((d) => {
       const k = dirKigaku?.[d.dir];
-      if (k) {
-        return {
-          ...d,
-          tier: k.tier,
-          blocked: k.blocked,
-          status: null as string | null,
-        };
-      }
-      // 判定が 1 件も無いなら、多数決を取る材料が無い。既定の "SAFE"
-      // （＝凶方位ではない）に落とすと、根拠なく「平穏」と塗ることになる。
-      if (!hasPersonalVerdict) {
-        return {
-          ...d,
-          tier: null as string | null,
-          blocked: false,
-          status: null as string | null,
-        };
-      }
-      // フォールバック: 物件の status の多数決（単盤・参考値）
-      const propsInDir = properties.filter((p) => p.direction === d.dir);
-      let status = "SAFE";
-      if (propsInDir.length > 0) {
-        const optimalCount = propsInDir.filter((p) =>
-          (p.astrologyStatus ?? "").includes("OPTIMAL"),
-        ).length;
-        const noiseCount = propsInDir.filter((p) =>
-          (p.astrologyStatus ?? "").includes("NOISE"),
-        ).length;
-        if (optimalCount > 0) status = "OPTIMAL";
-        else if (noiseCount > propsInDir.length / 2) status = "NOISE";
-      }
-      return { ...d, tier: null as string | null, blocked: false, status };
+      return {
+        ...d,
+        tier: k ? k.tier : (null as string | null),
+        blocked: k ? k.blocked : false,
+      };
     });
-  }, [properties, dirKigaku, hasPersonalVerdict]);
-
-  // Kigaku Vector Styles
-  const getStyleForVector = useCallback((status: string) => {
-    let color = "#3b82f6";
-    let opacity = 0.05;
-    let dashArray = undefined;
-
-    if (status.includes("OPTIMAL")) {
-      color = "#10b981";
-      opacity = 0.12;
-    } else if (status.includes("NOISE")) {
-      color = "#ef4444";
-      opacity = 0.08;
-      dashArray = "5,5";
-    } else if (status.includes("VOID") || status.includes("NODE")) {
-      color = "#f59e0b";
-      opacity = 0.08;
-    }
-
-    return { color, opacity, dashArray };
-  }, []);
+  }, [dirKigaku]);
 
   /**
    * 扇形の長さ。表示中の矩形の四隅までの最大距離を取るので、どのズームでも
@@ -1101,7 +681,6 @@ export default function ArbitrageMapInner({
        そのまま起きていた）。層を足したらあちらへ足すこと。 */
     const outlineOnly = wedgeOutlineOnly({
       isOverview,
-      showHeatmap,
       zoningOn,
       hazardOn: hazardTab !== "none",
     });
@@ -1120,14 +699,12 @@ export default function ArbitrageMapInner({
                 ? "5,5"
                 : (undefined as string | undefined),
           }
-        : d.status === null
-          ? {
-              // 判定が無い。塗らずに輪郭だけ残す（方位の区切りは見える）。
-              color: "#a8a29e",
-              opacity: 0.02,
-              dashArray: "4,6" as string | undefined,
-            }
-          : getStyleForVector(d.status);
+        : {
+            // 判定が無い。塗らずに輪郭だけ残す（方位の区切りは見える）。
+            color: "#a8a29e",
+            opacity: 0.02,
+            dashArray: "4,6" as string | undefined,
+          };
       const baseBearing = d.deg;
 
       // 扇形は表示中の画面を覆う長さで描く。以前は 30km 固定で、引くと
@@ -1155,25 +732,13 @@ export default function ArbitrageMapInner({
       );
       const labelPos: [number, number] = [labelAt.lat, labelAt.lon];
 
-      const getStatusText = (status: string) => {
-        if (status === "OPTIMAL") return "大吉方位";
-        if (status === "NOISE") return "凶方位";
-        // 既定を「通常吉」と書いていた。ここに落ちるのは主に SAFE で、
-        // SAFE は「凶方位ではない」であって吉ではない。扇形に「吉」と
-        // 書いてあるのに記事では「平」になる、という食い違いの元だった。
-        return "平穏";
-      };
       // 段階つきなら「S 三盤吉」の形。時期パネルのセルと同じ記号にして
-      // 突き合わせられるようにする。
+      // 突き合わせられるようにする。判定が無いときは方位名だけ。
       const label = d.tier
         ? d.blocked
           ? `${d.dir} 天中殺`
           : `${d.dir} ${d.tier} ${TIER_JP[d.tier as DayTier] ?? ""}`
-        : d.status === null
-          ? // 判定が無いときは方位名だけ。既定の "SAFE" に落とすと
-            // 「平穏（＝凶方位ではない）」と書いてしまう。
-            d.dir
-          : `${d.dir} (${getStatusText(d.status)})`;
+        : d.dir;
 
       return (
         <React.Fragment key={`sector-wedge-${d.dir}`}>
@@ -1183,15 +748,11 @@ export default function ArbitrageMapInner({
               color: color,
               fillColor: color,
               // 下に別の意味の色があるときは塗らない。俯瞰は県の塗り分け、
-              // 件数バブルは掲載件数で、どちらも扇形と重ねると 2 枚の色が
+              // 用途地域・ハザードも色を持つ。扇形と重ねると 2 枚の色が
               // 混ざって読めなくなる（#147 と同じ取り違えが起きる）。
               // 境界線だけ残せば「どこからどこまでが東か」は分かる。
               fillOpacity: outlineOnly ? 0 : opacity,
-              weight: outlineOnly
-                ? 1.5
-                : (d.tier ? d.tier === "C" : d.status === "SAFE")
-                  ? 0.5
-                  : 1,
+              weight: outlineOnly ? 1.5 : d.tier === "C" ? 0.5 : 1,
               dashArray: dashArray,
             }}
             interactive={false}
@@ -1220,12 +781,10 @@ export default function ArbitrageMapInner({
     center,
     baseLat,
     baseLon,
-    getStyleForVector,
     useClassical,
     sectorNodeMapping,
     wedgeRangeKm,
     isOverview,
-    showHeatmap,
     /* 用途地域・ハザードを足したので、切り替えたときに扇形も描き直す。
        ここに足し忘れると、用途地域を出しても扇形が塗ったままになる。 */
     zoningOn,
@@ -1343,87 +902,6 @@ export default function ArbitrageMapInner({
 
         {/* Theme Switcher + フォーカスの明示切り替え。
             「今どこを見ているのか」を手で確定できるようにする */}
-        {/* 表示範囲の候補数。
-            以前ここは「この範囲に掲載 N 件」で、名寄せ前の生の掲載数を
-            専用 API（viewport-count）で数え直していた。一覧の
-            「候補のうち範囲内」（名寄せ後）と数え方が違うため、同じ範囲でも
-            数字が食い違い、「重複を含む掲載数。一覧の候補数とは数え方が
-            違います」という断り書きで埋めていた。
-
-            **断りで埋めずに、数え方を一覧と同じにする。**一覧と同じ
-            候補（名寄せ・絞り込み後、上限500件）を同じ矩形で数えるので、
-            一覧の「候補のうち範囲内」と必ず一致する。通信も減る。 */}
-        {hasBase && zoom >= 10 && (
-          <div
-            /*
-              **狭い画面では下に置かない。**右下の「方位の吉凶」の凡例と
-              同じ高さになり、札がその裏に隠れていた（利用者の実機。
-              400px で実測すると **142 × 34px が重なって**、左の 31px しか
-              見えていなかった）。どちらも `bottom-4` なので、凡例が横に
-              広い狭幅では必ずぶつかる。
-
-              上へ移して左に寄せる。**中央のままだと右上の「全画面／設定」
-              に当たり、`top-14` へ下げると今度は設定を開いたときの操作の
-              列に当たる**（実測: 全画面は x=233〜348 / y=19〜45、列は
-              x≥218 で y≈62 から）。左上なら両方を避けられる。
-
-              幅も狭幅だけ抑える。`max-w-[min(90%,22rem)]` のままだと
-              右へ伸びて全画面の札に届く。
-            */
-            className={`absolute top-4 left-4 lg:left-1/2 lg:-translate-x-1/2 z-[1000] pointer-events-none bg-white/85 backdrop-blur shadow-lg border border-stone-200 px-3.5 py-1.5 text-center max-w-[11.5rem] lg:max-w-[min(90%,22rem)] ${
-              truncation ? "rounded-2xl" : "rounded-full"
-            }`}
-          >
-            <div className="text-[10px] text-stone-600">
-              この範囲の候補
-              <b
-                className={`mx-1 font-mono text-sm text-indigo-700 ${
-                  isLoading ? "opacity-50" : ""
-                }`}
-              >
-                {visibleCount.toLocaleString()}
-              </b>
-              件
-              {isLoading && (
-                <span className="ml-1.5 text-[10px] font-bold text-indigo-600 animate-pulse">
-                  更新中…
-                </span>
-              )}
-            </div>
-            {/* 窓に当たっているときは、地図が範囲の一部しか描いていない。
-                黙って空に見せると「そこに物件が無い」と読まれる（空の
-                方位を理由つきで出すのと同じ考え方）。 */}
-            {truncation && (
-              <div className="text-xs leading-snug text-stone-500 mt-0.5">
-                {truncation.rangeTotal !== null && (
-                  <>
-                    {"この範囲には "}
-                    <b className="font-mono text-stone-700">
-                      {truncation.rangeTotal.toLocaleString()}
-                    </b>
-                    {" 件あります。"}
-                  </>
-                )}
-                {"安い順に "}
-                {truncation.analyzed.toLocaleString()}
-                {
-                  " 件だけを見ているので、地図の空白は「物件が無い」ではありません。"
-                }
-              </div>
-            )}
-          </div>
-        )}
-        {/* 取りに行っている最中の札。候補数の札のすぐ下（狭い画面は
-            すぐ上）。頁側の右上に置いていたときは操作の列の下に隠れて
-            見えず、地図を動かしてから数秒なにも出ないので「この範囲には
-            無い」に見えていた（利用者の指摘）。器の中（isolate）の
-            z-[1000] で、操作の列とは重ならない位置に出す。 */}
-        {isLoading && (
-          <div className="absolute top-16 left-4 lg:left-1/2 lg:-translate-x-1/2 lg:top-14 z-[1000] pointer-events-none flex items-center gap-2 rounded-full border border-indigo-200 bg-white/90 px-3 py-1 text-[11px] font-bold text-indigo-700 shadow-lg">
-            <span className="inline-block h-3 w-3 animate-spin rounded-full border-2 border-indigo-500 border-t-transparent" />
-            この範囲の物件を読み込み中…
-          </div>
-        )}
         {/*
           操作の列。**下の「方位の吉凶」の凡例に被せない。**
 
@@ -1809,71 +1287,16 @@ export default function ArbitrageMapInner({
           )}
         </div>
 
-        {/* 俯瞰の塗り分け切り替え + 凡例。方位モードは
-            「どの県へなら動けるか」の意思決定面。
+        {/* 俯瞰の県塗りの凡例。「どの県へなら動けるか」の意思決定面。
 
-            prefKigaku が無いときもパネルごと消さない。消すと県塗りが
-            件数に変わったことも、方位モードの存在も画面から分からず、
-            件数の色を吉凶と読み違える。 */}
+            prefKigaku が無いときもパネルごと消さない。消すと、塗りが
+            無いことも、条件が揃えば塗られることも画面から分からない。
+            以前は判定が無いとき掲載件数の色に落ちていたが、物件を
+            描かなくなったので、判定が無ければ塗らない。 */}
         {zoom < 10 && (
           <div className="absolute bottom-4 left-4 z-[1000] pointer-events-auto bg-white/85 backdrop-blur rounded-xl shadow-lg border border-stone-200 p-2.5 text-[10px] text-stone-700 space-y-1.5">
-            <div className="flex items-center gap-1 select-none">
-              {(
-                [
-                  ["kigaku", "方位の吉凶"],
-                  ["count", "掲載件数"],
-                ] as const
-              ).map(([mode, label]) => {
-                // 方位モードは判定が出せるときだけ押せる。押せない理由は
-                // 下の一文に出す（disabled だけだと理由が分からない）。
-                const disabled = mode === "kigaku" && !prefKigaku;
-                const active = effectiveTint === mode;
-                return (
-                  <button
-                    key={mode}
-                    onClick={() => setOverviewTint(mode)}
-                    disabled={disabled}
-                    title={disabled ? kigakuUnavailableReason : undefined}
-                    className={`px-2 py-1 rounded-md font-bold transition-colors ${
-                      disabled
-                        ? "bg-stone-100 text-stone-300 cursor-not-allowed"
-                        : active
-                          ? "bg-indigo-600 text-white"
-                          : "bg-stone-100 text-stone-500 hover:bg-stone-200"
-                    }`}
-                  >
-                    {label}
-                  </button>
-                );
-              })}
-            </div>
-            {/* 何の色を見ているかを必ず 1 行で言う。方位モードに切り替え
-                られないときは、その理由もここに出す。 */}
-            {effectiveTint === "count" && (
-              <div className="max-w-44 space-y-1">
-                <div className="font-bold text-stone-600">
-                  {prefCountsFiltered
-                    ? "いまの色は絞込後の件数です"
-                    : "いまの色は掲載件数です"}
-                </div>
-                {/* 絞り込みのうち反映できるのは SQL で表せる条件だけ。
-                    方位・吉凶は出発地と生年月日から画面側で出す値なので、
-                    この数字には入っていない。断らずに出すと「方位で
-                    絞ったのに減らない」と読まれる。 */}
-                {prefCountsFiltered && (
-                  <div className="text-[10px] leading-relaxed text-stone-500">
-                    家賃・間取り・築年・徒歩・広さを反映しています。方位と吉凶は含みません。
-                  </div>
-                )}
-                {!prefKigaku && (
-                  <div className="text-[10px] leading-relaxed text-stone-500">
-                    {kigakuUnavailableReason ??
-                      "条件が揃うと方位の吉凶で塗り分けます"}
-                  </div>
-                )}
-              </div>
-            )}
-            {effectiveTint === "kigaku" && (
+            <div className="font-bold text-stone-600">県の塗り分け</div>
+            {prefKigaku ? (
               <div className="flex flex-wrap gap-x-2 gap-y-1 max-w-44">
                 {(
                   [
@@ -1904,23 +1327,11 @@ export default function ArbitrageMapInner({
                   出発地から見た各県の方位の、選択日の判定
                 </span>
               </div>
-            )}
-            {/* 灰色の丸を黙って足さない。方位モードのときは「掲載件数」の
-                凡例が出ないので、こちらに書く。 */}
-            {overviewCells.length > 0 && (
-              <div className="flex items-start gap-1.5 border-t border-stone-200 pt-1.5">
-                <span
-                  className="mt-0.5 inline-block w-2.5 h-2.5 shrink-0 rounded-full border"
-                  style={{
-                    backgroundColor: "rgba(100,116,139,0.2)",
-                    borderColor: "rgba(71,85,105,0.45)",
-                  }}
-                />
-                <span className="text-xs leading-tight text-stone-600">
-                  {
-                    "灰色の丸はそのあたりの掲載数（取り込みを止めた時点の集計）。吉凶ではありません"
-                  }
-                </span>
+            ) : (
+              /* 何も塗っていないことと、何を入れれば塗られるかを言う。 */
+              <div className="max-w-44 text-[10px] leading-relaxed text-stone-500">
+                {kigakuUnavailableReason ??
+                  "条件が揃うと方位の吉凶で塗り分けます"}
               </div>
             )}
           </div>
@@ -1952,27 +1363,6 @@ export default function ArbitrageMapInner({
           </Marker>
         )}
 
-        {/* 詳細パネルで開いている物件の強調リング。ピンの色分けの中で
-            「いまどれを見ているか」を見失わないようにする */}
-        {(() => {
-          if (!selectedPropertyId) return null;
-          const sel = properties.find((p) => p.id === selectedPropertyId);
-          if (!sel || sel.lat === null || sel.lon === null) return null;
-          return (
-            <CircleMarker
-              center={[sel.lat, sel.lon]}
-              radius={16}
-              pathOptions={{
-                color: "#4f46e5",
-                weight: 3,
-                fillColor: "#4f46e5",
-                fillOpacity: 0.08,
-                dashArray: "2,4",
-              }}
-            />
-          );
-        })()}
-
         {/* Pulsing ring around center (matching scan radius) */}
         {zoom >= 10 && radiusKm && radiusKm !== "all" && (
           <Circle
@@ -1989,12 +1379,11 @@ export default function ArbitrageMapInner({
         )}
 
         {/* 都道府県ポリゴン (zoom < 10)。
-            塗りは 2 モード。方位モードでは「その県はあなたから見て
-            どの方位で、選択日にその方位は動けるのか」を色にする。
-            地図がそのまま意思決定面になる。件数ラベルは両モード共通。 */}
+            「その県はあなたから見てどの方位で、選択日にその方位は動けるのか」
+            を色にする。地図がそのまま意思決定面になる。判定が無ければ塗らない。 */}
         {zoom < 10 && geoData && (
           <GeoJSON
-            key={`pref-geo-${effectiveTint}-${
+            key={`pref-geo-${
               prefKigaku
                 ? Object.values(prefKigaku)
                     .map((i) => i.tier + (i.blocked ? "b" : ""))
@@ -2004,26 +1393,22 @@ export default function ArbitrageMapInner({
             data={geoData}
             style={(feature) => {
               const prefName = feature?.properties?.name || "";
-              const count = prefCounts[prefName] || 0;
               const info = prefKigaku?.[prefName];
-              if (effectiveTint === "kigaku" && info) {
+              if (info) {
                 const fill = info.blocked
                   ? "#64748b"
                   : (TIER_FILL[info.tier as DayTier] ?? "#a8a29e");
                 return {
                   fillColor: fill,
-                  // データの無い県も方位の吉凶は薄く見せる。方位は
-                  // 物件の有無と独立に決まる情報なので消さない。
-                  fillOpacity: count > 0 ? 0.6 : 0.22,
+                  fillOpacity: 0.5,
                   color: "#1e293b",
                   weight: 1.2,
                   opacity: 0.6,
                 };
               }
-              const color = getDensityColor(count);
               return {
-                fillColor: color,
-                fillOpacity: count > 0 ? 0.65 : 0.1,
+                fillColor: "#a8a29e",
+                fillOpacity: 0.08,
                 color: "#1e293b",
                 weight: 1.2,
                 opacity: 0.6,
@@ -2031,39 +1416,22 @@ export default function ArbitrageMapInner({
             }}
             onEachFeature={(feature, layer) => {
               const prefName = feature?.properties?.name || "";
-              const count = prefCounts[prefName] || 0;
               const info = prefKigaku?.[prefName];
-              // 俯瞰は数字だけを見せる。物件そのものはズームインした
-              // ときに、そのとき見えている範囲だけを検索して出す。
-              if (count > 0) {
-                layer.bindTooltip(
-                  `<div class="text-center leading-tight">
-                     <div class="font-bold text-[11px]">${count.toLocaleString()}</div>
-                   </div>`,
-                  {
-                    permanent: true,
-                    direction: "center",
-                    className: "pref-count-label",
-                  },
-                );
-              }
               /* 方位は県の面積重心で決めている（lib/prefectureDirection）。
                  兵庫のように広い県は県内で方位が変わるので、その断りを
-                 ポップアップに残す。個々の物件は実座標で判定される。 */
+                 ポップアップに残す。街や地点は実座標で判定される。 */
               const kigakuLine = info
                 ? `<div class="mt-1">方位: <b>${info.directionLabel}</b> — ${
                     info.blocked
                       ? '<b class="text-slate-500">天中殺で移転不可</b>'
                       : `<b>${TIER_JP[info.tier as DayTier] ?? info.tier}</b>`
                   }<span class="text-xs text-stone-500">（選択日の判定）</span>
-                  <div class="text-xs text-stone-500">県の中心を基準にした方位です。広い県は県内でも方位が変わります（物件は個別に判定）</div></div>`
-                : "";
+                  <div class="text-xs text-stone-500">県の中心を基準にした方位です。広い県は県内でも方位が変わります（街や地点は個別に判定）</div></div>`
+                : `<div class="text-xs text-stone-500 mt-1">${kigakuUnavailableReason ?? "条件が揃うと方位の吉凶で塗り分けます"}</div>`;
               layer.bindPopup(
                 `<div class="font-sans text-xs text-gray-900 p-2 min-w-[120px]">
                   <div class="font-bold text-sm border-b border-gray-100 pb-1 mb-1.5">${prefName}</div>
-                  <div>掲載物件数: <b class="text-indigo-600 text-sm">${count.toLocaleString()}</b> 件<span class="text-[10px] text-stone-500">（取り込みを止めた時点）</span></div>
                   ${kigakuLine}
-                  <div class="text-xs text-stone-500 mt-1.5">※ズームインすると物件が表示されます</div>
                 </div>`,
               );
             }}
@@ -2073,14 +1441,11 @@ export default function ArbitrageMapInner({
         {/* 方位の扇形。ズームに関わらず常に描く。
             以前は「ピンを個別表示しているときだけ」という条件付きで、
             物件が少ないとき（クラスター表示）に扇形が黙って消えていた。
-            方位の吉凶はこの画面の主役なので、物件の数で消えてはいけない。
+            方位の吉凶はこの画面の主役なので、他の層の都合で消えてはいけない。
 
             zoom >= 10 の条件も外した。引くと扇形ごと消えるため、全国を
             見ている間は方位の境目がどこにも出ていなかった。
 
-            市区町村バブル（件数の画面）でも消さない。バブルは物件が
-            120 件以上見えると**自動で**入るので、地図を動かして物件の
-            多い側へ寄っただけで扇形が消えていた（利用者からの指摘）。
             下に別の意味の色があるときは、俯瞰と同じく塗りを外して
             境界線だけにする。
 
@@ -2136,488 +1501,11 @@ export default function ArbitrageMapInner({
           dirKigaku={dirKigaku}
           onInspect={onInspectSpot}
         />
-
-        {/* 俯瞰の升目。県の塗りだけでは 47 個しか無く、どこに掲載が
-            あるのかが読めなかった。市区町村のまま出すと今度は 1,127 個に
-            なるので、ズームに応じた升目にまとめる（利用者の要望：広いと
-            きは大きめの数で集約したい）。
-
-            県の塗りが「掲載件数」のときは出さない。件数を 2 通りに色分け
-            することになる（overviewCells の註）。 */}
-        {overviewCells.map((c) => {
-          const r = Math.max(5, Math.min(26, 3 + Math.log2(c.count) * 1.6));
-          return (
-            <React.Fragment key={`cell-${c.key}`}>
-              <CircleMarker
-                center={[c.lat, c.lon]}
-                radius={r}
-                pathOptions={{
-                  color: "#475569",
-                  fillColor: "#64748b",
-                  fillOpacity: 0.2,
-                  weight: 1,
-                  opacity: 0.45,
-                }}
-              >
-                <Popup>
-                  <div className="font-sans text-xs text-gray-900 p-2 min-w-[160px]">
-                    <div className="flex justify-between gap-3">
-                      <span className="text-stone-600">このあたりの掲載:</span>
-                      <span className="font-bold text-gray-900">
-                        {c.count.toLocaleString()}件
-                      </span>
-                    </div>
-                    <div className="flex justify-between gap-3 mt-0.5">
-                      <span className="text-stone-600">市区町村:</span>
-                      <span className="text-gray-900">{c.areas}</span>
-                    </div>
-                    <div className="text-xs text-stone-500 mt-2 leading-snug">
-                      {
-                        "取り込みを止めた時点の集計をまとめた数です。ズームすると市区町村ごとに分かれます。"
-                      }
-                    </div>
-                  </div>
-                </Popup>
-              </CircleMarker>
-              <Marker
-                position={[c.lat, c.lon]}
-                icon={L.divIcon({
-                  className: "custom-div-icon",
-                  html: `<div class="font-mono text-[10px] font-bold text-white text-center leading-none pointer-events-none" style="text-shadow: 0 0 3px rgba(0,0,0,0.95), 0 0 2px rgba(0,0,0,0.95);">${c.count.toLocaleString()}</div>`,
-                  iconSize: [64, 12],
-                  iconAnchor: [32, 6],
-                })}
-                interactive={false}
-                keyboard={false}
-              />
-            </React.Fragment>
-          );
-        })}
-
-        {/* 地の分布。候補より先に描いて下に敷く。
-
-            **候補（安い順 500 件の窓）だけを描くと、広い範囲では
-            いちばん安い一角にしか丸が出ず、残りが空白になる。**空白は
-            「物件が無い」ではなく「見ていない」なのに、画面からは区別が
-            付かなかった（利用者の報告：物件が俯瞰で見ると数が出てこない）。
-
-            こちらは集計＝その日の掲載を全部数えた値なので、絞り込みと
-            窓のどちらとも無関係に、掲載のある市区町村が全部出る。
-            **取り込みを止めたので、この数は止まった日のまま動かない**
-            （build_area_dataset は scrape-rentals.yml の中にしか無い）。
-
-            **色は付けない。**この地図には既に 2 つの色の意味（方位の吉凶、
-            候補の件数）が乗っている。3 つ目を足すと「この色は何？」に
-            なるので、灰色で厚みだけを見せる。 */}
-        {visibleBaseDistribution.map((m) => {
-          // 実数は 20,099 件まで開くので対数で潰す。
-          const r = Math.max(3, Math.min(20, 2 + Math.log2(m.count) * 1.8));
-          return (
-            <CircleMarker
-              key={`base-${m.code}`}
-              center={[m.lat, m.lon]}
-              radius={r}
-              pathOptions={{
-                color: "#64748b",
-                fillColor: "#64748b",
-                fillOpacity: 0.14,
-                weight: 1,
-                opacity: 0.35,
-              }}
-            >
-              <Popup>
-                <div className="font-sans text-xs text-gray-900 p-2 min-w-[150px]">
-                  <div className="flex justify-between gap-3">
-                    <span className="text-stone-600">この市区町村の掲載:</span>
-                    <span className="font-bold text-gray-900">
-                      {m.count.toLocaleString()}件
-                    </span>
-                  </div>
-                  <div className="text-xs text-stone-500 mt-2 leading-snug">
-                    {
-                      "取り込みを止めた時点の集計です。いまの絞り込みや、地図が出している候補とは別の数字になります。"
-                    }
-                  </div>
-                </div>
-              </Popup>
-            </CircleMarker>
-          );
-        })}
-
-        {/* Viewport content based on Zoom and Heatmap/Cluster/Pin State */}
-        {zoom >= 10 &&
-          (showHeatmap && visibleCount > 100
-            ? // 1. 広域表示：市区町村バブル (温度計と連動)
-              municipalityData.map((muni) => {
-                const color = getDensityColor(muni.count);
-                const coreRadius = Math.max(
-                  8,
-                  Math.min(25, 6 + Math.log2(muni.count) * 3),
-                );
-                const glowRadius = coreRadius * 2.2;
-                const hasGlow = muni.count > 10;
-
-                return (
-                  <React.Fragment key={`muni-${muni.name}`}>
-                    {hasGlow && (
-                      <CircleMarker
-                        center={[muni.lat, muni.lon]}
-                        radius={glowRadius}
-                        pathOptions={{
-                          stroke: false,
-                          fillColor: color,
-                          fillOpacity: 0.18,
-                        }}
-                        interactive={false}
-                      />
-                    )}
-                    <CircleMarker
-                      center={[muni.lat, muni.lon]}
-                      radius={coreRadius}
-                      pathOptions={{
-                        color: color,
-                        fillColor: color,
-                        fillOpacity: 0.8,
-                        weight: 2.5,
-                        opacity: 0.6,
-                      }}
-                    >
-                      <Popup>
-                        <div className="font-sans text-xs text-gray-900 p-2 min-w-[150px]">
-                          <div className="font-bold text-sm text-gray-900 leading-tight border-b border-gray-100 pb-1 mb-1.5">
-                            {muni.name}
-                          </div>
-                          <div className="space-y-1 text-stone-600">
-                            <div className="flex justify-between">
-                              <span>検出物件数:</span>
-                              <span className="font-bold text-gray-900">
-                                {muni.count}件
-                              </span>
-                            </div>
-                          </div>
-                          <div className="text-xs text-stone-500 mt-2 text-center">
-                            ※ズームインすると詳細物件ピンが表示されます
-                          </div>
-                        </div>
-                      </Popup>
-                    </CircleMarker>
-                    {/* 件数を丸の上に書く。**押さないと数が出なかった。**
-                        すぐ下のクラスター表示は白丸に数字を出しているのに、
-                        広域のバブルだけ色しか無く、数は Popup の中だった
-                        （利用者の報告：物件が俯瞰で見ると数が出てこない）。
-
-                        interactive を false にして、クリックは下の
-                        CircleMarker へ通す。ここを押せるようにすると
-                        Popup が開かなくなる。 */}
-                    <Marker
-                      position={[muni.lat, muni.lon]}
-                      icon={L.divIcon({
-                        className: "custom-div-icon",
-                        // 空中写真の上でも読めるよう、白抜きに濃い影を敷く。
-                        // 大きさは 10px（極小フォントを読める大きさへ
-                        // 引き上げた #218〜 の方針に合わせる）。
-                        html: `<div class="font-mono text-[10px] font-bold text-white text-center leading-none pointer-events-none" style="text-shadow: 0 0 3px rgba(0,0,0,0.95), 0 0 2px rgba(0,0,0,0.95);">${muni.count.toLocaleString()}</div>`,
-                        iconSize: [56, 12],
-                        iconAnchor: [28, 6],
-                      })}
-                      interactive={false}
-                      keyboard={false}
-                    />
-                  </React.Fragment>
-                );
-              })
-            : // 2. まとめるかどうかは**件数だけ**で決める。
-              //
-              //    以前はここに「100 件以下なら距離でまとめる」枝があり、
-              //    同じ目的の仕組みが 3 つ重なっていた（市区町村バブル /
-              //    距離クラスター / 升目クラスター）。距離クラスターは
-              //    O(n²) の自前実装で、100 件までを前提にしていたため
-              //    **件数が増えると使えず、少ないときだけ動く**という
-              //    逆向きの条件になっていた。
-              //
-              //    地図の定石はひとつ——**密なら升目にまとめ、疎なら
-              //    1 つずつ描く。**`shouldCluster` / `clusterByTile`
-              //    （O(n)・タイル升目）に一本化した。ズームや一覧の
-              //    開閉で見え方が飛ばなくなる。
-              //
-              //    zoom >= 12 では showHeatmap が強制的に false になる
-              //    ため、都市部を zoom 12〜14 で見ると**表示域の全物件が
-              //    個別のピンに落ちていた**（上限も間引きも無し）。
-              shouldCluster(pinProperties.length)
-              ? clusterByTile(pinProperties, zoom).map((cluster) => (
-                  <Marker
-                    key={`grid-${cluster.lat.toFixed(5)}-${cluster.lon.toFixed(5)}`}
-                    position={[cluster.lat, cluster.lon]}
-                    /* 押すと寄るので、キーボードの押し所として正しい。
-                       押せるものには名前が要る（Leaflet は `alt` を画像の
-                       代替文にする）。 */
-                    alt={`この一帯の ${cluster.count} 件を開く`}
-                    icon={L.divIcon({
-                      className: "custom-cluster-icon",
-                      html: `<div class="w-9 h-9 rounded-full bg-white border-2 border-indigo-500 shadow-[0_2.5px_8px_rgba(79,70,229,0.35)] text-indigo-600 font-extrabold text-[11px] flex items-center justify-center pointer-events-auto">${cluster.count}</div>`,
-                      iconSize: [36, 36],
-                      iconAnchor: [18, 18],
-                    })}
-                    eventHandlers={{
-                      click: (e) => {
-                        const map = e.target._map;
-                        map.setView(
-                          [cluster.lat, cluster.lon],
-                          Math.min(18, map.getZoom() + 2),
-                        );
-                      },
-                    }}
-                  />
-                ))
-              : (() => {
-                  const sortedProperties = [...pinProperties].sort((a, b) => {
-                    const getPriority = (p: ScoredProperty) => {
-                      const targetDay = p.dateScores?.[3];
-                      const isUltra = targetDay?.isUltraLucky;
-                      const isHeavyBad = [
-                        "NOISE_GOU",
-                        "NOISE_ANKEN",
-                        "NOISE_HA",
-                        "NOISE_HONMEI",
-                        "NOISE_TEKI",
-                      ].includes(p.astrologyStatus);
-                      if (isUltra || isHeavyBad) return 3;
-
-                      const details = targetDay?.scoreDetails;
-                      const hasLightBad =
-                        (details &&
-                          (details.doyouPenalty < 0 ||
-                            details.voidPenalty < 0)) ||
-                        [
-                          "NOISE_VOID",
-                          "NOISE_GETSUMEI",
-                          "NOISE_GETSUTEKI",
-                        ].includes(p.astrologyStatus);
-                      const hasLucky =
-                        p.isTendo ||
-                        ["OPTIMAL", "SAFE"].includes(p.astrologyStatus) ||
-                        p.astroFlags?.some((f: string) => f.endsWith("_LINE"));
-
-                      if (hasLucky && !hasLightBad) return 2;
-                      return 1;
-                    };
-                    return getPriority(a) - getPriority(b);
-                  });
-
-                  return sortedProperties.map((prop) => {
-                    if (!prop.lat || !prop.lon) return null;
-
-                    // 扇形と同じ段階を渡す。盤の切り替えで単盤が吉でも、
-                    // 三盤で凶ならピンも凶側に寄せる。
-                    const k = prop.direction
-                      ? dirKigaku?.[prop.direction]
-                      : undefined;
-                    const pinColors = getPropertyPinColors(
-                      prop,
-                      k?.tier,
-                      k?.blocked,
-                    );
-                    const isTodayUltra = prop.dateScores?.[3]?.isUltraLucky;
-
-                    return (
-                      <CircleMarker
-                        key={prop.id}
-                        center={[prop.lat, prop.lon]}
-                        radius={isTodayUltra ? 8 : 6}
-                        pathOptions={{
-                          color: pinColors.borderColor,
-                          fillColor: pinColors.fillColor,
-                          fillOpacity: isTransitioningDate ? 0.3 : 0.9,
-                          weight: isTodayUltra ? 2.5 : 1.5,
-                        }}
-                        className={isTransitioningDate ? "animate-pulse" : ""}
-                      >
-                        <Popup className="arbitrage-property-popup">
-                          <div className="font-sans text-xs text-gray-900 p-2 min-w-[220px] max-w-[280px]">
-                            <div
-                              className={`font-bold text-xs leading-tight p-2 -mx-2 -mt-2 rounded-t-lg border-b ${pinColors.bgClass} ${pinColors.textClass} flex justify-between items-center`}
-                            >
-                              <span className="line-clamp-1">
-                                {prop.property_name}
-                              </span>
-                              <span className="text-[10px] px-1.5 py-0.5 rounded bg-white/70 dark:bg-stone-200/70 font-bold shrink-0 ml-1">
-                                {pinColors.label}
-                              </span>
-                            </div>
-
-                            {/* その地点の空中写真。掲載元の写真ではなく
-                                周りの様子（川・崖・幹線道路・空き地）を見る。
-                                タイルが無い場所は部品側で「写真なし」に倒れる。 */}
-                            <div className="mt-2">
-                              <AerialThumb lat={prop.lat} lon={prop.lon} />
-                            </div>
-
-                            {prop.is_new_build && (
-                              <span className="inline-block bg-emerald-100 text-emerald-800 text-[10px] font-bold px-1.5 py-0.5 rounded mt-2 mr-1">
-                                新築
-                              </span>
-                            )}
-                            {prop.floor && (
-                              <span className="inline-block bg-gray-100 text-gray-800 text-[10px] font-medium px-1.5 py-0.5 rounded mt-2">
-                                {prop.floor}
-                              </span>
-                            )}
-
-                            <div className="mt-2.5 border-t border-gray-100 pt-2 space-y-1 text-stone-600 text-[11px]">
-                              <div className="flex justify-between">
-                                <span>総賃料:</span>
-                                <span className="font-bold text-gray-900">
-                                  {prop.totalRent
-                                    ? `${(prop.totalRent / 10000).toFixed(1)}万円`
-                                    : "不明"}
-                                  {prop.management_fee
-                                    ? ` (管:${(prop.management_fee / 1000).toFixed(0)}k)`
-                                    : ""}
-                                </span>
-                              </div>
-                              <div className="flex justify-between">
-                                <span>広さ / 間取り:</span>
-                                <span className="font-medium text-gray-900">
-                                  {prop.size_sqm}㎡ / {prop.layout || "不明"}
-                                </span>
-                              </div>
-                              <div className="flex justify-between">
-                                <span>築年 / 駅徒歩:</span>
-                                <span className="font-medium text-gray-900">
-                                  築{prop.building_age || 0}年 /{" "}
-                                  {prop.minutes_to_station || "不明"}分
-                                </span>
-                              </div>
-                              <div className="flex justify-between items-center">
-                                <span>方位・吉凶:</span>
-                                <span
-                                  className={`font-semibold ${pinColors.textClass}`}
-                                >
-                                  {prop.direction
-                                    ? `${prop.direction} (${prop.maxAstroFactor})`
-                                    : "不明"}
-                                </span>
-                              </div>
-                              {/* 三盤の段階。扇形・時期パネルと同じ値。
-                                  上の行は選択中の盤（単盤）の内訳なので
-                                  一致しないことがある */}
-                              {k && (
-                                <div className="flex justify-between items-center">
-                                  <span>三盤の判定:</span>
-                                  <span
-                                    className="font-semibold"
-                                    style={{
-                                      color: k.blocked
-                                        ? "#64748b"
-                                        : (TIER_FILL[k.tier as DayTier] ??
-                                          "#64748b"),
-                                    }}
-                                  >
-                                    {k.blocked
-                                      ? "天中殺"
-                                      : `${k.tier} ${TIER_JP[k.tier as DayTier] ?? ""}`}
-                                  </span>
-                                </div>
-                              )}
-                              <div
-                                className="flex justify-between items-center mt-1 cursor-pointer hover:bg-gray-100 p-0.5 rounded transition-colors group"
-                                onClick={() =>
-                                  copyCoordinates(
-                                    prop.lat!,
-                                    prop.lon!,
-                                    prop.property_name,
-                                  )
-                                }
-                                title="クリックで座標をコピー"
-                              >
-                                <span>緯度経度:</span>
-                                <span className="font-mono text-[10px] text-stone-500 flex items-center gap-1 group-hover:text-stone-600">
-                                  {prop.lat!.toFixed(5)}, {prop.lon!.toFixed(5)}
-                                  <Copy className="w-2.5 h-2.5 opacity-40 group-hover:opacity-100" />
-                                </span>
-                              </div>
-                            </div>
-
-                            <div className="mt-3">
-                              <AstroGridCalendar
-                                dateScores={prop.dateScores}
-                                onDateChange={onDateChange}
-                                isTransitioning={isTransitioningDate}
-                              />
-                            </div>
-
-                            {prop.url && (
-                              <a
-                                href={prop.url}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="mt-3 block w-full py-1.5 text-center text-xs font-semibold bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg transition-colors shadow-sm"
-                              >
-                                詳細サイトを開く ↗
-                              </a>
-                            )}
-                          </div>
-                        </Popup>
-                      </CircleMarker>
-                    );
-                  });
-                })())}
       </MapContainer>
 
-      {/* 件数の温度計。数を色で塗っている画面（俯瞰の件数モード、
-          広域の市区町村バブル）のときだけ出す。方位の吉凶を見ている
-          画面に出すと「この赤は件数？凶？」の取り違えになる */}
-      {((zoom < 10 && effectiveTint === "count") ||
-        (zoom >= 10 && showHeatmap)) && (
-        <div className="absolute top-4 left-4 bg-white/80 text-stone-900 px-3 py-3.5 rounded-2xl shadow-xl border border-stone-200 backdrop-blur text-[10px] pointer-events-auto z-[1000] flex flex-col gap-1.5 w-18 items-center">
-          {/* 「件数」とだけ書いてあり、吉凶の色と見分けが付かなかった。
-              何を数えた色なのかまで書く。 */}
-          <div className="font-bold text-[10px] text-stone-600 tracking-tight text-center pb-0.5 border-b border-stone-200 w-full">
-            掲載件数
-            <span className="block font-normal text-[7.5px] text-stone-600">
-              吉凶ではない
-            </span>
-          </div>
-          <div className="flex items-stretch h-36 gap-2 w-full justify-center pt-1">
-            <div className="w-2.5 rounded-full bg-gradient-to-t from-[#818cf8] via-[#10b981] via-[#fbbf24] to-[#ef4444] border border-stone-200" />
-            <div className="flex flex-col justify-between text-[7.5px] font-mono text-stone-500 select-none">
-              <span>{maxPrefOrBubbleCount.toLocaleString()}</span>
-              <span>
-                {Math.round(maxPrefOrBubbleCount * 0.75).toLocaleString()}
-              </span>
-              <span>
-                {Math.round(maxPrefOrBubbleCount * 0.5).toLocaleString()}
-              </span>
-              <span>
-                {Math.round(maxPrefOrBubbleCount * 0.25).toLocaleString()}
-              </span>
-              <span>0</span>
-            </div>
-          </div>
-          {/* 新しい印を黙って足さない。灰色の丸が何なのかを書く。
-              空の方位を理由つきで出すのと同じ考え方。 */}
-          {visibleBaseDistribution.length > 0 && (
-            <div className="flex items-start gap-1.5 border-t border-stone-200 pt-1.5 w-full">
-              <span
-                className="mt-0.5 inline-block w-2.5 h-2.5 shrink-0 rounded-full border"
-                style={{
-                  backgroundColor: "rgba(100,116,139,0.14)",
-                  borderColor: "rgba(100,116,139,0.35)",
-                }}
-              />
-              <span className="text-[7.5px] leading-tight text-stone-600">
-                {
-                  "灰色の丸は、その市区町村の掲載（取り込みを止めた時点）。色の丸とは別の数字です"
-                }
-              </span>
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* 吉凶の凡例（右下）。扇形・ピン・俯瞰の県塗り・時期パネルの
+      {/* 吉凶の凡例（右下）。扇形・俯瞰の県塗り・時期パネルの
           すべてが同じ段階（S〜X）なので、凡例もこの一つだけ。
-          命式が未入力で段階を出せないときだけ、従来の単盤の凡例に落ちる */}
+          命式が未入力で段階を出せないときは、出していないことを言う */}
       {/*
         右下の凡例。**狭い画面では「凡例 ▾」に畳む。**
 
@@ -2625,7 +1513,7 @@ export default function ArbitrageMapInner({
         bottom-4 で、368px の幅に収まらず 74px 重なっていた（Task #52。
         #1328 の候補数の札と同じ型の取り合い）。sm 未満では押し口だけ出し、
         開いたときは俯瞰の段の上に重なってよい（開いた人は凡例を見たい）。
-        中身の 3 通り（段階の凡例／判定なし／単盤の凡例）は変えていない。
+        中身の 2 通り（段階の凡例／判定なし）は変えていない。
       */}
       <div className="absolute bottom-4 right-4 z-[1000] flex flex-col items-end gap-1.5 pointer-events-auto">
         <button
@@ -2666,18 +1554,18 @@ export default function ArbitrageMapInner({
                 </div>
               </div>
               <span className="block text-[10px] text-stone-600 max-w-48 leading-relaxed">
-                年・月・日の三盤を合成した選択日の判定。扇形もピンも同じ段階で塗っています。物件ごとの違いは条件の良さ（スコア・星数）で見てください。
+                年・月・日の三盤を合成した選択日の判定。扇形と県塗りは同じ段階で塗っています。
               </span>
             </div>
-          ) : !hasPersonalVerdict ? (
+          ) : (
             /*
           個人の判定が無いとき。以前はここで「アストロ吉凶（凡例）」を
           出し、超大吉／吉／注意／大凶／平穏を並べていた。生年月日が
           未入力でも API が「今日生まれ」で計算した値を返していたため、
           根拠の無い断定が色と言葉の両方で出ていた（本番で実測）。
 
-          API 側は判定を作らないようにした（#205）。ここでは、色が
-          何も意味していないことと、何を入れれば出るかだけを言う。
+          ここでは、色が何も意味していないことと、何を入れれば出るか
+          だけを言う。
         */
             <div className="max-w-52 bg-white/85 text-stone-900 px-3.5 py-3 rounded-xl shadow-lg border border-stone-200 backdrop-blur text-[10px] pointer-events-none z-[1000] flex flex-col gap-1.5">
               <div className="font-bold border-b border-stone-200 pb-1 text-stone-600">
@@ -2692,44 +1580,6 @@ export default function ArbitrageMapInner({
                   "生年月日と出発地を入れると、その日の方位の吉凶で塗り分けます。"}
                 本命殺・天中殺は生年月日から決まるため、入力が無い状態では判定しません。
               </span>
-            </div>
-          ) : (
-            <div className="bg-white/80 text-stone-900 px-3.5 py-3 rounded-xl shadow-lg border border-stone-200 backdrop-blur text-[10px] pointer-events-none z-[1000] flex flex-col gap-2">
-              <div className="font-bold border-b border-stone-200 pb-1 mb-0.5 text-stone-600">
-                アストロ吉凶（凡例）
-              </div>
-              <div className="grid grid-cols-2 gap-x-3 gap-y-1">
-                <div className="flex items-center gap-1.5 col-span-2">
-                  <span className="w-2.5 h-2.5 rounded-full bg-[#fbbf24] border border-[#b45309] shadow-[0_0_8px_rgba(251,191,36,0.6)]"></span>
-                  <span className="font-bold text-amber-600">
-                    超大吉 (木星ライン特選)
-                  </span>
-                </div>
-                <div className="flex items-center gap-1.5">
-                  <span className="w-2.5 h-2.5 rounded-full bg-[#fbbf24] border border-[#b45309]"></span>
-                  <span>超吉 (最上吉)</span>
-                </div>
-                <div className="flex items-center gap-1.5">
-                  <span className="w-2.5 h-2.5 rounded-full bg-[#10b981] border border-[#065f46]"></span>
-                  <span>吉 (相性抜群)</span>
-                </div>
-                <div className="flex items-center gap-1.5">
-                  <span className="w-2.5 h-2.5 rounded-full bg-[#f97316] border border-[#7c2d12]"></span>
-                  <span>警告・調整方位</span>
-                </div>
-                <div className="flex items-center gap-1.5">
-                  <span className="w-2.5 h-2.5 rounded-full bg-[#f59e0b] border border-[#78350f]"></span>
-                  <span>注意 (軽い凶)</span>
-                </div>
-                <div className="flex items-center gap-1.5">
-                  <span className="w-2.5 h-2.5 rounded-full bg-[#ef4444] border border-[#7f1d1d]"></span>
-                  <span>大凶 (大凶方位)</span>
-                </div>
-                <div className="flex items-center gap-1.5">
-                  <span className="w-2.5 h-2.5 rounded-full bg-[#475569] border border-[#1e293b]"></span>
-                  <span>平穏 (凶方位ではない)</span>
-                </div>
-              </div>
             </div>
           )}
         </div>
