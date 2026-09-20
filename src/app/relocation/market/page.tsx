@@ -10,8 +10,10 @@
  *   生存分析         … 掲載がどれだけ速く消えるか＝流動性
  *   変動係数         … 市区町村ごとのボラティリティ
  *
- * データは毎晩 scripts/build_market_stats.ts が集計して静的に焼き込む。
- * 訪問時に DB は叩かない。
+ * データは scripts/build_market_stats.ts が集計して静的に焼き込む。
+ * 訪問時に DB は叩かない。**掲載の取り込みは規約に従って止めたので、
+ * この集計は 2026-09-13 で止まっている**（scrape-rentals.yml の中に
+ * しか無い）。頁は集計した時点と、止めたことを出す。
  */
 
 import Link from "next/link";
@@ -31,6 +33,7 @@ import {
 import { GRID_STROKE, SERIES } from "@/lib/chartPalette";
 
 import marketStats from "@/data/marketStats.json";
+import { listingSnapshotNote } from "@/lib/listingFreshness";
 import calendarClimatology from "@/data/calendarClimatology.json";
 import type { MarketStats } from "@/utils/marketStats";
 import { trailingAverage } from "@/utils/marketStats";
@@ -93,13 +96,14 @@ export default function MarketAnalyticsPage() {
             家賃市場の計量分析（準備中）
           </h1>
           <p className="mt-2 text-xs leading-relaxed text-amber-800">
-            毎晩のデータ集計がまだ一度も走っていません。次回の夜間バッチが完了すると、ここにヘドニック回帰・分布分析・生存分析が並びます。
+            データの集計がまだ一度も走っていません。集計が終わると、ここにヘドニック回帰・分布分析・生存分析が並びます。
           </p>
         </div>
       </div>
     );
   }
 
+  const snapshotNote = listingSnapshotNote(generated);
   const nat = stats.national;
   const dailySeries = (() => {
     const ma = trailingAverage(
@@ -136,9 +140,26 @@ export default function MarketAnalyticsPage() {
         <header>
           <h1 className="text-xl font-bold">家賃市場の計量分析</h1>
           <p className="mt-1 text-xs leading-relaxed text-stone-500">
-            株式の定量分析で使う道具（ファクターモデル・分布分析・生存分析）を賃貸市場に当てています。毎晩の巡回データから自動更新。最終更新:{" "}
-            {new Date(generated).toLocaleString("ja-JP")}
+            株式の定量分析で使う道具（ファクターモデル・分布分析・生存分析）を賃貸市場に当てています。集計した時点:{" "}
+            {new Date(generated).toLocaleString("ja-JP", {
+              timeZone: "Asia/Tokyo",
+            })}
           </p>
+          {/*
+            **自動更新が続いているかのように書いていた**（2026-09-20 に
+            訂正）。掲載の取り込みは提供元の規約に従って止めてあり、この頁が
+            読む marketStats.json を焼く build_market_stats.ts は
+            scrape-rentals.yml の中にしか無い。**0 件にはならず、その日の
+            集計のまま止まっている。**日付だけを出しても「取り込みが
+            遅れているのかな」としか読めないので、止めたことまで書く。
+
+            日数は出さない（`listingSnapshotNote` の註）。
+          */}
+          {snapshotNote && (
+            <p className="mt-2 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs leading-relaxed text-amber-900">
+              {snapshotNote}
+            </p>
+          )}
           {/*
             読み方の解説への導線。この頁は数字と図だけで、なぜ中央値なのか・
             残差が何を意味するのかは下の注記まで読まないと分からない。
@@ -161,7 +182,7 @@ export default function MarketAnalyticsPage() {
           <KpiCard
             label="分析対象の掲載"
             value={`${stats.totalListings.toLocaleString()}件`}
-            hint="直近30日に確認できた掲載のうち、家賃・面積が正常な範囲のもの"
+            hint="集計した時点で直近 30 日に確認できた掲載のうち、家賃・面積が正常な範囲のもの。取り込みは止めているので、この数は増えない"
           />
           {nat.rent && (
             <KpiCard
@@ -207,7 +228,7 @@ export default function MarketAnalyticsPage() {
         {/* 家賃指数の推移。株価チャートに相当する時系列 */}
         <Section
           title="家賃指数の推移（全国・㎡単価中央値）"
-          subtitle="毎晩の集計で積み上げる時系列。㎡単価の中央値なので、安い物件が増減しても面積構成の変化に引きずられにくい。過去に遡って再構成はできないため、導入日からの蓄積になる。"
+          subtitle="集計のたびに積み上げた時系列。㎡単価の中央値なので、安い物件が増減しても面積構成の変化に引きずられにくい。過去に遡って再構成はできないため、導入日からの蓄積になる。"
         >
           {stats.rentIndexSeries.length >= 5 ? (
             <div className="h-56">
@@ -243,7 +264,7 @@ export default function MarketAnalyticsPage() {
             </div>
           ) : (
             <p className="rounded-xl bg-stone-50 border border-stone-200 p-3 text-xs leading-relaxed text-stone-500">
-              蓄積中（現在 {stats.rentIndexSeries.length} 日ぶん）。毎晩の集計が 5 日ぶん貯まるとチャートが表示されます。
+              蓄積中（現在 {stats.rentIndexSeries.length} 日ぶん）。集計が 5 日ぶん貯まるとチャートが表示されます。
             </p>
           )}
         </Section>

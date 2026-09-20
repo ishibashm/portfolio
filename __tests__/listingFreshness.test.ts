@@ -191,6 +191,32 @@ describe("静止した数字の断り", () => {
     expect(listingSnapshotNote("こわれた値", NOW)).toBeNull();
   });
 
+  it("家賃市場の分析は、止めたことを書いている", () => {
+    /*
+      **「毎晩の巡回データから自動更新」と書いていた**（2026-09-20 に訂正）。
+      この頁が読む marketStats.json を焼く build_market_stats.ts は
+      scrape-rentals.yml の中にしか無いので、巡回を止めた時点で
+      **0 件にはならず、その日の集計のまま止まっている。**
+
+      市区町村ページ・県ページは公開統計へ移したが、この頁は掲載そのものを
+      分析する道具なので置き換え先が無い。集計した時点を書いて残す。
+    */
+    const page = readFileSync(
+      join(process.cwd(), "src/app/relocation/market/page.tsx"),
+      "utf8",
+    );
+    expect(page).not.toContain("毎晩の巡回データから自動更新");
+    expect(page).toContain("listingSnapshotNote");
+    /* 道具の一覧の説明も同じ（頁だけ直すと入口で嘘が残る） */
+    const structure = readFileSync(
+      join(process.cwd(), "src/lib/siteStructure.ts"),
+      "utf8",
+    );
+    expect(structure).not.toContain(
+      "ヘドニック回帰・分布分析・生存分析で毎晩集計する",
+    );
+  });
+
   it("県ページももう掲載の数字を出していない", () => {
     /* 市区町村ページ（#1454）に続けて、県ページも公開統計へ移した
        （2026-09-20）。凍結した数字を出さなくなったので断りも要らない。 */
