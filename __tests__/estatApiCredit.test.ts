@@ -23,6 +23,10 @@ const PAGES_USING_ESTAT_API = [
      出す。route は文言を lib/estatCredit から引く（route ファイルは
      route 以外の名前を export できないので、実体はそちらにある） */
   "src/app/api/housing-stats/by-direction/route.ts",
+  /* 市区町村ページの借家の札。掲載（賃貸の巡回）から作った中央値と
+     ㎡単価を、公開統計に置き換えた（2026-09-19）。巡回は止めてあり、
+     掲載由来の数字は 2026-09-13 で凍結していた。 */
+  "src/app/houi/area/[code]/page.tsx",
 ];
 
 describe("e-Stat の API のクレジット表示", () => {
