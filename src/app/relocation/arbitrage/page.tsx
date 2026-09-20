@@ -235,7 +235,7 @@ import {
  *
  * さらに、対象に足したばかりでまだ物件を取り切れていない県を出しても0件に
  * なるだけなので、実際にデータが載った県だけに絞る。この一覧は
- * scripts/build_area_dataset.ts が毎晩吐き直すので、取り込みが進めば自動で
+ * scripts/build_area_dataset.ts が吐き直すので、取り込みを再開すれば自動で
  * 増える。areaDirections.json は78KBあり client バンドルに乗せられないため、
  * 県名だけの小さな JSON を別に持っている。
  *
@@ -2136,7 +2136,7 @@ export default function ArbitrageScannerPage() {
   /**
    * 全国俯瞰の県別件数を、いまの絞り込みで数え直す。
    *
-   * 地図の県ラベルは src/data/prefecturesWithData.json（毎晩作る静的な
+   * 地図の県ラベルは src/data/prefecturesWithData.json（静的な
    * 値）を読んでおり、**絞り込みをどう変えても数字が動かなかった**。
    * 条件を足したあと「まだこの県にこれだけあるのか」を読み違える。
    *

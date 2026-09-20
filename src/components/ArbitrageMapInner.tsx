@@ -164,7 +164,7 @@ interface ArbitrageMapInnerProps {
   /**
    * 県名 → 掲載件数。俯瞰の県ラベルと「件数」塗りが読む。
    *
-   * 渡されないときは src/data/prefecturesWithData.json（毎晩作る静的な
+   * 渡されないときは src/data/prefecturesWithData.json（静的な
    * 値）に落ちる。**絞り込みを掛けているあいだはページ側が数え直した値を
    * 渡す。**静的な値だけを見ていたころは、条件をどう変えても県の数字が
    * 動かず、絞り込んだあとの分布を読み違えた。
@@ -481,7 +481,8 @@ export default function ArbitrageMapInner({
   const [legendOpen, setLegendOpen] = useState(false);
   const [geoData, setGeoData] = useState<FeatureCollection | null>(null);
   /**
-   * 地の分布。毎晩の集計＝その日の掲載を全部数えた値（#935）。
+   * 地の分布。集計＝その日の掲載を全部数えた値（#935）。取り込みを
+   * 止めたので、この数は止まった日のまま動かない。
    *
    * **候補（安い順 500 件の窓）とは別物。**窓は広い範囲を映すほど
    * いちばん安い一角に埋まるので、それだけを描くと残りが空白になり
@@ -731,7 +732,7 @@ export default function ArbitrageMapInner({
   // 以前は API が返した properties（安い順・最大 500 件）を県名で数えて
   // いた。母数が 500 件では安い県だけが濃く出るうえ、俯瞰のためだけに
   // 全国 45 万行の名寄せを走らせることになる。俯瞰に要るのは県ごとの
-  // 数字だけなので、build_area_dataset.ts が毎晩数えて静的に配る値を使う。
+  // 数字だけなので、build_area_dataset.ts が数えて静的に配る値を使う。
   // 取り込みが進んで新しい県にデータが載れば、翌朝ここも自動で増える。
   //
   // 絞り込みが掛かっているあいだは、ページ側が数え直した値（prefCountsProp）
@@ -1917,7 +1918,7 @@ export default function ArbitrageMapInner({
                 />
                 <span className="text-xs leading-tight text-stone-600">
                   {
-                    "灰色の丸はそのあたりの掲載数（毎晩の集計）。吉凶ではありません"
+                    "灰色の丸はそのあたりの掲載数（取り込みを止めた時点の集計）。吉凶ではありません"
                   }
                 </span>
               </div>
@@ -2060,7 +2061,7 @@ export default function ArbitrageMapInner({
               layer.bindPopup(
                 `<div class="font-sans text-xs text-gray-900 p-2 min-w-[120px]">
                   <div class="font-bold text-sm border-b border-gray-100 pb-1 mb-1.5">${prefName}</div>
-                  <div>掲載物件数: <b class="text-indigo-600 text-sm">${count.toLocaleString()}</b> 件<span class="text-[10px] text-stone-500">（毎晩更新）</span></div>
+                  <div>掲載物件数: <b class="text-indigo-600 text-sm">${count.toLocaleString()}</b> 件<span class="text-[10px] text-stone-500">（取り込みを止めた時点）</span></div>
                   ${kigakuLine}
                   <div class="text-xs text-stone-500 mt-1.5">※ズームインすると物件が表示されます</div>
                 </div>`,
@@ -2172,7 +2173,7 @@ export default function ArbitrageMapInner({
                     </div>
                     <div className="text-xs text-stone-500 mt-2 leading-snug">
                       {
-                        "毎晩の集計をまとめた数です。ズームすると市区町村ごとに分かれます。"
+                        "取り込みを止めた時点の集計をまとめた数です。ズームすると市区町村ごとに分かれます。"
                       }
                     </div>
                   </div>
@@ -2200,8 +2201,10 @@ export default function ArbitrageMapInner({
             「物件が無い」ではなく「見ていない」なのに、画面からは区別が
             付かなかった（利用者の報告：物件が俯瞰で見ると数が出てこない）。
 
-            こちらは毎晩の集計＝その日の掲載を全部数えた値なので、絞り込みと
+            こちらは集計＝その日の掲載を全部数えた値なので、絞り込みと
             窓のどちらとも無関係に、掲載のある市区町村が全部出る。
+            **取り込みを止めたので、この数は止まった日のまま動かない**
+            （build_area_dataset は scrape-rentals.yml の中にしか無い）。
 
             **色は付けない。**この地図には既に 2 つの色の意味（方位の吉凶、
             候補の件数）が乗っている。3 つ目を足すと「この色は何？」に
@@ -2232,7 +2235,7 @@ export default function ArbitrageMapInner({
                   </div>
                   <div className="text-xs text-stone-500 mt-2 leading-snug">
                     {
-                      "毎晩の集計です。いまの絞り込みや、地図が出している候補とは別の数字になります。"
+                      "取り込みを止めた時点の集計です。いまの絞り込みや、地図が出している候補とは別の数字になります。"
                     }
                   </div>
                 </div>
@@ -2605,7 +2608,7 @@ export default function ArbitrageMapInner({
               />
               <span className="text-[7.5px] leading-tight text-stone-600">
                 {
-                  "灰色の丸は、その市区町村の掲載（毎晩の集計）。色の丸とは別の数字です"
+                  "灰色の丸は、その市区町村の掲載（取り込みを止めた時点）。色の丸とは別の数字です"
                 }
               </span>
             </div>

@@ -48,7 +48,7 @@ interface ArbitrageMapProps {
   /** prefKigaku が無いときの理由。俯瞰の凡例にそのまま出す */
   kigakuUnavailableReason?: string;
   /**
-   * 県名 → 掲載件数。渡さないと静的ファイル（毎晩生成）の値になる。
+   * 県名 → 掲載件数。渡さないと静的ファイル（取り込みを止めた時点）の値になる。
    * 絞り込み中はページ側が数え直した値を渡す。
    */
   prefCounts?: Record<string, number>;

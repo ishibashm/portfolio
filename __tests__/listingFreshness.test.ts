@@ -191,6 +191,26 @@ describe("静止した数字の断り", () => {
     expect(listingSnapshotNote("こわれた値", NOW)).toBeNull();
   });
 
+  it("物件検索の地図が「毎晩更新」と言っていない", () => {
+    /*
+      **地図の吹き出しは「掲載物件数: N 件（毎晩更新）」と書いていた**
+      （2026-09-20 に訂正）。灰色の丸が出す数は build_area_dataset.ts が
+      焼く静的な値で、scrape-rentals.yml の中にしか無い。取り込みを
+      止めたので、**0 件にはならず止まった日のまま動かない。**
+
+      候補の件数（DB を毎回引く側）は 30 日の窓で減っていくので、
+      **同じ画面に「減る数」と「止まった数」が並ぶ。**どちらがどちらか
+      書かないと、止まったほうが今日の数に見える。
+    */
+    for (const file of [
+      "src/components/ArbitrageMapInner.tsx",
+      "src/components/ArbitrageMap.tsx",
+    ]) {
+      const src = readFileSync(join(process.cwd(), file), "utf8");
+      expect(src, `${file} に「毎晩」が残っている`).not.toContain("毎晩");
+    }
+  });
+
   it("家賃市場の分析は、止めたことを書いている", () => {
     /*
       **「毎晩の巡回データから自動更新」と書いていた**（2026-09-20 に訂正）。
