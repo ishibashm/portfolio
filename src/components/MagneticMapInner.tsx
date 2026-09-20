@@ -7,7 +7,6 @@ import {
   Polyline,
   Polygon,
   Circle,
-  CircleMarker,
   useMap,
   Tooltip,
 } from "react-leaflet";
@@ -32,7 +31,6 @@ import {
   directionWedgeHalfWidth,
   directionWedgePoints,
 } from "@/utils/directionGeo";
-import type { MapProperty } from "@/lib/mapProperty";
 import { applyLeafletDefaultIcon } from "@/lib/leafletDefaultIcon";
 import { HazardTileOverlay } from "@/components/HazardTileOverlay";
 import { StandardBaseTile } from "@/components/map/StandardBaseTile";
@@ -79,7 +77,6 @@ interface MapInnerProps {
   };
   activeLayerMode?: string;
   useTrueNorth?: boolean;
-  properties?: MapProperty[];
   onSelectTarget?: (lat: number, lon: number) => void;
   targetLat?: number | null;
   targetLon?: number | null;
@@ -166,7 +163,6 @@ export default function MagneticMapInner({
   activeLayerMode = "final",
   // useTrueNorth は受け口だけ残す。扇形は必ず真北で描くようになったので
   // ここでは読まない（呼び出し側は今も渡している）。
-  properties = [],
   onSelectTarget,
   targetLat,
   targetLon,
@@ -824,49 +820,6 @@ export default function MagneticMapInner({
             }}
           />
         ))}
-
-        {/* Real Estate Properties */}
-        {properties?.map((prop) => {
-          // 座標だけ局所に取り出す。lat/lon は null 許容で、下の click は
-          // 遅れて走るため、prop.lat のままだと絞り込みが効かない
-          // （呼ばれる時点で別の値になっている可能性を型が捨てられない）。
-          const { lat: propLat, lon: propLon } = prop;
-          return propLat && propLon ? (
-            <CircleMarker
-              key={prop.id || prop.url}
-              center={[propLat, propLon]}
-              radius={prop.is_new_build ? 5 : 3}
-              pathOptions={{
-                color: prop.is_new_build ? "#10b981" : "#3b82f6",
-                fillColor: prop.is_new_build ? "#10b981" : "#3b82f6",
-                fillOpacity: 0.8,
-                weight: 1,
-              }}
-              eventHandlers={{
-                click: () => {
-                  setClickedPos([propLat, propLon]);
-                  onSelectTarget?.(propLat, propLon);
-                },
-              }}
-            >
-              <Tooltip>
-                <div className="font-mono text-xs text-zinc-800 p-1">
-                  <div className="font-bold">{prop.property_name}</div>
-                  {prop.is_new_build && (
-                    <div className="text-emerald-700 font-bold">[新築]</div>
-                  )}
-                  <div>
-                    家賃:{" "}
-                    {prop.rent
-                      ? `${(prop.rent / 10000).toFixed(1)}万円`
-                      : "不明"}
-                  </div>
-                  <div>{prop.address}</div>
-                </div>
-              </Tooltip>
-            </CircleMarker>
-          ) : null;
-        })}
       </MapContainer>
 
       {/* UI Overlay */}

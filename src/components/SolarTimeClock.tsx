@@ -61,7 +61,6 @@ import {
   SETTINGS_KEY,
 } from "@/lib/userSettings";
 import type { MunicipalityWealthItem } from "@/lib/municipalityWealth";
-import type { MapProperty } from "@/lib/mapProperty";
 // TenChiJinEvaluation・Loader2 は「総合スコア」タブと一緒に
 // home/ScorecardPanel へ移した。
 import { getStatusScore } from "@/lib/scoreTier";
@@ -604,24 +603,6 @@ export const SolarTimeClock = () => {
   // Map Picker State
   const [showMapPicker, setShowMapPicker] = useState(false);
   const [activeLayerMode, setActiveLayerMode] = useState<LayerMode>("final");
-  const [showOnlyNewBuild, setShowOnlyNewBuild] = useState(false);
-  /**
-   * 地図に出す物件。
-   *
-   * MagneticMapInner には最初から物件ピンを描く実装があり、
-   * 「☐ 全物件表示 / ☑ 新築のみ表示」の切替も置いてある。取ってくる側の
-   * /api/rentals/map もある。繋いでいなかったのはその 1 本だけで、
-   * mapProperties は setter を一度も呼ばれず常に空だった。つまり
-   * 切替を押しても、何も出ないものを絞り込んでいた。
-   *
-   * ここは公開のホーム（/）に載っている。開いた全員に 500 件を
-   * 取りに行かせたくないので、出すと決めた人にだけ取りに行く。
-   */
-  const [mapProperties, setMapProperties] = useState<MapProperty[]>([]);
-  const [showProperties, setShowProperties] = useState(false);
-  const [propertiesLoading, setPropertiesLoading] = useState(false);
-  const [propertiesError, setPropertiesError] = useState<string | null>(null);
-
   // Geo & Environment State (Default: Tokyo)
   const [lat, setLat] = useState<number>(35.6895);
   const [lon, setLon] = useState<number>(139.6917);
@@ -3486,36 +3467,6 @@ export const SolarTimeClock = () => {
   }, [lat, lon, targetLat, targetLon]);
 
   useEffect(() => {
-    // 物件ピンは「出す」と押した人にだけ取りに行く。一度取ったら使い回す。
-    // ここは公開のホームなので、開いただけの人に 500 件を引かせない。
-    if (!showProperties || mapProperties.length > 0 || propertiesLoading) {
-      return;
-    }
-    let alive = true;
-    setPropertiesLoading(true);
-    setPropertiesError(null);
-    fetch("/api/rentals/map?limit=500")
-      .then((res) => (res.ok ? res.json() : Promise.reject(res.status)))
-      .then((rows) => {
-        if (!alive) return;
-        setMapProperties(Array.isArray(rows) ? rows : []);
-      })
-      .catch(() => {
-        if (!alive) return;
-        setPropertiesError(
-          "物件を読み込めませんでした。もう一度押すと再取得します。",
-        );
-        setShowProperties(false);
-      })
-      .finally(() => {
-        if (alive) setPropertiesLoading(false);
-      });
-    return () => {
-      alive = false;
-    };
-  }, [showProperties, mapProperties.length, propertiesLoading]);
-
-  useEffect(() => {
     if (baseTime && lon) {
       const targetTime = new Date(
         baseTime.getTime() + timeOffsetDays * 86400000,
@@ -4230,13 +4181,6 @@ export const SolarTimeClock = () => {
             spaceWeather={spaceWeather}
             ansLoad={ansLoad}
             shieldCapacity={shieldCapacity}
-            mapProperties={mapProperties}
-            showProperties={showProperties}
-            setShowProperties={setShowProperties}
-            showOnlyNewBuild={showOnlyNewBuild}
-            setShowOnlyNewBuild={setShowOnlyNewBuild}
-            propertiesLoading={propertiesLoading}
-            propertiesError={propertiesError}
             hudLayers={hudLayers}
             setHudLayers={setHudLayers}
           />
