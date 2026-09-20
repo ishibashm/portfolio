@@ -143,8 +143,6 @@ ${prefLines}
 
 ## 公開 API
 
-- GET \`/api/rentals/arbitrage\`: 方位と時期を加味した賃貸物件の評価一覧。出発地の座標（baseLat, baseLon）が必須です。
-- GET \`/api/rentals/arbitrage/timeline\`: 特定の物件について、指定期間の日ごとの吉凶。
 - GET \`/api/municipalities-wealth\`: 市区町村ごとの所得統計。移住先の比較に使います。
 
 ---

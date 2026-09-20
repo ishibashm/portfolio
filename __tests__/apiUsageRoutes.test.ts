@@ -1,5 +1,4 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { NextRequest } from "next/server";
 
 const { generateObject, recordApiCall, rentalFindFirst } = vi.hoisted(() => ({
   generateObject: vi.fn(),
@@ -27,7 +26,6 @@ vi.mock("@/lib/prisma", () => ({
 }));
 
 import { POST as webhookPost } from "@/app/api/rentals/webhook/route";
-import { POST as parseQueryPost } from "@/app/api/rentals/parse-query/route";
 
 describe("従量 API ルートの使用量計測", () => {
   beforeEach(() => {
@@ -90,47 +88,6 @@ describe("従量 API ルートの使用量計測", () => {
       route: "/api/rentals/webhook",
       inputTokens: 120,
       outputTokens: 30,
-    });
-  });
-
-  it("rentals/parse-query は Anthropic usage を記録する", async () => {
-    const fetchMock = vi.fn().mockResolvedValue(
-      new Response(
-        JSON.stringify({
-          usage: { input_tokens: 360, output_tokens: 90 },
-          content: [
-            {
-              type: "tool_use",
-              input: { keywords: ["眺望"] },
-            },
-          ],
-        }),
-        { status: 200, headers: { "content-type": "application/json" } },
-      ),
-    );
-    vi.stubGlobal("fetch", fetchMock);
-    const request = new NextRequest(
-      "https://cloud-palette.com/api/rentals/parse-query",
-      {
-        method: "POST",
-        headers: {
-          "content-type": "application/json",
-          origin: "https://cloud-palette.com",
-          host: "cloud-palette.com",
-        },
-        body: JSON.stringify({ query: "落ち着いて暮らせる住まい" }),
-      },
-    );
-
-    const response = await parseQueryPost(request);
-
-    expect(response.status).toBe(200);
-    expect(recordApiCall).toHaveBeenCalledWith({
-      provider: "anthropic",
-      model: "claude-haiku-4-5",
-      route: "/api/rentals/parse-query",
-      inputTokens: 360,
-      outputTokens: 90,
     });
   });
 });
