@@ -33,6 +33,7 @@ import {
 
 import calendarClimatology from "@/data/calendarClimatology.json";
 import { ArbitrageMap } from "@/components/ArbitrageMap";
+import { coreRouteLabel } from "@/lib/siteStructure";
 import { YearlyForecast } from "@/components/relocation/YearlyForecast";
 import { DayCellPopover } from "@/components/relocation/DayCellPopover";
 import { toPercentStack } from "@/utils/percentStack";
@@ -273,7 +274,7 @@ export default function TimingAnalyticsPage() {
     代表点への方位で、人ごとの段階を引いて 1 本にまとめる
     （lib/partyTimeline）。走査は本人と同じ範囲（2 年まで）を人数ぶん。
 
-    当初は物件スキャナーと同じ鍵を読んでいたが、あちらの時期の走査は
+    当初は物件検索（今の街探しの頁）と同じ鍵を読んでいたが、あちらの時期の走査は
     90 日まで・こちらは 2 年で、同じ人を載せても条件が揃わない。利用者の
     依頼（2026-09-19）で分けた。スキャナーで足した人は最初の 1 回だけ写す。
   */
@@ -410,7 +411,7 @@ export default function TimingAnalyticsPage() {
   const runScan = useCallback(async () => {
     if (!settings?.baseLon || !settings?.birthDate) {
       setError(
-        "出発地と生年月日が未設定です。先に物件スキャナーで設定してください。",
+        `出発地と生年月日が未設定です。先に「${coreRouteLabel("/relocation/arbitrage")}」か /profile で設定してください。`,
       );
       return;
     }
@@ -909,7 +910,7 @@ export default function TimingAnalyticsPage() {
               href="/relocation/arbitrage"
               className="mx-1 font-semibold text-indigo-600 underline"
             >
-              物件スキャナー
+              {coreRouteLabel("/relocation/arbitrage")}
             </Link>
             の設定（生年月日・出発地・天中殺の扱い）をそのまま使います。
           </p>
@@ -1042,7 +1043,7 @@ export default function TimingAnalyticsPage() {
         {/* 同行者・合流する人。走査の前でも人を足せるように、結果の外に置く */}
         <Section
           title="同行者・合流する人（いつなら全員で動けるか）"
-          subtitle="別の場所に住む親族と合流するなど、一緒に動く人を足すと、人数ぶん走査して重ね、いつなら全員で動けるかを日付から出します。日を選ぶと、その日に全員で動ける県が出るので、行き先はそこから決めます。走査は本人と同じ範囲（2 年まで）。ここで足した同行者はこの頁だけのもので、物件スキャナーの同行者とは別に持ちます。"
+          subtitle="別の場所に住む親族と合流するなど、一緒に動く人を足すと、人数ぶん走査して重ね、いつなら全員で動けるかを日付から出します。日を選ぶと、その日に全員で動ける県が出るので、行き先はそこから決めます。走査は本人と同じ範囲（2 年まで）。ここで足した同行者はこの頁だけのものです。"
         >
           <div className="grid gap-5 lg:grid-cols-[minmax(0,380px)_1fr]">
             <PartyMembersEditor
@@ -1079,7 +1080,7 @@ export default function TimingAnalyticsPage() {
                 memberTimelines.length > 0 &&
                 allTimelines.length === 0 && (
                   <p className="text-xs leading-relaxed text-rose-600">
-                    あなたの出発地の緯度が未設定なので、合流先への方位が出せません。物件スキャナーで出発地を入れ直してください。
+                    {`あなたの出発地の緯度が未設定なので、合流先への方位が出せません。/profile か「${coreRouteLabel("/relocation/arbitrage")}」で出発地を入れ直してください。`}
                   </p>
                 )}
               {/*
@@ -2025,7 +2026,7 @@ export default function TimingAnalyticsPage() {
                     href={`/relocation/arbitrage?targetDate=${selected.date}&view=overview`}
                     className="mt-3 inline-block text-[11px] font-semibold text-indigo-600 underline"
                   >
-                    この日で物件スキャナーを開く（物件も一緒に見る）
+                    この日に開いている方位の街を見る
                   </Link>
                 </Section>
               </div>
@@ -2176,7 +2177,7 @@ export default function TimingAnalyticsPage() {
         {/*
           「設定を読み込んでいます…」を出しっぱなしにしない。
 
-          出発地は localStorage（物件スキャナーが保存する）から取るので、
+          出発地は localStorage（設定バーと街探しの頁が保存する）から取るので、
           初めて来た人は空文字になる。空だと自動走査の条件を満たさず、
           days が null のままこの文言が残り続けていた。読み込み中ではなく
           入力待ちなので、待っても何も起きない。このページはサイトマップに
@@ -2197,13 +2198,13 @@ export default function TimingAnalyticsPage() {
               {missingLabel}を設定すると、ここに全期間の吉凶が出ます
             </p>
             <p className="mx-auto mt-2 max-w-md text-xs leading-relaxed text-stone-500">
-              いつ動くのが良いかは、出発地から見た方位と本命星で決まります。どちらも物件スキャナーの設定と共有しているので、片方で入れればこちらにも反映されます。
+              {`いつ動くのが良いかは、出発地から見た方位と本命星で決まります。どちらも「${coreRouteLabel("/relocation/arbitrage")}」の設定と共有しているので、片方で入れればこちらにも反映されます。`}
             </p>
             <Link
               href="/relocation/arbitrage"
               className="mt-4 inline-block rounded-full bg-stone-800 px-5 py-2 text-xs text-white"
             >
-              物件スキャナーで設定する
+              {`${coreRouteLabel("/relocation/arbitrage")}で設定する`}
             </Link>
           </div>
         )}
