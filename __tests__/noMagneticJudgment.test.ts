@@ -36,8 +36,6 @@ const WATCHED = [
   "src/components/home/DestinationMapPanel.tsx",
   "src/utils/arbitrageAstro.ts",
   "src/app/api/municipalities-wealth/route.ts",
-  "src/app/api/rentals/arbitrage/route.ts",
-  "src/app/api/rentals/arbitrage/timeline/route.ts",
 ];
 
 /**
