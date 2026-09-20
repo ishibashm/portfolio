@@ -85,6 +85,25 @@ describe("市区町村ページの家賃は公開統計から出す", () => {
     expect(prefSource).toMatch(/\.sort\(\(x, y\) => x\.rent - y\.rent\)/);
   });
 
+  it("MCP も同じ出どころを返す", () => {
+    /*
+      **画面と MCP で違う数字を返さない。**MCP は AI の道具から呼ばれる
+      ので、こちらだけ凍結した掲載の中央値を返していると、同じ問いに
+      2 通りの答えが出る。
+
+      数字だけでなく**出どころも添える**こと（何年の何かが分からない
+      数字は使えない）。
+    */
+    const mcp = readFileSync(
+      join(process.cwd(), "src/lib/mcpServer.ts"),
+      "utf8",
+    );
+    expect(mcp).not.toContain("medianRent");
+    expect(mcp).not.toContain("medianOfMedians");
+    expect(mcp).toContain("housingFiguresFor");
+    expect(mcp).toContain("HOUSING_SOURCE");
+  });
+
   it("差の計算は、どちらかが欠けたら null", () => {
     const withRent = Object.entries(snapshot.areas).find(
       ([, a]) => a.rentPerTatamiYen !== null,
