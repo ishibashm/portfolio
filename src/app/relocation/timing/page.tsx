@@ -799,6 +799,38 @@ export default function TimingAnalyticsPage() {
         : null,
     [partyDateOptions, selectedDate],
   );
+  /**
+   * 選択日に全員で動ける県を、**あなたの出発地から見た方角でまとめる。**
+   *
+   * 利用者の指摘（2026-09-21）。日付の次に決めるのは方角で、県はその
+   * 方角の中から選ぶ。47 の県名を平らに並べると、結局「どの県か」から
+   * 考えることになって順序が戻る。
+   *
+   * **人ごとの方位は県のボタンに残す。**同じ県でも出発地が違えば方位が
+   * 違うのがこの機能の理由なので、まとめる軸（あなた）だけにしない。
+   * 段階はあなたのその日のもの。開いている方角の中でどれが自分に良いかを
+   * 見るために添えるだけで、**判定は変えていない**（並べているのは
+   * 「全員が避けるべき判定に当たらない県」のまま）。
+   */
+  const partyOpenByDirection = useMemo(() => {
+    if (!selectedPartyOpen || allTimelines.length === 0) return [];
+    const self = allTimelines[0];
+    const byDir = new Map<string, string[]>();
+    for (const name of selectedPartyOpen) {
+      const center = PREFECTURE_CENTERS[name];
+      if (!center) continue;
+      const dir = memberDirection(self, center);
+      const list = byDir.get(dir);
+      if (list) list.push(name);
+      else byDir.set(dir, [name]);
+    }
+    return ALL_DIRECTIONS.filter((d) => byDir.has(d)).map((d) => ({
+      direction: d,
+      names: byDir.get(d) ?? [],
+      tier: selected?.tiers[d] ?? null,
+    }));
+  }, [selectedPartyOpen, allTimelines, selected]);
+
   /** 1 人ぶんも同じ向きで。月ごとに「凶でない方位がある日」を数える。 */
   const soloOpenByMonth = useMemo(
     () =>
@@ -1043,7 +1075,7 @@ export default function TimingAnalyticsPage() {
         {/* 同行者・合流する人。走査の前でも人を足せるように、結果の外に置く */}
         <Section
           title="同行者・合流する人（いつなら全員で動けるか）"
-          subtitle="別の場所に住む親族と合流するなど、一緒に動く人を足すと、人数ぶん走査して重ね、いつなら全員で動けるかを日付から出します。日を選ぶと、その日に全員で動ける県が出るので、行き先はそこから決めます。走査は本人と同じ範囲（2 年まで）。ここで足した同行者はこの頁だけのものです。"
+          subtitle="別の場所に住む親族と合流するなど、一緒に動く人を足すと、人数ぶん走査して重ね、いつなら全員で動けるかを日付から出します。日を選ぶと、その日に全員で動ける方角と、その方角の県が出るので、行き先はそこから決めます。走査は本人と同じ範囲（2 年まで）。ここで足した同行者はこの頁だけのものです。"
         >
           <div className="grid gap-5 lg:grid-cols-[minmax(0,380px)_1fr]">
             <PartyMembersEditor
@@ -1101,7 +1133,7 @@ export default function TimingAnalyticsPage() {
                   </p>
                   <p className="mt-0.5 text-xs leading-relaxed text-stone-500">
                     月ごとに、移動する全員が避けるべき判定に当たらない県が 1
-                    つでもある日を数えています。日を選ぶと、その日に全員で動ける県が下に出ます。行き先はそこから決めます。
+                    つでもある日を数えています。日を選ぶと、その日に全員で動ける方角と県が下に出ます。行き先はそこから決めます。
                   </p>
                   {partyOpenByMonth.every((m) => m.days === 0) && (
                     <p className="mt-1.5 text-xs leading-relaxed text-amber-800">
@@ -1166,7 +1198,7 @@ export default function TimingAnalyticsPage() {
                   data-party-open-on-date
                 >
                   <p className="text-xs font-bold text-stone-700">
-                    {selectedDate} に全員で動ける県
+                    {`${selectedDate} に全員で動ける方角と県`}
                   </p>
                   {selectedPartyOpen.length === 0 ? (
                     <p className="mt-0.5 text-xs leading-relaxed text-amber-800">
@@ -1175,40 +1207,55 @@ export default function TimingAnalyticsPage() {
                   ) : (
                     <>
                       <p className="mt-0.5 text-xs leading-relaxed text-stone-500">
-                        各人の出発地から見た方位を添えています。押すと合流先に入り、その県に向けた
-                        2 年ぶんの内訳が下に出ます。
+                        {`あなたの出発地から見た方角でまとめています。方角を決めてから、その中の県を押してください。押すと合流先に入り、その県に向けた 2 年ぶんの内訳が下に出ます。段階はあなたのその日のもので、並んでいるのは全員が動ける県だけです。`}
                       </p>
-                      <ul className="mt-1.5 flex flex-wrap gap-1.5">
-                        {selectedPartyOpen.map((name) => (
-                          <li key={name}>
-                            <button
-                              type="button"
-                              onClick={() => changeDest(name)}
-                              aria-pressed={destPref === name}
-                              className={`inline-flex min-h-[24px] items-baseline gap-1 rounded-lg border px-2 py-1 text-left text-xs hover:bg-indigo-50 ${
-                                destPref === name
-                                  ? "border-indigo-300 bg-indigo-50 text-indigo-900"
-                                  : "border-stone-200 text-stone-700"
-                              }`}
-                            >
-                              <span className="font-bold">{name}</span>
-                              <span className="text-stone-500">
-                                {allTimelines
-                                  .filter((m) => !m.stationary)
-                                  .map(
-                                    (m) =>
-                                      `${m.name}は${
-                                        DIRECTION_LABELS[
-                                          memberDirection(
-                                            m,
-                                            PREFECTURE_CENTERS[name],
-                                          )
-                                        ] ?? ""
-                                      }`,
-                                  )
-                                  .join("・")}
+                      <ul className="mt-1.5 space-y-2">
+                        {partyOpenByDirection.map((group) => (
+                          <li key={group.direction}>
+                            <p className="text-xs font-bold text-stone-700">
+                              {DIRECTION_LABELS[group.direction] ??
+                                group.direction}
+                              <span className="ml-1.5 font-normal text-stone-500">
+                                {`${group.names.length} 県`}
+                                {group.tier
+                                  ? ` / あなたは${TIER_LABELS[group.tier as DayTier] ?? group.tier}`
+                                  : ""}
                               </span>
-                            </button>
+                            </p>
+                            <ul className="mt-1 flex flex-wrap gap-1.5">
+                              {group.names.map((name) => (
+                                <li key={name}>
+                                  <button
+                                    type="button"
+                                    onClick={() => changeDest(name)}
+                                    aria-pressed={destPref === name}
+                                    className={`inline-flex min-h-[24px] items-baseline gap-1 rounded-lg border px-2 py-1 text-left text-xs hover:bg-indigo-50 ${
+                                      destPref === name
+                                        ? "border-indigo-300 bg-indigo-50 text-indigo-900"
+                                        : "border-stone-200 text-stone-700"
+                                    }`}
+                                  >
+                                    <span className="font-bold">{name}</span>
+                                    <span className="text-stone-500">
+                                      {allTimelines
+                                        .filter((m) => !m.stationary)
+                                        .map(
+                                          (m) =>
+                                            `${m.name}は${
+                                              DIRECTION_LABELS[
+                                                memberDirection(
+                                                  m,
+                                                  PREFECTURE_CENTERS[name],
+                                                )
+                                              ] ?? ""
+                                            }`,
+                                        )
+                                        .join("・")}
+                                    </span>
+                                  </button>
+                                </li>
+                              ))}
+                            </ul>
                           </li>
                         ))}
                       </ul>

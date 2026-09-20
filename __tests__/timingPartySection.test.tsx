@@ -228,7 +228,7 @@ describe("時期ツールの同行者", () => {
     expect(text).not.toContain("どこで合流できるか");
   });
 
-  it("日を選ぶと、その日に全員で動ける県が人ごとの方位つきで出る", async () => {
+  it("日を選ぶと、その日に全員で動ける方角ごとに県が出る", async () => {
     localStorage.removeItem("timing_dest_pref_v1");
     await render();
     const dates = container.querySelector("[data-party-dates]")!;
@@ -240,9 +240,19 @@ describe("時期ツールの同行者", () => {
     });
     const open = container.querySelector("[data-party-open-on-date]")!;
     expect(open).not.toBeNull();
-    expect(open.textContent).toContain("2026-09-17 に全員で動ける県");
-    /* 47 県が押せる。誰がどちらへ動くかを添える（方位が人ごとに違う
-       ことがこの機能の理由なので、県名だけ並べても判断できない） */
+    expect(open.textContent).toContain("2026-09-17 に全員で動ける方角と県");
+    /*
+      **方角でまとめる**（利用者の指摘 2026-09-21）。日付の次に決めるのは
+      方角で、県はその中から選ぶ。47 県を平らに並べると「どの県か」から
+      考えることになって順序が戻る。
+    */
+    const groups = open.querySelectorAll(":scope > ul > li");
+    expect(groups.length).toBeGreaterThan(1);
+    expect(groups.length).toBeLessThanOrEqual(8);
+    /* まとめの見出しは「方角 + 県数」。あなたのその日の段階も添える */
+    expect(groups[0].textContent).toMatch(/^[東西南北]+\d+ 県/);
+    /* 47 県が押せる（まとめても数は変わらない）。誰がどちらへ動くかは
+       県のボタンに残す（方位が人ごとに違うことがこの機能の理由） */
     const buttons = open.querySelectorAll("button");
     expect(buttons).toHaveLength(47);
     expect(open.textContent).toMatch(/あなたは[東西南北]/);
