@@ -60,23 +60,20 @@ const TIMING_PAGE = join(
 );
 const timingSrc = readFileSync(TIMING_PAGE, "utf8").split("\r\n").join("\n");
 
-describe("物件スキャナーの既定値", () => {
+describe("方位で街を探す頁の既定値", () => {
   it("ページを読めている（空回りしていない）", () => {
     expect(src.length).toBeGreaterThan(10000);
     expect(src).toContain("canJudgeDirections");
   });
 
-  it("生年月日に既定値を置いていない", () => {
-    expect(src).toContain('const [birthDate, setBirthDate] = useState("");');
-    expect(src).toContain(
-      'const [localBirthDate, setLocalBirthDate] = useState("");',
+  it("生年月日と出発地に既定値を置いていない", () => {
+    /* 2026-09-20 の組み替えで、初期状態は 1 つの object（readInitialState）
+       になった。生年月日・出発地はそこで空にしておく。ここに日付や座標を
+       置くと、入れていない人にも判定が出る。 */
+    expect(src).toContain("const state: PageState = {");
+    expect(src).toMatch(
+      /const state: PageState = \{\s*birthDate: "",\s*baseLat: "",\s*baseLon: "",/,
     );
-  });
-
-  it("保存値が無いときも生年月日は空のまま読み込む", () => {
-    // localStorage に何も無いときの初期値。ここに日付を置くと
-    // useState を空にしても、マウント直後に上書きされて元に戻る。
-    expect(src).toContain('let bDate = "";');
   });
 
   it("運営者の生年月日が値として残っていない", () => {
@@ -84,12 +81,22 @@ describe("物件スキャナーの既定値", () => {
     // 引用符の外にあるので当たらない。
     expect(stringLiteralsContaining(src, FORMER_BIRTH_DATE)).toEqual([]);
     expect(src).not.toContain(FORMER_BIRTH_DATETIME);
+    expect(src).not.toContain(FORMER_BIRTH_LAT);
+    expect(src).not.toContain(FORMER_BIRTH_LON);
   });
 
   it("未入力を検知する側は触っていない", () => {
     // 既定値を外しただけで、判定を出す条件そのものは変えていない。
     expect(src).toContain("hasBaseLocation && birthDate && targetDate");
     expect(src).toContain('if (!birthDate) missing.push("生年月日");');
+  });
+
+  it("出発地は利用者が入れたときだけ保存に流す", () => {
+    /* 画面の初期値を保存に流さない（CLAUDE.md 3 節。#1100・#1114・#1126）。
+       base_lat / base_lon を書くのは setBase（PlaceInput・現在地）の中だけ。 */
+    const writes = src.match(/saveSettings\(\{ base_lat/g) ?? [];
+    expect(writes).toHaveLength(1);
+    expect(src).toContain("const setBase = useCallback(");
   });
 
   it("走査が無効な理由に生年月日が入っている（移管先の時期分析）", () => {
@@ -174,49 +181,5 @@ describe("一覧 API は生年月日が無いと個人の判定を作らない",
       );
       expect(block, flag).not.toContain(flag);
     }
-  });
-});
-
-/**
- * 出生地の既定値。
- *
- * #202 は生年月日だけを外していて、出生地が残っていた。
- * 天体ライン（SUN / VENUS / JUPITER_LINE）は出生日時と
- * 出生地から決まるので、一度も入力していない人にも他人の出生地で
- * 計算した加点が乗っていた。
- */
-describe("物件スキャナーの出生地", () => {
-  it("出生地に既定値を置いていない", () => {
-    expect(src).toContain('const [birthLat, setBirthLat] = useState("");');
-    expect(src).toContain('const [birthLon, setBirthLon] = useState("");');
-    expect(src).toContain(
-      'const [localBirthLat, setLocalBirthLat] = useState("");',
-    );
-    expect(src).toContain(
-      'const [localBirthLon, setLocalBirthLon] = useState("");',
-    );
-  });
-
-  it("保存値が無いときも出生地は空のまま読み込む", () => {
-    expect(src).toContain('let bLat = "";');
-    expect(src).toContain('let bLon = "";');
-  });
-
-  it("運営者の出生地が値として残っていない", () => {
-    expect(src).not.toContain(FORMER_BIRTH_LAT);
-    expect(src).not.toContain(FORMER_BIRTH_LON);
-  });
-
-  it("地図で選ぶときの初期位置に特定の街を置かない", () => {
-    // ここに街を置くと、その地点が「あなたの出生地」の初期値として
-    // 選ばれてしまう。日本全体の中心から選んでもらう。
-    expect(src).toContain(
-      "initialLat={Number(birthLat) || OVERVIEW_CENTER[0]}",
-    );
-  });
-
-  it("未入力なら、何が付かないのかを画面に出す", () => {
-    expect(src).toContain("{!birthLat && (");
-    expect(src).toContain("天体ライン（太陽・金星・木星）は出生地から決まる");
   });
 });

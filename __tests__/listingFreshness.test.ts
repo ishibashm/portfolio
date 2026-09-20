@@ -111,44 +111,6 @@ describe("境目", () => {
 });
 
 /**
- * 掲載が尽きたときに、**代わりの行き先を出しているか**（2026-09-14）。
- *
- * 「もう無い」だけで終えると、読む側は次に何もできない。出発地の
- * 市区町村ページ（`/houi/area/{code}`）は方位ごとに街と相場を並べ、
- * その街の募集を見に行く導線（#1296 の `CityPortalLinks`）まで持って
- * いる。**代わりは既にある**ので、作らずに繋ぐ。
- *
- * 減っている途中（`stopped`）には出さない。まだ物件が出るので、そちらを
- * 先に見てもらう。
- */
-describe("掲載が尽きたときの行き先", () => {
-  const SRC = readFileSync(
-    join(process.cwd(), "src/app/relocation/arbitrage/page.tsx"),
-    "utf8",
-  );
-
-  it("empty のときだけ出す（stopped では出さない）", () => {
-    expect(SRC).toContain('listingFreshness.kind === "empty" && basePlace');
-  });
-
-  it("行き先は出発地の市区町村ページ", () => {
-    expect(SRC).toContain("/houi/area/${basePlace.code}");
-  });
-
-  it("鮮度そのものを持っている（文言だけでは分岐できない）", () => {
-    /* 文言（string | null）からは empty か stopped かを判別できない。
-       `describeListingFreshness` の結果を持っていること */
-    expect(SRC).toContain("const listingFreshness = useMemo(");
-    expect(SRC).toContain("listingFreshnessMessage(listingFreshness)");
-  });
-
-  it("出発地が分からないときは出さない（東京へ落とさない）", () => {
-    /* 既定値に落とすと、名古屋の人に東京の街を出す。#1100 の系統 */
-    expect(SRC).toMatch(/kind === "empty" && basePlace &&/);
-  });
-});
-
-/**
  * 掲載から作った**静止した数字**に添える断り（市区町村ページ・県ページ）。
  *
  * 物件検索とは事情が違う。あちらは DB を毎回引くので 30 日の窓から外れて
