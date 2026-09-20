@@ -92,7 +92,7 @@ describe("middleware を掛ける範囲", () => {
       "/admin/metrics",
       "/relocation/arbitrage",
       "/guide/honmei",
-      "/api/favorites",
+      "/api/spots",
       "/login",
     ]) {
       expect(isMatched(p), `${p} に middleware が掛かっていない`).toBe(true);
