@@ -29,6 +29,9 @@ const PAGES_USING_ESTAT_API = [
   "src/app/houi/area/[code]/page.tsx",
   /* 県ページの家賃。市区町村ページと同じ出どころ・同じ読み口（2026-09-20）。 */
   "src/app/houi/pref/[code]/page.tsx",
+  /* MCP の応答（search_municipality / area_directions / prefecture_summary）。
+     画面と同じ数字を返すので、出どころも同じものを添える（2026-09-20）。 */
+  "src/lib/mcpServer.ts",
 ];
 
 describe("e-Stat の API のクレジット表示", () => {

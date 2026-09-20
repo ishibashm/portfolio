@@ -46,12 +46,17 @@ import {
 } from "@/utils/tenchusatsuPolicy";
 import {
   AREAS,
-  areaAsOf,
   emptyDirections,
   findArea,
   neighboursByDirection,
 } from "@/lib/areaContent";
 import { DIRECTION_LABELS, DIRECTIONS } from "@/lib/kigakuContent";
+import housingStats from "@/data/housingStats.json";
+import {
+  housingFiguresFor,
+  type HousingSnapshotData,
+} from "@/lib/housingSnapshot";
+import { ESTAT_API_CREDIT } from "@/lib/estatCredit";
 import { toJapanDateString } from "@/utils/japanDate";
 import {
   getPrefStats,
@@ -145,6 +150,32 @@ function buildBase(input: {
 }
 
 /** 1 リクエストぶんのサーバーを作る。状態は持たない。 */
+/*
+  **家賃は掲載（賃貸の巡回）ではなく公開統計から返す**（利用者の依頼
+  2026-09-19）。巡回は規約に従って止めてあり、掲載から作った中央値は
+  2026-09-13 で凍結していた。画面（市区町村ページ・県ページ）は #1454・
+  #1455 で移してあるので、**同じ問いに画面と MCP で違う数字を返さない**
+  ようにここも揃える。
+
+  素の JSON を型として読むのはここ 1 か所。
+*/
+const HOUSING = housingStats as unknown as HousingSnapshotData;
+
+/** 応答に必ず添える出どころ。数字だけ返すと、何年の何かが分からない。 */
+const HOUSING_SOURCE = {
+  year: HOUSING.year,
+  unit: "円/㎡・月",
+  source:
+    "「統計でみる市区町村のすがた」（総務省）を加工して作成。出典：政府統計の総合窓口(e-Stat)（https://www.e-stat.go.jp/）",
+  credit: ESTAT_API_CREDIT,
+  note: "公表値の無い市区町村は null。0 ではない",
+};
+
+/** 1 ㎡あたりの家賃（円/月）。公表値が無ければ null。 */
+function rentOf(code: string): number | null {
+  return housingFiguresFor(HOUSING, code)?.rentPerSqm ?? null;
+}
+
 export function createMcpServer(): McpServer {
   const server = new McpServer(
     { name: "cloud-palette", version: "1.0.0" },
@@ -341,12 +372,15 @@ export function createMcpServer(): McpServer {
           pref: a.pref,
           lat: a.lat,
           lon: a.lon,
-          listings: a.count,
-          medianRent: a.medianRent,
-          asOf: areaAsOf(a),
+          rentPerSqm: rentOf(a.code),
           page: `${SITE_URL}/houi/area/${a.code}`,
         }));
-      return text({ query: q, count: hits.length, results: hits });
+      return text({
+        query: q,
+        count: hits.length,
+        results: hits,
+        housing: HOUSING_SOURCE,
+      });
     },
   );
 
@@ -398,11 +432,11 @@ export function createMcpServer(): McpServer {
           name: origin.full,
           lat: origin.lat,
           lon: origin.lon,
-          medianRent: origin.medianRent,
-          asOf: areaAsOf(origin),
+          rentPerSqm: rentOf(origin.code),
           page: `${SITE_URL}/houi/area/${origin.code}`,
         },
         rangeKm: { min: 5, max: 150 },
+        housing: HOUSING_SOURCE,
         directions: DIRECTIONS.map((d) => ({
           direction: d,
           label: DIRECTION_LABELS[d],
@@ -412,8 +446,7 @@ export function createMcpServer(): McpServer {
             name: n.full,
             distanceKm: n.distanceKm,
             bearing: n.bearing,
-            medianRent: n.medianRent,
-            rentDiffPct: n.rentDiffPct,
+            rentPerSqm: rentOf(n.code),
           })),
         })),
         emptyDirections: empties.map((e) => ({
@@ -467,9 +500,8 @@ export function createMcpServer(): McpServer {
         pref: stats.pref,
         code: stats.code,
         center: stats.center,
-        municipalitiesWithListings: stats.municipalities.length,
-        medianOfMedians: stats.medianOfMedians,
-        asOf: stats.asOf ?? null,
+        municipalitiesWithPages: stats.municipalities.length,
+        housing: HOUSING_SOURCE,
         byDirection: stats.byDirection.map((g) => ({
           direction: g.dir,
           label: g.jp,
@@ -477,7 +509,7 @@ export function createMcpServer(): McpServer {
           municipalities: g.areas.slice(0, cap).map((a) => ({
             code: a.code,
             name: a.city,
-            medianRent: a.medianRent,
+            rentPerSqm: rentOf(a.code),
           })),
         })),
         emptyDirections: stats.emptyDirections,
