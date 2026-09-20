@@ -24,6 +24,7 @@ import {
   settingBoolean,
   settingNumber,
   settingString,
+  writeLocalSettings,
 } from "@/lib/userSettings";
 import { nearestMunicipality, nearestPlaceLabel } from "@/lib/nearestPlace";
 import { countByDirection } from "@/lib/directionTowns";
@@ -79,9 +80,6 @@ const DirectionTierOverview = dynamic(
  * 同じ設定（lib/userSettings）から読む。**画面の初期値を保存に流さない**
  * （CLAUDE.md 3 節。出発地は利用者が入れたときだけ書く）。
  */
-
-/** 天中殺の扱いと「やむを得ない移動」は端末に残す（鍵は旧頁と同じ）。 */
-const AXIS_PREFS_KEY = "arb_axis_prefs_v1";
 
 /** 「出発地から何 km までの街を見るか」。null は全国（API の上限で切る）。 */
 const RADIUS_OPTIONS: { value: number | null; label: string }[] = [
@@ -185,24 +183,17 @@ function readInitialState(): PageState {
   );
   if (radius !== undefined) state.radiusKm = radius;
 
-  try {
-    const raw = ls(AXIS_PREFS_KEY);
-    if (raw) {
-      const saved: unknown = JSON.parse(raw);
-      if (saved && typeof saved === "object") {
-        const prefs = saved as Record<string, unknown>;
-        if (
-          typeof prefs.tenchusatsuMode === "string" &&
-          isTenchusatsuMode(prefs.tenchusatsuMode)
-        )
-          state.tenchusatsuMode = prefs.tenchusatsuMode;
-        if (typeof prefs.involuntaryMove === "boolean")
-          state.involuntaryMove = prefs.involuntaryMove;
-      }
-    }
-  } catch {
-    /* 壊れた保存値は無視して既定で動かす */
-  }
+  /*
+    天中殺の扱いと「やむを得ない移動」も正の設定から読む。以前はこの頁
+    だけが旧い塊（arb_axis_prefs_v1）を直に読み書きしていて、**時期
+    ツールへ伝わっていなかった**（あちらは tenchusatsu_mode を読むが、
+    どこも書いていないので常に既定で走っていた。2026-09-20 に判明）。
+    旧い塊しか持っていない端末は readSettingsSync の引き上げが拾う。
+  */
+  const mode = settingString(config, "tenchusatsu_mode");
+  if (mode && isTenchusatsuMode(mode)) state.tenchusatsuMode = mode;
+  const involuntary = settingBoolean(config, "involuntary_move");
+  if (involuntary !== undefined) state.involuntaryMove = involuntary;
 
   /*
     URL の値を最優先にする。/houi/area/* の「この街を出発地にして探す」と、
@@ -317,19 +308,18 @@ export default function DirectionTownsPage() {
   const baseLatNum = hasBaseLocation ? parseFloat(baseLat) : 0;
   const baseLonNum = hasBaseLocation ? parseFloat(baseLon) : 0;
 
-  /* 天中殺の扱いは端末に残す（時期ツールと同じ鍵の同じ項目）。 */
+  /*
+    天中殺の扱いは正の設定に残す。時期ツールがここを読んで走査するので、
+    **この 2 行が書かれないと、あちらは何を選んでも既定のまま**になる。
+    クラウドには送らない（SYNCED_FIELDS に入れていないので _savedAt も
+    進まない）。
+  */
   useEffect(() => {
     if (!state) return;
-    try {
-      const raw = localStorage.getItem(AXIS_PREFS_KEY);
-      const prev: Record<string, unknown> = raw ? JSON.parse(raw) : {};
-      localStorage.setItem(
-        AXIS_PREFS_KEY,
-        JSON.stringify({ ...prev, tenchusatsuMode, involuntaryMove }),
-      );
-    } catch {
-      /* 保存できなくても動作には影響しない */
-    }
+    writeLocalSettings({
+      tenchusatsu_mode: tenchusatsuMode,
+      involuntary_move: involuntaryMove,
+    });
   }, [state, tenchusatsuMode, involuntaryMove]);
 
   /** 出発地を決める。利用者が入れたときだけ保存に流す。 */
