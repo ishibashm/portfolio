@@ -85,12 +85,14 @@ describe("街の一覧の作り", () => {
   });
 
   it("開閉の状態を支援技術にも伝えている", () => {
-    expect(SRC).toContain("aria-expanded={openDirection === d.direction}");
+    /* 開いている方位は、押した方位か、絞り込んだ 1 方位（effectiveOpen）。
+       2026-09-20 に方位で絞ると最初から開くようにした */
+    expect(SRC).toContain("aria-expanded={effectiveOpen === d.direction}");
   });
 
   it("押せる大きさがある（24px 以上）", () => {
     /* WCAG 2.2 Target Size。頁の他の操作と同じ扱い */
-    expect(SRC).toMatch(/min-h-\[24px\][^"]*"\s*>\s*\{openDirection/);
+    expect(SRC).toMatch(/min-h-\[24px\][^"]*"\s*>\s*\{effectiveOpen/);
   });
 });
 

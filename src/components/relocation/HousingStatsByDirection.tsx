@@ -26,9 +26,16 @@ import {
   type CompassDirection,
   type NodeMapping,
 } from "@/utils/directionGeo";
+import {
+  isOpenDirection,
+  orderDirections,
+  type DirectionVerdict,
+} from "@/lib/directionTowns";
+import { BLOCKED_FILL, TIER_FILL, TIER_JP } from "@/utils/tierDisplay";
+import type { DayTier } from "@/utils/auspiciousDays";
 
 /** 方位に入った街 1 件（API の `DirectionMunicipality`）。 */
-interface DirectionMunicipality {
+export interface DirectionMunicipality {
   code: string;
   name: string;
   distanceKm: number;
@@ -38,7 +45,7 @@ interface DirectionMunicipality {
   totalDwellings: number | null;
 }
 
-interface DirectionStat {
+export interface DirectionStat {
   direction: CompassDirection;
   count: number;
   rentCount: number;
@@ -52,7 +59,7 @@ interface DirectionStat {
   truncated: boolean;
 }
 
-interface HousingStatsData {
+export interface HousingStatsData {
   directions: DirectionStat[];
   meta: {
     municipalitiesScanned: number;
@@ -86,12 +93,29 @@ export function HousingStatsByDirection({
   radiusKm,
   hasBase,
   nodeMapping,
+  verdicts,
+  selectedDirection = "ALL",
+  onData,
 }: {
   lat: number;
   lon: number;
   /** null は全国モード。API の上限（500km）で切る。 */
   radiusKm: number | null;
   hasBase: boolean;
+  /**
+   * その日の方位ごとの判定（`dayKigaku.byDirection`）。渡すと**開いている
+   * 方位の順**に並び、各方位に段階の札が付く（2026-09-20。街を方位で
+   * 探す形への移行）。渡さなければ八方位の順のまま、札も出ない。
+   */
+  verdicts?: Record<string, DirectionVerdict>;
+  /** 絞り込む方位。"ALL" なら全部。`DirectionTierOverview` の選択と同じ値。 */
+  selectedDirection?: string;
+  /**
+   * 応答が届いたときに親へ渡す。方位ごとの街の数を `DirectionTierOverview`
+   * に入れるため。**親は useCallback で固定すること**（毎回新しい関数だと
+   * 届くたびに呼び直す）。
+   */
+  onData?: (data: HousingStatsData) => void;
   /**
    * 方位の切り方。**同じ画面の物件一覧と同じものを渡すこと。**
    *
@@ -137,6 +161,12 @@ export function HousingStatsByDirection({
   const error = result?.key === requestKey ? result.error : null;
   const loading = hasBase && result?.key !== requestKey;
 
+  /* 届いた応答を親に渡す。取りに行くのはここ 1 か所のままにする
+     （親が別に取りに行くと、同じ問いを 2 回投げる）。 */
+  useEffect(() => {
+    if (data && onData) onData(data);
+  }, [data, onData]);
+
   useEffect(() => {
     if (!hasBase) return;
     let alive = true;
@@ -172,9 +202,20 @@ export function HousingStatsByDirection({
 
   if (!hasBase) return null;
 
-  /* 材料の無い方位も消さない（CLAUDE.md 2-c）。並びは方位の順のまま */
-  const directions = data?.directions ?? [];
-  const withData = directions.filter((d) => d.count > 0);
+  /* 材料の無い方位も消さない（CLAUDE.md 2-c）。判定があれば開いている
+     順、無ければ方位の順のまま。絞り込みは並べたあとに掛ける */
+  const ordered = orderDirections(data?.directions ?? [], verdicts);
+  const directions =
+    selectedDirection === "ALL"
+      ? ordered
+      : ordered.filter((d) => d.direction === selectedDirection);
+  const withData = ordered.filter((d) => d.count > 0);
+  /* 絞り込んだ 1 方位は最初から街を開く（押す手間を 1 つ減らす） */
+  const effectiveOpen =
+    openDirection ??
+    (selectedDirection !== "ALL"
+      ? (selectedDirection as CompassDirection)
+      : null);
 
   return (
     <section className="space-y-2">
@@ -211,6 +252,7 @@ export function HousingStatsByDirection({
                 <div className="flex items-baseline justify-between">
                   <span className="text-xs font-bold text-stone-700">
                     {DIRECTION_LABELS[d.direction] ?? d.direction}
+                    {verdicts && <TierBadge cell={verdicts[d.direction]} />}
                   </span>
                   <span className="text-right">
                     <span className="block text-[11px] font-mono text-stone-700">
@@ -251,14 +293,14 @@ export function HousingStatsByDirection({
                           cur === d.direction ? null : d.direction,
                         )
                       }
-                      aria-expanded={openDirection === d.direction}
+                      aria-expanded={effectiveOpen === d.direction}
                       className="mt-1 inline-flex min-h-[24px] items-center text-[10px] font-bold text-indigo-700 underline hover:text-indigo-900"
                     >
-                      {openDirection === d.direction
+                      {effectiveOpen === d.direction
                         ? "街を閉じる"
                         : `この方位の街を見る（${d.municipalities.length}${d.truncated ? "／" + d.count.toLocaleString() : ""}）`}
                     </button>
-                    {openDirection === d.direction && (
+                    {effectiveOpen === d.direction && (
                       <ul className="mt-1 space-y-0.5 border-t border-stone-200 pt-1">
                         {d.municipalities.map((m) => (
                           <li key={m.code} className="text-[10px]">
@@ -311,6 +353,41 @@ export function HousingStatsByDirection({
         </>
       )}
     </section>
+  );
+}
+
+/**
+ * その日の段階の札。色は utils/tierDisplay（地図の扇形・県塗り・
+ * カレンダーと同じ）で、名前を必ず添えて色に頼らせない
+ * （`DirectionTierOverview` と同じ理由）。判定が無ければ「判定なし」。
+ */
+function TierBadge({ cell }: { cell: DirectionVerdict | undefined }) {
+  if (!cell) {
+    return (
+      <span
+        className="ml-1.5 rounded px-1.5 py-0.5 text-[10px] font-bold text-stone-500 bg-stone-100"
+        data-tier="none"
+      >
+        判定なし
+      </span>
+    );
+  }
+  const open = isOpenDirection(cell);
+  const fill = cell.blocked
+    ? BLOCKED_FILL
+    : (TIER_FILL[cell.tier as DayTier] ?? "#e7e5e4");
+  const label = cell.blocked
+    ? "天中殺"
+    : (TIER_JP[cell.tier as DayTier] ?? cell.tier);
+  return (
+    <span
+      className="ml-1.5 rounded px-1.5 py-0.5 text-[10px] font-bold text-white"
+      style={{ background: fill }}
+      data-tier={cell.blocked ? "blocked" : cell.tier}
+      data-open={open ? "1" : "0"}
+    >
+      {label}
+    </span>
   );
 }
 
