@@ -19,7 +19,6 @@ import { Loader2 } from "lucide-react";
 import { TenChiJinEvaluation } from "../nba/TenChiJinEvaluation";
 import type { NBAData } from "@/types/nbaData";
 import type { MunicipalityWealthItem } from "@/lib/municipalityWealth";
-import type { ScoredProperty } from "@/lib/scoredProperty";
 import { directionLabelName } from "@/lib/directionLabels";
 import {
   SCORE_TIER_LEGEND,
@@ -83,8 +82,6 @@ export interface ScorecardSummaryRow {
   dates: { dateStr: string; status: string; score: number }[];
   topArea: MunicipalityWealthItem | null;
   topAreas: MunicipalityWealthItem[];
-  topRental: ScoredProperty | null;
-  topRentals: ScoredProperty[];
   classicalStatus: string;
   classicalScore: number;
   physicalIndepStatus: string;
@@ -595,23 +592,6 @@ export default function ScorecardPanel({
                               <span className="italic">データなし</span>
                             )}
                           </div>
-                          <div>
-                            <span className="text-stone-600">推奨物件:</span>{" "}
-                            {item.topRental ? (
-                              <span className="text-stone-700 font-bold">
-                                {item.topRental.property_name}
-                                <span className="font-mono font-normal text-stone-600">
-                                  （賃料+管理費{" "}
-                                  {(item.topRental.totalRent / 10000).toFixed(
-                                    1,
-                                  )}
-                                  万円）
-                                </span>
-                              </span>
-                            ) : (
-                              <span className="italic">対象物件なし</span>
-                            )}
-                          </div>
                         </div>
                       </div>
                     );
@@ -647,7 +627,6 @@ export default function ScorecardPanel({
 
                       <th className="p-3 w-20 text-center">30日で動ける日</th>
                       <th className="p-3">推奨エリア (所得)</th>
-                      <th className="p-3">推奨物件 (差益)</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-zinc-900/50 text-xs">
@@ -828,54 +807,6 @@ export default function ScorecardPanel({
                               ) : (
                                 <span className="text-stone-600 text-[10px] italic">
                                   データなし
-                                </span>
-                              )}
-                            </td>
-
-                            {/* Recommended Property */}
-                            <td className="p-3">
-                              {item.topRental ? (
-                                item.topRental.url ? (
-                                  <a
-                                    href={item.topRental.url}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="flex flex-col group/item cursor-pointer"
-                                  >
-                                    <span
-                                      className="text-stone-700 font-bold group-hover/item:text-indigo-600 group-hover/item:underline transition-all truncate max-w-[200px]"
-                                      title={item.topRental.property_name}
-                                    >
-                                      {item.topRental.property_name}
-                                    </span>
-                                    <span className="text-[10px] text-stone-600 font-mono mt-0.5 group-hover/item:text-zinc-450">
-                                      賃料+管理費:{" "}
-                                      {(
-                                        item.topRental.totalRent / 10000
-                                      ).toFixed(1)}
-                                      万円
-                                    </span>
-                                  </a>
-                                ) : (
-                                  <div className="flex flex-col">
-                                    <span
-                                      className="text-stone-700 font-bold truncate max-w-[200px]"
-                                      title={item.topRental.property_name}
-                                    >
-                                      {item.topRental.property_name}
-                                    </span>
-                                    <span className="text-[10px] text-stone-600 font-mono mt-0.5">
-                                      賃料+管理費:{" "}
-                                      {(
-                                        item.topRental.totalRent / 10000
-                                      ).toFixed(1)}
-                                      万円
-                                    </span>
-                                  </div>
-                                )
-                              ) : (
-                                <span className="text-stone-600 text-[10px] italic">
-                                  対象物件なし
                                 </span>
                               )}
                             </td>
@@ -1661,93 +1592,6 @@ export default function ScorecardPanel({
                       ) : (
                         <p className="text-xs text-stone-600 italic">
                           該当するエリアがありません。
-                        </p>
-                      )}
-                    </div>
-
-                    {/* Top 5 Rentals */}
-                    <div className="space-y-3">
-                      <h4 className="text-[11px] font-mono text-stone-600 uppercase tracking-wider flex items-center gap-1.5 border-b border-stone-200 pb-1.5">
-                        <span>🏠 相場より安い賃貸 5 件</span>
-                      </h4>
-                      {detail.topRentals.length > 0 ? (
-                        <div className="space-y-2">
-                          {detail.topRentals.map((rental, idx) => {
-                            const innerContent = (
-                              <>
-                                <div className="flex justify-between items-start gap-2">
-                                  <div className="flex items-start gap-2">
-                                    <span className="text-[10px] font-mono text-stone-600 mt-0.5">
-                                      #{idx + 1}
-                                    </span>
-                                    <div className="flex flex-col">
-                                      <span
-                                        className="text-stone-700 font-bold truncate max-w-[280px] group-hover:text-indigo-600 group-hover:underline transition-colors"
-                                        title={rental.property_name}
-                                      >
-                                        {rental.property_name}
-                                      </span>
-                                      <span className="text-[10px] text-stone-600 font-mono">
-                                        {/* 応答の項目は building_age。
-                                              age_years は存在せず、ここは
-                                              ずっと「築年数: 年」と空欄で
-                                              出ていた。#231 と同じ形。
-                                              築 0 年（新築）と値が無い場合を
-                                              取り違えないよう、null は「不明」。 */}
-                                        距離: {rental.distanceKm?.toFixed(1)}
-                                        km | 広さ: {rental.size_sqm}㎡ | 築年数:{" "}
-                                        {rental.building_age ?? "不明"}年
-                                      </span>
-                                    </div>
-                                  </div>
-                                </div>
-
-                                <div className="flex justify-between items-center border-t border-stone-200 pt-1.5 text-[10px] text-stone-600">
-                                  <span>
-                                    賃料+管理費:{" "}
-                                    <strong className="text-stone-600 font-bold font-mono">
-                                      {(rental.totalRent / 10000).toFixed(1)}
-                                      万円
-                                    </strong>
-                                  </span>
-                                  <span
-                                    className={`px-1 py-0.5 rounded text-[10px] font-mono border ${statusBadgeClass(rental.astrologyStatus)}`}
-                                  >
-                                    {directionLabelName(
-                                      parseBreakdown(rental).kigaku,
-                                    )}
-                                  </span>
-                                </div>
-                              </>
-                            );
-
-                            if (rental.url) {
-                              return (
-                                <a
-                                  key={rental.id}
-                                  href={rental.url}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  className="bg-white/70 border border-stone-200 hover:border-indigo-200 hover:bg-indigo-500/5 rounded p-2.5 flex flex-col gap-1.5 text-xs transition-all block group cursor-pointer"
-                                >
-                                  {innerContent}
-                                </a>
-                              );
-                            }
-
-                            return (
-                              <div
-                                key={rental.id}
-                                className="bg-white/70 border border-stone-200 rounded p-2.5 flex flex-col gap-1.5 text-xs"
-                              >
-                                {innerContent}
-                              </div>
-                            );
-                          })}
-                        </div>
-                      ) : (
-                        <p className="text-xs text-stone-600 italic">
-                          該当する物件情報がありません。
                         </p>
                       )}
                     </div>
