@@ -2043,7 +2043,6 @@ export default function TimingAnalyticsPage() {
               >
                 <div className="h-[420px] overflow-hidden rounded-2xl border border-gray-200">
                   <ArbitrageMap
-                    properties={[]}
                     baseLat={Number(settings!.baseLat)}
                     baseLon={Number(settings!.baseLon)}
                     mapCenter={[36.2048, 138.2529]}

@@ -362,20 +362,6 @@ export default function DirectionTownsPage() {
     );
   }, [setBase]);
 
-  /** 地図の日付チップから。設定バーにも伝える（保存は lib/workingDate）。 */
-  const handleDateChange = useCallback(
-    (date: string) => {
-      patch({ targetDate: date });
-      saveWorkingDate(date);
-      window.dispatchEvent(
-        new CustomEvent("metaphysical-config-updated", {
-          detail: { targetDate: date },
-        }),
-      );
-    },
-    [patch],
-  );
-
   const canJudgeDirections = Boolean(
     hasBaseLocation && birthDate && targetDate,
   );
@@ -761,10 +747,9 @@ export default function DirectionTownsPage() {
             )}
           </div>
 
-          {/* 右: 地図。扇形と県塗りは dayKigaku から。物件のピンは無い。 */}
+          {/* 右: 地図。扇形と県塗りは dayKigaku から。物件は描かない。 */}
           <div className="w-full lg:w-[64%] xl:w-[68%] h-[60vh] lg:h-[calc(100vh-220px)] min-h-[420px] lg:min-h-[600px] rounded-3xl overflow-hidden shadow-lg border border-stone-200 relative bg-stone-50 shrink-0">
             <ArbitrageMap
-              properties={[]}
               baseLat={hasBaseLocation ? baseLatNum : mapCenter[0]}
               baseLon={hasBaseLocation ? baseLonNum : mapCenter[1]}
               mapCenter={mapCenter}
@@ -786,7 +771,6 @@ export default function DirectionTownsPage() {
               hasBase={hasBaseLocation}
               focusKind={mapFocusKind}
               useClassical={useClassical}
-              onDateChange={handleDateChange}
             />
           </div>
         </div>

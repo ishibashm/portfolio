@@ -3,15 +3,16 @@ import { createRoot } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 /**
- * 方位の扇形が、地図を動かしただけで消えないこと。
+ * 方位の扇形が、他の層の都合で消えないこと。
  *
- * 件数バブル（showHeatmap）は「見えている物件が 120 件以上」で**自動的に**
- * 入る。扇形をその裏で消していたため、地図を物件の多い側へ寄せただけで
- * 方位の境目がひとりでに消えていた。利用者から「地図を移動させると方位の
- * 円が解除される」として報告された。
+ * かつて件数バブル（見えている物件が 120 件以上で自動的に入る層）の裏で
+ * 扇形を消していて、地図を物件の多い側へ寄せただけで方位の境目が
+ * ひとりでに消えていた（利用者の報告「地図を移動させると方位の円が
+ * 解除される」）。物件の描画は 2026-09-20 に外したが、同じ形は用途地域・
+ * ハザードにもある。
  *
- * 扇形はこの画面の主役なので、下に別の意味の色（件数）があるときは
- * 塗りだけ外し、境界線は残す。
+ * 扇形はこの画面の主役なので、下に別の意味の色があるときは塗りだけ外し、
+ * 境界線は残す。
  */
 
 const polygonCalls: Record<string, unknown>[] = [];
@@ -51,40 +52,13 @@ vi.mock("@/components/map/InvalidateMapSize", () => ({
 
 import ArbitrageMapInner from "@/components/ArbitrageMapInner";
 
-/** 件数バブルが入る条件（120 件以上）を満たすだけの物件。 */
-function makeProperties(count: number) {
-  return Array.from({ length: count }, (_, i) => ({
-    id: `p${i}`,
-    property_name: `物件${i}`,
-    rent: 60000,
-    management_fee: 3000,
-    layout: "1K",
-    size_sqm: 25,
-    is_new_build: false,
-    minutes_to_station: 8,
-    address: "滋賀県草津市",
-    lat: 35.0 + (i % 10) * 0.01,
-    lon: 136.0 + (i % 10) * 0.01,
-    building_age: 10,
-    floor: "2",
-    url: null,
-    totalRent: 63000,
-    propSqmRent: 2520,
-    distanceKm: 40,
-    direction: "E",
-    magneticDirection: "E",
-    astrologyStatus: "SAFE",
-    astrologyScore: 50,
-    yieldScore: 50,
-  }));
-}
-
 const KIGAKU = {
   E: { direction: "E", directionLabel: "東", tier: "S", blocked: false },
   W: { direction: "W", directionLabel: "西", tier: "S", blocked: false },
 };
 
-async function renderMap(propertyCount: number) {
+/* モックの useMapEvents は zoom 5 を返すので、描かれるのは俯瞰の扇形。 */
+async function renderMap() {
   polygonCalls.length = 0;
   const container = document.createElement("div");
   document.body.appendChild(container);
@@ -92,7 +66,6 @@ async function renderMap(propertyCount: number) {
   await act(async () => {
     root.render(
       <ArbitrageMapInner
-        properties={makeProperties(propertyCount) as never}
         baseLat={35.0116}
         baseLon={135.7681}
         useTrueNorth={false}
@@ -107,7 +80,7 @@ async function renderMap(propertyCount: number) {
   return wedges;
 }
 
-describe("方位の扇形は地図を動かしても残る", () => {
+describe("方位の扇形は他の層を出しても残る", () => {
   beforeEach(() => {
     vi.stubGlobal("IS_REACT_ACT_ENVIRONMENT", true);
     vi.stubGlobal(
@@ -121,20 +94,14 @@ describe("方位の扇形は地図を動かしても残る", () => {
     vi.unstubAllGlobals();
   });
 
-  it("物件が少ないときは 8 方位ぶん描く", async () => {
-    const wedges = await renderMap(10);
+  it("判定があれば 8 方位ぶん描く", async () => {
+    const wedges = await renderMap();
     expect(wedges).toHaveLength(8);
   });
 
-  it("件数バブルに切り替わっても消えない", async () => {
-    // 120 件以上でバブルが自動的に入る。以前はここで扇形ごと消えていた。
-    const wedges = await renderMap(130);
-    expect(wedges, "件数バブル中に扇形が消えている").toHaveLength(8);
-  });
-
-  it("下に別の意味の色があるときは塗らず、境界線だけ残す", async () => {
-    // 塗ってしまうと件数の色と混ざり、どちらの意味か読めなくなる。
-    const wedges = await renderMap(130);
+  it("下に別の意味の色（俯瞰の県塗り）があるときは塗らず、境界線だけ残す", async () => {
+    // 塗ってしまうと県塗りと混ざり、どちらの意味か読めなくなる。
+    const wedges = await renderMap();
     for (const w of wedges) {
       const opts = w.pathOptions as { fillOpacity: number; weight: number };
       expect(opts.fillOpacity).toBe(0);
@@ -151,7 +118,6 @@ describe("方位の扇形は地図を動かしても残る", () => {
     await act(async () => {
       root.render(
         <ArbitrageMapInner
-          properties={[]}
           baseLat={35.0116}
           baseLon={135.7681}
           useTrueNorth={false}

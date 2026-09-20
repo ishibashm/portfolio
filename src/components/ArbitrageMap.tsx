@@ -13,10 +13,7 @@ const ArbitrageMapInner = dynamic(() => import("./ArbitrageMapInner"), {
   ),
 });
 
-import type { ScoredProperty } from "@/lib/scoredProperty";
-
 interface ArbitrageMapProps {
-  properties: ScoredProperty[];
   baseLat: number;
   baseLon: number;
   mapCenter?: [number, number];
@@ -47,39 +44,16 @@ interface ArbitrageMapProps {
   >;
   /** prefKigaku が無いときの理由。俯瞰の凡例にそのまま出す */
   kigakuUnavailableReason?: string;
-  /**
-   * 県名 → 掲載件数。渡さないと静的ファイル（取り込みを止めた時点）の値になる。
-   * 絞り込み中はページ側が数え直した値を渡す。
-   */
-  prefCounts?: Record<string, number>;
-  /** 上が絞り込みを反映した値か。凡例の断り書きに使う */
-  prefCountsFiltered?: boolean;
-  /**
-   * この検索範囲にある候補の総数（名寄せ後）。地図が持っている
-   * 500 件の窓ではなく、DB が数えた実数。null なら出さない。
-   */
-  rangeUniqueCount?: number | null;
-  /** その総数のうち、実際に評価できた件数（窓の大きさ） */
-  rangeAnalyzedCount?: number | null;
-  /** 窓に当たって打ち切られたか。true のとき地図は一部しか描けていない */
-  rangeTruncated?: boolean;
   /** 地図の空きを押したとき、その地点を判定へ送る */
   onInspectSpot?: (lat: number, lon: number) => void;
   /** 扇形が「いつの」判定かを示すための選択日 YYYY-MM-DD */
   targetDate?: string;
   /** 出発地が入力済みか。フォーカスの初期値と「出発地へ」ボタンに使う */
   hasBase?: boolean;
-  /** mapCenter の意味。area=検索の起点 / spot=個別の物件 */
+  /** mapCenter の意味。area=出発地 / spot=調べている地点 */
   focusKind?: "area" | "spot";
-  /** 詳細パネルで開いている物件。地図でリング強調する */
-  selectedPropertyId?: string | null;
   prefecture?: string;
-  isTransitioningDate?: boolean;
-  /** 頁が物件を取りに行っている最中か（候補数の札に「更新中」を出す） */
-  isLoading?: boolean;
-  showListView?: boolean;
   useClassical?: boolean;
-  onDateChange?: (date: string) => void;
   onBoundsChange?: (bounds: {
     minLat: number;
     maxLat: number;

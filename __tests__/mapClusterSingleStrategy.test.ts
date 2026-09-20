@@ -1,6 +1,4 @@
 import { describe, expect, it } from "vitest";
-import { readFileSync } from "fs";
-import { join } from "path";
 import { clusterByTile, shouldCluster } from "@/lib/mapClusters";
 
 /**
@@ -27,34 +25,11 @@ import { clusterByTile, shouldCluster } from "@/lib/mapClusters";
  *
  * ## ここで見るもの
  *
- * 「消したものが戻っていないか」を字面で見る。**実装のパターンで引く**
- * （CLAUDE.md 3 節。名前で探すと取りこぼす）。
+ * 升目のまとめが定石どおりに働くこと。物件のピンは 2026-09-20 に地図から
+ * 外したので、`clusterByTile` を読むのは名所と駅の層だけになった。
+ * 「距離クラスターが戻っていないか」の字面の見張りは、その対象
+ * （ArbitrageMapInner の物件ピン）ごと無くなったので外した。
  */
-const MAP = readFileSync(
-  join(__dirname, "../src/components/ArbitrageMapInner.tsx"),
-  "utf8",
-);
-
-describe("まとめ方は 1 つ（升目）だけ", () => {
-  it("O(n²) の距離クラスターが戻っていない", () => {
-    /* 距離で寄せる実装の特徴。しきい値を度で持ち、点ごとに既存
-       グループを走査する形。名前ではなく形で引く */
-    expect(MAP).not.toMatch(/distThreshold/);
-    expect(MAP).not.toMatch(/const clusters = useMemo/);
-  });
-
-  it("まとめる判断は件数だけで、ズームや一覧の開閉で切り替えない", () => {
-    /* `visibleCount <= 100 && !showListView && zoom < 15` の形が
-       戻ったら落とす。ここが「少ないときだけまとめる」の入口だった */
-    expect(MAP).not.toMatch(/visibleCount <= 100 && !showListView/);
-    expect(MAP).toMatch(/shouldCluster\(pinProperties\.length\)/);
-  });
-
-  it("升目のまとめを使っている", () => {
-    expect(MAP).toMatch(/clusterByTile\(pinProperties, zoom\)/);
-  });
-});
-
 describe("升目のまとめが定石どおりに働く", () => {
   const grid = (n: number) =>
     Array.from({ length: n }, (_, i) => ({

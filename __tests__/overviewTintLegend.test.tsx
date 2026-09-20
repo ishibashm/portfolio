@@ -5,10 +5,12 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 /**
  * 俯瞰の県塗りが、何の色なのか画面から分かること。
  *
- * 出発地か生年月日が未入力だと prefKigaku が undefined になり、県の塗り分けが
- * 「方位の吉凶」から「掲載件数」へ無言で入れ替わっていた。どちらも同じ県を
- * 色で塗るので、利用者には件数の濃淡が吉凶に見える。さらに切り替えパネル
- * ごと消えていたため、方位モードが存在することも分からなかった。
+ * 出発地か生年月日が未入力だと prefKigaku が undefined になる。かつては
+ * そのとき県の塗り分けが「方位の吉凶」から「掲載件数」へ無言で入れ替わり、
+ * 件数の濃淡が吉凶に見えた。掲載の塗りは 2026-09-20 に物件の描画ごと
+ * 外したので、いまは**判定が無ければ塗らず、その理由を凡例に出す。**
+ * パネルごと消すと「塗られていない」ことも「何を入れれば塗られるか」も
+ * 分からないので、消さない。
  *
  * 地図そのものは leaflet が要るので、ここでは凡例まわりだけを見る。
  */
@@ -67,7 +69,7 @@ function renderMap(props: Record<string, unknown>) {
   return { container, root, props };
 }
 
-describe("俯瞰の塗り分けが何の色か分かる", () => {
+describe("俯瞰の県塗りが何の色か分かる", () => {
   beforeEach(() => {
     vi.stubGlobal("IS_REACT_ACT_ENVIRONMENT", true);
     vi.stubGlobal(
@@ -92,7 +94,6 @@ describe("俯瞰の塗り分けが何の色か分かる", () => {
     await act(async () => {
       root.render(
         <ArbitrageMapInner
-          properties={[]}
           baseLat={35.6895}
           baseLon={139.6917}
           useTrueNorth={false}
@@ -105,78 +106,36 @@ describe("俯瞰の塗り分けが何の色か分かる", () => {
     });
 
     const text = container.textContent ?? "";
-    const buttons = [...container.querySelectorAll("button")];
-    const byLabel = (label: string) =>
-      buttons.find((b) => b.textContent === label);
-    const snapshot = {
-      text,
-      kigakuButton: byLabel("方位の吉凶"),
-      countButton: byLabel("掲載件数"),
-    };
+    const snapshot = { text };
 
     await act(async () => root.unmount());
     return snapshot;
   }
 
-  it("判定を出せないときは、件数の色だと明記して理由も出す", async () => {
+  it("判定を出せないときは、塗っていない理由を出す", async () => {
     const { text } = await renderLegend({
       prefKigaku: undefined,
       kigakuUnavailableReason: "生年月日を入れると方位の吉凶で塗り分けます",
     });
 
-    expect(text).toContain("いまの色は掲載件数です");
+    expect(text).toContain("県の塗り分け");
     expect(text).toContain("生年月日を入れると方位の吉凶で塗り分けます");
+    /* 掲載件数の色にはもう落ちない（物件を描かなくなった） */
+    expect(text).not.toContain("掲載件数");
   });
 
-  it("判定を出せないときも「方位の吉凶」のボタンを消さない", async () => {
-    // 消すとモードの存在自体が分からず、件数の色を吉凶と読み違える。
-    const { kigakuButton, countButton } = await renderLegend({
-      prefKigaku: undefined,
-      kigakuUnavailableReason: "出発地を入れると方位の吉凶で塗り分けます",
-    });
-
-    expect(kigakuButton, "「方位の吉凶」ボタンが見つからない").toBeTruthy();
-    expect(kigakuButton!.disabled).toBe(true);
-    expect(kigakuButton!.getAttribute("title")).toContain("出発地");
-    // 件数側は押せるままにしておく（モードの存在が分かるように）
-    expect(countButton!.disabled).toBe(false);
-  });
-
-  /**
-   * 既定の overviewTint は "kigaku"。判定を出せないときは件数で塗るので、
-   * 選択（"kigaku"）と実際に塗っている側（件数）が食い違う。ボタンの強調を
-   * 選択のほうに合わせると、件数の色を塗りながらどちらのボタンも
-   * 強調されない状態になり、凡例の「いまの色は掲載件数です」と噛み合わない。
-   */
-  it("判定を出せないときは「掲載件数」のボタンが選択中に見える", async () => {
-    const { countButton, kigakuButton } = await renderLegend({
-      prefKigaku: undefined,
-    });
-
-    expect(countButton!.className).toContain("bg-indigo-600");
-    expect(kigakuButton!.className).not.toContain("bg-indigo-600");
-  });
-
-  it("理由が渡らなくても、色の意味は必ず言う", async () => {
+  it("理由が渡らなくても、塗られる条件は必ず言う", async () => {
     const { text } = await renderLegend({ prefKigaku: undefined });
-    expect(text).toContain("いまの色は掲載件数です");
     expect(text).toContain("方位の吉凶で塗り分けます");
+    expect(text).not.toContain("掲載件数");
   });
 
-  it("判定を出せるときは方位の凡例が出て、押せる", async () => {
-    const { text, kigakuButton } = await renderLegend({ prefKigaku: KIGAKU });
+  it("判定を出せるときは段階の凡例が出る", async () => {
+    const { text } = await renderLegend({ prefKigaku: KIGAKU });
 
     expect(text).toContain("三盤吉");
     expect(text).toContain("五大凶殺");
-    // 既定は方位モードなので、件数の見出しは出さない
-    expect(text).not.toContain("いまの色は掲載件数です");
-    expect(kigakuButton!.disabled).toBe(false);
-  });
-
-  it("件数の温度計は、吉凶ではないと分かる見出しを持つ", async () => {
-    // 「件数」とだけ書いてあり、吉凶の色と見分けが付かなかった。
-    const { text } = await renderLegend({ prefKigaku: undefined });
-    expect(text).toContain("掲載件数");
-    expect(text).toContain("吉凶ではない");
+    expect(text).toContain("出発地から見た各県の方位の、選択日の判定");
+    expect(text).not.toContain("条件が揃うと方位の吉凶で塗り分けます");
   });
 });
