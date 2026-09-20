@@ -28,6 +28,7 @@ import Link from "next/link";
 import purchaseStats from "@/data/purchaseStats.json";
 import type { PurchaseStats } from "@/utils/purchaseStats";
 import type { HistogramBucket } from "@/utils/marketStats";
+import { coreRouteLabel } from "@/lib/siteStructure";
 
 const stats = purchaseStats as unknown as PurchaseStats;
 
@@ -447,7 +448,10 @@ export default function PurchaseAnalyticsPage() {
           <ul className="flex flex-wrap gap-2">
             {[
               { href: "/relocation/market", label: "家賃相場を分析する" },
-              { href: "/relocation/arbitrage", label: "物件を方位で探す" },
+              {
+                href: "/relocation/arbitrage",
+                label: coreRouteLabel("/relocation/arbitrage") ?? "",
+              },
               { href: "/relocation/wealth", label: "移住先の地域を比べる" },
             ].map((l) => (
               <li key={l.href}>

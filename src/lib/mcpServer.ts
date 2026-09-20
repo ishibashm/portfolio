@@ -57,6 +57,7 @@ import {
   type HousingSnapshotData,
 } from "@/lib/housingSnapshot";
 import { ESTAT_API_CREDIT } from "@/lib/estatCredit";
+import { coreRouteLabel } from "@/lib/siteStructure";
 import { toJapanDateString } from "@/utils/japanDate";
 import {
   getPrefStats,
@@ -217,8 +218,7 @@ export function createMcpServer(): McpServer {
     "judge_directions",
     {
       title: "指定日の八方位の吉凶",
-      description:
-        "出発地の経度と生年月日から、指定日の八方位それぞれの段階（S 三盤吉〜X 五大凶殺）と状態を返します。年盤・月盤・日盤を合成した判定で、画面の「物件を方位で探す」と同じ関数です。",
+      description: `出発地の経度と生年月日から、指定日の八方位それぞれの段階（S 三盤吉〜X 五大凶殺）と状態を返します。年盤・月盤・日盤を合成した判定で、画面の「${coreRouteLabel("/relocation/arbitrage")}」と同じ関数です。`,
       inputSchema: {
         birthDate: z.string().describe("生年月日。YYYY-MM-DD"),
         lon: z.number().min(122).max(154).describe("出発地の経度（日本国内）"),

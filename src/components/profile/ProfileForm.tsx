@@ -26,6 +26,7 @@ import {
   type ProfilePreset,
 } from "@/lib/profilePresetSync";
 import { ProfileProgress } from "@/components/profile/ProfileProgress";
+import { coreRouteLabel } from "@/lib/siteStructure";
 
 /**
  * 生年月日・出生地・出発地・目的地をまとめて入れる頁の中身。
@@ -654,7 +655,7 @@ export function ProfileForm() {
                 href="/relocation/arbitrage"
                 className="font-semibold text-indigo-600 underline"
               >
-                物件を方位で探す
+                {coreRouteLabel("/relocation/arbitrage")}
               </Link>
             </li>
             <li>

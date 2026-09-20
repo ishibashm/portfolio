@@ -14,6 +14,7 @@ import { AdBanner } from "@/components/ads/AdBanner";
 import { prefNameByCode } from "@/lib/prefContent";
 import { PREF_EDITORIAL } from "@/lib/prefEditorial";
 import { ActiveProfileBadge } from "@/components/profile/ActiveProfileBadge";
+import { coreRouteLabel } from "@/lib/siteStructure";
 
 /**
  * 方位コンテンツの入口。
@@ -267,13 +268,13 @@ export default function Page() {
 
         <div className="mt-10 rounded-2xl border border-amber-200 bg-amber-50 p-5">
           <p className="text-xs text-amber-900 leading-relaxed">
-            方位は<b>今住んでいる場所から見た向き</b>で決まります。実際の物件で確認する場合は、出発地と生年月日を入れてスキャンしてください。
+            方位は<b>今住んでいる場所から見た向き</b>で決まります。方位ごとにどの街があるかを見るには、出発地と生年月日を入れてください。
           </p>
           <Link
             href="/relocation/arbitrage"
             className="mt-4 inline-flex px-5 py-2.5 rounded-full bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs transition-colors"
           >
-            物件を方位で探す
+            {coreRouteLabel("/relocation/arbitrage")}
           </Link>
         </div>
 

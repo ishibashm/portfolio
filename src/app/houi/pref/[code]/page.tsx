@@ -26,6 +26,7 @@ import { DIRECTION_LABELS } from "@/lib/kigakuContent";
 import { metaDescriptionFromIntro } from "@/lib/editorialMeta";
 import { AREA_EDITORIAL } from "@/lib/areaEditorial";
 import { todayInJapan } from "@/utils/japanDate";
+import { coreRouteLabel } from "@/lib/siteStructure";
 
 /**
  * 市区町村への 1 行。**解説を書いた頁に印を付ける。**
@@ -370,7 +371,7 @@ export default async function Page({
               href="/relocation/arbitrage"
               className="inline-flex px-5 py-2.5 rounded-full border border-slate-400 bg-white hover:bg-slate-50 text-slate-800 font-bold text-xs transition-colors"
             >
-              物件を方位で探す
+              {coreRouteLabel("/relocation/arbitrage")}
             </Link>
           </div>
         </section>

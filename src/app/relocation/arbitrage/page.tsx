@@ -27,6 +27,7 @@ import {
 } from "@/lib/userSettings";
 import { nearestMunicipality, nearestPlaceLabel } from "@/lib/nearestPlace";
 import { countByDirection } from "@/lib/directionTowns";
+import { coreRouteLabel } from "@/lib/siteStructure";
 import { saveWorkingDate } from "@/lib/workingDate";
 import type { DayKigaku } from "@/lib/dayKigakuClient";
 import {
@@ -495,7 +496,7 @@ export default function DirectionTownsPage() {
         <div className="bg-white/80 backdrop-blur-xl border border-rose-100/80 p-6 rounded-3xl shadow-xl shadow-rose-100/30">
           <h1 className="text-xl font-bold font-serif text-stone-900 flex items-center gap-2">
             <Compass className="w-6 h-6 text-amber-500" />
-            方位で街を探す
+            {coreRouteLabel("/relocation/arbitrage")}
           </h1>
           <p className="text-stone-600 mt-1 text-xs max-w-[70ch] leading-relaxed">
             いま住んでいる場所から見た八方位の吉凶と、それぞれの方位にある市区町村の家賃の水準・空き家率を並べます。物件の掲載は出しません。

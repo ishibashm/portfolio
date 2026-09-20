@@ -4,6 +4,7 @@ import { ArticleJsonLd } from "@/components/JsonLd";
 import { AdBanner } from "@/components/ads/AdBanner";
 import { GUIDE_INDEX, GUIDE_PAGES } from "@/lib/guideContent";
 import { SITE_NAME } from "@/lib/siteStructure";
+import { coreRouteLabel } from "@/lib/siteStructure";
 
 /**
  * 使い方ガイドの入口。
@@ -54,9 +55,12 @@ const FLOW = [
   },
   {
     slug: "find-property",
-    step: "物件を探す",
-    body: "決まった日付と方位で、相場より割安な賃貸物件を絞り込みます。",
-    target: { href: "/relocation/arbitrage", label: "物件を方位で探す" },
+    step: "街を探す",
+    body: "決まった日付に開いている方位の街を、家賃の水準と空き家率つきで並べます。",
+    target: {
+      href: "/relocation/arbitrage",
+      label: coreRouteLabel("/relocation/arbitrage") ?? "",
+    },
   },
 ] as const;
 
