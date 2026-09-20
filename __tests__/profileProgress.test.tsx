@@ -73,7 +73,7 @@ describe("ProfileProgress", () => {
 
     expect(screen.getByText(/3 つのうち 2 つ/)).toBeInTheDocument();
     expect(
-      screen.getByText(/方位の判定・引越しの試算・物件検索が使えます/),
+      screen.getByText(/方位の判定・引越しの試算・街探しが使えます/),
     ).toBeInTheDocument();
     expect(
       screen.queryByText(/生年月日といま住んでいる場所がそろうと/),
