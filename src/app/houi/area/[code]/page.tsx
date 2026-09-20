@@ -1,6 +1,5 @@
 import Link from "next/link";
 import { ContentDisclaimer } from "@/components/houi/ContentDisclaimer";
-import { LocalNewsPanel } from "@/components/news/LocalNewsPanel";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import {
@@ -685,11 +684,9 @@ export default async function Page({
           </section>
         )}
 
-        {/* その地域のニュース。取れなければ何も出さない（0 件で空の箱を
-            置かない）。頁の中では取らず、開いてから API に聞く——市区町村
-            ページは 1,022 枚あり、頁の中で取るとビルドで 1,022 回試すことに
-            なる */}
-        <LocalNewsPanel areaCode={area.code} placeName={area.full} />
+        {/* その地域のニュース（他社の RSS の見出し）は 2026-09-21 に外した。
+            各社の RSS 利用規約をこちらで確認できていないため（backlog 33 節）。
+            台帳（data/newsSources）は残してあるので、規約を確かめたら戻せる。 */}
 
         <ContentDisclaimer />
       </article>

@@ -2,7 +2,6 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import { ContentDisclaimer } from "@/components/houi/ContentDisclaimer";
-import { LocalNewsPanel } from "@/components/news/LocalNewsPanel";
 import {
   ArticleJsonLd,
   BreadcrumbJsonLd,
@@ -407,8 +406,8 @@ export default async function Page({
           相場は当サイトが収集した賃貸掲載から集計した参考値です。市区町村によって収集の網羅度に差があり、掲載件数の少ない街の数字は振れやすい点に注意してください。
         </p>
 
-        {/* 県内のニュース。市区町村ページと同じ仕組みで、県名で拾う */}
-        <LocalNewsPanel prefCode={code} placeName={pref} />
+        {/* 県内のニュース（他社の RSS の見出し）は 2026-09-21 に外した。
+            市区町村ページと同じ理由（規約を確認できていない。backlog 33 節）。 */}
 
         <ContentDisclaimer />
       </article>
