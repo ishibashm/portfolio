@@ -203,11 +203,12 @@ describe("時期ツールの同行者", () => {
     expect(scanner.candidateStrategy).toBe("top");
   });
 
-  it("合流先を選んでいなくても、どこで合流できるかの候補を出す", async () => {
+  it("合流先を選んでいなくても、いつなら全員で動けるかが日付から出る", async () => {
     /*
-      **選ばせる前に候補を出す**（利用者の指摘。2026-09-18）。
-      人ごとに出発地が違うので、同じ合流先でも方位が違って答えが
-      予想できない。選ばせるだけだと 47 回選び直すことになる。
+      **日付が先、場所が後**（利用者の指摘。2026-09-20）。方角が凶でない
+      日付を選んでから移動する方角を決めるのであって、合流先を先に
+      決めるのは順序が逆。以前は「どこで合流できるか」（県ごとの候補）が
+      先に出ていた。
 
       合流先を選ぶまで合成の結果（data-party-report）は出さない、
       という元からの決めはそのまま。
@@ -215,15 +216,46 @@ describe("時期ツールの同行者", () => {
     localStorage.removeItem("timing_dest_pref_v1");
     await render();
     const text = container.textContent ?? "";
-    expect(text).toContain("どこで合流できるか");
-    expect(container.querySelector("[data-party-candidates]")).not.toBeNull();
+    expect(text).toContain("いつなら全員で動けるか（合流先を決める前に）");
+    expect(container.querySelector("[data-party-dates]")).not.toBeNull();
     expect(container.querySelector("[data-party-report]")).toBeNull();
-    /* 候補は押せる。押せないと「選ばせない」と言いながら選べない。 */
-    const list = container.querySelector("[data-party-candidates]")!;
-    expect(list.querySelectorAll("button").length).toBeGreaterThan(1);
-    /* 誰がどちらへ動くかを添える。方位が人ごとに違うことがこの機能の
-       理由なので、県名だけ並べても判断できない。 */
-    expect(text).toMatch(/あなたは[東西南北]/);
+    /* 9/17 はあなた B・母 C → どこの県へも全員で動ける（47 県）。
+       9/18 はあなた D、10/1 は母が天中殺で、10 月は 0 日 */
+    expect(text).toContain("2026-091日09-1747県");
+    expect(text).toContain("2026-100日");
+    /* 県ごとの候補（場所が先）は、合流先の欄を開くまで出さない */
+    expect(container.querySelector("[data-party-candidates]")).toBeNull();
+    expect(text).not.toContain("どこで合流できるか");
+  });
+
+  it("日を選ぶと、その日に全員で動ける県が人ごとの方位つきで出る", async () => {
+    localStorage.removeItem("timing_dest_pref_v1");
+    await render();
+    const dates = container.querySelector("[data-party-dates]")!;
+    const first = [...dates.querySelectorAll("button")].find(
+      (b) => b.textContent === "09-17",
+    )!;
+    await act(async () => {
+      first.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    });
+    const open = container.querySelector("[data-party-open-on-date]")!;
+    expect(open).not.toBeNull();
+    expect(open.textContent).toContain("2026-09-17 に全員で動ける県");
+    /* 47 県が押せる。誰がどちらへ動くかを添える（方位が人ごとに違う
+       ことがこの機能の理由なので、県名だけ並べても判断できない） */
+    const buttons = open.querySelectorAll("button");
+    expect(buttons).toHaveLength(47);
+    expect(open.textContent).toMatch(/あなたは[東西南北]/);
+    expect(open.textContent).toMatch(/母は[東西南北]/);
+    /* 県を押すと合流先に入り、その県に向けた内訳（report）が出る */
+    const hokkaido = [...buttons].find((b) =>
+      b.textContent?.startsWith("北海道"),
+    )!;
+    await act(async () => {
+      hokkaido.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    });
+    expect(container.querySelector("[data-party-report]")).not.toBeNull();
+    expect(localStorage.getItem("timing_dest_pref_v1")).toBe("北海道");
   });
 
   it("天中殺を見ないモードでは、説明にそう書く", async () => {
@@ -286,10 +318,22 @@ describe("時期ツールの同行者", () => {
     expect(container.querySelector('input[type="number"]')).toBeNull();
   });
 
-  it("候補を押すと合流先に入り、合成の結果が出る", async () => {
+  it("合流先の欄を開くと県ごとの候補が出て、押すと合流先に入る", async () => {
+    /*
+      県が先に決まっている人の入口は残す（任意の欄に降ろした）。
+      **選ばせる前に候補を出す**（2026-09-18）の作りもそのまま。
+    */
     localStorage.removeItem("timing_dest_pref_v1");
     await render();
+    const toggle = container.querySelector("[data-party-destination-toggle]")!;
+    expect(toggle).not.toBeNull();
+    await act(async () => {
+      toggle.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    });
+    expect(container.textContent).toContain("どこで合流できるか");
     const list = container.querySelector("[data-party-candidates]")!;
+    expect(list).not.toBeNull();
+    expect(list.querySelectorAll("button").length).toBeGreaterThan(1);
     const first = list.querySelector("button")!;
     const name = first.textContent ?? "";
     await act(async () => {

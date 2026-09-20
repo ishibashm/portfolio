@@ -77,7 +77,10 @@ import {
 import {
   blockingReasons,
   destinationCandidates,
+  jointDateOptions,
   jointTimeline,
+  openDirections,
+  summarizeOpenByMonth,
   memberDirection,
   partyTimingReport,
   type MemberTimeline,
@@ -312,8 +315,6 @@ export default function TimingAnalyticsPage() {
   };
   const changeDest = (pref: string) => {
     setDestPref(pref);
-    // 表で押した方位が残っていると、合流先を変えても下の既定が動かない
-    setFocusDir(null);
     try {
       localStorage.setItem(DEST_PREF_KEY, pref);
     } catch {
@@ -767,6 +768,52 @@ export default function TimingAnalyticsPage() {
     [partyActive, allTimelines, partyPolicy, todayIso],
   );
   /**
+   * **日付が先、場所が後**（利用者の指摘 2026-09-20）。
+   *
+   * 日ごとに「全員で動ける合流先」を並べる。`partyCandidates` は県ごとに
+   * 日を数える（場所が先）で、こちらは日ごとに県を数える（日が先）。
+   * 中身は同じ合成で、向きを変えただけ（lib 側の検査で一致を固定）。
+   */
+  const partyDateOptions = useMemo(
+    () =>
+      partyActive
+        ? jointDateOptions(
+            allTimelines,
+            PREFECTURE_CENTERS,
+            partyPolicy,
+            todayIso,
+          )
+        : [],
+    [partyActive, allTimelines, partyPolicy, todayIso],
+  );
+  const partyOpenByMonth = useMemo(
+    () => summarizeOpenByMonth(partyDateOptions),
+    [partyDateOptions],
+  );
+  /** 選択日に全員で動ける県。選択日が今日より前なら null（過去は出さない）。 */
+  const selectedPartyOpen = useMemo(
+    () =>
+      selectedDate
+        ? (partyDateOptions.find((o) => o.date === selectedDate)?.open ?? null)
+        : null,
+    [partyDateOptions, selectedDate],
+  );
+  /** 1 人ぶんも同じ向きで。月ごとに「凶でない方位がある日」を数える。 */
+  const soloOpenByMonth = useMemo(
+    () =>
+      days
+        ? summarizeOpenByMonth(
+            days
+              .filter((d) => d.date >= todayIso)
+              .map((d) => ({ date: d.date, open: openDirections(d) })),
+          )
+        : [],
+    [days, todayIso],
+  );
+  /** 合流先の欄（任意）を開いているか。合流先が入っていれば常に出す。 */
+  const [showDestBlock, setShowDestBlock] = useState(false);
+  const destBlockVisible = showDestBlock || destPref !== "";
+  /**
    * いまの判定モードが天中殺を見るか。**説明文の書き分けに使う。**
    * 判定そのものはエンジン側がモードを見ている（`filterModeUsesTenchusatsu`）。
    * ここは `directionFilterMode` の表（import の無い葉）を引くだけ。
@@ -827,9 +874,15 @@ export default function TimingAnalyticsPage() {
     );
   }, [profile]);
 
-  /* 既定の方位は、合流先があればそこへの方位。無ければ最良の方位。
-     表で押した方位はどちらより優先。 */
-  const activeDir = focusDir ?? destDir ?? perDirection[0]?.dir ?? null;
+  /*
+    既定の方位は最良の方位。表で押した方位が優先。
+
+    **合流先への方位を既定にするのはやめた**（利用者の指摘 2026-09-20）。
+    方角が凶でない日付を選んでから移動する方角を決めるのであって、
+    合流先を先に決めて方位を固定するのは順序が逆。合流先は表の行の印
+    （data-dest-row）としてだけ残す。
+  */
+  const activeDir = focusDir ?? perDirection[0]?.dir ?? null;
 
   /** 絞り込みに残った日数。0 のときは「該当なし」と出す。 */
   const matchedCount = useMemo(() => {
@@ -989,7 +1042,7 @@ export default function TimingAnalyticsPage() {
         {/* 同行者・合流する人。走査の前でも人を足せるように、結果の外に置く */}
         <Section
           title="同行者・合流する人（いつなら全員で動けるか）"
-          subtitle="別の場所に住む親族と合流するなど、一緒に動く人を足すと、合流先に向けた全員ぶんの方位を人数ぶん走査して重ねます。走査は本人と同じ範囲（2 年まで）。ここで足した同行者はこの頁だけのもので、物件スキャナーの同行者とは別に持ちます。"
+          subtitle="別の場所に住む親族と合流するなど、一緒に動く人を足すと、人数ぶん走査して重ね、いつなら全員で動けるかを日付から出します。日を選ぶと、その日に全員で動ける県が出るので、行き先はそこから決めます。走査は本人と同じ範囲（2 年まで）。ここで足した同行者はこの頁だけのもので、物件スキャナーの同行者とは別に持ちます。"
         >
           <div className="grid gap-5 lg:grid-cols-[minmax(0,380px)_1fr]">
             <PartyMembersEditor
@@ -1000,43 +1053,6 @@ export default function TimingAnalyticsPage() {
               savedProfiles={savedProfiles}
             />
             <div className="space-y-3">
-              <label className="block text-[11px] font-semibold text-stone-600">
-                合流先（県）
-                <select
-                  value={destPref}
-                  onChange={(e) => changeDest(e.target.value)}
-                  className="ml-1.5 rounded-lg border border-gray-200 bg-gray-50 px-2 py-1 text-xs font-normal"
-                >
-                  <option value="">選んでください</option>
-                  {Object.keys(PREFECTURE_CENTERS).map((name) => (
-                    <option key={name} value={name}>
-                      {name}
-                    </option>
-                  ))}
-                </select>
-              </label>
-              {destLeg && destPref && (
-                <p
-                  className="text-xs leading-relaxed text-stone-600"
-                  data-dest-direction
-                >
-                  あなたの出発地から{destPref}は
-                  <b>{DIRECTION_LABELS[destLeg.direction]}</b>
-                  {destLeg.unstable ? (
-                    <>
-                      ですが、
-                      <b className="text-amber-700">
-                        近すぎて方位が定まりません
-                      </b>
-                      。下の表とカレンダーの既定もこの方位にしていますが、当てにしないでください。
-                    </>
-                  ) : (
-                    <>
-                      。下の方位別サマリー・帯グラフ・カレンダーはこの方位を既定にします（表の行を押すと変えられます）。
-                    </>
-                  )}
-                </p>
-              )}
               {partyMembers.length === 0 && (
                 <p className="text-xs leading-relaxed text-stone-500">
                   左で同行者を足すと、ここに「次に全員で動ける日」と月ごとの日数が出ます。
@@ -1067,6 +1083,201 @@ export default function TimingAnalyticsPage() {
                   </p>
                 )}
               {/*
+                **日付が先、場所が後**（利用者の指摘 2026-09-20）。以前は
+                合流先（県）を選ばせるのが先で、選ぶまで全員の合成が出な
+                かった。方角が凶でない日付を選んでから移動する方角を
+                決めるのであって、合流先を先に決めるのは順序が逆。
+                ここで月ごとに「どこかへ全員で動ける日」を出し、日を選ぶと
+                その日に全員で動ける県を出す。県はそこから決める。
+              */}
+              {partyActive && (
+                <div
+                  className="rounded-xl border border-stone-200 bg-white p-2.5"
+                  data-party-dates
+                >
+                  <p className="text-xs font-bold text-stone-700">
+                    いつなら全員で動けるか（合流先を決める前に）
+                  </p>
+                  <p className="mt-0.5 text-xs leading-relaxed text-stone-500">
+                    月ごとに、移動する全員が避けるべき判定に当たらない県が 1
+                    つでもある日を数えています。日を選ぶと、その日に全員で動ける県が下に出ます。行き先はそこから決めます。
+                  </p>
+                  {partyOpenByMonth.every((m) => m.days === 0) && (
+                    <p className="mt-1.5 text-xs leading-relaxed text-amber-800">
+                      この範囲では、<b>全員で動ける日がどの県にもありません</b>
+                      。期間を延ばすか、まとめ方を変えるか、同行者を分けて動くかの判断になります。
+                    </p>
+                  )}
+                  <div className="mt-1.5 overflow-x-auto">
+                    <table className="w-full text-[11px]">
+                      <thead>
+                        <tr className="border-b border-gray-200 text-left text-[10px] tracking-wider text-stone-600">
+                          <th className="py-1.5 pr-2">月</th>
+                          <th className="py-1.5 pr-2 text-right">
+                            全員で動ける日数
+                          </th>
+                          <th className="py-1.5 pr-2 text-right">最初の日</th>
+                          <th className="py-1.5 text-right">
+                            動ける県（最多）
+                          </th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {partyOpenByMonth.map((m) => (
+                          <tr
+                            key={m.month}
+                            className="border-b border-gray-100 last:border-0"
+                          >
+                            <td className="py-1 pr-2 font-mono">{m.month}</td>
+                            <td className="py-1 pr-2 text-right font-mono">
+                              {m.days === 0 ? (
+                                <span className="text-stone-300">0日</span>
+                              ) : (
+                                `${m.days}日`
+                              )}
+                            </td>
+                            <td className="py-1 pr-2 text-right font-mono">
+                              {m.first ? (
+                                <button
+                                  type="button"
+                                  onClick={() => setSelectedDate(m.first)}
+                                  className="font-semibold text-indigo-600 underline"
+                                >
+                                  {m.first.slice(5)}
+                                </button>
+                              ) : (
+                                "—"
+                              )}
+                            </td>
+                            <td className="py-1 text-right font-mono">
+                              {m.most === 0 ? "—" : `${m.most}県`}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              )}
+              {partyActive && selectedDate && selectedPartyOpen && (
+                <div
+                  className="rounded-xl border border-stone-200 bg-white p-2.5"
+                  data-party-open-on-date
+                >
+                  <p className="text-xs font-bold text-stone-700">
+                    {selectedDate} に全員で動ける県
+                  </p>
+                  {selectedPartyOpen.length === 0 ? (
+                    <p className="mt-0.5 text-xs leading-relaxed text-amber-800">
+                      この日は、どこへも全員では動けません。上の表で別の日を選んでください。
+                    </p>
+                  ) : (
+                    <>
+                      <p className="mt-0.5 text-xs leading-relaxed text-stone-500">
+                        各人の出発地から見た方位を添えています。押すと合流先に入り、その県に向けた
+                        2 年ぶんの内訳が下に出ます。
+                      </p>
+                      <ul className="mt-1.5 flex flex-wrap gap-1.5">
+                        {selectedPartyOpen.map((name) => (
+                          <li key={name}>
+                            <button
+                              type="button"
+                              onClick={() => changeDest(name)}
+                              aria-pressed={destPref === name}
+                              className={`inline-flex min-h-[24px] items-baseline gap-1 rounded-lg border px-2 py-1 text-left text-xs hover:bg-indigo-50 ${
+                                destPref === name
+                                  ? "border-indigo-300 bg-indigo-50 text-indigo-900"
+                                  : "border-stone-200 text-stone-700"
+                              }`}
+                            >
+                              <span className="font-bold">{name}</span>
+                              <span className="text-stone-500">
+                                {allTimelines
+                                  .filter((m) => !m.stationary)
+                                  .map(
+                                    (m) =>
+                                      `${m.name}は${
+                                        DIRECTION_LABELS[
+                                          memberDirection(
+                                            m,
+                                            PREFECTURE_CENTERS[name],
+                                          )
+                                        ] ?? ""
+                                      }`,
+                                  )
+                                  .join("・")}
+                              </span>
+                            </button>
+                          </li>
+                        ))}
+                      </ul>
+                    </>
+                  )}
+                </div>
+              )}
+              {/*
+                合流先を先に決めているときの欄。**任意で、後ろに置く。**
+                県を先に決めると、その県に向けた方位で全員ぶんを重ねる
+                （以前はこれが唯一の入口だった）。合流先が入っていれば
+                常に出す。空なら押して開く。
+              */}
+              {partyActive && !destBlockVisible && (
+                <button
+                  type="button"
+                  onClick={() => setShowDestBlock(true)}
+                  className="inline-flex min-h-[24px] items-center text-xs font-bold text-indigo-700 underline"
+                  data-party-destination-toggle
+                >
+                  合流先が決まっているときはこちら（県を先に選ぶ）
+                </button>
+              )}
+              {(destBlockVisible || !partyActive) && (
+                <div
+                  className="space-y-3 rounded-xl border border-stone-200 bg-stone-50/60 p-2.5"
+                  data-party-destination
+                >
+                  <p className="text-xs font-bold text-stone-700">
+                    合流先が決まっているとき（任意）
+                  </p>
+                  <p className="text-xs leading-relaxed text-stone-500">
+                    県を先に決めると、その県に向けた方位で全員ぶんを重ね、次に全員で動ける日と月ごとの日数を出します。上の「いつなら全員で動けるか」から日を選ぶほうが先です。
+                  </p>
+                  <label className="block text-[11px] font-semibold text-stone-600">
+                    合流先（県）
+                    <select
+                      value={destPref}
+                      onChange={(e) => changeDest(e.target.value)}
+                      className="ml-1.5 rounded-lg border border-gray-200 bg-gray-50 px-2 py-1 text-xs font-normal"
+                    >
+                      <option value="">選んでください</option>
+                      {Object.keys(PREFECTURE_CENTERS).map((name) => (
+                        <option key={name} value={name}>
+                          {name}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                  {destLeg && destPref && (
+                    <p
+                      className="text-xs leading-relaxed text-stone-600"
+                      data-dest-direction
+                    >
+                      あなたの出発地から{destPref}は
+                      <b>{DIRECTION_LABELS[destLeg.direction]}</b>
+                      {destLeg.unstable ? (
+                        <>
+                          ですが、
+                          <b className="text-amber-700">
+                            近すぎて方位が定まりません
+                          </b>
+                          。表の行にこの方位の印を付けていますが、当てにしないでください。
+                        </>
+                      ) : (
+                        <>。方位別サマリーの行にこの方位の印を付けます。</>
+                      )}
+                    </p>
+                  )}
+                  {/*
                 **選ばせる前に候補を出す。**利用者の指摘（2026-09-18）。
                 人ごとに出発地が違うので、同じ合流先でも方位が違って
                 答えが予想できない。選ばせる作りだと「どこなら全員で
@@ -1075,148 +1286,150 @@ export default function TimingAnalyticsPage() {
                 並びは lib（destinationCandidates）が決める。ここでは
                 出す本数だけを絞る。
               */}
-              {partyCandidates.length > 0 && (
-                <div
-                  className="rounded-xl border border-stone-200 bg-white p-2.5"
-                  data-party-candidates
-                >
-                  <p className="text-xs font-bold text-stone-700">
-                    どこで合流できるか
-                  </p>
-                  <p className="mt-0.5 text-xs leading-relaxed text-stone-500">
-                    今日以降で、移動する全員が避けるべき判定に当たらない日数の多い順です。押すと合流先に入ります。
-                  </p>
-                  {partyCandidates[0].allClearDays === 0 ? (
-                    /* どこも 0 日。隠すと「期間を延ばすか人を減らすか」の
+                  {partyCandidates.length > 0 && (
+                    <div
+                      className="rounded-xl border border-stone-200 bg-white p-2.5"
+                      data-party-candidates
+                    >
+                      <p className="text-xs font-bold text-stone-700">
+                        どこで合流できるか
+                      </p>
+                      <p className="mt-0.5 text-xs leading-relaxed text-stone-500">
+                        今日以降で、移動する全員が避けるべき判定に当たらない日数の多い順です。押すと合流先に入ります。
+                      </p>
+                      {partyCandidates[0].allClearDays === 0 ? (
+                        /* どこも 0 日。隠すと「期間を延ばすか人を減らすか」の
                        判断ができないので、一覧の前に言い切る。 */
-                    <p className="mt-1.5 text-xs leading-relaxed text-amber-800">
-                      この範囲では、<b>全員で動ける日がどの県にもありません</b>
-                      。期間を延ばすか、まとめ方を変えるか、同行者を分けて動くかの判断になります。
-                    </p>
-                  ) : null}
-                  <ul className="mt-1.5 space-y-1">
-                    {(showAllCandidates
-                      ? partyCandidates
-                      : partyCandidates.slice(0, 8)
-                    ).map((c) => (
-                      <li key={c.name}>
+                        <p className="mt-1.5 text-xs leading-relaxed text-amber-800">
+                          この範囲では、
+                          <b>全員で動ける日がどの県にもありません</b>
+                          。期間を延ばすか、まとめ方を変えるか、同行者を分けて動くかの判断になります。
+                        </p>
+                      ) : null}
+                      <ul className="mt-1.5 space-y-1">
+                        {(showAllCandidates
+                          ? partyCandidates
+                          : partyCandidates.slice(0, 8)
+                        ).map((c) => (
+                          <li key={c.name}>
+                            <button
+                              type="button"
+                              onClick={() => changeDest(c.name)}
+                              aria-pressed={destPref === c.name}
+                              className={`flex min-h-[24px] w-full items-baseline gap-2 rounded-lg px-1.5 py-1 text-left text-xs hover:bg-indigo-50 ${
+                                destPref === c.name
+                                  ? "bg-indigo-50 font-bold text-indigo-900"
+                                  : "text-stone-700"
+                              }`}
+                            >
+                              <span className="w-16 shrink-0">{c.name}</span>
+                              <span className="w-12 shrink-0 text-right font-bold">
+                                {c.allClearDays} 日
+                              </span>
+                              <span className="w-20 shrink-0 text-stone-500">
+                                {c.nextAllClearDate ?? "—"}
+                              </span>
+                              <span className="truncate text-stone-500">
+                                {TIER_LABELS[c.bestTier]}
+                              </span>
+                            </button>
+                            <p className="px-1.5 text-xs leading-relaxed text-stone-500">
+                              {c.legs
+                                .filter((l) => l.direction)
+                                .map(
+                                  (l) =>
+                                    `${l.name}は${DIRECTION_LABELS[l.direction!] ?? l.direction}`,
+                                )
+                                .join("・")}
+                              {c.hasUnstableLeg && (
+                                <b className="ml-1 text-amber-700">
+                                  近すぎて方位が定まりません
+                                </b>
+                              )}
+                            </p>
+                          </li>
+                        ))}
+                      </ul>
+                      {partyCandidates.length > 8 && (
                         <button
                           type="button"
-                          onClick={() => changeDest(c.name)}
-                          aria-pressed={destPref === c.name}
-                          className={`flex min-h-[24px] w-full items-baseline gap-2 rounded-lg px-1.5 py-1 text-left text-xs hover:bg-indigo-50 ${
-                            destPref === c.name
-                              ? "bg-indigo-50 font-bold text-indigo-900"
-                              : "text-stone-700"
-                          }`}
+                          onClick={() => setShowAllCandidates((v) => !v)}
+                          className="mt-1 inline-flex min-h-[24px] items-center text-xs font-bold text-indigo-700 underline"
                         >
-                          <span className="w-16 shrink-0">{c.name}</span>
-                          <span className="w-12 shrink-0 text-right font-bold">
-                            {c.allClearDays} 日
-                          </span>
-                          <span className="w-20 shrink-0 text-stone-500">
-                            {c.nextAllClearDate ?? "—"}
-                          </span>
-                          <span className="truncate text-stone-500">
-                            {TIER_LABELS[c.bestTier]}
-                          </span>
+                          {showAllCandidates
+                            ? "上位だけ表示"
+                            : `47 県すべて見る（残り ${partyCandidates.length - 8}）`}
                         </button>
-                        <p className="px-1.5 text-xs leading-relaxed text-stone-500">
-                          {c.legs
-                            .filter((l) => l.direction)
+                      )}
+                    </div>
+                  )}
+                  {partyReport && (
+                    <div className="space-y-3" data-party-report>
+                      <p className="text-xs leading-relaxed text-stone-600">
+                        {allTimelines
+                          .filter((m) => !m.stationary)
+                          .map(
+                            (m) =>
+                              `${m.name}: ${DIRECTION_LABELS[memberDirection(m, destination!)] ?? ""}`,
+                          )
+                          .join("　")}
+                        {allTimelines.some((m) => m.stationary) &&
+                          `　移動しない: ${allTimelines
+                            .filter((m) => m.stationary)
+                            .map((m) => m.name)
+                            .join("・")}`}
+                      </p>
+                      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+                        <div className="rounded-xl border border-gray-200 bg-gray-50 p-3">
+                          <div className="text-[11px] text-stone-500">
+                            次に全員で動ける日
+                          </div>
+                          <div className="mt-0.5 font-mono text-sm font-bold text-stone-800">
+                            {partyReport.nextAllClearDate ?? "範囲内に無し"}
+                          </div>
+                        </div>
+                        <div className="rounded-xl border border-gray-200 bg-gray-50 p-3">
+                          <div className="text-[11px] text-stone-500">
+                            全員で動ける日数
+                          </div>
+                          <div className="mt-0.5 font-mono text-sm font-bold text-stone-800">
+                            {partyReport.allClearDays} /{" "}
+                            {partyReport.scannedDays}日
+                          </div>
+                        </div>
+                        <div className="rounded-xl border border-gray-200 bg-gray-50 p-3">
+                          <div className="text-[11px] text-stone-500">
+                            窓の数
+                          </div>
+                          <div className="mt-0.5 font-mono text-sm font-bold text-stone-800">
+                            {summarizeWindows(partyReport.clearDates)?.count ??
+                              0}
+                            回
+                          </div>
+                        </div>
+                        <div className="rounded-xl border border-gray-200 bg-gray-50 p-3">
+                          <div className="text-[11px] text-stone-500">
+                            窓の平均の長さ
+                          </div>
+                          <div className="mt-0.5 font-mono text-sm font-bold text-stone-800">
+                            {summarizeWindows(partyReport.clearDates)?.avgLen ??
+                              "—"}
+                            日
+                          </div>
+                        </div>
+                      </div>
+                      {partyReport.alwaysBlockedBy.length > 0 && (
+                        <p className="rounded-xl border border-rose-200 bg-rose-50 p-2.5 text-xs leading-relaxed text-rose-900">
+                          {partyReport.alwaysBlockedBy
                             .map(
-                              (l) =>
-                                `${l.name}は${DIRECTION_LABELS[l.direction!] ?? l.direction}`,
+                              (b) =>
+                                `${b.name}は走査した全ての日で「${b.status}」`,
                             )
-                            .join("・")}
-                          {c.hasUnstableLeg && (
-                            <b className="ml-1 text-amber-700">
-                              近すぎて方位が定まりません
-                            </b>
-                          )}
+                            .join("。")}
+                          。期間を延ばしても変わらないので、合流先の県を変えるか、年を改めるかの判断になります。
                         </p>
-                      </li>
-                    ))}
-                  </ul>
-                  {partyCandidates.length > 8 && (
-                    <button
-                      type="button"
-                      onClick={() => setShowAllCandidates((v) => !v)}
-                      className="mt-1 inline-flex min-h-[24px] items-center text-xs font-bold text-indigo-700 underline"
-                    >
-                      {showAllCandidates
-                        ? "上位だけ表示"
-                        : `47 県すべて見る（残り ${partyCandidates.length - 8}）`}
-                    </button>
-                  )}
-                </div>
-              )}
-              {partyActive && !destination && (
-                <p className="text-xs leading-relaxed text-stone-500">
-                  上の候補を押すか、県を選ぶと、各人の出発地からその県への方位で全員ぶんを重ねます。地図（カレンダーの日を選ぶと出ます）は合流先を選ばなくても全員ぶんの塗りになります。
-                </p>
-              )}
-              {partyReport && (
-                <div className="space-y-3" data-party-report>
-                  <p className="text-xs leading-relaxed text-stone-600">
-                    {allTimelines
-                      .filter((m) => !m.stationary)
-                      .map(
-                        (m) =>
-                          `${m.name}: ${DIRECTION_LABELS[memberDirection(m, destination!)] ?? ""}`,
-                      )
-                      .join("　")}
-                    {allTimelines.some((m) => m.stationary) &&
-                      `　移動しない: ${allTimelines
-                        .filter((m) => m.stationary)
-                        .map((m) => m.name)
-                        .join("・")}`}
-                  </p>
-                  <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-                    <div className="rounded-xl border border-gray-200 bg-gray-50 p-3">
-                      <div className="text-[11px] text-stone-500">
-                        次に全員で動ける日
-                      </div>
-                      <div className="mt-0.5 font-mono text-sm font-bold text-stone-800">
-                        {partyReport.nextAllClearDate ?? "範囲内に無し"}
-                      </div>
-                    </div>
-                    <div className="rounded-xl border border-gray-200 bg-gray-50 p-3">
-                      <div className="text-[11px] text-stone-500">
-                        全員で動ける日数
-                      </div>
-                      <div className="mt-0.5 font-mono text-sm font-bold text-stone-800">
-                        {partyReport.allClearDays} / {partyReport.scannedDays}日
-                      </div>
-                    </div>
-                    <div className="rounded-xl border border-gray-200 bg-gray-50 p-3">
-                      <div className="text-[11px] text-stone-500">窓の数</div>
-                      <div className="mt-0.5 font-mono text-sm font-bold text-stone-800">
-                        {summarizeWindows(partyReport.clearDates)?.count ?? 0}回
-                      </div>
-                    </div>
-                    <div className="rounded-xl border border-gray-200 bg-gray-50 p-3">
-                      <div className="text-[11px] text-stone-500">
-                        窓の平均の長さ
-                      </div>
-                      <div className="mt-0.5 font-mono text-sm font-bold text-stone-800">
-                        {summarizeWindows(partyReport.clearDates)?.avgLen ??
-                          "—"}
-                        日
-                      </div>
-                    </div>
-                  </div>
-                  {partyReport.alwaysBlockedBy.length > 0 && (
-                    <p className="rounded-xl border border-rose-200 bg-rose-50 p-2.5 text-xs leading-relaxed text-rose-900">
-                      {partyReport.alwaysBlockedBy
-                        .map(
-                          (b) => `${b.name}は走査した全ての日で「${b.status}」`,
-                        )
-                        .join("。")}
-                      。期間を延ばしても変わらないので、合流先の県を変えるか、年を改めるかの判断になります。
-                    </p>
-                  )}
-                  {/*
+                      )}
+                      {/*
                     **「天中殺にも当たらない日」と無条件に書いていた**
                     （利用者の指摘。2026-09-19）。天中殺を見るかどうかは
                     判定モードで決まる。本命星 ＋ 環境方位・本命星のみ・
@@ -1230,98 +1443,104 @@ export default function TimingAnalyticsPage() {
                     説明文だけ。数が少ない理由を取り違える材料になるので、
                     モードに合わせて書き分ける。
                   */}
-                  <p className="text-xs leading-relaxed text-stone-500">
-                    「全員で動ける日」は、移動する全員が凶なし（C 以上）
-                    {partyUsesTenchusatsu ? "で天中殺にも当たらない日" : "の日"}
-                    。まとめ方は日ごとの段階（下の地図の塗り）に効き、この日数には効きません。
-                    {!partyUsesTenchusatsu && (
-                      <>
-                        {" "}
-                        <b>
-                          いまの判定モード（
-                          {
-                            modeInfo(
-                              settings?.directionFilterMode ?? "composite",
-                            ).label
-                          }
-                          ）は天中殺を見ていません。
-                        </b>
-                        天中殺の期間も候補に入ります。
-                      </>
-                    )}
-                  </p>
-                  {partyBlocking &&
-                    partyBlocking.reasons.length > 0 &&
-                    partyBlocking.scanned > 0 && (
-                      <p className="rounded-xl border border-amber-200 bg-amber-50 p-2.5 text-xs leading-relaxed text-amber-900">
-                        <b>
-                          {partyBlocking.until
-                            ? `${partyBlocking.until} まで ${partyBlocking.scanned} 日ぶん、全員では動けません。`
-                            : `走査した ${partyBlocking.scanned} 日のあいだ、全員では動ける日がありません。`}
-                        </b>
-                        <span className="ml-1">
-                          {partyBlocking.reasons
-                            .map(
-                              (r) =>
-                                /* 凶の名前（年盤の本命的殺 など）があればそれを。
+                      <p className="text-xs leading-relaxed text-stone-500">
+                        「全員で動ける日」は、移動する全員が凶なし（C 以上）
+                        {partyUsesTenchusatsu
+                          ? "で天中殺にも当たらない日"
+                          : "の日"}
+                        。まとめ方は日ごとの段階（下の地図の塗り）に効き、この日数には効きません。
+                        {!partyUsesTenchusatsu && (
+                          <>
+                            {" "}
+                            <b>
+                              いまの判定モード（
+                              {
+                                modeInfo(
+                                  settings?.directionFilterMode ?? "composite",
+                                ).label
+                              }
+                              ）は天中殺を見ていません。
+                            </b>
+                            天中殺の期間も候補に入ります。
+                          </>
+                        )}
+                      </p>
+                      {partyBlocking &&
+                        partyBlocking.reasons.length > 0 &&
+                        partyBlocking.scanned > 0 && (
+                          <p className="rounded-xl border border-amber-200 bg-amber-50 p-2.5 text-xs leading-relaxed text-amber-900">
+                            <b>
+                              {partyBlocking.until
+                                ? `${partyBlocking.until} まで ${partyBlocking.scanned} 日ぶん、全員では動けません。`
+                                : `走査した ${partyBlocking.scanned} 日のあいだ、全員では動ける日がありません。`}
+                            </b>
+                            <span className="ml-1">
+                              {partyBlocking.reasons
+                                .map(
+                                  (r) =>
+                                    /* 凶の名前（年盤の本命的殺 など）があればそれを。
                                    段階の名前（五大凶殺あり）では、本命殺か
                                    五黄殺かが分からず、天中殺が入っているのでは
                                    と推測させた（利用者報告 2026-09-19）。 */
-                                `${r.name}（${r.direction ? (DIRECTION_LABELS[r.direction] ?? r.direction) : "方位なし"}）が ${r.days} 日「${r.cause || r.status}」`,
-                            )
-                            .join("、")}
-                          。
-                        </span>
-                        <span className="ml-1">
-                          年盤で塞がった方位は、その気学年のあいだ日取りでは戻りません。
-                          <b>合流先を変える</b>
-                          と各人の方位が変わるので、上の候補も見てください。
-                        </span>
-                      </p>
-                    )}
-                  <div className="overflow-x-auto">
-                    <table className="w-full text-[11px]">
-                      <thead>
-                        <tr className="border-b border-gray-200 text-left text-[10px] tracking-wider text-stone-600">
-                          <th className="py-1.5 pr-2">月</th>
-                          <th className="py-1.5 pr-2 text-right">
-                            全員で動ける日数
-                          </th>
-                          <th className="py-1.5 text-right">最初の日</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {partyMonths.map((m) => (
-                          <tr
-                            key={m.month}
-                            className="border-b border-gray-100 last:border-0"
-                          >
-                            <td className="py-1 pr-2 font-mono">{m.month}</td>
-                            <td className="py-1 pr-2 text-right font-mono">
-                              {m.count === 0 ? (
-                                <span className="text-stone-300">0日</span>
-                              ) : (
-                                `${m.count}日`
-                              )}
-                            </td>
-                            <td className="py-1 text-right font-mono">
-                              {m.first ? (
-                                <button
-                                  type="button"
-                                  onClick={() => setSelectedDate(m.first)}
-                                  className="font-semibold text-indigo-600 underline"
-                                >
-                                  {m.first.slice(5)}
-                                </button>
-                              ) : (
-                                "—"
-                              )}
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
+                                    `${r.name}（${r.direction ? (DIRECTION_LABELS[r.direction] ?? r.direction) : "方位なし"}）が ${r.days} 日「${r.cause || r.status}」`,
+                                )
+                                .join("、")}
+                              。
+                            </span>
+                            <span className="ml-1">
+                              年盤で塞がった方位は、その気学年のあいだ日取りでは戻りません。
+                              <b>合流先を変える</b>
+                              と各人の方位が変わるので、上の候補も見てください。
+                            </span>
+                          </p>
+                        )}
+                      <div className="overflow-x-auto">
+                        <table className="w-full text-[11px]">
+                          <thead>
+                            <tr className="border-b border-gray-200 text-left text-[10px] tracking-wider text-stone-600">
+                              <th className="py-1.5 pr-2">月</th>
+                              <th className="py-1.5 pr-2 text-right">
+                                全員で動ける日数
+                              </th>
+                              <th className="py-1.5 text-right">最初の日</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {partyMonths.map((m) => (
+                              <tr
+                                key={m.month}
+                                className="border-b border-gray-100 last:border-0"
+                              >
+                                <td className="py-1 pr-2 font-mono">
+                                  {m.month}
+                                </td>
+                                <td className="py-1 pr-2 text-right font-mono">
+                                  {m.count === 0 ? (
+                                    <span className="text-stone-300">0日</span>
+                                  ) : (
+                                    `${m.count}日`
+                                  )}
+                                </td>
+                                <td className="py-1 text-right font-mono">
+                                  {m.first ? (
+                                    <button
+                                      type="button"
+                                      onClick={() => setSelectedDate(m.first)}
+                                      className="font-semibold text-indigo-600 underline"
+                                    >
+                                      {m.first.slice(5)}
+                                    </button>
+                                  ) : (
+                                    "—"
+                                  )}
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
             </div>
@@ -1330,6 +1549,65 @@ export default function TimingAnalyticsPage() {
 
         {days && days.length > 0 && (
           <>
+            {/*
+              **日付が先、方位が後**（利用者の指摘 2026-09-20）。月ごとに
+              「凶でない方位が 1 つでもある日」を数え、日を選ぶとその日に
+              開いている方位が下の「全方位」に出る。先に方位を 1 つ決めて
+              日を探すと、年盤で塞がった方位では候補が 1 日も出ない。
+            */}
+            <Section
+              title="動ける日（方位を決める前に）"
+              subtitle="月ごとに、凶でない方位が 1 つでもある日を数えています。日を選ぶと、その日に開いている方位が下の「全方位」に出るので、行き先はそこから決めます。先に方位を 1 つ決めて日を探すと、年盤で塞がった方位では候補が 1 日も出ません。"
+            >
+              <div className="overflow-x-auto" data-solo-dates>
+                <table className="w-full text-[11px]">
+                  <thead>
+                    <tr className="border-b border-gray-200 text-left text-[10px] tracking-wider text-stone-600">
+                      <th className="py-1.5 pr-2">月</th>
+                      <th className="py-1.5 pr-2 text-right">
+                        凶でない方位がある日数
+                      </th>
+                      <th className="py-1.5 pr-2 text-right">最初の日</th>
+                      <th className="py-1.5 text-right">開く方位（最多）</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {soloOpenByMonth.map((m) => (
+                      <tr
+                        key={m.month}
+                        className="border-b border-gray-100 last:border-0"
+                      >
+                        <td className="py-1 pr-2 font-mono">{m.month}</td>
+                        <td className="py-1 pr-2 text-right font-mono">
+                          {m.days === 0 ? (
+                            <span className="text-stone-300">0日</span>
+                          ) : (
+                            `${m.days}日`
+                          )}
+                        </td>
+                        <td className="py-1 pr-2 text-right font-mono">
+                          {m.first ? (
+                            <button
+                              type="button"
+                              onClick={() => setSelectedDate(m.first)}
+                              className="font-semibold text-indigo-600 underline"
+                            >
+                              {m.first.slice(5)}
+                            </button>
+                          ) : (
+                            "—"
+                          )}
+                        </td>
+                        <td className="py-1 text-right font-mono">
+                          {m.most === 0 ? "—" : `${m.most}方位`}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </Section>
+
             {/* 方位別サマリー */}
             <Section
               title="方位別サマリー（未来の候補）"
@@ -1488,7 +1766,7 @@ export default function TimingAnalyticsPage() {
                   ? `＝${destPref}への方位`
                   : ""
               }）`}
-              subtitle="1 マスが 1 日。上の表で方位を選ぶと切り替わります。合流先を選ぶと、その県への方位が既定になります。今日より前は薄く表示。マスを押すとその場に判定が出ます（全方位の一覧と地図はこの下）。"
+              subtitle="1 マスが 1 日。上の表で方位を選ぶと切り替わります。今日より前は薄く表示。マスを押すとその場に判定が出ます（全方位の一覧と地図はこの下）。"
             >
               <div className="space-y-2">
                 {/* 段階の絞り込み。段階は既に計算済みなので、ここでやるのは
@@ -1865,8 +2143,12 @@ export default function TimingAnalyticsPage() {
                   （365 日 × 8 方位）は記事に分けてある。
                 */}
                 <li>
-                  <b>方位が先、日取りが後です。</b>
-                  年盤で塞がった方位は、月日をどう選んでも段階が上がりません。順序の理由と実測は
+                  <b>
+                    日を選んだら、その日に開いている方位の中から行き先を決めます。
+                  </b>
+                  年盤で塞がった方位は、月日をどう選んでも段階が上がりません。先に方位を
+                  1 つ決めてから日を探すと、その方位では候補が 1
+                  日も出ないことがあります。理由と実測は
                   <Link
                     href="/blog/direction-or-timing-which-matters"
                     className="mx-1 font-semibold text-indigo-600 underline"
