@@ -392,7 +392,6 @@ const filterLayerData = (
     if (list.includes("NOISE_TEKI")) return "NOISE_TEKI";
     if (list.includes("NOISE_VOID")) return "NOISE_VOID";
     if (list.includes("NOISE_HA")) return "NOISE_HA";
-    if (list.includes("NOISE_NODE")) return "NOISE_NODE";
     if (list.includes("NOISE")) return "NOISE";
     if (list.includes("OPTIMAL")) return "OPTIMAL";
     if (list.includes("OPTIMAL_REGULAR")) return "OPTIMAL_REGULAR";
@@ -440,7 +439,6 @@ const filterLayerData = (
       if (isGou) resList.push("NOISE_GOU");
       if (isAnken) resList.push("NOISE_ANKEN");
       if (status === "NOISE_HA") resList.push("NOISE_HA");
-      if (status === "NOISE_NODE") resList.push("NOISE_NODE");
     }
 
     return combineStatuses(resList);

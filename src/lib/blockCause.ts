@@ -47,7 +47,6 @@ const NOISE_CODE: Record<string, string> = {
   NOISE_HONMEI: "M",
   NOISE_TEKI: "T",
   NOISE_VOID: "V",
-  NOISE_NODE: "N",
   NOISE_DOYO: "Y",
   NOISE_GETSUMEI: "E",
   NOISE_GETSUTEKI: "F",

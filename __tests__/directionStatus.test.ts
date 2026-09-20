@@ -29,7 +29,7 @@ const OBSERVED: DirectionLayers = {
     E: "NOISE_ANKEN",
     SE: "SAFE",
     S: "NOISE_GETSUMEI",
-    SW: "NOISE_NODE",
+    SW: "NOISE_GETSUTEKI",
     W: "NOISE_GOU",
     NW: "OPTIMAL_REGULAR",
   },

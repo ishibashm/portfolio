@@ -103,12 +103,6 @@ const DIRECTION_LABELS: Record<string, DirectionLabel> = {
     short: "月命的殺 (凶)",
     detailed: "月命的殺 (凶 - 人間関係に凶とされる)",
   },
-  NOISE_NODE: {
-    name: "羅睺・計都軸",
-    badge: "交点",
-    short: "羅睺・計都軸 (凶)",
-    detailed: "羅睺・計都軸 (凶 - インド占星術で凶とされる軸)",
-  },
   WARNING: {
     name: "注意",
     badge: "注意",

@@ -60,7 +60,7 @@ describe("gradeVerdict の段階", () => {
       gradeVerdict(verdict("SAFE", "NOISE_GETSUMEI", "SAFE", "SAFE")),
     ).toBe("D");
     expect(
-      gradeVerdict(verdict("OPTIMAL", "NOISE_NODE", "OPTIMAL", "SAFE")),
+      gradeVerdict(verdict("OPTIMAL", "NOISE_GETSUTEKI", "OPTIMAL", "SAFE")),
     ).toBe("D");
   });
 

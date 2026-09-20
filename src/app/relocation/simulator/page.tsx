@@ -697,7 +697,6 @@ export default function RelocationSimulatorPage() {
             "NOISE_TEKI",
             "NOISE_GETSUMEI",
             "NOISE_GETSUTEKI",
-            "NOISE_NODE",
           ].includes(mStatus)
         ) {
           mRating = "凶";

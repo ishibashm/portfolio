@@ -47,7 +47,6 @@ export const NOISE_PRIORITY: readonly string[] = [
   "NOISE_VOID", // 天中殺方位（空亡の支の方位）
   "NOISE_GETSUMEI", // 月命殺
   "NOISE_GETSUTEKI", // 月命的殺
-  "NOISE_NODE", // 羅睺・計都（月の交点）
 ];
 
 /**

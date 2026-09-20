@@ -5,11 +5,12 @@
  * 名前になっていた。**日取りパネルだけを見ても、
  *
  *   NOISE_VOID   「空亡」    / 他の画面は「天中殺方位」
- *   NOISE_NODE   「月交点」  / 他の画面は「羅睺・計都軸」
  *   NOISE_HA     「歳破/月破」/ 他の画面は「歳破/月破/日破」
  *   SAFE         「平」      / 他の画面は「平穏」
  *
- * と 4 つずれていた。さらに未知の状態が来ると `?? s` で NOISE_XXX という
+ * と 3 つずれていた（もう 1 つ、NOISE_NODE を「月交点」と呼ぶ画面と
+ * 「羅睺・計都軸」と呼ぶ画面のずれもあったが、月交点は 2026-09-19 に
+ * 判定から外したので状態そのものが無くなった）。さらに未知の状態が来ると `?? s` で NOISE_XXX という
  * 内部コードをそのまま画面に出していた。
  *
  * 4 つの形（name / badge / short / detailed）は**言葉を変えるためではなく、
@@ -78,9 +79,8 @@ describe("4 つの形が揃っている", () => {
     expect(directionLabelBadge(unknown)).toBe("");
   });
 
-  it("名指しの値（ずれていた 4 つ）", () => {
+  it("名指しの値（ずれていた 3 つ）", () => {
     expect(directionLabelName("NOISE_VOID")).toBe("天中殺方位");
-    expect(directionLabelName("NOISE_NODE")).toBe("羅睺・計都軸");
     expect(directionLabelName("NOISE_HA")).toBe("歳破/月破/日破");
     expect(directionLabelName("SAFE")).toBe("平穏");
   });

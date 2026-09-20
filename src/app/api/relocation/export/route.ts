@@ -460,7 +460,6 @@ export async function GET(request: Request) {
             score = 60;
             break;
           case "NOISE_VOID":
-          case "NOISE_NODE":
             score = 40;
             break;
           case "NOISE_HONMEI":

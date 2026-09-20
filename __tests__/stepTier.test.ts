@@ -69,7 +69,6 @@ describe("stepDayTier", () => {
       "NOISE_VOID",
       "NOISE_HONMEI",
       "NOISE_GETSUMEI",
-      "NOISE_NODE",
     ];
     for (const f of STATUSES)
       for (const y of STATUSES)

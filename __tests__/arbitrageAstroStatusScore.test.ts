@@ -34,8 +34,6 @@ function oldBaseScore(status: string): number {
       return 60;
     case "NOISE_VOID":
       return 40;
-    case "NOISE_NODE":
-      return 40;
     case "NOISE_HONMEI":
     case "NOISE_TEKI":
     case "NOISE_GETSUMEI":

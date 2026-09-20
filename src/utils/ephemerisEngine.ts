@@ -787,7 +787,6 @@ export type VectorStatus =
   | "NOISE_GETSUMEI"
   | "NOISE_GETSUTEKI"
   | "NOISE_VOID"
-  | "NOISE_NODE"
   | "NOISE"
   | "NOISE_HA";
 
@@ -1791,7 +1790,6 @@ export function filterCollisionByMode(
     if (isGou) return "NOISE_GOU";
     if (isAnken) return "NOISE_ANKEN";
     if (status === "NOISE_HA") return "NOISE_HA";
-    if (status === "NOISE_NODE") return "NOISE_NODE";
     return "SAFE";
   };
 
@@ -1810,7 +1808,6 @@ export function filterCollisionByMode(
     "NOISE_HONMEI",
     "NOISE_TEKI",
     "NOISE_VOID",
-    "NOISE_NODE",
   ];
   const merge = (candidates: VectorStatus[]): VectorStatus => {
     for (const bad of SEVERITY) {
@@ -1861,7 +1858,6 @@ export function filterCollisionByMode(
       (s) => s === "NOISE_GOU" || s === "NOISE_ANKEN" || s === "NOISE_HA",
     );
     if (hasRed) return hasRed;
-    if (list.includes("NOISE_NODE")) return "NOISE_NODE";
     return "SAFE";
   };
 

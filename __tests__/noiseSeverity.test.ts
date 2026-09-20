@@ -25,19 +25,22 @@ describe("noiseSeverity（凶の重さの唯一の定義）", () => {
   it("isFatalNoise は五大凶殺だけを真にする", () => {
     for (const s of FIVE_FATAL_NOISES) expect(isFatalNoise(s)).toBe(true);
     expect(isFatalNoise("NOISE_VOID")).toBe(false);
-    expect(isFatalNoise("NOISE_NODE")).toBe(false);
     expect(isFatalNoise("SAFE")).toBe(false);
     expect(isFatalNoise(undefined)).toBe(false);
   });
 
   it("worstNoise は最も重い凶を返し、凶が無ければ null", () => {
-    expect(worstNoise(["NOISE_NODE", "NOISE_GOU", "SAFE"])).toBe("NOISE_GOU");
+    expect(worstNoise(["NOISE_GETSUMEI", "NOISE_GOU", "SAFE"])).toBe(
+      "NOISE_GOU",
+    );
     expect(worstNoise(["NOISE_VOID", "NOISE_HONMEI"])).toBe("NOISE_HONMEI");
     expect(worstNoise(["SAFE", "OPTIMAL"])).toBeNull();
   });
 
   it("優先表に無い凶も名前を保ったまま返す", () => {
     expect(worstNoise(["NOISE_MIKKA", "SAFE"])).toBe("NOISE_MIKKA");
-    expect(worstNoise(["NOISE_MIKKA", "NOISE_NODE"])).toBe("NOISE_NODE");
+    expect(worstNoise(["NOISE_MIKKA", "NOISE_GETSUTEKI"])).toBe(
+      "NOISE_GETSUTEKI",
+    );
   });
 });

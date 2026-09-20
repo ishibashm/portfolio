@@ -151,7 +151,7 @@ describe("段階が無いときのピン（フォールバック）", () => {
   });
 
   it("二次凶は注意（大凶と混ぜない）", () => {
-    for (const s of ["NOISE_VOID", "NOISE_NODE", "NOISE_GETSUMEI", "NOISE_GETSUTEKI"]) {
+    for (const s of ["NOISE_VOID", "NOISE_GETSUMEI", "NOISE_GETSUTEKI"]) {
       expect(bare(s).label, s).toBe("注意");
     }
   });

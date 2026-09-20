@@ -545,14 +545,12 @@ export default function DestinationMapPanel({
                   className={`mt-1 text-[10px] font-mono p-1 border rounded-xl flex items-center justify-between gap-2 ${
                     targetVectorStatus.startsWith("NOISE_VOID")
                       ? "bg-stone-50 border-stone-200 text-stone-600 repeating-linear-gradient-45"
-                      : targetVectorStatus.startsWith("NOISE_NODE")
-                        ? "bg-amber-50 border-amber-200 text-amber-700"
-                        : targetVectorStatus.startsWith("NOISE")
-                          ? "bg-red-500/10 border-red-200 text-red-600"
-                          : targetVectorStatus === "OPTIMAL" ||
-                              targetVectorStatus === "OPTIMAL_REGULAR"
-                            ? "bg-emerald-500/10 border-emerald-200 text-emerald-700"
-                            : "bg-blue-500/10 border-blue-200 text-blue-700"
+                      : targetVectorStatus.startsWith("NOISE")
+                        ? "bg-red-500/10 border-red-200 text-red-600"
+                        : targetVectorStatus === "OPTIMAL" ||
+                            targetVectorStatus === "OPTIMAL_REGULAR"
+                          ? "bg-emerald-500/10 border-emerald-200 text-emerald-700"
+                          : "bg-blue-500/10 border-blue-200 text-blue-700"
                   }`}
                 >
                   <div className="flex items-center gap-2">
@@ -1123,10 +1121,7 @@ export default function DestinationMapPanel({
                             bgClass = isLuckyFilter
                               ? "bg-purple-100/70 text-purple-700"
                               : "bg-purple-600 text-white font-medium";
-                          } else if (
-                            st?.startsWith("NOISE_VOID") ||
-                            st?.startsWith("NOISE_NODE")
-                          ) {
+                          } else if (st?.startsWith("NOISE_VOID")) {
                             bgClass = isLuckyFilter
                               ? "bg-amber-100/70 text-amber-800"
                               : "bg-amber-400 text-amber-950 font-medium";
