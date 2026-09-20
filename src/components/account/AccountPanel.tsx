@@ -208,7 +208,7 @@ export function AccountPanel() {
         </h2>
         <p className="max-w-[70ch] text-xs leading-relaxed text-stone-500">
           {
-            "方位の判定・引越しの試算・物件検索は、すべてこのプロフィールで出しています。"
+            "方位の判定・引越しの試算・街探しは、すべてこのプロフィールで出しています。"
           }
         </p>
         <ProfileProgress completion={completion} />
@@ -229,7 +229,7 @@ export function AccountPanel() {
         ) : (
           <p className="mt-3 text-xs leading-relaxed text-stone-600">
             {
-              "まだ入れていません。入れておくと、シミュレータ・物件検索・時期の分析で同じ場所を打ち直さずに済みます。"
+              "まだ入れていません。入れておくと、シミュレータ・街探し・時期の分析で同じ場所を打ち直さずに済みます。"
             }
           </p>
         )}
@@ -385,7 +385,7 @@ export function AccountPanel() {
                             setCompletion(profileCompletion(settings));
                             setBusyId(null);
                             setSwitchMessage(
-                              `「${preset.name}」を使用中にしました。方位の判定・引越しの試算・物件検索は、このプロフィールで出します。`,
+                              `「${preset.name}」を使用中にしました。方位の判定・引越しの試算・街探しは、このプロフィールで出します。`,
                             );
                           }}
                           className="inline-flex cursor-pointer items-center gap-1 rounded-full bg-emerald-600 px-3 py-1 text-[11px] font-bold text-white transition-colors hover:bg-emerald-700 disabled:cursor-not-allowed disabled:bg-stone-300"
