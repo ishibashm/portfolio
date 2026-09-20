@@ -2,8 +2,14 @@
  * 購入（成約価格）の相場分析。
  *
  * 国交省の不動産情報ライブラリから取り込んだ実際の成約価格を集計して出す。
- * 数字は毎晩 scripts/build_purchase_stats.ts が焼き込む
+ * 数字は scripts/build_purchase_stats.ts が焼き込む
  * （src/data/purchaseStats.json）。**訪問時に DB は叩かない。**
+ *
+ * **集計は毎週**（build-purchase-stats.yml の cron は "10 20 * * 1"＝
+ * 月曜 20:10 UTC）。頁は長いあいだ夜ごとに更新されると書いていた
+ * （2026-09-20 に訂正）。頻度を頁に書き写すと、cron を
+ * 変えたときに片方だけ古くなる。見張りが cron と突き合わせる
+ * （`purchaseStatsCadence`）。
  *
  * ## なぜ表が主役で、グラフ（recharts）を使わないか
  *
@@ -456,7 +462,7 @@ export default function PurchaseAnalyticsPage() {
           </ul>
           <p className="mt-3 leading-relaxed text-stone-600">
             出典:
-            国土交通省の不動産情報ライブラリ（成約価格・地価公示）。数字は毎晩の集計で更新されます。
+            国土交通省の不動産情報ライブラリ（成約価格・地価公示）。数字は毎週の集計で更新されます。
           </p>
         </nav>
       </div>
