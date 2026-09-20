@@ -28,6 +28,7 @@ import { directionLabelShort } from "@/lib/directionLabels";
 import type { KimonScheduleItem } from "@/utils/solarTime";
 import type { Direction, getHonmeiStar } from "../../utils/ephemerisEngine";
 import { getZonedDateTimeFields } from "@/utils/solarTime";
+import { coreRouteLabel } from "@/lib/siteStructure";
 
 /** 8 方位。中央は動く先にならないので出さない。 */
 const DIRS: Direction[] = ["N", "NE", "E", "SE", "S", "SW", "W", "NW"];
@@ -457,7 +458,7 @@ export default function HomePortal({
                 href="/relocation/arbitrage"
                 className="inline-flex min-h-[24px] items-center text-indigo-700 hover:underline"
               >
-                物件を方位で探す →
+                {`${coreRouteLabel("/relocation/arbitrage")} →`}
               </Link>
             </li>
             <li>
@@ -476,7 +477,7 @@ export default function HomePortal({
             </li>
             <li>
               {/*
-                買う側の導線。物件を方位で探す（賃貸）の隣に置く。
+                買う側の導線。方位で街を探す（借りる側）の隣に置く。
                 相場の頁ではなく査定を出すのは、ここに来る人は
                 「見ている物件がある」段階だから。
               */}

@@ -60,7 +60,7 @@ function filesRepeating(label: string): string[] {
 
 describe("道具の名前は CORE_ROUTES が正", () => {
   it("href から名前を引ける", () => {
-    expect(coreRouteLabel("/relocation/arbitrage")).toBe("物件を方位で探す");
+    expect(coreRouteLabel("/relocation/arbitrage")).toBe("方位で街を探す");
     expect(coreRouteLabel("/relocation/simulator")).toBe("引越し先を試算する");
   });
 
@@ -84,7 +84,10 @@ describe("写しを増やさない", () => {
     ここも下げる（下げ忘れると下の検査が落ちる）。
   */
   const BASELINE: Record<string, number> = {
-    物件を方位で探す: 17,
+    /* 2026-09-20 に「物件を方位で探す」から改名し、画面の字面は
+       coreRouteLabel で引く形に寄せた（17 → 2）。残る 2 つはコメント
+       （HomePortal・arbitrage/page の経緯）。 */
+    方位で街を探す: 2,
   };
 
   for (const [label, max] of Object.entries(BASELINE)) {
@@ -109,6 +112,6 @@ describe("写しを増やさない", () => {
 
   it("見張りが空回りしていない（走査できている）", () => {
     expect(allSourceFiles().length).toBeGreaterThan(100);
-    expect(filesRepeating("物件を方位で探す").length).toBeGreaterThan(0);
+    expect(filesRepeating("方位で街を探す").length).toBeGreaterThan(0);
   });
 });

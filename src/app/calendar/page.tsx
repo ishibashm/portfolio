@@ -6,6 +6,7 @@ import { CosmicCalendar } from "@/components/widgets/CosmicCalendar";
 import { Calendar } from "lucide-react";
 import { AuspiciousDayFinder } from "@/components/relocation/AuspiciousDayFinder";
 import { calendarMonths, calendarMonthSlug } from "@/lib/calendarMonths";
+import { coreRouteLabel } from "@/lib/siteStructure";
 
 export default function CalendarPage() {
   return (
@@ -125,7 +126,7 @@ export default function CalendarPage() {
               href="/relocation/arbitrage"
               className="px-5 py-2.5 rounded-full bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold transition-colors"
             >
-              物件を方位で探す
+              {coreRouteLabel("/relocation/arbitrage")}
             </Link>
           </div>
           <p className="mt-4 text-xs text-slate-500 leading-relaxed">
