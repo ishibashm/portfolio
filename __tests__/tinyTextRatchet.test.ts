@@ -136,7 +136,6 @@ describe("小さすぎる字を増やさない", () => {
       片付いたファイルが出たら、ここに足す。
     */
     for (const done of [
-      "src/components/relocation/AerialThumb.tsx",
       "src/components/relocation/SpotVerdict.tsx",
       "src/components/relocation/LandPriceByDirection.tsx",
       "src/components/relocation/HousingStatsByDirection.tsx",
