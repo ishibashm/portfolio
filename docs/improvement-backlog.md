@@ -3313,13 +3313,41 @@ fetch も描画もしない。地図の層は未入力でも `mapCenter`（日�
 - 名前を「方位で街を探す」に（判断 A。URL は据え置き）。`CORE_ROUTES`
   が正で、画面の字面は `coreRouteLabel` で引く形に寄せた
 
-**まだ残っているもの。**読む側が消えた API と lib（`/api/rentals/arbitrage`
-とその timeline・prefecture-counts・viewport-count・rent-histogram・
-parse-query、`lib/arbitrageCounts`・`lib/listingGrid`・`utils/arbitrageHelpers`・
-`AstroGridCalendar`・`AerialThumb`）、ホーム（`SolarTimeClock`）の物件の
-呼び出し、お気に入り（`lib/favorites`・`FavoriteButton`・`FavoritePicker`。
-★ を付ける頁が無くなった）、使い方ガイドの「物件を探す」の章。
-読み手を数えてから 1 つずつ消す。
+### 掃除（読む側が消えた順に消した。2026-09-20）
+
+- #1467 使い方ガイドの「物件を探す」の章を、今の画面の中身に書き直した
+- #1468 `lib/arbitrageCounts`・`listingGrid`・`latestWinsQueue`・`layoutMatch`・
+  `arbitrageRanking`・`AerialThumb`・`FavoriteButton`（単体テスト 6 本も）
+- #1469 画面の文中に残っていた「物件スキャナー」「物件検索」
+- #1470 お気に入り（`FavoritePicker`・`lib/favorites`・`api/favorites`・
+  `api/rentals/by-ids`）。★ を付ける頁が無くなり、選ぶ側は空の一覧しか
+  出せなかった
+- #1471 ホームの総合スコアの「推奨物件」。**ホームを開いた人ごとに
+  1,000 件の走査を DB へ投げていた**（頁を閉じたあとも、この 1 本だけが
+  残っていた）
+- #1472 ホームの目的地の地図の物件ピン（`api/rentals/map`・`lib/mapProperty`）
+- #1473 走査 API 5 本（arbitrage・timeline・prefecture-counts・
+  viewport-count・rent-histogram）とスマート検索（`api/rentals/parse-query`・
+  `utils/smartSearch`）、SQL を組む `utils/arbitrageQuery` /
+  `arbitrageScoring`・`lib/rentalCountFilters`。3,617 行
+
+`api/rentals` に残るのは `webhook`（メールから取り込む口）だけになった。
+
+### 残してあるもの（理由つき）
+
+- **`utils/arbitrageAstro`（物件×日付の採点）と `arbitrageHelpers`・
+  `lib/scoredProperty`・`AstroGridCalendar`。**読む画面は消えたが、
+  **見張り 8 本がこの lib を通して判定の性質を固定している**（八字相性の
+  日干を日本時間で読む・天中殺の設定がスコアに届く・天道が緩める凶の
+  集合・状態 → 点・時間軸の組み合わせ・絞り込みモードと天中殺・真北で
+  採点する・磁北で判定しない）。lib ごと消すと**この見張りも消える**。
+  判定に関わるので、消すかどうかは別に判断する
+- `api/rentals/webhook` … メールから物件を取り込む口。取り込みの経路なので
+  止め方を別に決める
+- 本番 DB の `rental_properties` と `favorite_properties` … 削除は戻せない
+  （6 節）。管理画面の集計が後者を読む
+- 用語辞典の「物件探しで出てくる言葉」（㎡単価・利回り偏差値・近隣相場比・
+  コスパ指数・軸カバー） … 検査が節名を固定している
 
 ## 30. 検索からの入口を増やす（2026-09-16）
 
