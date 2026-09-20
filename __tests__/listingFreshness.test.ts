@@ -199,13 +199,19 @@ describe("静止した数字の断り", () => {
     expect(page).toContain("listingSnapshotNote(stats.asOf)");
   });
 
-  it("市区町村ページが集計日を見て出している", () => {
+  it("市区町村ページはもう掲載の数字を出していない", () => {
+    /*
+      **2026-09-19 に出どころを移した。**掲載から作った中央値と ㎡単価を
+      公開統計（e-Stat）に置き換えたので、凍結の断りも要らなくなった。
+      断りが要るのは**凍結した数字を出している頁だけ**で、出さなくなった
+      頁に残すと「何が古いのか」が分からない文が 1 つ増えるだけになる。
+
+      家賃の出どころそのものは `houiAreaHousingSource` が見張る。
+    */
     const page = readFileSync(
       join(process.cwd(), "src/app/houi/area/[code]/page.tsx"),
       "utf8",
     );
-    expect(page).toContain("listingSnapshotNote(areaAsOf(area))");
-    /* 頁の側で日数を作っていない */
-    expect(page).not.toMatch(/snapshotNote[^\n]*日前/);
+    expect(page).not.toContain("listingSnapshotNote");
   });
 });

@@ -25,7 +25,13 @@ import { prefCodeByName } from "@/lib/prefContent";
 import { metaDescriptionFromIntro } from "@/lib/editorialMeta";
 import { INDEXED_ROBOTS, NOINDEX_ROBOTS } from "@/lib/siteStructure";
 import { CityPortalLinks } from "@/components/portal/CityPortalLinks";
-import { listingSnapshotNote } from "@/lib/listingFreshness";
+import housingStats from "@/data/housingStats.json";
+import {
+  housingFiguresFor,
+  rentDiffPct,
+  type HousingSnapshotData,
+} from "@/lib/housingSnapshot";
+import { ESTAT_API_CREDIT } from "@/lib/estatCredit";
 
 /**
  * 「○○市から見た方位別のエリアと相場」。
@@ -52,6 +58,18 @@ import { listingSnapshotNote } from "@/lib/listingFreshness";
   同じ作りの /blog/[slug] は元から true で、この記録が 1 件も無い。
 */
 export const dynamicParams = true;
+
+/*
+  **素の JSON を型として読むのはここ 1 か所。**`resolveJsonModule` が
+  作る型は 1,235 市区町村ぶんのオブジェクトリテラルで、そのまま持ち回ると
+  tsc が重くなる。読む側は `HousingSnapshotData` だけを見る（#149 の
+  「外部 JSON は読む枝だけ型にして 1 か所に閉じ込める」と同じ扱い）。
+*/
+const HOUSING = housingStats as unknown as HousingSnapshotData;
+
+/** e-Stat の利用規約が求める出典と加工の明記。文言は規約の指定どおり。 */
+const ESTAT_SOURCE =
+  "「統計でみる市区町村のすがた」（総務省）を加工して作成。出典：政府統計の総合窓口(e-Stat)（https://www.e-stat.go.jp/）";
 
 /*
   **事前生成するのは、索引に載せる頁だけ。**残りは要求が来たときに作る。
@@ -173,18 +191,20 @@ export default async function Page({
   const notListed = empty.filter((e) => e.hasWithinRangeMunicipality);
 
   /*
-    掲載から作った数字が凍結していることの断り（2026-09-14）。
+    **相場は掲載（賃貸の巡回）から公開統計へ移した**（利用者の依頼
+    2026-09-19）。巡回は規約に従って止めてあり、掲載から作った中央値と
+    ㎡単価は 2026-09-13 で凍結していた。凍結した数字を出し続けるより、
+    毎年更新される公開統計を出すほうが正しい。
 
-    `areaDirections.json` を焼く `build_area_dataset` は
-    `scrape-rentals.yml` の中にしか無い。巡回を止めた時点で焼き直され
-    なくなったので、**0 件にはならず、その日の値のまま止まっている。**
-    頁は集計日を出しているが、日付だけでは「取り込みが遅れているのかな」
-    としか読めない。
+    出どころは e-Stat「統計でみる市区町村のすがた」Ｈ 居住（表
+    0000020108）。方位別の読み口（/api/housing-stats/by-direction）と
+    同じもので、割り算は `lib/housingSnapshot` に 1 つだけ置いてある。
 
-    日数は出さない（この頁は静的生成なので `new Date()` はビルド時刻に
-    なる。詳しくは `listingSnapshotNote` の註）。
+    **公表値が無い市区町村がある。**1,161 頁のうち行があるのは 1,062、
+    家賃まであるのは 878（2026-09-19 実測）。無い頁は数字を作らず、
+    無いと書く。町村と、2024 年に再編された浜松市の区が欠ける。
   */
-  const snapshotNote = listingSnapshotNote(areaAsOf(area));
+  const figures = housingFiguresFor(HOUSING, area.code);
   /* 150km 以内には無く、どこかにはある＝先にしか無い。掲載の有無を
      問わない母集団（hasAnyMunicipality）で見る */
   const farOnly = empty.filter(
@@ -216,7 +236,7 @@ export default async function Page({
       */}
       <DatasetJsonLd
         name={`${area.full}から見た方位別のエリアと家賃相場`}
-        description={`${area.full}を出発地として、北・北東・東・南東・南・南西・西・北西の八方位ごとに、その方角に位置する市区町村の一覧と、掲載中の賃貸物件から集計した専有面積あたりの家賃相場をまとめたデータ。九星気学の吉方位から引越し先を探すときの判断材料に使う。`}
+        description={`${area.full}を出発地として、北・北東・東・南東・南・南西・西・北西の八方位ごとに、その方角に位置する市区町村の一覧と、住宅・土地統計調査から作った借家の家賃と空き家率をまとめたデータ。九星気学の吉方位から引越し先を探すときの判断材料に使う。`}
         path={path}
         dateModified={areaAsOf(area)}
       />
@@ -260,7 +280,7 @@ export default async function Page({
         </h1>
 
         <p className="mt-5 text-sm leading-relaxed text-slate-700">
-          吉方位が分かっても、その方位に実際どんな街があっていくらなのかが分からないと引越し先は決められません。{area.full}を出発地として、八方位それぞれにある市区町村と家賃相場をまとめました。
+          吉方位が分かっても、その方位に実際どんな街があっていくらなのかが分からないと引越し先は決められません。{area.full}を出発地として、八方位それぞれにある市区町村と、住宅・土地統計調査から作った借家の家賃をまとめました。
         </p>
 
         {/* 固有の文章。書いた市区町村だけが索引に載る（AREA_EDITORIAL）。
@@ -279,48 +299,61 @@ export default async function Page({
         )}
 
         <div className="mt-5 rounded-2xl border border-slate-300 bg-white/90 p-4">
-          <p className="text-xs text-slate-700 leading-relaxed">
-            <b>{area.full}の相場</b>: 専有面積あたり{" "}
-            <b>{area.sqmRent.toLocaleString()}円/㎡</b>、家賃（管理費込み）の中央値 <b>{area.medianRent.toLocaleString()}円</b>
-            。掲載中の {area.count.toLocaleString()} 件から集計しています。以下の増減率はこの値を基準にした差です。
-          </p>
-          {/*
-            日付はファイル全体の generatedAt ではなく、この市区町村の asOf
-            を出す。掲載が閾値に満たない市区町村は前回の数字を引き継いで
-            いる（#533）ので、ファイルの日付だと更新していない相場に
-            今日の日付が付く。
-          */}
-          <p className="mt-2 text-xs text-slate-500">
-            集計日:{" "}
-            {new Date(areaAsOf(area)).toLocaleDateString("ja-JP", {
-              timeZone: "Asia/Tokyo",
-            })}
-            ／ 掲載中の物件は入れ替わるため、最新の相場とは差が出ることがあります。
-          </p>
-          {/* 集計日が古いときは、**もう動かない**ことまで書く。日付だけ
-              では「取り込みが遅れているのかな」としか読めない。巡回を
-              止めたので（backlog 29 節）、この数字は凍結している。
-              再開すれば `asOf` が進んで次のデプロイで消える。 */}
-          {snapshotNote && (
-            <p className="mt-2 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs leading-relaxed text-amber-900">
-              {snapshotNote}
+          {figures && figures.rentPerSqm !== null ? (
+            <p className="text-xs text-slate-700 leading-relaxed">
+              <b>{area.full}の借家</b>: 家賃は 1 ㎡あたり{" "}
+              <b>{figures.rentPerSqm.toLocaleString()}円/月</b>
+              {figures.monthlyRentEstimate !== null && (
+                <>
+                  、1 戸あたりの目安は{" "}
+                  <b>{figures.monthlyRentEstimate.toLocaleString()}円/月</b>
+                </>
+              )}
+              {figures.floorAreaPerRental !== null && (
+                <>（平均 {figures.floorAreaPerRental}㎡）</>
+              )}
+              。以下の増減率はこの 1 ㎡あたりの家賃を基準にした差です。
+            </p>
+          ) : (
+            <p className="text-xs text-slate-700 leading-relaxed">
+              <b>{area.full}の借家</b>:{" "}
+              {figures
+                ? "家賃は、この市区町村では公表されていません。"
+                : "住宅・土地統計調査の市区町村別の集計に、この市区町村の行がありません。"}
+              空き家率や総住宅数は下に出しています。方位ごとの一覧では、公表値のある市区町村だけ家賃が入ります。
             </p>
           )}
+          {figures &&
+            (figures.vacancyRate !== null ||
+              figures.totalDwellings !== null) && (
+              <p className="mt-2 text-xs text-slate-700 leading-relaxed">
+                {figures.vacancyRate !== null && (
+                  <>
+                    空き家率 <b>{(figures.vacancyRate * 100).toFixed(1)}%</b>
+                  </>
+                )}
+                {figures.vacancyRate !== null &&
+                  figures.totalDwellings !== null &&
+                  "、"}
+                {figures.totalDwellings !== null && (
+                  <>
+                    総住宅数 <b>{figures.totalDwellings.toLocaleString()}戸</b>
+                  </>
+                )}
+                。
+              </p>
+            )}
           {/*
-            この数字がどう作られているかへの導線。
-            「◯◯市 家賃相場」で来た人が最初に見るのがこの札で、
-            中央値なのか平均なのか・何件から出したのかが分からないと
-            読みようがない。この頁は noindex（#379）なので、
-            説明そのものは索引に載る記事の側に置いてある。
+            出どころと調査年。**数字そのものより先に、いつの何かを書く。**
+            以前ここに出していた掲載由来の中央値は毎晩動く前提の数字で、
+            巡回を止めた日で凍結していた。住宅・土地統計調査は 5 年ごと
+            なので、次は 2028 年の調査が出たときに year を上げて取り込む。
           */}
-          <p className="mt-1 text-xs text-slate-500">
-            <Link
-              href="/blog/how-we-analyze-the-rental-market"
-              className="font-semibold text-indigo-700 underline"
-            >
-              相場をどう出しているか
-            </Link>
-            ：平均ではなく中央値を使う理由と、割安度の測り方。
+          <p className="mt-2 text-xs text-slate-500 leading-relaxed">
+            {HOUSING.year} 年 住宅・土地統計調査／{ESTAT_SOURCE}
+          </p>
+          <p className="mt-1 text-xs text-slate-500 leading-relaxed">
+            {ESTAT_API_CREDIT}
           </p>
         </div>
 
@@ -456,10 +489,10 @@ export default async function Page({
                           距離
                         </th>
                         <th className="border border-slate-300 p-2 text-right font-bold">
-                          ㎡単価
+                          家賃（円/㎡）
                         </th>
                         <th className="border border-slate-300 p-2 text-right font-bold">
-                          家賃中央値
+                          1戸の目安
                         </th>
                         <th className="border border-slate-300 p-2 text-right font-bold">
                           {area.city}比
@@ -467,39 +500,50 @@ export default async function Page({
                       </tr>
                     </thead>
                     <tbody>
-                      {groups[d].slice(0, 12).map((n) => (
-                        <tr key={n.code}>
-                          <td className="border border-slate-300 p-2">
-                            <Link prefetch={false}
-                              href={`/houi/area/${n.code}`}
-                              className="hover:text-rose-600 font-semibold"
+                      {groups[d].slice(0, 12).map((n) => {
+                        /* 方位ごとの一覧も同じ公開統計から引く。**頁の札と
+                           別の出どころにしない。**公表値の無い市区町村は
+                           「—」。0 と書くと家賃が 0 円に読める。 */
+                        const f = housingFiguresFor(HOUSING, n.code);
+                        const diff = rentDiffPct(figures, f);
+                        return (
+                          <tr key={n.code}>
+                            <td className="border border-slate-300 p-2">
+                              <Link
+                                prefetch={false}
+                                href={`/houi/area/${n.code}`}
+                                className="hover:text-rose-600 font-semibold"
+                              >
+                                {n.full}
+                              </Link>
+                            </td>
+                            <td className="border border-slate-300 p-2 text-right font-mono">
+                              {n.distanceKm}km
+                            </td>
+                            <td className="border border-slate-300 p-2 text-right font-mono">
+                              {f?.rentPerSqm?.toLocaleString() ?? "—"}
+                            </td>
+                            <td className="border border-slate-300 p-2 text-right font-mono">
+                              {f?.monthlyRentEstimate?.toLocaleString() ?? "—"}
+                            </td>
+                            <td
+                              className={`border border-slate-300 p-2 text-right font-mono font-bold ${
+                                diff === null
+                                  ? "text-slate-500"
+                                  : diff < 0
+                                    ? "text-emerald-700"
+                                    : diff > 0
+                                      ? "text-rose-700"
+                                      : "text-slate-500"
+                              }`}
                             >
-                              {n.full}
-                            </Link>
-                          </td>
-                          <td className="border border-slate-300 p-2 text-right font-mono">
-                            {n.distanceKm}km
-                          </td>
-                          <td className="border border-slate-300 p-2 text-right font-mono">
-                            {n.sqmRent.toLocaleString()}
-                          </td>
-                          <td className="border border-slate-300 p-2 text-right font-mono">
-                            {n.medianRent.toLocaleString()}
-                          </td>
-                          <td
-                            className={`border border-slate-300 p-2 text-right font-mono font-bold ${
-                              n.rentDiffPct < 0
-                                ? "text-emerald-700"
-                                : n.rentDiffPct > 0
-                                  ? "text-rose-700"
-                                  : "text-slate-500"
-                            }`}
-                          >
-                            {n.rentDiffPct > 0 ? "+" : ""}
-                            {n.rentDiffPct}%
-                          </td>
-                        </tr>
-                      ))}
+                              {diff === null
+                                ? "—"
+                                : `${diff > 0 ? "+" : ""}${diff}%`}
+                            </td>
+                          </tr>
+                        );
+                      })}
                     </tbody>
                   </table>
                 </div>
@@ -572,7 +616,7 @@ export default async function Page({
               方位は市区町村の<b>中心どうし</b>で計算しています。同じ市の中でも端のほうは方位が変わることがあります。実際の物件で確認してください。
             </li>
             <li>
-              相場は掲載中の物件から集計した平均です。間取りや築年数の構成がエリアごとに違うため、単純比較には限界があります。
+              家賃は住宅・土地統計調査の 1 畳当たり家賃を 1 ㎡あたりに直したものです。間取りや築年数の構成がエリアごとに違うため、単純比較には限界があります。公表値の無い市区町村は「—」で出しています。
             </li>
             <li>
               九星気学は伝統的な考え方であり、科学的に効果が確認されたものではありません。
