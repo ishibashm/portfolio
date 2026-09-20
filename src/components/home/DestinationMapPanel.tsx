@@ -12,7 +12,6 @@
 
 import React from "react";
 import dynamic from "next/dynamic";
-import type { MapProperty } from "@/lib/mapProperty";
 import type { SpaceWeatherData } from "../../utils/spaceWeather";
 import type { GeomagneticData } from "../../utils/geomagnetism";
 import {
@@ -119,13 +118,6 @@ export interface DestinationMapPanelProps {
   spaceWeather: SpaceWeatherData | null;
   ansLoad: number;
   shieldCapacity: number;
-  mapProperties: MapProperty[];
-  showProperties: boolean;
-  setShowProperties: React.Dispatch<React.SetStateAction<boolean>>;
-  showOnlyNewBuild: boolean;
-  setShowOnlyNewBuild: React.Dispatch<React.SetStateAction<boolean>>;
-  propertiesLoading: boolean;
-  propertiesError: string | null;
   hudLayers: {
     terrain: boolean;
     weather: boolean;
@@ -205,13 +197,6 @@ export default function DestinationMapPanel({
   spaceWeather,
   ansLoad,
   shieldCapacity,
-  mapProperties,
-  showProperties,
-  setShowProperties,
-  showOnlyNewBuild,
-  setShowOnlyNewBuild,
-  propertiesLoading,
-  propertiesError,
   hudLayers,
   setHudLayers,
 }: DestinationMapPanelProps) {
@@ -1514,33 +1499,6 @@ export default function DestinationMapPanel({
           </div>
 
           <div className="flex flex-wrap gap-2 self-stretch md:self-auto justify-end">
-            {/* 物件ピンの表示。押した人にだけ取りに行く（公開ホームなので
-                      開いただけの人に 500 件を引かせない）。絞り込みは出して
-                      から出す。空のものを絞り込む選択肢は見せない。 */}
-            <button
-              onClick={() => setShowProperties(!showProperties)}
-              disabled={propertiesLoading}
-              className={`px-3 py-1 text-[10px] font-mono uppercase tracking-widest border rounded transition-colors disabled:opacity-50 ${showProperties ? "bg-blue-500/20 text-blue-700 border-blue-200 hover:bg-blue-500/30" : "bg-zinc-500/20 text-stone-600 border-zinc-500/50 hover:bg-zinc-500/30"}`}
-            >
-              {propertiesLoading
-                ? "物件を読み込み中…"
-                : showProperties
-                  ? `☑ 物件を地図に出す (${mapProperties.length})`
-                  : "☐ 物件を地図に出す"}
-            </button>
-            {showProperties && (
-              <button
-                onClick={() => setShowOnlyNewBuild(!showOnlyNewBuild)}
-                className={`px-3 py-1 text-[10px] font-mono uppercase tracking-widest border rounded transition-colors ${showOnlyNewBuild ? "bg-emerald-500/20 text-emerald-700 border-emerald-200 hover:bg-emerald-500/30" : "bg-zinc-500/20 text-stone-600 border-zinc-500/50 hover:bg-zinc-500/30"}`}
-              >
-                {showOnlyNewBuild ? "☑ 新築のみ表示" : "☐ 全物件表示"}
-              </button>
-            )}
-            {propertiesError && (
-              <span className="px-2 py-1 text-[10px] text-amber-700 bg-amber-50 border border-amber-200 rounded">
-                {propertiesError}
-              </span>
-            )}
             {!useClassicalBoard && (
               <button
                 onClick={() =>
@@ -1648,13 +1606,6 @@ export default function DestinationMapPanel({
           }
           activeLayerMode={activeLayerMode}
           setActiveLayerMode={setActiveLayerMode}
-          properties={
-            !showProperties
-              ? []
-              : showOnlyNewBuild
-                ? mapProperties.filter((p) => p.is_new_build)
-                : mapProperties
-          }
           useTrueNorth={useTrueNorth}
           setUseTrueNorth={setUseTrueNorth}
           targetLat={targetLat}
