@@ -1,4 +1,5 @@
 import type { Settings } from "@/lib/userSettings";
+import { isTenchusatsuMode } from "@/utils/tenchusatsuPolicy";
 
 /**
  * 画面ごとに散っている**生年月日と座標の写し**を、正の設定
@@ -75,6 +76,13 @@ export function clearedFields(settings: Settings): Set<string> {
   return new Set(raw.split(",").filter(Boolean));
 }
 
+/**
+ * 街探しが判定の設定を書いてきた置き場。**1 つの JSON の塊**で、同行者の
+ * 一覧（`lib/partyMemberInput` の `PARTY_PREFS_KEY`）も同じ塊に入っている。
+ * 上の表は「鍵 1 つに値 1 つ」なので、こちらは `liftAxisPrefs` が別に読む。
+ */
+export const AXIS_PREFS_KEY = "arb_axis_prefs_v1";
+
 /** 座標の欄。旧い鍵は文字列だが、正の設定は数値で持つ。 */
 const COORD_FIELDS = new Set([
   "base_lat",
@@ -147,5 +155,61 @@ export function legacyProfilePatch(
       patch[field] = raw;
     }
   }
+  liftAxisPrefs(storage, current, patch, cleared);
   return patch;
+}
+
+/**
+ * 街探しが持っていた**天中殺の扱い**と**転勤などの他動的な移動**を
+ * 引き上げる。上の表と違い、旧い置き場が **1 つの JSON の塊**なので
+ * 「鍵 → 欄」の対では書けない。
+ *
+ * ## なぜ要るか
+ *
+ * 街探しはこの 2 つを `arb_axis_prefs_v1` にだけ書き、時期ツールは正の
+ * 設定（`tenchusatsu_mode` / `involuntary_move`）を読んでいた。**どこも
+ * 正の設定に書いていない**ので、時期ツールは利用者が何を選んでいても
+ * 常に既定（`strict`）で走っていた。画面には「街探しの設定（生年月日・
+ * 出発地・天中殺の扱い）をそのまま使います」と書いてあり、記事にも
+ * 共有だと書いてある。2026-09-20 に判明。
+ *
+ * 引き上げたあとは街探しも正の設定へ書くので、この処理が効くのは
+ * **旧い塊しか持っていない端末の 1 回目**だけ。
+ */
+function liftAxisPrefs(
+  storage: LegacyStorage,
+  current: Settings,
+  patch: Settings,
+  cleared: Set<string>,
+): void {
+  const wantMode =
+    !isSettled(current, "tenchusatsu_mode", cleared) &&
+    patch.tenchusatsu_mode === undefined;
+  const wantInvoluntary =
+    !isSettled(current, "involuntary_move", cleared) &&
+    patch.involuntary_move === undefined;
+  if (!wantMode && !wantInvoluntary) return;
+
+  let parsed: unknown;
+  try {
+    const raw = storage.getItem(AXIS_PREFS_KEY);
+    if (!raw) return;
+    parsed = JSON.parse(raw);
+  } catch {
+    return; /* 読めない・壊れている端末では何もしない */
+  }
+  if (!parsed || typeof parsed !== "object") return;
+  const prefs = parsed as Record<string, unknown>;
+
+  /* 知らない綴りは入れない。時期ツールは読んだ値を検めずに走査へ渡す。 */
+  if (
+    wantMode &&
+    typeof prefs.tenchusatsuMode === "string" &&
+    isTenchusatsuMode(prefs.tenchusatsuMode)
+  ) {
+    patch.tenchusatsu_mode = prefs.tenchusatsuMode;
+  }
+  if (wantInvoluntary && typeof prefs.involuntaryMove === "boolean") {
+    patch.involuntary_move = prefs.involuntaryMove;
+  }
 }
