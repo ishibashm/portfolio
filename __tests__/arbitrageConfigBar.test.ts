@@ -17,8 +17,7 @@ import { describe, expect, it } from "vitest";
  * 記事の側が正しい（公開している仕様）ので、バーを戻して合わせた。
  * 見た目のコミットで機能が落ちるのは静かに起きるので、ここで固定する。
  *
- * ソースを読んで見ている。8,000 行のクライアント component で、
- * 描画して確かめるのが現実的でないため。
+ * ソースを読んで見ている（設定バーは API を叩くので描画して確かめない）。
  */
 
 const read = (...parts: string[]) =>
@@ -41,21 +40,19 @@ describe("物件スキャナーの設定バー", () => {
   });
 
   it("切替がページの state に反映される", () => {
-    expect(PAGE).toContain("setUseClassical(newConfig.useClassicalBoard);");
-    expect(PAGE).toContain("setTargetDate(newConfig.targetDate);");
-    expect(PAGE).toContain(
-      "setDirectionFilterMode(newConfig.directionFilterMode);",
-    );
-    expect(PAGE).toContain("setActionIntent(newConfig.actionIntent);");
+    /* 2026-09-20 の組み替えで state は 1 つの object（patch）になった。
+       目的（actionIntent）は方位ごとの判定（dayKigakuClient）が読まないので
+       この頁は受け取らない。 */
+    expect(PAGE).toContain("useClassical: c.useClassicalBoard,");
+    expect(PAGE).toContain("targetDate: c.targetDate,");
+    expect(PAGE).toContain("directionFilterMode: c.directionFilterMode,");
   });
 
   it("保存済みの設定が無いときは古典で始める", () => {
     // バーの既定も /houi の表も古典。ここだけ独自モデルで始まると、
     // バーがマウント時に古典を押し込んで判定が一瞬で変わる。
-    expect(PAGE).toContain(
-      "const [useClassical, setUseClassical] = useState(true);",
-    );
-    expect(PAGE).toContain("let classical = true;");
+    expect(PAGE).toMatch(/const state: PageState = \{[^}]*useClassical: true,/);
+    expect(PAGE).toContain("state?.useClassical ?? true");
   });
 });
 

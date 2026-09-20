@@ -218,7 +218,9 @@ describe("端末に残る鍵の数え上げ", () => {
   it("数え上げが空回りしていない", () => {
     const keys = storageKeysInSource();
     expect(keys).toContain("tactical_config_v1");
-    expect(keys).toContain("arb_birthDate");
+    /* 旧頁の写し（arb_birthDate）は 2026-09-20 の組み替えで書く側が消えた。
+       消す一覧には残す（古い端末にはまだある）。証人は今も書いている鍵にする */
+    expect(keys).toContain("arb_axis_prefs_v1");
     expect(keys.length).toBeGreaterThan(20);
   });
 
