@@ -50,15 +50,29 @@ export function parseGeocodeSource(raw: unknown): GeocodeSource | null {
  */
 export function geocodePrecisionNote(
   source: GeocodeSource | null,
+  /**
+   * 正確な地点にする手段。その画面に何があるかで変わる。
+   *
+   *   map     地図がある画面（SpotVerdict）。クリックで指し直せる
+   *   coords  地図が無い入力欄（PlaceInput）。緯度経度を直接入れる
+   *
+   * 文言を画面ごとに書き分けると出どころの説明まで割れるので、
+   * 手段の 1 文だけをここで差し替える。
+   */
+  retry: "map" | "coords" = "map",
 ): string | null {
+  const how =
+    retry === "map"
+      ? "地図をクリックすると正確な地点で調べ直せます。"
+      : "緯度経度を直接入れると正確な地点にできます。";
   switch (source) {
     case "gsi":
       /* 番地まで当たっている。言うことは無い */
       return null;
     case "normalize":
-      return "この住所は番地まで特定できませんでした。市の中心あたりを指している可能性があります。地図をクリックすると正確な地点で調べ直せます。";
+      return `この住所は番地まで特定できませんでした。市の中心あたりを指している可能性があります。${how}`;
     case "nominatim":
-      return "おおよその位置です。地図をクリックすると正確な地点で調べ直せます。";
+      return `おおよその位置です。${how}`;
     case "municipality":
       return "貼っていただいた URL から読めるのは市区町村までです。この点は街の代表点で、物件そのものの場所ではありません。";
     default:
