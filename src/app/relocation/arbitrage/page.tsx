@@ -26,6 +26,7 @@ import {
   settingString,
   writeLocalSettings,
 } from "@/lib/userSettings";
+import { savePlacePoint } from "@/lib/placePoint";
 import { nearestMunicipality, nearestPlaceLabel } from "@/lib/nearestPlace";
 import { countByDirection } from "@/lib/directionTowns";
 import { coreRouteLabel } from "@/lib/siteStructure";
@@ -322,9 +323,16 @@ export default function DirectionTownsPage() {
     });
   }, [state, tenchusatsuMode, involuntaryMove]);
 
-  /** 出発地を決める。利用者が入れたときだけ保存に流す。 */
+  /**
+   * 出発地を決める。利用者が入れたときだけ保存に流す。
+   *
+   * **`name` を落とさない。**地名で選んだときの名前を捨てると、前に
+   * 登録した地名が `base_label` に残り、同じ画面の帯が別の街の名前を
+   * 出し続ける（`lib/placePoint` の冒頭に経緯）。名前が無いとき
+   * （現在地ボタン・緯度経度の直接入力）は、向こうで欄ごと消える。
+   */
   const setBase = useCallback(
-    (lat: number, lon: number) => {
+    (lat: number, lon: number, name?: string) => {
       patch({
         baseLat: String(lat),
         baseLon: String(lon),
@@ -332,7 +340,7 @@ export default function DirectionTownsPage() {
         mapFocusKind: "area",
         openOverview: false,
       });
-      void saveSettings({ base_lat: lat, base_lon: lon });
+      void savePlacePoint("base", lat, lon, name);
       window.dispatchEvent(
         new CustomEvent("metaphysical-config-updated", {
           detail: { baseLat: lat, baseLon: lon },
