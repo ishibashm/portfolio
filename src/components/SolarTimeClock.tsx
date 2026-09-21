@@ -1012,49 +1012,13 @@ export const SolarTimeClock = () => {
       }
     }
 
-    // Sync from Relocation Matrix Dashboard if available
-    //
-    // **設定（tactical_config_v1 / クラウド）が読めたときは上書きしない。**
-    // 以前は無条件に wealth_* で上書きしていたので、設定バーで生年月日を
-    // 変えると（そちらは tactical_config_v1 にしか書かない）、この部品が
-    // 再読込のたびに古い wealth_birthDate へ戻し、下の自動保存がその古い
-    // 値を tactical_config_v1 に書き戻していた。本命星・天中殺が設定バーの
-    // 表示と違う人で計算され、他の画面の値まで巻き戻っていた。
-    // wealth_* は設定が 1 つも無い端末（移住先マップだけを使っていた
-    // 旧利用者）の引き継ぎにだけ使う。
-    if (typeof window !== "undefined" && !isLoaded) {
-      const wBirthDate = localStorage.getItem("wealth_birthDate");
-      const wBirthLat = localStorage.getItem("wealth_birthLat");
-      const wBirthLon = localStorage.getItem("wealth_birthLon");
-      const wBaseLat = localStorage.getItem("wealth_baseLat");
-      const wBaseLon = localStorage.getItem("wealth_baseLon");
-
-      if (wBirthDate) {
-        setBirthDate(wBirthDate);
-        setBirthDateOwned(true);
-        isLoaded = true;
-      }
-      if (wBirthLat) {
-        setBirthLat(Number(wBirthLat));
-        setBirthPlaceOwned(true);
-        isLoaded = true;
-      }
-      if (wBirthLon) {
-        setBirthLon(Number(wBirthLon));
-        setBirthPlaceOwned(true);
-        isLoaded = true;
-      }
-      if (wBaseLat) {
-        setLat(Number(wBaseLat));
-        setBasePlaceOwned(true);
-        isLoaded = true;
-      }
-      if (wBaseLon) {
-        setLon(Number(wBaseLon));
-        setBasePlaceOwned(true);
-        isLoaded = true;
-      }
-    }
+    /*
+      旧い写し（wealth_*）はここでは読まない。`loadSettings` が最初に
+      `migrateLegacyProfileKeys` で正の設定へ引き上げるので、上の data に
+      もう入っている。以前ここにあった「設定が 1 つも無い端末だけ wealth_*
+      を読む」経路は、引き上げが入った時点で**通ることのない枝**になって
+      いた（wealth_* があるなら data は空でない）。2026-09-21 に消した。
+    */
 
     setConfigLoaded(true);
     return isLoaded;
@@ -1225,26 +1189,13 @@ export const SolarTimeClock = () => {
       // 見ていたため、ホームで設定した出発地が物件検索に伝わらなかった。
       const { synced } = await saveSettings(configToSave);
 
-      // Sync back to Relocation Matrix Dashboard
-      if (typeof window !== "undefined") {
-        // 旧 wealth_* も同じ。相場マップは tactical_config_v1 に無いとき
-        // ここを読むので、初期値を書くと向こうで「登録済み」になる
-        if (birthDateOwned) localStorage.setItem("wealth_birthDate", birthDate);
-        if (birthPlaceOwned) {
-          localStorage.setItem("wealth_birthLat", birthLat.toString());
-          localStorage.setItem("wealth_birthLon", birthLon.toString());
-        }
-        /* **出発地も旗の内側へ**（2026-09-19）。ここだけ素通しだった。
-           生年月日と出生地は #1100・#1126 で包んだのに、出発地は
-           包み忘れていて、画面の初期値（東京駅 35.6895 / 139.6917）が
-           保存のたびに書かれていた。相場マップは tactical_config_v1 に
-           出発地が無いときこの鍵を読むので、**出発地を入れていない人の
-           地図が東京駅を基準に出ていた。**同じ事故の 4 件目。 */
-        if (basePlaceOwned) {
-          localStorage.setItem("wealth_baseLat", lat.toString());
-          localStorage.setItem("wealth_baseLon", lon.toString());
-        }
-      }
+      /*
+        旧 wealth_* には**もう書かない**（2026-09-21）。読む側は全部
+        `readSettingsSync` / `loadSettings` に寄せてあり、旧い鍵は引き上げ
+        （lib/legacyProfileKeys）が 1 回読むだけ。ここに書き続けると、
+        同じ値が 2 か所にある状態が新しい端末でも再生産される。#1100・
+        #1126・2026-09-19 の事故は全部「写しが増えたこと」が原因だった。
+      */
 
       alert(
         synced
