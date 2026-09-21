@@ -100,12 +100,37 @@ function apiResponse(url: string) {
 let container: HTMLDivElement;
 let root: ReturnType<typeof createRoot>;
 
+/**
+ * 描いて、**走査を 1 回走らせる**ところまで。
+ *
+ * 2026-09-21 から走査はボタンで始まる（利用者の依頼）。ここの試験は
+ * 走査の結果に出るもの（同行者の帯・全員で動ける日）を見ているので、
+ * 開いただけでは何も出ない。押すところまでを「描いた状態」とする。
+ * **押さずに何が出るか**は timingScanFollowsSettings が見ている。
+ */
 async function render() {
   container = document.createElement("div");
   document.body.appendChild(container);
   root = createRoot(container);
   await act(async () => {
     root.render(<TimingAnalyticsPage />);
+  });
+  for (let i = 0; i < 4; i++) {
+    await act(async () => {
+      await Promise.resolve();
+    });
+  }
+  await startScan();
+}
+
+/** 「走査を始める」を押して、応答が返るまで進める。 */
+async function startScan() {
+  const button = [...container.querySelectorAll("button")].find((b) =>
+    /走査を始める|この範囲で走査$/.test(b.textContent ?? ""),
+  );
+  if (!button) throw new Error("走査のボタンが見つからない");
+  await act(async () => {
+    button.click();
   });
   for (let i = 0; i < 4; i++) {
     await act(async () => {

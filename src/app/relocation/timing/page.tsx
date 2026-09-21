@@ -211,7 +211,10 @@ function Section({
   );
 }
 
-/** API に渡す判定の入力を 1 本の文字列にする。これが変わったら走査し直す。 */
+/**
+ * API に渡す判定の入力を 1 本の文字列にする。**走査済みの結果が古く
+ * なったか**を見るのに使う（下の `scanKey`）。
+ */
 function scanInputsOf(s: {
   birthDate: string;
   baseLon: string;
@@ -405,8 +408,13 @@ export default function TimingAnalyticsPage() {
     .filter(Boolean)
     .join("と");
 
-  /** 直近の走査に使った入力。走らせる前に記録する。 */
-  const scannedInputs = useRef<string | null>(null);
+  /**
+   * 直近の走査に使った入力（判定の設定 + 走査範囲）。走らせる前に記録する。
+   *
+   * **ref ではなく state。**変わったことを画面に出す（「設定が変わりました」）
+   * ので、書き換えたときに描き直しが要る。
+   */
+  const [scannedKey, setScannedKey] = useState<string | null>(null);
 
   const runScan = useCallback(async () => {
     if (!settings?.baseLon || !settings?.birthDate) {
@@ -415,7 +423,7 @@ export default function TimingAnalyticsPage() {
       );
       return;
     }
-    scannedInputs.current = scanInputsOf(settings);
+    setScannedKey(`${scanInputsOf(settings)}|${pastMonths}|${futureMonths}`);
     setBusy(true);
     setError(null);
     try {
@@ -463,24 +471,25 @@ export default function TimingAnalyticsPage() {
   }, [settings, pastMonths, futureMonths, partyMembers]);
 
   /*
-    設定が読めたら自動で走らせる。このページは分析が主役なので、ボタンを
-    押させてから待たせる理由がない。
+    **走査は押したときだけ始める**（利用者の依頼、2026-09-21）。
 
-    **走らせた設定と今の設定が違えば、もう一度走らせる。**以前は
-    `days === null` のときしか走らせなかったので、最初の走査が返る前に
-    クラウドの設定（別の判定モード）が届くと、走査は古い設定のまま・
-    select だけが新しい設定、という食い違いで止まっていた（利用者報告
-    2026-09-19）。走査中は始めず、終わってから比べ直す。同時に 2 本
-    走らせないので、古い応答が新しい応答を上書きする経路も無い。
+    以前は設定が読めた時点で自動で走り、設定が変わるたびに走り直していた。
+    2 年ぶん・同行者ぶんを毎回数えるので、開いただけで待たされる。見たい
+    範囲を決めてから押すほうが、待つ理由が本人に分かる。
 
-    比べるのは**入力**だけで、結果の有無（days）は見ない。失敗した走査を
-    同じ入力で繰り返すと止まらなくなる（見張りで実際に起きた）。
+    自動で走らせていたころの食い違い（走査は composite のまま・select だけ
+    新しい判定モード。利用者報告 2026-09-19）は、**押した時点の設定で走る**
+    ので起きない。代わりに「走らせたあとに設定が変わった」ことは起こるので、
+    下の `scanStale` で出して押し直してもらう。
+
+    比べるのは**入力**だけで、結果の有無（days）は見ない。
   */
-  useEffect(() => {
-    if (!settings?.baseLon || !settings?.birthDate || busy) return;
-    if (scanInputsOf(settings) !== scannedInputs.current) runScan();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [settings, busy]);
+  /** いまの画面で走らせるなら、どの入力になるか。 */
+  const scanKey = settings
+    ? `${scanInputsOf(settings)}|${pastMonths}|${futureMonths}`
+    : null;
+  /** 出ている結果が、いまの設定・範囲と食い違っているか。 */
+  const scanStale = days !== null && scanKey !== null && scanKey !== scannedKey;
 
   const todayIso = iso(new Date());
 
@@ -1021,10 +1030,10 @@ export default function TimingAnalyticsPage() {
             </label>
             <button
               onClick={runScan}
-              disabled={busy}
+              disabled={busy || !canScan}
               className="rounded-xl bg-indigo-600 px-4 py-2 text-xs font-bold text-white transition-colors hover:bg-indigo-700 disabled:bg-stone-300"
             >
-              {busy ? "走査中…" : "この範囲で走査"}
+              {busy ? "走査中…" : days ? "この範囲で走査" : "走査を始める"}
             </button>
             {profile && (
               <span className="text-[10px] text-stone-600">
@@ -1034,6 +1043,18 @@ export default function TimingAnalyticsPage() {
               </span>
             )}
           </div>
+          {/* 走らせたあとに範囲や判定の設定を変えた人へ。**結果は消さない** —
+              消すと、何と比べて変わったのかが分からなくなる。 */}
+          {scanStale && (
+            <p
+              role="status"
+              className="mt-2 rounded-xl border border-amber-200 bg-amber-50 p-2.5 text-xs leading-relaxed text-amber-900"
+            >
+              走査したあとで設定か範囲を変えました。下に出ているのは
+              <b>前の条件</b>
+              の結果です。「この範囲で走査」を押すと出し直します。
+            </p>
+          )}
           <p className="mt-2 text-xs leading-relaxed text-stone-600">
             {modeInfo(settings?.directionFilterMode ?? "composite").hint}
           </p>
@@ -2236,6 +2257,28 @@ export default function TimingAnalyticsPage() {
         {!days && !busy && !error && !settings && (
           <div className="rounded-3xl border border-stone-200 bg-white p-8 text-center text-xs text-stone-500">
             設定を読み込んでいます…
+          </div>
+        )}
+
+        {/*
+          設定は揃っているが、まだ走らせていない。**開いただけでは走らせない**
+          ので（利用者の依頼、2026-09-21）、ここで押してもらう。上の「走査を
+          始める」と同じ引き金で、範囲も上で決まっているものを使う。
+        */}
+        {!days && !busy && !error && settings && canScan && (
+          <div className="rounded-3xl border border-stone-200 bg-white p-8 text-center">
+            <p className="text-sm font-bold text-stone-700">
+              走査を始めると、日ごと・方位ごとの吉凶が出ます
+            </p>
+            <p className="mx-auto mt-2 max-w-md text-xs leading-relaxed text-stone-500">
+              {`上で決めた範囲（過去 ${pastMonths}か月・未来 ${futureMonths}か月）を 1 日ずつ数えます。同行者を足してあれば、同じ範囲でその人たちぶんも数えます。`}
+            </p>
+            <button
+              onClick={runScan}
+              className="mt-4 inline-block rounded-full bg-indigo-600 px-5 py-2 text-xs font-bold text-white transition-colors hover:bg-indigo-700"
+            >
+              走査を始める
+            </button>
           </div>
         )}
 
