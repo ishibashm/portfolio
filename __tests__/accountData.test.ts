@@ -230,10 +230,27 @@ describe("端末に残る鍵の数え上げ", () => {
     const personal = storageKeysInSource().filter((k) =>
       /birth|baseLat|baseLon/i.test(k),
     );
-    expect(personal.length).toBeGreaterThan(0);
     for (const key of personal) {
       expect(ACCOUNT_LOCAL_KEYS, key).toContain(key);
     }
+    /*
+      2026-09-21 に画面側の書き手を全部消したので、ここは 0 件になった。
+      **一覧からは外さない** — 古い端末にはまだ入っていて、「すべて消す」
+      で消えなければならない。空回りの検査は一覧の側で行う。
+    */
+    const ledger = ACCOUNT_LOCAL_KEYS.filter((k) =>
+      /birth|baseLat|baseLon/i.test(k),
+    );
+    expect(ledger).toEqual([
+      "arb_birthDate",
+      "arb_baseLat",
+      "arb_baseLon",
+      "wealth_birthDate",
+      "wealth_birthLat",
+      "wealth_birthLon",
+      "wealth_baseLat",
+      "wealth_baseLon",
+    ]);
   });
 
   it("計測の停止は消さない（消すと黙って再開する）", () => {

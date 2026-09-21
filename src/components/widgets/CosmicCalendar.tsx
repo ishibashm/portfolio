@@ -283,7 +283,8 @@ function getActionableAdvice(day: DayData): string {
 // separate instances), so edits are broadcast instead of only living in state.
 const BIRTH_CONFIG_EVENT = "cosmic-birth-config";
 
-type BirthConfigKey = "wealth_birthDate" | "wealth_birthLon";
+/** 直せる欄。正の設定（tactical_config_v1）の欄名をそのまま使う。 */
+type BirthConfigKey = "birth_date" | "birth_lon";
 
 /**
  * 生年月日と出生地の経度を読む。**設定（tactical_config_v1）が正。**
@@ -309,15 +310,18 @@ export function readBirthConfig(): { birthDate: string; birthLon: string } {
 
 /**
  * 欄で直した値を保存する。設定（tactical_config_v1 とクラウド）へ書き、
- * 旧キーにも書いて、同じ頁の他の暦にも知らせる。
+ * 同じ頁の他の暦にも知らせる。
  * 空や数値でない値は設定には書かない（消す操作はプロフィールで行う）。
+ *
+ * 旧キー（wealth_birthDate / wealth_birthLon）には**もう書かない**
+ * （2026-09-21）。読む側は上の readBirthConfig が引き上げ経由で読むので、
+ * 書き続けると同じ値が 2 か所にある状態を新しい端末でも再生産する。
  */
 export function persistBirthConfig(key: BirthConfigKey, value: string) {
   if (typeof window === "undefined") return;
-  localStorage.setItem(key, value);
-  if (key === "wealth_birthDate" && value) {
+  if (key === "birth_date" && value) {
     void saveSettings({ birth_date: value });
-  } else if (key === "wealth_birthLon") {
+  } else if (key === "birth_lon") {
     const n = Number(value);
     if (value !== "" && Number.isFinite(n)) void saveSettings({ birth_lon: n });
   }
@@ -408,8 +412,8 @@ export function CosmicCalendar({
       const { key, value } = (
         event as CustomEvent<{ key: BirthConfigKey; value: string }>
       ).detail;
-      if (key === "wealth_birthDate") setBirthDate(value);
-      if (key === "wealth_birthLon") setBirthLon(value);
+      if (key === "birth_date") setBirthDate(value);
+      if (key === "birth_lon") setBirthLon(value);
     };
     window.addEventListener(BIRTH_CONFIG_EVENT, handler);
     return () => window.removeEventListener(BIRTH_CONFIG_EVENT, handler);
@@ -876,7 +880,7 @@ export function CosmicCalendar({
                     onChange={(e) => {
                       const val = e.target.value;
                       setBirthDate(val);
-                      persistBirthConfig("wealth_birthDate", val);
+                      persistBirthConfig("birth_date", val);
                     }}
                     className="w-full bg-white/70 border border-stone-200/80 rounded px-2 py-1 text-stone-900 text-[11px] focus:outline-none focus:border-emerald-200"
                   />
@@ -892,7 +896,7 @@ export function CosmicCalendar({
                     onChange={(e) => {
                       const val = e.target.value;
                       setBirthLon(val);
-                      persistBirthConfig("wealth_birthLon", val);
+                      persistBirthConfig("birth_lon", val);
                     }}
                     className="w-full bg-white/70 border border-stone-200/80 rounded px-2 py-1 text-stone-900 text-[11px] focus:outline-none focus:border-emerald-200"
                     placeholder="139.6917"

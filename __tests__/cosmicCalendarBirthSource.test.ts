@@ -73,11 +73,11 @@ describe("CosmicCalendar の生年月日の読み書き", () => {
   });
 
   it("直した生年月日は設定（端末とクラウド）に書かれる", () => {
-    persistBirthConfig("wealth_birthDate", "1990-05-15T12:00");
+    persistBirthConfig("birth_date", "1990-05-15T12:00");
     const saved = JSON.parse(localStorage.getItem(SETTINGS_KEY) ?? "{}");
     expect(saved.birth_date).toBe("1990-05-15T12:00");
-    // 旧キーも残す
-    expect(localStorage.getItem("wealth_birthDate")).toBe("1990-05-15T12:00");
+    /* 旧キーには書かない（2026-09-21）。写しを再生産しない */
+    expect(localStorage.getItem("wealth_birthDate")).toBeNull();
     const call = (fetch as unknown as ReturnType<typeof vi.fn>).mock.calls[0];
     expect(call[0]).toBe("/api/user-config");
     expect(JSON.parse(call[1].body)).toEqual({
@@ -86,12 +86,12 @@ describe("CosmicCalendar の生年月日の読み書き", () => {
   });
 
   it("経度は数値として設定に書き、数値でなければ設定には書かない", () => {
-    persistBirthConfig("wealth_birthLon", "135.5");
+    persistBirthConfig("birth_lon", "135.5");
     expect(
       JSON.parse(localStorage.getItem(SETTINGS_KEY) ?? "{}").birth_lon,
     ).toBe(135.5);
     localStorage.removeItem(SETTINGS_KEY);
-    persistBirthConfig("wealth_birthLon", "abc");
+    persistBirthConfig("birth_lon", "abc");
     expect(localStorage.getItem(SETTINGS_KEY)).toBeNull();
   });
 
@@ -100,7 +100,7 @@ describe("CosmicCalendar の生年月日の読み書き", () => {
       SETTINGS_KEY,
       JSON.stringify({ birth_date: "1990-05-15T12:00" }),
     );
-    persistBirthConfig("wealth_birthDate", "");
+    persistBirthConfig("birth_date", "");
     expect(
       JSON.parse(localStorage.getItem(SETTINGS_KEY) ?? "{}").birth_date,
     ).toBe("1990-05-15T12:00");
