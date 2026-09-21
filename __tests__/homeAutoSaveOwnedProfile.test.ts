@@ -105,15 +105,16 @@ describe("ホームの自動保存", () => {
     for (const key of GUARDED) expect(text, key).toContain(key);
   });
 
-  it("旗を立てる所がそろっている（読み込み・引き継ぎ・入力）", () => {
+  it("旗を立てる所がそろっている（読み込み・入力）", () => {
     const src = readFileSync(join(process.cwd(), SOURCE), "utf8");
-    /* 保存値を読んだとき / 旧 wealth_* から引き継いだとき / 欄を直したとき */
+    /* 保存値を読んだとき / 欄を直したとき。旧 wealth_* からの引き継ぎは
+       2026-09-21 に消した（loadSettings の引き上げが同じ役を担う）。 */
     expect(
       src.match(/setBirthDateOwned\(true\)/g)?.length ?? 0,
-    ).toBeGreaterThanOrEqual(3);
+    ).toBeGreaterThanOrEqual(2);
     expect(
       src.match(/setBirthPlaceOwned\(true\)/g)?.length ?? 0,
-    ).toBeGreaterThanOrEqual(3);
+    ).toBeGreaterThanOrEqual(2);
   });
 });
 
@@ -152,15 +153,15 @@ describe("ホームの手動保存", () => {
     for (const key of GUARDED) expect(text, key).toContain(key);
   });
 
-  it("旧 wealth_birthDate / wealth_birthLat も無条件には書かない", () => {
+  it("旧 wealth_* の写しは読みも書きもしない", () => {
+    /*
+      以前は「利用者の値のときだけ書く」だった。2026-09-21 に書くのを
+      やめた。読む側は loadSettings（引き上げ込み）だけ。
+      wealth_presets（控え）は別の話なので、鍵を名指しで見る。
+    */
     const src = readFileSync(join(process.cwd(), SOURCE), "utf8");
-    expect(src).not.toMatch(/^\s*localStorage\.setItem\("wealth_birthDate"/m);
-    expect(src).toMatch(
-      /if \(birthDateOwned\) localStorage\.setItem\("wealth_birthDate"/,
-    );
-    expect(src).toMatch(
-      /if \(birthPlaceOwned\) \{\s*localStorage\.setItem\("wealth_birthLat"/,
-    );
+    const legacy = /"wealth_(birthDate|birthLat|birthLon|baseLat|baseLon)"/;
+    expect(src).not.toMatch(legacy);
   });
 });
 
@@ -211,30 +212,25 @@ describe("相場マップの保存", () => {
  * 上の 2 つは保存に渡す object literal（`partialConfig` /
  * `configToSave`）を見ている。だが `SolarTimeClock` は保存のあとで、
  * 旧 `wealth_*` の鍵へ **localStorage.setItem を直に呼んで**同じ値を
- * 写している。そちらは object literal ではないので、上の検査に
- * 掛からない。
+ * 写していた。そちらは object literal ではないので、上の検査に
+ * 掛からない。生年月日と出生地は旗で包まれていたのに、**出発地だけ
+ * 素通しで書かれていた**（#1100・#1114・#1126 と同じ事故の 4 件目）。
  *
- * 実際、生年月日と出生地は旗で包まれていたのに、**出発地だけ素通しで
- * 書かれていた。**相場マップは `tactical_config_v1` に出発地が無いとき
- * この鍵を読むので、出発地を入れていない人の地図が画面の初期値
- * （東京駅 35.6895 / 139.6917）を基準に出ていた。#1100・#1114・#1126 と
- * 同じ事故の 4 件目。
- *
- * ここでは**呼び出しが旗の `if` の内側にあるか**を構文木で見る。
- * 字面だと、この説明の中の「basePlaceOwned」を拾ってしまう。
+ * 2026-09-21 に**書くのをやめた。**旗で包むより、写しそのものを
+ * 無くすほうが穴が残らない。ここでは `setItem` の呼び出しを構文木で
+ * 集めて、旧い鍵への書き込みが 1 つも無いことを見る。
  */
 describe("旧 wealth_* への直接の書き込み", () => {
-  /** 鍵 → その値を書いてよい条件の旗。 */
-  const FLAG_FOR: Record<string, string> = {
-    wealth_birthDate: "birthDateOwned",
-    wealth_birthLat: "birthPlaceOwned",
-    wealth_birthLon: "birthPlaceOwned",
-    wealth_baseLat: "basePlaceOwned",
-    wealth_baseLon: "basePlaceOwned",
-  };
+  const LEGACY = new Set([
+    "wealth_birthDate",
+    "wealth_birthLat",
+    "wealth_birthLon",
+    "wealth_baseLat",
+    "wealth_baseLon",
+  ]);
 
   /** `localStorage.setItem("<key>", …)` の呼び出しを全部拾う。 */
-  function setItemCalls(source: string): { key: string; node: ts.Node }[] {
+  function setItemKeys(source: string): string[] {
     const path = join(process.cwd(), source);
     const sf = ts.createSourceFile(
       path,
@@ -242,7 +238,7 @@ describe("旧 wealth_* への直接の書き込み", () => {
       ts.ScriptTarget.Latest,
       true,
     );
-    const out: { key: string; node: ts.Node }[] = [];
+    const out: string[] = [];
     const visit = (node: ts.Node) => {
       if (
         ts.isCallExpression(node) &&
@@ -251,7 +247,7 @@ describe("旧 wealth_* への直接の書き込み", () => {
         node.arguments.length > 0 &&
         ts.isStringLiteral(node.arguments[0])
       ) {
-        out.push({ key: node.arguments[0].text, node });
+        out.push(node.arguments[0].text);
       }
       ts.forEachChild(node, visit);
     };
@@ -259,34 +255,12 @@ describe("旧 wealth_* への直接の書き込み", () => {
     return out;
   }
 
-  /** その呼び出しを囲む if の条件を、根まで辿って連結する。 */
-  function enclosingConditions(node: ts.Node): string {
-    const parts: string[] = [];
-    let cur: ts.Node | undefined = node.parent;
-    while (cur) {
-      if (ts.isIfStatement(cur)) parts.push(cur.expression.getText());
-      cur = cur.parent;
-    }
-    return parts.join(" && ");
-  }
-
-  const calls = setItemCalls(SOURCE);
-
   it("見張りが空回りしていない（書き込みを読めている）", () => {
-    const keys = calls.map((c) => c.key);
-    for (const key of Object.keys(FLAG_FOR)) {
-      expect(keys, `${key} への書き込みが見つからない`).toContain(key);
-    }
+    /* 画面の状態（タブ）は今も直に書いている。それが拾えていれば読めている */
+    expect(setItemKeys(SOURCE)).toContain("stc_activeTab");
   });
 
-  it("個人の値は、利用者が入れたときだけ書く", () => {
-    for (const { key, node } of calls) {
-      const flag = FLAG_FOR[key];
-      if (!flag) continue;
-      expect(
-        enclosingConditions(node),
-        `${key} を ${flag} の外で書いている（画面の初期値が入る）`,
-      ).toContain(flag);
-    }
+  it("ホームの時計は旧い鍵に書かない", () => {
+    expect(setItemKeys(SOURCE).filter((k) => LEGACY.has(k))).toEqual([]);
   });
 });
