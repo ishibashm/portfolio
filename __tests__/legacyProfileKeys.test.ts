@@ -1,3 +1,5 @@
+import { readdirSync, readFileSync } from "node:fs";
+import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import {
   LEGACY_PROFILE_KEYS,
@@ -146,5 +148,55 @@ describe("畳む対象と、消す対象がそろっている", () => {
       "birth_lat",
       "birth_lon",
     ]);
+  });
+});
+
+/**
+ * 旧い鍵は、**引き上げ**（この lib）と**「すべて消す」**（accountData）の
+ * 2 か所にしか出てこないこと。
+ *
+ * 2026-09-21 までは、ホームの時計・相場マップ・暦がまだ wealth_* に
+ * 書いていた。読む側は全部 readSettingsSync に寄せてあったので、書く
+ * ほうだけが残って**同じ値が 2 か所にある状態を新しい端末でも再生産**
+ * していた。#1100・#1126・2026-09-19 の事故はどれも写しが原因。
+ *
+ * 引用符つきの綴りだけを見る（経緯を書いたコメントは当たらない）。
+ */
+describe("旧い鍵を直に触る画面が無い", () => {
+  const ALLOWED = new Set([
+    "src/lib/legacyProfileKeys.ts",
+    "src/lib/accountData.ts",
+  ]);
+  const LITERAL =
+    /"(arb_birthDate|arb_baseLat|arb_baseLon|wealth_birthDate|wealth_birthLat|wealth_birthLon|wealth_baseLat|wealth_baseLon)"/;
+
+  function walk(dir: string): string[] {
+    const out: string[] = [];
+    for (const e of readdirSync(join(process.cwd(), dir), {
+      withFileTypes: true,
+    })) {
+      const rel = `${dir}/${e.name}`;
+      if (e.isDirectory()) out.push(...walk(rel));
+      else if (/\.tsx?$/.test(e.name)) out.push(rel);
+    }
+    return out;
+  }
+
+  it("src の中で旧い鍵の綴りを持つのは 2 ファイルだけ", () => {
+    const offenders = walk("src").filter(
+      (f) =>
+        !ALLOWED.has(f) &&
+        LITERAL.test(readFileSync(join(process.cwd(), f), "utf8")),
+    );
+    expect(offenders).toEqual([]);
+  });
+
+  it("空回りしていない（許した 2 ファイルには綴りがある）", () => {
+    for (const f of ALLOWED) {
+      expect(
+        LITERAL.test(readFileSync(join(process.cwd(), f), "utf8")),
+        f,
+      ).toBe(true);
+    }
   });
 });
