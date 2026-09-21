@@ -93,10 +93,31 @@ describe("方位で街を探す頁の既定値", () => {
 
   it("出発地は利用者が入れたときだけ保存に流す", () => {
     /* 画面の初期値を保存に流さない（CLAUDE.md 3 節。#1100・#1114・#1126）。
-       base_lat / base_lon を書くのは setBase（PlaceInput・現在地）の中だけ。 */
-    const writes = src.match(/saveSettings\(\{ base_lat/g) ?? [];
+       出発地を書くのは setBase（PlaceInput・現在地）の中だけ。 */
+    const writes = src.match(/savePlacePoint\("base"/g) ?? [];
     expect(writes).toHaveLength(1);
     expect(src).toContain("const setBase = useCallback(");
+  });
+
+  it("座標を直に書かない（地名が置き去りになる）", () => {
+    /*
+      以前はここが `saveSettings({ base_lat, base_lon })` だった。座標だけ
+      書くと、前に登録した地名（`base_label`）がそのまま残り、**同じ画面の
+      帯が別の街の名前を出し続ける**（`lib/placePoint` の冒頭に経緯）。
+      名前ごと扱う口を通すこと。
+    */
+    expect(src).not.toMatch(/saveSettings\(\{\s*base_l(at|on)/);
+    expect(src).toContain('savePlacePoint("base", lat, lon, name)');
+  });
+
+  it("setBase が地名を受け取る（第 3 引数を落とさない）", () => {
+    /*
+      `PlaceInput` の props は `onChange(lat, lon, name?)`。name を受け口に
+      書いていないと、型は通るのに地名だけ静かに捨てられる。
+    */
+    expect(src).toMatch(
+      /const setBase = useCallback\(\s*\(lat: number, lon: number, name\?: string\) =>/,
+    );
   });
 
   it("走査が無効な理由に生年月日が入っている（移管先の時期分析）", () => {
