@@ -320,11 +320,12 @@ export default function RegionalWealthPage() {
 
     // Save to localStorage & POST to user-config for global sync
     if (typeof window !== "undefined") {
-      localStorage.setItem("wealth_birthDate", currentBirthDate);
-      localStorage.setItem("wealth_birthLat", currentBirthLat);
-      localStorage.setItem("wealth_birthLon", currentBirthLon);
-      localStorage.setItem("wealth_baseLat", currentBaseLat);
-      localStorage.setItem("wealth_baseLon", currentBaseLon);
+      /*
+        旧 wealth_* にはもう書かない（2026-09-21）。この頁も含めて読む側は
+        `readSettingsSync` に寄せてあり、旧い鍵は引き上げが 1 回読むだけ。
+        ここは空文字まで素通しで書いていた（座標が未入力でも "" を書く）
+        ので、消して困る読み手はいない。
+      */
 
       const partialConfig = {
         /*
