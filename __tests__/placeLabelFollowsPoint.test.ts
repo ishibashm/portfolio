@@ -1,3 +1,5 @@
+import { readdirSync, readFileSync } from "node:fs";
+import { join } from "node:path";
 import { describe, it, expect, beforeEach, vi, afterEach } from "vitest";
 import { savePlacePoint, writePlaceLabel } from "@/lib/placePoint";
 import { describePlace } from "@/lib/placeLabel";
@@ -137,5 +139,82 @@ describe("地名は座標に付いてくる", () => {
       localStorage.getItem(SETTINGS_KEY) ?? "{}",
     );
     expect(raw._savedAt).toBeUndefined();
+  });
+});
+
+/**
+ * 地名を受け取る口が、どの画面にも付いていること。
+ *
+ * **`name` は省略できる引数なので、書き忘れても型は通る。**
+ * `onChange={(lat, lon) => …}` は `(lat, lon, name?) => void` にそのまま
+ * 代入できるし、`onChange={setBase}` も同じ。tsc は何も言わない。
+ * 実際それで 3 か所が地名を捨てていた（2026-09-21）。だから字面で見張る。
+ */
+describe("PlaceInput の地名を落とさない", () => {
+  /** 設定の座標（base_* / birth_*）を書く画面。ここは name が要る。 */
+  const WRITERS = [
+    "src/app/relocation/arbitrage/page.tsx",
+    "src/components/layout/MetaphysicalConfigBar.tsx",
+    "src/components/home/QuickProfileBar.tsx",
+    "src/components/profile/ProfileForm.tsx",
+  ];
+
+  /**
+   * 設定の `base_label` / `birth_label` を持たない画面。地名を捨てても
+   * 誰かの登録内容とは食い違わない。
+   */
+  const NOT_WRITERS: Record<string, string> = {
+    "src/components/relocation/PartyMembersEditor.tsx":
+      "同行者の座標。設定の base_*/birth_* ではない",
+    "src/app/relocation/appraisal/AppraisalForm.tsx":
+      "査定の入力。設定に書かない",
+    "src/components/home/DestinationMapPanel.tsx":
+      "引越し先。destinationSetting が自分で地名を持つ",
+  };
+
+  function read(rel: string): string {
+    return readFileSync(join(process.cwd(), rel), "utf8")
+      .split("\r\n")
+      .join("\n");
+  }
+
+  it("見ている画面が実在する（空回りしていない）", () => {
+    for (const rel of [...WRITERS, ...Object.keys(NOT_WRITERS)]) {
+      expect(read(rel), rel).toContain("<PlaceInput");
+    }
+  });
+
+  /** src の下の .tsx を全部。`node:fs` の glob は型に無いので自分で歩く。 */
+  function tsxFiles(dir: string): string[] {
+    const out: string[] = [];
+    for (const e of readdirSync(join(process.cwd(), dir), {
+      withFileTypes: true,
+    })) {
+      const rel = `${dir}/${e.name}`;
+      if (e.isDirectory()) out.push(...tsxFiles(rel));
+      else if (e.name.endsWith(".tsx")) out.push(rel);
+    }
+    return out;
+  }
+
+  it("PlaceInput を置く画面が増えたら、ここに足す", () => {
+    /*
+      新しい画面が地名を捨てていないかは、人が決めるしかない（設定に
+      書くのかどうかで変わる）。**数が合わなくなったら気付ける**ように
+      しておく。
+    */
+    const found = tsxFiles("src").filter((f) =>
+      read(f).includes("<PlaceInput"),
+    );
+    expect(found.sort()).toEqual(
+      [...WRITERS, ...Object.keys(NOT_WRITERS)].sort(),
+    );
+  });
+
+  it.each(WRITERS)("%s の onChange が name を受け取る", (rel) => {
+    const src = read(rel);
+    /* PlaceInput の onChange から、地名を捨てている書き方が消えていること */
+    expect(src).not.toMatch(/onChange=\{\(\s*\w+,\s*\w+\s*\)\s*=>/);
+    expect(src).toMatch(/\bname\b/);
   });
 });

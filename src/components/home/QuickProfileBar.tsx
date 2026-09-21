@@ -30,8 +30,10 @@ import { PlaceInput } from "@/components/relocation/PlaceInput";
 import {
   readLocalSettings,
   saveSettings,
+  settingString,
   type Settings,
 } from "@/lib/userSettings";
+import { writePlaceLabel } from "@/lib/placePoint";
 import { loadProfilePresets } from "@/lib/profilePresetSync";
 import {
   DEFAULT_PROFILE_NAME,
@@ -50,6 +52,14 @@ export function QuickProfileBar() {
   const [baseLon, setBaseLon] = useState<number | null>(null);
   const [birthLat, setBirthLat] = useState<number | null>(null);
   const [birthLon, setBirthLon] = useState<number | null>(null);
+  /*
+    地名（地名で選べたときだけ入る）。**座標と一緒に持たないと置き去りに
+    なる。**保存済みの値で始め、欄を触ったときだけ入れ替える。undefined の
+    まま保存すると欄ごと消えるので、触っていない人の地名を消さないために
+    ここを初期値から埋めておく（`lib/placePoint` の冒頭に経緯）。
+  */
+  const [baseLabel, setBaseLabel] = useState<string | undefined>(undefined);
+  const [birthLabel, setBirthLabel] = useState<string | undefined>(undefined);
   const [isSaving, setIsSaving] = useState(false);
   const [saved, setSaved] = useState<"none" | "local" | "cloud">("none");
 
@@ -71,6 +81,8 @@ export function QuickProfileBar() {
     setBaseLon(toNumber(s.base_lon));
     setBirthLat(toNumber(s.birth_lat));
     setBirthLon(toNumber(s.birth_lon));
+    setBaseLabel(settingString(s, "base_label"));
+    setBirthLabel(settingString(s, "birth_label"));
   }, []);
 
   /** いま画面に入っている 3 つを設定として書く。 */
@@ -81,6 +93,13 @@ export function QuickProfileBar() {
     if (baseLon !== null) patch.base_lon = baseLon;
     if (birthLat !== null) patch.birth_lat = birthLat;
     if (birthLon !== null) patch.birth_lon = birthLon;
+
+    /* 地名は端末だけ。座標を書くときに必ず一緒に入れ替える（名前が
+       無ければ欄ごと消える）。 */
+    if (baseLat !== null && baseLon !== null)
+      writePlaceLabel("base", baseLabel);
+    if (birthLat !== null && birthLon !== null)
+      writePlaceLabel("birth_place", birthLabel);
 
     const result = await saveSettings(patch);
     setSaved(result.synced ? "cloud" : "local");
@@ -97,8 +116,10 @@ export function QuickProfileBar() {
           values: {
             birthDate,
             ...(hasBirthPlace ? { birthLat, birthLon } : {}),
+            ...(hasBirthPlace && birthLabel ? { birthLabel } : {}),
             baseLat,
             baseLon,
+            ...(baseLabel ? { baseLabel } : {}),
           },
         },
         fetch,
@@ -212,9 +233,11 @@ export function QuickProfileBar() {
           label={PROFILE_FIELDS.base.label}
           lat={baseLat}
           lon={baseLon}
-          onChange={(lat, lon) => {
+          onChange={(lat, lon, name) => {
             setBaseLat(lat);
             setBaseLon(lon);
+            /* 名前が無ければ undefined。前の地名を持ち越さない */
+            setBaseLabel(name);
           }}
           help={PROFILE_FIELDS.base.help}
           onUseCurrentLocation={() => {
@@ -222,6 +245,8 @@ export function QuickProfileBar() {
             navigator.geolocation.getCurrentPosition((pos) => {
               setBaseLat(pos.coords.latitude);
               setBaseLon(pos.coords.longitude);
+              /* 現在地には名前が無い */
+              setBaseLabel(undefined);
             });
           }}
         />
@@ -231,9 +256,10 @@ export function QuickProfileBar() {
           label={PROFILE_FIELDS.birthPlace.label}
           lat={birthLat}
           lon={birthLon}
-          onChange={(lat, lon) => {
+          onChange={(lat, lon, name) => {
             setBirthLat(lat);
             setBirthLon(lon);
+            setBirthLabel(name);
           }}
           optional
           help={PROFILE_FIELDS.birthPlace.help}
