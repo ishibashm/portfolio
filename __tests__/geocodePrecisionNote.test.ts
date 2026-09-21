@@ -85,6 +85,25 @@ describe("粗さの断り", () => {
       expect(geocodePrecisionNote(s), s).toContain("地図をクリック");
     }
   });
+
+  it("地図が無い欄では、手段を「緯度経度を直接入れる」に替える", () => {
+    /*
+      PlaceInput（2026-09-21 に住所で決める口を足した）には地図が無い。
+      「地図をクリック」と書くと、無いものを探させる。出どころの説明は
+      同じまま、手段の 1 文だけが替わる。
+    */
+    for (const s of ["normalize", "nominatim"] as const) {
+      const n = geocodePrecisionNote(s, "coords") ?? "";
+      expect(n, s).toContain("緯度経度を直接入れる");
+      expect(n, s).not.toContain("地図をクリック");
+    }
+    /* 番地まで当たっている点は、手段に関わらず黙る */
+    expect(geocodePrecisionNote("gsi", "coords")).toBeNull();
+    /* 街の代表点の断りは手段の話ではないので変わらない */
+    expect(geocodePrecisionNote("municipality", "coords")).toBe(
+      geocodePrecisionNote("municipality", "map"),
+    );
+  });
 });
 
 describe("画面が読んでいる", () => {

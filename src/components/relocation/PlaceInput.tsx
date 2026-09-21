@@ -11,8 +11,16 @@
  * 出す順を「やさしい順」にする。
  *
  *   1. 地名で探す   打ちながら候補が出る（/api/geocode/suggest）
- *   2. 郵便番号     7 桁で引く（/api/postal）
- *   3. 緯度経度     畳んでおく。直したい人だけ開く
+ *   2. 住所で決める 番地まで打って Enter か「この住所で決める」
+ *                   （/api/geocode。国土地理院を先に引く。#40）
+ *   3. 郵便番号     7 桁で引く（/api/postal）
+ *   4. 緯度経度     畳んでおく。直したい人だけ開く
+ *
+ * 2 は 2026-09-21 に足した。それまで座標が入る経路は「候補をクリック」
+ * と「郵便番号」しか無く、候補は町丁目までなので、**番地まで打っても
+ * 確定する口が無かった。**番地まで当てる /api/geocode はシミュレータや
+ * SpotVerdict からは呼んでいたのに、この欄だけ取り残されていた。
+ * 緯度経度の欄は props に束縛されているので、決めた瞬間にそちらにも入る。
  *
  * 座標は「結果」として小さく出すだけにする。**消しはしない。**
  * 地図で拾った値を手で微調整している人がいるため。
@@ -25,6 +33,7 @@
 import React from "react";
 import { MapPin } from "lucide-react";
 import { formatCoords } from "@/lib/profileCompletion";
+import { geocodePrecisionNote, parseGeocodeSource } from "@/lib/geocodeSource";
 
 export interface PlaceInputProps {
   /** 「生まれたところ」「いま住んでいるところ」など。 */
@@ -68,6 +77,8 @@ const VARIANT_STYLES = {
       "w-full px-3 py-2 bg-white border border-stone-200 rounded-xl text-xs text-stone-700 placeholder-stone-300 focus:outline-none focus:border-indigo-300",
     searching: "text-[10px] text-stone-600 animate-pulse",
     notice: "text-[10px] text-amber-600",
+    resolve:
+      "shrink-0 min-h-[36px] px-3 rounded-xl border border-indigo-200 bg-indigo-50 text-xs font-semibold text-indigo-700 hover:bg-indigo-100",
     suggestion:
       "w-full text-left px-2.5 py-1.5 text-xs text-stone-700 hover:bg-indigo-50 transition-colors",
     picked: "flex items-center gap-1.5 text-[10px] text-stone-500",
@@ -89,6 +100,8 @@ const VARIANT_STYLES = {
       "w-full px-3 py-2.5 bg-white border border-slate-300 rounded-xl text-sm text-slate-900 placeholder-slate-300 outline-none focus:border-rose-400 transition-colors",
     searching: "text-xs text-slate-400 animate-pulse",
     notice: "text-xs text-amber-600",
+    resolve:
+      "shrink-0 min-h-[42px] px-3 rounded-xl border border-rose-200 bg-rose-50 text-sm font-semibold text-rose-700 hover:bg-rose-100",
     suggestion:
       "w-full text-left px-3 py-2 text-sm text-slate-700 hover:bg-rose-50 transition-colors",
     picked: "flex items-center gap-1.5 text-xs text-slate-500",
@@ -132,6 +145,8 @@ export function PlaceInput({
   const [notice, setNotice] = React.useState<string | null>(null);
   const [picked, setPicked] = React.useState<string | null>(null);
   const [showCoords, setShowCoords] = React.useState(false);
+  /** 決めた点が粗いときの断り（/api/geocode の source から）。 */
+  const [precisionNote, setPrecisionNote] = React.useState<string | null>(null);
 
   /**
    * 打っている途中で候補を引く。1 文字ごとに外へ出すと公共の口を
@@ -200,6 +215,7 @@ export function PlaceInput({
         }
         onChange(body.data.lat, body.data.lon, body.data.address);
         setPicked(body.data.address);
+        setPrecisionNote(null);
         setQuery("");
       } catch {
         if (alive) setNotice("郵便番号を調べられませんでした。");
@@ -218,9 +234,63 @@ export function PlaceInput({
   const pick = (s: Suggestion) => {
     onChange(s.lat, s.lon, s.name);
     setPicked(s.name);
+    setPrecisionNote(null);
     setQuery("");
     setSuggestions([]);
     setNotice(null);
+  };
+
+  /** 打った文字列をそのまま住所として決められるか（郵便番号は別の経路）。 */
+  const canResolve = query.trim().length >= 2 && !normalizePostal(query);
+
+  /**
+   * 打った住所を番地まで当てて決める。候補（町丁目まで）を経由しない。
+   *
+   * `/api/geocode` は国土地理院を先に引き、番地を落とさない。粗い点
+   * （source が normalize / nominatim）で返ったときは、その旨を出す。
+   * 404 の文言は API のものをそのまま出す — URL を貼った人に住所の話を
+   * 返さないため（SpotVerdict と同じ扱い）。
+   */
+  const resolveExact = async () => {
+    const text = query.trim();
+    if (!canResolve) return;
+    setSearching(true);
+    setNotice(null);
+    try {
+      const res = await fetch(`/api/geocode?q=${encodeURIComponent(text)}`);
+      const body = (await res.json()) as {
+        lat?: unknown;
+        lon?: unknown;
+        name?: unknown;
+        source?: unknown;
+        error?: unknown;
+      };
+      if (
+        !res.ok ||
+        typeof body.lat !== "number" ||
+        typeof body.lon !== "number"
+      ) {
+        setNotice(
+          typeof body.error === "string" && body.error
+            ? body.error
+            : "その住所は見つかりませんでした。候補から選ぶか、緯度経度を直接入れてください。",
+        );
+        return;
+      }
+      const name =
+        typeof body.name === "string" && body.name ? body.name : text;
+      onChange(body.lat, body.lon, name);
+      setPicked(name);
+      setPrecisionNote(
+        geocodePrecisionNote(parseGeocodeSource(body.source), "coords"),
+      );
+      setQuery("");
+      setSuggestions([]);
+    } catch {
+      setNotice("住所を調べられませんでした。通信を確かめてください。");
+    } finally {
+      setSearching(false);
+    }
   };
 
   const hasCoords = lat !== null && lon !== null;
@@ -257,20 +327,41 @@ export function PlaceInput({
         )}
       </div>
 
-      <input
-        type="text"
-        value={query}
-        onChange={(e) => {
-          setQuery(e.target.value);
-          setNotice(null);
-        }}
-        /* 何を入れる欄かはラベルが言っている。placeholder は**書き方の例**
-           だけにする。以前は「市区町村・住所・郵便番号（例: …）」と説明を
-           繰り返していて、3 列に並べたときに欄の幅を超えて途中で切れていた
-           （利用者の報告 2026-08-28）。 */
-        placeholder="例: 京都市南区 / 6018001"
-        className={s.input}
-      />
+      <div className="flex min-w-0 items-stretch gap-2">
+        <input
+          type="text"
+          value={query}
+          onChange={(e) => {
+            setQuery(e.target.value);
+            setNotice(null);
+          }}
+          onKeyDown={(e) => {
+            /* 日本語入力の変換確定の Enter を拾わない（isComposing）。
+               拾うと、変換の途中の綴りで住所を引いてしまう */
+            if (e.key !== "Enter" || e.nativeEvent.isComposing) return;
+            e.preventDefault();
+            void resolveExact();
+          }}
+          /* 何を入れる欄かはラベルが言っている。placeholder は**書き方の例**
+             だけにする。以前は「市区町村・住所・郵便番号（例: …）」と説明を
+             繰り返していて、3 列に並べたときに欄の幅を超えて途中で切れていた
+             （利用者の報告 2026-08-28）。 */
+          placeholder="例: 京都市南区 / 6018001"
+          className={s.input}
+        />
+        {/* 番地まで打った人が「候補に無い」で止まらないための口。
+            Enter と同じ。タッチ端末では Enter が見つけにくいので置く */}
+        {canResolve && (
+          <button
+            type="button"
+            onClick={() => void resolveExact()}
+            disabled={searching}
+            className={s.resolve}
+          >
+            この住所で決める
+          </button>
+        )}
+      </div>
 
       {searching && <p className={s.searching}>探しています…</p>}
 
@@ -306,6 +397,8 @@ export function PlaceInput({
         )}
       </div>
 
+      {precisionNote && <p className={s.notice}>{precisionNote}</p>}
+
       {help && <p className={s.help}>{help}</p>}
 
       {/*
@@ -332,6 +425,7 @@ export function PlaceInput({
               /* 手で直したら地名は捨てる。座標だけ動いて名前が残ると、
                  別の場所に前の地名が付いたまま出る */
               setPicked(null);
+              setPrecisionNote(null);
               onChange(v, lon);
             }}
             placeholder="緯度"
@@ -345,6 +439,7 @@ export function PlaceInput({
               const v = parseFloat(e.target.value);
               if (!Number.isFinite(v) || lat === null) return;
               setPicked(null);
+              setPrecisionNote(null);
               onChange(lat, v);
             }}
             placeholder="経度"
