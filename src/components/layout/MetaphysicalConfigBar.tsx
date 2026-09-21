@@ -22,6 +22,7 @@ import {
 import { ProfilePicker } from "@/components/profile/ProfilePicker";
 import { PlaceInput } from "@/components/relocation/PlaceInput";
 import { PROFILE_FIELDS } from "@/lib/profileFields";
+import { writePlaceLabel } from "@/lib/placePoint";
 
 export interface MetaphysicalConfig {
   targetDate: string; // YYYY-MM-DD
@@ -415,12 +416,15 @@ export const MetaphysicalConfigBar: React.FC<MetaphysicalConfigBarProps> = ({
   const useCurrentLocation = () => {
     if (typeof navigator === "undefined" || !navigator.geolocation) return;
     navigator.geolocation.getCurrentPosition(
-      (pos) =>
-        saveConfig({
+      (pos) => {
+        /* 現在地には名前が無い。前の地名を消してから座標を書く。 */
+        writePlaceLabel("base");
+        void saveConfig({
           ...config,
           baseLat: Number(pos.coords.latitude.toFixed(6)),
           baseLon: Number(pos.coords.longitude.toFixed(6)),
-        }),
+        });
+      },
       () => {
         /* 断られても画面は止めない。地名でも入れられる */
       },
@@ -751,9 +755,13 @@ export const MetaphysicalConfigBar: React.FC<MetaphysicalConfigBarProps> = ({
                 label={PROFILE_FIELDS.base.label}
                 lat={config.baseLat ?? null}
                 lon={config.baseLon ?? null}
-                onChange={(lat, lon) =>
-                  saveConfig({ ...config, baseLat: lat, baseLon: lon })
-                }
+                /* 第 3 引数（地名）を落とさない。座標だけ書くと前に
+                   登録した地名が残り、別の街の名前が帯に出続ける
+                   （`lib/placePoint` の冒頭に経緯）。 */
+                onChange={(lat, lon, name) => {
+                  writePlaceLabel("base", name);
+                  void saveConfig({ ...config, baseLat: lat, baseLon: lon });
+                }}
                 help={PROFILE_FIELDS.base.help}
                 onUseCurrentLocation={useCurrentLocation}
               />
@@ -762,9 +770,10 @@ export const MetaphysicalConfigBar: React.FC<MetaphysicalConfigBarProps> = ({
                 optional
                 lat={config.birthLat ?? null}
                 lon={config.birthLon ?? null}
-                onChange={(lat, lon) =>
-                  saveConfig({ ...config, birthLat: lat, birthLon: lon })
-                }
+                onChange={(lat, lon, name) => {
+                  writePlaceLabel("birth_place", name);
+                  void saveConfig({ ...config, birthLat: lat, birthLon: lon });
+                }}
                 help={PROFILE_FIELDS.birthPlace.help}
               />
             </div>
