@@ -79,7 +79,6 @@ const ALL = FILES.flatMap(markerTags);
 
 /** まだ直していないもの。**減らす方向にだけ動かす。** */
 const KNOWN_UNFIXED = [
-  "src/components/LocationPickerInner.tsx:91",
   "src/components/WealthMap.tsx:103",
   "src/components/WealthMap.tsx:135",
   "src/components/nba/PastMoveMap.tsx:227",

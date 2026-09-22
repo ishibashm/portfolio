@@ -189,6 +189,17 @@ export function PlaceInput({
    * 出しても自分がどこを押したのか読めないので、確かめる材料としてここに出す。
    */
   const [nearby, setNearby] = React.useState<string | null>(null);
+  /**
+   * 現在地の最後の測位。**受け取るだけで、座標には入れない。**
+   *
+   * 入れてしまうと、測位のたびに利用者が選んだ地点が上書きされる
+   * （`LocationPickerInner` の註と同じ決めごと）。下の「ここにする」を
+   * 押したときだけ `onChange` に渡す。
+   */
+  const [herePos, setHerePos] = React.useState<{
+    lat: number;
+    lon: number;
+  } | null>(null);
 
   /**
    * 打っている途中で候補を引く。1 文字ごとに外へ出すと公共の口を
@@ -474,8 +485,10 @@ export function PlaceInput({
       </div>
 
       {allowMapPick && showMap && (
-        <div className="flex flex-col gap-1.5">
-          <div className="h-[260px] w-full overflow-hidden rounded-xl border border-stone-200">
+        <div className="flex flex-col gap-2">
+          {/* 260px では建物の見当が付かず、指で寄せるだけで画面が埋まる。
+              狭い画面でも地図として読める高さにする */}
+          <div className="h-[320px] w-full sm:h-[420px]">
             {/* 座標が無いときは 0 を渡す。向こうは印を出さず全国の縮尺で開く
                 （画面の初期値を地点として渡さない。CLAUDE.md 3 節） */}
             <LocationPickerInner
@@ -494,8 +507,33 @@ export function PlaceInput({
                 setNearby(null);
                 void resolvePlaceName(la, lo).then(setNearby);
               }}
+              onCurrentPosition={(p) => setHerePos({ lat: p.lat, lon: p.lon })}
             />
           </div>
+
+          {/*
+            現在地を**押して**決める。地図の現在地ボタンは「いまどこか」を
+            見せるだけなので、そこを住まいにしたい人は結局その点を目で探して
+            押すことになっていた。いちばん多い使い方（いま居る場所が
+            住まい）に 1 手で届く道を出す。**測位しただけでは入らない。**
+          */}
+          {herePos && (
+            <button
+              type="button"
+              onClick={() => {
+                setPicked(null);
+                setPrecisionNote(null);
+                setNotice(null);
+                onChange(herePos.lat, herePos.lon);
+                setNearby(null);
+                void resolvePlaceName(herePos.lat, herePos.lon).then(setNearby);
+              }}
+              className="self-start rounded-full border border-indigo-200 bg-indigo-50 px-4 py-2 text-xs font-bold text-indigo-700 transition-colors hover:bg-indigo-100"
+            >
+              いま居る場所をここにする
+            </button>
+          )}
+
           <p className={s.help}>
             地図を押すとその地点になります。判定はここから測るので、番地まで分からないときは建物のあたりで構いません。
           </p>
