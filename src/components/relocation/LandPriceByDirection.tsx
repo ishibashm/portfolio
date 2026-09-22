@@ -22,7 +22,11 @@
 import React, { useEffect, useState } from "react";
 /* ラベルと方位の型は directionGeo（暦エンジンを引かない葉）から。
    kigakuContent 経由だと lunar-javascript 一式が初回読み込みに乗る。 */
-import { DIRECTION_LABELS, type CompassDirection } from "@/utils/directionGeo";
+import {
+  DIRECTION_LABELS,
+  type CompassDirection,
+  type NodeMapping,
+} from "@/utils/directionGeo";
 
 interface DirectionStat {
   direction: CompassDirection;
@@ -55,12 +59,19 @@ export function LandPriceByDirection({
   lon,
   radiusKm,
   hasBase,
+  nodeMapping,
 }: {
   lat: number;
   lon: number;
   /** null は全国モード。API の上限（500km）で切る。 */
   radiusKm: number | null;
   hasBase: boolean;
+  /**
+   * 方位の切り方。**盤の設定と同じものを渡すこと。**渡さないと API が
+   * traditional に倒すので、独自モデルの利用者だけが同じ画面で 2 通りの
+   * 振り分けを見る（#1297・#1298 の取り残し）。
+   */
+  nodeMapping: NodeMapping;
 }) {
   /*
     TransactionsPanel と同じ形。取得結果は「どの条件で取ったか」と一緒に
@@ -79,7 +90,7 @@ export function LandPriceByDirection({
      いた。TransactionsPanel が null → 自分の上限（300）にしているのと
      同じ形にそろえる。 */
   const effectiveRadius = radiusKm ?? 500;
-  const requestKey = `${lat},${lon},${effectiveRadius}`;
+  const requestKey = `${lat},${lon},${effectiveRadius},${nodeMapping}`;
   const data = result?.key === requestKey ? result.data : null;
   const error = result?.key === requestKey ? result.error : null;
   const loading = hasBase && result?.key !== requestKey;
@@ -89,7 +100,7 @@ export function LandPriceByDirection({
     let alive = true;
 
     fetch(
-      `/api/land-prices/by-direction?baseLat=${lat}&baseLon=${lon}&maxKm=${effectiveRadius}`,
+      `/api/land-prices/by-direction?baseLat=${lat}&baseLon=${lon}&maxKm=${effectiveRadius}&nodeMapping=${nodeMapping}`,
     )
       .then(async (res) => {
         const body = await res.json();
@@ -117,7 +128,7 @@ export function LandPriceByDirection({
     return () => {
       alive = false;
     };
-  }, [hasBase, lat, lon, effectiveRadius, requestKey]);
+  }, [hasBase, lat, lon, effectiveRadius, nodeMapping, requestKey]);
 
   if (!hasBase) return null;
 

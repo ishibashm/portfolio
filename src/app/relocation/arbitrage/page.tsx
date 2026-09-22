@@ -741,6 +741,7 @@ export default function DirectionTownsPage() {
                   lon={baseLonNum}
                   radiusKm={radiusKm}
                   hasBase={hasBaseLocation}
+                  nodeMapping={nodeMappingForBoard(useClassical)}
                 />
               </ArbitrageSidebarSection>
             )}

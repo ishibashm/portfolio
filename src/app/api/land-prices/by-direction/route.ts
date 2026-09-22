@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { toLogMessage } from "@/lib/errorMessage";
+import { parseNodeMapping } from "@/utils/directionGeo";
 import {
   DEFAULT_MAX_KM,
   DEFAULT_MIN_KM,
@@ -59,6 +60,12 @@ export async function GET(request: Request) {
     0,
   );
   const useCategory = searchParams.get("useCategory");
+  /*
+    方位の切り方。知らない値は traditional に倒す（`parseNodeMapping`）。
+    `as` で押し通すと綴り違いが黙って physical になり、設定と無関係に
+    方位が動く（housing-stats の route と同じ註）。
+  */
+  const nodeMapping = parseNodeMapping(searchParams.get("nodeMapping"));
 
   const latSpan = maxKm / KM_PER_DEG_LAT;
   /* 経度は緯度で縮む。高緯度ほど 1 度が短いので cos で割って広げる */
@@ -87,6 +94,7 @@ export async function GET(request: Request) {
       minKm,
       maxKm,
       useCategory,
+      nodeMapping,
     });
 
     return NextResponse.json({
@@ -97,6 +105,9 @@ export async function GET(request: Request) {
         minKm,
         maxKm,
         useCategory,
+        /* どの規則で切ったか。画面が「統計と同じ規則か」を言えるように
+           返す。綴り違いを倒した結果もここに出る */
+        nodeMapping,
         source: "国土交通省 不動産情報ライブラリ（地価公示・都道府県地価調査）",
       },
     });
