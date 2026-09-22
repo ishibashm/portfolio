@@ -18,7 +18,11 @@ import React, { useEffect, useState } from "react";
 /* ラベルと方位の型は directionGeo（暦エンジンを引かない葉）から。
    kigakuContent 経由だと、この部品を載せる頁の初回読み込みに
    lunar-javascript 一式が乗る（backlog 17 節）。中身は同じ表。 */
-import { DIRECTION_LABELS, type CompassDirection } from "@/utils/directionGeo";
+import {
+  DIRECTION_LABELS,
+  type CompassDirection,
+  type NodeMapping,
+} from "@/utils/directionGeo";
 
 interface TxRow {
   id: string;
@@ -69,12 +73,22 @@ export function TransactionsPanel({
   lon,
   radiusKm,
   hasBase,
+  nodeMapping,
 }: {
   lat: number;
   lon: number;
   /** null は全国モード。API の上限（300km）で切る。 */
   radiusKm: number | null;
   hasBase: boolean;
+  /**
+   * 方位の切り方。**盤の設定と同じものを渡すこと。**
+   *
+   * route は `node_mapping` を読むのに、ここが送っていなかった。渡さないと
+   * 向こうは traditional に倒すので、独自モデル（45 度等分）の利用者は
+   * **同じ画面の住宅・土地統計と別の振り分け**を見ていた（#1297・#1298 で
+   * 統計を直したときの取り残し。地価は #1498）。
+   */
+  nodeMapping: NodeMapping;
 }) {
   /*
     取得結果は「どの条件で取ったか」と一緒に持ち、読み込み中かどうかは
@@ -95,7 +109,7 @@ export function TransactionsPanel({
   const [minRatio, setMinRatio] = useState("");
 
   const effectiveRadius = radiusKm ?? 300;
-  const requestKey = `${lat},${lon},${effectiveRadius},${minRatio}`;
+  const requestKey = `${lat},${lon},${effectiveRadius},${minRatio},${nodeMapping}`;
   const data = result?.key === requestKey ? result.data : null;
   const error = result?.key === requestKey ? result.error : null;
   const loading = hasBase && result?.key !== requestKey;
@@ -106,6 +120,7 @@ export function TransactionsPanel({
 
     fetch(
       `/api/relocation/transactions?lat=${lat}&lon=${lon}&radius_km=${effectiveRadius}` +
+        `&node_mapping=${nodeMapping}` +
         (minRatio ? `&min_building_ratio=${minRatio}` : ""),
     )
       .then(async (res) => {
@@ -134,7 +149,7 @@ export function TransactionsPanel({
     return () => {
       alive = false;
     };
-  }, [lat, lon, effectiveRadius, hasBase, requestKey, minRatio]);
+  }, [lat, lon, effectiveRadius, hasBase, requestKey, minRatio, nodeMapping]);
 
   if (!hasBase) {
     return (
