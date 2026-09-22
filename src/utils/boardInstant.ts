@@ -108,3 +108,19 @@ export function forecastAnchorMs(baseTime: Date): number {
 export function jstNoonOf(date: Date): Date {
   return new Date(forecastAnchorMs(date));
 }
+
+/**
+ * その日時が属する**日本時間の日の終わり**（翌日 0 時の 1 ミリ秒前）。
+ *
+ * 「節入りの日は新しい節に属する」を素直に書くための時刻。節入りも
+ * 土用の入りも**瞬間**なので、日の代表を正午に取ると、午後に入った日が
+ * 前の節のまま残る。日の終わりで見れば「その日のうちに入ったか」が
+ * そのまま答えになる。
+ *
+ * 土用がこれで 1 日ずれていた（#1493）。`jstNoonOf` と使い分けること —
+ * 盤の代表時刻は正午のままでよい（日の端に寄せると数分のずれで前日・
+ * 翌日へ倒れる）。境目そのものを決めるときだけこちらを使う。
+ */
+export function jstDayEndOf(date: Date): Date {
+  return new Date(forecastAnchorMs(date) + 12 * 3_600_000 - 1);
+}

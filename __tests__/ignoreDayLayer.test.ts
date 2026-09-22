@@ -102,12 +102,17 @@ describe("12ヶ月表示の日盤除外 (ignoreDayLayer)", () => {
   it("土用殺は日盤を外しても残る", () => {
     // 土用殺は盤ではなく暦から finalVectors に直接刻まれる。
     // 呼び出し側で finalVectors を組み直すとこれも消える。
+    //
+    // 日付をこの検査だけ 8/6 にしてある。以前は 8/7 で「夏土用」と
+    // 書いていたが、**8/7 は立秋**で土用ではない（#1493）。土用の日を
+    // 12:00 JST の黄経で切っていたため、明けが 1 日後ろにずれていた。
+    const doyouDay = new Date("2026-08-06T03:00:00Z");
     const [y, m, d] = boards(6, 5, 7);
     const off = calculateVectorCollision(
-      personal, y, m, d, [], "DEFAULT", target, 139.6917,
+      personal, y, m, d, [], "DEFAULT", doyouDay, 139.6917,
       undefined, true,
     );
-    // 2026-08-07 は夏土用。土用殺の南西は、年盤・月盤が凶でなくても大凶。
+    // 2026-08-06 は夏土用の最終日。土用殺の南西は、年盤・月盤が凶でなくても大凶。
     expect(off.yearLayer.SW).not.toContain("NOISE_GOU");
     expect(off.monthLayer.SW).not.toContain("NOISE_GOU");
     expect(off.finalVectors.SW).toBe("NOISE_GOU");
