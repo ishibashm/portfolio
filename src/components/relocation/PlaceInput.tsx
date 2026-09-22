@@ -14,7 +14,8 @@
  *   2. 住所で決める 番地まで打って Enter か「この住所で決める」
  *                   （/api/geocode。国土地理院を先に引く。#40）
  *   3. 郵便番号     7 桁で引く（/api/postal）
- *   4. 緯度経度     畳んでおく。直したい人だけ開く
+ *   4. 地図から選ぶ 畳んでおく。押した地点をそのまま使う（allowMapPick）
+ *   5. 緯度経度     畳んでおく。直したい人だけ開く
  *
  * 2 は 2026-09-21 に足した。それまで座標が入る経路は「候補をクリック」
  * と「郵便番号」しか無く、候補は町丁目までなので、**番地まで打っても
@@ -31,9 +32,32 @@
  */
 
 import React from "react";
+import dynamic from "next/dynamic";
 import { MapPin } from "lucide-react";
 import { formatCoords } from "@/lib/profileCompletion";
 import { geocodePrecisionNote, parseGeocodeSource } from "@/lib/geocodeSource";
+import { resolvePlaceName } from "@/lib/placeLabel";
+
+/*
+  地点を拾う地図。**`import()` で遅延する。**Leaflet 一式は重く、この欄は
+  設定バーやホームにも置かれている。開くまで読み込まないので、押さない人の
+  初回表示は変わらない。
+
+  **地図の部品は 1 つに寄せる**（CLAUDE.md 3 節）。相場マップとホームの
+  引越し先が使っているものと同じ `LocationPickerInner` をそのまま呼ぶ。
+  現在地ボタン・明暗の切り替え・クリックの拾い方は向こうが持っている。
+*/
+const LocationPickerInner = dynamic(
+  () => import("@/components/LocationPickerInner"),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="flex h-full w-full items-center justify-center rounded-xl border border-stone-200 bg-stone-50 text-xs text-stone-500">
+        地図を読み込んでいます…
+      </div>
+    ),
+  },
+);
 
 export interface PlaceInputProps {
   /** 「生まれたところ」「いま住んでいるところ」など。 */
@@ -56,6 +80,14 @@ export interface PlaceInputProps {
   help?: string;
   /** 「いまいる場所を使う」を出すか。現在地の欄でだけ true。 */
   onUseCurrentLocation?: () => void;
+  /**
+   * 「地図から選ぶ」を出すか。
+   *
+   * 既定は出さない。Leaflet を読み込む操作なので、**場所を登録するのが
+   * 主役の画面でだけ**開けるようにする（/profile）。他の画面で要るように
+   * なったら、その画面でこの旗を立てる。
+   */
+  allowMapPick?: boolean;
   /**
    * 見た目の縮尺。既定の "compact" は設定バー（MetaphysicalConfigBar）用の
    * 小さい字。"form" はホーム上部の「まずここを入れる」用で、隣に並ぶ
@@ -136,6 +168,7 @@ export function PlaceInput({
   optional,
   help,
   onUseCurrentLocation,
+  allowMapPick = false,
   variant = "compact",
 }: PlaceInputProps) {
   const s = VARIANT_STYLES[variant];
@@ -147,6 +180,15 @@ export function PlaceInput({
   const [showCoords, setShowCoords] = React.useState(false);
   /** 決めた点が粗いときの断り（/api/geocode の source から）。 */
   const [precisionNote, setPrecisionNote] = React.useState<string | null>(null);
+  const [showMap, setShowMap] = React.useState(false);
+  /**
+   * 地図で押した点の最寄りの市区町村。**表示だけで、呼び出し側へは渡さない。**
+   *
+   * `onChange` の第 3 引数は「地名で選べた」印なので、代表点からの逆引きを
+   * そこに入れると別の意味になる（`lib/placePoint` の決めごと）。座標だけ
+   * 出しても自分がどこを押したのか読めないので、確かめる材料としてここに出す。
+   */
+  const [nearby, setNearby] = React.useState<string | null>(null);
 
   /**
    * 打っている途中で候補を引く。1 文字ごとに外へ出すと公共の口を
@@ -216,6 +258,7 @@ export function PlaceInput({
         onChange(body.data.lat, body.data.lon, body.data.address);
         setPicked(body.data.address);
         setPrecisionNote(null);
+        setNearby(null);
         setQuery("");
       } catch {
         if (alive) setNotice("郵便番号を調べられませんでした。");
@@ -235,6 +278,7 @@ export function PlaceInput({
     onChange(s.lat, s.lon, s.name);
     setPicked(s.name);
     setPrecisionNote(null);
+    setNearby(null);
     setQuery("");
     setSuggestions([]);
     setNotice(null);
@@ -281,6 +325,7 @@ export function PlaceInput({
         typeof body.name === "string" && body.name ? body.name : text;
       onChange(body.lat, body.lon, name);
       setPicked(name);
+      setNearby(null);
       setPrecisionNote(
         geocodePrecisionNote(parseGeocodeSource(body.source), "coords"),
       );
@@ -388,6 +433,10 @@ export function PlaceInput({
         <MapPin size={s.pinSize} className="text-stone-600 shrink-0" />
         {picked ? (
           <span className="truncate">{picked}</span>
+        ) : nearby && hasCoords ? (
+          /* 地図で押した点。**地名で選んだのではない**ので「付近」を付ける
+             （describePlace と同じ順序・同じ言い方にそろえる） */
+          <span className="truncate">{nearby} 付近</span>
         ) : hasCoords ? (
           <span>設定済み（{formatCoords(lat, lon)}）</span>
         ) : (
@@ -405,13 +454,53 @@ export function PlaceInput({
         緯度経度は畳んでおく。地図で拾った値を手で微調整している人が
         いるので消しはしない。
       */}
-      <button
-        type="button"
-        onClick={() => setShowCoords(!showCoords)}
-        className={s.coordsToggle}
-      >
-        {showCoords ? "▲ 緯度経度を隠す" : "▼ 緯度経度を直接入れる"}
-      </button>
+      <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
+        {allowMapPick && (
+          <button
+            type="button"
+            onClick={() => setShowMap(!showMap)}
+            className={s.coordsToggle}
+          >
+            {showMap ? "▲ 地図を閉じる" : "▼ 地図から選ぶ"}
+          </button>
+        )}
+        <button
+          type="button"
+          onClick={() => setShowCoords(!showCoords)}
+          className={s.coordsToggle}
+        >
+          {showCoords ? "▲ 緯度経度を隠す" : "▼ 緯度経度を直接入れる"}
+        </button>
+      </div>
+
+      {allowMapPick && showMap && (
+        <div className="flex flex-col gap-1.5">
+          <div className="h-[260px] w-full overflow-hidden rounded-xl border border-stone-200">
+            {/* 座標が無いときは 0 を渡す。向こうは印を出さず全国の縮尺で開く
+                （画面の初期値を地点として渡さない。CLAUDE.md 3 節） */}
+            <LocationPickerInner
+              initialLat={lat ?? 0}
+              initialLon={lon ?? 0}
+              onSelect={(la, lo) => {
+                /* **名前は渡さない。**地図で押した点に地名は無い。前に
+                   地名で選んでいたなら、その名前は捨てる（別の場所に前の
+                   名前が付いたまま残らないように。lib/placePoint の決めごと） */
+                setPicked(null);
+                setPrecisionNote(null);
+                setNotice(null);
+                onChange(la, lo);
+                /* 押した場所が読めるように、最寄りの市区町村だけ引く。
+                   表示のためで、保存にも判定にも使わない */
+                setNearby(null);
+                void resolvePlaceName(la, lo).then(setNearby);
+              }}
+            />
+          </div>
+          <p className={s.help}>
+            地図を押すとその地点になります。判定はここから測るので、番地まで分からないときは建物のあたりで構いません。
+          </p>
+        </div>
+      )}
 
       {showCoords && (
         <div className="grid grid-cols-2 gap-2">
@@ -426,6 +515,7 @@ export function PlaceInput({
                  別の場所に前の地名が付いたまま出る */
               setPicked(null);
               setPrecisionNote(null);
+              setNearby(null);
               onChange(v, lon);
             }}
             placeholder="緯度"
@@ -440,6 +530,7 @@ export function PlaceInput({
               if (!Number.isFinite(v) || lat === null) return;
               setPicked(null);
               setPrecisionNote(null);
+              setNearby(null);
               onChange(lat, v);
             }}
             placeholder="経度"

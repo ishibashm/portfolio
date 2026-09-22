@@ -492,6 +492,7 @@ export function ProfileForm() {
           <PlaceInput
             label="出生地"
             variant="form"
+            allowMapPick
             optional
             lat={birthLat}
             lon={birthLon}
@@ -520,6 +521,7 @@ export function ProfileForm() {
           <PlaceInput
             label="出発地"
             variant="form"
+            allowMapPick
             lat={baseLat}
             lon={baseLon}
             onChange={(lat, lon, name) => {
@@ -553,6 +555,7 @@ export function ProfileForm() {
             <PlaceInput
               label="目的地"
               variant="form"
+              allowMapPick
               optional
               lat={destLat}
               lon={destLon}
