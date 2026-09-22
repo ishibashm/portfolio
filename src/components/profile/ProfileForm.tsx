@@ -95,6 +95,17 @@ export function ProfileForm() {
   const [status, setStatus] = React.useState<Status>("loading");
   const [message, setMessage] = React.useState<string>("");
   const [synced, setSynced] = React.useState(false);
+  /**
+   * 知らせを出した時刻（端末の時計）。
+   *
+   * **2 回目の保存が「効いたのか分からない」ことへの答え**（利用者の
+   * 指摘、2026-09-22）。文言は 2 回目も同じで、帯は `setMessage("")` で
+   * 一度消えて出直すだけなので、**同じ場所に同じ文が戻る。**変化として
+   * 読めるものを添える。
+   */
+  const [savedAt, setSavedAt] = React.useState<string>("");
+  /** 知らせを出したら、そこまで送る。長い入力欄の下にあると画面外になる。 */
+  const noticeRef = React.useRef<HTMLParagraphElement | null>(null);
 
   const [birthDate, setBirthDate] = React.useState("");
   const [birthLat, setBirthLat] = React.useState<number | null>(null);
@@ -223,6 +234,27 @@ export function ProfileForm() {
   // 入れられない
   const today = todayInJapan();
 
+  /**
+   * 知らせを出す。**文言が同じでも、押すたびに出し直す。**
+   *
+   * 時刻を添えるのは、2 回目以降に「いま保存された」と分かるようにする
+   * ため。端末の時計でよい（"use client" の部品なので、日本時間へ倒す
+   * 必要は無い。`__tests__/serverPagesDateTimeZone.test.ts` の註）。
+   */
+  function notify(next: Status, text: string) {
+    setStatus(next);
+    setMessage(text);
+    setSavedAt(next === "saved" ? new Date().toLocaleTimeString("ja-JP") : "");
+    /* 出した先が画面の外だと、押しても何も起きていないように見える。
+       jsdom には scrollIntoView が無いので、あるときだけ呼ぶ。 */
+    requestAnimationFrame(() => {
+      noticeRef.current?.scrollIntoView?.({
+        block: "center",
+        behavior: "smooth",
+      });
+    });
+  }
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setStatus("saving");
@@ -249,15 +281,15 @@ export function ProfileForm() {
           window.localStorage,
         );
         setSynced(result.cloudSynced);
-        setStatus("saved");
-        setMessage(
+        notify(
+          "saved",
           result.cloudSynced
             ? `「${editingPreset.name}」を保存しました。ほかの端末でも同じ内容になります。`
             : `「${editingPreset.name}」をこの端末に保存しました。ログインすると、ほかの端末でも同じ内容が使えます。`,
         );
       } catch {
-        setStatus("error");
-        setMessage(
+        notify(
+          "error",
           "保存できませんでした。通信の状態を確かめて、もう一度お試しください。",
         );
       }
@@ -312,13 +344,13 @@ export function ProfileForm() {
         setIsNew(false);
       }
       setSynced(result.synced);
-      setStatus("saved");
-      setMessage(
+      notify(
+        "saved",
         `プロフィール「${name}」を保存し、使用中にしました。${saveMessage(result)}`,
       );
     } catch {
-      setStatus("error");
-      setMessage(
+      notify(
+        "error",
         "保存できませんでした。通信の状態を確かめて、もう一度お試しください。",
       );
     }
@@ -572,6 +604,36 @@ export function ProfileForm() {
         </fieldset>
       )}
 
+      {/*
+        知らせは**ボタンのすぐ上**に置く。以前はボタンよりさらに下にあり、
+        入力欄の長い画面では押したあと画面の外だった。出したら
+        `scrollIntoView` でそこまで送る（`notify`）。
+      */}
+      {message && (
+        <p
+          ref={noticeRef}
+          role="status"
+          aria-live="polite"
+          className={`flex items-start gap-2 rounded-xl border-2 p-4 text-sm leading-relaxed font-medium ${
+            status === "error"
+              ? "border-rose-300 bg-rose-50 text-rose-800"
+              : "border-emerald-300 bg-emerald-50 text-emerald-900"
+          }`}
+        >
+          {status === "saved" && (
+            <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0" aria-hidden />
+          )}
+          <span>
+            {message}
+            {status === "saved" && savedAt && (
+              <span className="ml-1 font-normal text-emerald-700">
+                （{savedAt}）
+              </span>
+            )}
+          </span>
+        </p>
+      )}
+
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
         <button
           type="submit"
@@ -593,22 +655,6 @@ export function ProfileForm() {
               : "未ログインです。入力はこの端末にだけ残ります。"}
         </span>
       </div>
-
-      {message && (
-        <p
-          role="status"
-          className={`flex items-start gap-2 rounded-xl border p-4 text-xs leading-relaxed ${
-            status === "error"
-              ? "border-rose-200 bg-rose-50 text-rose-700"
-              : "border-emerald-200 bg-emerald-50 text-emerald-800"
-          }`}
-        >
-          {status === "saved" && (
-            <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0" aria-hidden />
-          )}
-          <span>{message}</span>
-        </p>
-      )}
 
       {/* 保存できたら、次にどこへ行けばよいかを出す。入れて終わりに
           しない（入力だけして何も起きない画面を作らない） */}
