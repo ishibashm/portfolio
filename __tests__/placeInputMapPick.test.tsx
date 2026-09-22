@@ -30,14 +30,39 @@ import { PlaceInput } from "@/components/relocation/PlaceInput";
 vi.mock("@/components/LocationPickerInner", () => ({
   default: ({
     onSelect,
+    onCurrentPosition,
   }: {
     initialLat: number;
     initialLon: number;
     onSelect: (lat: number, lon: number) => void;
+    onCurrentPosition?: (p: {
+      lat: number;
+      lon: number;
+      accuracyM: number;
+      headingDeg: number | null;
+      at: number;
+    }) => void;
   }) => (
-    <button type="button" onClick={() => onSelect(34.9819, 135.7444)}>
-      地図の 1 点を押す
-    </button>
+    <>
+      <button type="button" onClick={() => onSelect(34.9819, 135.7444)}>
+        地図の 1 点を押す
+      </button>
+      {/* 現在地の測位。本物は CurrentLocationControl が繰り返し呼ぶ */}
+      <button
+        type="button"
+        onClick={() =>
+          onCurrentPosition?.({
+            lat: 33.5902,
+            lon: 130.4017,
+            accuracyM: 12,
+            headingDeg: null,
+            at: 0,
+          })
+        }
+      >
+        測位する
+      </button>
+    </>
   ),
 }));
 
@@ -177,5 +202,99 @@ describe("/profile の 3 つの欄で地図を開ける", () => {
 
   it("見張りが空回りしていない（PlaceInput を 3 つ置いている）", () => {
     expect(src.match(/<PlaceInput/g) ?? []).toHaveLength(3);
+  });
+});
+
+/**
+ * 現在地で決める（利用者の指摘、2026-09-22「使いにくい」）。
+ *
+ * 地図の現在地ボタンは「いまどこか」を見せるだけで、押しても座標は入らない。
+ * 自動で入れないのは正しい（測位のたびに選んだ地点が上書きされる）。ただし
+ * **いま居る場所を住まいにしたい**のがいちばん多い使い方なので、押して決める
+ * 道を 1 つ出す。「測位しただけでは入らない」ことも同時に固定する。
+ */
+describe("PlaceInput: 現在地をここにする", () => {
+  async function openMap() {
+    const onChange = vi.fn();
+    render(
+      <PlaceInput
+        label="いま住んでいるところ"
+        lat={null}
+        lon={null}
+        onChange={onChange}
+        allowMapPick
+      />,
+    );
+    fireEvent.click(screen.getByText(/地図から選ぶ/));
+    return onChange;
+  }
+
+  it("測位しただけでは座標が入らない", async () => {
+    const onChange = await openMap();
+    fireEvent.click(await screen.findByText("測位する"));
+    /* 押すための札は出るが、値はまだ動かない */
+    expect(await screen.findByText("いま居る場所をここにする")).toBeTruthy();
+    expect(onChange).not.toHaveBeenCalled();
+  });
+
+  it("押すとその座標が入る。**名前は渡さない**", async () => {
+    const onChange = await openMap();
+    fireEvent.click(await screen.findByText("測位する"));
+    fireEvent.click(await screen.findByText("いま居る場所をここにする"));
+
+    expect(onChange).toHaveBeenCalledTimes(1);
+    expect(onChange.mock.calls[0][0]).toBeCloseTo(33.5902, 4);
+    expect(onChange.mock.calls[0][1]).toBeCloseTo(130.4017, 4);
+    /* 第 3 引数は「地名で選べた」印。測位した点に地名は無い */
+    expect(onChange.mock.calls[0][2]).toBeUndefined();
+  });
+
+  it("測位していないあいだは札を出さない", async () => {
+    await openMap();
+    await screen.findByText("地図の 1 点を押す");
+    expect(screen.queryByText("いま居る場所をここにする")).toBeNull();
+  });
+});
+
+/**
+ * 共有の地図部品（`LocationPickerInner`）の作り。
+ *
+ * jsdom では Leaflet を読めないので字面で見る（`mapMarkerKeyboard` と同じ作法）。
+ */
+describe("共有の地図部品", () => {
+  const src = readFileSync(
+    join(process.cwd(), "src/components/LocationPickerInner.tsx"),
+    "utf8",
+  );
+
+  it("印は渡された座標そのもの（写しを state で持たない）", () => {
+    /*
+      以前は useState の初期値に props を写していたので、開いたあとに外から
+      座標が変わっても（地名で選び直す、郵便番号を入れる）印が前の場所に
+      残った。値は新しいのに地図は古い、という食い違いを利用者が見る。
+    */
+    expect(src).toContain("const markerPos: [number, number] | null =");
+    expect(src).not.toMatch(/useState<\[number, number\] \| null>/);
+    expect(src).not.toContain("setMarkerPos");
+  });
+
+  it("英語の等幅の札が戻っていない", () => {
+    for (const stale of [
+      "LOADING MAP ENGINE",
+      "CLICK ON MAP TO SET TARGET",
+      "font-mono",
+    ]) {
+      expect(src, `「${stale}」が残っている`).not.toContain(stale);
+    }
+    expect(src).toContain("地図を読み込んでいます");
+  });
+
+  it("器のサイズに追従する（折りたたみの中で開いても地色が残らない）", () => {
+    expect(src).toContain("<InvalidateMapSize />");
+  });
+
+  it("選んだ点が画面の中なら地図を動かさない", () => {
+    /* 端を押すたびに地図が跳ねると、隣を押して詰める操作と噛み合わない */
+    expect(src).toContain("map.getBounds().contains(markerPos)");
   });
 });
