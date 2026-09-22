@@ -2,6 +2,7 @@ import {
   bearingBetween,
   COMPASS_DIRECTIONS,
   directionFromBearing,
+  type NodeMapping,
   distanceKmBetween,
   type CompassDirection,
 } from "@/utils/directionGeo";
@@ -79,6 +80,18 @@ export interface LandPriceDirectionOptions {
   maxKm?: number;
   /** 「住宅地」など。指定すると `use_category` が一致する地点だけを見る。 */
   useCategory?: string | null;
+  /**
+   * 方位角を八方位に落とす規則。**判定と同じものを渡すこと。**
+   *
+   * ここは `"traditional"` の決め打ちだった。同じサイドバーの住宅・土地
+   * 統計は `nodeMappingForBoard` に従う（#1297・#1298）ので、独自モデル
+   * （45 度等分）を選んでいる利用者は、**同じ「東」の見出しの下で 2 通りの
+   * 振り分けを見ていた**。四正と四隅の境目にある地点は、統計では東なのに
+   * 地価では北東に入る。
+   *
+   * **既定は `"traditional"`**。渡さない呼び出しの答えは 1 件も変わらない。
+   */
+  nodeMapping?: NodeMapping;
 }
 
 /** 昇順に並んだ配列の分位点。線形補間はしない（件数が少ないため）。 */
@@ -121,6 +134,7 @@ export function landPricesByDirection(
   const minKm = options.minKm ?? DEFAULT_MIN_KM;
   const maxKm = options.maxKm ?? DEFAULT_MAX_KM;
   const useCategory = options.useCategory ?? null;
+  const nodeMapping = options.nodeMapping ?? "traditional";
 
   const prices = new Map<CompassDirection, number[]>();
   const nearest = new Map<CompassDirection, number>();
@@ -140,7 +154,7 @@ export function landPricesByDirection(
 
     /* 判定と同じ真北の方位角で切る。磁北は使わない（CLAUDE.md 3 節） */
     const bearing = bearingBetween(baseLat, baseLon, row.lat, row.lon);
-    const direction = directionFromBearing(bearing, "traditional");
+    const direction = directionFromBearing(bearing, nodeMapping);
 
     prices.get(direction)!.push(row.price_per_sqm);
     const near = nearest.get(direction);
