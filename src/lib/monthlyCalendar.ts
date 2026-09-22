@@ -1,7 +1,7 @@
 import { getRokuyo, getLuckyDays, plainRokuyo } from "@/utils/lunar";
 import {
-  AstroEngine,
   DOYOU_MABI,
+  doyouTypeOfDay,
   getCurrentZodiac,
   getUpcomingDoyouPeriod,
 } from "@/utils/ephemerisEngine";
@@ -175,37 +175,21 @@ function doyouPeriodOf(
  *
  * 立春・立夏・立秋・立冬の前 18 日間が土用で、土いじりや移転の基礎に
  * 関わることを避けるとされる。ただし間日は障りが無いとする。
- * ephemerisEngine の内部実装と同じ規則をここでも使う（あちらは
- * calculateVectorCollision の中にあり、単体で呼べないため）。
+ * 規則は ephemerisEngine の `doyouTypeOfDay` ただ 1 つ。
  */
 function doyouStateOf(
   date: Date,
   dayZodiac: string,
 ): { inDoyou: boolean; isMabi: boolean } {
-  const sunLon = AstroEngine.getSolarLongitude(date);
-  // 土用は各季の終わり 18 度ぶん。立春315/立夏45/立秋135/立冬225 の手前。
   /*
-    間日の表は ephemerisEngine の DOYOU_MABI から引く。以前はここに手で
-    写していて、冬に春の表（巳午酉）、春に夏の表（卯辰申）が入っていた。
-    /calendar/2026-04 が 4/23（卯）を「向く日」に入れ、4/25（巳・大安）を
-    落とすなど、冬と春の土用で毎年ずれていた。
+    区切りも間日の表も ephemerisEngine から引く。以前はここに手で写して
+    いて、間日は冬に春の表・春に夏の表が入り、黄経を見る時刻も帯
+    （getUpcomingDoyouPeriod）と違っていた。同じ頁の帯と行が土用の
+    入り・明けで 1 日食い違っていた（#1493）。
   */
-  const RANGES: { from: number; to: number; mabi: readonly string[] }[] = [
-    { from: 297, to: 315, mabi: DOYOU_MABI.WINTER }, // 冬土用
-    { from: 27, to: 45, mabi: DOYOU_MABI.SPRING }, // 春土用
-    { from: 117, to: 135, mabi: DOYOU_MABI.SUMMER }, // 夏土用
-    { from: 207, to: 225, mabi: DOYOU_MABI.AUTUMN }, // 秋土用
-  ];
-  for (const r of RANGES) {
-    const inRange =
-      r.from < r.to
-        ? sunLon >= r.from && sunLon < r.to
-        : sunLon >= r.from || sunLon < r.to;
-    if (inRange) {
-      return { inDoyou: true, isMabi: r.mabi.includes(dayZodiac) };
-    }
-  }
-  return { inDoyou: false, isMabi: false };
+  const type = doyouTypeOfDay(date);
+  if (!type) return { inDoyou: false, isMabi: false };
+  return { inDoyou: true, isMabi: DOYOU_MABI[type].includes(dayZodiac) };
 }
 
 export function directionListLabel(list: string[]): string {

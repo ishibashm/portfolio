@@ -74,6 +74,15 @@ export const DOYOU_SATSU_DIRECTIONS: Record<
   WINTER: "NE",
 };
 
+export type DoyouSeason = "SPRING" | "SUMMER" | "AUTUMN" | "WINTER";
+
+const DOYOU_SEASONS: readonly DoyouSeason[] = [
+  "SPRING",
+  "SUMMER",
+  "AUTUMN",
+  "WINTER",
+];
+
 export type DoyouState = {
   inDoyou: boolean;
   doyouType: "SPRING" | "SUMMER" | "AUTUMN" | "WINTER" | null;
@@ -115,7 +124,7 @@ import {
 } from "astronomy-engine";
 import { Solar } from "lunar-javascript";
 import { calculateSolarTime, getZonedDateTimeFields } from "./solarTime";
-import { jstNoonOf } from "./boardInstant";
+import { jstDayEndOf, jstNoonOf } from "./boardInstant";
 import { worstNoise } from "./noiseSeverity";
 
 /**
@@ -846,6 +855,40 @@ export const DOYOU_MABI: Record<
   WINTER: ["寅", "卯", "巳"],
 };
 
+/**
+ * 土用の太陽黄経の区切り。立春 315・立夏 45・立秋 135・立冬 225 の
+ * 手前 18 度ぶん。
+ */
+export const DOYOU_RANGES: Record<DoyouSeason, readonly [number, number]> = {
+  SPRING: [27, 45],
+  SUMMER: [117, 135],
+  AUTUMN: [207, 225],
+  WINTER: [297, 315],
+};
+
+/**
+ * その**日本時間の日**が、どの土用に属するか。属さなければ null。
+ *
+ * **黄経を見る時刻は日本時間の日の終わり。**土用の入りは瞬間なので、
+ * 日の途中で入った日を「まだ土用ではない」と読むと 1 日遅れる。
+ * 逆に明けの側は、立春などが来た日はもう次の季なので土用から外れる。
+ * 日の終わりで見ると、この両方が同時に正しくなる（市販の暦と
+ * 2024〜2029 の 24 期間すべてで一致する）。
+ *
+ * **写しを作らないこと。**同じ区切りが 4 か所に書かれていて、標本を
+ * 取る時刻が 3 通りに割れていた（渡された瞬間そのもの／実行環境の
+ * 正午／日本時間の正午）。/calendar は帯と日ごとの行が食い違い、
+ * 本番（UTC）と開発機（JST）でも答えが違った（#1493）。
+ */
+export function doyouTypeOfDay(date: Date): DoyouSeason | null {
+  const L0 = AstroEngine.getSolarLongitude(jstDayEndOf(date));
+  for (const season of DOYOU_SEASONS) {
+    const [from, to] = DOYOU_RANGES[season];
+    if (L0 >= from && L0 < to) return season;
+  }
+  return null;
+}
+
 export function calculateVectorCollision(
   personalStar: StarFrequency,
   yearBoard: BoardLayout,
@@ -943,12 +986,7 @@ export function calculateVectorCollision(
   // 土用 (Doyou) & 間日 (Mabi)
   let doyouState: DoyouState | undefined = undefined;
   if (targetDate) {
-    const L0 = AstroEngine.getSolarLongitude(targetDate);
-    let doyouType: "SPRING" | "SUMMER" | "AUTUMN" | "WINTER" | null = null;
-    if (L0 >= 27 && L0 < 45) doyouType = "SPRING";
-    else if (L0 >= 117 && L0 < 135) doyouType = "SUMMER";
-    else if (L0 >= 207 && L0 < 225) doyouType = "AUTUMN";
-    else if (L0 >= 297 && L0 < 315) doyouType = "WINTER";
+    const doyouType = doyouTypeOfDay(targetDate);
 
     const inDoyou = doyouType !== null;
     let isMabi = false;
@@ -1541,36 +1579,23 @@ export interface DoyouPeriodInfo {
   mabiDays: string[];
 }
 
+/**
+ * `baseDate` 以降で最初に来る（または今いる）土用の期間。
+ *
+ * 日の切り方は `doyouTypeOfDay` ただ 1 つ。以前はここだけ
+ * `setHours(12, 0, 0, 0)` で**実行環境の正午**に正規化していたので、
+ * 本番（UTC）では 21:00 JST、開発機（JST）では 12:00 JST が基準になり、
+ * 同じコミットで入りの日が 1 日違った（#1493）。
+ */
 export function getUpcomingDoyouPeriod(baseDate: Date): DoyouPeriodInfo | null {
-  const getDoyouType = (
-    L0: number,
-  ): "SPRING" | "SUMMER" | "AUTUMN" | "WINTER" | null => {
-    if (L0 >= 27 && L0 < 45) return "SPRING";
-    if (L0 >= 117 && L0 < 135) return "SUMMER";
-    if (L0 >= 207 && L0 < 225) return "AUTUMN";
-    if (L0 >= 297 && L0 < 315) return "WINTER";
-    return null;
-  };
-
-  const getMabiZodiacs = (
-    type: "SPRING" | "SUMMER" | "AUTUMN" | "WINTER",
-  ): string[] => {
-    if (type === "SPRING") return ["巳", "午", "酉"];
-    if (type === "SUMMER") return ["卯", "辰", "申"];
-    if (type === "AUTUMN") return ["未", "酉", "亥"];
-    return ["寅", "卯", "巳"]; // WINTER
-  };
-
-  // Find the first day in a Doyou period, starting from baseDate
-  const current = new Date(baseDate.getTime());
-  current.setHours(12, 0, 0, 0); // normalize
-  let foundType: "SPRING" | "SUMMER" | "AUTUMN" | "WINTER" | null = null;
+  /* 日の代表は日本時間の正午。24 時間ずつ足しても正午のまま動く。 */
+  const current = jstNoonOf(baseDate);
+  let foundType: DoyouSeason | null = null;
   let targetDate = new Date(current.getTime());
 
   for (let i = 0; i < 365; i++) {
     const testDate = new Date(current.getTime() + i * 86400000);
-    const L0 = AstroEngine.getSolarLongitude(testDate);
-    const type = getDoyouType(L0);
+    const type = doyouTypeOfDay(testDate);
     if (type) {
       foundType = type;
       targetDate = testDate;
@@ -1580,40 +1605,34 @@ export function getUpcomingDoyouPeriod(baseDate: Date): DoyouPeriodInfo | null {
 
   if (!foundType) return null;
 
-  // Scan backward to find the start date of this Doyou period
+  // その期間の初日まで遡る
   let startDate = new Date(targetDate.getTime());
   while (true) {
     const prevDate = new Date(startDate.getTime() - 86400000);
-    const L0 = AstroEngine.getSolarLongitude(prevDate);
-    if (getDoyouType(L0) === foundType) {
-      startDate = prevDate;
-    } else {
-      break;
-    }
+    if (doyouTypeOfDay(prevDate) === foundType) startDate = prevDate;
+    else break;
   }
 
-  // Scan forward to find the end date of this Doyou period
+  // その期間の最終日まで進む
   let endDate = new Date(targetDate.getTime());
   while (true) {
     const nextDate = new Date(endDate.getTime() + 86400000);
-    const L0 = AstroEngine.getSolarLongitude(nextDate);
-    if (getDoyouType(L0) === foundType) {
-      endDate = nextDate;
-    } else {
-      break;
-    }
+    if (doyouTypeOfDay(nextDate) === foundType) endDate = nextDate;
+    else break;
   }
 
-  // Find Mabi days in this period
+  // 期間中の間日
   const mabiDays: string[] = [];
-  const mabiZodiacs = getMabiZodiacs(foundType);
   const totalDays =
     Math.round((endDate.getTime() - startDate.getTime()) / 86400000) + 1;
 
   for (let i = 0; i < totalDays; i++) {
     const d = new Date(startDate.getTime() + i * 86400000);
     const zodiacs = getCurrentZodiac(d);
-    if (zodiacs?.dayZodiac && mabiZodiacs.includes(zodiacs.dayZodiac)) {
+    if (
+      zodiacs?.dayZodiac &&
+      DOYOU_MABI[foundType].includes(zodiacs.dayZodiac)
+    ) {
       mabiDays.push(d.toISOString().split("T")[0]);
     }
   }
@@ -1627,29 +1646,14 @@ export function getUpcomingDoyouPeriod(baseDate: Date): DoyouPeriodInfo | null {
 }
 
 export function checkIsDoyouHazard(date: Date): boolean {
-  const L0 = AstroEngine.getSolarLongitude(date);
-  let doyouType: "SPRING" | "SUMMER" | "AUTUMN" | "WINTER" | null = null;
-  if (L0 >= 27 && L0 < 45) doyouType = "SPRING";
-  else if (L0 >= 117 && L0 < 135) doyouType = "SUMMER";
-  else if (L0 >= 207 && L0 < 225) doyouType = "AUTUMN";
-  else if (L0 >= 297 && L0 < 315) doyouType = "WINTER";
-
-  const inDoyou = doyouType !== null;
-  if (!inDoyou) return false;
+  const doyouType = doyouTypeOfDay(date);
+  if (!doyouType) return false;
 
   const zodiacs = getCurrentZodiac(date);
-  let isMabi = false;
-  if (zodiacs?.dayZodiac) {
-    if (doyouType === "SPRING")
-      isMabi = ["巳", "午", "酉"].includes(zodiacs.dayZodiac);
-    else if (doyouType === "SUMMER")
-      isMabi = ["卯", "辰", "申"].includes(zodiacs.dayZodiac);
-    else if (doyouType === "AUTUMN")
-      isMabi = ["未", "酉", "亥"].includes(zodiacs.dayZodiac);
-    else if (doyouType === "WINTER")
-      isMabi = ["寅", "卯", "巳"].includes(zodiacs.dayZodiac);
-  }
-  return inDoyou && !isMabi;
+  const isMabi = zodiacs?.dayZodiac
+    ? DOYOU_MABI[doyouType].includes(zodiacs.dayZodiac)
+    : false;
+  return !isMabi;
 }
 
 export function filterCollisionByMode(
