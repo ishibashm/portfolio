@@ -23,6 +23,7 @@ import {
 /* 型だけ。値で import すると prefContent → 暦エンジンまで頁に乗る
    （リンクはサーバの /api/geocode/reverse が組んで返す）。 */
 import type { PortalLink } from "@/lib/portalLinks";
+import { PortalLinkList } from "@/components/portal/PortalLinkList";
 
 /**
  * 指定した1地点の吉凶を、そのまま画面で見る。
@@ -505,33 +506,12 @@ export function SpotVerdict({
           `name` のまま縮めず、断り書きを必ず添える（lib/portalLinks）。
           出発地が無くても出す（方位が要らない話なので）。 */}
       {target && shownPortal && (
-        <div className="rounded-xl border border-stone-200 bg-white/80 dark:bg-stone-50 p-2.5">
-          <p className="text-xs font-bold text-stone-700">
-            {shownPortal.city}で募集中の部屋を見る
-          </p>
-          <ul className="mt-1 space-y-1 text-xs">
-            {shownPortal.links.map((l) => (
-              <li key={l.portal}>
-                <a
-                  href={l.href}
-                  rel={l.rel}
-                  target="_blank"
-                  className="inline-flex min-h-[24px] items-center font-semibold text-indigo-700 underline hover:text-indigo-900"
-                >
-                  {l.name}
-                </a>
-                {l.city && (
-                  <span className="ml-1 text-stone-500">
-                    （{shownPortal.city}の賃貸）
-                  </span>
-                )}
-              </li>
-            ))}
-          </ul>
-          <p className="mt-1 text-xs leading-relaxed text-stone-500">
-            {`${shownPortal.disclaimer}街は調べた地点に一番近い市区町村です。境目の近くでは、隣の街の一覧が開くことがあります。`}
-          </p>
-        </div>
+        <PortalLinkList
+          cityName={shownPortal.city}
+          links={shownPortal.links}
+          disclaimer={shownPortal.disclaimer}
+          note="街は調べた地点に一番近い市区町村です。境目の近くでは、隣の街の一覧が開くことがあります。"
+        />
       )}
     </div>
   );

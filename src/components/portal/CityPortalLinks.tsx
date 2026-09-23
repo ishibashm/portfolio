@@ -1,8 +1,5 @@
-import {
-  PORTAL_LINK_DISCLAIMER,
-  portalLinksForPref,
-  suumoCitySearchUrl,
-} from "@/lib/portalLinks";
+import { PORTAL_LINK_DISCLAIMER, portalLinksForCity } from "@/lib/portalLinks";
+import { PortalLinkList } from "./PortalLinkList";
 
 /**
  * その市区町村の募集を、外部のサイトで見るための入口。
@@ -35,6 +32,11 @@ import {
  * を false にすれば `suumoCitySearchUrl` が null を返し、この部品は
  * 自動的に地方のトップだけに戻る。**HOME'S には例外が無い**ので、
  * どの県でもトップページだけ。
+ *
+ * ## 「この地点を調べる」と同じ仕組み（2026-09-23）
+ *
+ * 組み立ては `portalLinksForCity`、描くのは `PortalLinkList`。どちらも
+ * 物件検索の「この地点を調べる」（`SpotVerdict`）と共有している。
  */
 export function CityPortalLinks({
   /** JIS の市区町村コード 5 桁。 */
@@ -47,56 +49,14 @@ export function CityPortalLinks({
   cityName: string;
   className?: string;
 }) {
-  const cityUrl = suumoCitySearchUrl(code);
-  const prefLinks = portalLinksForPref(code.slice(0, 2));
-  const suumo = prefLinks.find((l) => l.portal === "suumo");
-  const homes = prefLinks.find((l) => l.portal === "homes");
-
+  /* 組み立ては台帳の 1 つ（「この地点を調べる」と同じ）、描くのも 1 つ */
   return (
-    <div
-      className={`rounded-2xl border border-slate-300 bg-white/90 p-4 ${className}`}
-    >
-      <p className="text-xs font-bold text-slate-800">
-        {cityName}で募集中の部屋を見る
-      </p>
-      {/* 文の途中で改行すると、日本語の文中に半角スペースが入る
-          （jsxJapaneseLinebreak が拾う）。1 つの式にまとめて渡す。 */}
-      <p className="mt-1 text-xs leading-relaxed text-slate-600">
-        {
-          "このサイトは方位・暦・公的な統計を扱っていて、募集中の部屋そのものは持っていません。下の各社でご覧ください。"
-        }
-      </p>
-      <ul className="mt-2 space-y-1 text-xs">
-        {suumo && (
-          <li>
-            <a
-              href={cityUrl ?? suumo.href}
-              rel={suumo.rel}
-              target="_blank"
-              className="inline-flex min-h-[24px] items-center font-semibold text-indigo-700 underline hover:text-indigo-900"
-            >
-              {suumo.name}
-            </a>
-            {cityUrl && (
-              <span className="ml-1 text-slate-500">（{cityName}の賃貸）</span>
-            )}
-          </li>
-        )}
-        {homes && (
-          <li>
-            <a
-              href={homes.href}
-              rel={homes.rel}
-              target="_blank"
-              className="inline-flex min-h-[24px] items-center font-semibold text-indigo-700 underline hover:text-indigo-900"
-            >
-              {homes.name}
-            </a>
-          </li>
-        )}
-      </ul>
-      <p className="mt-2 text-xs text-slate-500">{PORTAL_LINK_DISCLAIMER}</p>
-    </div>
+    <PortalLinkList
+      cityName={cityName}
+      links={portalLinksForCity(code)}
+      disclaimer={PORTAL_LINK_DISCLAIMER}
+      className={className}
+    />
   );
 }
 
