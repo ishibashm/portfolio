@@ -61,6 +61,11 @@ export interface PortalLink {
   href: string;
   /** リンクの `rel`。両社のサンプルに合わせる。 */
   rel: string;
+  /**
+   * 市区町村まで絞った一覧を指しているか。`portalLinksForCity` の SUUMO
+   * だけが立てる。画面が「（広島市中区の賃貸）」と添えるかどうかに使う。
+   */
+  city?: boolean;
 }
 
 /** 誤認を避けるための一言。リンクを出す画面に必ず添える。 */
@@ -301,4 +306,25 @@ export function portalLinksForPref(prefCode: string): PortalLink[] {
       rel: "nofollow noopener",
     },
   ];
+}
+
+/**
+ * その市区町村から渡してよい外部リンク。
+ *
+ * SUUMO は市区町村の賃貸一覧（`suumoCitySearchUrl`）。組み立てられない
+ * ときは県の地方のトップへ落ちる（`portalLinksForPref` と同じ）。
+ * **HOME'S はどの市区町村でもトップだけ**（例外が無い）。
+ *
+ * 「この地点を調べる」がこれを使う（2026-09-23。利用者の依頼）。調べた
+ * 地点の市区町村で募集中の部屋を見に行くのに、**向こうの検索画面で
+ * 同じ街を選び直さずに済む**ようにする。URL を貼らせるのではなく、
+ * こちらが組んで渡す。
+ *
+ * @param code JIS の市区町村コード 5 桁
+ */
+export function portalLinksForCity(code: string): PortalLink[] {
+  const cityUrl = suumoCitySearchUrl(code);
+  return portalLinksForPref(code.slice(0, 2)).map((l) =>
+    l.portal === "suumo" && cityUrl ? { ...l, href: cityUrl, city: true } : l,
+  );
 }
