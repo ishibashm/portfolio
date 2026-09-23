@@ -328,15 +328,27 @@ export function SpotVerdict({
           {busy ? <Loader2 className="w-3 h-3 animate-spin" /> : "調べる"}
         </button>
       </div>
+      {/*
+        説明は 1 文にする（利用者の指摘、2026-09-24）。以前は URL の貼り方
+        まで 2 段落で並べていて、**市区町村名を入れればリンクまで出る**
+        ことが読み取れず、「広島ならそのリンクを生成できるようにしたい」
+        と言われた（既に出る作りだった）。URL の話は畳む。
+      */}
       <p className="text-xs text-stone-600 leading-relaxed">
         {
-          "一覧に無い場所でも、出発地から見た方位とその日の吉凶を出します。住所や市区町村名で探せるので、URL は要りません。地図をクリックしても入ります。調べた街の賃貸の一覧（SUUMO）へのリンクも出します。"
-        }
-        <br />
-        {
-          "物件サイトの一覧の URL を貼っても、その街として調べます（URL は開きに行きません。綴りに入っている市区町村だけを読みます）。HOME'S の URL と物件ごとのページの URL には市区町村が入っていないので、そのときは市区町村名でお願いします。"
+          "市区町村名（例: 広島市中区）を入れて「調べる」を押すと、出発地から見た方位とその日の吉凶に加えて、その街の SUUMO の賃貸一覧へのリンクが出ます。URL は要りません。地図をクリックしても入ります。"
         }
       </p>
+      <details className="text-xs text-stone-500">
+        <summary className="cursor-pointer select-none min-h-[24px]">
+          物件サイトの URL を貼るとき
+        </summary>
+        <p className="mt-1 leading-relaxed">
+          {
+            "物件サイトの一覧の URL を貼っても、その街として調べます（URL は開きに行きません。綴りに入っている市区町村だけを読みます）。HOME'S の URL と物件ごとのページの URL には市区町村が入っていないので、そのときは市区町村名でお願いします。"
+          }
+        </p>
+      </details>
 
       {error && <p className="text-xs text-rose-600">{error}</p>}
 

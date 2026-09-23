@@ -1,4 +1,5 @@
 import type { PortalLink } from "@/lib/portalLinks";
+import { CopyLinkButton } from "./CopyLinkButton";
 
 /**
  * 外部の不動産サイトへの入口を描く**だけ**の部品。リンクは受け取る。
@@ -68,6 +69,9 @@ export function PortalLinkList({
             {link.city && (
               <span className="ml-1 text-slate-500">（{cityName}の賃貸）</span>
             )}
+            {/* 市区町村まで絞った URL だけ写せるようにする。トップページを
+                写しても、向こうで街を選び直すことになるので意味が薄い */}
+            {link.city && <CopyLinkButton href={link.href} />}
           </li>
         ))}
       </ul>
