@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { AREAS } from "@/lib/areaContent";
 import { mergeWithListed } from "@/lib/municipalityCoords";
 import { nearestMunicipality } from "@/lib/nearestMunicipality";
+import { PORTAL_LINK_DISCLAIMER, portalLinksForCity } from "@/lib/portalLinks";
 
 /**
  * 座標 → 一番近い市区町村名。画面が「35.689 / 139.692」のような座標の
@@ -13,6 +14,19 @@ import { nearestMunicipality } from "@/lib/nearestMunicipality";
  * 市区町村になることはまず無い）。
  *
  * 判定には一切使わない。表示だけ。
+ *
+ * ## `portal`（2026-09-23）
+ *
+ * その市区町村の募集を外部のサイトで見るためのリンク（`portalLinksForCity`）。
+ * 「この地点を調べる」が、調べた地点の街の一覧へ渡すのに使う。
+ *
+ * **組み立てはここ（サーバ）でする。**`portalLinks` は `prefContent` を
+ * 引き、その先で方位の JSON と暦エンジンまで連れてくる。物件検索の頁が
+ * 画面側で import すると初期バンドルに乗る（`arbitrageBundleLeaf` が止める）。
+ * 断り書きも同じ理由で一緒に返す。
+ *
+ * **開きに行かない。**URL を文字列として組むだけで、相手のサーバーには
+ * 1 回も触らない。
  */
 export const dynamic = "force-dynamic";
 
@@ -38,7 +52,15 @@ export async function GET(request: Request) {
     allPoints(),
   );
   return NextResponse.json(
-    { data: hit },
+    {
+      data: hit,
+      portal: hit
+        ? {
+            links: portalLinksForCity(hit.code),
+            disclaimer: PORTAL_LINK_DISCLAIMER,
+          }
+        : null,
+    },
     { headers: { "Cache-Control": "public, max-age=86400, s-maxage=86400" } },
   );
 }

@@ -20,6 +20,9 @@ import {
   parseGeocodeSource,
   type GeocodeSource,
 } from "@/lib/geocodeSource";
+/* 型だけ。値で import すると prefContent → 暦エンジンまで頁に乗る
+   （リンクはサーバの /api/geocode/reverse が組んで返す）。 */
+import type { PortalLink } from "@/lib/portalLinks";
 
 /**
  * 指定した1地点の吉凶を、そのまま画面で見る。
@@ -65,6 +68,23 @@ export type SpotTarget = {
    */
   source?: GeocodeSource | null;
 };
+
+/**
+ * 調べた地点の街の、外部サイトへの入口（/api/geocode/reverse の `portal`）。
+ *
+ * `key` は引いた座標。地点を変えたあとに前の地点の答えが遅れて届いても、
+ * 鍵が合わなければ出さない（別の街の一覧を開かせない）。
+ */
+type SpotPortal = {
+  key: string;
+  city: string;
+  links: PortalLink[];
+  disclaimer: string;
+};
+
+function spotKey(lat: number, lon: number): string {
+  return `${lat.toFixed(3)},${lon.toFixed(3)}`;
+}
 
 /**
  * 入力を座標として読めるか。
@@ -136,6 +156,13 @@ export function SpotVerdict({
   const [showMark, setShowMark] = useState(false);
   const [markUrl, setMarkUrl] = useState("");
   const [markMemo, setMarkMemo] = useState("");
+  /*
+    調べた地点の街で、募集中の部屋を外部のサイトで見る入口（2026-09-23。
+    利用者の依頼「URL が無いと調べにくい。SUUMO で広島ならそのリンクを
+    作ってほしい」）。地名・座標・地図のどれで指しても、その街の一覧へ
+    渡す。URL を貼らせるのではなく、こちらが組む。
+  */
+  const [portal, setPortal] = useState<SpotPortal | null>(null);
 
   /*
     **`Number.isFinite` では足りない。**呼び出し側は `Number(baseLat)` で
@@ -161,6 +188,41 @@ export function SpotVerdict({
     setError(null);
     setTarget({ lat: requestedLat, lon: requestedLon, name: text });
   }, [requestedSeq, requestedLat, requestedLon]);
+
+  const targetLat = target?.lat;
+  const targetLon = target?.lon;
+  const targetKey =
+    targetLat === undefined || targetLon === undefined
+      ? null
+      : spotKey(targetLat, targetLon);
+  useEffect(() => {
+    if (targetLat === undefined || targetLon === undefined) return;
+    const key = spotKey(targetLat, targetLon);
+    let alive = true;
+    fetch(`/api/geocode/reverse?lat=${targetLat}&lon=${targetLon}`)
+      .then((res) => (res.ok ? res.json() : null))
+      .then((body) => {
+        const city = body?.data?.name;
+        const p = body?.portal;
+        if (!alive || typeof city !== "string" || !p) return;
+        if (!Array.isArray(p.links) || p.links.length === 0) return;
+        setPortal({
+          key,
+          city,
+          links: p.links,
+          disclaimer: String(p.disclaimer ?? ""),
+        });
+      })
+      .catch(() => {
+        /* 入口が出ないだけ。判定には関係しない */
+      });
+    return () => {
+      alive = false;
+    };
+  }, [targetLat, targetLon]);
+  /* 今の地点の答えだけを出す。前の地点のものは鍵が合わない */
+  const shownPortal =
+    portal && targetKey !== null && portal.key === targetKey ? portal : null;
 
   const lookup = async () => {
     const text = query.trim();
@@ -245,7 +307,7 @@ export function SpotVerdict({
         <input
           id="arb-spot-query"
           type="text"
-          placeholder="住所、物件サイトの一覧の URL、または 35.0116, 135.7681"
+          placeholder="住所・市区町村名（広島市中区 など）、または 35.0116, 135.7681"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           onKeyDown={(e) => {
@@ -266,13 +328,13 @@ export function SpotVerdict({
         </button>
       </div>
       <p className="text-xs text-stone-600 leading-relaxed">
-        一覧に無い場所でも、出発地から見た方位とその日の吉凶を出します。地図をクリックすると、その地点がここに入ります。
+        {
+          "一覧に無い場所でも、出発地から見た方位とその日の吉凶を出します。住所や市区町村名で探せるので、URL は要りません。地図をクリックしても入ります。調べた街の賃貸の一覧（SUUMO）へのリンクも出します。"
+        }
         <br />
-        SUUMO で市区町村を絞った一覧の URL を貼ると、その街として調べます（
-        <b>URL は開きに行きません。</b>
-        綴りに入っている市区町村だけを読みます）。HOME&apos;S の URL
-        と物件ごとのページの URL
-        には市区町村が入っていないので、そのときは市区町村名でお願いします。
+        {
+          "物件サイトの一覧の URL を貼っても、その街として調べます（URL は開きに行きません。綴りに入っている市区町村だけを読みます）。HOME'S の URL と物件ごとのページの URL には市区町村が入っていないので、そのときは市区町村名でお願いします。"
+        }
       </p>
 
       {error && <p className="text-xs text-rose-600">{error}</p>}
@@ -435,6 +497,40 @@ export function SpotVerdict({
               </p>
             </div>
           )}
+        </div>
+      )}
+
+      {/* 調べた街の募集を外部のサイトで見る。**1 地点につき 2 本だけ**
+          （方位の表の各行には貼らない。#1296 の決め）。文言は台帳の
+          `name` のまま縮めず、断り書きを必ず添える（lib/portalLinks）。
+          出発地が無くても出す（方位が要らない話なので）。 */}
+      {target && shownPortal && (
+        <div className="rounded-xl border border-stone-200 bg-white/80 dark:bg-stone-50 p-2.5">
+          <p className="text-xs font-bold text-stone-700">
+            {shownPortal.city}で募集中の部屋を見る
+          </p>
+          <ul className="mt-1 space-y-1 text-xs">
+            {shownPortal.links.map((l) => (
+              <li key={l.portal}>
+                <a
+                  href={l.href}
+                  rel={l.rel}
+                  target="_blank"
+                  className="inline-flex min-h-[24px] items-center font-semibold text-indigo-700 underline hover:text-indigo-900"
+                >
+                  {l.name}
+                </a>
+                {l.city && (
+                  <span className="ml-1 text-stone-500">
+                    （{shownPortal.city}の賃貸）
+                  </span>
+                )}
+              </li>
+            ))}
+          </ul>
+          <p className="mt-1 text-xs leading-relaxed text-stone-500">
+            {`${shownPortal.disclaimer}街は調べた地点に一番近い市区町村です。境目の近くでは、隣の街の一覧が開くことがあります。`}
+          </p>
         </div>
       )}
     </div>
