@@ -17,7 +17,13 @@ import type { CompassDirection } from "@/utils/directionGeo";
 import { parseJapanDateTime } from "@/utils/japanDate";
 
 /**
- * 方位ごとに「その日の段階」と「いま表示している物件数」を並べる。
+ * 方位ごとに「その日の段階」と「その方位にある街（市区町村）の数」を並べる。
+ *
+ * **数えているのは物件ではなく街。**賃貸の掲載を閉じた（#74、backlog
+ * 29 節）あと、頁は `townCounts`（方位ごとの市区町村の数）を渡している。
+ * ところがこの部品の文言が「棒の長さが物件数」「表示中 914 件」のまま
+ * 残っていて、**取り込んでいない物件が 914 件あるように読めた**
+ * （利用者の指摘、2026-09-23）。数は正しく、言葉だけが古かった。
  *
  * 一覧は㎡単価や総合スコアの順に並ぶので、「どっちへ動くか」を決めるための
  * 全体像——どの方位が動ける方位で、そこに物件がどれだけあるか——が出ていない。
@@ -153,7 +159,7 @@ export function DirectionTierOverview({
         <h3 className="text-xs font-bold text-stone-700">方位ごとの内訳</h3>
         <span className="flex items-center gap-1.5">
           <span className="text-[10px] text-stone-600">
-            表示中 {total.toLocaleString()} 件
+            {total.toLocaleString()} 市区町村
           </span>
           <ChevronRight
             aria-hidden="true"
@@ -165,7 +171,7 @@ export function DirectionTierOverview({
       </button>
       <div id={contentId} hidden={!open}>
         <p className="mt-1 text-xs leading-relaxed text-stone-500">
-          棒の長さが物件数、色がその日の段階です。行を押すとその方位だけに絞れます。
+          棒の長さがその方位にある市区町村の数、色がその日の段階です。行を押すとその方位だけに絞れます。
         </p>
 
         {fengShui && (
@@ -174,7 +180,7 @@ export function DirectionTierOverview({
             ）。
             <b>気学の段階とは足し合わせていません。</b>
             八宅は<b>方位名で</b>
-            引いているため、気学と区切りが違う境目の物件は八宅では隣の方位に入ります。
+            引いているため、気学と区切りが違う境目の街は八宅では隣の方位に入ります。
           </p>
         )}
 
