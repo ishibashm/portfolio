@@ -240,6 +240,9 @@ export function QuickProfileBar() {
             setBaseLabel(name);
           }}
           help={PROFILE_FIELDS.base.help}
+          /* 地名で言えない家（番地が分からない・棟が違う）は地図で指す。
+             /profile と同じ共有の地図（利用者の依頼、2026-09-23） */
+          allowMapPick
           onUseCurrentLocation={() => {
             if (!navigator.geolocation) return;
             navigator.geolocation.getCurrentPosition((pos) => {
@@ -263,6 +266,7 @@ export function QuickProfileBar() {
           }}
           optional
           help={PROFILE_FIELDS.birthPlace.help}
+          allowMapPick
         />
       </div>
 
