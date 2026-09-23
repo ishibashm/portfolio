@@ -18,7 +18,7 @@
  * 本文は書き換えない。低い記事を人が読んで、題・説明文・冒頭のどれを
  * 直すかを決める（score_title_alignment の頭を読むこと）。
  */
-import { paragraphsOf, stripLinks, type PostLike } from "./linkCandidates";
+import { stripLinks, type PostLike } from "./linkCandidates";
 
 /** 問いの id。Jev の答えはこの名前で返る（[a-z0-9_] だけ）。 */
 export const ALIGNMENT_QUESTIONS = [
@@ -28,8 +28,47 @@ export const ALIGNMENT_QUESTIONS = [
 ] as const;
 export type AlignmentQuestion = (typeof ALIGNMENT_QUESTIONS)[number];
 
-/** 冒頭として見せる段落の数。検索から来た人が読む範囲の目安。 */
-export const LEAD_PARAGRAPHS = 3;
+/**
+ * 冒頭の長さの上限（字）。最初の節が長い記事でも、検索から来た人が
+ * 最初の画面で読む範囲を超えて「冒頭に答えがある」と数えないため。
+ */
+export const LEAD_MAX_CHARS = 1500;
+
+/** 見えない記号を外す（リンクの URL と強調）。 */
+function visible(text: string): string {
+  return stripLinks(text).replace(/\*\*/g, "");
+}
+
+/**
+ * 冒頭 = **本文の最初の `## ` 見出しの節の終わりまで**（見出しの前の
+ * 前置きも含む）。全記事が「## 先に結論」で始まるので、実際には
+ * 前置き＋結論の節になる。
+ *
+ * 最初は「段落を 3 つ」（内部リンクの採点と同じ `paragraphsOf`）で
+ * 切っていたが、run #7（2026-09-24）で冒頭の列が低く出た 5 本を
+ * 読むと、5 本とも答えは結論の節に書いてあった。`paragraphsOf` は
+ * **表と 40 字未満の行を捨てる**（リンクを張る段落を選ぶための規則）
+ * ので、答えが表の記事（九星気学以外の評価基準）や、結論が短い
+ * 番号付きの箇条書きの記事（なぜ方位で吉凶が決まると考えたのか）で
+ * 冒頭が空振りし、答えが 4 番目の箇条書きの記事（風水はどこから
+ * 来たのか）は 3 で切れていた。**別の目的の規則を流用しないこと。**
+ */
+export function leadOf(body: string): string {
+  const lines = body.split("\n");
+  let headings = 0;
+  const out: string[] = [];
+  for (const line of lines) {
+    if (/^## /.test(line)) {
+      headings++;
+      if (headings === 2) break;
+    }
+    out.push(line);
+  }
+  const text = visible(out.join("\n")).trim();
+  return text.length > LEAD_MAX_CHARS
+    ? `${text.slice(0, LEAD_MAX_CHARS)}…`
+    : text;
+}
 
 export interface AlignmentRequest {
   model: string;
@@ -38,20 +77,12 @@ export interface AlignmentRequest {
 }
 
 /**
- * state を組む。冒頭の段落を先に切り出して見せ、そのあとに本文の全体を
- * 置く。「冒頭」を Jev の数え方に任せると、見出しや表を段落と数えるか
- * どうかで答えが揺れるので、こちらで決めて渡す（段落の切り方は内部
- * リンクの採点と同じ `paragraphsOf`）。
- *
- * リンクの URL と強調の記号は外す（読む人には見えないもの）。
+ * state を組む。冒頭（`leadOf`）を先に切り出して見せ、そのあとに本文の
+ * 全体を置く。「冒頭」を Jev の数え方に任せると答えが揺れるので、
+ * こちらで決めて渡す。リンクの URL と強調の記号は外す。
  */
 export function alignmentState(body: string): string {
-  const lead = paragraphsOf(body)
-    .slice(0, LEAD_PARAGRAPHS)
-    .map((p) => p.text)
-    .join("\n\n");
-  const full = stripLinks(body).replace(/\*\*/g, "").trim();
-  return `【冒頭の ${LEAD_PARAGRAPHS} 段落】\n${lead}\n\n【本文の全体】\n${full}`;
+  return `【冒頭（最初の節）】\n${leadOf(body)}\n\n【本文の全体】\n${visible(body).trim()}`;
 }
 
 export function buildAlignmentRequest(
@@ -80,7 +111,7 @@ export function buildAlignmentRequest(
       answer_first: {
         type: "noul",
         instructions:
-          `state の【冒頭の ${LEAD_PARAGRAPHS} 段落】を見てください。` +
+          `state の【冒頭（最初の節）】を見てください。` +
           `題「${post.title}」で検索して来た人が最初に知りたい答えが、この冒頭に書かれていますか。` +
           `前置き・背景・一般論が続いて、答えが【本文の全体】の後半にしか出てこない場合は「いいえ」。`,
       },
@@ -118,10 +149,7 @@ export function toScore(
 export function mockAlignment(
   post: Pick<PostLike, "title" | "description" | "body">,
 ): Record<AlignmentQuestion, number> {
-  const lead = paragraphsOf(post.body)
-    .slice(0, LEAD_PARAGRAPHS)
-    .map((p) => p.text)
-    .join("");
+  const lead = leadOf(post.body);
   const hit = (s: string, where: string) => {
     const words = s
       .split(/[、。・\s「」（）()？?！!]+/)
