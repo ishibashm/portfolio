@@ -50,6 +50,7 @@ import {
   distanceKmBetween,
 } from "@/utils/directionGeo";
 import { SimulatorStart } from "@/components/relocation/SimulatorStart";
+import { PlaceInput } from "@/components/relocation/PlaceInput";
 import { ratingForStatus } from "@/lib/verdictRating";
 import { stepDayTier } from "@/lib/stepTier";
 import { TIER_LABELS, TIER_ORDER, type DayTier } from "@/utils/auspiciousDays";
@@ -2405,17 +2406,36 @@ export default function RelocationSimulatorPage() {
                         className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4"
                         onClick={(e) => e.stopPropagation()}
                       >
-                        <div className="flex flex-col gap-1.5">
-                          <label className="text-[10px] uppercase font-bold text-stone-600">
-                            目的地
-                          </label>
-                          <input
-                            type="text"
-                            value={step.toName}
-                            onChange={(e) =>
-                              handleUpdateStep(idx, { toName: e.target.value })
+                        {/*
+                          目的地は**座標ごと**決める（利用者の依頼、2026-09-24）。
+
+                          以前は名前だけを書き換える素の欄で、ここに「広島」と
+                          打っても**座標は前のまま**だった。方位・距離・吉凶は
+                          座標で決まるので、見出しは広島なのに判定は前の行き先、
+                          という食い違いが出る。動かせるのは右の地図だけだった。
+
+                          地名の欄（PlaceInput）にする。地名・郵便番号のほか、
+                          SUUMO の市区町村一覧の URL を貼ってもその街になる
+                          （`/api/geocode` が綴りだけを読む。開きに行かない）。
+                        */}
+                        <div className="sm:col-span-2 md:col-span-3">
+                          <PlaceInput
+                            label="目的地"
+                            lat={step.toLat}
+                            lon={step.toLon}
+                            currentName={step.toName}
+                            onChange={(lat, lon, name) =>
+                              handleUpdateStep(idx, {
+                                toLat: lat,
+                                toLon: lon,
+                                /* 名前が無いのは緯度経度を手で直したとき。
+                                   前の地名を残すと別の場所に付いたままになる */
+                                toName:
+                                  name ??
+                                  `${lat.toFixed(4)}, ${lon.toFixed(4)}`,
+                              })
                             }
-                            className="w-full px-3 py-2 bg-white/80 border border-stone-200 rounded-xl text-xs font-mono text-stone-900 placeholder-stone-300 focus:outline-none focus:border-indigo-500/20 shadow-inner"
+                            help="市区町村名・住所・郵便番号で探せます。SUUMO で市区町村を絞った一覧の URL を貼っても、その街になります（URL は開きに行きません）。"
                           />
                         </div>
 
