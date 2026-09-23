@@ -23,6 +23,13 @@ import {
   type CompassDirection,
   type NodeMapping,
 } from "@/utils/directionGeo";
+import {
+  isOpenDirection,
+  orderDirections,
+  type DirectionVerdict,
+} from "@/lib/directionTowns";
+import { TIER_JP } from "@/utils/tierDisplay";
+import type { DayTier } from "@/utils/dayTier";
 
 interface TxRow {
   id: string;
@@ -68,12 +75,49 @@ function unitManYen(yenPerSqm: number | null): string {
   return `${(yenPerSqm / 10000).toFixed(1)}万円/㎡`;
 }
 
+/** 総額の上限（円）。「買うときの水準」で絞る選択肢。 */
+const PRICE_CAPS = [
+  10_000_000, 20_000_000, 30_000_000, 50_000_000, 100_000_000,
+];
+/** 面積の下限（㎡）。土地・戸建ての広さで絞る選択肢。 */
+const AREA_FLOORS = [100, 150, 200, 300];
+
+/** 段階の札の文言。判定が無ければ出さない。 */
+function verdictLabel(cell: DirectionVerdict | undefined): string | null {
+  if (!cell) return null;
+  if (cell.blocked) return "天中殺";
+  return TIER_JP[cell.tier as DayTier] ?? cell.tier;
+}
+
+/**
+ * 一覧を絞る方位。**1 方位を選んでいればそれだけ**、そうでなく「開いて
+ * いる方位だけ」なら開いている方位の集合、どちらでもなければ null（絞らない）。
+ * 開いている方位が 1 つも無い日に空の集合で 0 件にしないよう、そのときは
+ * null ではなく空配列を返して呼び出し側に言わせる。
+ */
+export function listDirections(
+  selectedDirection: string,
+  openOnly: boolean,
+  verdicts: Record<string, DirectionVerdict> | undefined,
+): CompassDirection[] | null {
+  if (selectedDirection !== "ALL") {
+    return [selectedDirection as CompassDirection];
+  }
+  if (!openOnly || !verdicts) return null;
+  return (Object.keys(DIRECTION_LABELS) as CompassDirection[]).filter((d) =>
+    isOpenDirection(verdicts[d]),
+  );
+}
+
 export function TransactionsPanel({
   lat,
   lon,
   radiusKm,
   hasBase,
   nodeMapping,
+  verdicts,
+  selectedDirection = "ALL",
+  onSelectDirection,
 }: {
   lat: number;
   lon: number;
@@ -89,6 +133,19 @@ export function TransactionsPanel({
    * 統計を直したときの取り残し。地価は #1498）。
    */
   nodeMapping: NodeMapping;
+  /**
+   * その日の方位ごとの段階（ページが組んだ `dayKigaku.byDirection`）。
+   * 渡すと方位の札に段階を添え、「開いている方位だけ」で絞れる。判定は
+   * ここでは作らない（街の一覧・地図と同じものを借りる）。
+   */
+  verdicts?: Record<string, DirectionVerdict>;
+  /**
+   * 頁全体の方位の絞り込み（"ALL" なら絞らない）。方位の札を押すと
+   * `onSelectDirection` で頁へ返す。街の一覧・方位ごとの内訳と同じ
+   * 1 つの状態で、この札だけ別の選び方を持たない。
+   */
+  selectedDirection?: string;
+  onSelectDirection?: (direction: string) => void;
 }) {
   /*
     取得結果は「どの条件で取ったか」と一緒に持ち、読み込み中かどうかは
@@ -107,21 +164,38 @@ export function TransactionsPanel({
     なるので requestKey に含める。
   */
   const [minRatio, setMinRatio] = useState("");
+  /*
+    買うときの水準で絞る（利用者の依頼、2026-09-24「土地の方角などで
+    フィルタリングできるように」）。総額の上限・面積の下限・開いている
+    方位だけ。どれも API で絞る — 一覧は新しい順に 500 件で切るので、
+    画面で絞ると件数の少ない方位や予算帯はほとんど残らない。
+  */
+  const [maxPrice, setMaxPrice] = useState("");
+  const [minArea, setMinArea] = useState("");
+  const [openOnly, setOpenOnly] = useState(false);
+
+  const dirs = listDirections(selectedDirection, openOnly, verdicts);
+  const dirsParam = dirs ? dirs.join(",") : "";
+  /* 開いている方位が 1 つも無い日。取りに行っても方位で絞れない */
+  const noOpenDirection = dirs !== null && dirs.length === 0;
 
   const effectiveRadius = radiusKm ?? 300;
-  const requestKey = `${lat},${lon},${effectiveRadius},${minRatio},${nodeMapping}`;
+  const requestKey = `${lat},${lon},${effectiveRadius},${minRatio},${maxPrice},${minArea},${dirsParam},${nodeMapping}`;
   const data = result?.key === requestKey ? result.data : null;
   const error = result?.key === requestKey ? result.error : null;
-  const loading = hasBase && result?.key !== requestKey;
+  const loading = hasBase && !noOpenDirection && result?.key !== requestKey;
 
   useEffect(() => {
-    if (!hasBase) return;
+    if (!hasBase || noOpenDirection) return;
     let alive = true;
 
     fetch(
       `/api/relocation/transactions?lat=${lat}&lon=${lon}&radius_km=${effectiveRadius}` +
         `&node_mapping=${nodeMapping}` +
-        (minRatio ? `&min_building_ratio=${minRatio}` : ""),
+        (minRatio ? `&min_building_ratio=${minRatio}` : "") +
+        (maxPrice ? `&max_price=${maxPrice}` : "") +
+        (minArea ? `&min_area=${minArea}` : "") +
+        (dirsParam ? `&directions=${dirsParam}` : ""),
     )
       .then(async (res) => {
         const body = await res.json();
@@ -149,7 +223,19 @@ export function TransactionsPanel({
     return () => {
       alive = false;
     };
-  }, [lat, lon, effectiveRadius, hasBase, requestKey, minRatio, nodeMapping]);
+  }, [
+    lat,
+    lon,
+    effectiveRadius,
+    hasBase,
+    requestKey,
+    minRatio,
+    nodeMapping,
+    maxPrice,
+    minArea,
+    dirsParam,
+    noOpenDirection,
+  ]);
 
   if (!hasBase) {
     return (
@@ -201,6 +287,54 @@ export function TransactionsPanel({
         )}
       </div>
 
+      {/* 総額・面積・方位の絞り込み。条件を変えると取り直すので、
+          読み込み中に消えないよう data の外に置く */}
+      <div className="grid grid-cols-2 gap-1.5">
+        <select
+          value={maxPrice}
+          onChange={(e) => setMaxPrice(e.target.value)}
+          aria-label="総額の上限"
+          className="w-full px-3 py-2 bg-gray-50 dark:bg-white border border-gray-200 dark:border-stone-200 rounded-xl text-xs outline-none cursor-pointer"
+        >
+          <option value="">総額の上限なし</option>
+          {PRICE_CAPS.map((v) => (
+            <option key={v} value={v}>
+              {manYen(v)}以下
+            </option>
+          ))}
+        </select>
+        <select
+          value={minArea}
+          onChange={(e) => setMinArea(e.target.value)}
+          aria-label="面積の下限"
+          className="w-full px-3 py-2 bg-gray-50 dark:bg-white border border-gray-200 dark:border-stone-200 rounded-xl text-xs outline-none cursor-pointer"
+        >
+          <option value="">面積の下限なし</option>
+          {AREA_FLOORS.map((v) => (
+            <option key={v} value={v}>
+              {v}㎡以上
+            </option>
+          ))}
+        </select>
+      </div>
+      {verdicts && (
+        <label className="flex min-h-[24px] items-center gap-2 text-xs text-stone-700">
+          <input
+            type="checkbox"
+            checked={openOnly}
+            onChange={(e) => setOpenOnly(e.target.checked)}
+          />
+          その日に開いている方位の事例だけ
+        </label>
+      )}
+      {noOpenDirection && (
+        <p className="text-xs leading-relaxed text-amber-800">
+          {
+            "この日は開いている方位がありません（どの方位も五大凶殺か天中殺に当たっています）。日付を変えるか、チェックを外してください。"
+          }
+        </p>
+      )}
+
       {loading && (
         <p className="text-xs text-stone-600 animate-pulse">
           成約事例を読み込んでいます…
@@ -223,15 +357,41 @@ export function TransactionsPanel({
               </p>
             ) : (
               <div className="grid grid-cols-2 gap-1.5">
-                {[...data.byDirection]
-                  .sort((a, b) => b.count - a.count)
-                  .map((d) => (
-                    <div
+                {/* 判定があれば開いている順（街の一覧と同じ並べ方）、
+                    無ければ件数の多い順。押すと頁全体がその方位に絞られる */}
+                {(verdicts
+                  ? orderDirections(data.byDirection, verdicts)
+                  : [...data.byDirection].sort((a, b) => b.count - a.count)
+                ).map((d) => {
+                  const active = selectedDirection === d.direction;
+                  const label = verdictLabel(verdicts?.[d.direction]);
+                  const open = isOpenDirection(verdicts?.[d.direction]);
+                  return (
+                    <button
+                      type="button"
                       key={d.direction}
-                      className="flex items-baseline justify-between bg-white dark:bg-stone-50 border border-stone-200 rounded-lg px-2.5 py-1.5"
+                      aria-pressed={active}
+                      disabled={!onSelectDirection}
+                      onClick={() =>
+                        onSelectDirection?.(active ? "ALL" : d.direction)
+                      }
+                      className={`flex items-baseline justify-between rounded-lg border px-2.5 py-1.5 text-left transition-colors ${
+                        active
+                          ? "border-indigo-400 bg-indigo-50"
+                          : "border-stone-200 bg-white dark:bg-stone-50 hover:bg-stone-50"
+                      }`}
                     >
                       <span className="text-xs font-bold text-stone-700">
                         {DIRECTION_LABELS[d.direction] ?? d.direction}
+                        {label && (
+                          <span
+                            className={`ml-1.5 text-[10px] font-bold ${
+                              open ? "text-emerald-700" : "text-rose-700"
+                            }`}
+                          >
+                            {label}
+                          </span>
+                        )}
                       </span>
                       <span className="text-right">
                         <span className="block text-[11px] font-mono text-stone-700">
@@ -241,8 +401,9 @@ export function TransactionsPanel({
                           {d.count.toLocaleString()} 件
                         </span>
                       </span>
-                    </div>
-                  ))}
+                    </button>
+                  );
+                })}
               </div>
             )}
           </section>
@@ -268,6 +429,24 @@ export function TransactionsPanel({
             <h3 className="text-[10px] font-bold uppercase tracking-wider text-stone-500 mb-2">
               直近の成約事例（新しい順・{rows.length.toLocaleString()} 件表示）
             </h3>
+            {/* 何で絞っているかを一覧の上で言う。方位は頁全体の状態なので、
+                ここで外せるようにする（上の札まで戻らなくてよい） */}
+            {dirs && dirs.length > 0 && (
+              <p className="mb-2 flex flex-wrap items-center gap-2 text-xs text-indigo-800">
+                <span>
+                  {`方位: ${dirs.map((d) => DIRECTION_LABELS[d] ?? d).join("・")}`}
+                </span>
+                {selectedDirection !== "ALL" && onSelectDirection && (
+                  <button
+                    type="button"
+                    onClick={() => onSelectDirection("ALL")}
+                    className="min-h-[24px] font-bold underline"
+                  >
+                    全方位に戻す
+                  </button>
+                )}
+              </p>
+            )}
             <ul className="space-y-1.5">
               {rows.slice(0, 100).map((r) => (
                 <li

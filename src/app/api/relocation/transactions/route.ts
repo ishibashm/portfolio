@@ -2,9 +2,11 @@ import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { toResponseMessage } from "@/lib/errorMessage";
 import {
+  COMPASS_DIRECTIONS,
   bearingBetween,
   distanceKmBetween,
   directionFromBearing,
+  type CompassDirection,
 } from "@/utils/directionGeo";
 
 /**
@@ -36,6 +38,29 @@ function toNum(value: string | null): number | null {
   if (value === null || value.trim() === "") return null;
   const n = Number(value);
   return Number.isFinite(n) ? n : null;
+}
+
+/** 正の数だけ。0 や負の上限・下限は「絞らない」と同じに扱う。 */
+function toPositive(value: string | null): number | null {
+  const n = toNum(value);
+  return n !== null && n > 0 ? n : null;
+}
+
+/**
+ * `directions=N,NE` を八方位の集合に読む。知らない綴りは捨てる。
+ * 1 つも残らなければ null（＝絞らない）。**空の集合で 0 件を返さない**
+ * （綴り違いで「無い」と出すと、無いのか読めなかったのか分からない）。
+ */
+function parseDirections(raw: string | null): Set<CompassDirection> | null {
+  if (!raw) return null;
+  const out = new Set<CompassDirection>();
+  for (const part of raw.split(",")) {
+    const d = part.trim().toUpperCase();
+    if ((COMPASS_DIRECTIONS as readonly string[]).includes(d)) {
+      out.add(d as CompassDirection);
+    }
+  }
+  return out.size > 0 ? out : null;
 }
 
 function median(values: number[]): number | null {
@@ -79,6 +104,22 @@ export async function GET(request: Request) {
       #415・#416）で、ここでは索引の効く数値比較しかしない。
     */
     const minBuildingRatio = toNum(searchParams.get("min_building_ratio"));
+    /*
+      買うときの水準で絞る（利用者の依頼、2026-09-24）。総額の上限（円）と
+      面積の下限（㎡）。索引の要らない数値比較で、方位別の中央値にも
+      効かせる（「予算内の相場」を方位で比べたい）。値の無い行は、
+      絞っているときは外す（総額不明を予算内とは言えない）。
+    */
+    const maxPrice = toPositive(searchParams.get("max_price"));
+    const minArea = toPositive(searchParams.get("min_area"));
+    /*
+      方位で絞る。**一覧（rows）にだけ効かせ、方位別の相場（byDirection）
+      には効かせない。**相場の札は「どの方位を選ぶか」の材料なので、
+      選んだ後も全方位ぶん残す（1 方位に絞った途端に他の札が消えると
+      選び直せない）。上限（limit）は絞った後に掛ける — 絞る前に掛けると、
+      件数の少ない方位は新しい 500 件の中に数件しか残らない。
+    */
+    const directions = parseDirections(searchParams.get("directions"));
     const nodeMapping =
       searchParams.get("node_mapping") === "physical"
         ? ("physical" as const)
@@ -101,6 +142,12 @@ export async function GET(request: Request) {
           ...(propertyType ? { property_type: propertyType } : {}),
           ...(minBuildingRatio !== null
             ? { building_ratio: { gte: minBuildingRatio } }
+            : {}),
+          ...(maxPrice !== null
+            ? { trade_price: { not: null, lte: BigInt(Math.floor(maxPrice)) } }
+            : {}),
+          ...(minArea !== null
+            ? { area_sqm: { not: null, gte: minArea } }
             : {}),
         },
         orderBy: [{ trade_year: "desc" }, { trade_quarter: "desc" }],
@@ -163,12 +210,17 @@ export async function GET(request: Request) {
       byDirection.set(row.direction, entry);
     }
 
+    const listed = directions
+      ? withDirection.filter((r) => directions.has(r.direction))
+      : withDirection;
+
     return NextResponse.json({
       success: true,
       data: {
-        rows: withDirection.slice(0, limit),
-        totalInRadius: withDirection.length,
-        truncated: withDirection.length > limit,
+        rows: listed.slice(0, limit),
+        /* 方位で絞っているときは、絞った後の件数（一覧の母数） */
+        totalInRadius: listed.length,
+        truncated: listed.length > limit,
         /*
           読む行は SCAN_CAP（新しい順）で切っている。密集地では矩形の中に
           それ以上あり、totalInRadius も方位別の中央値も「新しい 8,000 件」
