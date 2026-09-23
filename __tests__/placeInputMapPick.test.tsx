@@ -298,3 +298,24 @@ describe("共有の地図部品", () => {
     expect(src).toContain("map.getBounds().contains(markerPos)");
   });
 });
+
+/**
+ * ホームの「まずここを入れる」でも地図を開ける（利用者の依頼、2026-09-23）。
+ *
+ * /profile だけに付けていたので、ホームで同じ欄を入れる人は地図で
+ * 選べなかった。同じ部品・同じ地図なので、付け忘れを字面で固定する。
+ */
+describe("ホームの「まずここを入れる」の 2 つの欄で地図を開ける", () => {
+  const src = readFileSync(
+    join(process.cwd(), "src/components/home/QuickProfileBar.tsx"),
+    "utf8",
+  );
+
+  it("出発地・出生地の 2 つに allowMapPick が立っている", () => {
+    expect(src.match(/allowMapPick/g) ?? []).toHaveLength(2);
+  });
+
+  it("見張りが空回りしていない（PlaceInput を 2 つ置いている）", () => {
+    expect(src.match(/<PlaceInput/g) ?? []).toHaveLength(2);
+  });
+});
