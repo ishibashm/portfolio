@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { looksLikeUrl } from "@/lib/looksLikeUrl";
 import { normalize } from "@geolonia/normalize-japanese-addresses";
 import { lookupGsi } from "@/lib/gsiGeocode";
 import {
@@ -24,21 +25,6 @@ function exampleCityIn(prefCode: string): string {
     if (m.code.startsWith(prefCode)) return m.city;
   }
   return "市区町村名";
-}
-
-/**
- * 入力が URL かどうか。**綴りだけを見る。開きに行かない。**
- *
- * URL を外へ投げないために要る。下の nominatim は `q` をそのまま
- * 載せるので、物件ページの URL を貼られると**貼った本人の物件が
- * 外部のサービスに渡る。**#1310 で「地点に物件の URL を控える」欄を
- * 作った以上、この欄に URL が貼られるのは想定内の操作。
- */
-function looksLikeUrl(raw: string): boolean {
-  return (
-    /^(?:https?:)?\/\//i.test(raw.trim()) ||
-    /^[a-z][a-z0-9+.-]*:/i.test(raw.trim())
-  );
 }
 
 export async function GET(request: Request) {
