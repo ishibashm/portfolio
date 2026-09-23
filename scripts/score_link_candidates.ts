@@ -59,25 +59,15 @@ import {
   type PostLike,
   type Scored,
 } from "./linkCandidates";
+// 口の選び方・再試行・途中停止は jevClient に 1 つだけ置く
+import {
+  PRICE_PER_MTOK_USD,
+  callJev,
+  resolveProvider,
+  runPool,
+} from "./jevClient";
 
 dotenv.config();
-
-const PRICE_PER_MTOK_USD = 0.042;
-
-/** どの口から Jev を呼ぶか。本文の形は同じで、URL・モデル名・鍵が違う。 */
-const PROVIDERS = {
-  typesafe: {
-    endpoint: `${process.env.TYPESAFE_BASE_URL ?? "https://api.typesafe.ai"}/v1/systemone`,
-    model: "jev-latest",
-    key: process.env.TYPESAFE_API_KEY,
-  },
-  openrouter: {
-    endpoint: `${process.env.OPENROUTER_BASE_URL ?? "https://openrouter.ai/api"}/alpha/decisions`,
-    model: "typesafe/jev-1.13",
-    key: process.env.OPENROUTER_API_KEY,
-  },
-} as const;
-type ProviderName = keyof typeof PROVIDERS;
 
 function arg(name: string): string | undefined {
   const i = process.argv.indexOf(`--${name}`);
@@ -94,14 +84,14 @@ const list = (v: string | undefined) =>
       )
     : undefined;
 
-const wanted = arg("provider") as ProviderName | undefined;
-if (wanted && !(wanted in PROVIDERS)) {
-  console.error(`--provider は typesafe か openrouter（${wanted} は不明）`);
+let provider: ReturnType<typeof resolveProvider>;
+try {
+  provider = resolveProvider(arg("provider"));
+} catch (e) {
+  console.error(e instanceof Error ? e.message : String(e));
   process.exit(1);
 }
-const providerName: ProviderName =
-  wanted ?? (PROVIDERS.typesafe.key ? "typesafe" : "openrouter");
-const provider = PROVIDERS[providerName];
+const providerName = provider.name;
 const apiKey = provider.key;
 const mode: "dry-run" | "mock" | "live" = flag("mock")
   ? "mock"
@@ -177,42 +167,23 @@ let spentUsd = 0;
 
 async function scoreLive(c: (typeof calls)[number]): Promise<Scored[]> {
   const req = buildRequest(c.source, c.paragraph, c.dests, provider.model);
-  for (let attempt = 0; attempt < 2; attempt++) {
-    const res = await fetch(provider.endpoint, {
-      method: "POST",
-      headers: {
-        "content-type": "application/json",
-        authorization: `Bearer ${apiKey}`,
-        "x-api-key": apiKey!,
-      },
-      body: JSON.stringify(req),
-    });
-    if (res.status === 429 || res.status >= 500) {
-      await new Promise((r) => setTimeout(r, 2000 * (attempt + 1)));
-      continue;
+  const json = await callJev(provider, req);
+  const cost = costOf(json);
+  if (cost !== null) spentUsd += cost;
+  return c.dests.map((d) => {
+    const a = parseAnswer(json, d.slug);
+    if (!a) {
+      throw new Error(
+        `応答から ${d.slug} の確率を読めなかった。応答の先頭:\n${JSON.stringify(json).slice(0, 600)}`,
+      );
     }
-    if (!res.ok) {
-      throw new Error(`Jev ${res.status}: ${(await res.text()).slice(0, 300)}`);
-    }
-    const json: unknown = await res.json();
-    const cost = costOf(json);
-    if (cost !== null) spentUsd += cost;
-    return c.dests.map((d) => {
-      const a = parseAnswer(json, d.slug);
-      if (!a) {
-        throw new Error(
-          `応答から ${d.slug} の確率を読めなかった。応答の先頭:\n${JSON.stringify(json).slice(0, 600)}`,
-        );
-      }
-      return {
-        source: c.source.slug,
-        paragraph: c.paragraph,
-        dest: d.slug,
-        ...a,
-      };
-    });
-  }
-  throw new Error("Jev が 429/5xx を返し続けた");
+    return {
+      source: c.source.slug,
+      paragraph: c.paragraph,
+      dest: d.slug,
+      ...a,
+    };
+  });
 }
 
 async function main() {
@@ -229,53 +200,31 @@ async function main() {
     if (calls.length > 10) console.log(`\n…ほか ${calls.length - 10} 段落`);
     return;
   }
-  const targets = calls.slice(0, limit);
-  const planned = targets.length;
-  let done = 0;
-  /**
-   * **途中で落ちても、採点済みは捨てない。**
-   *
-   * run #4（2026-09-19。全宛先 897 段落）は 700 段落まで採点したところで
-   * OpenRouter が 402（残高切れ）を返し、例外がそのまま main を抜けて
-   * TSV も表も出なかった。約 $0.2 ぶんの答えが全部消えた。
-   *
-   * 1 本の worker が致命的な誤りを受けたら、他の worker も次の段落を
-   * 取らずに止まり、そこまでの結果を書き出してから失敗で終える
-   * （終了コードは 1 のまま。緑にはしない）。
-   */
-  // 閉包の中で代入するので、tsc の絞り込みが効かない形（入れ物）で持つ
-  const halt: { fatal: Error | null } = { fatal: null };
-  const worker = async () => {
-    while (targets.length && !halt.fatal) {
-      const c = targets.shift()!;
-      if (mode === "mock") {
-        for (const d of c.dests) {
-          scored.push({
+  // 途中で落ちても採点済みは捨てない（jevClient.runPool。#1435）
+  const run = await runPool(
+    calls.slice(0, limit),
+    mode === "live" ? 4 : 1,
+    async (c): Promise<Scored[]> =>
+      mode === "mock"
+        ? c.dests.map((d) => ({
             source: c.source.slug,
             paragraph: c.paragraph,
             dest: d.slug,
             probability: mockScore(c.paragraph, c.source, d),
             confidence: null,
-          });
-        }
-      } else {
-        try {
-          scored.push(...(await scoreLive(c)));
-        } catch (e) {
-          halt.fatal ??= e instanceof Error ? e : new Error(String(e));
-          return;
-        }
-      }
-      done++;
+          }))
+        : scoreLive(c),
+    (done, planned) => {
       if (done % 20 === 0) console.log(`  ${done} / ${planned}`);
-    }
-  };
-  await Promise.all(Array.from({ length: mode === "live" ? 4 : 1 }, worker));
+    },
+  );
+  scored.push(...run.results);
+  const fatal = run.fatal;
 
-  if (halt.fatal) {
+  if (fatal) {
     console.log(
-      `\n**途中で止まった: ${done} / ${planned} 段落まで採点。**残りは未採点（候補なしではない）。` +
-        `\n${halt.fatal.message}`,
+      `\n**途中で止まった: ${run.done} / ${run.planned} 段落まで採点。**残りは未採点（候補なしではない）。` +
+        `\n${fatal.message}`,
     );
   }
   if (mode === "live")
@@ -310,7 +259,7 @@ async function main() {
     );
   }
   // 書き出しと表を出し切ってから失敗にする（Summary に途中までが残る）
-  if (halt.fatal) process.exit(1);
+  if (fatal) process.exit(1);
 }
 
 main().catch((e) => {
