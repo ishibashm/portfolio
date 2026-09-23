@@ -1,6 +1,9 @@
 import { describe, expect, it, vi, beforeEach, afterEach } from "vitest";
 import { GET } from "@/app/api/geocode/route";
+import { GET as SUGGEST } from "@/app/api/geocode/suggest/route";
 import { suumoCitySearchUrl } from "@/lib/portalLinks";
+import { looksLikeUrl } from "@/lib/looksLikeUrl";
+import { readFileSync } from "node:fs";
 
 /*
   「この地点を調べる」の入口（`/api/geocode`）に **URL が貼られたとき**の話。
@@ -133,24 +136,13 @@ describe("貼られた URL を外へ出さない", () => {
 });
 
 describe("URL でない入力の扱いは変えていない", () => {
-  it("地名は URL と見なさない（今までの経路へ行く）", async () => {
+  it("地名は URL と見なさない（今までの経路へ行く）", () => {
     /*
       ここで外への要求が出るのは**正しい**（住所の正規化）。URL の判定が
-      地名まで巻き込んでいないことを、`looksLikeUrl` の形で確かめる。
+      地名まで巻き込んでいないことを、判定そのもので確かめる。
       route を実際に走らせると外へ出るので、綴りの規則だけを見る。
+      （判定は `lib/looksLikeUrl` に 1 つだけ。候補の口と共有している）
     */
-    const src = (await import("node:fs")).readFileSync(
-      "src/app/api/geocode/route.ts",
-      "utf8",
-    );
-    const m = src.match(
-      /function looksLikeUrl\(raw: string\): boolean \{\n\s*return ([\s\S]*?);\n\}/,
-    );
-    expect(m, "looksLikeUrl が見つからない").not.toBeNull();
-    const looksLikeUrl = new Function("raw", `return ${m![1]};`) as (
-      raw: string,
-    ) => boolean;
-
     for (const place of [
       "東京都港区",
       "名古屋市中区",
@@ -169,6 +161,63 @@ describe("URL でない入力の扱いは変えていない", () => {
       "data:text/html,x",
     ]) {
       expect(looksLikeUrl(url), url).toBe(true);
+    }
+  });
+});
+
+/*
+  候補の口（`/api/geocode/suggest`）にも同じ穴があった（2026-09-24）。
+
+  地名の欄（PlaceInput。/profile・ホーム・時期ツール・試算の画面）は、
+  打ち止めから 400ms でここを引き、`q` をそのまま**国土地理院へ載せて**
+  いた。確定の口（`/api/geocode`）は #1312 で折り返していたが、同じ欄の
+  もう 1 つの入口が残っていた。**貼っただけで**外へ出る（Enter も要らない）。
+
+  旧実装に当てると、下の 1 本目は spy が呼ばれて落ちる（確認済み）。
+*/
+describe("候補の口も、貼られた URL を外へ出さない", () => {
+  let fetchSpy: ReturnType<typeof spyOnFetch>;
+  beforeEach(() => {
+    fetchSpy = spyOnFetch();
+  });
+  afterEach(() => {
+    fetchSpy.mockRestore();
+  });
+
+  function suggestReq(q: string): Request {
+    return new Request(
+      `https://cloud-palette.com/api/geocode/suggest?q=${encodeURIComponent(q)}`,
+    );
+  }
+
+  it("URL は国土地理院へ載せず、候補を空で返す", async () => {
+    for (const url of [
+      SUUMO,
+      "https://suumo.jp/chintai/jnc_000012345/",
+      "https://www.homes.co.jp/chintai/b-1234567890/",
+      "//suumo.jp/?sc=13103",
+    ]) {
+      const res = await SUGGEST(suggestReq(url));
+      const body = await res.json();
+      expect(body.data, url).toEqual([]);
+    }
+    expect(fetchSpy).not.toHaveBeenCalled();
+  });
+
+  it("地名は今までどおり国土地理院へ引きに行く（空回りしていない）", async () => {
+    await SUGGEST(suggestReq("京都市南区"));
+    expect(fetchSpy).toHaveBeenCalledTimes(1);
+    expect(String(fetchSpy.mock.calls[0][0])).toContain("msearch.gsi.go.jp");
+  });
+
+  it("URL の判定は 1 か所だけ（2 つの口で規則を写さない）", () => {
+    for (const rel of [
+      "src/app/api/geocode/route.ts",
+      "src/app/api/geocode/suggest/route.ts",
+    ]) {
+      const src = readFileSync(rel, "utf8");
+      expect(src, rel).toContain('from "@/lib/looksLikeUrl"');
+      expect(src, rel).not.toMatch(/function looksLikeUrl/);
     }
   });
 });

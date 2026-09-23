@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { toLogMessage } from "@/lib/errorMessage";
+import { looksLikeUrl } from "@/lib/looksLikeUrl";
 
 /**
  * 地名の候補を返す。入力しながら選べるようにするための口。
@@ -35,6 +36,17 @@ export async function GET(request: Request) {
 
   // 1 文字だと候補が広すぎて意味が無い。外に出さない。
   if (q.length < 2) {
+    return NextResponse.json({ success: true, data: [] });
+  }
+
+  /*
+    URL は**国土地理院へ載せない。**地名の欄は打ち止めから 400ms で
+    ここを引くので、物件ページの URL を貼っただけで外へ出ていた
+    （2026-09-24。`/api/geocode` は #1312 で折り返していたが、こちらが
+    残っていた）。候補は空で返す。URL から街を読むのは確定の口
+    （`/api/geocode`）が受け持つ。
+  */
+  if (looksLikeUrl(q)) {
     return NextResponse.json({ success: true, data: [] });
   }
 
