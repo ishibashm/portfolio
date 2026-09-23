@@ -151,3 +151,58 @@ describe("画面: 地名で調べたら、その街の一覧へのリンクが�
     expect(screen.getByText(/URL は要りません/)).toBeTruthy();
   });
 });
+
+/*
+  利用者の依頼（2026-09-24）「広島なら広島のリンクができて、貼り付け
+  られるようにしたい」。リンクは #1504 で既に出ていたが、説明が 2 段落の
+  URL の話に埋もれて気付かれなかった。説明を 1 文にし、組んだ URL を
+  写せるようにした。
+*/
+describe("画面: 組んだリンクを写せる", () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it("SUUMO の市区町村の URL を「URL をコピー」でそのまま写す", async () => {
+    const writeText = vi.fn(async () => {});
+    vi.stubGlobal("navigator", { ...navigator, clipboard: { writeText } });
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (url: string) =>
+        url.startsWith("/api/geocode/reverse")
+          ? reverseGet(new Request(`http://localhost${url}`))
+          : new Response(
+              JSON.stringify({ ...HIROSHIMA, name: "広島県広島市中区" }),
+              { status: 200 },
+            ),
+      ),
+    );
+    render(
+      <SpotVerdict baseLat={33.5902} baseLon={130.4017} useClassical={true} />,
+    );
+    fireEvent.change(screen.getByLabelText("この地点を調べる"), {
+      target: { value: "広島市中区" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "調べる" }));
+
+    const suumo = await screen.findByRole("link", { name: /SUUMO/ });
+    /* 写せるのは市区町村まで絞った URL だけ（トップを写しても意味が薄い） */
+    const copyButtons = screen.getAllByRole("button", { name: "URL をコピー" });
+    expect(copyButtons).toHaveLength(1);
+
+    fireEvent.click(copyButtons[0]);
+    await screen.findByRole("button", { name: "コピーしました" });
+    expect(writeText).toHaveBeenCalledWith(suumo.getAttribute("href"));
+  });
+
+  it("説明は「市区町村名を入れるとリンクまで出る」を先に言う", () => {
+    vi.stubGlobal("fetch", vi.fn());
+    render(<SpotVerdict baseLat={0} baseLon={0} useClassical={true} />);
+    expect(
+      screen.getByText(/市区町村名（例: 広島市中区）を入れて「調べる」/),
+    ).toBeTruthy();
+    expect(screen.getByText(/SUUMO の賃貸一覧へのリンクが出ます/)).toBeTruthy();
+    /* URL の貼り方は畳んで残す（消さない。userSpotMarkUi が見ている） */
+    expect(screen.getByText("物件サイトの URL を貼るとき")).toBeTruthy();
+  });
+});
