@@ -96,6 +96,18 @@ export interface PlaceInputProps {
    * 食い違って崩れて見える（利用者の指摘）。
    */
   variant?: "compact" | "form";
+  /**
+   * 呼び出し側が既に持っている地名（任意）。
+   *
+   * 渡されたら、決まった場所を座標ではなくこの名前で出す。**欄の中で
+   * 最後に選んだ名前より優先する**（この欄の外、たとえば地図で座標が
+   * 動くと、欄の中の名前は古くなる）。呼び出し側は `onChange` の名前を
+   * そのまま持ち直すこと。
+   *
+   * 試算の画面の目的地が使う（2026-09-24）。以前は名前だけを書き換える
+   * 素の欄で、打っても座標が動かなかった。
+   */
+  currentName?: string | null;
 }
 
 /** 縮尺ごとの class。構造は同じで、字の大きさと余白だけが違う。 */
@@ -170,6 +182,7 @@ export function PlaceInput({
   onUseCurrentLocation,
   allowMapPick = false,
   variant = "compact",
+  currentName,
 }: PlaceInputProps) {
   const s = VARIANT_STYLES[variant];
   const [query, setQuery] = React.useState("");
@@ -442,7 +455,12 @@ export function PlaceInput({
       {/* 決まった場所。座標そのものではなく、地名で確かめられるようにする */}
       <div className={s.picked}>
         <MapPin size={s.pinSize} className="text-stone-600 shrink-0" />
-        {picked ? (
+        {/* 呼び出し側が名前を持っているなら、それが正（右の地図など、
+            この欄の外で座標が動くことがある。欄の中で最後に選んだ名前を
+            出し続けると、別の場所に前の地名が付いたまま残る） */}
+        {currentName && hasCoords ? (
+          <span className="truncate">{currentName}</span>
+        ) : picked ? (
           <span className="truncate">{picked}</span>
         ) : nearby && hasCoords ? (
           /* 地図で押した点。**地名で選んだのではない**ので「付近」を付ける

@@ -104,13 +104,28 @@ export function SimulatorStart({
     };
   }, []);
 
-  /** 住所を 1 つ引く。見つからなければ null。 */
+  /**
+   * 住所を 1 つ引く。見つからなければ `error` に API の文言（無ければ null）。
+   *
+   * **API の文言を捨てない。**URL を貼った人に「市区町村までで試して
+   * ください」と住所の話を返すと、何を直せばよいか分からない
+   * （「この URL は愛知県までしか指していません」のほうが要る。
+   * SpotVerdict・PlaceInput と同じ扱い）。
+   */
   async function lookup(
     query: string,
-  ): Promise<{ name: string; lat: number; lon: number } | null> {
+  ): Promise<
+    | { name: string; lat: number; lon: number; error?: undefined }
+    | { error: string | null }
+  > {
     const res = await fetch(`/api/geocode?q=${encodeURIComponent(query)}`);
     const json = await res.json();
-    if (!res.ok || typeof json?.lat !== "number") return null;
+    if (!res.ok || typeof json?.lat !== "number") {
+      return {
+        error:
+          typeof json?.error === "string" && json.error ? json.error : null,
+      };
+    }
     return { name: json.name || query.trim(), lat: json.lat, lon: json.lon };
   }
 
@@ -145,15 +160,17 @@ export function SimulatorStart({
         lookup(place),
         lookup(destination),
       ]);
-      if (!from) {
+      if (!("lat" in from)) {
         setError(
-          "いま住んでいる場所が見つかりませんでした。市区町村までで試してください（例: 京都市下京区）。",
+          from.error ??
+            "いま住んでいる場所が見つかりませんでした。市区町村までで試してください（例: 京都市下京区）。",
         );
         return;
       }
-      if (!to) {
+      if (!("lat" in to)) {
         setError(
-          "引越し先が見つかりませんでした。市区町村までで試してください（例: 名古屋市中区）。",
+          to.error ??
+            "引越し先が見つかりませんでした。市区町村までで試してください（例: 名古屋市中区）。",
         );
         return;
       }
@@ -225,7 +242,9 @@ export function SimulatorStart({
             className="w-full rounded-xl border border-stone-300 p-2.5 text-sm"
           />
           <span className="mt-1 block text-[11px] text-stone-600">
-            候補が複数あるなら、まず 1 つで試してください。あとから足せます。
+            {
+              "候補が複数あるなら、まず 1 つで試してください。あとから足せます。SUUMO で市区町村を絞った一覧の URL を貼っても、その街として試算します（URL は開きに行きません）。"
+            }
           </span>
         </label>
 

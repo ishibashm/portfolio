@@ -170,6 +170,8 @@ describe("PlaceInput の地名を落とさない", () => {
       "査定の入力。設定に書かない",
     "src/components/home/DestinationMapPanel.tsx":
       "引越し先。destinationSetting が自分で地名を持つ",
+    "src/app/relocation/simulator/page.tsx":
+      "試算の各ステップの目的地。下書き（relocation_simulator_draft）にだけ持ち、onChange の名前を toName に入れる",
   };
 
   function read(rel: string): string {
