@@ -730,12 +730,17 @@ export default function DirectionTownsPage() {
                 title="買うときの水準（成約価格・地価）"
                 summary="国土交通省の公開データ"
               >
+                {/* 方位の札は頁全体の絞り込みと同じ状態を使う（街の一覧・
+                    方位ごとの内訳と揃える）。段階も同じ盤から借りる */}
                 <TransactionsPanel
                   lat={baseLatNum}
                   lon={baseLonNum}
                   radiusKm={radiusKm}
                   hasBase={hasBaseLocation}
                   nodeMapping={nodeMappingForBoard(useClassical)}
+                  verdicts={dayKigaku?.byDirection}
+                  selectedDirection={selectedDirection}
+                  onSelectDirection={(dir) => patch({ selectedDirection: dir })}
                 />
                 <LandPriceByDirection
                   lat={baseLatNum}
