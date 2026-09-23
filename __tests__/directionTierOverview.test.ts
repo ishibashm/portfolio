@@ -1,4 +1,6 @@
 import { describe, expect, it } from "vitest";
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 import {
   fillFor,
   sortDirectionRows,
@@ -47,7 +49,7 @@ describe("並び順", () => {
     expect(sortDirectionRows(rows).map((r) => r.direction)).toEqual(["N", "E"]);
   });
 
-  it("同じ段階なら物件が多い順", () => {
+  it("同じ段階なら街が多い順", () => {
     const rows = [
       row({ direction: "N", tier: "S", count: 3 }),
       row({ direction: "E", tier: "S", count: 12 }),
@@ -90,5 +92,38 @@ describe("色と言葉は既存の 1 か所から引く", () => {
     // 色は既定に落ちるが、名前はコードがそのまま出るしかない。
     // せめて色が undefined にならないこと。
     expect(fillFor(row({ tier: "???" }))).toMatch(/^#[0-9a-f]{6}$/i);
+  });
+});
+
+/**
+ * **数えているのは物件ではなく街。**
+ *
+ * 賃貸の掲載を閉じた（#74）あと、頁は方位ごとの市区町村の数を渡している。
+ * それなのに文言が「棒の長さが物件数」「表示中 914 件」のまま残り、
+ * 取り込んでいない物件が 914 件あるように読めた（利用者の指摘、2026-09-23）。
+ *
+ * 字面で見る。**コメントは外してから数える**（この部品の註には経緯として
+ * 「物件」と書いてある）。
+ */
+describe("方位ごとの内訳の言葉", () => {
+  const code = readFileSync(
+    join(process.cwd(), "src/components/relocation/DirectionTierOverview.tsx"),
+    "utf8",
+  )
+    .replace(/\/\*[\s\S]*?\*\//g, "")
+    .replace(/\{\/\*[\s\S]*?\*\/\}/g, "")
+    .replace(/^\s*\/\/.*$/gm, "");
+
+  it("画面に「物件」と出さない", () => {
+    expect(code).not.toContain("物件");
+  });
+
+  it("合計は「件」ではなく市区町村で数える", () => {
+    expect(code).not.toMatch(/表示中 \{total/);
+    expect(code).toContain("{total.toLocaleString()} 市区町村");
+  });
+
+  it("見張りが空回りしていない（説明の文を拾えている）", () => {
+    expect(code).toContain("市区町村の数、色がその日の段階です");
   });
 });
