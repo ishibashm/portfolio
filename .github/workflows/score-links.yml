@@ -1,7 +1,11 @@
 name: Score internal link candidates with Jev
 
-# 記事どうしの内部リンク候補を Jev（OpenRouter の Decisions API 経由）で
-# 採点し、表を Summary に、全件を TSV の artifact に出す。
+# 記事を Jev（OpenRouter の Decisions API 経由）で採点し、表を Summary に、
+# 全件を TSV の artifact に出す。task で 2 つを選ぶ。
+#
+#   links  … 記事どうしの内部リンク候補（scripts/score_link_candidates.ts）
+#   titles … 記事の題・説明文と本文のズレ（scripts/score_title_alignment.ts）。
+#            広告運用でいう「広告と LP のズレ」。limit は記事数。34 本で約 $0.01
 #
 # ## なぜワークフローか
 #
@@ -23,20 +27,28 @@ name: Score internal link candidates with Jev
 on:
   workflow_dispatch:
     inputs:
+      task:
+        description: "links: 内部リンク候補 / titles: 題・説明文と本文のズレ"
+        required: true
+        default: links
+        type: choice
+        options:
+          - links
+          - titles
       dest:
         description: "宛先を絞る slug（カンマ区切り）。新しい記事へ張る先を探すときに指定。空なら全記事"
         required: false
         default: ""
       source:
-        description: "元の記事を絞る slug（カンマ区切り）。空なら全記事"
+        description: "元の記事を絞る slug（カンマ区切り）。空なら全記事。titles では採点する記事"
         required: false
         default: ""
       limit:
-        description: "API を呼ぶ段落数の上限（費用の天井）。最初は 1"
+        description: "API を呼ぶ回数の上限（費用の天井。links は段落数、titles は記事数）。最初は 1"
         required: true
         default: "1"
       threshold:
-        description: "表に出す確率の下限"
+        description: "links: 表に出す確率の下限 / titles: 最低値がこれ未満の記事を出す（1 で全部）"
         required: false
         default: "0.6"
       top:
@@ -68,7 +80,8 @@ jobs:
       - name: Install dependencies
         run: npm ci --legacy-peer-deps
 
-      - name: Score
+      - name: Score links
+        if: inputs.task == 'links'
         env:
           OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
           DEST: ${{ inputs.dest }}
@@ -82,6 +95,19 @@ jobs:
           [ -n "$DEST" ] && ARGS+=(--dest "$DEST")
           [ -n "$SOURCE" ] && ARGS+=(--source "$SOURCE")
           npx -y tsx scripts/score_link_candidates.ts "${ARGS[@]}" | tee -a "$GITHUB_STEP_SUMMARY"
+
+      - name: Score titles
+        if: inputs.task == 'titles'
+        env:
+          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+          SOURCE: ${{ inputs.source }}
+          LIMIT: ${{ inputs.limit }}
+          THRESHOLD: ${{ inputs.threshold }}
+        run: |
+          set -o pipefail
+          ARGS=(--provider openrouter --limit "$LIMIT" --threshold "$THRESHOLD" --out "$RUNNER_TEMP/link-candidates.tsv")
+          [ -n "$SOURCE" ] && ARGS+=(--only "$SOURCE")
+          npx -y tsx scripts/score_title_alignment.ts "${ARGS[@]}" | tee -a "$GITHUB_STEP_SUMMARY"
 
       - name: Upload TSV
         if: always()
