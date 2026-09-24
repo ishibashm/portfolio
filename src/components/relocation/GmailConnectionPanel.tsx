@@ -32,6 +32,35 @@ async function api(path: string, signal: AbortSignal, body?: unknown) {
     );
   return result;
 }
+/**
+ * 失敗の理由ごとの文言。以前は下の 3 つ以外をすべて「処理できませんでした。
+ * 接続状態を確認して…」に丸めていて、**サイト側の設定が済んでいない**
+ * （GMAIL_CONFIG）場合も利用者には「接続状態を確認して」と読めた。本人が
+ * 何度押し直しても直らない失敗を、本人の操作の問題に見せていた。
+ *
+ * コードはサーバーが返す固定の文字列（秘密も入力も含まない）なので、知らない
+ * ものは末尾にそのまま添える。問い合わせのときに何が起きたかが分かる。
+ */
+function failureMessage(code: string): string {
+  switch (code) {
+    case "GMAIL_RECONNECT":
+      return "Gmailの認証が失効しました。再接続してください。";
+    case "LOGIN_REQUIRED":
+      return "Gmail接続にはログインが必要です。";
+    case "INVALID_CURSOR":
+      return "取り込みの続きが期限切れです。ラベルを確認し、最初から取り込んでください。";
+    case "GMAIL_CONFIG":
+      return "サイト側のGmail接続の設定が済んでいないため、接続できません。押し直しても直りません（運営側で設定します）。（コード: GMAIL_CONFIG）";
+    case "ORIGIN":
+      return "このサイトのアドレス（cloud-palette.com）で開いた頁からだけ接続できます。頁を開き直してください。";
+    case "RATE_LIMIT":
+      return "操作が続きすぎています。1分ほど待ってからお試しください。";
+    case "GMAIL_UNAVAILABLE":
+      return "Gmailに接続できませんでした。時間をおいてお試しください。";
+    default:
+      return `処理できませんでした。時間をおいてもう一度お試しください。（コード: ${code}）`;
+  }
+}
 export function GmailConnectionPanel({
   onSelect,
 }: {
@@ -87,15 +116,7 @@ function EnabledGmailPanel({ onSelect }: { onSelect: (url: string) => void }) {
       setCursor(null);
       setDone(true);
     }
-    setMessage(
-      code === "GMAIL_RECONNECT"
-        ? "Gmailの認証が失効しました。再接続してください。"
-        : code === "LOGIN_REQUIRED"
-          ? "Gmail接続にはログインが必要です。"
-          : code === "INVALID_CURSOR"
-            ? "取り込みの続きが期限切れです。ラベルを確認し、最初から取り込んでください。"
-            : "処理できませんでした。接続状態を確認して、もう一度お試しください。",
-    );
+    setMessage(failureMessage(code));
   }, []);
   useEffect(() => {
     const controller = new AbortController();

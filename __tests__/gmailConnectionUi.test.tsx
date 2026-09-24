@@ -277,3 +277,34 @@ it("revoke failure with successful local deletion reports the remaining Google a
   await screen.findByText(/Googleアカウントでもアクセスを取り消してください/);
   expect(screen.getByText("接続状態: 未接続")).toBeInTheDocument();
 });
+/*
+  利用者の報告（2026-09-24）: 「Gmailと接続」を押すと「処理できませんでした。
+  接続状態を確認して、もう一度お試しください。」が出て進めない。本番のログでは
+  connect が 503 を返していた。サイト側の設定（GMAIL_CONFIG）の不足も同じ文言に
+  丸めていたので、本人の操作の問題に見えていた。
+*/
+it.each([
+  [
+    "GMAIL_CONFIG",
+    503,
+    /サイト側のGmail接続の設定が済んでいない.*GMAIL_CONFIG/,
+  ],
+  ["ORIGIN", 403, /cloud-palette\.com/],
+  ["RATE_LIMIT", 429, /1分ほど待って/],
+  ["SOMETHING_NEW", 503, /（コード: SOMETHING_NEW）/],
+])(
+  "connect failure %s says what went wrong instead of 接続状態を確認して",
+  async (code, status, text) => {
+    vi.stubEnv("LISTING_EMAIL_GMAIL_ENABLED", "true");
+    vi.spyOn(globalThis, "fetch").mockImplementation(async (url) =>
+      String(url).endsWith("status")
+        ? reply({ connections: [] })
+        : reply({ code, error: "メール接続を処理できませんでした。" }, status),
+    );
+    mount();
+    await screen.findByText("接続状態: 未接続");
+    fireEvent.click(screen.getByRole("button", { name: "Gmailと接続" }));
+    const message = await screen.findByText(text);
+    expect(message.textContent).not.toMatch(/接続状態を確認して/);
+  },
+);
