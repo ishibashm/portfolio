@@ -405,7 +405,7 @@ describe("本物の記事に題を渡す", () => {
   const files = readdirSync(DIR).filter((f) => f.endsWith(".md"));
   const titleOf = (md: string) => md.match(/^title:\s*"?(.+?)"?\s*$/m)?.[1];
 
-  it("FAQPage を出せる記事が 16 → 18 本になる", () => {
+  it("FAQPage を出せる記事が 16 → 20 本になる", () => {
     const count = (withTitle: boolean) =>
       files.filter((f) => {
         const md = readFileSync(join(DIR, f), "utf8");
@@ -419,8 +419,13 @@ describe("本物の記事に題を渡す", () => {
     */
     /* 2026-09-24: 物件サイトへのリンクの記事（問いの見出しが 3 つ）で +1 */
     /* 2026-09-24: 天中殺に引越しすると影響はあるのか（問いの見出しが 4 つ）で +1 */
+    /*
+      2026-09-25: 題が問いで「先に結論」が箇条書きから始まっていた 2 本
+      （距離・本命的殺）に、題へ答える 1 文を足して +2。箇条書きは答えに
+      しない決まりなので、題の組が取れていなかった
+    */
     expect(count(false)).toBe(16);
-    expect(count(true)).toBe(18);
+    expect(count(true)).toBe(20);
   });
 
   it("題から作った問いは、記事の題そのもの（言い換えない）", () => {
