@@ -1,4 +1,6 @@
-import { NextResponse } from "next/server";
+import { isSameOrigin } from "@/lib/apiGuard";
+import { lockCandidateOwner, privateHeaders } from "@/lib/listingCandidateApi";
+import { NextRequest, NextResponse } from "next/server";
 import { DIRECTION_FILTER_MODES } from "@/utils/directionFilterMode";
 import prisma from "@/lib/prisma";
 import { findUserConfig, getAuthUser, toUserId } from "@/lib/userConfig";
@@ -256,31 +258,49 @@ export async function POST(req: Request) {
  * 問い合わせ（contact）、閲覧の記録は別の表で、ここでは触らない。
  * 画面にもそう書いてある。
  *
- * 行が無ければ 204。すでに消えている＝目的は達しているので、
- * 押し直しても失敗にしない。
+ * 設定行がなくても候補履歴を削除する。押し直しても成功を返す。
  */
-export async function DELETE() {
+export async function DELETE(request: NextRequest) {
+  if (!isSameOrigin(request))
+    return NextResponse.json(
+      { error: "同じサイトから操作してください。" },
+      { status: 403, headers: privateHeaders },
+    );
   const user = await getAuthUser();
   if (!user) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    return NextResponse.json(
+      { error: "Unauthorized" },
+      { status: 401, headers: privateHeaders },
+    );
   }
 
   try {
+    const userId = toUserId(user);
+    if (!userId)
+      return NextResponse.json(
+        { error: "ログインし直してください。" },
+        { status: 401, headers: privateHeaders },
+      );
     const existing = await findUserConfig(user);
-    if (!existing) {
-      return new NextResponse(null, { status: 204 });
-    }
-
-    /* id で消す。findUserConfig は本人の行しか返さないので、
-       ここで他人の行に当たることはない。 */
-    await prisma.user_configs.delete({ where: { id: existing.id } });
-
-    return NextResponse.json({ success: true });
+    await prisma.$transaction(async (tx) => {
+      await lockCandidateOwner(tx, userId);
+      await tx.listingCandidate.deleteMany({ where: { userId } });
+      await tx.listingCandidateRate.deleteMany({
+        where: {
+          key: {
+            in: [`write:${userId}`, `read:${userId}`, `geocode:${userId}`],
+          },
+        },
+      });
+      if (existing)
+        await tx.user_configs.delete({ where: { id: existing.id } });
+    });
+    return NextResponse.json({ success: true }, { headers: privateHeaders });
   } catch (error) {
-    console.error("Config Delete Error:", error);
+    void error;
     return NextResponse.json(
-      { error: toResponseMessage(error, "Failed to delete config") },
-      { status: 500 },
+      { error: "登録内容を削除できませんでした。" },
+      { status: 500, headers: privateHeaders },
     );
   }
 }

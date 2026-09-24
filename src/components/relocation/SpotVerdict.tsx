@@ -1,13 +1,12 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { MapPin, Loader2 } from "lucide-react";
-import {
-  bearingBetween,
-  directionFromBearing,
-  distanceKmBetween,
-} from "@/utils/directionGeo";
+import { evaluateSpot } from "@/lib/spotEvaluation";
+import { classifyCandidateInput } from "@/lib/listingCandidateInput";
+import { CandidateSave } from "./CandidateSave";
+import type { DayKigakuInput } from "@/lib/dayKigakuClient";
 import { directionUnstableNote } from "@/lib/directionDistance";
 import { TIER_BADGE_CLASS } from "@/utils/tierDisplay";
 /* 段階の名前は dayTier（暦エンジンを引かない葉）から。auspiciousDays を
@@ -68,6 +67,7 @@ export type SpotTarget = {
    * （利用者が指した点そのものなので、粗さの断りが要らない）。
    */
   source?: GeocodeSource | null;
+  inputSource?: "pin" | "coordinates";
 };
 
 /**
@@ -120,7 +120,9 @@ export function SpotVerdict({
   kigakuUnavailableReason,
   requestedPoint,
   onFocus,
+  candidateContext,
 }: {
+  candidateContext?: DayKigakuInput;
   baseLat: number;
   baseLon: number;
   useClassical: boolean;
@@ -138,6 +140,7 @@ export function SpotVerdict({
   /** 地図をその地点へ寄せる */
   onFocus?: (lat: number, lon: number) => void;
 }) {
+  const lookupSeq = useRef(0);
   const [query, setQuery] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -157,6 +160,7 @@ export function SpotVerdict({
   const [showMark, setShowMark] = useState(false);
   const [markUrl, setMarkUrl] = useState("");
   const [markMemo, setMarkMemo] = useState("");
+  const [markTitle, setMarkTitle] = useState("");
   /*
     調べた地点の街で、募集中の部屋を外部のサイトで見る入口（2026-09-23。
     利用者の依頼「URL が無いと調べにくい。SUUMO で広島ならそのリンクを
@@ -185,6 +189,7 @@ export function SpotVerdict({
   useEffect(() => {
     if (requestedLat === undefined || requestedLon === undefined) return;
     const text = `${requestedLat.toFixed(6)}, ${requestedLon.toFixed(6)}`;
+    lookupSeq.current++;
     setQuery(text);
     setError(null);
     setTarget({ lat: requestedLat, lon: requestedLon, name: text });
@@ -216,10 +221,49 @@ export function SpotVerdict({
       })
       .catch(() => {
         /* 入口が出ないだけ。判定には関係しない */
+
+  // Re-evaluate an owned candidate by id only; coordinates never go into the URL.
+  useEffect(() => {
+    if (!candidateContext) return;
+    const id = new URLSearchParams(window.location.search).get("candidate");
+    if (!id || !/^[0-9a-f-]{36}$/i.test(id)) return;
+    let alive = true;
+    const initialSeq = ++lookupSeq.current;
+    fetch(`/api/relocation/candidates/${id}`, { cache: "no-store" })
+      .then(async (res) => {
+        const body = await res.json();
+        if (!alive || initialSeq !== lookupSeq.current) return;
+        if (!res.ok) {
+          setError(body.error);
+          return;
+        }
+        const c = body.candidate;
+        setTarget({
+          lat: c.lat,
+          lon: c.lon,
+          name: c.title || "保存済み候補",
+          inputSource:
+            c.judgment.source === "coordinates" ? "coordinates" : "pin",
+          source: parseGeocodeSource(c.judgment.source),
+        });
+        setMarkTitle(c.title || "");
+        setMarkUrl(c.url || "");
+        setMarkMemo(c.memo || "");
+        setShowMark(true);
+        setError(
+          "現在の設定で再判定しています。保存時の結果は候補履歴で確認できます。",
+        );
+      })
+      .catch(() => {
+        if (alive) setError("候補を読み込めませんでした。");
       });
     return () => {
       alive = false;
     };
+    // The id is fixed for this page visit; context changes must not reload the draft.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [!!candidateContext]);
+
   }, [targetLat, targetLon]);
   /* 今の地点の答えだけを出す。前の地点のものは鍵が合わない */
   const shownPortal =
@@ -229,17 +273,48 @@ export function SpotVerdict({
     const text = query.trim();
     if (!text) return;
     setError(null);
+    const seq = ++lookupSeq.current;
+    if (candidateContext) {
+      const input = classifyCandidateInput(text);
+      if (input.kind === "invalid") {
+        setTarget(null);
+        setError(
+          "HTTPSの通常URL、住所（氏名・建物名・部屋番号を除く）、または日本の座標を入力してください。",
+        );
+        return;
+      }
+      if (input.kind === "url") {
+        setMarkUrl(input.url);
+        setShowMark(true);
+        setTarget(null);
+        setError(
+          "このURLだけでは物件の住所を特定できません。掲載ページで確認した住所を入力するか、地図で場所を指定してください。",
+        );
+        return;
+      }
+    }
 
     const coords = parseCoordinates(text);
     if (coords) {
-      setTarget({ ...coords, name: `${coords.lat}, ${coords.lon}` });
+      setTarget({
+        ...coords,
+        name: `${coords.lat}, ${coords.lon}`,
+        inputSource: "coordinates",
+      });
       return;
     }
 
     setBusy(true);
     try {
-      const res = await fetch(`/api/geocode?q=${encodeURIComponent(text)}`);
+      const res = candidateContext
+        ? await fetch("/api/relocation/candidates/geocode", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ address: text }),
+          })
+        : await fetch(`/api/geocode?q=${encodeURIComponent(text)}`);
       const body = await res.json();
+      if (seq !== lookupSeq.current) return;
       if (!res.ok || typeof body?.lat !== "number") {
         setTarget(null);
         /*
@@ -262,6 +337,7 @@ export function SpotVerdict({
         source: parseGeocodeSource(body.source),
       });
     } catch {
+      if (seq !== lookupSeq.current) return;
       setTarget(null);
       setError("住所を調べられませんでした。通信を確かめてください。");
     } finally {
@@ -270,21 +346,19 @@ export function SpotVerdict({
   };
 
   // 方位は物件・県の塗り分けと同じ経路で出す。判定の基準は真北。
-  const bearing =
+  const evaluation =
     target && hasBase
-      ? bearingBetween(baseLat, baseLon, target.lat, target.lon)
+      ? evaluateSpot(
+          baseLat,
+          baseLon,
+          target.lat,
+          target.lon,
+          useClassical,
+          dirKigaku,
+        )
       : null;
-  const direction =
-    bearing === null
-      ? null
-      : directionFromBearing(
-          bearing,
-          useClassical ? "traditional" : "physical",
-        );
-  const distanceKm =
-    target && hasBase
-      ? distanceKmBetween(baseLat, baseLon, target.lat, target.lon)
-      : null;
+  const direction = evaluation?.direction ?? null;
+  const distanceKm = evaluation?.distanceKm ?? null;
   const cell = direction ? dirKigaku?.[direction] : undefined;
   const unstableNote =
     distanceKm === null ? null : directionUnstableNote(distanceKm);
@@ -301,16 +375,20 @@ export function SpotVerdict({
         htmlFor="arb-spot-query"
         className="text-[10px] font-semibold text-stone-600 dark:text-stone-500 block"
       >
-        この地点を調べる
+        物件URL・住所・座標から調べる
       </label>
       <div className="relative">
         <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-emerald-600" />
         <input
           id="arb-spot-query"
           type="text"
-          placeholder="住所・市区町村名（広島市中区 など）、または 35.0116, 135.7681"
+          placeholder="物件URL、住所、または 35.0116, 135.7681"
           value={query}
-          onChange={(e) => setQuery(e.target.value)}
+          onChange={(e) => {
+            lookupSeq.current++;
+            setQuery(e.target.value);
+            if (candidateContext) setTarget(null);
+          }}
           onKeyDown={(e) => {
             if (e.key === "Enter") {
               e.preventDefault();
@@ -335,21 +413,30 @@ export function SpotVerdict({
         と言われた（既に出る作りだった）。URL の話は畳む。
       */}
       <p className="text-xs text-stone-600 leading-relaxed">
-        {
-          "市区町村名（例: 広島市中区）を入れて「調べる」を押すと、出発地から見た方位とその日の吉凶に加えて、その街の SUUMO の賃貸一覧へのリンクが出ます。URL は要りません。地図をクリックしても入ります。"
-        }
+        URLは参照リンクのみで、中身を取得しません。住所または座標を入力し、地図で所在地を確認してください。地図クリックで位置を修正できます。
       </p>
-      <details className="text-xs text-stone-500">
-        <summary className="cursor-pointer select-none min-h-[24px]">
-          物件サイトの URL を貼るとき
-        </summary>
-        <p className="mt-1 leading-relaxed">
-          {
-            "物件サイトの一覧の URL を貼っても、その街として調べます（URL は開きに行きません。綴りに入っている市区町村だけを読みます）。HOME'S の URL と物件ごとのページの URL には市区町村が入っていないので、そのときは市区町村名でお願いします。"
-          }
+      {candidateContext && markUrl && !target && (
+        <p className="text-xs break-all">
+          参照リンク: {markUrl}
+          <br />
+          住所または地図ピンが必要です。
         </p>
-      </details>
+      )}
+      {target && hasBase && !evaluation && (
+        <p role="alert" className="text-xs text-amber-700">
+          出発地と同一点です。方位は未定義のため保存できません。
+        </p>
+      )}
 
+      {candidateContext && (
+        <Link
+          href="/relocation/candidates"
+          prefetch={false}
+          className="block text-xs underline"
+        >
+          本人の候補履歴を見る
+        </Link>
+      )}
       {error && <p className="text-xs text-rose-600">{error}</p>}
 
       {/* 出発地が無いと方位が決まらない。判定を出さずに理由を言う。
@@ -369,6 +456,9 @@ export function SpotVerdict({
           <div className="flex items-center gap-2 flex-wrap">
             <span className="text-sm font-bold text-stone-800">
               {cell?.directionLabel ?? direction}
+            </span>
+            <span className="text-xs text-stone-500">
+              真北 {evaluation?.bearingDeg.toFixed(1)}°
             </span>
             {distanceKm !== null && (
               <span className="text-[10px] font-mono text-stone-500">
@@ -442,28 +532,30 @@ export function SpotVerdict({
             {/* 端末の localStorage に置き、ログイン中はクラウドにも同期する
                 （lib/userSpots。#25 で DB 保存を足した）。地図の
                 UserSpotLayer が購読して ★ で出す。 */}
-            <button
-              type="button"
-              onClick={() => {
-                const r = addUserSpot({
-                  name: target.name,
-                  lat: target.lat,
-                  lon: target.lon,
-                  url: markUrl,
-                  memo: markMemo,
-                });
-                setSavedNote(
-                  r.added
-                    ? "保存しました（地図に ★ で出ます）"
-                    : r.reason === "full"
-                      ? "保存できる地点は 50 件までです"
-                      : "同じ地点が保存済みです（内容を更新しました）",
-                );
-              }}
-              className="min-h-[24px] text-[10px] font-bold text-violet-700 hover:underline"
-            >
-              ★ この地点を保存
-            </button>
+            {!candidateContext && (
+              <button
+                type="button"
+                onClick={() => {
+                  const r = addUserSpot({
+                    name: target.name,
+                    lat: target.lat,
+                    lon: target.lon,
+                    url: markUrl,
+                    memo: markMemo,
+                  });
+                  setSavedNote(
+                    r.added
+                      ? "保存しました（地図に ★ で出ます）"
+                      : r.reason === "full"
+                        ? "保存できる地点は 50 件までです"
+                        : "同じ地点が保存済みです（内容を更新しました）",
+                  );
+                }}
+                className="min-h-[24px] text-[10px] font-bold text-violet-700 hover:underline"
+              >
+                ★ この地点を保存
+              </button>
+            )}
             <button
               type="button"
               onClick={() => setShowMark((v) => !v)}
@@ -496,6 +588,7 @@ export function SpotVerdict({
               <label className="block text-[10px] font-bold text-stone-700">
                 覚え書き
                 <textarea
+                  maxLength={candidateContext ? 1000 : 500}
                   value={markMemo}
                   onChange={(e) => setMarkMemo(e.target.value)}
                   rows={2}
@@ -505,10 +598,28 @@ export function SpotVerdict({
               </label>
               <p className="text-xs leading-relaxed text-stone-500">
                 {
-                  "貼った URL は控えとして残すだけで、こちらから中身を読みに行くことはありません。家賃や間取りは手で書いてください。入れたら「★ この地点を保存」を押します。"
+                  "こちらから中身を読みに行くことはありません。メモは短い覚え書きにし、掲載本文はコピーしないでください。"
                 }
               </p>
             </div>
+          )}
+          {candidateContext && (
+            <CandidateSave
+              key={JSON.stringify([
+                target.lat,
+                target.lon,
+                target.source,
+                candidateContext,
+              ])}
+              target={target}
+              context={candidateContext}
+              url={markUrl}
+              memo={markMemo}
+              title={markTitle}
+              onTitleChange={setMarkTitle}
+              ready={!!cell}
+              onFocus={onFocus}
+            />
           )}
         </div>
       )}

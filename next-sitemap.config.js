@@ -433,6 +433,7 @@ module.exports = {
   generateRobotsTxt: false, // src/app/robots.ts を使用するため
   sitemapSize: 7000,
   exclude: [
+    "/relocation/candidates",
     "/admin/*",
     "/api/*",
     ...NON_CORE,

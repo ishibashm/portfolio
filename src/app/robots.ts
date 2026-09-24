@@ -13,7 +13,12 @@ export default function robots(): MetadataRoute.Robots {
   const baseUrl =
     process.env.NEXT_PUBLIC_BASE_URL || "https://cloud-palette.com";
 
-  const disallow = ["/admin/", "/api/", ...NON_CORE_DISALLOW];
+  const disallow = [
+    "/admin/",
+    "/api/",
+    "/relocation/candidates",
+    ...NON_CORE_DISALLOW,
+  ];
 
   return {
     rules: [

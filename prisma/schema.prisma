@@ -914,3 +914,31 @@ model rental_price_history {
   @@index([property_id, observed_at])
   @@index([observed_at])
 }
+
+// Supabase ownership, independent of the legacy NextAuth User model.
+model ListingCandidate {
+  id            String   @id @default(uuid()) @db.Uuid
+  userId        String   @db.Uuid
+  url           String?  @db.VarChar(2048)
+  title         String?  @db.VarChar(120)
+  memo          String?  @db.VarChar(1000)
+  lat           Float
+  lon           Float
+  bearingDeg    Float
+  direction     String   @db.VarChar(2)
+  judgment      Json
+  requestKey    String   @db.Uuid
+  requestDigest String   @db.VarChar(64)
+  createdAt     DateTime @default(now()) @db.Timestamptz(6)
+  updatedAt     DateTime @updatedAt @db.Timestamptz(6)
+  @@unique([userId, requestKey])
+  @@index([userId, createdAt, id])
+  @@map("listing_candidates")
+}
+
+model ListingCandidateRate {
+  key       String   @id @db.VarChar(100)
+  hits      Int
+  resetsAt  DateTime @db.Timestamptz(6)
+  @@map("listing_candidate_rates")
+}

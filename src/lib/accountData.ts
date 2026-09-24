@@ -4,7 +4,7 @@
  * 消す先は 2 か所ある。**どちらか片方だけだと、消したはずのものが
  * 戻ってくる。**
  *
- *   クラウド … user_configs の行（生年月日・場所・保存済みプロフィール・
+ *   クラウド … listing_candidates（候補履歴）と user_configs の行（生年月日・場所・保存済みプロフィール・
  *              設定バーの好み）。DELETE /api/user-config
  *   この端末 … localStorage。設定・保存済みプロフィール・目的地
  *

@@ -247,6 +247,7 @@ function FocusController({
     const centerChanged =
       !prev ||
       prev.wide ||
+      (focusKind === "spot" && prev.center !== center) ||
       Math.abs(prev.center[0] - center[0]) > 1e-4 ||
       Math.abs(prev.center[1] - center[1]) > 1e-4;
     const contextChanged =
@@ -1335,6 +1336,14 @@ export default function ArbitrageMapInner({
               </div>
             )}
           </div>
+        )}
+
+        {focusKind === "spot" && mapCenter && (
+          <Marker position={mapCenter} alt="確認する候補の所在地">
+            <Popup>
+              確認する候補の所在地です。違う場合は地図をクリックして修正してください。
+            </Popup>
+          </Marker>
         )}
 
         {/* 起点の目印。吹き出しを持つので押せる。押せるものには名前が要る
