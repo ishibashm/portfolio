@@ -53,6 +53,7 @@ describe("消す鍵", () => {
       "arb_axis_prefs_v1",
       "timing_party_v1",
       "timing_dest_pref_v1",
+      "timing_scan_v1",
       "dest_lat",
       "dest_lon",
       "dest_label",
@@ -169,6 +170,7 @@ const KEPT: Record<string, string> = {
   map_theme: "地図の明暗",
   map_hazard_tab_v1: "災害情報のタブ",
   stc_activeTab: "ホームの時計のタブ",
+  timing_view_v1: "時期ツールの範囲と絞り込み",
   "cloud-palette:chunk-reload-at": "読み込み失敗の再試行時刻",
 };
 

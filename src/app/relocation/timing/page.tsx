@@ -94,6 +94,12 @@ import {
   type ProfilePreset,
 } from "@/lib/profilePresetSync";
 import { DEFAULT_PARTY_POLICY, type PartyPolicy } from "@/utils/arbitrageParty";
+import {
+  readTimingScan,
+  readTimingView,
+  writeTimingScan,
+  writeTimingView,
+} from "@/lib/timingViewState";
 
 interface TimelineDay {
   date: string;
@@ -270,6 +276,12 @@ export default function TimingAnalyticsPage() {
   // 段階と暦注は軸が違うので別々に持ち、AND で重ねる。
   const [tierFilter, setTierFilter] = useState<Set<DayCategory>>(allCategories);
   const [luckyOnly, setLuckyOnly] = useState(false);
+  /*
+    見え方と直近の走査を端末に残す（利用者の指摘、2026-09-24「絞り込んで
+    頁を離れ、戻ると消えていて設定し直しになる」。lib/timingViewState）。
+    読み終わるまでは書かない。読む前の既定値で保存を上書きしてしまう。
+  */
+  const [viewLoaded, setViewLoaded] = useState(false);
 
   /*
     同行者・合流する人。**この頁専用の鍵**（lib/partyMemberInput の
@@ -300,12 +312,51 @@ export default function TimingAnalyticsPage() {
     } catch {
       // 読めなければ空のまま
     }
+    /*
+      前に見ていた見え方と、今日の走査の結果を戻す。走査の入力（scannedKey）
+      も一緒に戻すので、設定が変わっていれば「設定が変わりました」が出る
+      （結果は出したまま、押し直すかは本人が決める）。
+    */
+    try {
+      const view = readTimingView(localStorage);
+      setPastMonths(view.pastMonths);
+      setFutureMonths(view.futureMonths);
+      setFocusDir(view.focusDir);
+      setTierFilter(view.tierFilter);
+      setLuckyOnly(view.luckyOnly);
+      const scan = readTimingScan<TimelineDay, MemberTimeline>(
+        localStorage,
+        iso(new Date()),
+      );
+      if (scan) {
+        setDays(scan.days);
+        setMemberTimelines(scan.members);
+        setScannedKey(scan.key);
+        setScannedParty(scan.party);
+        setPastClippedDays(scan.pastClippedDays);
+        setProfile(scan.profile);
+      }
+    } catch {
+      // 読めなければ既定の見え方で始める
+    }
+    setViewLoaded(true);
     loadProfilePresets(fetch, localStorage)
       .then((r) => setSavedProfiles(r.presets))
       .catch(() => {
         /* 未ログイン・オフラインなら手入力してもらう */
       });
   }, []);
+
+  useEffect(() => {
+    if (!viewLoaded) return;
+    writeTimingView(localStorage, {
+      pastMonths,
+      futureMonths,
+      focusDir,
+      tierFilter,
+      luckyOnly,
+    });
+  }, [viewLoaded, pastMonths, futureMonths, focusDir, tierFilter, luckyOnly]);
 
   // 保存は変えた瞬間に。効果で書くと、読み込み前の空の値で一度
   // 上書きしてしまう（物件スキャナーで足した人が消える）。
@@ -454,13 +505,25 @@ export default function TimingAnalyticsPage() {
       if (!res.ok) throw new Error(String(res.status));
       const json = await res.json();
       if (!Array.isArray(json?.days)) throw new Error("empty");
-      setDays(json.days);
-      setMemberTimelines(Array.isArray(json.members) ? json.members : []);
-      setScannedParty(party);
-      setPastClippedDays(clipped);
-      setProfile({
+      const members = Array.isArray(json.members) ? json.members : [];
+      const nextProfile = {
         honmeiStar: json.honmeiStar,
         voidZodiacs: json.voidZodiacs ?? [],
+      };
+      setDays(json.days);
+      setMemberTimelines(members);
+      setScannedParty(party);
+      setPastClippedDays(clipped);
+      setProfile(nextProfile);
+      /* 頁を離れて戻っても押し直さずに済むよう、今日のぶんを残す */
+      writeTimingScan(localStorage, {
+        key: `${scanInputsOf(settings)}|${pastMonths}|${futureMonths}`,
+        party,
+        day: iso(new Date()),
+        days: json.days,
+        members,
+        profile: nextProfile,
+        pastClippedDays: clipped,
       });
       setSelectedDate(null);
     } catch {

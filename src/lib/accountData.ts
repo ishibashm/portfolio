@@ -85,6 +85,11 @@ export const ACCOUNT_LOCAL_KEYS = [
   /* 時期ツールの合流先（県）。目的地と同じ扱い */
   "timing_dest_pref_v1",
   /*
+    時期ツールの直近の走査の結果（lib/timingViewState）。生年月日から出た
+    段階が日ごとに入る。見え方（timing_view_v1）は画面の状態なので残す側
+  */
+  "timing_scan_v1",
+  /*
     目的地。**いまは tactical_config_v1 の中の項目**なので、上の 1 行目で
     既に消えている（destinationSetting は writeLocalSettings 経由で書く）。
     ここに残すのは、独立した鍵に移した日に消し忘れないための保険。
