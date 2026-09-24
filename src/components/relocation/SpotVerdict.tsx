@@ -6,6 +6,7 @@ import { MapPin, Loader2 } from "lucide-react";
 import { evaluateSpot } from "@/lib/spotEvaluation";
 import { classifyCandidateInput } from "@/lib/listingCandidateInput";
 import { CandidateSave } from "./CandidateSave";
+import { ListingEmailPreview } from "./ListingEmailPreview";
 import type { DayKigakuInput } from "@/lib/dayKigakuClient";
 import { directionUnstableNote } from "@/lib/directionDistance";
 import { TIER_BADGE_CLASS } from "@/utils/tierDisplay";
@@ -421,6 +422,17 @@ export function SpotVerdict({
           <p className="text-xs text-stone-600 leading-relaxed">
             URLは参照リンクのみで、中身を取得しません。住所または座標を入力し、地図で所在地を確認してください。地図クリックで位置を修正できます。
           </p>
+          {candidateContext && (
+            <ListingEmailPreview
+              onSelect={(url) => {
+                lookupSeq.current++;
+                setQuery(url);
+                setTarget(null);
+                setMarkUrl("");
+                setError(null);
+              }}
+            />
+          )}
           {markUrl && !target && (
             <p className="text-xs break-all">
               参照リンク: {markUrl}
