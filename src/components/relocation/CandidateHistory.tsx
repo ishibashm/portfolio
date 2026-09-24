@@ -96,8 +96,8 @@ function CandidateRow({
       <details>
         <summary>保存時の位置・条件</summary>
         <p>
-          出発地: {c.judgment.context.baseLat}, {c.judgment.context.baseLon} ／
-          候補: {c.lat}, {c.lon}
+          出発地: {c.judgment.context.baseLat}, {c.judgment.context.baseLon}{" "}
+          ／候補: {c.lat}, {c.lon}
         </p>
         <p>
           {c.judgment.context.useClassical ? "伝統方位" : "均等方位"} ／{" "}

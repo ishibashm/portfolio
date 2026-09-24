@@ -202,7 +202,7 @@ API仕様の確認先: [messages.list](https://developers.google.com/workspace/g
 
 disconnectはrefresh tokenのrevokeを試行し、その成功／失敗にかかわらず接続行（トークン・cursor）をローカル削除する。revoke失敗は削除コミット後に`GMAIL_REVOKE_FAILED_LOCAL_DELETED`を返す。この場合はGoogleアカウント側でもアクセス取消が必要。ローカル削除失敗は`GMAIL_DELETE_FAILED`として区別する。他人の接続／不存在／繰り返し切断は状態を変更せず同じ成功とする。
 
-Prismaモデル`ListingEmailConnection`と`ListingEmailOAuthState`、migration `20260924000000_listing_email_connections`を追加した。接続メタとOAuth一時stateを候補から分離し、RLS有効化・PUBLIC/anon/authenticatedの直接アクセス剥奪、存在する場合のauth.users外部キー／ON DELETE CASCADEをSQLに含む。**migrationは適用していない。migrate deploy／db pushも実行していない。** 既存migrationのbaselineと実DB権限を確認してから運用者が適用する。auth.usersがない環境の所有者削除連動は別途必要。OAuth一時行は本人の次のconnectで置換され、期限切れで拒否するが、定期掃除ジョブは未追加。
+Prismaモデル`ListingEmailConnection`と`ListingEmailOAuthState`、接続用SQLを追加した（現在の配備元は§12の統合SQL）。接続メタとOAuth一時stateを候補から分離し、RLS有効化・PUBLIC/anon/authenticatedの直接アクセス剥奪、存在する場合のauth.users外部キー／ON DELETE CASCADEをSQLに含む。**migrationは適用していない。migrate deploy／db pushも実行していない。** §12のActions手順で実DB権限を確認してから運用者が適用する。auth.usersがない環境の所有者削除連動は別途必要。OAuth一時行は本人の次のconnectで置換され、期限切れで拒否するが、定期掃除ジョブは未追加。
 
 ### 必須envとRestricted scope
 
@@ -258,7 +258,7 @@ OAuth connect/callback、PKCE、取得scopeの検証後の接続作成、本人�
 
 ### スキーマ・機能フラグ
 
-新migration `20260924010000_listing_email_label_selection`は接続のlabelIdをnullableにする変更だけ。既存migrationは変更せず、**両migrationとも未適用。migrate deploy／db pushは実行していない。** PKCEデータは暗号化cookieに置くのでOAuth一時state表への列追加はない。
+接続のlabelIdはnullable。現在は§12の統合SQLで最初からnullableとして作成する。旧3 migrationディレクトリは削除した。**SQL適用・migrate deploy／db pushは実行していない。** PKCEデータは暗号化cookieに置くのでOAuth一時state表への列追加はない。
 
 `LISTING_EMAIL_GMAIL_ENABLED`は既定OFF。connect／callback／read／disconnect／labels／select-label／statusの7ルートすべてで、OFF時は認証・DB・通信前にdisabledとなる。必須envは§9の6項目から増やしていない。実Googleの認可画面を開いたり、本物のトークンを取得したりする作業は本単位で行わない。
 
@@ -312,3 +312,46 @@ UIは再接続コードを受けるとURLプレビューとcursorを消し、取
 - 新規テストの通信モックはfetchのみ。状態ハンドラーの認証／所有者条件は注入したメモリ上の契約fixtureで検証し、実認証・DBへは接続していない。既存テストの認証／DBモックは引き継ぐ。
 - migration追加なし。既存migrationも適用していない。実Google通信、秘密設定変更、フラグ有効化は行っていない。
 - 実ブラウザの表示／キーボード操作、実認証＋PostgreSQLの所有者分離・RLS・ロック／削除連動、Google Testingでの実同意は未検証。次はGoogle通信モックのままローカル認証・DB環境を用意し、画面からcallback・ラベル選択・read・disconnectまでのE2Eと並行処理を確認する単位を推奨する。
+
+
+## 12. GitHub Actionsによる本番導入
+
+本番配備は `deploy.yml`、DDLは `db-apply-sql.yml` のみを使う。package.json・workflow・Dockerfile・scriptsにはPrisma migrateの実行経路がないため、旧3 migration（listing_candidates / listing_email_connections / listing_email_label_selection）は削除し、`prisma/sql/20260924_add_listing_candidates_and_email.sql` に統合した。過去節のmigration適用未実施は実装当時の記録である。
+
+### 設定の受け渡し
+
+Settings → Secrets and variables → Actions のリポジトリ設定を使用する。
+
+| 名前 | deploy.yml が読む設定 |
+| --- | --- |
+| `LISTING_EMAIL_GMAIL_ENABLED` | `vars.LISTING_EMAIL_GMAIL_ENABLED` 優先、空なら `secrets.LISTING_EMAIL_GMAIL_ENABLED` |
+| `LISTING_CANDIDATE_GSI_ENABLED` | `vars.LISTING_CANDIDATE_GSI_ENABLED` 優先、空なら `secrets.LISTING_CANDIDATE_GSI_ENABLED` |
+| `LISTING_EMAIL_GOOGLE_CLIENT_ID` | 同名の `secrets` |
+| `LISTING_EMAIL_GOOGLE_CLIENT_SECRET` | 同名の `secrets` |
+| `LISTING_EMAIL_GOOGLE_REDIRECT_URI` | 同名の `secrets` |
+| `LISTING_EMAIL_ENCRYPTION_KEY` | 同名の `secrets` |
+| `LISTING_EMAIL_ENCRYPTION_KEY_ID` | 同名の `secrets` |
+
+既存の `secrets.ENV_FILE` を書いた後、`scripts/apply-listing-env.sh` が値のあるキーだけを追記する。未設定の個別設定はENV_FILEを上書きしない。Gmail用OAuthはログイン用の `GOOGLE_CLIENT_ID` と別設定。鍵の形式・redirect URI・Restricted scopeの要件は§9〜10参照。
+
+`scripts/convert_env.py` は最後の同名キーを採用して全キーを `env.json` に出力する。最終Gmailフラグが厳密に `true` で、残り5項目のいずれかが空ならキー名だけで警告する（配備は止めない）。値・トークン・本文はログに出さない。`scripts/env_to_gcloud_flag.py` からシェル変数に取り込み、`gcloud run deploy --update-env-vars` へ渡すため、ビルドだけでなく実行時にも届く。
+
+両フラグの既定はOFFのまま。`--update-env-vars` は設定から消したキーをCloud Runから削除しないため、停止時はvariableを明示的に `false` にして再配備する。単にsecretやvariableを削除しても停止したことにはならない。
+
+### 適用順序と検証限界
+
+1. Gmail・住所検索フラグをOFFに保ち、バックアップと対象DBを確認する。DDLワークフローは既存の `secrets.ENV_FILE` / `secrets.DATABASE_URL_OVERRIDE` からDIRECT_URLを解決する。
+2. `db-apply-sql.yml` を file=`20260924_add_listing_candidates_and_email.sql`、mode=`dry-run` で手動実行する。これはSQL表示・接続確認・表の状態確認であり、DDLの実行／ロールバック試験ではない。
+3. 同じfile、mode=`apply` で実行する。ワークフローが単一トランザクションとタイムアウトを付ける。4表・3インデックス、CHECK・条件付きauth外部キー、RLS・権限・退会トリガーを作成し、再実行時は重複作成しない。
+4. 必須設定を登録して `deploy.yml` を実行する。認証・ラベル選択・読み取り・切断・失効時の復旧とログ非収集を確認してから必要な機能のみ有効化する。Google Testingの7日失効と本番公開の審査要件は§10のまま。
+
+SQLはschema.prismaの列型・NULL可否・主キー／インデックス名に合わせた。UUIDはPrismaの `uuid()` と同じくアプリ側で生成し、labelIdは最初からNULL可。古いSQLを途中まで適用してlabelIdがNOT NULLのDBでは例外で停止し、手動調査が必要（この追加専用経路でDROP NOT NULLは行わない）。
+
+RLS・トリガー・auth.usersへの外部キーはPrismaモデル外のDB保護であり、`db push` による保持を保証できない。本番でdb pushを実行せず、このSQLを管理元とする。実DBでの再適用・権限・削除連動は未検証。今回DB適用・配備・Google通信は行っていない。
+
+### この変更のローカル検証
+
+- 関連28ファイル297テストと、配備スクリプトの9テストが成功（計29ファイル306件）。個別設定の後勝ち、未設定時の保持、ENV_FILE内の設定、各必須値の欠落警告、明示的OFF、値の非出力とCloud Run引数への到達を確認した。
+- `npx tsc --noEmit`、変更したTSテストのeslint、シェル構文検査が成功。
+- pglastで22 SQL文と7つのPL/pgSQLブロックの構文を検査。DB接続しない `prisma migrate diff --from-empty --to-schema prisma/schema.prisma --script` の生成DDLと4表の列型・NULL可否・デフォルト・主キー、3インデックスを照合した。これはmigrateの適用経路を追加するものではない。
+- 実DBでの二重適用や既存DBとの差分、RLS・auth削除連動は未検証。SQLの構文／モデル照合は実適用の代わりにはならない。

@@ -69,6 +69,17 @@ jobs:
           # 履歴グラフの日次記録エンドポイント（/api/cron/telemetry）の合言葉。
           # Record Daily Telemetry ワークフローが同じ値で呼ぶ。
           CRON_SECRET: ${{ secrets.CRON_SECRET }}
+          # 物件メールの設定も ENV_FILE を再入力せず個別に渡せるようにする。
+          # 未設定なら ENV_FILE の値を残す。公開フラグは vars 優先、secrets も許容。
+          # Gmail 用 OAuth はログイン用 GOOGLE_CLIENT_ID と分離する。
+          LISTING_EMAIL_GMAIL_ENABLED: ${{ vars.LISTING_EMAIL_GMAIL_ENABLED || secrets.LISTING_EMAIL_GMAIL_ENABLED }}
+          LISTING_EMAIL_GOOGLE_CLIENT_ID: ${{ secrets.LISTING_EMAIL_GOOGLE_CLIENT_ID }}
+          LISTING_EMAIL_GOOGLE_CLIENT_SECRET: ${{ secrets.LISTING_EMAIL_GOOGLE_CLIENT_SECRET }}
+          LISTING_EMAIL_GOOGLE_REDIRECT_URI: ${{ secrets.LISTING_EMAIL_GOOGLE_REDIRECT_URI }}
+          LISTING_EMAIL_ENCRYPTION_KEY: ${{ secrets.LISTING_EMAIL_ENCRYPTION_KEY }}
+          LISTING_EMAIL_ENCRYPTION_KEY_ID: ${{ secrets.LISTING_EMAIL_ENCRYPTION_KEY_ID }}
+          # Phase 1 の住所検索 API が実行時に読むフラグ。既定 OFF を維持する。
+          LISTING_CANDIDATE_GSI_ENABLED: ${{ vars.LISTING_CANDIDATE_GSI_ENABLED || secrets.LISTING_CANDIDATE_GSI_ENABLED }}
           # 管理画面（/admin）と管理 API を開ける唯一のアドレス。
           # ENV_FILE の中に既にあるなら、この secret は未設定でよい（下の
           # 追記は後勝ちなので、両方あればこちらが勝つ）。ENV_FILE は
@@ -124,6 +135,9 @@ jobs:
           fi
           echo "$ENV_FILE_CONTENT" > .env
           bash scripts/apply-db-override.sh
+          # 値はログへ出さず、設定されたキーだけ追記する（後勝ち）。
+          # 最終 .env の不足確認は env.json 変換時に行い、ENV_FILE 内の値も考慮する。
+          bash scripts/apply-listing-env.sh
           echo "" >> .env
           echo "NEXT_SERVER_ACTIONS_ENCRYPTION_KEY=$SERVER_ACTIONS_KEY" >> .env
           if [ -n "$ADSENSE_ID" ]; then
