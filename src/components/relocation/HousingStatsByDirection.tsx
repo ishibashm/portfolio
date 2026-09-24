@@ -40,6 +40,9 @@ export interface DirectionMunicipality {
   name: string;
   distanceKm: number;
   bearing: number;
+  /** 代表点。「この地点を調べる」へ渡す（lib の同名の型の註）。 */
+  lat: number;
+  lon: number;
   rentPerSqm: number | null;
   vacancyRate: number | null;
   totalDwellings: number | null;
@@ -96,6 +99,7 @@ export function HousingStatsByDirection({
   verdicts,
   selectedDirection = "ALL",
   onData,
+  onInspectTown,
 }: {
   lat: number;
   lon: number;
@@ -116,6 +120,17 @@ export function HousingStatsByDirection({
    * 届くたびに呼び直す）。
    */
   onData?: (data: HousingStatsData) => void;
+  /**
+   * 街の名前を押したとき、その街を**出発地から見た判定**で調べる
+   * （頁の「この地点を調べる」へ渡す）。渡さなければ、名前は今までどおり
+   * 市区町村ページへのリンク。
+   *
+   * 市区町村ページは**その街を起点にした方位**の頁で、ここから飛ぶと
+   * 起点が入れ替わる（利用者の指摘、2026-09-24。「京都から東の長久手市を
+   * 押すと、長久手から見た方位になる」）。方位で街を選んでいる途中で
+   * 知りたいのは、出発地から見てその街がどう出るかのほう。
+   */
+  onInspectTown?: (town: { lat: number; lon: number; name: string }) => void;
   /**
    * 方位の切り方。**同じ画面の物件一覧と同じものを渡すこと。**
    *
@@ -300,17 +315,40 @@ export function HousingStatsByDirection({
                         ? "街を閉じる"
                         : `この方位の街を見る（${d.municipalities.length}${d.truncated ? "／" + d.count.toLocaleString() : ""}）`}
                     </button>
+                    {effectiveOpen === d.direction && onInspectTown && (
+                      <p className="mt-1 text-xs leading-relaxed text-stone-500">
+                        {
+                          "街の名前を押すと、出発地から見たその街の方位と吉凶を、下の「物件URL・住所から候補を検討」の欄に出します。「この街から見た方位」は、その街に移ったあとの方位の頁です。"
+                        }
+                      </p>
+                    )}
                     {effectiveOpen === d.direction && (
                       <ul className="mt-1 space-y-0.5 border-t border-stone-200 pt-1">
                         {d.municipalities.map((m) => (
                           <li key={m.code} className="text-[10px]">
-                            <Link
-                              prefetch={false}
-                              href={`/houi/area/${m.code}`}
-                              className="font-semibold text-stone-800 underline hover:text-indigo-700"
-                            >
-                              {m.name}
-                            </Link>
+                            {onInspectTown ? (
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  onInspectTown({
+                                    lat: m.lat,
+                                    lon: m.lon,
+                                    name: m.name,
+                                  })
+                                }
+                                className="min-h-[24px] font-semibold text-stone-800 underline hover:text-indigo-700"
+                              >
+                                {m.name}
+                              </button>
+                            ) : (
+                              <Link
+                                prefetch={false}
+                                href={`/houi/area/${m.code}`}
+                                className="font-semibold text-stone-800 underline hover:text-indigo-700"
+                              >
+                                {m.name}
+                              </Link>
+                            )}
                             {/* 名前と数字の間に区切りを入れる。`ml-1` の
                                 余白だけだと「東京都N区010km」と読めて
                                 しまった（実測。名前が数字で終わる街は
@@ -329,6 +367,17 @@ export function HousingStatsByDirection({
                                 .filter(Boolean)
                                 .join(" ・ ")}
                             </span>
+                            {/* 市区町村ページは起点が入れ替わる頁なので、
+                                そう名乗るリンクにして残す */}
+                            {onInspectTown && (
+                              <Link
+                                prefetch={false}
+                                href={`/houi/area/${m.code}`}
+                                className="ml-2 inline-flex min-h-[24px] items-center text-stone-500 underline hover:text-indigo-700"
+                              >
+                                この街から見た方位
+                              </Link>
+                            )}
                           </li>
                         ))}
                         {d.truncated && (
