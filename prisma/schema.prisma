@@ -504,6 +504,11 @@ model property_transactions {
   est_land_price       BigInt?
   /// est_building_price / trade_price（0〜1）。絞り込みはこの 1 本で引く。
   building_ratio       Float?
+  /// 前面道路（国交省 XIT001 の Direction / Classification / Breadth）。
+  /// マンションは接道が無く NULL。SQL は prisma/sql/20260924_add_property_transactions_road.sql
+  road_direction       String?
+  road_classification  String?
+  road_breadth_m       Float?
   created_at           DateTime @default(now()) @db.Timestamptz(6)
   updated_at           DateTime @default(now()) @db.Timestamptz(6)
 
