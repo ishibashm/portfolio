@@ -1,3 +1,4 @@
+import { googleJson } from "./transport";
 import { randomUUID } from "node:crypto";
 import { z } from "zod";
 import {
@@ -51,62 +52,6 @@ export class GmailListingEmailReader implements ListingEmailReader {
     private readonly transport: typeof fetch = fetch,
   ) {}
 
-  private async json(
-    url: string,
-    init: RequestInit,
-    deadline: number,
-  ): Promise<unknown> {
-    // All URLs originate below, never from message text or a redirect response.
-    const u = new URL(url);
-    if (
-      !(
-        (u.origin === "https://gmail.googleapis.com" &&
-          u.pathname.startsWith("/gmail/v1/users/me/")) ||
-        (u.origin === "https://oauth2.googleapis.com" &&
-          ["/token", "/revoke"].includes(u.pathname))
-      )
-    )
-      throw new GmailError("GMAIL_ENDPOINT");
-    requireGmailEnabled();
-    if (Date.now() >= deadline) throw new GmailError("GMAIL_TIMEOUT");
-    let response: Response;
-    try {
-      response = await this.transport(url, {
-        ...init,
-        redirect: "error",
-        cache: "no-store",
-        signal: AbortSignal.timeout(Math.min(3000, deadline - Date.now())),
-      });
-      if (!response.ok) {
-        await response.body?.cancel();
-        throw new GmailError(
-          response.status === 401 ? "GMAIL_RECONNECT" : "GMAIL_PROVIDER",
-        );
-      }
-      if (u.pathname === "/revoke") {
-        await response.body?.cancel();
-        return {};
-      }
-      const reader = response.body?.getReader();
-      if (!reader) throw new GmailError("GMAIL_RESPONSE");
-      const chunks: Uint8Array[] = [];
-      let size = 0;
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-        size += value.byteLength;
-        if (size > 65536) {
-          await reader.cancel();
-          throw new GmailError("GMAIL_RESPONSE_SIZE");
-        }
-        chunks.push(value);
-      }
-      return JSON.parse(Buffer.concat(chunks).toString("utf8"));
-    } catch (e) {
-      throw e instanceof GmailError ? e : new GmailError("GMAIL_PROVIDER");
-    }
-  }
-
   async read(ownerId: string, window: ListingEmailReadWindow) {
     requireGmailEnabled();
     const config = gmailConfig();
@@ -122,6 +67,7 @@ export class GmailListingEmailReader implements ListingEmailReader {
           )
             throw new GmailError("NOT_FOUND");
           if (
+            !record.labelId ||
             window.labelId !== record.labelId ||
             window.startedAt !== record.startedAt.toISOString() ||
             !Number.isInteger(window.maxMessages) ||
@@ -129,6 +75,7 @@ export class GmailListingEmailReader implements ListingEmailReader {
             window.maxMessages > 20
           )
             throw new GmailError("INVALID_WINDOW");
+          const selectedLabelId = record.labelId;
           const state = gmailStateSchema.parse(
             unseal(record.sealedState, ownerId, record.id),
           );
@@ -153,7 +100,8 @@ export class GmailListingEmailReader implements ListingEmailReader {
               refresh_token: z.string().min(1).max(8192).optional(),
             })
             .parse(
-              await this.json(
+              await googleJson(
+                this.transport,
                 "https://oauth2.googleapis.com/token",
                 {
                   method: "POST",
@@ -180,7 +128,8 @@ export class GmailListingEmailReader implements ListingEmailReader {
             const label = z
               .object({ id: z.string(), type: z.literal("user") })
               .parse(
-                await this.json(
+                await googleJson(
+                  this.transport,
                   `${base}labels/${encodeURIComponent(record.labelId)}`,
                   { headers },
                   deadline,
@@ -207,7 +156,8 @@ export class GmailListingEmailReader implements ListingEmailReader {
                 nextPageToken: z.string().min(1).max(4096).optional(),
               })
               .parse(
-                await this.json(
+                await googleJson(
+                  this.transport,
                   `${base}messages?${query}`,
                   { headers },
                   deadline,
@@ -220,7 +170,8 @@ export class GmailListingEmailReader implements ListingEmailReader {
               seen.add(id);
               const endpoint = `${base}messages/${id}`;
               const meta = metadataSchema.parse(
-                await this.json(
+                await googleJson(
+                  this.transport,
                   `${endpoint}?format=metadata&fields=id,labelIds,internalDate,sizeEstimate`,
                   { headers },
                   deadline,
@@ -228,7 +179,7 @@ export class GmailListingEmailReader implements ListingEmailReader {
               );
               const inRange = (m: z.infer<typeof metadataSchema>) =>
                 m.id === id &&
-                m.labelIds.includes(record.labelId) &&
+                m.labelIds.includes(selectedLabelId) &&
                 Number(m.internalDate) >= record.startedAt.getTime();
               if (!inRange(meta)) continue;
               if (meta.sizeEstimate > EMAIL_PREVIEW_MAX_BYTES)
@@ -241,7 +192,8 @@ export class GmailListingEmailReader implements ListingEmailReader {
                     .regex(/^[A-Za-z0-9_-]+={0,2}$/),
                 })
                 .parse(
-                  await this.json(
+                  await googleJson(
+                    this.transport,
                     `${endpoint}?format=raw&fields=id,labelIds,internalDate,sizeEstimate,raw`,
                     { headers },
                     deadline,
@@ -318,7 +270,8 @@ export class GmailListingEmailReader implements ListingEmailReader {
             const state = gmailStateSchema.parse(
               unseal(record.sealedState, ownerId, record.id),
             );
-            await this.json(
+            await googleJson(
+              this.transport,
               "https://oauth2.googleapis.com/revoke",
               {
                 method: "POST",

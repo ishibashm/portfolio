@@ -1,7 +1,7 @@
 # Phase 2: 本人の通知メールからURLを選ぶ
 
 設計・骨格追加日: 2026-09-24。対象: ishibashm/portfolio。
-[元設計 §8・§12](./listing-paste-ingest-design.md)を引き継ぐ。今回の到達点は、本人が渡したテスト用テキスト／HTML／生MIMEのプレビューと、Phase 1への受け渡し。実Gmail接続・OAuth認可・定期ジョブ・トークン保存は実装しない。
+[元設計 §8・§12](./listing-paste-ingest-design.md)を引き継ぐ。現状は貼付プレビュー、Gmail取得アダプター、PKCE付きOAuthと本人ラベル選択APIまで実装。§1〜8は初期段階の設計・検証記録、現在の実装は§9〜10を参照。定期ジョブは未追加。実Google接続とmigration適用は行っていない。
 
 ## 1. フローと責務
 
@@ -126,7 +126,7 @@ UIは解析成功・選択・クリア・欄を閉じる・アンマウントで
 
 ## 8. 偽Gmailアダプターの実装メモ（2026-09-24）
 
-`src/lib/testing/fakeListingEmailReader.ts`の`FakeListingEmailReader`が既存の`ListingEmailReader`を実装する。テストはインターフェース型を介して取得・切断を呼ぶ。本番UI/APIには登録しない。DB・ファイル保存・Google／ポータル通信を行わず、入力は合成fixtureだけ。schema／migrationの追加・適用はない。§3の本番接続ストアと暗号化処理は引き続き未実装。
+`src/lib/testing/fakeListingEmailReader.ts`の`FakeListingEmailReader`が既存の`ListingEmailReader`を実装する。テストはインターフェース型を介して取得・切断を呼ぶ。本番UI/APIには登録しない。DB・ファイル保存・Google／ポータル通信を行わず、入力は合成fixtureだけ。schema／migrationの追加・適用はない。本番接続ストアと暗号化処理の後続実装は§9〜10を参照。
 
 ### 取得範囲・所有者分離
 
@@ -153,7 +153,7 @@ UIは解析成功・選択・クリア・欄を閉じる・アンマウントで
 
 ### 残件と次の単位
 
-実認証＋ローカルPostgreSQLで、既存貼付プレビューの401／本人レート／no-store／本文非ログを検証する単位を推奨する。実Gmail、実トークンのscope検証、暗号化ストア、複数プロセスの排他、プロバイダー失効・退会連動は未実装。偽アダプターの成功をこれらの検証完了とは扱わない。
+実認証＋ローカルPostgreSQLで、既存貼付プレビューの401／本人レート／no-store／本文非ログを検証する単位を推奨する。この段階では実Gmail・scope検証・暗号化ストア等は未実装だった。後続コードは§9〜10を参照し、実サービスでの検証とは区別する。偽アダプターの成功をこれらの検証完了とは扱わない。
 
 ### この単位の検証結果
 
@@ -164,18 +164,18 @@ UIは解析成功・選択・クリア・欄を閉じる・アンマウントで
 
 ## 9. GmailListingEmailReader実装（2026-09-24）
 
-§1〜8は各段階の記録。本単位では`src/lib/gmail/reader.ts`の`GmailListingEmailReader`を追加し、同じ`ListingEmailReader`契約を実装した。Google API呼出しを行えるコードは追加したが、実アカウントによる接続・トークン取得・稼働確認は行っていない。UIの接続ボタンは引き続き未接続。OAuthコード交換はスタブのため、フラグをONにするだけでは接続レコードを作成できない。
+§1〜8は各段階の記録。本単位では`src/lib/gmail/reader.ts`の`GmailListingEmailReader`を追加し、同じ`ListingEmailReader`契約を実装した。Google API呼出しを行えるコードは追加したが、実アカウントによる接続・トークン取得・稼働確認は行っていない。UIの接続ボタンは引き続き未接続。OAuthコード交換と接続レコード作成APIは§10で実装済み。
 
 ### 機能フラグとルート
 
-`LISTING_EMAIL_GMAIL_ENABLED`が文字列`true`のときだけ有効。それ以外／未設定はOFF。以下4つのGmailルートはOFF時、認証・DB・Google通信より先に503／`GMAIL_DISABLED`を返す。アダプター自身もread／disconnectと通信直前に同じフラグを検証する。
+`LISTING_EMAIL_GMAIL_ENABLED`が文字列`true`のときだけ有効。それ以外／未設定はOFF。以下のGmailルート（ラベルAPIは§10）はOFF時、認証・DB・Google通信より先に503／`GMAIL_DISABLED`を返す。アダプター自身もread／disconnectと通信直前に同じフラグを検証する。
 
-| ルート（`/api/relocation/email/gmail/`配下） | 挙動                                                                                                                                                                                              |
-| -------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `POST connect`                               | 本人認証・同一オリジン・5回/分。ランダムstateとブラウザnonceを作り、ハッシュだけを本人1件のDB行に保存。Googleへ移動せず`OAUTH_STUB`を返す                                                         |
-| `GET callback`                               | 本人認証、固定redirect URIのorigin、state・HttpOnly cookieのnonce・10分期限を照合。DELETE条件で原子的に一度だけ消費。正常照合でも501／`OAUTH_STUB`・connected=false。認可コードは読まず交換しない |
-| `POST read`                                  | 本人認証・同一オリジン・10回/分。接続ID・ラベル・開始時刻・全体上限・不透明cursorを検証し、アダプター結果からURLだけを返す。raw MIMEをHTTP応答に含めない                                          |
-| `POST disconnect`                            | 本人認証・同一オリジン・10回/分。本人の接続だけ失効・削除する                                                                                                                                     |
+| ルート（`/api/relocation/email/gmail/`配下） | 挙動                                                                                                                                                                                                                              |
+| -------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `POST connect`                               | 本人認証・同一オリジン・5回/分。state・nonceのハッシュを本人1件のDB行に保存。PKCE S256を含む認可URLと暗号化HttpOnly cookieを返す                                                                                                  |
+| `GET callback`                               | 本人認証、固定redirect URIのorigin、state・HttpOnly cookieのnonce・10分期限を照合。DELETE条件で原子的に一度だけ消費。認可コードをPKCE verifier付きで交換し、scope検証後に暗号化接続を保存。コードを含まないローカルURLへ303で戻す |
+| `POST read`                                  | 本人認証・同一オリジン・10回/分。接続ID・ラベル・開始時刻・全体上限・不透明cursorを検証し、アダプター結果からURLだけを返す。raw MIMEをHTTP応答に含めない                                                                          |
+| `POST disconnect`                            | 本人認証・同一オリジン・10回/分。本人の接続だけ失効・削除する                                                                                                                                                                     |
 
 応答は成功／失敗ともno-store・noindex。callbackはcookieを消去し`Referrer-Policy: no-referrer`を付ける。cookieは`__Host-`接頭辞・Secure・HttpOnly・SameSite=Lax・Path=/。コールバックは外部サイトからのトップレベル遷移を想定し、Origin必須にはせず本人・state・ブラウザnonceでCSRFを防ぐ。認可コードやエラー文字列を応答・ログに写さない。
 
@@ -221,7 +221,7 @@ Prismaモデル`ListingEmailConnection`と`ListingEmailOAuthState`、migration `
 
 ### 未解決事項と次の単位
 
-OAuth connect/callbackは意図的にスタブ。実認可コード交換、PKCE、取得scopeの検証後の接続作成、本人によるラベル選択は次の単位で実装する。現状には接続レコードを作成する公開APIも初期トークン投入スクリプトもない。
+OAuth connect/callback、PKCE、取得scopeの検証後の接続作成、本人によるラベル選択APIは§10で実装済み。UIとの接続および実認証・実DB検証が次の単位。
 
 先にローカルPostgreSQL＋合成トークン＋Google通信モックで、migrationの権限／削除連動、並行read・disconnect、実認証付きのOFFガードとstate消費を検証することを推奨する。本番build、実Google、インフラのcallbackクエリ／HTTP本文の非収集設定、バックアップ保持・鍵ローテーションは未検証。実Gmailの動作確認済みとして有効化しない。
 
@@ -230,3 +230,50 @@ OAuth connect/callbackは意図的にスタブ。実認可コード交換、PKCE
 - Gmailアダプター・ルート・ストアの新規26テスト成功。fake／Phase 1／Spot／ジオコード不転送／方位・盤の回帰を含め、25ファイル・264テスト成功。
 - `npx tsc --noEmit`成功（型エラー0）。変更したTypeScript 11ファイルのESLint成功（エラー0・警告0）。`prisma validate`、`git diff --check`成功。
 - 全Gmailテストで実fetchを拒否するモックを設定し、アダプターには専用モック通信を注入。実Gmail API・OAuth・revoke通信は実行していない。DBテストはSQL呼出しのモックであり、実DBロック・RLS・CASCADEの動作確認ではない。
+
+## 10. PKCE付き実OAuth・本人ラベル選択（2026-09-24）
+
+### OAuthフロー
+
+`createGmailHandlers(fetch)`が全ルートの通信依存を受け取り、`GmailAccountService`と既存readerへ渡す。実行時の組立て境界だけがglobal fetchを注入する。`transport.ts`に既存の固定Googleエンドポイント・リダイレクト禁止・応答64KiB上限・タイムアウト・固定エラー化を共通化した。テストでは注入fetchをモックし、global fetchも拒否モックにして実Google通信がないことを検証する。
+
+1. `POST connect`: 本人認証・同一オリジン・レート制限後、32-byte乱数のstate・ブラウザnonce・PKCE verifierを生成する。認可URLは`https://accounts.google.com/o/oauth2/v2/auth`固定、redirect URIは既存env固定。scopeは完全なgmail.readonly URI1件だけ。`response_type=code`、`code_challenge_method=S256`、SHA-256 challenge、`access_type=offline`、`prompt=consent`を指定する。任意redirect・追加scopeを入力として受けない。
+2. stateとnonceのハッシュは従来の本人単位DB行に10分期限で保存する。state・nonce・verifier・期限はAES-GCMで暗号化したHttpOnly cookieへ保存し、ownerIdと固定用途`oauth-pending`をAADにする。verifierを認可URL・レスポンスJSON・DBへ平文で出さない。ここでのnonceはブラウザ結合用であり、openid scope／ID tokenは要求しない。
+3. `GET callback`: ログイン本人、固定origin、cookieの認証付き復号、state一致、期限を確認し、DBのstateHash＋browserHash＋本人条件のDELETEで一度だけ消費する。ユーザーを切り替えたcallback、偽造cookie、再使用、重複state、期限切れを拒否する。
+4. codeが1件だけ存在し、プロバイダーerrorがない場合に限り、固定token endpointへPOSTする。固定client ID／secret／redirect URIにcodeとPKCE verifierを添える。scopeは欠落・短縮名・追加scope・空文字を拒否し、refresh tokenも必須。保存できないgrantは失効を試行し、固定エラーだけを返す。
+5. scope検証後、既存のAES-GCM形式でrefresh token・scope・cursor=nullを暗号化して接続を作成する。access token・code・verifierは保存しない。`labelId=null`で開始し、メール取得は禁止する。成功時は`/relocation/arbitrage?emailConnection=<接続UUID>`へ303で戻す。アプリが生成するURL／レスポンス／ログに認可コードやトークンを出さず、cookieも消去する。
+
+通常のOAuth codeフローではGoogleからの**入力callback URL**にcodeが届く。この受信クエリまで存在しないという意味ではない。アプリはcodeを別URLへ転記せず、成功時にクエリを除去する。失敗応答も固定コード・no-store・no-referrerで、受信codeを反射しない。公開前にproxy／アクセスログ／APMのcallbackクエリ・本文収集を無効化する必要がある。実インフラの収集設定は未検証。
+
+### 本人によるラベル選択API
+
+| エンドポイント                                               | 入力・出力と条件                                                                                                                                                                                                     |
+| ------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `GET /api/relocation/email/gmail/labels?connectionId=<UUID>` | 認証必須、本人10回/分。接続を本人条件＋行ロックで解決し、refresh後にlabels.listを呼ぶ。type=userだけを`{labels:[{id,name}]}`で返す。件数・system label・トークンは返さない                                           |
+| `POST /api/relocation/email/gmail/select-label`              | `{connectionId,labelId}`だけを受ける。本人認証・同一オリジン・10回/分。labels.getでIDとtype=userを再検証し、labelIdとサーバー側の現在日時を保存。cursorを破棄し、`{selected:{connectionId,labelId,startedAt}}`を返す |
+
+他人の接続はGoogle通信前に拒否する。ラベル名はDBへ保存しない。クライアント指定のstartedAtや追加キーを拒否し、過去に遡る入力を許さない。ラベルの再選択もその時点の現在日時で再開し、古いページcursorを無効にする。選択・refresh・read・disconnectは既存の本人付き行ロックを共有する。refresh tokenが更新された場合は一覧・選択処理の失敗時にも暗号化して保持する。
+
+接続直後のstartedAtは接続作成時刻だが、labelId未選択の間はreaderが拒否する。本人による選択完了時にstartedAtを再設定する。自動ジオコード、ListingCandidateの一括保存、メール本文の永続保存、ポータルアクセスは追加していない。既存UIの接続ボタンはまだ無効で、上記APIを操作するUIは次の単位で接続する。
+
+### スキーマ・機能フラグ
+
+新migration `20260924010000_listing_email_label_selection`は接続のlabelIdをnullableにする変更だけ。既存migrationは変更せず、**両migrationとも未適用。migrate deploy／db pushは実行していない。** PKCEデータは暗号化cookieに置くのでOAuth一時state表への列追加はない。
+
+`LISTING_EMAIL_GMAIL_ENABLED`は既定OFF。connect／callback／read／disconnect／labels／select-labelの6ルートすべてで、OFF時は認証・DB・通信前にdisabledとなる。必須envは§9の6項目から増やしていない。実Googleの認可画面を開いたり、本物のトークンを取得したりする作業は本単位で行わない。
+
+### Testingモードでの個人利用と公開前の条件
+
+個人の開発試験では、OAuth同意画面を**Testing**にし、オーナー本人をテストユーザーとして登録する運用を前提とする。この限定された試験段階では公開向けRestricted scope検証を完了せずに試せるが、一般公開の免除ではない。gmail.readonlyを含むTestingのrefresh tokenは**7日で失効**するため、失効後は本人が再同意する。再試行を無制限に続けず、既存の接続を切断して再接続する。
+
+本番公開にはOAuth **verification＋security assessment**を前提に準備し、適用要件・例外・Google API Services User Data Policyを運用者が確認する。今回の実装完了は審査・評価の完了を意味しない。参照先は[Google OAuth Web Serverガイド](https://developers.google.com/identity/protocols/oauth2/web-server)、[Gmail scope分類](https://developers.google.com/workspace/gmail/api/auth/scopes)。この単位では実Googleネットワーク禁止のため、公式サイトへの追加アクセスも行っていない。公開前に最新条件を再確認する。
+
+### 未解決事項と次の単位
+
+次は実Googleを使わず、ラベル選択UIとAPIを接続し、ローカルPostgreSQL＋合成トークンでcallback stateの並行消費、行ロック・RLS・削除連動を検証する。実Google認可、DB migration適用、実認証E2E、本番build、鍵ローテーション、アクセスログ非収集設定は未検証。個人Testing用のGoogleプロジェクト設定・テストユーザー登録・実同意も未実施である。
+
+### この単位の検証結果
+
+- Gmail関連4ファイル・44テスト成功。既存fake／Phase 1／Spot／ジオコード／方位・盤の回帰を含む合計26ファイル・282テスト成功。最後のテスト型・SQL引数確認の修正後、該当2ファイル・14テストを再確認して成功。
+- `npx tsc --noEmit`: 型エラー0。変更したTypeScript 10ファイルのESLint: エラー0・警告0。`prisma validate`、`git diff --check`成功。
+- Google通信はすべてモック。OAuth状態照合・ストアはDB呼出しモックであり、実Google／実DBの動作確認ではない。migration適用・実同意・秘密設定の作成は行っていない。
