@@ -443,7 +443,7 @@ it("connect rejects a mismatching public site even if browser Origin matches Hos
   );
   expect(response.status).toBe(503);
   expect(log).toHaveBeenCalledWith(
-    "[GMAIL_CONFIG] redirect origin mismatch with public request origin",
+    "[GMAIL_CONFIG] redirect origin mismatch: expected host example.com got host evil.example",
   );
   expect(mock.execute).not.toHaveBeenCalled();
 });

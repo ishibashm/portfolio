@@ -36,8 +36,18 @@ const cookieOptions = {
 function requireRedirectOrigin(req: NextRequest, redirectUri: string) {
   const origin = publicRequestOrigin(req);
   if (!origin) gmailConfigFailure("invalid public request host or protocol");
-  if (new URL(redirectUri).origin !== origin)
-    gmailConfigFailure("redirect origin mismatch with public request origin");
+  const expected = new URL(redirectUri);
+  if (expected.origin !== origin) {
+    let gotHost = "unparseable";
+    try {
+      gotHost = new URL(origin).host;
+    } catch {
+      /* keep unparseable */
+    }
+    gmailConfigFailure(
+      `redirect origin mismatch: expected host ${expected.host} got host ${gotHost}`,
+    );
+  }
 }
 function failure(e: unknown) {
   if (!(e instanceof GmailError)) return candidateFailure(e);
