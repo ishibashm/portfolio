@@ -135,6 +135,8 @@ function stat(direction: string, count: number, name: string) {
             name,
             distanceKm: 12,
             bearing: 10,
+            lat: 35.69,
+            lon: 139.75,
             rentPerSqm: 2000,
             vacancyRate: 0.1,
             totalDwellings: 1000,

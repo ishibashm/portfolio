@@ -467,6 +467,7 @@ export default function DirectionTownsPage() {
     lat: number;
     lon: number;
     seq: number;
+    name?: string;
   } | null>(null);
 
   const basePlace = useMemo(
@@ -698,6 +699,29 @@ export default function DirectionTownsPage() {
                 verdicts={dayKigaku?.byDirection}
                 selectedDirection={selectedDirection}
                 onData={setHousing}
+                /* 街の名前は「出発地から見たこの街」を調べる口。市区町村
+                   ページへ飛ぶと起点がその街に入れ替わる（2026-09-24 の
+                   指摘）。地図も寄せ、結果の札まで画面を送る */
+                onInspectTown={(town) => {
+                  setSpotRequest((prev) => ({
+                    lat: town.lat,
+                    lon: town.lon,
+                    name: town.name,
+                    seq: (prev?.seq ?? 0) + 1,
+                  }));
+                  patch({
+                    mapCenter: [town.lat, town.lon],
+                    mapFocusKind: "spot",
+                  });
+                  requestAnimationFrame(() =>
+                    document
+                      .getElementById("arb-spot-section")
+                      ?.scrollIntoView?.({
+                        behavior: "smooth",
+                        block: "start",
+                      }),
+                  );
+                }}
               />
             </div>
 
@@ -705,7 +729,10 @@ export default function DirectionTownsPage() {
                 移らずに確かめる。判定は dayKigaku の段階をそのまま使う。
                 地図のクリックがここへ届くので、畳める札には入れない
                 （畳んだままだと押した結果が見えない）。 */}
-            <div className="rounded-3xl border border-stone-200 bg-white/80 p-4 space-y-3">
+            <div
+              id="arb-spot-section"
+              className="scroll-mt-4 rounded-3xl border border-stone-200 bg-white/80 p-4 space-y-3"
+            >
               <h2 className="text-sm font-bold text-stone-900">
                 物件URL・住所から候補を検討
               </h2>

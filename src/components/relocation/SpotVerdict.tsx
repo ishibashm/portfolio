@@ -138,7 +138,13 @@ export function SpotVerdict({
    * seq は「同じ座標をもう一度クリックした」を区別するための連番。
    * 座標だけを見ていると、同じ場所を押し直したときに何も起きない。
    */
-  requestedPoint?: { lat: number; lon: number; seq: number } | null;
+  requestedPoint?: {
+    lat: number;
+    lon: number;
+    seq: number;
+    /** 街の一覧から渡すときの名前。地図のクリックには無い（座標を出す） */
+    name?: string;
+  } | null;
   /** 地図をその地点へ寄せる */
   onFocus?: (lat: number, lon: number) => void;
 }) {
@@ -188,14 +194,22 @@ export function SpotVerdict({
   const requestedSeq = requestedPoint?.seq ?? 0;
   const requestedLat = requestedPoint?.lat;
   const requestedLon = requestedPoint?.lon;
+  const requestedName = requestedPoint?.name;
   useEffect(() => {
     if (requestedLat === undefined || requestedLon === undefined) return;
-    const text = `${requestedLat.toFixed(6)}, ${requestedLon.toFixed(6)}`;
+    const text =
+      requestedName ?? `${requestedLat.toFixed(6)}, ${requestedLon.toFixed(6)}`;
     lookupSeq.current++;
     setQuery(text);
     setError(null);
-    setTarget({ lat: requestedLat, lon: requestedLon, name: text });
-  }, [requestedSeq, requestedLat, requestedLon]);
+    /* 街の一覧から来たときは代表点。点の粗さの断りを出す */
+    setTarget({
+      lat: requestedLat,
+      lon: requestedLon,
+      name: text,
+      source: requestedName ? "municipality" : undefined,
+    });
+  }, [requestedSeq, requestedLat, requestedLon, requestedName]);
 
   // Re-evaluate an owned candidate by id only; coordinates never go into the URL.
   useEffect(() => {

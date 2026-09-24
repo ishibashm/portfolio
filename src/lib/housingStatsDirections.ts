@@ -76,6 +76,14 @@ export interface DirectionMunicipality {
   distanceKm: number;
   /** 真北からの方位角（度）。境目の近さを画面で断るのに使う。 */
   bearing: number;
+  /**
+   * 代表点（方位と距離を測った点そのもの）。画面が「出発地から見た
+   * この街」を「この地点を調べる」に渡すのに使う（2026-09-24）。
+   * 街の名前だけで市区町村ページへ飛ばすと、**その街を起点にした方位**
+   * の頁が開き、出発地から見た方位と食い違って見えていた。
+   */
+  lat: number;
+  lon: number;
   /** 借家の家賃（円/㎡・月）。1 畳当たり家賃 ÷ 1.62。無ければ null。 */
   rentPerSqm: number | null;
   /** 空き家率（0〜1）。無ければ null。 */
@@ -281,6 +289,9 @@ export function housingStatsByDirection(
           : (row.area_name ?? row.area_code),
       distanceKm: Math.round(km),
       bearing: Math.round(bearing),
+      /* 小数 4 桁（約 10m）で足りる。代表点そのものが数 km の平均 */
+      lat: Math.round(p.lat * 1e4) / 1e4,
+      lon: Math.round(p.lon * 1e4) / 1e4,
       rentPerSqm,
       vacancyRate,
       totalDwellings: total !== null && Number.isFinite(total) ? total : null,
