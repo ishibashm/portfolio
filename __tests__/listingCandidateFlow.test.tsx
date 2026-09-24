@@ -36,6 +36,38 @@ afterEach(() => {
   vi.restoreAllMocks();
 });
 describe("listing candidate flow", () => {
+  it("email selection only fills the Phase 1 input and still requires location", async () => {
+    const fetch = vi
+      .spyOn(globalThis, "fetch")
+      .mockResolvedValue(
+        new Response(
+          JSON.stringify({ urls: ["https://suumo.jp/a"], truncated: false }),
+        ),
+      );
+    mount();
+    fireEvent.click(screen.getByText(/自分の通知メールから/));
+    fireEvent.change(screen.getByLabelText("テスト用メール"), {
+      target: { value: "https://suumo.jp/a" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "URLをプレビュー" }));
+    fireEvent.click(
+      await screen.findByRole("button", {
+        name: /https:\/\/suumo.jp\/a を既存入力へ/,
+      }),
+    );
+    expect(
+      screen.getByRole("textbox", { name: "物件URL・住所・座標から調べる" }),
+    ).toHaveValue("https://suumo.jp/a");
+    fireEvent.click(screen.getByRole("button", { name: "調べる" }));
+    expect(
+      screen.getByText(/このURLだけでは物件の住所を特定できません/),
+    ).toBeInTheDocument();
+    expect(fetch).toHaveBeenCalledTimes(1);
+    expect(fetch.mock.calls[0][0]).toBe("/api/relocation/email-preview");
+    expect(
+      screen.queryByRole("button", { name: "候補履歴に保存" }),
+    ).not.toBeInTheDocument();
+  });
   it("portal paste makes zero requests; asks for location and never persists draft", async () => {
     const fetch = vi.spyOn(globalThis, "fetch");
     const store = vi.spyOn(Storage.prototype, "setItem");

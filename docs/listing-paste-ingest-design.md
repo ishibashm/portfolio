@@ -1,7 +1,7 @@
 # 賃貸候補の貼り付け取り込み・方位判定設計
 
 設計日: 2026-09-21。対象: cloud-palette.com / ishibashm/portfolio。
-状態: Phase 1 のローカル実装を追加（2026-09-21）。設計本文の方針を維持し、実装状況・未達事項は12節に記録。Phase 2 は未実装。
+状態: Phase 1 のローカル実装を追加（2026-09-21）。設計本文の方針を維持し、実装状況・未達事項は12節に記録。Phase 2 の詳細設計とOAuth未接続の貼付プレビュー骨格は[別紙](./listing-email-ingest-phase2.md)を参照（2026-09-24）。
 
 ## 1. 結論と範囲
 
@@ -208,15 +208,15 @@ Phase 1 の実装順は、入力分類と位置確認 → 既存判定の共有 
 - 冪等性は所有者＋requestKeyのDB一意制約と入力ダイジェストで検査する。同じキー・同内容は保存済みを返し、異なる内容は409。タイトル・メモ編集はupdatedAtで競合を検出。座標・URL・保存時の判定は更新不可。
 - PostgreSQLの本人単位advisory transaction lockで上限チェックと挿入を直列化。流量制限はプロセスメモリではなくDBの原子的な60秒カウンターで共有する。保存/編集/削除20回、読取60回、住所検索10回/人、候補500件。新しい候補経路のGSI総量は30回/分。
 - JSON本文16KBをストリーム読込中に制限。個人APIはno-store、ログに本文や例外内容を出さない。履歴はnoindex・サイトマップ除外・robots除外。ポータルリンクは通常のa要素で、本人クリックのみ・no-referrer・noopener noreferrer。
-- 「登録した内容を消す」に本人の候補履歴削除を追加。Supabase `auth.users` があるDBではmigrationが候補のON DELETE CASCADEと流量行削除トリガーを設定する。レガシーNextAuth Userへの外部キーは作らない。
+- 「登録した内容を消す」に本人の候補履歴削除を追加。Supabase `auth.users` があるDBでは統合SQLが候補のON DELETE CASCADEと流量行削除トリガーを設定する。レガシーNextAuth Userへの外部キーは作らない。
 - Jev・OAuth・メール処理は追加していない。Jev設定・鍵の有無によらず同じ処理経路になる。
 
 ### 導入手順と未確認事項
 
-1. `prisma/migrations/20260921000000_listing_candidates/migration.sql` を対象DBで適用する。このリポジトリには従来Prisma migrations履歴がないため、既存DBへ最初から `migrate deploy` を流す前にbaselineを整理すること。従来のSQL運用で導入する場合は、このSQLを一度だけ実行する（BEGIN/COMMIT付き）。`db push` だけではRLS・権限剥奪・auth削除連動が導入されない。
+1. GitHub Actions の `db-apply-sql.yml` を、file=`20260924_add_listing_candidates_and_email.sql`、mode=`dry-run` で実行し、対象DB・SQL・接続結果を確認する。dry-run はDDLを実行しないため適用成功の保証ではない。続いて同じfileでmode=`apply` を実行する（単一トランザクション、再実行可能）。Phase 1/2 の4表をまとめて作成する。従来の3 migrationディレクトリは削除し、`prisma/sql/20260924_add_listing_candidates_and_email.sql` に統合した。package scripts・workflow・DockerfileにPrisma migrate実行経路はない。本番はこのActions経由で適用し、`db push` は使わない（モデル外のRLS・権限剥奪・auth削除連動を保全する）。設定と配備順は[Phase 2 §12](./listing-email-ingest-phase2.md#12-github-actionsによる本番導入)を参照。
 2. `prisma generate` を実行してからアプリを起動する。今回Client生成とschema validateは実行済み。対象DBへのDDL実行・本番接続・push・PRは実施していない。
-3. **住所検索は `LISTING_CANDIDATE_GSI_ENABLED=false` が既定。** 利用条件、個人住所の取扱い、結果の保存可否、既存経路も含めたプロバイダー全体の総量を運用者が確認してからtrueにする。今回はこの確認を完了していないため有効化していない。OFF時は503/GEOCODE_DISABLEDを表示し、地図ピン・座標で続けられる。公開Nominatimはこの経路から呼ばない。有効時は既存lookupGsiのみを使い、住所をアプリのGET URLには載せない。氏名・電話番号・建物名・部屋番号を除いた住所の入力を案内し、検知できる連絡先等は拒否する。任意の自由文からすべての氏名を識別する機能はない。
-4. **未検証:** 実PostgreSQLでの同時実行、migrationの権限/RLS/退会連動、Supabase認証ユーザーによるブラウザでの一連動作。この環境には実行可能なローカルDB・認証設定がなく、APIテストはDBと認証をモックしている。これらの受け入れ確認はリリース前に必要。
+3. **住所検索は `LISTING_CANDIDATE_GSI_ENABLED=false` が既定。** deploy.yml は同名のActions repository variable（優先）またはsecretを読み、未設定ならENV_FILEを維持する。 利用条件、個人住所の取扱い、結果の保存可否、既存経路も含めたプロバイダー全体の総量を運用者が確認してからtrueにする。今回はこの確認を完了していないため有効化していない。OFF時は503/GEOCODE_DISABLEDを表示し、地図ピン・座標で続けられる。公開Nominatimはこの経路から呼ばない。有効時は既存lookupGsiのみを使い、住所をアプリのGET URLには載せない。氏名・電話番号・建物名・部屋番号を除いた住所の入力を案内し、検知できる連絡先等は拒否する。任意の自由文からすべての氏名を識別する機能はない。
+4. **未検証:** 実PostgreSQLでの同時実行、SQLの権限/RLS/退会連動、Supabase認証ユーザーによるブラウザでの一連動作。この環境には実行可能なローカルDB・認証設定がなく、APIテストはDBと認証をモックしている。これらの受け入れ確認はリリース前に必要。
 5. **未確認:** バックアップの実保持期間と公開画面への反映、各ポータル参照リンクについての公開前の条件確認。住所・画像・掲載本文・メールを候補モデルへ格納する列は作っていないが、運用側アクセスログ/APMでリクエスト本文収集を無効にする設定も公開前に確認する。
 
 ### 受け入れ条件に対する確認結果

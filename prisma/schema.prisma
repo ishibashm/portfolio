@@ -942,3 +942,26 @@ model ListingCandidateRate {
   resetsAt  DateTime @db.Timestamptz(6)
   @@map("listing_candidate_rates")
 }
+
+// Gmail metadata only. Refresh token and provider cursor are AES-GCM sealed.
+model ListingEmailConnection {
+  id          String   @id @default(uuid()) @db.Uuid
+  userId      String   @db.Uuid
+  labelId     String?  @db.VarChar(200)
+  startedAt   DateTime @db.Timestamptz(6)
+  sealedState String   @db.Text
+  createdAt   DateTime @default(now()) @db.Timestamptz(6)
+
+  @@index([userId])
+  @@map("listing_email_connections")
+}
+
+// One pending OAuth PKCE challenge per owner, no authorization code or token.
+model ListingEmailOAuthState {
+  userId      String   @id @db.Uuid
+  stateHash   String   @db.VarChar(64)
+  browserHash String   @db.VarChar(64)
+  expiresAt   DateTime @db.Timestamptz(6)
+
+  @@map("listing_email_oauth_states")
+}
