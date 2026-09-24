@@ -169,6 +169,14 @@ export interface Row {
   est_building_price: number | null;
   est_land_price: number | null;
   building_ratio: number | null;
+  /**
+   * 前面道路（2026-09-24。probe run 35997210798 で実物を確認）。
+   * マンションは接道が無く "" で来るので null。**id には入れない**
+   * （入れると取り込み直しで同じ取引が別の行として増える）。
+   */
+  road_direction: string | null;
+  road_classification: string | null;
+  road_breadth_m: number | null;
 }
 
 /**
@@ -239,6 +247,9 @@ export function toRow(r: RawRecord, year: number, quarter: number): Row | null {
     est_building_price: null,
     est_land_price: null,
     building_ratio: null,
+    road_direction: str(r.Direction),
+    road_classification: str(r.Classification),
+    road_breadth_m: toNumber(r.Breadth),
   };
 
   const split = estimateBuildingSplit(row);

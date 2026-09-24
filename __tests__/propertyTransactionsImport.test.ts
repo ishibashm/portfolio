@@ -107,7 +107,34 @@ describe("実物の応答を 1 行にする", () => {
       est_building_price: null,
       est_land_price: null,
       building_ratio: null,
+      /* 前面道路（2026-09-24 に足した列）。**上の id は変わっていない**
+         （方位を id に入れると、取り込み直しで同じ取引が行として増える） */
+      road_direction: "南西",
+      road_classification: "市道",
+      road_breadth_m: 1.6,
     });
+  });
+
+  it("マンションは前面道路が空で来る。null のまま（北道路と取り違えない）", () => {
+    const row = toRow(
+      { ...REAL_HOUSE, Direction: "", Classification: "", Breadth: "" },
+      2025,
+      1,
+    )!;
+    expect(row.road_direction).toBeNull();
+    expect(row.road_classification).toBeNull();
+    expect(row.road_breadth_m).toBeNull();
+  });
+
+  it("取り込みの SQL が前面道路の 3 列を書き、座標には触らない", () => {
+    for (const col of [
+      "road_direction",
+      "road_classification",
+      "road_breadth_m",
+    ]) {
+      expect(SRC).toContain(`${col} = EXCLUDED.${col}`);
+    }
+    expect(SRC).not.toMatch(/lat = EXCLUDED\.lat/);
   });
 
   it("築年の「2010年」から数を取り出す", () => {

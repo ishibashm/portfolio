@@ -240,12 +240,14 @@ async function stageFetch(pool: Pool) {
               municipality, district_name, property_type, trade_price,
               area_sqm, unit_price_sqm, building_year, structure, use_type,
               total_floor_area_sqm, est_building_price, est_land_price,
-              building_ratio)
+              building_ratio, road_direction, road_classification,
+              road_breadth_m)
            SELECT * FROM unnest(
              $1::text[], $2::int[], $3::int[], $4::text[], $5::text[],
              $6::text[], $7::text[], $8::text[], $9::bigint[],
              $10::float8[], $11::float8[], $12::int[], $13::text[], $14::text[],
-             $15::float8[], $16::bigint[], $17::bigint[], $18::float8[])
+             $15::float8[], $16::bigint[], $17::bigint[], $18::float8[],
+             $19::text[], $20::text[], $21::float8[])
            ON CONFLICT (id) DO UPDATE SET
              trade_price = EXCLUDED.trade_price,
              area_sqm = EXCLUDED.area_sqm,
@@ -254,6 +256,9 @@ async function stageFetch(pool: Pool) {
              est_building_price = EXCLUDED.est_building_price,
              est_land_price = EXCLUDED.est_land_price,
              building_ratio = EXCLUDED.building_ratio,
+             road_direction = EXCLUDED.road_direction,
+             road_classification = EXCLUDED.road_classification,
+             road_breadth_m = EXCLUDED.road_breadth_m,
              updated_at = now()`,
           [
             rows.map((r) => r.id),
@@ -274,6 +279,9 @@ async function stageFetch(pool: Pool) {
             rows.map((r) => r.est_building_price),
             rows.map((r) => r.est_land_price),
             rows.map((r) => r.building_ratio),
+            rows.map((r) => r.road_direction),
+            rows.map((r) => r.road_classification),
+            rows.map((r) => r.road_breadth_m),
           ],
         );
         total += rows.length;
