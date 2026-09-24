@@ -164,7 +164,7 @@ UIは解析成功・選択・クリア・欄を閉じる・アンマウントで
 
 ## 9. GmailListingEmailReader実装（2026-09-24）
 
-§1〜8は各段階の記録。本単位では`src/lib/gmail/reader.ts`の`GmailListingEmailReader`を追加し、同じ`ListingEmailReader`契約を実装した。Google API呼出しを行えるコードは追加したが、実アカウントによる接続・トークン取得・稼働確認は行っていない。UIの接続ボタンは引き続き未接続。OAuthコード交換と接続レコード作成APIは§10で実装済み。
+§1〜8は各段階の記録。本単位では`src/lib/gmail/reader.ts`の`GmailListingEmailReader`を追加し、同じ`ListingEmailReader`契約を実装した。Google API呼出しを行えるコードは追加したが、実アカウントによる接続・トークン取得・稼働確認は行っていない。ユーザー向け接続UIは§11で追加した。OAuthコード交換と接続レコード作成APIは§10で実装済み。
 
 ### 機能フラグとルート
 
@@ -254,13 +254,13 @@ OAuth connect/callback、PKCE、取得scopeの検証後の接続作成、本人�
 
 他人の接続はGoogle通信前に拒否する。ラベル名はDBへ保存しない。クライアント指定のstartedAtや追加キーを拒否し、過去に遡る入力を許さない。ラベルの再選択もその時点の現在日時で再開し、古いページcursorを無効にする。選択・refresh・read・disconnectは既存の本人付き行ロックを共有する。refresh tokenが更新された場合は一覧・選択処理の失敗時にも暗号化して保持する。
 
-接続直後のstartedAtは接続作成時刻だが、labelId未選択の間はreaderが拒否する。本人による選択完了時にstartedAtを再設定する。自動ジオコード、ListingCandidateの一括保存、メール本文の永続保存、ポータルアクセスは追加していない。既存UIの接続ボタンはまだ無効で、上記APIを操作するUIは次の単位で接続する。
+接続直後のstartedAtは接続作成時刻だが、labelId未選択の間はreaderが拒否する。本人による選択完了時にstartedAtを再設定する。自動ジオコード、ListingCandidateの一括保存、メール本文の永続保存、ポータルアクセスは追加していない。上記APIを操作するUIは§11で接続済み。
 
 ### スキーマ・機能フラグ
 
 新migration `20260924010000_listing_email_label_selection`は接続のlabelIdをnullableにする変更だけ。既存migrationは変更せず、**両migrationとも未適用。migrate deploy／db pushは実行していない。** PKCEデータは暗号化cookieに置くのでOAuth一時state表への列追加はない。
 
-`LISTING_EMAIL_GMAIL_ENABLED`は既定OFF。connect／callback／read／disconnect／labels／select-labelの6ルートすべてで、OFF時は認証・DB・通信前にdisabledとなる。必須envは§9の6項目から増やしていない。実Googleの認可画面を開いたり、本物のトークンを取得したりする作業は本単位で行わない。
+`LISTING_EMAIL_GMAIL_ENABLED`は既定OFF。connect／callback／read／disconnect／labels／select-label／statusの7ルートすべてで、OFF時は認証・DB・通信前にdisabledとなる。必須envは§9の6項目から増やしていない。実Googleの認可画面を開いたり、本物のトークンを取得したりする作業は本単位で行わない。
 
 ### Testingモードでの個人利用と公開前の条件
 
@@ -270,10 +270,45 @@ OAuth connect/callback、PKCE、取得scopeの検証後の接続作成、本人�
 
 ### 未解決事項と次の単位
 
-次は実Googleを使わず、ラベル選択UIとAPIを接続し、ローカルPostgreSQL＋合成トークンでcallback stateの並行消費、行ロック・RLS・削除連動を検証する。実Google認可、DB migration適用、実認証E2E、本番build、鍵ローテーション、アクセスログ非収集設定は未検証。個人Testing用のGoogleプロジェクト設定・テストユーザー登録・実同意も未実施である。
+ラベル選択UIとAPIの接続は§11で実装済み。次は実Googleを使わず、ローカルPostgreSQL＋合成トークンでcallback stateの並行消費、行ロック・RLS・削除連動を検証する。実Google認可、DB migration適用、実認証E2E、本番build、鍵ローテーション、アクセスログ非収集設定は未検証。個人Testing用のGoogleプロジェクト設定・テストユーザー登録・実同意も未実施である。
 
 ### この単位の検証結果
 
 - Gmail関連4ファイル・44テスト成功。既存fake／Phase 1／Spot／ジオコード／方位・盤の回帰を含む合計26ファイル・282テスト成功。最後のテスト型・SQL引数確認の修正後、該当2ファイル・14テストを再確認して成功。
 - `npx tsc --noEmit`: 型エラー0。変更したTypeScript 10ファイルのESLint: エラー0・警告0。`prisma validate`、`git diff --check`成功。
 - Google通信はすべてモック。OAuth状態照合・ストアはDB呼出しモックであり、実Google／実DBの動作確認ではない。migration適用・実同意・秘密設定の作成は行っていない。
+
+## 11. Gmail接続UI（2026-09-24）
+
+### 画面と操作
+
+引越しエリア画面`/relocation/arbitrage`の既存ListingEmailPreviewに`GmailConnectionPanel`を追加した。貼付プレビューとGmailのURL一覧は`EmailUrlChoices`を共有し、どちらも既存のonSelectを介してPhase 1の入力欄へ1件ずつ渡す。選択時に住所確定・ジオコード・候補保存を実行しない。
+
+- 接続状態を「確認中／未接続／接続済み・ラベル未確定／接続済み／再接続が必要」で表示する。「接続済み」は保存メタがあることを意味し、表示のためにGoogleへ認証確認を送信するものではない。
+- 「Gmailと接続」はPOST connectを実行し、返されたURLのoriginとpathをGoogle認可画面に限定して検証する。その後「Googleの認可画面へ進む」を表示し、本人のクリックで遷移する。認可URLはメモリだけで保持し、localStorageへ保存しない。
+- callbackの`emailConnection`は本人限定status結果内のUUIDに一致した場合だけ採用する。照合後に画面URLから除く。複数の接続レコードがある場合は接続時刻ではなく取得開始時刻とラベルIDで選べ、古い接続も切断できる。
+- ラベル未確定時はlabels APIから一覧を取得する。名前が完全一致する「物件通知」だけをプリセレクトし、なければ空欄のままとする。プリセレクトだけでは取り込めず、「このラベルで確定」の明示操作が必須。選択保存はselect-label APIを使い、サーバーのstartedAtを取り込み条件へ使う。ラベル変更でも確定し直すまで取り込めない。
+- 「取り込み」はread APIへ接続ID・ラベル・開始日時・上限20・cursorを送る。続きは「続きを取り込む」の明示操作だけで取得する。完了後の「最初から取り込む」は新しい操作としてcursor=nullで開始する。期限切れcursorでも自動再試行せず、最初からの操作を案内する。
+- Gmail由来URLもHTTPS分類・正規化を確認して文字列と選択ボタンだけで表示する。ポータルへのリンク先確認・prefetch・画像取得をしない。
+- 「Gmailを切断」は確認ダイアログを開き、キャンセルでは通信しない。「切断を確定」でだけdisconnectを呼ぶ。ローカル削除済み／Google側revoke未確認の場合は、切断表示に戻してGoogle側でのアクセス取消を案内する。候補履歴は削除しない。
+- 「OAuth同意画面がTestingモードの場合、7日ごとに再接続が必要です」と表示する。フラグをONにしただけでTestingか本番かを推測しない。
+
+### 状態APIとサーバーフラグ
+
+`GET /api/relocation/email/gmail/status`を追加。既定OFF時は認証・DB処理前に503／GMAIL_DISABLED。ON時はサーバー認証の本人UUIDで接続行を絞り、`{connections:[{id,labelId,startedAt}]}`だけを返す。トークン・sealedState・内部cursor・メールアドレス・本文は返さない。成功／失敗ともno-store。Google通信は行わない。
+
+arbitrageのServer Layoutが実行時に`LISTING_EMAIL_GMAIL_ENABLED === "true"`を評価し、booleanだけをクライアントContextへ渡す。Layoutはforce-dynamic。OFF時はGmail UI自体を描画せず、状態取得リクエストも行わない。ページ表示後にAPIがdisabledを返した場合もUIを隠す。envのクライアント公開や新しいenv追加はない。Googleを使わない手動貼付プレビューは引き続き利用できる。
+
+### 失効と一時データ
+
+`transport.ts`は固定token endpointのHTTP 400 JSON応答で`error=invalid_grant`を確認した場合、固定コード`GMAIL_RECONNECT`へ変換する。error_description等は返さない。エラー応答も既存64KiBのストリーム上限内でだけ読み、URL／本文／例外をログに書かない。他の400は通常エラー、401は従来どおり再接続扱い。
+
+UIは再接続コードを受けるとURLプレビューとcursorを消し、取り込みを無効にして「Gmailに再接続」を提示する。ログイン失効時は接続表示・ラベル・プレビューも消す。未完了リクエストはアンマウントでAbortし、遅れて届いた結果を既存入力へ渡さない。入力／取得結果はメモリだけで保持し、DB・localStorage・sessionStorage・画面URLへコピーしない。
+
+### 検証と残件
+
+- 新規コンポーネント11テスト・ルート／transport契約4テスト成功。関連28ファイル・297テスト成功（既存OAuth、fake、Phase 1、Spot、ジオコードへのURL不転送、方位・盤回帰を含む）。
+- `npx tsc --noEmit`: 型エラー0。変更したTS／TSX 11ファイルのESLint: エラー0・警告0。`git diff --check`成功。
+- 新規テストの通信モックはfetchのみ。状態ハンドラーの認証／所有者条件は注入したメモリ上の契約fixtureで検証し、実認証・DBへは接続していない。既存テストの認証／DBモックは引き継ぐ。
+- migration追加なし。既存migrationも適用していない。実Google通信、秘密設定変更、フラグ有効化は行っていない。
+- 実ブラウザの表示／キーボード操作、実認証＋PostgreSQLの所有者分離・RLS・ロック／削除連動、Google Testingでの実同意は未検証。次はGoogle通信モックのままローカル認証・DB環境を用意し、画面からcallback・ラベル選択・read・disconnectまでのE2Eと並行処理を確認する単位を推奨する。

@@ -17,7 +17,9 @@ it("previews via the authenticated endpoint and selects one URL without navigati
     );
   render(<ListingEmailPreview onSelect={select} />);
   fireEvent.click(screen.getByText(/自分の通知メールから/));
-  expect(screen.getByRole("button", { name: /Gmail接続/ })).toBeDisabled();
+  expect(
+    screen.queryByRole("region", { name: "Gmail接続" }),
+  ).not.toBeInTheDocument();
   fireEvent.change(screen.getByLabelText("テスト用メール"), {
     target: { value: "test https://suumo.jp/a" },
   });

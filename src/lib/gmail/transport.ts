@@ -27,13 +27,7 @@ export async function googleJson(
       cache: "no-store",
       signal: AbortSignal.timeout(Math.min(3000, deadline - Date.now())),
     });
-    if (!response.ok) {
-      await response.body?.cancel();
-      throw new GmailError(
-        response.status === 401 ? "GMAIL_RECONNECT" : "GMAIL_PROVIDER",
-      );
-    }
-    if (u.pathname === "/revoke") {
+    if (response.ok && u.pathname === "/revoke") {
       await response.body?.cancel();
       return {};
     }
@@ -51,7 +45,27 @@ export async function googleJson(
       }
       chunks.push(value);
     }
-    return JSON.parse(Buffer.concat(chunks).toString("utf8"));
+    let value;
+    try {
+      value = JSON.parse(Buffer.concat(chunks).toString("utf8"));
+    } catch {
+      throw new GmailError(
+        response.status === 401 ? "GMAIL_RECONNECT" : "GMAIL_PROVIDER",
+      );
+    }
+    if (!response.ok) {
+      const expired =
+        u.origin === "https://oauth2.googleapis.com" &&
+        u.pathname === "/token" &&
+        response.status === 400 &&
+        value?.error === "invalid_grant";
+      throw new GmailError(
+        expired || response.status === 401
+          ? "GMAIL_RECONNECT"
+          : "GMAIL_PROVIDER",
+      );
+    }
+    return value;
   } catch (e) {
     throw e instanceof GmailError ? e : new GmailError("GMAIL_PROVIDER");
   }

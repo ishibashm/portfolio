@@ -2,7 +2,8 @@
 
 import { useEffect, useRef, useState } from "react";
 import { classifyCandidateInput } from "@/lib/listingCandidateInput";
-import { GMAIL_CONNECTION_STATUS } from "@/lib/listingEmailConnection";
+import { GmailConnectionPanel } from "./GmailConnectionPanel";
+import { EmailUrlChoices } from "./EmailUrlChoices";
 
 export function ListingEmailPreview({
   onSelect,
@@ -80,87 +81,74 @@ export function ListingEmailPreview({
     }
   };
   return (
-    <details
-      className="rounded-xl border border-stone-200 p-3 text-xs space-y-2"
-      onToggle={(e) => {
-        if (!e.currentTarget.open) clear();
-      }}
-    >
-      <summary>自分の通知メールからURLを選ぶ（試験版）</summary>
-      <p>
-        ログインが必要です。貼り付けた内容をこのサイトで解析します。本文は保存せず、解析成功・クリア・閉じる操作で入力を消します。氏名などを除いたテスト用の内容を使ってください。
-      </p>
-      <button
-        type="button"
-        disabled
-        data-connection-status={GMAIL_CONNECTION_STATUS}
+    <>
+      <GmailConnectionPanel onSelect={onSelect} />
+      <details
+        className="rounded-xl border border-stone-200 p-3 text-xs space-y-2"
+        onToggle={(e) => {
+          if (!e.currentTarget.open) clear();
+        }}
       >
-        Gmail接続（未接続・準備中）
-      </button>
-      <label className="block">
-        メールの形式
-        <select
-          aria-label="メールの形式"
-          value={format}
-          disabled={busy}
-          onChange={(e) => {
-            setFormat(e.target.value);
-            setUrls([]);
-            setMessage("");
-          }}
+        <summary>自分の通知メールからURLを選ぶ（試験版）</summary>
+        <p>
+          ログインが必要です。貼り付けた内容をこのサイトで解析します。本文は保存せず、解析成功・クリア・閉じる操作で入力を消します。氏名などを除いたテスト用の内容を使ってください。
+        </p>
+        <label className="block">
+          メールの形式
+          <select
+            aria-label="メールの形式"
+            value={format}
+            disabled={busy}
+            onChange={(e) => {
+              setFormat(e.target.value);
+              setUrls([]);
+              setMessage("");
+            }}
+          >
+            <option value="text">テキスト</option>
+            <option value="html">HTML（hrefのみ）</option>
+            <option value="mime">生MIME</option>
+          </select>
+        </label>
+        <label className="block">
+          テスト用メール
+          <textarea
+            aria-label="テスト用メール"
+            value={source}
+            disabled={busy}
+            maxLength={12000}
+            autoComplete="off"
+            spellCheck={false}
+            className="block w-full border rounded p-2"
+            onChange={(e) => {
+              setSource(e.target.value);
+              setUrls([]);
+              setMessage("");
+            }}
+          />
+        </label>
+        <button
+          type="button"
+          disabled={busy || !source.trim()}
+          onClick={() => void preview()}
         >
-          <option value="text">テキスト</option>
-          <option value="html">HTML（hrefのみ）</option>
-          <option value="mime">生MIME</option>
-        </select>
-      </label>
-      <label className="block">
-        テスト用メール
-        <textarea
-          aria-label="テスト用メール"
-          value={source}
-          disabled={busy}
-          maxLength={12000}
-          autoComplete="off"
-          spellCheck={false}
-          className="block w-full border rounded p-2"
-          onChange={(e) => {
-            setSource(e.target.value);
-            setUrls([]);
-            setMessage("");
+          {busy ? "解析中…" : "URLをプレビュー"}
+        </button>{" "}
+        <button type="button" onClick={clear}>
+          メール入力をクリア
+        </button>
+        {message && <p role="status">{message}</p>}
+        <EmailUrlChoices
+          urls={urls}
+          onSelect={(url) => {
+            onSelect(url);
+            clear();
           }}
         />
-      </label>
-      <button
-        type="button"
-        disabled={busy || !source.trim()}
-        onClick={() => void preview()}
-      >
-        {busy ? "解析中…" : "URLをプレビュー"}
-      </button>{" "}
-      <button type="button" onClick={clear}>
-        メール入力をクリア
-      </button>
-      {message && <p role="status">{message}</p>}
-      <ul>
-        {urls.map((url) => (
-          <li key={url} className="break-all">
-            <button
-              type="button"
-              className="text-left underline"
-              onClick={() => {
-                onSelect(url);
-                clear();
-              }}
-            >
-              {url} を既存入力へ
-            </button>
-          </li>
-        ))}
-      </ul>
-      <p>
-        リンク先・画像は取得しません。メール内の住所は確定情報ではありません。URL選択後も住所入力・地図確認が必要です。
-      </p>
-    </details>
+        <p>
+          リンク先・画像は取得しません。メール内の住所は確定情報ではありません。URL選択後も住所入力・地図確認が必要です。
+        </p>
+      </details>
+    </>
   );
 }
