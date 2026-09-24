@@ -101,12 +101,27 @@ describe("方位の扇形は他の層を出しても残る", () => {
 
   it("下に別の意味の色（俯瞰の県塗り）があるときは塗らず、境界線だけ残す", async () => {
     // 塗ってしまうと県塗りと混ざり、どちらの意味か読めなくなる。
+    // 県を塗るのは「県ごと」を選んだときだけ（2026-09-24 から既定は扇形）
+    localStorage.setItem("arb_overview_paint", "pref");
     const wedges = await renderMap();
+    localStorage.removeItem("arb_overview_paint");
     for (const w of wedges) {
       const opts = w.pathOptions as { fillOpacity: number; weight: number };
       expect(opts.fillOpacity).toBe(0);
       expect(opts.weight).toBeGreaterThan(0);
     }
+  });
+
+  it("全国を扇形で塗る見方（既定）では、判定のある扇形を塗る", async () => {
+    /* 県を 1 色で塗ると、境目をまたぐ広い県は吉方位の扇形の中まで凶の色に
+       なる（利用者の指摘、2026-09-24）。扇形の中は全部同じ方位 */
+    localStorage.removeItem("arb_overview_paint");
+    const wedges = await renderMap();
+    const filled = wedges.filter(
+      (w) => (w.pathOptions as { fillOpacity: number }).fillOpacity > 0,
+    );
+    /* 判定のある東・西（S）は塗る */
+    expect(filled.length).toBeGreaterThanOrEqual(2);
   });
 
   it("出発地が無いときは描かない", async () => {
