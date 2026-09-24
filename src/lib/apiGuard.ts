@@ -182,3 +182,36 @@ export function isSameOrigin(req: {
     return false;
   }
 }
+
+/**
+ * Cloud Run のTLS終端後も公開originで比較する。Host優先はisSameOriginと同じ。
+ * 転送ヘッダは配備先プロキシが設定する前提。曖昧な複数値やHostとの矛盾は拒否。
+ * ヘッダは転送先を決める用途には使わず、CSRF・固定redirect URIの検証だけに使う。
+ */
+export function publicRequestOrigin(req: {
+  headers: Headers;
+  nextUrl: { host: string; protocol: string };
+}): string | null {
+  const host = req.headers.get("host");
+  const forwardedHost = req.headers.get("x-forwarded-host");
+  if (
+    host &&
+    forwardedHost &&
+    host.toLowerCase() !== forwardedHost.toLowerCase()
+  )
+    return null;
+  const publicHost = host ?? forwardedHost ?? req.nextUrl.host;
+  const protocol =
+    req.headers.get("x-forwarded-proto") ??
+    (forwardedHost ? "https" : req.nextUrl.protocol.slice(0, -1));
+  if (
+    !/^[a-zA-Z0-9.:[\]-]+$/.test(publicHost) ||
+    !["https", "http"].includes(protocol)
+  )
+    return null;
+  try {
+    return new URL(`${protocol}://${publicHost}`).origin;
+  } catch {
+    return null;
+  }
+}

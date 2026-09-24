@@ -2,6 +2,7 @@ import { createHash, randomBytes } from "node:crypto";
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import prisma from "@/lib/prisma";
+import { publicRequestOrigin } from "@/lib/apiGuard";
 import {
   candidateBody,
   candidateFailure,
@@ -15,6 +16,7 @@ import { extractEmailUrls } from "@/lib/listingEmailIngest";
 import {
   GmailError,
   gmailConfig,
+  gmailConfigFailure,
   requireGmailEnabled,
   seal,
   unseal,
@@ -30,6 +32,13 @@ const cookieOptions = {
   sameSite: "lax" as const,
   path: "/",
 };
+/** Cloud Run の内部 nextUrl ではなく公開ホストを検証する。転送先は常に固定設定。 */
+function requireRedirectOrigin(req: NextRequest, redirectUri: string) {
+  const origin = publicRequestOrigin(req);
+  if (!origin) gmailConfigFailure("invalid public request host or protocol");
+  if (new URL(redirectUri).origin !== origin)
+    gmailConfigFailure("redirect origin mismatch with public request origin");
+}
 function failure(e: unknown) {
   if (!(e instanceof GmailError)) return candidateFailure(e);
   const status =
@@ -59,8 +68,7 @@ export function createGmailHandlers(transport: typeof fetch) {
       const owner = await candidateUser(req, true);
       await candidateRate(`gmail-connect:${owner}`, 5);
       const config = gmailConfig();
-      if (new URL(config.redirectUri).origin !== req.nextUrl.origin)
-        throw new GmailError("GMAIL_CONFIG");
+      requireRedirectOrigin(req, config.redirectUri);
       const state = randomBytes(32).toString("base64url");
       const browser = randomBytes(32).toString("base64url");
       const verifier = randomBytes(32).toString("base64url");
@@ -109,8 +117,7 @@ export function createGmailHandlers(transport: typeof fetch) {
       requireGmailEnabled();
       const owner = await candidateUser(req);
       const config = gmailConfig();
-      if (new URL(config.redirectUri).origin !== req.nextUrl.origin)
-        throw new GmailError("GMAIL_CONFIG");
+      requireRedirectOrigin(req, config.redirectUri);
       const state = req.nextUrl.searchParams.get("state");
       const cookie = req.cookies.get(cookieName)?.value;
       if (!cookie || cookie.length > 2048) throw new GmailError("OAUTH_STATE");

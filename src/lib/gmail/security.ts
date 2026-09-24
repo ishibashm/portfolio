@@ -5,6 +5,11 @@ export class GmailError extends Error {
     super(code);
   }
 }
+// 呼出し側は固定の検証名だけを渡す。例外・設定値・リクエストURLはログに渡さない。
+export function gmailConfigFailure(check: string): never {
+  console.error(`[GMAIL_CONFIG] ${check}`);
+  throw new GmailError("GMAIL_CONFIG");
+}
 export function requireGmailEnabled() {
   if (process.env.LISTING_EMAIL_GMAIL_ENABLED !== "true")
     throw new GmailError("GMAIL_DISABLED");
@@ -16,25 +21,27 @@ export function gmailConfig() {
   const redirectUri = process.env.LISTING_EMAIL_GOOGLE_REDIRECT_URI;
   const encoded = process.env.LISTING_EMAIL_ENCRYPTION_KEY;
   const keyId = process.env.LISTING_EMAIL_ENCRYPTION_KEY_ID;
-  if (
-    !clientId ||
-    !clientSecret ||
-    !redirectUri ||
-    !encoded ||
-    !keyId ||
-    !/^[A-Za-z0-9_-]{1,40}$/.test(keyId) ||
-    !/^[A-Za-z0-9+/]{43}=$/.test(encoded)
-  )
-    throw new GmailError("GMAIL_CONFIG");
+  if (!clientId) gmailConfigFailure("missing LISTING_EMAIL_GOOGLE_CLIENT_ID");
+  if (!clientSecret)
+    gmailConfigFailure("missing LISTING_EMAIL_GOOGLE_CLIENT_SECRET");
+  if (!redirectUri)
+    gmailConfigFailure("missing LISTING_EMAIL_GOOGLE_REDIRECT_URI");
+  if (!encoded) gmailConfigFailure("missing LISTING_EMAIL_ENCRYPTION_KEY");
+  if (!keyId) gmailConfigFailure("missing LISTING_EMAIL_ENCRYPTION_KEY_ID");
+  if (!/^[A-Za-z0-9_-]{1,40}$/.test(keyId))
+    gmailConfigFailure("invalid LISTING_EMAIL_ENCRYPTION_KEY_ID format");
+  if (!/^[A-Za-z0-9+/]{43}=$/.test(encoded))
+    gmailConfigFailure("invalid LISTING_EMAIL_ENCRYPTION_KEY base64 format");
   const key = Buffer.from(encoded, "base64");
   let uri: URL;
   try {
     uri = new URL(redirectUri);
   } catch {
-    throw new GmailError("GMAIL_CONFIG");
+    gmailConfigFailure("invalid LISTING_EMAIL_GOOGLE_REDIRECT_URI URL");
   }
+  if (key.length !== 32)
+    gmailConfigFailure("invalid LISTING_EMAIL_ENCRYPTION_KEY length");
   if (
-    key.length !== 32 ||
     uri.protocol !== "https:" ||
     uri.username ||
     uri.password ||
@@ -42,7 +49,9 @@ export function gmailConfig() {
     uri.search ||
     uri.pathname !== "/api/relocation/email/gmail/callback"
   )
-    throw new GmailError("GMAIL_CONFIG");
+    gmailConfigFailure(
+      "invalid LISTING_EMAIL_GOOGLE_REDIRECT_URI HTTPS callback format",
+    );
   return { clientId, clientSecret, redirectUri, key, keyId };
 }
 export function seal(value: unknown, ownerId: string, connectionId: string) {
