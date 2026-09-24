@@ -48,6 +48,8 @@ export async function lookupGsi(query: string): Promise<GeoResult> {
   try {
     const res = await fetch(`${GSI_ENDPOINT}?q=${encodeURIComponent(query)}`, {
       signal: AbortSignal.timeout(15000),
+      cache: "no-store",
+      redirect: "error",
     });
     if (!res.ok) return { kind: "error" };
     const json = (await res.json()) as Array<{

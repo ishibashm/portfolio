@@ -193,7 +193,7 @@ jobs:
           #
           # next-sitemap.config.js の NOT_A_PAGE と同じ顔ぶれ。あちらに
           # 頁を足したら、ここにも足すこと。
-          for path in /login /profile /account; do
+          for path in /login /profile /account /relocation/candidates; do
             code=$(curl -s -o /dev/null -w "%{http_code}" -A "cloud-palette-site-audit" "$BASE$path")
             echo "$code $path" | tee -a "$GITHUB_STEP_SUMMARY"
             if [ "$code" != "200" ]; then
@@ -205,7 +205,7 @@ jobs:
           # **noindex のままであることも見る。**索引しない約束でサイト
           # マップから外してあるので、robots メタが消えると「載っていない
           # のに索引される」状態になり、指示が食い違う。
-          for path in /login /profile /account; do
+          for path in /login /profile /account /relocation/candidates; do
             BODY=$(curl -s --compressed -A "cloud-palette-site-audit" "$BASE$path")
             if [[ "$BODY" != *"noindex"* ]]; then
               echo "::error::$path に noindex が無い" | tee -a "$GITHUB_STEP_SUMMARY"

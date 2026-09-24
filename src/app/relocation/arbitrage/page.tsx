@@ -705,24 +705,39 @@ export default function DirectionTownsPage() {
                 移らずに確かめる。判定は dayKigaku の段階をそのまま使う。
                 地図のクリックがここへ届くので、畳める札には入れない
                 （畳んだままだと押した結果が見えない）。 */}
-            {hasBaseLocation && (
-              <div className="rounded-3xl border border-stone-200 bg-white/80 p-4 space-y-3">
-                <h2 className="text-sm font-bold text-stone-900">
-                  この地点を調べる
-                </h2>
-                <SpotVerdict
-                  baseLat={baseLatNum}
-                  baseLon={baseLonNum}
-                  useClassical={useClassical}
-                  dirKigaku={dayKigaku?.byDirection}
-                  kigakuUnavailableReason={kigakuUnavailableReason}
-                  requestedPoint={spotRequest}
-                  onFocus={(lat, lon) =>
-                    patch({ mapCenter: [lat, lon], mapFocusKind: "spot" })
-                  }
-                />
-              </div>
-            )}
+            <div className="rounded-3xl border border-stone-200 bg-white/80 p-4 space-y-3">
+              <h2 className="text-sm font-bold text-stone-900">
+                物件URL・住所から候補を検討
+              </h2>
+              <SpotVerdict
+                candidateContext={{
+                  birthDate,
+                  targetDate,
+                  baseLat,
+                  baseLon,
+                  tenchusatsuMode,
+                  involuntaryMove,
+                  directionFilterMode,
+                  useClassical,
+                }}
+                baseLat={baseLatNum}
+                baseLon={baseLonNum}
+                useClassical={useClassical}
+                dirKigaku={dayKigaku?.byDirection}
+                kigakuUnavailableReason={kigakuUnavailableReason}
+                requestedPoint={spotRequest}
+                onFocus={(lat, lon) => {
+                  patch({
+                    mapCenter: [lat, lon],
+                    mapFocusKind: "spot",
+                    openOverview: false,
+                  });
+                  document
+                    .getElementById("candidate-location-map")
+                    ?.scrollIntoView({ behavior: "smooth", block: "center" });
+                }}
+              />
+            </div>
 
             {/* 買う人向け。国交省の成約価格と地価公示を方位別に。 */}
             {hasBaseLocation && (
@@ -754,7 +769,10 @@ export default function DirectionTownsPage() {
           </div>
 
           {/* 右: 地図。扇形と県塗りは dayKigaku から。物件は描かない。 */}
-          <div className="w-full lg:w-[64%] xl:w-[68%] h-[60vh] lg:h-[calc(100vh-220px)] min-h-[420px] lg:min-h-[600px] rounded-3xl overflow-hidden shadow-lg border border-stone-200 relative bg-stone-50 shrink-0">
+          <div
+            id="candidate-location-map"
+            className="w-full lg:w-[64%] xl:w-[68%] h-[60vh] lg:h-[calc(100vh-220px)] min-h-[420px] lg:min-h-[600px] rounded-3xl overflow-hidden shadow-lg border border-stone-200 relative bg-stone-50 shrink-0"
+          >
             <ArbitrageMap
               baseLat={hasBaseLocation ? baseLatNum : mapCenter[0]}
               baseLon={hasBaseLocation ? baseLonNum : mapCenter[1]}

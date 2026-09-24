@@ -115,7 +115,7 @@ describe("画面: 地名で調べたら、その街の一覧へのリンクが�
     render(
       <SpotVerdict baseLat={33.5902} baseLon={130.4017} useClassical={true} />,
     );
-    fireEvent.change(screen.getByLabelText("この地点を調べる"), {
+    fireEvent.change(screen.getByLabelText("物件URL・住所・座標から調べる"), {
       target: { value: "広島市中区" },
     });
     fireEvent.click(screen.getByRole("button", { name: "調べる" }));
@@ -136,7 +136,7 @@ describe("画面: 地名で調べたら、その街の一覧へのリンクが�
   it("出発地が未入力でも出す（方位の要らない話なので）", async () => {
     stubFetch();
     render(<SpotVerdict baseLat={0} baseLon={0} useClassical={true} />);
-    fireEvent.change(screen.getByLabelText("この地点を調べる"), {
+    fireEvent.change(screen.getByLabelText("物件URL・住所・座標から調べる"), {
       target: { value: `${HIROSHIMA.lat}, ${HIROSHIMA.lon}` },
     });
     fireEvent.click(screen.getByRole("button", { name: "調べる" }));
@@ -180,7 +180,7 @@ describe("画面: 組んだリンクを写せる", () => {
     render(
       <SpotVerdict baseLat={33.5902} baseLon={130.4017} useClassical={true} />,
     );
-    fireEvent.change(screen.getByLabelText("この地点を調べる"), {
+    fireEvent.change(screen.getByLabelText("物件URL・住所・座標から調べる"), {
       target: { value: "広島市中区" },
     });
     fireEvent.click(screen.getByRole("button", { name: "調べる" }));

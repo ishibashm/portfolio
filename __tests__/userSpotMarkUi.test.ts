@@ -140,16 +140,16 @@ describe("URL を貼って場所を決める導線", () => {
   const SRC = read(VERDICT).replace(/\s+/g, " ");
 
   it("貼れることを入力欄と説明の両方で言っている", () => {
-    expect(SRC).toContain("物件サイトの一覧の URL");
-    expect(SRC).toContain("その街として調べます");
+    expect(SRC).toContain("物件URL、住所、または");
+    expect(SRC).toContain("地図で所在地を確認してください");
   });
 
   it("開きに行かないことを同じ所に書いている", () => {
-    expect(SRC).toContain("URL は開きに行きません");
+    expect(SRC).toContain("URLは参照リンクのみで、中身を取得しません");
   });
 
   it("物件ごとのページでは決まらないことを先に言っている", () => {
-    expect(SRC).toContain("物件ごとのページの URL には市区町村が入っていない");
+    expect(SRC).toContain("このURLだけでは物件の住所を特定できません");
   });
 
   it("API が文言を返したら、それを出す（丸めない）", () => {
