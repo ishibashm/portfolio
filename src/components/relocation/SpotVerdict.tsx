@@ -71,6 +71,18 @@ export type SpotTarget = {
 };
 
 /**
+ * 入力を座標として読めるか。
+ *
+ * 地図のクリックは座標をクリップボードへ入れるので、貼り付けたものが
+ * そのまま使えないと一度住所へ直す手間が挟まる。「35.0116, 135.7681」
+ * のような形をここで受ける。
+ *
+ * 日本の範囲に収まらない値は座標として扱わない。「1,2」のような
+ * 住所の一部が座標として読まれると、地球のどこかを指したまま
+ * それらしい方位が出てしまう。
+ */
+
+/**
  * 調べた地点の街の、外部サイトへの入口（/api/geocode/reverse の `portal`）。
  *
  * `key` は引いた座標。地点を変えたあとに前の地点の答えが遅れて届いても、
@@ -87,17 +99,6 @@ function spotKey(lat: number, lon: number): string {
   return `${lat.toFixed(3)},${lon.toFixed(3)}`;
 }
 
-/**
- * 入力を座標として読めるか。
- *
- * 地図のクリックは座標をクリップボードへ入れるので、貼り付けたものが
- * そのまま使えないと一度住所へ直す手間が挟まる。「35.0116, 135.7681」
- * のような形をここで受ける。
- *
- * 日本の範囲に収まらない値は座標として扱わない。「1,2」のような
- * 住所の一部が座標として読まれると、地球のどこかを指したまま
- * それらしい方位が出てしまう。
- */
 export function parseCoordinates(
   raw: string,
 ): { lat: number; lon: number } | null {
@@ -195,33 +196,6 @@ export function SpotVerdict({
     setTarget({ lat: requestedLat, lon: requestedLon, name: text });
   }, [requestedSeq, requestedLat, requestedLon]);
 
-  const targetLat = target?.lat;
-  const targetLon = target?.lon;
-  const targetKey =
-    targetLat === undefined || targetLon === undefined
-      ? null
-      : spotKey(targetLat, targetLon);
-  useEffect(() => {
-    if (targetLat === undefined || targetLon === undefined) return;
-    const key = spotKey(targetLat, targetLon);
-    let alive = true;
-    fetch(`/api/geocode/reverse?lat=${targetLat}&lon=${targetLon}`)
-      .then((res) => (res.ok ? res.json() : null))
-      .then((body) => {
-        const city = body?.data?.name;
-        const p = body?.portal;
-        if (!alive || typeof city !== "string" || !p) return;
-        if (!Array.isArray(p.links) || p.links.length === 0) return;
-        setPortal({
-          key,
-          city,
-          links: p.links,
-          disclaimer: String(p.disclaimer ?? ""),
-        });
-      })
-      .catch(() => {
-        /* 入口が出ないだけ。判定には関係しない */
-
   // Re-evaluate an owned candidate by id only; coordinates never go into the URL.
   useEffect(() => {
     if (!candidateContext) return;
@@ -264,6 +238,36 @@ export function SpotVerdict({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [!!candidateContext]);
 
+  const targetLat = target?.lat;
+  const targetLon = target?.lon;
+  const targetKey =
+    targetLat === undefined || targetLon === undefined
+      ? null
+      : spotKey(targetLat, targetLon);
+  useEffect(() => {
+    if (targetLat === undefined || targetLon === undefined) return;
+    const key = spotKey(targetLat, targetLon);
+    let alive = true;
+    fetch(`/api/geocode/reverse?lat=${targetLat}&lon=${targetLon}`)
+      .then((res) => (res.ok ? res.json() : null))
+      .then((body) => {
+        const city = body?.data?.name;
+        const p = body?.portal;
+        if (!alive || typeof city !== "string" || !p) return;
+        if (!Array.isArray(p.links) || p.links.length === 0) return;
+        setPortal({
+          key,
+          city,
+          links: p.links,
+          disclaimer: String(p.disclaimer ?? ""),
+        });
+      })
+      .catch(() => {
+        /* 入口が出ないだけ。判定には関係しない */
+      });
+    return () => {
+      alive = false;
+    };
   }, [targetLat, targetLon]);
   /* 今の地点の答えだけを出す。前の地点のものは鍵が合わない */
   const shownPortal =
@@ -406,12 +410,6 @@ export function SpotVerdict({
           {busy ? <Loader2 className="w-3 h-3 animate-spin" /> : "調べる"}
         </button>
       </div>
-      {/*
-        説明は 1 文にする（利用者の指摘、2026-09-24）。以前は URL の貼り方
-        まで 2 段落で並べていて、**市区町村名を入れればリンクまで出る**
-        ことが読み取れず、「広島ならそのリンクを生成できるようにしたい」
-        と言われた（既に出る作りだった）。URL の話は畳む。
-      */}
       <p className="text-xs text-stone-600 leading-relaxed">
         URLは参照リンクのみで、中身を取得しません。住所または座標を入力し、地図で所在地を確認してください。地図クリックで位置を修正できます。
       </p>
@@ -625,9 +623,9 @@ export function SpotVerdict({
       )}
 
       {/* 調べた街の募集を外部のサイトで見る。**1 地点につき 2 本だけ**
-          （方位の表の各行には貼らない。#1296 の決め）。文言は台帳の
-          `name` のまま縮めず、断り書きを必ず添える（lib/portalLinks）。
-          出発地が無くても出す（方位が要らない話なので）。 */}
+        （方位の表の各行には貼らない。#1296 の決め）。文言は台帳の
+        `name` のまま縮めず、断り書きを必ず添える（lib/portalLinks）。
+        出発地が無くても出す（方位が要らない話なので）。 */}
       {target && shownPortal && (
         <PortalLinkList
           cityName={shownPortal.city}
