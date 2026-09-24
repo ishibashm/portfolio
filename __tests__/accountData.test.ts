@@ -159,6 +159,7 @@ const KEPT: Record<string, string> = {
   arb_searchArea: "地図の表示範囲",
   arb_base_map: "下地の種類",
   arb_zoning_on: "用途地域を重ねるか",
+  arb_overview_paint: "全国の地図で扇形と県のどちらを塗るか",
   arbitrage_show_rings: "距離の輪を出すか",
   arbitrage_show_sectors: "方位の扇を出すか",
   arbitrage_show_spots: "名所を出すか",

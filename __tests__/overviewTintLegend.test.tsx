@@ -118,7 +118,8 @@ describe("俯瞰の県塗りが何の色か分かる", () => {
       kigakuUnavailableReason: "生年月日を入れると方位の吉凶で塗り分けます",
     });
 
-    expect(text).toContain("県の塗り分け");
+    /* 既定は扇形で塗る見方（2026-09-24）。見出しもそれに合わせる */
+    expect(text).toContain("方位の塗り分け");
     expect(text).toContain("生年月日を入れると方位の吉凶で塗り分けます");
     /* 掲載件数の色にはもう落ちない（物件を描かなくなった） */
     expect(text).not.toContain("掲載件数");
@@ -130,12 +131,22 @@ describe("俯瞰の県塗りが何の色か分かる", () => {
     expect(text).not.toContain("掲載件数");
   });
 
-  it("判定を出せるときは段階の凡例が出る", async () => {
+  it("判定を出せるときは段階の凡例が出る（扇形で塗る見方）", async () => {
     const { text } = await renderLegend({ prefKigaku: KIGAKU });
 
     expect(text).toContain("三盤吉");
     expect(text).toContain("五大凶殺");
-    expect(text).toContain("出発地から見た各県の方位の、選択日の判定");
+    expect(text).toContain("扇形の中はどこでも同じ方位です");
     expect(text).not.toContain("条件が揃うと方位の吉凶で塗り分けます");
+  });
+
+  it("「県ごと」を選ぶと県の塗り分けに戻り、県の中心で決めた目安だと断る", async () => {
+    localStorage.setItem("arb_overview_paint", "pref");
+    const { text } = await renderLegend({ prefKigaku: KIGAKU });
+    localStorage.removeItem("arb_overview_paint");
+
+    expect(text).toContain("県の塗り分け");
+    expect(text).toContain("出発地から見た各県の方位の、選択日の判定");
+    expect(text).toContain("広い県は県内でも方位が変わります");
   });
 });

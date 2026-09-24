@@ -38,7 +38,14 @@ import {
   normalizeHazardTab,
   type HazardTabId,
 } from "@/lib/hazardLayers";
-import { wedgeOutlineOnly } from "@/lib/wedgeOverlay";
+import {
+  OVERVIEW_PAINT_KEY,
+  overviewWedgeOpacity,
+  parseOverviewPaint,
+  prefFillOn,
+  wedgeOutlineOnly,
+  type OverviewPaint,
+} from "@/lib/wedgeOverlay";
 import { DistanceRings } from "@/components/map/DistanceRings";
 import { PowerSpotLayer } from "@/components/map/PowerSpotLayer";
 import { UserSpotLayer } from "@/components/map/UserSpotLayer";
@@ -416,6 +423,29 @@ export default function ArbitrageMapInner({
       localStorage.getItem(STATIONS_STORAGE_KEY) === "1",
   );
   /*
+    全国を見ているときに何を塗るか（lib/wedgeOverlay の OverviewPaint）。
+    既定は扇形。県を 1 色で塗ると、境目をまたぐ広い県は吉方位の扇形の
+    中まで凶の色になる（利用者の指摘、2026-09-24）。
+  */
+  const [overviewPaint, setOverviewPaint] = useState<OverviewPaint>(() => {
+    if (typeof window === "undefined") return "wedge";
+    try {
+      return parseOverviewPaint(localStorage.getItem(OVERVIEW_PAINT_KEY));
+    } catch {
+      return "wedge";
+    }
+  });
+  /** 俯瞰で県を色で塗っているか。扇形で塗る見方では県は輪郭だけ */
+  const prefFilled = prefFillOn(isOverview, overviewPaint);
+  const changeOverviewPaint = (next: OverviewPaint) => {
+    setOverviewPaint(next);
+    try {
+      localStorage.setItem(OVERVIEW_PAINT_KEY, next);
+    } catch {
+      /* 残せなくても今の画面は切り替わる */
+    }
+  };
+  /*
     現在地。**押されるまで購読しない。**開いた瞬間に位置情報の許可を
     聞く画面は嫌われるので、既定は消えている（useWatchedPosition の註）。
 
@@ -681,12 +711,16 @@ export default function ArbitrageMapInner({
        入っていなかった（#147 が防ぐはずだった「2 枚の色が混ざる」状態が
        そのまま起きていた）。層を足したらあちらへ足すこと。 */
     const outlineOnly = wedgeOutlineOnly({
-      isOverview,
+      isOverview: prefFilled,
       zoningOn,
       hazardOn: hazardTab !== "none",
     });
     return sectors.map((d) => {
-      const { color, opacity, dashArray } = d.tier
+      const {
+        color,
+        opacity: nearOpacity,
+        dashArray,
+      } = d.tier
         ? {
             // 天中殺で塞がっている方位は段階に関わらず灰色。俯瞰の県塗りと同じ扱い。
             color: d.blocked
@@ -706,6 +740,11 @@ export default function ArbitrageMapInner({
             opacity: 0.02,
             dashArray: "4,6" as string | undefined,
           };
+      /* 全国を扇形で塗るときは濃くする。近景の濃さは全国では見分けにくい */
+      const opacity =
+        isOverview && !prefFilled
+          ? overviewWedgeOpacity(nearOpacity)
+          : nearOpacity;
       const baseBearing = d.deg;
 
       // 扇形は表示中の画面を覆う長さで描く。以前は 30km 固定で、引くと
@@ -786,6 +825,7 @@ export default function ArbitrageMapInner({
     sectorNodeMapping,
     wedgeRangeKm,
     isOverview,
+    prefFilled,
     /* 用途地域・ハザードを足したので、切り替えたときに扇形も描き直す。
        ここに足し忘れると、用途地域を出しても扇形が塗ったままになる。 */
     zoningOn,
@@ -1296,7 +1336,49 @@ export default function ArbitrageMapInner({
             描かなくなったので、判定が無ければ塗らない。 */}
         {zoom < 10 && (
           <div className="absolute bottom-4 left-4 z-[1000] pointer-events-auto bg-white/85 backdrop-blur rounded-xl shadow-lg border border-stone-200 p-2.5 text-[10px] text-stone-700 space-y-1.5">
-            <div className="font-bold text-stone-600">県の塗り分け</div>
+            <div className="font-bold text-stone-600">
+              {prefFilled ? "県の塗り分け" : "方位の塗り分け"}
+            </div>
+            {/* 何を塗るか。扇形（既定）は扇形の中が全部同じ方位なので県境に
+                左右されない。県は中心 1 点の方位で 1 色にする目安 */}
+            <div
+              role="group"
+              aria-label="全国の地図で何を塗るか"
+              className="flex gap-1"
+            >
+              {(
+                [
+                  ["wedge", "方位の扇形"],
+                  ["pref", "県ごと"],
+                ] as const
+              ).map(([id, label]) => (
+                <button
+                  key={id}
+                  type="button"
+                  aria-pressed={overviewPaint === id}
+                  onClick={() => changeOverviewPaint(id)}
+                  className={`min-h-[24px] rounded-md border px-2 text-[10px] font-bold ${
+                    overviewPaint === id
+                      ? "border-indigo-500 bg-indigo-600 text-white"
+                      : "border-stone-300 bg-white text-stone-600 hover:bg-stone-100"
+                  }`}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+            {!prefFilled && !showSectors && (
+              <button
+                type="button"
+                onClick={() => {
+                  setShowSectors(true);
+                  localStorage.setItem(SECTORS_STORAGE_KEY, "1");
+                }}
+                className="block min-h-[24px] text-[10px] font-bold text-indigo-700 underline"
+              >
+                方位の扇形が非表示です — 表示する
+              </button>
+            )}
             {prefKigaku ? (
               <div className="flex flex-wrap gap-x-2 gap-y-1 max-w-44">
                 {(
@@ -1325,7 +1407,9 @@ export default function ArbitrageMapInner({
                   天中殺
                 </span>
                 <span className="block w-full text-[10px] text-stone-600">
-                  出発地から見た各県の方位の、選択日の判定
+                  {prefFilled
+                    ? "出発地から見た各県の方位の、選択日の判定。県の中心 1 点で決めた目安で、広い県は県内でも方位が変わります"
+                    : "出発地から見た方位の、選択日の判定。扇形の中はどこでも同じ方位です（県境とは関係ありません）"}
                 </span>
               </div>
             ) : (
@@ -1392,7 +1476,7 @@ export default function ArbitrageMapInner({
             を色にする。地図がそのまま意思決定面になる。判定が無ければ塗らない。 */}
         {zoom < 10 && geoData && (
           <GeoJSON
-            key={`pref-geo-${
+            key={`pref-geo-${overviewPaint}-${
               prefKigaku
                 ? Object.values(prefKigaku)
                     .map((i) => i.tier + (i.blocked ? "b" : ""))
@@ -1403,6 +1487,15 @@ export default function ArbitrageMapInner({
             style={(feature) => {
               const prefName = feature?.properties?.name || "";
               const info = prefKigaku?.[prefName];
+              /* 扇形で塗る見方では県は輪郭だけ（色は扇形が持つ） */
+              if (!prefFilled) {
+                return {
+                  fillOpacity: 0,
+                  color: "#1e293b",
+                  weight: 1,
+                  opacity: 0.5,
+                };
+              }
               if (info) {
                 const fill = info.blocked
                   ? "#64748b"
