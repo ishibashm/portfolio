@@ -12,6 +12,7 @@ import {
   subscribeFengShui,
 } from "@/lib/fengShuiSettings";
 import { readFengShui, type FengShuiReading } from "@/utils/fengShuiEngine";
+import { FengShuiSetup } from "@/components/relocation/FengShuiNote";
 import { honmeiYearFor } from "@/utils/honmeiYear";
 import type { CompassDirection } from "@/utils/directionGeo";
 import { parseJapanDateTime } from "@/utils/japanDate";
@@ -174,6 +175,20 @@ export function DirectionTierOverview({
           棒の長さがその方位にある市区町村の数、色がその日の段階です。行を押すとその方位だけに絞れます。
         </p>
 
+        {/*
+          風水（八宅）を右端に並べる入口。以前はここに無く、シミュレータで
+          入れた人にしか出なかった（利用者の指摘、2026-09-25「風水の評価も
+          入っているのを教えてほしい」）。生年月日が無いと本命卦が出ない
+          ので、そのときは出さない
+        */}
+        {!fengShui && birthDate && (
+          <div className="mt-2">
+            <FengShuiSetup
+              stored={stored}
+              label="風水（八宅）の吉凶も、方位ごとに右端へ並べられます"
+            />
+          </div>
+        )}
         {fengShui && (
           <p className="mt-1 text-xs leading-relaxed text-stone-500">
             右端は風水（八宅）の遊星です（{fengShui.guaName}命・{fengShui.group}
