@@ -73,7 +73,7 @@ const DANGER = `${BTN} border border-rose-200 bg-white text-rose-700 hover:bg-ro
 const SELECT =
   "min-h-[32px] px-2 py-1 bg-white border border-stone-300 rounded-lg text-xs";
 
-/** 取り込みの起点（ラベルを確定した時刻）を日本時間で。 */
+/** 取り込みの起点（ラベルを確定した時刻の 7 日前）を日本時間で。 */
 function startedLabel(iso: string): string {
   const d = new Date(iso);
   return Number.isNaN(d.getTime())
@@ -329,11 +329,10 @@ function EnabledGmailPanel({ onSelect }: { onSelect: (url: string) => void }) {
                 </button>
               </p>
               {/*
-                取り込めるのは、ラベルを確定した時刻より**後に届いた**メール
-                だけ（reader が after: と internalDate で切る）。それより前の
-                メールは読まない決まりだが、画面のどこにも書いておらず、
-                「取り込み」を押しても 0 件の理由が分からなかった
-                （利用者の指摘、2026-09-25）
+                取り込めるのは startedAt（ラベルを確定した時刻の 7 日前）より
+                **後に届いた**メールだけ（reader が after: と internalDate で
+                切る）。画面のどこにも書いておらず、「取り込み」を押しても
+                0 件の理由が分からなかった（利用者の指摘、2026-09-25）
               */}
               <p className="text-stone-600">
                 読むのは、{startedLabel(selected.startedAt)}
@@ -347,7 +346,7 @@ function EnabledGmailPanel({ onSelect }: { onSelect: (url: string) => void }) {
                 Gmailで本人専用ラベル「物件通知」を作成してください。選択候補が表示されても、確定するまで取り込みません。
               </p>
               <p className="text-stone-600">
-                確定した時刻より後に届いたメールだけを読みます。Gmailの「フィルタを作成」で、物件サイトからの通知にこのラベルが自動で付くようにしておくと、以後の通知がそのまま対象になります。
+                確定した時点の7日前から後に届いた、このラベルのメールを読みます。先にGmailで既存の通知にラベルを付けてから確定してください。「フィルタを作成」で物件サイトからの通知に自動でラベルが付くようにしておくと、以後の通知もそのまま対象になります。
               </p>
               <div className="flex flex-wrap items-end gap-2">
                 <button
@@ -408,7 +407,7 @@ function EnabledGmailPanel({ onSelect }: { onSelect: (url: string) => void }) {
                       setChoosing(false);
                       resetPreview();
                       setMessage(
-                        "ラベルを確定しました。この時刻以降の通知が対象です。",
+                        "ラベルを確定しました。7日前から後に届いた通知が対象です。",
                       );
                     })
                   }

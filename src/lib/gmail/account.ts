@@ -24,6 +24,10 @@ const labelSchema = z.object({
   name: z.string().max(1000),
   type: z.enum(["user", "system"]),
 });
+/** ラベルを確定したとき、何日前に届いたメールから読むか。 */
+export const GMAIL_LOOKBACK_DAYS = 7;
+const GMAIL_LOOKBACK_MS = GMAIL_LOOKBACK_DAYS * 24 * 60 * 60 * 1000;
+
 export class GmailAccountService {
   constructor(
     private readonly store: GmailConnectionStore,
@@ -152,7 +156,13 @@ export class GmailAccountService {
               );
               if (label.id !== selected || label.type !== "user")
                 throw new GmailError("INVALID_LABEL");
-              const startedAt = new Date();
+              /*
+                確定の 7 日前から読む（利用者の判断、2026-09-25「過去 7 日
+                読めたらいいかな」）。以前は確定した瞬間からで、受信箱に
+                既にある通知は 1 通も読めず、確定直後の取り込みは必ず 0 件
+                だった。reader はこの時刻で after: と internalDate を切る
+              */
+              const startedAt = new Date(Date.now() - GMAIL_LOOKBACK_MS);
               state.cursor = null;
               await save(seal(state, owner, id), {
                 labelId: selected,
