@@ -308,3 +308,55 @@ it.each([
     expect(message.textContent).not.toMatch(/接続状態を確認して/);
   },
 );
+/*
+  利用者の指摘（2026-09-25）「表示がおかしい。物件メールからデータ取れて
+  ない？」。ボタンに見た目が無く地の文と続いて読めていたうえ、取り込むのは
+  ラベルを確定した時刻より後のメールだけという決まりが画面に無く、0 件の
+  理由が分からなかった。
+*/
+it("confirmed label says which mail is read (after the confirmation time only)", async () => {
+  vi.stubEnv("LISTING_EMAIL_GMAIL_ENABLED", "true");
+  network({ confirmed: true });
+  mount();
+  await screen.findByText("接続状態: 接続済み");
+  /* startedAt 2026-09-24T00:00Z は日本時間 9:00 */
+  expect(
+    screen.getByText(
+      /2026\/9\/24 09:00\s*以降に届き、このラベルが付いたメールだけ/,
+    ),
+  ).toBeInTheDocument();
+  expect(
+    screen.getByText(/それより前のメールは読みません/),
+  ).toBeInTheDocument();
+});
+it("an empty import explains the time window instead of a bare 'no URLs'", async () => {
+  vi.stubEnv("LISTING_EMAIL_GMAIL_ENABLED", "true");
+  vi.spyOn(globalThis, "fetch").mockImplementation(async (url) =>
+    String(url).endsWith("status")
+      ? reply({ connections: [{ id, labelId: "Label_1", startedAt }] })
+      : reply({ urls: [], truncated: false, nextCursor: null }),
+  );
+  mount();
+  await screen.findByText("接続状態: 接続済み");
+  fireEvent.click(screen.getByRole("button", { name: "取り込み" }));
+  const status = await screen.findByRole("status");
+  expect(status.textContent).toMatch(
+    /以降に届いた、このラベルのメールからは URL が見つかりませんでした/,
+  );
+});
+it("buttons look like buttons (not bare text run into the paragraph)", async () => {
+  vi.stubEnv("LISTING_EMAIL_GMAIL_ENABLED", "true");
+  network({ confirmed: true });
+  mount();
+  await screen.findByText("接続状態: 接続済み");
+  for (const name of [
+    "Gmailと接続",
+    "取り込み",
+    "Gmailを切断",
+    "ラベルを確認・変更",
+  ]) {
+    expect(screen.getByRole("button", { name }).className).toMatch(
+      /rounded-lg/,
+    );
+  }
+});

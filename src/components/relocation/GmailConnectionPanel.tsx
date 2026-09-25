@@ -61,6 +61,32 @@ function failureMessage(code: string): string {
       return `処理できませんでした。時間をおいてもう一度お試しください。（コード: ${code}）`;
   }
 }
+/*
+  ボタンに見た目が無く、「取り込みGmailを切断」のように地の文と続けて
+  読めていた（利用者の指摘、2026-09-25）。役割ごとに 3 種に分ける。
+*/
+const BTN =
+  "min-h-[32px] px-3 py-1.5 rounded-lg text-xs font-bold disabled:opacity-40 disabled:cursor-not-allowed";
+const PRIMARY = `${BTN} bg-stone-800 text-white hover:bg-stone-700`;
+const SECONDARY = `${BTN} border border-stone-300 bg-white text-stone-700 hover:bg-stone-50`;
+const DANGER = `${BTN} border border-rose-200 bg-white text-rose-700 hover:bg-rose-50`;
+const SELECT =
+  "min-h-[32px] px-2 py-1 bg-white border border-stone-300 rounded-lg text-xs";
+
+/** 取り込みの起点（ラベルを確定した時刻）を日本時間で。 */
+function startedLabel(iso: string): string {
+  const d = new Date(iso);
+  return Number.isNaN(d.getTime())
+    ? iso
+    : d.toLocaleString("ja-JP", {
+        timeZone: "Asia/Tokyo",
+        year: "numeric",
+        month: "numeric",
+        day: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+      });
+}
 export function GmailConnectionPanel({
   onSelect,
 }: {
@@ -205,7 +231,7 @@ function EnabledGmailPanel({ onSelect }: { onSelect: (url: string) => void }) {
   return (
     <section
       aria-label="Gmail接続"
-      className="rounded-xl border border-stone-200 p-3 space-y-2 text-xs"
+      className="rounded-xl border border-stone-200 p-3 space-y-3 text-xs"
     >
       <h3 className="font-bold">Gmailから物件通知を取り込む</h3>
       <p>
@@ -224,6 +250,7 @@ function EnabledGmailPanel({ onSelect }: { onSelect: (url: string) => void }) {
       <button
         type="button"
         disabled={disabled}
+        className={selected && !reconnect ? SECONDARY : PRIMARY}
         onClick={() =>
           void run(async (signal) => {
             const result = await api("connect", signal, {});
@@ -249,16 +276,17 @@ function EnabledGmailPanel({ onSelect }: { onSelect: (url: string) => void }) {
           href={authorizationUrl}
           rel="noreferrer"
           referrerPolicy="no-referrer"
-          className="block underline"
+          className={`${PRIMARY} inline-block`}
         >
           Googleの認可画面へ進む
         </a>
       )}
       {connections.length > 1 && (
-        <label className="block">
+        <label className="flex flex-col gap-1">
           接続を選択
           <select
             aria-label="接続を選択"
+            className={SELECT}
             value={id}
             disabled={disabled}
             onChange={(e) => {
@@ -280,145 +308,179 @@ function EnabledGmailPanel({ onSelect }: { onSelect: (url: string) => void }) {
       )}
       {selected && (
         <>
-          {!choosing && (
-            <p>
-              対象ラベル: {selected.labelId}{" "}
-              <button
-                type="button"
-                disabled={disabled}
-                onClick={() => {
-                  setChoosing(true);
-                  resetPreview();
-                }}
-              >
-                ラベルを確認・変更
-              </button>
-            </p>
+          {!choosing && selected.labelId && (
+            <div className="space-y-1">
+              <p>
+                対象ラベル:{" "}
+                <span className="font-bold">
+                  {labels.find((l) => l.id === selected.labelId)?.name ??
+                    selected.labelId}
+                </span>{" "}
+                <button
+                  type="button"
+                  disabled={disabled}
+                  className={`${SECONDARY} ml-1`}
+                  onClick={() => {
+                    setChoosing(true);
+                    resetPreview();
+                  }}
+                >
+                  ラベルを確認・変更
+                </button>
+              </p>
+              {/*
+                取り込めるのは、ラベルを確定した時刻より**後に届いた**メール
+                だけ（reader が after: と internalDate で切る）。それより前の
+                メールは読まない決まりだが、画面のどこにも書いておらず、
+                「取り込み」を押しても 0 件の理由が分からなかった
+                （利用者の指摘、2026-09-25）
+              */}
+              <p className="text-stone-600">
+                読むのは、{startedLabel(selected.startedAt)}
+                以降に届き、このラベルが付いたメールだけです。それより前のメールは読みません。
+              </p>
+            </div>
           )}
           {choosing && (
             <div>
               <p>
                 Gmailで本人専用ラベル「物件通知」を作成してください。選択候補が表示されても、確定するまで取り込みません。
               </p>
-              <button
-                type="button"
-                disabled={disabled}
-                onClick={() => setLabelAttempt((n) => n + 1)}
-              >
-                ラベルを再読み込み
-              </button>
-              <label>
-                通知ラベル
-                <select
-                  aria-label="通知ラベル"
-                  value={labelId}
+              <p className="text-stone-600">
+                確定した時刻より後に届いたメールだけを読みます。Gmailの「フィルタを作成」で、物件サイトからの通知にこのラベルが自動で付くようにしておくと、以後の通知がそのまま対象になります。
+              </p>
+              <div className="flex flex-wrap items-end gap-2">
+                <button
+                  type="button"
                   disabled={disabled}
-                  onChange={(e) => setLabelId(e.target.value)}
+                  className={SECONDARY}
+                  onClick={() => setLabelAttempt((n) => n + 1)}
                 >
-                  <option value="">ラベルを選択してください</option>
-                  {labels.map((l) => (
-                    <option key={l.id} value={l.id}>
-                      {l.name}
-                    </option>
-                  ))}
-                </select>
-              </label>
-              <button
-                type="button"
-                disabled={disabled || !labelId || reconnect}
-                onClick={() =>
-                  void run(async (signal) => {
-                    const result = await api("select-label", signal, {
-                      connectionId: id,
-                      labelId,
-                    });
-                    const value = z
-                      .object({
-                        selected: z.object({
-                          connectionId: z.literal(id),
-                          labelId: z.string(),
-                          startedAt: z.iso.datetime(),
-                        }),
-                      })
-                      .parse(result).selected;
-                    setConnections((rows) =>
-                      rows.map((c) =>
-                        c.id === id
-                          ? {
-                              ...c,
-                              labelId: value.labelId,
-                              startedAt: value.startedAt,
-                            }
-                          : c,
-                      ),
-                    );
-                    setChoosing(false);
-                    resetPreview();
-                    setMessage(
-                      "ラベルを確定しました。この時刻以降の通知が対象です。",
-                    );
-                  })
-                }
-              >
-                このラベルで確定
-              </button>
+                  ラベルを再読み込み
+                </button>
+                <label className="flex flex-col gap-1">
+                  通知ラベル
+                  <select
+                    aria-label="通知ラベル"
+                    className={SELECT}
+                    value={labelId}
+                    disabled={disabled}
+                    onChange={(e) => setLabelId(e.target.value)}
+                  >
+                    <option value="">ラベルを選択してください</option>
+                    {labels.map((l) => (
+                      <option key={l.id} value={l.id}>
+                        {l.name}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <button
+                  type="button"
+                  disabled={disabled || !labelId || reconnect}
+                  className={PRIMARY}
+                  onClick={() =>
+                    void run(async (signal) => {
+                      const result = await api("select-label", signal, {
+                        connectionId: id,
+                        labelId,
+                      });
+                      const value = z
+                        .object({
+                          selected: z.object({
+                            connectionId: z.literal(id),
+                            labelId: z.string(),
+                            startedAt: z.iso.datetime(),
+                          }),
+                        })
+                        .parse(result).selected;
+                      setConnections((rows) =>
+                        rows.map((c) =>
+                          c.id === id
+                            ? {
+                                ...c,
+                                labelId: value.labelId,
+                                startedAt: value.startedAt,
+                              }
+                            : c,
+                        ),
+                      );
+                      setChoosing(false);
+                      resetPreview();
+                      setMessage(
+                        "ラベルを確定しました。この時刻以降の通知が対象です。",
+                      );
+                    })
+                  }
+                >
+                  このラベルで確定
+                </button>
+              </div>
             </div>
           )}
-          <button
-            type="button"
-            disabled={disabled || reconnect || choosing || !selected.labelId}
-            onClick={() =>
-              void run(async (signal) => {
-                const result = await api("read", signal, {
-                  connectionId: id,
-                  labelId: selected.labelId,
-                  startedAt: selected.startedAt,
-                  maxMessages: 20,
-                  cursor: done ? null : cursor,
-                });
-                const data = z
-                  .object({
-                    urls: z.array(z.string()).max(20),
-                    nextCursor: z.uuid().nullable(),
-                    truncated: z.boolean(),
-                  })
-                  .parse(result);
-                const next = data.urls.flatMap((url) => {
-                  const value = classifyCandidateInput(url);
-                  return value.kind === "url" ? [value.url] : [];
-                });
-                setUrls((previous) => [
-                  ...new Set([...(done ? [] : previous), ...next]),
-                ]);
-                setCursor(data.nextCursor);
-                setDone(data.nextCursor === null);
-                setMessage(
-                  data.truncated
-                    ? "URL表示に上限があります。表示されたURLから選んでください。"
-                    : next.length
-                      ? "URLを1件選び、既存入力の「調べる」へ進んでください。"
-                      : "このページには利用できるURLがありません。",
-                );
-              })
-            }
-          >
-            {cursor ? "続きを取り込む" : done ? "最初から取り込む" : "取り込み"}
-          </button>
-          <button
-            type="button"
-            disabled={disabled}
-            ref={disconnectButton}
-            onClick={() => setConfirmDisconnect(true)}
-          >
-            Gmailを切断
-          </button>
+          <div className="flex flex-wrap gap-2">
+            <button
+              type="button"
+              disabled={disabled || reconnect || choosing || !selected.labelId}
+              className={PRIMARY}
+              onClick={() =>
+                void run(async (signal) => {
+                  const result = await api("read", signal, {
+                    connectionId: id,
+                    labelId: selected.labelId,
+                    startedAt: selected.startedAt,
+                    maxMessages: 20,
+                    cursor: done ? null : cursor,
+                  });
+                  const data = z
+                    .object({
+                      urls: z.array(z.string()).max(20),
+                      nextCursor: z.uuid().nullable(),
+                      truncated: z.boolean(),
+                    })
+                    .parse(result);
+                  const next = data.urls.flatMap((url) => {
+                    const value = classifyCandidateInput(url);
+                    return value.kind === "url" ? [value.url] : [];
+                  });
+                  setUrls((previous) => [
+                    ...new Set([...(done ? [] : previous), ...next]),
+                  ]);
+                  setCursor(data.nextCursor);
+                  setDone(data.nextCursor === null);
+                  setMessage(
+                    data.truncated
+                      ? "URL表示に上限があります。表示されたURLから選んでください。"
+                      : next.length
+                        ? "URLを1件選び、既存入力の「調べる」へ進んでください。"
+                        : `${startedLabel(selected.startedAt)} 以降に届いた、このラベルのメールからは URL が見つかりませんでした。それより前のメールは読みません。`,
+                  );
+                })
+              }
+            >
+              {cursor
+                ? "続きを取り込む"
+                : done
+                  ? "最初から取り込む"
+                  : "取り込み"}
+            </button>
+            <button
+              type="button"
+              disabled={disabled}
+              ref={disconnectButton}
+              className={DANGER}
+              onClick={() => setConfirmDisconnect(true)}
+            >
+              Gmailを切断
+            </button>
+          </div>
         </>
       )}
       {confirmDisconnect && (
         <div
           role="alertdialog"
           aria-labelledby="gmail-disconnect-title"
-          className="border rounded p-3"
+          className="border border-rose-200 rounded-lg p-3 space-y-2"
         >
           <p id="gmail-disconnect-title">Gmail接続を切断しますか？</p>
           <p>
@@ -427,6 +489,7 @@ function EnabledGmailPanel({ onSelect }: { onSelect: (url: string) => void }) {
           <button
             type="button"
             disabled={busy}
+            className={`${SECONDARY} mr-2`}
             autoFocus
             onClick={() => {
               setConfirmDisconnect(false);
@@ -438,6 +501,7 @@ function EnabledGmailPanel({ onSelect }: { onSelect: (url: string) => void }) {
           <button
             type="button"
             disabled={busy}
+            className={DANGER}
             onClick={() =>
               void run(async (signal) => {
                 let revokeFailed = false;
@@ -472,7 +536,11 @@ function EnabledGmailPanel({ onSelect }: { onSelect: (url: string) => void }) {
           </button>
         </div>
       )}
-      {message && <p role="status">{message}</p>}
+      {message && (
+        <p role="status" className="font-bold text-stone-800">
+          {message}
+        </p>
+      )}
       <EmailUrlChoices
         urls={urls}
         onSelect={(url) => {
@@ -480,7 +548,7 @@ function EnabledGmailPanel({ onSelect }: { onSelect: (url: string) => void }) {
           setUrls([]);
         }}
       />
-      <p>
+      <p className="text-stone-500">
         メール本文は保存しません。URLを選んだ後も、住所入力と地図での位置確認が必要です。
       </p>
     </section>
