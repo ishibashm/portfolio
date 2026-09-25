@@ -51,6 +51,19 @@ function toPositive(value: string | null): number | null {
  * 1 つも残らなければ null（＝絞らない）。**空の集合で 0 件を返さない**
  * （綴り違いで「無い」と出すと、無いのか読めなかったのか分からない）。
  */
+/** 前面道路の方位として受ける値（国交省の綴り）。 */
+const ROAD_DIRECTIONS = [
+  "北",
+  "北東",
+  "東",
+  "南東",
+  "南",
+  "南西",
+  "西",
+  "北西",
+  "接面道路無",
+] as const;
+
 function parseDirections(raw: string | null): Set<CompassDirection> | null {
   if (!raw) return null;
   const out = new Set<CompassDirection>();
@@ -120,6 +133,19 @@ export async function GET(request: Request) {
       件数の少ない方位は新しい 500 件の中に数件しか残らない。
     */
     const directions = parseDirections(searchParams.get("directions"));
+    /*
+      前面道路の方位で絞る（利用者の依頼、2026-09-24「前面道路の方位も
+      取り込めるようにして」）。国交省の値そのまま（北〜北西の 8 つと
+      「接面道路無」。2026-09-25 の全国取り直しと probe で綴りを確認）。
+      知らない値は無視する。マンション・農地・林地は値を持たないので、
+      絞ると外れる（前面道路の無い取引を「南道路」とは言えない）。
+      方位（家から見た向き）とは別の軸で、相場の札にも効かせる。
+    */
+    const roadRaw = searchParams.get("road_direction");
+    const roadDirection =
+      roadRaw && (ROAD_DIRECTIONS as readonly string[]).includes(roadRaw)
+        ? roadRaw
+        : null;
     const nodeMapping =
       searchParams.get("node_mapping") === "physical"
         ? ("physical" as const)
@@ -149,6 +175,7 @@ export async function GET(request: Request) {
           ...(minArea !== null
             ? { area_sqm: { not: null, gte: minArea } }
             : {}),
+          ...(roadDirection !== null ? { road_direction: roadDirection } : {}),
         },
         orderBy: [{ trade_year: "desc" }, { trade_quarter: "desc" }],
         take: SCAN_CAP,
@@ -180,6 +207,9 @@ export async function GET(request: Request) {
           estLandPrice:
             r.est_land_price === null ? null : Number(r.est_land_price),
           buildingRatio: r.building_ratio,
+          roadDirection: r.road_direction,
+          roadClassification: r.road_classification,
+          roadBreadthM: r.road_breadth_m,
           tradeYear: r.trade_year,
           tradeQuarter: r.trade_quarter,
           lat: r.lat,
