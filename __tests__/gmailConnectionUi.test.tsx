@@ -324,7 +324,13 @@ it("resolves the existing athome label and offers explicit switching to 物件�
       : original(url, init),
   );
   mount();
-  await screen.findByText(/対象ラベル: athome/);
+  await screen.findByText((content, element) => {
+    return (
+      element?.tagName === "P" &&
+      content.includes("対象ラベル:") &&
+      element.textContent?.includes("athome")
+    );
+  });
   fireEvent.click(screen.getByRole("button", { name: "ラベルを確認・変更" }));
   expect(screen.getByLabelText("通知ラベル")).toHaveValue("Label_2");
   expect(screen.getByRole("button", { name: "取り込み" })).toBeDisabled();

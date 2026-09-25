@@ -85,7 +85,13 @@ it("moves only selected fields from candidate history to confirmation in memory,
       <Navigation />
     </StrictMode>,
   );
-  await screen.findByText(/対象ラベル: 物件通知/);
+  await screen.findByText((content, element) => {
+    return (
+      element?.tagName === "P" &&
+      content.includes("対象ラベル:") &&
+      element.textContent?.includes("物件通知")
+    );
+  });
   fireEvent.click(screen.getByRole("button", { name: "取り込み" }));
   fireEvent.click(
     await screen.findByRole("button", {

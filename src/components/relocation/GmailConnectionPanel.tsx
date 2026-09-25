@@ -122,6 +122,7 @@ function EnabledGmailPanel({
   const [urls, setUrls] = useState<string[]>([]);
   const [listings, setListings] = useState<EmailListing[]>([]);
   const [cursor, setCursor] = useState<string | null>(null);
+  const prevChoosingRef = useRef(choosing);
   const [done, setDone] = useState(false);
   const [confirmDisconnect, setConfirmDisconnect] = useState(false);
   const action = useRef<AbortController | null>(null);
@@ -189,30 +190,44 @@ function EnabledGmailPanel({
     };
   }, [fail]);
   useEffect(() => {
-    if (!id || !choosing) return;
+    const wasChoosingBefore = prevChoosingRef.current;
+    prevChoosingRef.current = choosing;
+    if (!id) return;
+    const needsFetch = labels.length === 0;
+    if (!needsFetch && !choosing) return;
+    if (!choosing && wasChoosingBefore) return;
     const controller = new AbortController();
-    setLabelsLoading(true);
-    setLabels([]);
-    setLabelId("");
-    void api(`labels?connectionId=${encodeURIComponent(id)}`, controller.signal)
-      .then((result) => {
-        if (controller.signal.aborted) return;
-        const rows = z
-          .object({
-            labels: z.array(z.object({ id: z.string(), name: z.string() })),
-          })
-          .parse(result).labels;
-        setLabels(rows);
-        setLabelId(rows.find((l) => l.name === "物件通知")?.id ?? "");
-      })
-      .catch((e) => {
-        if (!controller.signal.aborted) fail(e);
-      })
-      .finally(() => {
-        if (!controller.signal.aborted) setLabelsLoading(false);
-      });
+    if (choosing && needsFetch) {
+      setLabelsLoading(true);
+    }
+    if (needsFetch) {
+      void api(
+        `labels?connectionId=${encodeURIComponent(id)}`,
+        controller.signal,
+      )
+        .then((result) => {
+          if (controller.signal.aborted) return;
+          const rows = z
+            .object({
+              labels: z.array(z.object({ id: z.string(), name: z.string() })),
+            })
+            .parse(result).labels;
+          setLabels(rows);
+          if (choosing) {
+            setLabelId(rows.find((l) => l.name === "物件通知")?.id ?? "");
+          }
+        })
+        .catch((e) => {
+          if (!controller.signal.aborted) fail(e);
+        })
+        .finally(() => {
+          if (!controller.signal.aborted && choosing) setLabelsLoading(false);
+        });
+    } else if (choosing && !labelId) {
+      setLabelId(labels.find((l) => l.name === "物件通知")?.id ?? "");
+    }
     return () => controller.abort();
-  }, [id, choosing, fail, labelAttempt]);
+  }, [id, choosing, fail, labelAttempt, labels, labelId]);
   const run = async (operation: (signal: AbortSignal) => Promise<void>) => {
     if (action.current) return;
     const controller = new AbortController();
