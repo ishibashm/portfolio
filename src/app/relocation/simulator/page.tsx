@@ -52,6 +52,7 @@ import {
 import { SimulatorStart } from "@/components/relocation/SimulatorStart";
 import { PlaceInput } from "@/components/relocation/PlaceInput";
 import { resolvePlaceName } from "@/lib/placeLabel";
+import { baseMovesAfter } from "@/lib/stayBase";
 import { ratingForStatus } from "@/lib/verdictRating";
 import { stepDayTier } from "@/lib/stepTier";
 import { TIER_LABELS, TIER_ORDER, type DayTier } from "@/utils/auspiciousDays";
@@ -736,7 +737,7 @@ export default function RelocationSimulatorPage() {
 
       list.push(evaluatedStepObj);
 
-      if (step.purpose === "MIGRATION" && stayDuration >= 75) {
+      if (baseMovesAfter(step.purpose, stayDuration)) {
         currentBaseLat = step.toLat;
         currentBaseLon = step.toLon;
         currentBaseName = step.toName;
