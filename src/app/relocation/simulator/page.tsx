@@ -1577,10 +1577,10 @@ export default function RelocationSimulatorPage() {
     }
   };
 
+  /* 住まいの座標は受け取らない（出発地の変更は下書きだけに残す。下の
+     SimulatorMap の onStartLocationChange を参照）。型で閉じておく */
   const saveUnifiedConfig = async (updatedFields: {
     use_true_north?: boolean;
-    base_lat?: number;
-    base_lon?: number;
   }) => {
     try {
       // 端末の設定の読み出しは lib/userSettings に既にある。ここで
@@ -2773,10 +2773,17 @@ export default function RelocationSimulatorPage() {
                     setStartLon(lon);
                     if (name) setStartName(name);
                     saveDraft(steps, lat, lon, name || startName);
-                    saveUnifiedConfig({
-                      base_lat: lat,
-                      base_lon: lon,
-                    });
+                    /*
+                      **登録した住まい（base_lat / base_lon）には書かない。**
+                      この計画の出発地として下書きにだけ残す。以前は共有の
+                      設定とクラウドへ座標だけを書いていた。地図の出発地は
+                      印のドラッグだけでなく、ステップを選んでいないときの
+                      地名検索や名所の「判定へ」でも動くので、試しに押した
+                      点が全ての道具の「いま住んでいるところ」になっていた。
+                      地名（base_label）は書かないので前の街の名前が残り、
+                      プロフィールの札は京都、判定は名古屋という食い違いに
+                      なった（利用者の指摘、2026-09-25）
+                    */
                   }}
                   onStepDestinationChange={(index, lat, lon, name) => {
                     const nameToUse = name || steps[index].toName;
