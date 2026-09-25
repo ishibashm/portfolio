@@ -3,6 +3,12 @@ import { classifyCandidateInput } from "@/lib/listingCandidateInput";
 
 export type EmailPreviewFormat = "text" | "html" | "mime";
 export const EMAIL_PREVIEW_MAX_BYTES = 12000;
+export const GMAIL_MIME_MAX_BYTES = 512 * 1024;
+export const GMAIL_MIME_LIMITS = {
+  maxBytes: GMAIL_MIME_MAX_BYTES,
+  maxHeaderBytes: 64 * 1024,
+} as const;
+export type EmailParseLimits = { maxBytes?: number; maxHeaderBytes?: number };
 export const EMAIL_PREVIEW_MAX_URLS = 20;
 export class EmailPreviewError extends Error {
   constructor() {
@@ -16,8 +22,19 @@ export function extractEmailUrls(
   format: EmailPreviewFormat,
   onPart?: (body: string, html: boolean) => void,
   onSender?: (sender: string) => void,
+  limits: EmailParseLimits = {},
 ) {
-  if (Buffer.byteLength(source, "utf8") > EMAIL_PREVIEW_MAX_BYTES)
+  const maxBytes = limits.maxBytes ?? EMAIL_PREVIEW_MAX_BYTES;
+  const maxHeaderBytes = limits.maxHeaderBytes ?? 8192;
+  if (
+    !Number.isInteger(maxBytes) ||
+    maxBytes < 1 ||
+    maxBytes > GMAIL_MIME_MAX_BYTES ||
+    !Number.isInteger(maxHeaderBytes) ||
+    maxHeaderBytes < 1 ||
+    maxHeaderBytes > 64 * 1024 ||
+    Buffer.byteLength(source, "utf8") > maxBytes
+  )
     throw new EmailPreviewError();
   const urls = new Set<string>();
   let truncated = false;
@@ -61,7 +78,11 @@ export function extractEmailUrls(
   const mime = (raw: string, depth: number) => {
     if (++parts > 40 || depth > 6) throw new EmailPreviewError();
     const split = raw.search(/\r?\n\r?\n/);
-    if (split < 0 || split > 8192) throw new EmailPreviewError();
+    if (
+      split < 0 ||
+      Buffer.byteLength(raw.slice(0, split), "utf8") > maxHeaderBytes
+    )
+      throw new EmailPreviewError();
     const headers = new Map<string, string>();
     for (const line of raw
       .slice(0, split)

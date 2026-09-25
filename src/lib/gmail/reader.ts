@@ -7,8 +7,9 @@ import {
   type ListingEmailReadWindow,
 } from "@/lib/listingEmailConnection";
 import {
-  EMAIL_PREVIEW_MAX_BYTES,
+  GMAIL_MIME_MAX_BYTES,
   extractEmailUrls,
+  GMAIL_MIME_LIMITS,
 } from "@/lib/listingEmailIngest";
 import type { GmailConnectionStore } from "./store";
 import {
@@ -182,13 +183,13 @@ export class GmailListingEmailReader implements ListingEmailReader {
                 m.labelIds.includes(selectedLabelId) &&
                 Number(m.internalDate) >= record.startedAt.getTime();
               if (!inRange(meta)) continue;
-              if (meta.sizeEstimate > EMAIL_PREVIEW_MAX_BYTES)
+              if (meta.sizeEstimate > GMAIL_MIME_MAX_BYTES)
                 throw new GmailError("GMAIL_MESSAGE_SIZE");
               const raw = metadataSchema
                 .extend({
                   raw: z
                     .string()
-                    .max(16000)
+                    .max(Math.ceil(GMAIL_MIME_MAX_BYTES / 3) * 4)
                     .regex(/^[A-Za-z0-9_-]+={0,2}$/),
                 })
                 .parse(
@@ -197,19 +198,26 @@ export class GmailListingEmailReader implements ListingEmailReader {
                     `${endpoint}?format=raw&fields=id,labelIds,internalDate,sizeEstimate,raw`,
                     { headers },
                     deadline,
+                    Math.ceil(GMAIL_MIME_MAX_BYTES / 3) * 4 + 16384,
                   ),
                 );
               if (!inRange(raw)) continue;
               const bytes = Buffer.from(raw.raw, "base64url");
               if (
-                bytes.length > EMAIL_PREVIEW_MAX_BYTES ||
-                raw.sizeEstimate > EMAIL_PREVIEW_MAX_BYTES
+                bytes.length > GMAIL_MIME_MAX_BYTES ||
+                raw.sizeEstimate > GMAIL_MIME_MAX_BYTES
               )
                 throw new GmailError("GMAIL_MESSAGE_SIZE");
               const rawMime = new TextDecoder("utf-8", { fatal: true }).decode(
                 bytes,
               );
-              extractEmailUrls(rawMime, "mime");
+              extractEmailUrls(
+                rawMime,
+                "mime",
+                undefined,
+                undefined,
+                GMAIL_MIME_LIMITS,
+              );
               messages.push({ rawMime });
             }
             // Empty/repeating provider pages cannot keep an operation alive forever.

@@ -12,6 +12,7 @@ import {
   CandidateError,
 } from "@/lib/listingCandidateApi";
 import { GMAIL_READONLY_SCOPE } from "@/lib/listingEmailConnection";
+import { GMAIL_MIME_LIMITS } from "@/lib/listingEmailIngest";
 import { extractEmailListings } from "@/lib/listingEmailDetails";
 import type { EmailListing } from "@/lib/listingDetails";
 import {
@@ -212,7 +213,11 @@ export function createGmailHandlers(transport: typeof fetch) {
       const listings = new Map<string, EmailListing>();
       let truncated = false;
       for (const { rawMime } of result.messages) {
-        const extracted = extractEmailListings(rawMime, "mime");
+        const extracted = extractEmailListings(
+          rawMime,
+          "mime",
+          GMAIL_MIME_LIMITS,
+        );
         truncated ||= extracted.truncated;
         for (const listing of extracted.listings) {
           const url = listing.url;

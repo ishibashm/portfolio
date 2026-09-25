@@ -1,4 +1,6 @@
 // @vitest-environment node
+import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
 import { beforeEach, afterEach, expect, it, vi } from "vitest";
 import { NextRequest } from "next/server";
 const mock = vi.hoisted(() => ({
@@ -484,3 +486,33 @@ it.each([
     );
   },
 );
+
+it("read uses Gmail MIME limits and returns only the fixture's property summaries", async () => {
+  const rawMime = readFileSync(
+    resolve("__tests__/fixtures/listing-emails/athome.eml"),
+    "utf8",
+  );
+  vi.spyOn(GmailListingEmailReader.prototype, "read").mockResolvedValue({
+    messages: [{ rawMime }],
+    nextCursor: null,
+  });
+  const response = await read(
+    request("read", {
+      body: {
+        connectionId: owner,
+        labelId: "Label_rental",
+        startedAt: "2026-09-24T00:00:00.000Z",
+        maxMessages: 20,
+        cursor: null,
+      },
+    }),
+  );
+  expect(response.status).toBe(200);
+  const result = await response.json();
+  expect(result.listings).toHaveLength(2);
+  expect(result.urls).toEqual([
+    "https://www.athome.co.jp/chintai/1000000001/",
+    "https://www.athome.co.jp/chintai/1000000002/",
+  ]);
+  expect(JSON.stringify(result).includes(rawMime)).toBe(false);
+});

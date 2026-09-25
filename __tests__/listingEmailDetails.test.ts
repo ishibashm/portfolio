@@ -25,11 +25,37 @@ it.each([
     const log = vi.spyOn(console, "log");
     const error = vi.spyOn(console, "error");
     expect(listingEmailPortal(sender)).toBe(portal);
-    const source = `From: Synthetic <${sender}>\nContent-Type: text/plain; charset=utf-8\n\n${block("試験ハイツA", "７．２", "https://suumo.jp/chintai/test-a/").replace("賃料", label)}\n${block("試験ハイツB", "9", "https://www.homes.co.jp/chintai/test-b/")}`;
+    const propertyUrls = {
+      suumo: [
+        "https://suumo.jp/chintai/bc_1000000001/",
+        "https://suumo.jp/chintai/bc_1000000002/",
+      ],
+      homes: [
+        "https://www.homes.co.jp/chintai/b-1000000001/",
+        "https://www.homes.co.jp/chintai/b-1000000002/",
+      ],
+      athome: [
+        "https://www.athome.co.jp/chintai/1000000001/",
+        "https://www.athome.co.jp/chintai/1000000002/",
+      ],
+      shamaison: [
+        "https://www.shamaison.com/kanagawa/area/14117/100_1/1001/",
+        "https://www.shamaison.com/kanagawa/area/14117/100_1/1002/",
+      ],
+      eheya: [
+        "https://www.eheya.net/building/100/1/",
+        "https://www.eheya.net/building/100/2/",
+      ],
+      generic: [
+        "https://suumo.jp/chintai/test-a/",
+        "https://www.homes.co.jp/chintai/test-b/",
+      ],
+    }[portal as ReturnType<typeof listingEmailPortal>];
+    const source = `From: Synthetic <${sender}>\nContent-Type: text/plain; charset=utf-8\n\n${block("試験ハイツA", "７．２", propertyUrls[0]).replace("賃料", label)}\n${block("試験ハイツB", "9", propertyUrls[1])}`;
     const { listings } = extractEmailListings(source);
     expect(listings).toHaveLength(2);
     expect(listings[0]).toMatchObject({
-      propertyName: "試験ハイツA",
+      ...(portal === "athome" ? {} : { propertyName: "試験ハイツA" }),
       rentYen: 72000,
       managementFeeYen: 3000,
       deposit: "1ヶ月",
@@ -42,7 +68,7 @@ it.each([
       buildingAgeYears: 12,
     });
     expect(listings[1]).toMatchObject({
-      propertyName: "試験ハイツB",
+      ...(portal === "athome" ? {} : { propertyName: "試験ハイツB" }),
       rentYen: 90000,
     });
     expect(fetch).not.toHaveBeenCalled();
