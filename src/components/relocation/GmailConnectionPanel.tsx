@@ -3,12 +3,12 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import {
   listingDetailsSchema,
   type ListingDetails,
+  type EmailListing,
 } from "@/lib/listingDetails";
 import { z } from "zod";
 import { classifyCandidateInput } from "@/lib/listingCandidateInput";
 import { useGmailEnabled } from "./GmailFeature";
 import { EmailUrlChoices } from "./EmailUrlChoices";
-import { EmailListingDraft } from "./EmailListingDraft";
 const connectionSchema = z.object({
   id: z.uuid(),
   labelId: z.string().nullable(),
@@ -95,12 +95,16 @@ function startedLabel(iso: string): string {
 export function GmailConnectionPanel({
   onSelect,
 }: {
-  onSelect: (url: string) => void;
+  onSelect: (url: string, details?: ListingDetails) => void;
 }) {
   const enabled = useGmailEnabled();
   return enabled ? <EnabledGmailPanel onSelect={onSelect} /> : null;
 }
-function EnabledGmailPanel({ onSelect }: { onSelect: (url: string) => void }) {
+function EnabledGmailPanel({
+  onSelect,
+}: {
+  onSelect: (url: string, details?: ListingDetails) => void;
+}) {
   const [hidden, setHidden] = useState(false);
   const [authorizationUrl, setAuthorizationUrl] = useState("");
   const [labelAttempt, setLabelAttempt] = useState(0);
@@ -116,7 +120,7 @@ function EnabledGmailPanel({ onSelect }: { onSelect: (url: string) => void }) {
   const [reconnect, setReconnect] = useState(false);
   const [loginRequired, setLoginRequired] = useState(false);
   const [urls, setUrls] = useState<string[]>([]);
-  const [listings, setListings] = useState<ListingDetails[]>([]);
+  const [listings, setListings] = useState<EmailListing[]>([]);
   const [cursor, setCursor] = useState<string | null>(null);
   const [done, setDone] = useState(false);
   const [confirmDisconnect, setConfirmDisconnect] = useState(false);
@@ -561,18 +565,19 @@ function EnabledGmailPanel({ onSelect }: { onSelect: (url: string) => void }) {
           {message}
         </p>
       )}
-      <EmailListingDraft
-        listings={listings}
-        onSelect={(url) => {
-          onSelect(url);
-          setUrls([]);
-          setListings([]);
-        }}
-      />
       <EmailUrlChoices
         urls={urls}
+        listings={listings}
         onSelect={(url) => {
-          onSelect(url);
+          const item = listings.find((l) => l.url === url);
+          const details = item
+            ? listingDetailsSchema.parse(
+                Object.fromEntries(
+                  Object.entries(item).filter(([key]) => key !== "url"),
+                ),
+              )
+            : undefined;
+          onSelect(url, details);
           setUrls([]);
           setListings([]);
         }}
