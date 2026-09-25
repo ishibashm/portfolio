@@ -87,7 +87,7 @@ import {
   type MemberTimeline,
 } from "@/lib/partyTimeline";
 import { PREFECTURE_CENTERS } from "@/lib/prefectureDirection";
-import { distanceKmBetween } from "@/utils/directionGeo";
+import { COMPASS_DIRECTIONS, distanceKmBetween } from "@/utils/directionGeo";
 import { isDirectionUnstable } from "@/lib/directionDistance";
 import {
   loadProfilePresets,
@@ -322,6 +322,18 @@ export default function TimingAnalyticsPage() {
       setPastMonths(view.pastMonths);
       setFutureMonths(view.futureMonths);
       setFocusDir(view.focusDir);
+      /*
+        /relocation/arbitrage から「開く日を探す」で来たときは、その方位で
+        始める（?dir=NE）。保存していた見え方より優先する。知らない値は
+        無視する（readTimingView と同じく八方位だけを通す）
+      */
+      const dirParam = new URLSearchParams(window.location.search).get("dir");
+      if (
+        dirParam &&
+        (COMPASS_DIRECTIONS as readonly string[]).includes(dirParam)
+      ) {
+        setFocusDir(dirParam);
+      }
       setTierFilter(view.tierFilter);
       setLuckyOnly(view.luckyOnly);
       const scan = readTimingScan<TimelineDay, MemberTimeline>(
