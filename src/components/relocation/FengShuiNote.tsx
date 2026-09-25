@@ -47,39 +47,29 @@ const SEX_LABELS: Record<Sex, string> = {
   female: "女性",
 };
 
-export function FengShuiNote({
-  bearing,
-  birthDate,
-  kigakuDirection,
+/**
+ * 風水（八宅）を併記するための切り替え。入っていなければ「併記する」、
+ * 性別が無ければその選択を出す。どちらも済んでいれば何も出さない。
+ *
+ * 移動の札（`FengShuiNote`）と、/relocation/arbitrage の方位ごとの内訳
+ * （`DirectionTierOverview`）が同じものを使う。以前は内訳の側に入口が
+ * 無く、シミュレータで一度入れた人にしか遊星が出なかった。あの頁から
+ * 風水を見られることが分からなかった（利用者の指摘、2026-09-25）。
+ */
+export function FengShuiSetup({
+  stored,
+  label = "風水（八宅）でも見る",
 }: {
-  /** 出発地から行き先への方位角（度）。 */
-  bearing: number;
-  /** 生年月日。ISO の文字列。読めなければ何も出さない。 */
-  birthDate: string;
-  /**
-   * 気学側が同じ移動に付けている方位。八宅と食い違ったときに
-   * その場で断るために受け取る。渡さなければ断りを出さない。
-   */
-  kigakuDirection?: string;
+  stored: ReturnType<typeof parseSnapshot>;
+  /** 切り替えの見出し。置き場所に合わせて言い換える。 */
+  label?: string;
 }) {
-  const stored = parseSnapshot(
-    useSyncExternalStore(
-      subscribeFengShui,
-      fengShuiSnapshot,
-      () => FENG_SHUI_SERVER_SNAPSHOT,
-    ),
-  );
-
-  const birth = parseJapanDateTime(birthDate);
-  if (!birthDate || Number.isNaN(birth.getTime())) return null;
-  if (!Number.isFinite(bearing)) return null;
-
   if (!stored.enabled) {
     return (
       <div className="rounded-2xl border border-stone-200 bg-white/60 p-3">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <p className="text-xs text-stone-600">
-            風水（八宅）でも見る
+            {label}
             <span className="ml-2 text-[10px] text-stone-500">
               既定では判定に使っていません
             </span>
@@ -128,6 +118,38 @@ export function FengShuiNote({
       </div>
     );
   }
+
+  return null;
+}
+
+export function FengShuiNote({
+  bearing,
+  birthDate,
+  kigakuDirection,
+}: {
+  /** 出発地から行き先への方位角（度）。 */
+  bearing: number;
+  /** 生年月日。ISO の文字列。読めなければ何も出さない。 */
+  birthDate: string;
+  /**
+   * 気学側が同じ移動に付けている方位。八宅と食い違ったときに
+   * その場で断るために受け取る。渡さなければ断りを出さない。
+   */
+  kigakuDirection?: string;
+}) {
+  const stored = parseSnapshot(
+    useSyncExternalStore(
+      subscribeFengShui,
+      fengShuiSnapshot,
+      () => FENG_SHUI_SERVER_SNAPSHOT,
+    ),
+  );
+
+  const birth = parseJapanDateTime(birthDate);
+  if (!birthDate || Number.isNaN(birth.getTime())) return null;
+  if (!Number.isFinite(bearing)) return null;
+
+  if (!fengShuiActive(stored)) return <FengShuiSetup stored={stored} />;
 
   /* 八宅は八卦に 45 度ずつ。気学の伝統区分とは切り方が違う。 */
   const direction = directionFromBearing(bearing, "physical");
