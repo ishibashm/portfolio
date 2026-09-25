@@ -280,6 +280,22 @@ export function HousingStatsByDirection({
                     </span>
                   </span>
                 </div>
+                {/*
+                  その日に塞がっている方位は、開く日を探しに時期の頁へ戻れる
+                  ようにする（利用者の依頼、2026-09-25「日取りがわるかったら
+                  また引っ越し時期を分析するに戻れるようにしてほしい」）。
+                  方位を持たせて開くので、時期の頁はその方位の見え方で始まる
+                */}
+                {verdicts &&
+                  verdicts[d.direction] &&
+                  !isOpenDirection(verdicts[d.direction]) && (
+                    <Link
+                      href={`/relocation/timing?dir=${d.direction}`}
+                      className="mt-1 inline-flex min-h-[24px] items-center text-xs font-bold text-indigo-700 underline hover:text-indigo-900"
+                    >
+                      この日は塞がっています — 開く日を引っ越し時期で探す
+                    </Link>
+                  )}
                 {d.count > 0 && (
                   <p className="mt-0.5 text-xs text-stone-600">
                     {[
