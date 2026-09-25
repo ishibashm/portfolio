@@ -89,14 +89,14 @@ afterEach(() => {
   vi.unstubAllEnvs();
   vi.restoreAllMocks();
 });
-it("read route returns selected URL candidates only, never raw MIME", async () => {
+it("read route returns selected structured candidates, never raw MIME", async () => {
   const spy = vi
     .spyOn(GmailListingEmailReader.prototype, "read")
     .mockResolvedValue({
       messages: [
         {
           rawMime:
-            "Content-Type: text/plain\r\n\r\nPRIVATE_BODY https://suumo.jp/a",
+            "Content-Type: text/plain\r\n\r\nPRIVATE_BODY\n物件名: 合成ハイツ\n賃料: 7万円\nhttps://suumo.jp/a",
         },
       ],
       nextCursor: null,
@@ -115,6 +115,9 @@ it("read route returns selected URL candidates only, never raw MIME", async () =
   expect(response.status).toBe(200);
   expect(await response.json()).toEqual({
     urls: ["https://suumo.jp/a"],
+    listings: [
+      { url: "https://suumo.jp/a", propertyName: "合成ハイツ", rentYen: 70000 },
+    ],
     truncated: false,
     nextCursor: null,
   });

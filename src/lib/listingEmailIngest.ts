@@ -11,7 +11,12 @@ export class EmailPreviewError extends Error {
 }
 
 /** Bounded, network-free subset. Unsupported/ambiguous MIME fails closed. */
-export function extractEmailUrls(source: string, format: EmailPreviewFormat) {
+export function extractEmailUrls(
+  source: string,
+  format: EmailPreviewFormat,
+  onPart?: (body: string, html: boolean) => void,
+  onSender?: (sender: string) => void,
+) {
   if (Buffer.byteLength(source, "utf8") > EMAIL_PREVIEW_MAX_BYTES)
     throw new EmailPreviewError();
   const urls = new Set<string>();
@@ -32,6 +37,7 @@ export function extractEmailUrls(source: string, format: EmailPreviewFormat) {
     urls.add(input.url);
   };
   const extract = (body: string, html: boolean) => {
+    onPart?.(body, html);
     if (!html) {
       for (const m of body.matchAll(/https:\/\/[^\s<>"'「」]+/gi))
         add(m[0].replace(/[。、,;.!?)\]]+$/, ""));
@@ -68,6 +74,7 @@ export function extractEmailUrls(source: string, format: EmailPreviewFormat) {
         throw new EmailPreviewError();
       headers.set(key, m[2]);
     }
+    if (depth === 0) onSender?.(headers.get("from") ?? "");
     const ct = headers.get("content-type") ?? "text/plain";
     const disposition = headers.get("content-disposition") ?? "";
     if (

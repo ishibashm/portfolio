@@ -2,13 +2,14 @@
 
 import { useEffect, useRef, useState } from "react";
 import { classifyCandidateInput } from "@/lib/listingCandidateInput";
+import type { ListingDetails } from "@/lib/listingDetails";
 import { GmailConnectionPanel } from "./GmailConnectionPanel";
 import { EmailUrlChoices } from "./EmailUrlChoices";
 
 export function ListingEmailPreview({
   onSelect,
 }: {
-  onSelect: (url: string) => void;
+  onSelect: (url: string, details?: ListingDetails) => void;
 }) {
   const [source, setSource] = useState("");
   const [format, setFormat] = useState("text");

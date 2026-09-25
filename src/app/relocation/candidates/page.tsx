@@ -1,3 +1,5 @@
+import { CandidateEmailImport } from "@/components/relocation/EmailListingDraft";
+import { GmailFeature } from "@/components/relocation/GmailFeature";
 import { getAuthUser, toUserId } from "@/lib/userConfig";
 import Link from "next/link";
 import CandidateHistory from "@/components/relocation/CandidateHistory";
@@ -27,6 +29,11 @@ export default async function CandidatesPage() {
       <Link href="/relocation/arbitrage" prefetch={false} className="underline">
         物件URL・住所・地図から候補を追加
       </Link>
+      <GmailFeature
+        enabled={process.env.LISTING_EMAIL_GMAIL_ENABLED === "true"}
+      >
+        <CandidateEmailImport />
+      </GmailFeature>
       <CandidateHistory />
     </main>
   );

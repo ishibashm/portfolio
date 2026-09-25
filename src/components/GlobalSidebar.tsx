@@ -381,6 +381,13 @@ export function GlobalSidebar() {
         {/* Navigation Links */}
         <nav className="shrink-0 py-4 px-3 space-y-1 overflow-x-hidden">
           {PUBLIC_ITEMS.map(renderNavItem)}
+          <Link
+            href="/relocation/candidates"
+            prefetch={false}
+            className={`block px-3 py-2 text-sm ${hideWhenCollapsed}`}
+          >
+            本人の候補履歴
+          </Link>
 
           {/* 見出しは "Public Space" / "Secure Engines" だった。中核ページは
               匿名で開けるようにしたので "Secure" は事実と違い、ログインが

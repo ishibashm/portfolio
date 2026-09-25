@@ -109,6 +109,18 @@ export async function lockCandidateOwner(
   await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtextextended(${userId}, 21092026))`;
 }
 export const candidateSelect = {
+  propertyName: true,
+  rentYen: true,
+  managementFeeYen: true,
+  deposit: true,
+  keyMoney: true,
+  layout: true,
+  floorAreaM2: true,
+  nearestStation: true,
+  walkMinutes: true,
+  address: true,
+  buildingAgeYears: true,
+
   id: true,
   url: true,
   title: true,

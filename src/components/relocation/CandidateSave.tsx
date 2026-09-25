@@ -1,6 +1,11 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
+import {
+  listingDetailLabels,
+  numericListingFields,
+  type ListingDetails,
+} from "@/lib/listingDetails";
 import type { DayKigakuInput } from "@/lib/dayKigakuClient";
 import type { SpotTarget } from "./SpotVerdict";
 import {
@@ -17,7 +22,11 @@ export function CandidateSave({
   title,
   onTitleChange,
   onFocus,
+  details = {},
+  onDetailsChange,
 }: {
+  details?: ListingDetails;
+  onDetailsChange?: (details: ListingDetails) => void;
   target: SpotTarget;
   context: DayKigakuInput;
   url: string;
@@ -68,6 +77,7 @@ export function CandidateSave({
     url: normalizedUrl,
     title,
     memo,
+    details,
     target: {
       lat: target.lat,
       lon: target.lon,
@@ -154,6 +164,42 @@ export function CandidateSave({
           onChange={(e) => onTitleChange(e.target.value)}
         />
       </label>
+      {onDetailsChange && (
+        <fieldset className="space-y-2">
+          <legend>物件情報（メールからの推測・修正できます）</legend>
+          <p>
+            住所を直した場合は、住所検索または地図ピンで位置も確認してください。
+          </p>
+          {Object.entries(listingDetailLabels).map(([rawKey, label]) => {
+            const key = rawKey as keyof ListingDetails;
+            const numeric = numericListingFields.has(key);
+            return (
+              <label className="block" key={key}>
+                {label}
+                <input
+                  className="block w-full rounded border p-2"
+                  type={numeric ? "number" : "text"}
+                  min={0}
+                  step={key === "floorAreaM2" ? "any" : 1}
+                  maxLength={key === "address" ? 256 : 120}
+                  value={details[key] ?? ""}
+                  onChange={(event) =>
+                    onDetailsChange({
+                      ...details,
+                      [key]:
+                        event.target.value === ""
+                          ? null
+                          : numeric
+                            ? Number(event.target.value)
+                            : event.target.value,
+                    })
+                  }
+                />
+              </label>
+            );
+          })}
+        </fieldset>
+      )}
       {normalizedUrl && (
         <p className="break-all">
           保存する参照リンク:{" "}

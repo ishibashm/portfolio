@@ -1,6 +1,11 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEmailListingDraft } from "./EmailListingDraft";
+import {
+  listingDetailsSchema,
+  type ListingDetails,
+} from "@/lib/listingDetails";
+import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { MapPin, Loader2 } from "lucide-react";
 import { evaluateSpot } from "@/lib/spotEvaluation";
@@ -148,6 +153,10 @@ export function SpotVerdict({
   /** 地図をその地点へ寄せる */
   onFocus?: (lat: number, lon: number) => void;
 }) {
+  const draftContext = useEmailListingDraft();
+  const consumedDraft = useRef<unknown>(null);
+  const draft = draftContext?.draft;
+  const setDraft = draftContext?.setDraft;
   const lookupSeq = useRef(0);
   const [query, setQuery] = useState("");
   const [busy, setBusy] = useState(false);
@@ -169,6 +178,7 @@ export function SpotVerdict({
   const [markUrl, setMarkUrl] = useState("");
   const [markMemo, setMarkMemo] = useState("");
   const [markTitle, setMarkTitle] = useState("");
+  const [listingDetails, setListingDetails] = useState<ListingDetails>({});
   /*
     調べた地点の街で、募集中の部屋を外部のサイトで見る入口（2026-09-23。
     利用者の依頼「URL が無いと調べにくい。SUUMO で広島ならそのリンクを
@@ -236,6 +246,16 @@ export function SpotVerdict({
           source: parseGeocodeSource(c.judgment.source),
         });
         setMarkTitle(c.title || "");
+        setListingDetails(
+          listingDetailsSchema.parse(
+            Object.fromEntries(
+              Object.keys(listingDetailsSchema.shape).map((key) => [
+                key,
+                c[key],
+              ]),
+            ),
+          ),
+        );
         setMarkUrl(c.url || "");
         setMarkMemo(c.memo || "");
         setShowMark(true);
@@ -288,81 +308,107 @@ export function SpotVerdict({
   const shownPortal =
     portal && targetKey !== null && portal.key === targetKey ? portal : null;
 
-  const lookup = async () => {
-    const text = query.trim();
-    if (!text) return;
-    setError(null);
-    const seq = ++lookupSeq.current;
-    if (candidateContext) {
-      const input = classifyCandidateInput(text);
-      if (input.kind === "invalid") {
-        setTarget(null);
-        setError(
-          "HTTPSの通常URL、住所（氏名・建物名・部屋番号を除く）、または日本の座標を入力してください。",
-        );
+  const lookup = useCallback(
+    async (address?: string) => {
+      const text = (address ?? query).trim();
+      if (!text) return;
+      setError(null);
+      const seq = ++lookupSeq.current;
+      if (candidateContext) {
+        const input = classifyCandidateInput(text);
+        if (input.kind === "invalid") {
+          setTarget(null);
+          setError(
+            "HTTPSの通常URL、住所（氏名・建物名・部屋番号を除く）、または日本の座標を入力してください。",
+          );
+          return;
+        }
+        if (input.kind === "url") {
+          setMarkUrl(input.url);
+          setShowMark(true);
+          setTarget(null);
+          setError(
+            "このURLだけでは物件の住所を特定できません。掲載ページで確認した住所を入力するか、地図で場所を指定してください。",
+          );
+          return;
+        }
+      }
+
+      const coords = parseCoordinates(text);
+      if (coords) {
+        setTarget({
+          ...coords,
+          name: `${coords.lat}, ${coords.lon}`,
+          inputSource: "coordinates",
+        });
         return;
       }
-      if (input.kind === "url") {
-        setMarkUrl(input.url);
-        setShowMark(true);
-        setTarget(null);
-        setError(
-          "このURLだけでは物件の住所を特定できません。掲載ページで確認した住所を入力するか、地図で場所を指定してください。",
-        );
-        return;
-      }
-    }
 
-    const coords = parseCoordinates(text);
-    if (coords) {
-      setTarget({
-        ...coords,
-        name: `${coords.lat}, ${coords.lon}`,
-        inputSource: "coordinates",
-      });
-      return;
-    }
-
-    setBusy(true);
-    try {
-      const res = candidateContext
-        ? await fetch("/api/relocation/candidates/geocode", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ address: text }),
-          })
-        : await fetch(`/api/geocode?q=${encodeURIComponent(text)}`);
-      const body = await res.json();
-      if (seq !== lookupSeq.current) return;
-      if (!res.ok || typeof body?.lat !== "number") {
-        setTarget(null);
-        /*
+      setBusy(true);
+      try {
+        const res = candidateContext
+          ? await fetch("/api/relocation/candidates/geocode", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ address: text }),
+            })
+          : await fetch(`/api/geocode?q=${encodeURIComponent(text)}`);
+        const body = await res.json();
+        if (seq !== lookupSeq.current) return;
+        if (!res.ok || typeof body?.lat !== "number") {
+          setTarget(null);
+          /*
           **API の文言を捨てない。**以前はどんな失敗でも「その住所は
           見つかりませんでした」に丸めていたので、URL を貼った人にも
           住所の話が返っていた（何を直せばよいか分からない）。
           文言を持って返す口だけ、そのまま出す。
         */
-        setError(
-          typeof body?.error === "string" && body.error
-            ? body.error
-            : "その住所は見つかりませんでした。市区町村から入れてみてください。",
-        );
-        return;
+          setError(
+            typeof body?.error === "string" && body.error
+              ? body.error
+              : "その住所は見つかりませんでした。市区町村から入れてみてください。",
+          );
+          return;
+        }
+        setTarget({
+          lat: body.lat,
+          lon: body.lon,
+          name: body.name || text,
+          source: parseGeocodeSource(body.source),
+        });
+      } catch {
+        if (seq !== lookupSeq.current) return;
+        setTarget(null);
+        setError("住所を調べられませんでした。通信を確かめてください。");
+      } finally {
+        setBusy(false);
       }
-      setTarget({
-        lat: body.lat,
-        lon: body.lon,
-        name: body.name || text,
-        source: parseGeocodeSource(body.source),
-      });
-    } catch {
-      if (seq !== lookupSeq.current) return;
+    },
+    [query, candidateContext],
+  );
+
+  const selectEmail = useCallback(
+    (url: string, details?: ListingDetails) => {
+      lookupSeq.current++;
+      setQuery(details?.address || url);
       setTarget(null);
-      setError("住所を調べられませんでした。通信を確かめてください。");
-    } finally {
-      setBusy(false);
-    }
-  };
+      setMarkUrl(url);
+      setMarkTitle(details?.propertyName ?? "");
+      setMarkMemo("");
+      setListingDetails(details ?? {});
+      setShowMark(true);
+      setError(null);
+      if (details?.address) void lookup(details.address);
+    },
+    [lookup],
+  );
+  useEffect(() => {
+    if (!draft || !candidateContext || consumedDraft.current === draft) return;
+    consumedDraft.current = draft;
+    const { url, ...details } = draft;
+    setDraft?.(null);
+    selectEmail(url, details);
+  }, [draft, setDraft, selectEmail, candidateContext]);
 
   // 方位は物件・県の塗り分けと同じ経路で出す。判定の基準は真北。
   const evaluation =
@@ -436,17 +482,9 @@ export function SpotVerdict({
           <p className="text-xs text-stone-600 leading-relaxed">
             URLは参照リンクのみで、中身を取得しません。住所または座標を入力し、地図で所在地を確認してください。地図クリックで位置を修正できます。
           </p>
-          {candidateContext && (
-            <ListingEmailPreview
-              onSelect={(url) => {
-                lookupSeq.current++;
-                setQuery(url);
-                setTarget(null);
-                setMarkUrl("");
-                setError(null);
-              }}
-            />
-          )}
+          <div id="candidate-import">
+            <ListingEmailPreview onSelect={selectEmail} />
+          </div>
           {markUrl && !target && (
             <p className="text-xs break-all">
               参照リンク: {markUrl}
@@ -658,6 +696,7 @@ export function SpotVerdict({
           {candidateContext && (
             <CandidateSave
               key={JSON.stringify([
+                markUrl,
                 target.lat,
                 target.lon,
                 target.source,
@@ -668,6 +707,8 @@ export function SpotVerdict({
               url={markUrl}
               memo={markMemo}
               title={markTitle}
+              details={listingDetails}
+              onDetailsChange={setListingDetails}
               onTitleChange={setMarkTitle}
               ready={!!cell}
               onFocus={onFocus}

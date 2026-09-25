@@ -1,5 +1,10 @@
 "use client";
 import { useCallback, useEffect, useRef, useState } from "react";
+import {
+  listingDetailsSchema,
+  type EmailListing,
+  type ListingDetails,
+} from "@/lib/listingDetails";
 import { z } from "zod";
 import { classifyCandidateInput } from "@/lib/listingCandidateInput";
 import { useGmailEnabled } from "./GmailFeature";
@@ -64,12 +69,16 @@ function failureMessage(code: string): string {
 export function GmailConnectionPanel({
   onSelect,
 }: {
-  onSelect: (url: string) => void;
+  onSelect: (url: string, details?: ListingDetails) => void;
 }) {
   const enabled = useGmailEnabled();
   return enabled ? <EnabledGmailPanel onSelect={onSelect} /> : null;
 }
-function EnabledGmailPanel({ onSelect }: { onSelect: (url: string) => void }) {
+function EnabledGmailPanel({
+  onSelect,
+}: {
+  onSelect: (url: string, details?: ListingDetails) => void;
+}) {
   const [hidden, setHidden] = useState(false);
   const [authorizationUrl, setAuthorizationUrl] = useState("");
   const [labelAttempt, setLabelAttempt] = useState(0);
@@ -85,6 +94,7 @@ function EnabledGmailPanel({ onSelect }: { onSelect: (url: string) => void }) {
   const [reconnect, setReconnect] = useState(false);
   const [loginRequired, setLoginRequired] = useState(false);
   const [urls, setUrls] = useState<string[]>([]);
+  const [listings, setListings] = useState<EmailListing[]>([]);
   const [cursor, setCursor] = useState<string | null>(null);
   const [done, setDone] = useState(false);
   const [confirmDisconnect, setConfirmDisconnect] = useState(false);
@@ -96,6 +106,7 @@ function EnabledGmailPanel({ onSelect }: { onSelect: (url: string) => void }) {
     if (code === "GMAIL_DISABLED") {
       setHidden(true);
       setUrls([]);
+      setListings([]);
     }
     if (code === "LOGIN_REQUIRED") {
       setLoginRequired(true);
@@ -106,10 +117,12 @@ function EnabledGmailPanel({ onSelect }: { onSelect: (url: string) => void }) {
       setConfirmDisconnect(false);
       setAuthorizationUrl("");
       setUrls([]);
+      setListings([]);
     }
     if (code === "GMAIL_RECONNECT") {
       setReconnect(true);
       setUrls([]);
+      setListings([]);
       setCursor(null);
     }
     if (code === "INVALID_CURSOR") {
@@ -153,7 +166,7 @@ function EnabledGmailPanel({ onSelect }: { onSelect: (url: string) => void }) {
     };
   }, [fail]);
   useEffect(() => {
-    if (!id || !choosing) return;
+    if (!id) return;
     const controller = new AbortController();
     setLabelsLoading(true);
     setLabels([]);
@@ -176,7 +189,7 @@ function EnabledGmailPanel({ onSelect }: { onSelect: (url: string) => void }) {
         if (!controller.signal.aborted) setLabelsLoading(false);
       });
     return () => controller.abort();
-  }, [id, choosing, fail, labelAttempt]);
+  }, [id, fail, labelAttempt]);
   const run = async (operation: (signal: AbortSignal) => Promise<void>) => {
     if (action.current) return;
     const controller = new AbortController();
@@ -196,12 +209,17 @@ function EnabledGmailPanel({ onSelect }: { onSelect: (url: string) => void }) {
   };
   const resetPreview = () => {
     setUrls([]);
+    setListings([]);
     setCursor(null);
     setDone(false);
   };
   if (hidden) return null;
   const disabled =
-    busy || loading || labelsLoading || loginRequired || confirmDisconnect;
+    busy ||
+    loading ||
+    (choosing && labelsLoading) ||
+    loginRequired ||
+    confirmDisconnect;
   return (
     <section
       aria-label="Gmail接続"
@@ -272,7 +290,12 @@ function EnabledGmailPanel({ onSelect }: { onSelect: (url: string) => void }) {
           >
             {connections.map((c) => (
               <option key={c.id} value={c.id}>
-                {c.startedAt} / {c.labelId ?? "ラベル未確定"}
+                {c.startedAt} /{" "}
+                {(c.id === id
+                  ? labels.find((l) => l.id === c.labelId)?.name
+                  : null) ??
+                  c.labelId ??
+                  "ラベル未確定"}
               </option>
             ))}
           </select>
@@ -282,7 +305,9 @@ function EnabledGmailPanel({ onSelect }: { onSelect: (url: string) => void }) {
         <>
           {!choosing && (
             <p>
-              対象ラベル: {selected.labelId}{" "}
+              対象ラベル:{" "}
+              {labels.find((l) => l.id === selected.labelId)?.name ??
+                selected.labelId}{" "}
               <button
                 type="button"
                 disabled={disabled}
@@ -379,6 +404,10 @@ function EnabledGmailPanel({ onSelect }: { onSelect: (url: string) => void }) {
                 const data = z
                   .object({
                     urls: z.array(z.string()).max(20),
+                    listings: z
+                      .array(listingDetailsSchema.extend({ url: z.string() }))
+                      .max(20)
+                      .optional(),
                     nextCursor: z.uuid().nullable(),
                     truncated: z.boolean(),
                   })
@@ -387,9 +416,19 @@ function EnabledGmailPanel({ onSelect }: { onSelect: (url: string) => void }) {
                   const value = classifyCandidateInput(url);
                   return value.kind === "url" ? [value.url] : [];
                 });
-                setUrls((previous) => [
-                  ...new Set([...(done ? [] : previous), ...next]),
-                ]);
+                setUrls((previous) =>
+                  [...new Set([...(done ? [] : previous), ...next])].slice(
+                    -200,
+                  ),
+                );
+                setListings((previous) => {
+                  const merged = new Map(
+                    (done ? [] : previous).map((l) => [l.url, l]),
+                  );
+                  for (const item of data.listings ?? [])
+                    if (next.includes(item.url)) merged.set(item.url, item);
+                  return [...merged.values()].slice(-200);
+                });
                 setCursor(data.nextCursor);
                 setDone(data.nextCursor === null);
                 setMessage(
@@ -475,13 +514,23 @@ function EnabledGmailPanel({ onSelect }: { onSelect: (url: string) => void }) {
       {message && <p role="status">{message}</p>}
       <EmailUrlChoices
         urls={urls}
+        listings={listings}
         onSelect={(url) => {
-          onSelect(url);
+          const item = listings.find((l) => l.url === url);
+          const details = item
+            ? listingDetailsSchema.parse(
+                Object.fromEntries(
+                  Object.entries(item).filter(([key]) => key !== "url"),
+                ),
+              )
+            : undefined;
+          onSelect(url, details);
           setUrls([]);
+          setListings([]);
         }}
       />
       <p>
-        メール本文は保存しません。URLを選んだ後も、住所入力と地図での位置確認が必要です。
+        メール本文は保存しません。物件情報はメールからの推測です。選択した1件の住所を検索し、地図での位置確認後に保存します。
       </p>
     </section>
   );
