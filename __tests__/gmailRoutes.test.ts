@@ -1,4 +1,6 @@
 // @vitest-environment node
+import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
 import { beforeEach, afterEach, expect, it, vi } from "vitest";
 import { NextRequest } from "next/server";
 const mock = vi.hoisted(() => ({
@@ -89,14 +91,14 @@ afterEach(() => {
   vi.unstubAllEnvs();
   vi.restoreAllMocks();
 });
-it("read route returns selected URL candidates only, never raw MIME", async () => {
+it("read route returns selected structured candidates, never raw MIME", async () => {
   const spy = vi
     .spyOn(GmailListingEmailReader.prototype, "read")
     .mockResolvedValue({
       messages: [
         {
           rawMime:
-            "Content-Type: text/plain\r\n\r\nPRIVATE_BODY https://suumo.jp/a",
+            "Content-Type: text/plain\r\n\r\nPRIVATE_BODY\n物件名: 合成ハイツ\n賃料: 7万円\nhttps://suumo.jp/a",
         },
       ],
       nextCursor: null,
@@ -115,6 +117,9 @@ it("read route returns selected URL candidates only, never raw MIME", async () =
   expect(response.status).toBe(200);
   expect(await response.json()).toEqual({
     urls: ["https://suumo.jp/a"],
+    listings: [
+      { url: "https://suumo.jp/a", propertyName: "合成ハイツ", rentYen: 70000 },
+    ],
     truncated: false,
     nextCursor: null,
   });
@@ -481,3 +486,33 @@ it.each([
     );
   },
 );
+
+it("read uses Gmail MIME limits and returns only the fixture's property summaries", async () => {
+  const rawMime = readFileSync(
+    resolve("__tests__/fixtures/listing-emails/athome.eml"),
+    "utf8",
+  );
+  vi.spyOn(GmailListingEmailReader.prototype, "read").mockResolvedValue({
+    messages: [{ rawMime }],
+    nextCursor: null,
+  });
+  const response = await read(
+    request("read", {
+      body: {
+        connectionId: owner,
+        labelId: "Label_rental",
+        startedAt: "2026-09-24T00:00:00.000Z",
+        maxMessages: 20,
+        cursor: null,
+      },
+    }),
+  );
+  expect(response.status).toBe(200);
+  const result = await response.json();
+  expect(result.listings).toHaveLength(2);
+  expect(result.urls).toEqual([
+    "https://www.athome.co.jp/chintai/1000000001/",
+    "https://www.athome.co.jp/chintai/1000000002/",
+  ]);
+  expect(JSON.stringify(result).includes(rawMime)).toBe(false);
+});

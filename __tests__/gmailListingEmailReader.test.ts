@@ -1,4 +1,6 @@
 // @vitest-environment node
+import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
 import { beforeEach, afterEach, describe, it, expect, vi } from "vitest";
 import { GmailListingEmailReader, gmailStateSchema } from "@/lib/gmail/reader";
 import { seal, unseal } from "@/lib/gmail/security";
@@ -7,6 +9,7 @@ import type {
   GmailConnectionRecord,
   GmailConnectionStore,
 } from "@/lib/gmail/store";
+import { GMAIL_MIME_MAX_BYTES } from "@/lib/listingEmailIngest";
 const owner = "owner";
 const start = "2026-09-24T00:00:00.000Z";
 const window = {
@@ -19,7 +22,7 @@ const window = {
 const mime = "Content-Type: text/plain\r\n\r\nhttps://suumo.jp/fixture";
 const json = (value: unknown, status = 200) =>
   new Response(JSON.stringify(value), { status });
-function setup() {
+function setup(rawMime = mime) {
   let record: GmailConnectionRecord | null = {
     id: "connection",
     userId: owner,
@@ -50,7 +53,7 @@ function setup() {
     id: "abc",
     labelIds: [window.labelId],
     internalDate: String(Date.parse(start)),
-    sizeEstimate: 100,
+    sizeEstimate: Buffer.byteLength(rawMime),
   };
   transport.mockImplementation(async (input) => {
     const u = new URL(String(input));
@@ -72,7 +75,7 @@ function setup() {
     return json({
       ...metadata,
       ...(u.searchParams.get("format") === "raw"
-        ? { raw: Buffer.from(mime).toString("base64url") }
+        ? { raw: Buffer.from(rawMime).toString("base64url") }
         : {}),
     });
   });
@@ -238,7 +241,7 @@ describe("Gmail reader", () => {
   );
   it("rejects oversized messages before raw fetch", async () => {
     const s = setup();
-    s.metadata.sizeEstimate = 12001;
+    s.metadata.sizeEstimate = GMAIL_MIME_MAX_BYTES + 1;
     await expect(s.reader.read(owner, window)).rejects.toThrow(
       "GMAIL_MESSAGE_SIZE",
     );
@@ -311,4 +314,40 @@ describe("Gmail reader", () => {
       "GMAIL_CIPHERTEXT",
     );
   });
+});
+
+it.each(["athome", "suumo", "homes", "shamaison"])(
+  "reader accepts the bounded %s fixture through injected Google responses",
+  async (name) => {
+    const raw = readFileSync(
+      resolve(`__tests__/fixtures/listing-emails/${name}.eml`),
+      "utf8",
+    );
+    const s = setup(raw);
+    const result = await s.reader.read(owner, window);
+    // Compare without printing a MIME body on assertion failure.
+    expect(result.messages.length).toBe(1);
+    expect(result.messages[0].rawMime === raw).toBe(true);
+    expect(s.writes.some((value) => value?.includes(raw))).toBe(false);
+  },
+);
+it("reader bounds both decoded MIME and the raw JSON stream even with a false sizeEstimate", async () => {
+  const s = setup("Content-Type: text/plain\r\n\r\n" + "x".repeat(60000));
+  expect((await s.reader.read(owner, window)).messages).toHaveLength(1);
+  const huge = setup(
+    "Content-Type: text/plain\r\n\r\n" + "x".repeat(GMAIL_MIME_MAX_BYTES + 1),
+  );
+  huge.metadata.sizeEstimate = 1;
+  await expect(huge.reader.read(owner, window)).rejects.toThrow();
+  expect(huge.writes).toHaveLength(0);
+  const capped = setup();
+  const original = capped.transport.getMockImplementation()!;
+  capped.transport.mockImplementation(async (url, init) =>
+    String(url).includes("format=raw")
+      ? new Response("x".repeat(1024 * 1024))
+      : original(url, init),
+  );
+  await expect(capped.reader.read(owner, window)).rejects.toThrow(
+    "GMAIL_RESPONSE_SIZE",
+  );
 });

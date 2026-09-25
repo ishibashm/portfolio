@@ -118,3 +118,23 @@ it("explicit false overrides ENV_FILE true and suppresses the warning", () => {
   expect(result.runtime.LISTING_EMAIL_GMAIL_ENABLED).toBe("false");
   expect(result.log).toBe("");
 });
+it("GSI explicit false disables an ENV_FILE true at the runtime boundary", () => {
+  const result = deploy("LISTING_CANDIDATE_GSI_ENABLED=true", {
+    LISTING_CANDIDATE_GSI_ENABLED: "false",
+  });
+  expect(result.runtime.LISTING_CANDIDATE_GSI_ENABLED).toBe("false");
+  expect(result.log + result.appendLog).toBe("");
+});
+it("workflow forwards the repository flag through env.json into Cloud Run", () => {
+  const workflow = readFileSync(
+    resolve(".github/workflows/deploy.yml"),
+    "utf8",
+  );
+  expect(workflow).toContain(
+    "vars.LISTING_CANDIDATE_GSI_ENABLED || secrets.LISTING_CANDIDATE_GSI_ENABLED",
+  );
+  expect(workflow).toContain("bash scripts/apply-listing-env.sh");
+  expect(workflow).toContain("python scripts/convert_env.py");
+  expect(workflow).toContain("scripts/env_to_gcloud_flag.py env.json");
+  expect(workflow).toContain('--update-env-vars="$ENV_VARS_FLAG"');
+});

@@ -64,7 +64,7 @@ export async function POST(req: NextRequest) {
         "CONTEXT_REQUIRED",
         "判定に必要な条件が揃っていません。",
       );
-    // Digest is salted per request. Never retain raw birth date or address.
+    // Digest is salted per request. Never retain birth date or email body.
     const requestDigest = createHash("sha256")
       .update(userId + JSON.stringify(p))
       .digest("hex");
@@ -96,6 +96,7 @@ export async function POST(req: NextRequest) {
       const now = new Date().toISOString();
       const candidate = await tx.listingCandidate.create({
         data: {
+          ...p.details,
           userId,
           requestKey: p.requestKey,
           requestDigest,

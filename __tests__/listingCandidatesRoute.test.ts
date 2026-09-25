@@ -311,3 +311,39 @@ describe("candidate API", () => {
     fetch.mockRestore();
   });
 });
+it("persists only validated selected listing fields after explicit confirmed save", async () => {
+  const details = {
+    propertyName: "合成ハイツ",
+    rentYen: 72000,
+    managementFeeYen: 3000,
+    deposit: "1ヶ月",
+    keyMoney: "なし",
+    layout: "1LDK",
+    floorAreaM2: 42.5,
+    nearestStation: "架空駅",
+    walkMinutes: 8,
+    address: "架空県見本市試験町1-2",
+    buildingAgeYears: 12,
+  };
+  const response = await POST(req("POST", { ...input(), details }));
+  expect(response.status).toBe(201);
+  expect(db.listingCandidate.create.mock.calls[0][0].data).toMatchObject(
+    details,
+  );
+  db.listingCandidate.create.mockClear();
+  for (const invalid of [
+    { ...details, rentYen: -1 },
+    { ...details, address: "x".repeat(257) },
+    { ...details, body: "PRIVATE_BODY" },
+  ]) {
+    expect(
+      (await POST(req("POST", { ...input(), details: invalid }))).status,
+    ).toBe(400);
+  }
+  const unconfirmed = input();
+  unconfirmed.target.confirmed = false;
+  expect((await POST(req("POST", { ...unconfirmed, details }))).status).toBe(
+    400,
+  );
+  expect(db.listingCandidate.create).not.toHaveBeenCalled();
+});

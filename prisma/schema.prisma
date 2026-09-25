@@ -927,6 +927,17 @@ model ListingCandidate {
   url           String?  @db.VarChar(2048)
   title         String?  @db.VarChar(120)
   memo          String?  @db.VarChar(1000)
+  propertyName String? @db.VarChar(120)
+  rentYen Int?
+  managementFeeYen Int?
+  deposit String? @db.VarChar(80)
+  keyMoney String? @db.VarChar(80)
+  layout String? @db.VarChar(40)
+  floorAreaM2 Float?
+  nearestStation String? @db.VarChar(120)
+  walkMinutes Int?
+  address String? @db.VarChar(256)
+  buildingAgeYears Int?
   lat           Float
   lon           Float
   bearingDeg    Float

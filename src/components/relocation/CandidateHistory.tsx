@@ -3,8 +3,9 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { TIER_LABELS, type DayTier } from "@/utils/dayTier";
 import { directionUnstableNote } from "@/lib/directionDistance";
+import { listingDetailLabels, type ListingDetails } from "@/lib/listingDetails";
 import { normalizeCandidateUrl } from "@/lib/listingCandidateInput";
-type Candidate = {
+type Candidate = ListingDetails & {
   id: string;
   url: string | null;
   title: string | null;
@@ -77,6 +78,17 @@ function CandidateRow({
       <h2 className="font-bold">
         {c.title || `候補 ${new Date(c.createdAt).toLocaleDateString("ja-JP")}`}
       </h2>
+      <dl>
+        {Object.entries(listingDetailLabels).map(([key, label]) => {
+          const value = c[key as keyof ListingDetails];
+          return value == null ? null : (
+            <div key={key}>
+              <dt className="inline">{label}: </dt>
+              <dd className="inline">{value}</dd>
+            </div>
+          );
+        })}
+      </dl>
       <p>
         保存時: {c.judgment.context.targetDate} ／ {c.direction}（真北{" "}
         {c.bearingDeg.toFixed(1)}°）／{" "}

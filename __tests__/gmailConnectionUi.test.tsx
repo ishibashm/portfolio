@@ -119,6 +119,7 @@ it("connect only requests authorization URL and offers an explicit Google link",
   );
   expect(fetch.mock.calls.map(([url]) => String(url))).toEqual([
     "/api/relocation/email/gmail/status",
+    `/api/relocation/email/gmail/labels?connectionId=${id}`,
     "/api/relocation/email/gmail/connect",
   ]);
 });
@@ -131,7 +132,7 @@ it("expired token prompts reconnection without retrying or importing", async () 
   await screen.findByText(/Gmailの認証が失効しました/);
   expect(screen.getByRole("button", { name: "Gmailに再接続" })).toBeEnabled();
   expect(screen.getByRole("button", { name: "取り込み" })).toBeDisabled();
-  expect(fetch.mock.calls).toHaveLength(2);
+  expect(fetch.mock.calls).toHaveLength(3);
   expect(selected).toEqual([]);
 });
 it("disconnect requires confirmation; cancelling makes no request", async () => {
@@ -142,7 +143,7 @@ it("disconnect requires confirmation; cancelling makes no request", async () => 
   fireEvent.click(screen.getByRole("button", { name: "Gmailを切断" }));
   expect(screen.getByRole("alertdialog")).toBeInTheDocument();
   fireEvent.click(screen.getByRole("button", { name: "キャンセル" }));
-  expect(fetch.mock.calls).toHaveLength(1);
+  expect(fetch.mock.calls).toHaveLength(2);
   fireEvent.click(screen.getByRole("button", { name: "Gmailを切断" }));
   fireEvent.click(screen.getByRole("button", { name: "切断を確定" }));
   await screen.findByText("Gmailを切断しました。");
@@ -173,8 +174,8 @@ it("pagination passes the returned cursor and never automatically requests anoth
     await screen.findByRole("button", { name: "続きを取り込む" }),
   );
   await screen.findByRole("button", { name: "最初から取り込む" });
-  expect(fetch.mock.calls).toHaveLength(3);
-  expect(JSON.parse(String(fetch.mock.calls[2][1]?.body))).toMatchObject({
+  expect(fetch.mock.calls).toHaveLength(4);
+  expect(JSON.parse(String(fetch.mock.calls[3][1]?.body))).toMatchObject({
     cursor: id,
     maxMessages: 20,
   });
@@ -218,7 +219,7 @@ it("Gmail URL selection reaches Phase 1, which still requires a location", async
   expect(
     screen.queryByRole("button", { name: "候補履歴に保存" }),
   ).not.toBeInTheDocument();
-  expect(fetch.mock.calls).toHaveLength(2);
+  expect(fetch.mock.calls).toHaveLength(3);
 });
 it("missing 物件通知 does not choose another label automatically", async () => {
   vi.stubEnv("LISTING_EMAIL_GMAIL_ENABLED", "true");
@@ -308,6 +309,35 @@ it.each([
     expect(message.textContent).not.toMatch(/接続状態を確認して/);
   },
 );
+it("resolves the existing athome label and offers explicit switching to 物件通知", async () => {
+  vi.stubEnv("LISTING_EMAIL_GMAIL_ENABLED", "true");
+  const fetch = network({ confirmed: true });
+  const original = fetch.getMockImplementation()!;
+  fetch.mockImplementation(async (url, init) =>
+    String(url).includes("labels?")
+      ? reply({
+          labels: [
+            { id: "Label_1", name: "athome" },
+            { id: "Label_2", name: "物件通知" },
+          ],
+        })
+      : original(url, init),
+  );
+  mount();
+  await screen.findByText((content, element) => {
+    return (
+      element?.tagName === "P" &&
+      content.includes("対象ラベル:") &&
+      element.textContent?.includes("athome")
+    );
+  });
+  fireEvent.click(screen.getByRole("button", { name: "ラベルを確認・変更" }));
+  expect(screen.getByLabelText("通知ラベル")).toHaveValue("Label_2");
+  expect(screen.getByRole("button", { name: "取り込み" })).toBeDisabled();
+  expect(
+    fetch.mock.calls.some(([url]) => String(url).endsWith("select-label")),
+  ).toBe(false);
+});
 /*
   利用者の指摘（2026-09-25）「表示がおかしい。物件メールからデータ取れて
   ない？」。ボタンに見た目が無く地の文と続いて読めていたうえ、取り込むのは

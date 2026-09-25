@@ -5,7 +5,10 @@ export async function googleJson(
   url: string,
   init: RequestInit,
   deadline: number,
+  maxBytes = 65536,
 ): Promise<unknown> {
+  if (!Number.isInteger(maxBytes) || maxBytes < 1 || maxBytes > 1024 * 1024)
+    throw new GmailError("GMAIL_RESPONSE_SIZE");
   // All URLs originate below, never from message text or a redirect response.
   const u = new URL(url);
   if (
@@ -39,7 +42,7 @@ export async function googleJson(
       const { done, value } = await reader.read();
       if (done) break;
       size += value.byteLength;
-      if (size > 65536) {
+      if (size > maxBytes) {
         await reader.cancel();
         throw new GmailError("GMAIL_RESPONSE_SIZE");
       }

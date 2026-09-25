@@ -12,7 +12,9 @@ import {
   CandidateError,
 } from "@/lib/listingCandidateApi";
 import { GMAIL_READONLY_SCOPE } from "@/lib/listingEmailConnection";
-import { extractEmailUrls } from "@/lib/listingEmailIngest";
+import { GMAIL_MIME_LIMITS } from "@/lib/listingEmailIngest";
+import { extractEmailListings } from "@/lib/listingEmailDetails";
+import type { EmailListing } from "@/lib/listingDetails";
 import {
   GmailError,
   gmailConfig,
@@ -208,17 +210,27 @@ export function createGmailHandlers(transport: typeof fetch) {
         transport,
       ).read(owner, window.data);
       const urls = new Set<string>();
+      const listings = new Map<string, EmailListing>();
       let truncated = false;
       for (const { rawMime } of result.messages) {
-        const extracted = extractEmailUrls(rawMime, "mime");
+        const extracted = extractEmailListings(
+          rawMime,
+          "mime",
+          GMAIL_MIME_LIMITS,
+        );
         truncated ||= extracted.truncated;
-        for (const url of extracted.urls) {
+        for (const listing of extracted.listings) {
+          const url = listing.url;
           if (urls.size >= 20 && !urls.has(url)) truncated = true;
-          else urls.add(url);
+          else {
+            urls.add(url);
+            if (!listings.has(url)) listings.set(url, listing);
+          }
         }
       }
       return candidateJson({
         urls: [...urls],
+        listings: [...listings.values()],
         truncated,
         nextCursor: result.nextCursor,
       });

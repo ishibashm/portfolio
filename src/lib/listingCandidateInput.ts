@@ -1,3 +1,4 @@
+import { listingDetailsSchema } from "./listingDetails";
 import { z } from "zod";
 import { isInJapan } from "@/lib/japanBounds";
 
@@ -120,6 +121,7 @@ export const candidateTextSchema = z.object({
 });
 export const candidateCreateSchema = candidateTextSchema
   .extend({
+    details: listingDetailsSchema.optional(),
     requestKey: z.uuid(),
     url: z
       .string()

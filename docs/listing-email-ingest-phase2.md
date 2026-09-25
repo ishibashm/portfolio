@@ -355,3 +355,40 @@ RLS・トリガー・auth.usersへの外部キーはPrismaモデル外のDB保�
 - `npx tsc --noEmit`、変更したTSテストのeslint、シェル構文検査が成功。
 - pglastで22 SQL文と7つのPL/pgSQLブロックの構文を検査。DB接続しない `prisma migrate diff --from-empty --to-schema prisma/schema.prisma --script` の生成DDLと4表の列型・NULL可否・デフォルト・主キー、3インデックスを照合した。これはmigrateの適用経路を追加するものではない。
 - 実DBでの二重適用や既存DBとの差分、RLS・auth削除連動は未検証。SQLの構文／モデル照合は実適用の代わりにはならない。
+
+## 13. メール内の物件項目とラベル名（2026-09-25）
+
+Gmail read は既存の `urls` に加えて `listings` を返す。本文をメモリで解析し、URLごとに物件名、円換算の賃料・管理費／共益費、敷金・礼金（単位を保持）、間取り、専有面積（㎡）、駅名・徒歩分数、所在地、築年数を抽出する。SUUMO、LIFULL HOME'S、シャーメゾン、いい部屋ネット／kentaku、at home の指定送信元ごとに表記を補正し、その他は共通の正規表現で抽出する。送信元は形式選択だけに使い、信頼性や住所確定の証拠にしない。
+
+既存MIME制限（12,000 bytes、40 parts、深さ6、UTF-8／ASCII、添付除外）は維持する。HTMLはparse5の非描画ツリーから文字とhrefを読むだけで、画像・script・リンク先を取得しない。全角数字を正規化し、名前／URLの物件ブロックを分離、同一URL・MIME代替パートを統合する。不明項目は欠落のまま。テストは架空名・架空住所の合成メールだけで、実際の全テンプレートに対応した保証はない。転送／追跡URLを解決するための通信もしない。
+
+### 選択・位置確認・保存
+
+- `/relocation/arbitrage` と `/relocation/candidates` のGmailパネルで抽出項目を表示する。候補履歴から選んだ場合は、共有React contextのメモリだけで位置確認ページへ引き継ぐ。本文も詳細もURL・localStorage・sessionStorageへ載せない。リロードや引越しエリアを離れると未保存の引継ぎは失われる。
+- 今回の仕様では、本人が**選んだ1件に住所がある場合だけ**既存 `POST /api/relocation/candidates/geocode` を呼んで概略点を提案する（過去節の「自動ジオコードなし」は取り込み時の一括処理を禁止する方針として維持）。GSIがOFF・住所不適切・検索失敗なら通常の住所修正／地図ピンへ戻る。取り込みや一覧表示だけでは住所検索しない。
+- 抽出項目は保存フォームで編集可能。地図表示＋本人の確認チェック＋保存操作を経て初めて `ListingCandidate` へ格納する。メール本文・HTML・添付を受け付けるAPIフィールドやDB列は追加しない。詳細の型・長さ・数値範囲を検証し、再送digestには詳細も含める。保存済み詳細は本人の候補履歴と再判定でも表示する。
+- ラベル名は本人のlabels APIから読み、現在のIDに対応する名前を表示する。例えば既存IDが `athome` ならそう表示し、「ラベルを確認・変更」から「物件通知」を明示確定する。勝手に変更しない。名前が取得できなければIDを表示する。名前のDB列追加は不要。
+- Gmailのプレビュー一覧はブラウザメモリ内で直近200 URLまで。本文をレスポンスやログへ追加しない。
+
+### 追加SQLと配備
+
+新規 `prisma/sql/20260925_add_listing_candidate_details.sql` に11個のnullable列を追加した。すべて `ADD COLUMN IF NOT EXISTS` で再実行可能。schema.prismaの `ListingCandidate` と同じ列名・型。新しいmigrationディレクトリは作らず、SQL・db push・migrateは**適用していない**。
+
+運用者は先にGitHub Actionsの **Apply additive SQL** (`db-apply-sql.yml`) を file=`20260925_add_listing_candidate_details.sql`, mode=`dry-run` で確認し、同じfileでmode=`apply` を実行する。dry-runはDDLを実行しない。既存Phase 1/2の基礎SQLが適用済みであることが前提。列を追加してからアプリを配備する（新しい候補SELECTも追加列を読むため）。
+
+### GSI有効化の正確な経路
+
+既存経路を検証した結果、修正は不要だった。
+
+1. GitHubリポジトリの Settings → Secrets and variables → Actions → **Variables** に `LISTING_CANDIDATE_GSI_ENABLED` を値 `true` で登録する。同名Actions secretも代替として許容されるが、variableが優先。提供元の利用条件と住所の送信を運用者が確認してから有効化する。
+2. **deploy.ymlを再実行**する。実行stepの `vars.LISTING_CANDIDATE_GSI_ENABLED || secrets.LISTING_CANDIDATE_GSI_ENABLED` → `scripts/apply-listing-env.sh` により、非空の場合だけENV_FILE由来の `.env` へ追記（後勝ち）。
+3. `scripts/convert_env.py` が全キーを `env.json` に変換し、`scripts/env_to_gcloud_flag.py env.json` の出力をシェル変数へ取り込み、`gcloud run deploy --update-env-vars="$ENV_VARS_FLAG"` でCloud Run実行時へ渡す。値はログへ出さない。
+4. 実行時APIは厳密に `=== "true"` の場合だけ許可する。未設定はOFF。停止時はvariableを明示的に `false` にして再配備する（キー削除だけでは既存Cloud Run envは削除されない）。
+
+住所検索の通信先は固定の `https://msearch.gsi.go.jp/address-search/AddressSearch?q=...` のみ。リダイレクトはerror、cacheはno-store。ポータルURLの入力は検索前に拒否し、GSIへの不転送・既定OFF・配備引数への到達をテストする。本作業で本番variable／secretやCloud Run設定は変更していない。
+
+### 本単位の検証
+
+- 最終全テスト: `TZ=UTC npm test`、414ファイル・3,581件成功、失敗0。合成通知の形式別抽出、物件分離、添付除外、APIの本文非返却、明示保存の詳細検証、ラベル名、選択後だけの住所検索、GSI無効時、地図確認、StrictModeを含むページ間引継ぎを検証した。
+- `npx tsc --noEmit` 成功。`npm run lint` はエラー0・既存の未変更ファイルの警告17。Prisma Client生成・schema validate成功。
+- pglastで追加DDL 11文の構文を確認。DB接続なしのPrisma生成DDLと11列の型・nullableを照合した。SQL適用・実Google／ポータル通信・メール送信・本番設定変更はしていない。
