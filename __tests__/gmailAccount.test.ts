@@ -166,7 +166,7 @@ it("lists only user labels with id/name and checks ownership before fetch", asyn
   });
   expect(s.save).not.toHaveBeenCalled();
 });
-it("selects a server-verified user label with current time and clears cursor", async () => {
+it("selects a server-verified user label, starts 7 days back and clears cursor", async () => {
   const s = setup();
   s.transport.mockImplementation(async (url) =>
     String(url).includes("/token")
@@ -194,7 +194,10 @@ it("selects a server-verified user label with current time and clears cursor", a
   const before = Date.now();
   const result = await s.account.selectLabel(owner, "connection", "Label_1");
   expect(s.record().labelId).toBe("Label_1");
-  expect(s.record().startedAt.getTime()).toBeGreaterThanOrEqual(before);
+  /* 確定の 7 日前から読む（受信箱に既にある通知も対象にする） */
+  const week = 7 * 24 * 60 * 60 * 1000;
+  expect(s.record().startedAt.getTime()).toBeGreaterThanOrEqual(before - week);
+  expect(s.record().startedAt.getTime()).toBeLessThanOrEqual(Date.now() - week);
   expect(result).toEqual({
     selected: {
       connectionId: "connection",
