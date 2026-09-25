@@ -51,6 +51,7 @@ import {
 } from "@/utils/directionGeo";
 import { SimulatorStart } from "@/components/relocation/SimulatorStart";
 import { PlaceInput } from "@/components/relocation/PlaceInput";
+import { resolvePlaceName } from "@/lib/placeLabel";
 import { ratingForStatus } from "@/lib/verdictRating";
 import { stepDayTier } from "@/lib/stepTier";
 import { TIER_LABELS, TIER_ORDER, type DayTier } from "@/utils/auspiciousDays";
@@ -1400,6 +1401,26 @@ export default function RelocationSimulatorPage() {
     saveDraft(newSteps);
   };
 
+  /**
+   * 地図で押した目的地に「〇〇 付近」の名前を付ける。地図で押した点に
+   * 地名は無いので、最寄りの市区町村を引いて表示用に添える。引き終わる
+   * 前に別の点へ動いていたら書かない（古い名前が新しい点に付かないように）。
+   */
+  const nameStepFromPoint = (index: number, lat: number, lon: number) => {
+    void resolvePlaceName(lat, lon).then((place) => {
+      if (!place) return;
+      setSteps((prev) => {
+        const s = prev[index];
+        if (!s || s.toLat !== lat || s.toLon !== lon) return prev;
+        const next = prev.map((x, i) =>
+          i === index ? { ...x, toName: `${place} 付近` } : x,
+        );
+        saveDraft(next);
+        return next;
+      });
+    });
+  };
+
   const handleApplyDetour = (cand: (typeof detourCandidates)[0]) => {
     if (activeStepIndex === null || activeStepIndex >= steps.length) return;
     const currentStep = steps[activeStepIndex];
@@ -2424,18 +2445,26 @@ export default function RelocationSimulatorPage() {
                             lat={step.toLat}
                             lon={step.toLon}
                             currentName={step.toName}
-                            onChange={(lat, lon, name) =>
+                            onChange={(lat, lon, name) => {
                               handleUpdateStep(idx, {
                                 toLat: lat,
                                 toLon: lon,
-                                /* 名前が無いのは緯度経度を手で直したとき。
-                                   前の地名を残すと別の場所に付いたままになる */
+                                /* 名前が無いのは地図で押したか、緯度経度を
+                                   手で直したとき。前の地名を残すと別の場所に
+                                   付いたままになるので、いったん座標にして
+                                   最寄りの市区町村を引き直す */
                                 toName:
                                   name ??
                                   `${lat.toFixed(4)}, ${lon.toFixed(4)}`,
-                              })
-                            }
-                            help="市区町村名・住所・郵便番号で探せます。SUUMO で市区町村を絞った一覧の URL を貼っても、その街になります（URL は開きに行きません）。"
+                              });
+                              if (!name) nameStepFromPoint(idx, lat, lon);
+                            }}
+                            /* 地図からも選べる（利用者の依頼、2026-09-25
+                               「このページでも目的地を選ぶところは地図で
+                               選べるようにしてほしい」）。右の地図は画面が
+                               狭いと下に回り、欄から遠かった */
+                            allowMapPick
+                            help="市区町村名・住所・郵便番号で探すか、「地図から選ぶ」で地図を押してください。SUUMO で市区町村を絞った一覧の URL を貼っても、その街になります（URL は開きに行きません）。"
                           />
                         </div>
 
