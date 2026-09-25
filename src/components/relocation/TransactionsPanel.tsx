@@ -46,6 +46,10 @@ interface TxRow {
   estBuildingPrice: number | null;
   estLandPrice: number | null;
   buildingRatio: number | null;
+  /** 前面道路（国交省の値そのまま）。マンション等は null。 */
+  roadDirection?: string | null;
+  roadClassification?: string | null;
+  roadBreadthM?: number | null;
   tradeYear: number;
   tradeQuarter: number;
   distanceKm: number;
@@ -81,6 +85,21 @@ const PRICE_CAPS = [
 ];
 /** 面積の下限（㎡）。土地・戸建ての広さで絞る選択肢。 */
 const AREA_FLOORS = [100, 150, 200, 300];
+/**
+ * 前面道路の方位の選択肢（国交省の綴り。2026-09-25 の probe で確認）。
+ * 家の方位（出発地から見た向き）とは別の軸なので、名前で区別する。
+ */
+const ROAD_DIRECTION_OPTIONS = [
+  "南",
+  "南東",
+  "南西",
+  "東",
+  "西",
+  "北東",
+  "北西",
+  "北",
+  "接面道路無",
+];
 
 /** 段階の札の文言。判定が無ければ出さない。 */
 function verdictLabel(cell: DirectionVerdict | undefined): string | null {
@@ -172,6 +191,7 @@ export function TransactionsPanel({
   */
   const [maxPrice, setMaxPrice] = useState("");
   const [minArea, setMinArea] = useState("");
+  const [roadDirection, setRoadDirection] = useState("");
   const [openOnly, setOpenOnly] = useState(false);
 
   const dirs = listDirections(selectedDirection, openOnly, verdicts);
@@ -180,7 +200,7 @@ export function TransactionsPanel({
   const noOpenDirection = dirs !== null && dirs.length === 0;
 
   const effectiveRadius = radiusKm ?? 300;
-  const requestKey = `${lat},${lon},${effectiveRadius},${minRatio},${maxPrice},${minArea},${dirsParam},${nodeMapping}`;
+  const requestKey = `${lat},${lon},${effectiveRadius},${minRatio},${maxPrice},${minArea},${roadDirection},${dirsParam},${nodeMapping}`;
   const data = result?.key === requestKey ? result.data : null;
   const error = result?.key === requestKey ? result.error : null;
   const loading = hasBase && !noOpenDirection && result?.key !== requestKey;
@@ -195,6 +215,9 @@ export function TransactionsPanel({
         (minRatio ? `&min_building_ratio=${minRatio}` : "") +
         (maxPrice ? `&max_price=${maxPrice}` : "") +
         (minArea ? `&min_area=${minArea}` : "") +
+        (roadDirection
+          ? `&road_direction=${encodeURIComponent(roadDirection)}`
+          : "") +
         (dirsParam ? `&directions=${dirsParam}` : ""),
     )
       .then(async (res) => {
@@ -233,6 +256,7 @@ export function TransactionsPanel({
     nodeMapping,
     maxPrice,
     minArea,
+    roadDirection,
     dirsParam,
     noOpenDirection,
   ]);
@@ -316,7 +340,28 @@ export function TransactionsPanel({
             </option>
           ))}
         </select>
+        {/* 前面道路の方位（利用者の依頼、2026-09-24）。家の方位とは別の軸 */}
+        <select
+          value={roadDirection}
+          onChange={(e) => setRoadDirection(e.target.value)}
+          aria-label="前面道路の方位"
+          className="col-span-2 w-full px-3 py-2 bg-gray-50 dark:bg-white border border-gray-200 dark:border-stone-200 rounded-xl text-xs outline-none cursor-pointer"
+        >
+          <option value="">前面道路の方位を問わない</option>
+          {ROAD_DIRECTION_OPTIONS.map((v) => (
+            <option key={v} value={v}>
+              {v === "接面道路無" ? "前面道路なし" : `前面道路が${v}`}
+            </option>
+          ))}
+        </select>
       </div>
+      {roadDirection && (
+        <p className="text-xs text-stone-600 leading-relaxed">
+          {
+            "前面道路の方位は、土地が接する道路の向きです（国交省の取引価格情報）。家から見た方位とは別で、マンション・農地・林地は値が無いため、この絞り込みでは表示されません。"
+          }
+        </p>
+      )}
       {verdicts && (
         <label className="flex min-h-[24px] items-center gap-2 text-xs text-stone-700">
           <input
@@ -469,6 +514,17 @@ export function TransactionsPanel({
                     <span>
                       {r.tradeYear}年Q{r.tradeQuarter}
                     </span>
+                    {r.roadDirection && (
+                      <span>
+                        {r.roadDirection === "接面道路無"
+                          ? "前面道路なし"
+                          : `前面道路 ${r.roadDirection}`}
+                        {r.roadClassification
+                          ? `・${r.roadClassification}`
+                          : ""}
+                        {r.roadBreadthM != null ? ` ${r.roadBreadthM}m` : ""}
+                      </span>
+                    )}
                     {r.buildingRatio !== null && (
                       <span>
                         建物{Math.round(r.buildingRatio * 100)}%（建物
