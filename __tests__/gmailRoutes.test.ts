@@ -34,14 +34,17 @@ const {
 import { GmailAccountService } from "@/lib/gmail/account";
 import { GmailListingEmailReader } from "@/lib/gmail/reader";
 const owner = "11111111-2222-4333-8444-555555555555";
+let requestOrigin = "https://example.com";
+let proxyHeaders: Record<string, string> = {};
 const request = (
   path = "connect",
   options: { origin?: string; cookie?: string; body?: unknown } = {},
 ) =>
-  new NextRequest(`https://example.com/api/relocation/email/gmail/${path}`, {
+  new NextRequest(`${requestOrigin}/api/relocation/email/gmail/${path}`, {
     method:
       path.startsWith("callback") || path.startsWith("labels") ? "GET" : "POST",
     headers: {
+      ...proxyHeaders,
       origin: options.origin ?? "https://example.com",
       "content-type": "application/json",
       ...(options.cookie ? { cookie: options.cookie } : {}),
@@ -50,6 +53,8 @@ const request = (
   });
 beforeEach(() => {
   vi.resetAllMocks();
+  requestOrigin = "https://example.com";
+  proxyHeaders = {};
   transport.mockResolvedValue(
     new Response(
       JSON.stringify({
@@ -138,93 +143,106 @@ it("connect requires authentication and same-origin CSRF protection", async () =
   expect((await connect(request())).status).toBe(401);
   expect(mock.execute).not.toHaveBeenCalled();
 });
-it("PKCE callback is browser/owner-bound and single-use; credentials only reach injected token exchange", async () => {
-  let pending: unknown[] | null = null;
-  mock.execute.mockImplementation(
-    async (sql: TemplateStringsArray, ...args: unknown[]) => {
-      if (sql.join("").includes("INSERT INTO listing_email_connections"))
-        return 1;
-      if (sql.join("").includes("INSERT")) {
-        pending = args;
-        return 1;
-      }
-      if (pending && JSON.stringify(pending) === JSON.stringify(args)) {
-        pending = null;
-        return 1;
-      }
-      return 0;
-    },
-  );
-  const response = await connect(request());
-  const result = await response.json();
-  const cookie = response.headers.get("set-cookie")!.split(";")[0];
-  const auth = new URL(result.authorizationUrl);
-  result.state = auth.searchParams.get("state");
-  expect(auth.origin + auth.pathname).toBe(
-    "https://accounts.google.com/o/oauth2/v2/auth",
-  );
-  expect(auth.searchParams.get("scope")).toBe(GMAIL_READONLY_SCOPE);
-  expect(auth.searchParams.get("code_challenge_method")).toBe("S256");
-  expect(auth.searchParams.get("access_type")).toBe("offline");
-  expect(auth.searchParams.get("prompt")).toBe("consent");
-  const pendingCookie = unseal(
-    decodeURIComponent(cookie.split("=")[1]),
-    owner,
-    "oauth-pending",
-  ) as { verifier: string; state: string; browser: string };
-  expect(auth.searchParams.get("code_challenge")).toBe(
-    createHash("sha256").update(pendingCookie.verifier).digest("base64url"),
-  );
-  expect(pendingCookie.state).toBe(result.state);
-  expect(pendingCookie.browser).toBe(auth.searchParams.get("nonce"));
-  expect(result.authorizationUrl).not.toContain(pendingCookie.verifier);
-  expect(response.headers.get("location")).toBeNull();
-  expect(response.headers.get("set-cookie")).toMatch(/HttpOnly/);
-  expect(response.headers.get("set-cookie")).toMatch(/Secure/);
-  expect(JSON.stringify(mock.execute.mock.calls)).not.toContain(result.state);
-  expect(
-    (await callback(request(`callback?state=${result.state}`))).status,
-  ).toBe(403);
-  expect(
-    (await callback(request(`callback?state=${"x".repeat(43)}`, { cookie })))
-      .status,
-  ).toBe(403);
-  mock.user.mockResolvedValue({ id: "other" });
-  expect(
-    (await callback(request(`callback?state=${result.state}`, { cookie })))
-      .status,
-  ).toBe(403);
-  mock.user.mockResolvedValue({ id: owner });
-  const accepted = await callback(
-    request(`callback?state=${result.state}&code=SECRET_AUTH_CODE`, { cookie }),
-  );
-  expect(accepted.status).toBe(303);
-  const location = accepted.headers.get("location")!;
-  expect(location).toMatch(
-    /^https:\/\/example.com\/relocation\/arbitrage\?emailConnection=/,
-  );
-  expect(location).not.toMatch(/SECRET_AUTH_CODE|TEST_ACCESS|TEST_REFRESH/);
-  const body = new URLSearchParams(String(transport.mock.calls[0][1]?.body));
-  expect(body.get("code_verifier")).toBe(pendingCookie.verifier);
-  expect(body.get("code")).toBe("SECRET_AUTH_CODE");
-  expect(body.get("redirect_uri")).toBe(
-    "https://example.com/api/relocation/email/gmail/callback",
-  );
-  expect(JSON.stringify(mock.execute.mock.calls)).not.toMatch(
-    /TEST_REFRESH|TEST_ACCESS/,
-  );
-  expect(accepted.headers.get("set-cookie")).toContain("Max-Age=0");
-  expect(
-    (await callback(request(`callback?state=${result.state}`, { cookie })))
-      .status,
-  ).toBe(403);
-  expect(JSON.stringify(mock.execute.mock.calls)).not.toContain(
-    "SECRET_AUTH_CODE",
-  );
-  expect(mock.execute.mock.calls.at(-1)![0].join("")).toContain(
-    '"expiresAt" > now()',
-  );
-});
+it.each([null, "http", "https"])(
+  "PKCE callback is browser/owner-bound and single-use (proxy=%s)",
+  async (proxy) => {
+    if (proxy) {
+      requestOrigin = `${proxy}://0.0.0.0:8080`;
+      proxyHeaders = {
+        host: "example.com",
+        "x-forwarded-host": "example.com",
+        "x-forwarded-proto": "https",
+      };
+    }
+    let pending: unknown[] | null = null;
+    mock.execute.mockImplementation(
+      async (sql: TemplateStringsArray, ...args: unknown[]) => {
+        if (sql.join("").includes("INSERT INTO listing_email_connections"))
+          return 1;
+        if (sql.join("").includes("INSERT")) {
+          pending = args;
+          return 1;
+        }
+        if (pending && JSON.stringify(pending) === JSON.stringify(args)) {
+          pending = null;
+          return 1;
+        }
+        return 0;
+      },
+    );
+    const response = await connect(request());
+    const result = await response.json();
+    const cookie = response.headers.get("set-cookie")!.split(";")[0];
+    const auth = new URL(result.authorizationUrl);
+    result.state = auth.searchParams.get("state");
+    expect(auth.origin + auth.pathname).toBe(
+      "https://accounts.google.com/o/oauth2/v2/auth",
+    );
+    expect(auth.searchParams.get("scope")).toBe(GMAIL_READONLY_SCOPE);
+    expect(auth.searchParams.get("code_challenge_method")).toBe("S256");
+    expect(auth.searchParams.get("access_type")).toBe("offline");
+    expect(auth.searchParams.get("prompt")).toBe("consent");
+    const pendingCookie = unseal(
+      decodeURIComponent(cookie.split("=")[1]),
+      owner,
+      "oauth-pending",
+    ) as { verifier: string; state: string; browser: string };
+    expect(auth.searchParams.get("code_challenge")).toBe(
+      createHash("sha256").update(pendingCookie.verifier).digest("base64url"),
+    );
+    expect(pendingCookie.state).toBe(result.state);
+    expect(pendingCookie.browser).toBe(auth.searchParams.get("nonce"));
+    expect(result.authorizationUrl).not.toContain(pendingCookie.verifier);
+    expect(response.headers.get("location")).toBeNull();
+    expect(response.headers.get("set-cookie")).toMatch(/HttpOnly/);
+    expect(response.headers.get("set-cookie")).toMatch(/Secure/);
+    expect(JSON.stringify(mock.execute.mock.calls)).not.toContain(result.state);
+    expect(
+      (await callback(request(`callback?state=${result.state}`))).status,
+    ).toBe(403);
+    expect(
+      (await callback(request(`callback?state=${"x".repeat(43)}`, { cookie })))
+        .status,
+    ).toBe(403);
+    mock.user.mockResolvedValue({ id: "other" });
+    expect(
+      (await callback(request(`callback?state=${result.state}`, { cookie })))
+        .status,
+    ).toBe(403);
+    mock.user.mockResolvedValue({ id: owner });
+    const accepted = await callback(
+      request(`callback?state=${result.state}&code=SECRET_AUTH_CODE`, {
+        cookie,
+      }),
+    );
+    expect(accepted.status).toBe(303);
+    const location = accepted.headers.get("location")!;
+    expect(location).toMatch(
+      /^https:\/\/example.com\/relocation\/arbitrage\?emailConnection=/,
+    );
+    expect(location).not.toMatch(/SECRET_AUTH_CODE|TEST_ACCESS|TEST_REFRESH/);
+    const body = new URLSearchParams(String(transport.mock.calls[0][1]?.body));
+    expect(body.get("code_verifier")).toBe(pendingCookie.verifier);
+    expect(body.get("code")).toBe("SECRET_AUTH_CODE");
+    expect(body.get("redirect_uri")).toBe(
+      "https://example.com/api/relocation/email/gmail/callback",
+    );
+    expect(JSON.stringify(mock.execute.mock.calls)).not.toMatch(
+      /TEST_REFRESH|TEST_ACCESS/,
+    );
+    expect(accepted.headers.get("set-cookie")).toContain("Max-Age=0");
+    expect(
+      (await callback(request(`callback?state=${result.state}`, { cookie })))
+        .status,
+    ).toBe(403);
+    expect(JSON.stringify(mock.execute.mock.calls)).not.toContain(
+      "SECRET_AUTH_CODE",
+    );
+    expect(mock.execute.mock.calls.at(-1)![0].join("")).toContain(
+      '"expiresAt" > now()',
+    );
+  },
+);
 it("callback rejects expired and duplicate state values", async () => {
   mock.execute.mockResolvedValue(0);
   const state = "s".repeat(43);
@@ -364,3 +382,102 @@ it("callback sanitizes provider failures and clears the cookie without leaking c
   expect(result.headers.get("set-cookie")).toContain("Max-Age=0");
   expect(log).not.toHaveBeenCalled();
 });
+
+it.each<Record<string, string>>([
+  {
+    host: "cloud-palette.com",
+    "x-forwarded-host": "cloud-palette.com",
+    "x-forwarded-proto": "https",
+  },
+  { host: "cloud-palette.com", "x-forwarded-proto": "https" },
+])(
+  "connect accepts public Cloud Run headers with an internal nextUrl: %j",
+  async (headers) => {
+    requestOrigin = "http://0.0.0.0:8080";
+    proxyHeaders = headers;
+    vi.stubEnv(
+      "LISTING_EMAIL_GOOGLE_REDIRECT_URI",
+      "https://cloud-palette.com/api/relocation/email/gmail/callback",
+    );
+    const response = await connect(
+      request("connect", { origin: "https://cloud-palette.com" }),
+    );
+    expect(response.status).toBe(200);
+    const auth = new URL((await response.json()).authorizationUrl);
+    expect(auth.searchParams.get("redirect_uri")).toBe(
+      "https://cloud-palette.com/api/relocation/email/gmail/callback",
+    );
+    expect(transport).not.toHaveBeenCalled();
+  },
+);
+it.each<Record<string, string>>([
+  { host: "evil.example" },
+  { host: "example.com", "x-forwarded-proto": "http" },
+  { host: "example.com", "x-forwarded-host": "evil.example" },
+  { host: "example.com", "x-forwarded-host": "example.com,evil.example" },
+  { host: "example.com", "x-forwarded-proto": "https,http" },
+  { "x-forwarded-host": "user:PRIVATE_TOKEN@example.com" },
+  { "x-forwarded-host": "example.com/PRIVATE_CODE" },
+])(
+  "callback rejects untrusted public origin headers without exposing values: %j",
+  async (headers) => {
+    const log = vi.spyOn(console, "error").mockImplementation(() => {});
+    requestOrigin = "http://0.0.0.0:8080";
+    proxyHeaders = headers;
+    const response = await callback(request("callback?code=PRIVATE_CODE"));
+    expect(response.status).toBe(503);
+    expect(await response.json()).toMatchObject({ code: "GMAIL_CONFIG" });
+    expect(log).toHaveBeenCalledOnce();
+    expect(JSON.stringify(log.mock.calls)).not.toMatch(
+      /PRIVATE_TOKEN|PRIVATE_CODE|test-secret/,
+    );
+    expect(mock.execute).not.toHaveBeenCalled();
+    expect(transport).not.toHaveBeenCalled();
+  },
+);
+it("connect rejects a mismatching public site even if browser Origin matches Host", async () => {
+  const log = vi.spyOn(console, "error").mockImplementation(() => {});
+  proxyHeaders = { host: "evil.example" };
+  const response = await connect(
+    request("connect", { origin: "https://evil.example" }),
+  );
+  expect(response.status).toBe(503);
+  expect(log).toHaveBeenCalledWith(
+    "[GMAIL_CONFIG] redirect origin mismatch: expected host example.com got host evil.example",
+  );
+  expect(mock.execute).not.toHaveBeenCalled();
+});
+it.each([
+  "LISTING_EMAIL_GOOGLE_CLIENT_ID",
+  "LISTING_EMAIL_GOOGLE_CLIENT_SECRET",
+  "LISTING_EMAIL_GOOGLE_REDIRECT_URI",
+  "LISTING_EMAIL_ENCRYPTION_KEY",
+  "LISTING_EMAIL_ENCRYPTION_KEY_ID",
+])("missing configuration logs only the check name: %s", async (key) => {
+  const log = vi.spyOn(console, "error").mockImplementation(() => {});
+  vi.stubEnv(key, "");
+  const response = await connect(request());
+  expect(response.status).toBe(503);
+  expect(log).toHaveBeenCalledExactlyOnceWith(`[GMAIL_CONFIG] missing ${key}`);
+  expect(await response.text()).not.toContain(key);
+});
+it.each([
+  ["LISTING_EMAIL_GOOGLE_REDIRECT_URI", "PRIVATE_CODE", "URL"],
+  [
+    "LISTING_EMAIL_GOOGLE_REDIRECT_URI",
+    "https://example.com/api/relocation/email/gmail/callback?code=PRIVATE_CODE",
+    "HTTPS callback format",
+  ],
+  ["LISTING_EMAIL_ENCRYPTION_KEY", "PRIVATE_KEY", "base64 format"],
+  ["LISTING_EMAIL_ENCRYPTION_KEY_ID", "PRIVATE/KEY", "format"],
+])(
+  "invalid configuration never logs its value: %s",
+  async (key, value, check) => {
+    const log = vi.spyOn(console, "error").mockImplementation(() => {});
+    vi.stubEnv(key, value);
+    expect((await connect(request())).status).toBe(503);
+    expect(log).toHaveBeenCalledExactlyOnceWith(
+      `[GMAIL_CONFIG] invalid ${key} ${check}`,
+    );
+  },
+);

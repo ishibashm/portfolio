@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { Prisma } from "@prisma/client";
 import prisma from "@/lib/prisma";
 import { getAuthUser, toUserId } from "@/lib/userConfig";
-import { isSameOrigin } from "@/lib/apiGuard";
+import { isSameOrigin, publicRequestOrigin } from "@/lib/apiGuard";
 
 export const privateHeaders = {
   "Cache-Control": "no-store, max-age=0",
@@ -45,7 +45,7 @@ export async function candidateUser(req: NextRequest, write = false) {
   if (
     write &&
     (!isSameOrigin(req) ||
-      new URL(req.headers.get("origin")!).protocol !== req.nextUrl.protocol)
+      new URL(req.headers.get("origin")!).origin !== publicRequestOrigin(req))
   )
     throw new CandidateError(403, "ORIGIN", "同じサイトから操作してください。");
   const user = await getAuthUser();
