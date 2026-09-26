@@ -46,7 +46,10 @@ import {
   summarizeWindows,
   type DayTier,
 } from "@/utils/auspiciousDays";
-import { TIER_FILL, BLOCKED_FILL } from "@/utils/tierDisplay";
+import { TIER_FILL, BLOCKED_FILL, TIER_JP } from "@/utils/tierDisplay";
+import { KYUSEI } from "@/utils/kigaku";
+import { buildTimingReport } from "@/lib/timingReport";
+import { SavedAnalysisPanel } from "@/components/relocation/SavedAnalysisPanel";
 import {
   DAY_CATEGORIES,
   allCategories,
@@ -1834,6 +1837,49 @@ export default function TimingAnalyticsPage() {
                 </table>
               </div>
             </Section>
+
+            {/*
+              分析を残す・AI に渡す（利用者の依頼、2026-09-26「分析したあと、
+              それを保存できたらいい」「MCP を通して LLM に分析させたい」）。
+              文書は lib/timingReport が作る。生年月日と座標は入れない
+            */}
+            <SavedAnalysisPanel
+              kind="timing"
+              defaultName={`${todayIso} の時期分析`}
+              buildMarkdown={() =>
+                days && days.length > 0
+                  ? buildTimingReport({
+                      title: "引越し時期の全期間分析",
+                      generatedAt: new Date(),
+                      honmeiStarName: profile
+                        ? KYUSEI.find((k) => k.number === profile.honmeiStar)
+                            ?.japanese
+                        : undefined,
+                      voidZodiacs: profile?.voidZodiacs,
+                      range: {
+                        from: days[0].date,
+                        to: days[days.length - 1].date,
+                      },
+                      conditions: [
+                        `判定モード: ${modeInfo(settings?.directionFilterMode ?? "composite").label}`,
+                        ...(partyActive
+                          ? ["同行者あり（この表は本人 1 人の判定）"]
+                          : []),
+                      ],
+                      directions: perDirection.map((p) => ({
+                        label: p.label,
+                        bestTier: p.bestTier
+                          ? `${p.bestTier} ${TIER_JP[p.bestTier]}`
+                          : null,
+                        firstDate: p.firstDate,
+                        totalOpen: p.totalOpen,
+                        windows: p.windows,
+                      })),
+                      sourcePath: "https://cloud-palette.com/relocation/timing",
+                    })
+                  : null
+              }
+            />
 
             {/* 構成比 */}
             <Section
