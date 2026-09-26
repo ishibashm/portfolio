@@ -89,6 +89,31 @@ describe("/calendar: 保存したプロフィールを呼び出す", () => {
   });
 });
 
+describe("/calendar: アカウントに登録した値を開いたときに読む", () => {
+  it("端末に写しが無くても、アカウントの生年月日と出発地が欄に入る", async () => {
+    /* 2026-09-26 の指摘。ProfilePicker は「Kyoto を使用中」と出すのに、
+       欄は既定の 2000-01-01・東京のままだった（端末の localStorage しか
+       読んでいなかった） */
+    loadSettings.mockResolvedValue({
+      settings: {
+        birth_date: "1985-04-10",
+        base_lat: KYOTO.lat,
+        base_lon: KYOTO.lon,
+      },
+      synced: true,
+    });
+    render(<AuspiciousDayFinder />);
+    await waitFor(() =>
+      expect(
+        (document.getElementById("ad-birth") as HTMLInputElement).value,
+      ).toContain("1985-04-10"),
+    );
+    expect(screen.getByDisplayValue(String(KYOTO.lon))).toBeTruthy();
+    expect(screen.getByDisplayValue(String(KYOTO.lat))).toBeTruthy();
+    expect(applyProfile).not.toHaveBeenCalled();
+  });
+});
+
 describe("サイドバー: 日取りを全期間の分析より上に", () => {
   it("/calendar が /relocation/timing より先に並ぶ", () => {
     const src = readFileSync(
