@@ -9,6 +9,8 @@ const mock = vi.hoisted(() => ({
   candidates: vi.fn(),
   rates: vi.fn(),
   deleteConfig: vi.fn(),
+  spots: vi.fn(),
+  analyses: vi.fn(),
 }));
 vi.mock("@/lib/prisma", () => ({ default: { $transaction: mock.tx } }));
 vi.mock("@/lib/userConfig", () => ({
@@ -28,6 +30,8 @@ beforeEach(() => {
       listingCandidate: { deleteMany: mock.candidates },
       listingCandidateRate: { deleteMany: mock.rates },
       user_configs: { delete: mock.deleteConfig },
+      userSpot: { deleteMany: mock.spots },
+      savedAnalysis: { deleteMany: mock.analyses },
     }),
   );
 });
@@ -42,6 +46,18 @@ it("clears only the owner's candidates even if no user_config exists", async () 
   expect(mock.candidates).toHaveBeenCalledWith({ where: { userId: id } });
   expect(mock.deleteConfig).not.toHaveBeenCalled();
   expect(mock.lock).toHaveBeenCalled();
+});
+it("also clears the owner's saved spots and saved analyses", async () => {
+  /* 以前は user_spots が残っていた。画面は「すべて消す」と書いている */
+  const res = await DELETE(
+    new NextRequest("https://example.com/api/user-config", {
+      method: "DELETE",
+      headers: { origin: "https://example.com" },
+    }),
+  );
+  expect(res.status).toBe(200);
+  expect(mock.spots).toHaveBeenCalledWith({ where: { user_id: id } });
+  expect(mock.analyses).toHaveBeenCalledWith({ where: { user_id: id } });
 });
 it("does not clear registered data from another origin", async () => {
   const res = await DELETE(
