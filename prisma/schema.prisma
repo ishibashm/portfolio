@@ -852,6 +852,29 @@ model UserSpot {
   @@map("user_spots")
 }
 
+/// 時期の分析（全期間の分析・/calendar の吉日）をアカウントに残したもの。
+///
+/// 利用者の依頼（2026-09-26）。本文は lib/timingReport の Markdown で、
+/// **生年月日と座標は入らない**が、生年月日から出た結果なので個人情報に
+/// あたる（CLAUDE.md 6 節）。読み書きは本人だけ。
+/// DDL は prisma/sql/20260926_add_saved_analyses.sql（RLS・権限の剥奪・
+/// auth.users への ON DELETE CASCADE を含む）。
+model SavedAnalysis {
+  id         String   @id @default(cuid())
+  /// Supabase の user.id。user_spots と同じ安定キー。
+  user_id    String   @db.Uuid
+  /// "timing"（全期間の分析）か "calendar"（吉日）。DB でも CHECK で縛る。
+  kind       String
+  /// 利用者が付けた名前（API 側で 60 文字まで）。
+  name       String
+  /// lib/timingReport の文書（DB で 32768 文字まで）。
+  markdown   String
+  created_at DateTime @default(now()) @db.Timestamptz(6)
+
+  @@index([user_id, created_at])
+  @@map("saved_analyses")
+}
+
 model FavoriteProperty {
   id          String   @id @default(cuid())
   /// Supabase の user.id。user_configs と同じ安定キーを使う。
