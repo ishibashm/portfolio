@@ -2,6 +2,9 @@
 
 import React, { useCallback, useEffect, useState } from "react";
 import { ProfilePicker } from "@/components/profile/ProfilePicker";
+import { SavedAnalysisPanel } from "@/components/relocation/SavedAnalysisPanel";
+import { buildTimingReport } from "@/lib/timingReport";
+import { KYUSEI } from "@/utils/kigaku";
 import { SampleProfileNotice } from "@/components/profile/SampleProfileNotice";
 import { Loader2, CalendarCheck, ArrowRight } from "lucide-react";
 import Link from "next/link";
@@ -682,6 +685,55 @@ export function AuspiciousDayFinder() {
                 )}
               </div>
             ))}
+
+          {/*
+            分析を残す・AI に渡す（利用者の依頼、2026-09-26「どちらも引越し
+            時期を分析したあと、それを保存できたらいい」）。全期間の分析と
+            同じ部品と文書。生年月日と座標は入れない
+          */}
+          <SavedAnalysisPanel
+            kind="calendar"
+            defaultName={`${todayString()} の吉日`}
+            buildMarkdown={() =>
+              summaries.length === 0
+                ? null
+                : buildTimingReport({
+                    title: "三盤すべてが吉になる日（引越しの日取り）",
+                    generatedAt: new Date(),
+                    honmeiStarName:
+                      meta.honmeiStar !== undefined
+                        ? KYUSEI.find((k) => k.number === meta.honmeiStar)
+                            ?.japanese
+                        : undefined,
+                    voidZodiacs: meta.voidZodiacs,
+                    range: {
+                      from,
+                      to: `${months} か月先まで`,
+                    },
+                    conditions: [
+                      `天中殺の扱い: ${
+                        TENCHUSATSU_MODES.find((m) => m.id === tenchusatsuMode)
+                          ?.label ?? tenchusatsuMode
+                      }`,
+                      "段階は三盤吉（年盤・月盤・日盤のすべてが吉）の日だけを数えています",
+                    ],
+                    directions: summaries.map((s) => {
+                      const open = s.days.filter(
+                        (d) => !d.blockedByTenchusatsu,
+                      );
+                      return {
+                        label: s.directionLabel,
+                        bestTier:
+                          s.tripleAuspiciousDays > 0 ? "S 三盤吉" : null,
+                        firstDate: open[0]?.date ?? null,
+                        totalOpen: open.length,
+                        windows: null,
+                      };
+                    }),
+                    sourcePath: "https://cloud-palette.com/calendar",
+                  })
+            }
+          />
         </div>
       )}
     </section>
