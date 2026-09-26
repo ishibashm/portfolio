@@ -4,6 +4,12 @@ import React, { useCallback, useEffect, useState } from "react";
 import { ProfilePicker } from "@/components/profile/ProfilePicker";
 import { SavedAnalysisPanel } from "@/components/relocation/SavedAnalysisPanel";
 import { buildTimingReport } from "@/lib/timingReport";
+import {
+  loadSettings,
+  readSettingsSync,
+  settingString,
+  type Settings,
+} from "@/lib/userSettings";
 import { KYUSEI } from "@/utils/kigaku";
 import { SampleProfileNotice } from "@/components/profile/SampleProfileNotice";
 import { Loader2, CalendarCheck, ArrowRight } from "lucide-react";
@@ -176,20 +182,35 @@ export function AuspiciousDayFinder() {
   /**
    * 保存済みの設定を入力欄へ写す。開いたときと、上の ProfilePicker で
    * プロフィールを切り替えたとき（applyProfile が設定に書いたあと）に呼ぶ。
+   *
+   * **端末だけでなくアカウントの値も読む**（2026-09-26 の指摘）。以前は
+   * localStorage の tactical_config_v1 を直に読むだけで、生年月日を
+   * アカウントに登録してある人でも、その端末に写しが無ければ既定の
+   * 2000-01-01・東京のまま出ていた。同じ頁の ProfilePicker は
+   * loadSettings（アカウントを重ねる）で読むので「Kyoto を使用中」と
+   * 出しながら、入力欄は見本の値という食い違いになっていた。
+   * ほかの道具と同じく、先に端末（readSettingsSync）、後からアカウント
+   * （loadSettings）を重ねる。
    */
   function readSaved() {
+    const apply = (c: Settings) => {
+      const birth = settingString(c, "birth_date");
+      if (birth) setBirthDate(birth);
+      /* 座標は数値でも数字の文字列でも入りうる（旧い写し）。以前と同じく
+         toInputCoord に通し、読めないものは欄に写さない */
+      const baseLon = toInputCoord(c.base_lon ?? NaN);
+      if (baseLon) setLon(baseLon);
+      const baseLat = toInputCoord(c.base_lat ?? NaN);
+      if (baseLat) setLat(baseLat);
+    };
     try {
-      const raw = localStorage.getItem("tactical_config_v1");
-      if (!raw) return;
-      const c = JSON.parse(raw);
-      if (typeof c.birth_date === "string") setBirthDate(c.birth_date);
-      if (c.base_lon !== undefined && c.base_lon !== null)
-        setLon(toInputCoord(c.base_lon));
-      if (c.base_lat !== undefined && c.base_lat !== null)
-        setLat(toInputCoord(c.base_lat));
+      apply(readSettingsSync());
     } catch {
       // 壊れていれば手入力してもらう
     }
+    loadSettings()
+      .then(({ settings }) => apply(settings))
+      .catch(() => {});
   }
 
   const search = useCallback(async () => {
