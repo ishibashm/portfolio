@@ -254,7 +254,8 @@ export async function POST(req: Request) {
  * なる。行が無い状態は「まだ一度も保存していない人」と同じで、
  * `findUserConfig` も `GET` もその形を既に扱える。
  *
- * 消えるのは **user_configs の 1 行だけ**。Supabase の認証アカウント、
+ * 消えるのは user_configs の 1 行と、候補履歴・登録した地点・残した
+ * 分析（本人の行だけ）。Supabase の認証アカウント、
  * 問い合わせ（contact）、閲覧の記録は別の表で、ここでは触らない。
  * 画面にもそう書いてある。
  *
@@ -285,6 +286,10 @@ export async function DELETE(request: NextRequest) {
     await prisma.$transaction(async (tx) => {
       await lockCandidateOwner(tx, userId);
       await tx.listingCandidate.deleteMany({ where: { userId } });
+      /* 登録した地点（user_spots）と残した分析（saved_analyses）も本人の
+         登録内容。以前は地点が残っていた（画面は「すべて」と書いている） */
+      await tx.userSpot.deleteMany({ where: { user_id: userId } });
+      await tx.savedAnalysis.deleteMany({ where: { user_id: userId } });
       await tx.listingCandidateRate.deleteMany({
         where: {
           key: {
