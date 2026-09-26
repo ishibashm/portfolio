@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useCallback, useEffect, useState } from "react";
+import { ProfilePicker } from "@/components/profile/ProfilePicker";
 import { SampleProfileNotice } from "@/components/profile/SampleProfileNotice";
 import { Loader2, CalendarCheck, ArrowRight } from "lucide-react";
 import Link from "next/link";
@@ -166,6 +167,14 @@ export function AuspiciousDayFinder() {
   // 他の画面で保存済みの設定を初期値にする。ここで入れ直させると、
   // 別画面の判定と違う前提で日付を出してしまう。
   useEffect(() => {
+    readSaved();
+  }, []);
+
+  /**
+   * 保存済みの設定を入力欄へ写す。開いたときと、上の ProfilePicker で
+   * プロフィールを切り替えたとき（applyProfile が設定に書いたあと）に呼ぶ。
+   */
+  function readSaved() {
     try {
       const raw = localStorage.getItem("tactical_config_v1");
       if (!raw) return;
@@ -178,7 +187,7 @@ export function AuspiciousDayFinder() {
     } catch {
       // 壊れていれば手入力してもらう
     }
-  }, []);
+  }
 
   const search = useCallback(async () => {
     if (!birthDate || !lon) {
@@ -251,6 +260,13 @@ export function AuspiciousDayFinder() {
       <p className="mt-3 text-sm text-slate-700 leading-relaxed">
         年盤・月盤・日盤のどれにも凶が入らない日だけを日付として並べます。年盤は立春で切り替わるため、その方位が吉でいられる期限も併せて出します。
       </p>
+
+      {/*
+        保存したプロフィールを呼び出す（利用者の指摘、2026-09-26「日取りを
+        選ぶ方は保存したプロフィールを呼び出せない」）。ほかの道具と同じ
+        部品で、選ぶと設定に書かれ、ここの入力欄にも写る
+      */}
+      <ProfilePicker className="mt-4" onApplied={() => readSaved()} />
 
       <div className="mt-5 grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
         <div className="min-w-0 space-y-1">
