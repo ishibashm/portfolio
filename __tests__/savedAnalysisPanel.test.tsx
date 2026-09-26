@@ -15,10 +15,19 @@ import { MCP_URL, readSavedAnalyses } from "@/lib/timingReport";
 const MD = "# 引越し時期の全期間分析（Cloud Palette）\n\n| 南東 | S 三盤吉 |";
 
 let writeText: ReturnType<typeof vi.fn>;
+let fetchMock: ReturnType<typeof vi.fn>;
+const json = (status: number, body: unknown) =>
+  new Response(JSON.stringify(body), {
+    status,
+    headers: { "content-type": "application/json" },
+  });
 beforeEach(() => {
   localStorage.clear();
   writeText = vi.fn(async () => {});
   vi.stubGlobal("navigator", { ...navigator, clipboard: { writeText } });
+  /* 既定はログインしていない（401） */
+  fetchMock = vi.fn(async () => json(401, { error: "x" }));
+  vi.stubGlobal("fetch", fetchMock);
 });
 afterEach(() => vi.unstubAllGlobals());
 
@@ -108,6 +117,116 @@ describe("SavedAnalysisPanel", () => {
     fireEvent.click(screen.getByRole("button", { name: "この端末に保存" }));
     await screen.findByText("cal");
     expect(screen.queryByText("時期のほう")).toBeNull();
+  });
+});
+
+describe("アカウントに保存（ログイン中だけ）", () => {
+  const cloudItem = {
+    id: "c1",
+    kind: "timing",
+    name: "別の端末で保存",
+    savedAt: "2026-09-25T03:00:00.000Z",
+    markdown: MD,
+  };
+
+  it("ログインしていなければボタンを出さず、ログインで使えると書く", async () => {
+    render(
+      <SavedAnalysisPanel
+        kind="timing"
+        defaultName="x"
+        buildMarkdown={() => MD}
+      />,
+    );
+    await screen.findByText(/ログインすると、アカウントにも保存できます/);
+    expect(
+      screen.queryByRole("button", { name: "アカウントに保存" }),
+    ).toBeNull();
+    expect(fetchMock).toHaveBeenCalledWith(
+      "/api/saved-analyses?kind=timing",
+      expect.anything(),
+    );
+  });
+
+  it("ログイン中はアカウントの一覧を出し、保存すると POST して先頭に並べる", async () => {
+    fetchMock.mockImplementation(async (url: string, init?: RequestInit) => {
+      if (init?.method === "POST")
+        return json(200, {
+          analysis: {
+            ...cloudItem,
+            id: "c2",
+            name: "今回の分析",
+            savedAt: "2026-09-26T03:00:00.000Z",
+          },
+        });
+      return json(200, { analyses: [cloudItem] });
+    });
+    render(
+      <SavedAnalysisPanel
+        kind="timing"
+        defaultName="今回の分析"
+        buildMarkdown={() => MD}
+      />,
+    );
+    await screen.findByText("別の端末で保存");
+    fireEvent.click(screen.getByRole("button", { name: "アカウントに保存" }));
+    await screen.findByText("今回の分析");
+
+    const post = fetchMock.mock.calls.find(
+      ([, init]) => (init as RequestInit | undefined)?.method === "POST",
+    );
+    expect(post?.[0]).toBe("/api/saved-analyses");
+    expect(JSON.parse(String((post?.[1] as RequestInit).body))).toEqual({
+      kind: "timing",
+      name: "今回の分析",
+      markdown: MD,
+    });
+    expect(screen.getByRole("status").textContent).toMatch(
+      /ほかの端末でも見られます/,
+    );
+    /* 端末には書かない（押したのはアカウントの保存） */
+    expect(readSavedAnalyses(localStorage)).toHaveLength(0);
+  });
+
+  it("上限（409）のときはサーバーの文言をそのまま出す", async () => {
+    fetchMock.mockImplementation(async (_url: string, init?: RequestInit) =>
+      init?.method === "POST"
+        ? json(409, { error: "アカウントに残せる分析は 50 件までです。" })
+        : json(200, { analyses: [] }),
+    );
+    render(
+      <SavedAnalysisPanel
+        kind="timing"
+        defaultName="x"
+        buildMarkdown={() => MD}
+      />,
+    );
+    fireEvent.click(
+      await screen.findByRole("button", { name: "アカウントに保存" }),
+    );
+    await screen.findByText("アカウントに残せる分析は 50 件までです。");
+  });
+
+  it("アカウントの分析を消すと id を付けて DELETE し、一覧から外す", async () => {
+    fetchMock.mockImplementation(async (_url: string, init?: RequestInit) =>
+      init?.method === "DELETE"
+        ? json(200, { ok: true })
+        : json(200, { analyses: [cloudItem] }),
+    );
+    render(
+      <SavedAnalysisPanel
+        kind="timing"
+        defaultName="x"
+        buildMarkdown={() => MD}
+      />,
+    );
+    await screen.findByText("別の端末で保存");
+    fireEvent.click(screen.getByRole("button", { name: "削除" }));
+    await waitFor(() =>
+      expect(screen.queryByText("別の端末で保存")).toBeNull(),
+    );
+    expect(fetchMock).toHaveBeenCalledWith("/api/saved-analyses?id=c1", {
+      method: "DELETE",
+    });
   });
 });
 
