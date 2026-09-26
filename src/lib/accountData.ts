@@ -89,6 +89,8 @@ export const ACCOUNT_LOCAL_KEYS = [
     段階が日ごとに入る。見え方（timing_view_v1）は画面の状態なので残す側
   */
   "timing_scan_v1",
+  /* 端末に残した分析（lib/timingReport）。生年月日から出た結果なので消す */
+  "saved_analyses_v1",
   /*
     目的地。**いまは tactical_config_v1 の中の項目**なので、上の 1 行目で
     既に消えている（destinationSetting は writeLocalSettings 経由で書く）。
