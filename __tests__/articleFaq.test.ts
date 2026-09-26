@@ -405,7 +405,7 @@ describe("本物の記事に題を渡す", () => {
   const files = readdirSync(DIR).filter((f) => f.endsWith(".md"));
   const titleOf = (md: string) => md.match(/^title:\s*"?(.+?)"?\s*$/m)?.[1];
 
-  it("FAQPage を出せる記事が 16 → 20 本になる", () => {
+  it("FAQPage を出せる記事が 16 → 21 本になる", () => {
     const count = (withTitle: boolean) =>
       files.filter((f) => {
         const md = readFileSync(join(DIR, f), "utf8");
@@ -424,8 +424,14 @@ describe("本物の記事に題を渡す", () => {
       （距離・本命的殺）に、題へ答える 1 文を足して +2。箇条書きは答えに
       しない決まりなので、題の組が取れていなかった
     */
+    /*
+      2026-09-27: 凶を吉で上回れるか（can-good-outweigh-a-bad-move）の見出し
+      「『上回る』が成立する唯一の経路」を問いの形にし、最初の段落を
+      その答えから始めて、題を渡したときだけ +1（題の組と合わせて 2 組。
+      題を渡さなければ 1 組のままなので、左の数は変わらない）
+    */
     expect(count(false)).toBe(16);
-    expect(count(true)).toBe(20);
+    expect(count(true)).toBe(21);
   });
 
   it("題から作った問いは、記事の題そのもの（言い換えない）", () => {
