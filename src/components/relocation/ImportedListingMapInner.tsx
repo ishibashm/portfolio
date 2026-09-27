@@ -126,7 +126,7 @@ export default function ImportedListingMapInner(props: ImportedMapProps) {
     <MapContainer
       center={[first.lat, first.lon]}
       zoom={12}
-      className="h-96 w-full rounded-lg"
+      className="isolate relative h-96 w-full rounded-lg"
       aria-label="取り込み物件の地図"
     >
       <StandardBaseTile />
