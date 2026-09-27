@@ -9,6 +9,7 @@ import { z } from "zod";
 import { classifyCandidateInput } from "@/lib/listingCandidateInput";
 import { useGmailEnabled } from "./GmailFeature";
 import { EmailUrlChoices } from "./EmailUrlChoices";
+import { ImportedListingMap } from "./ImportedListingMap";
 const connectionSchema = z.object({
   id: z.uuid(),
   labelId: z.string().nullable(),
@@ -94,16 +95,22 @@ function startedLabel(iso: string): string {
 }
 export function GmailConnectionPanel({
   onSelect,
+  showMap = false,
 }: {
   onSelect: (url: string, details?: ListingDetails) => void;
+  showMap?: boolean;
 }) {
   const enabled = useGmailEnabled();
-  return enabled ? <EnabledGmailPanel onSelect={onSelect} /> : null;
+  return enabled ? (
+    <EnabledGmailPanel onSelect={onSelect} showMap={showMap} />
+  ) : null;
 }
 function EnabledGmailPanel({
   onSelect,
+  showMap = false,
 }: {
   onSelect: (url: string, details?: ListingDetails) => void;
+  showMap?: boolean;
 }) {
   const [hidden, setHidden] = useState(false);
   const [authorizationUrl, setAuthorizationUrl] = useState("");
@@ -250,6 +257,19 @@ function EnabledGmailPanel({
     setListings([]);
     setCursor(null);
     setDone(false);
+  };
+  const selectListing = (url: string) => {
+    const item = listings.find((l) => l.url === url);
+    const details = item
+      ? listingDetailsSchema.parse(
+          Object.fromEntries(
+            Object.entries(item).filter(([key]) => key !== "url"),
+          ),
+        )
+      : undefined;
+    onSelect(url, details);
+    setUrls([]);
+    setListings([]);
   };
   if (hidden) return null;
   const disabled =
@@ -580,25 +600,23 @@ function EnabledGmailPanel({
           {message}
         </p>
       )}
-      <EmailUrlChoices
-        urls={urls}
-        listings={listings}
-        onSelect={(url) => {
-          const item = listings.find((l) => l.url === url);
-          const details = item
-            ? listingDetailsSchema.parse(
-                Object.fromEntries(
-                  Object.entries(item).filter(([key]) => key !== "url"),
-                ),
-              )
-            : undefined;
-          onSelect(url, details);
-          setUrls([]);
-          setListings([]);
-        }}
-      />
+      {showMap && urls.length > 0 && (
+        <ImportedListingMap
+          listings={urls.map(
+            (url) => listings.find((l) => l.url === url) ?? { url },
+          )}
+          onSelect={(listing) => selectListing(listing.url)}
+        />
+      )}
+      {!showMap && (
+        <EmailUrlChoices
+          urls={urls}
+          listings={listings}
+          onSelect={selectListing}
+        />
+      )}
       <p className="text-stone-500">
-        メール本文は保存しません。物件情報はメールからの推測です。選択した1件の住所を検索し、地図での位置確認後に保存します。
+        メール本文は保存しません。物件情報と住所から推測した位置は未確定です。選択した1件を既存入力で確認してから保存します。
       </p>
     </section>
   );
