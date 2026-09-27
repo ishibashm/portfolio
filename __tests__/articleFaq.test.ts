@@ -405,7 +405,7 @@ describe("本物の記事に題を渡す", () => {
   const files = readdirSync(DIR).filter((f) => f.endsWith(".md"));
   const titleOf = (md: string) => md.match(/^title:\s*"?(.+?)"?\s*$/m)?.[1];
 
-  it("FAQPage を出せる記事が 16 → 21 本になる", () => {
+  it("FAQPage を出せる記事が 17 → 22 本になる", () => {
     const count = (withTitle: boolean) =>
       files.filter((f) => {
         const md = readFileSync(join(DIR, f), "utf8");
@@ -430,8 +430,14 @@ describe("本物の記事に題を渡す", () => {
       その答えから始めて、題を渡したときだけ +1（題の組と合わせて 2 組。
       題を渡さなければ 1 組のままなので、左の数は変わらない）
     */
-    expect(count(false)).toBe(16);
-    expect(count(true)).toBe(21);
+    /*
+      2026-09-28: 60 年説の記事（does-bad-direction-last-60-years）の見出し
+      「実際に確認するには」を問いの形にして +1。題は途中に問いを含む
+      だけ（「…続くのか？　周期を…確かめる」）で題の組は取れないので、
+      題の有無にかかわらず 1 → 2 組
+    */
+    expect(count(false)).toBe(17);
+    expect(count(true)).toBe(22);
   });
 
   it("題から作った問いは、記事の題そのもの（言い換えない）", () => {
