@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useMemo } from "react";
+import { Minus, Plus, LocateFixed } from "lucide-react";
 import {
   ComposableMap,
   Geographies,
@@ -48,6 +49,24 @@ interface WealthMapProps {
   useTrueNorth?: boolean;
 }
 
+/** 拡大の上限。市区町村の点が重ならずに見分けられるところまで。 */
+const MAX_ZOOM = 16;
+
+/*
+  ## 拡大しても点と文字が一緒に大きくならないように（2026-09-28）
+
+  利用者の指摘「地図でフォーカスしようとしてもできない」（iPad）。
+  ZoomableGroup は中身を SVG の scale でまとめて拡大する。点の半径も
+  「現在地」の文字も同じ倍率で大きくなるので、拡大すると点どうしが
+  重なって地図を覆い、狙った街に寄れなかった（スクリーンショットでは
+  「現在地」が見出しより大きく、点が画面を埋めていた）。
+
+  - 倍率を state に持ち、点の半径・線の太さ・文字の大きさを倍率で割る
+    （画面上の大きさを一定に保つ）
+  - 拡大・縮小・出発地へ戻すボタンを置く（ピンチが効きにくい端末でも寄れる）
+  - 点を押すと吹き出しを出す（以前は mouseenter だけで、指では出なかった）
+  - 最初の中心は出発地（以前は日本の中央に固定）
+*/
 export function WealthMap({
   data,
   baseLat = 35.6895,
@@ -55,6 +74,24 @@ export function WealthMap({
   useTrueNorth = false,
 }: WealthMapProps) {
   const [tooltipContent, setTooltipContent] = useState("");
+  const [view, setView] = useState<{
+    center: [number, number];
+    zoom: number;
+  }>({ center: [baseLon, baseLat], zoom: 1 });
+  /* 出発地は後から届く（頁が API の応答で渡し直す）。届いたら中心を
+     そこへ移す。effect で setState せず、描画中に前の値と比べる */
+  const baseKey = `${baseLon},${baseLat}`;
+  const [seenBase, setSeenBase] = useState(baseKey);
+  if (seenBase !== baseKey) {
+    setSeenBase(baseKey);
+    setView({ center: [baseLon, baseLat], zoom: 1 });
+  }
+  const k = view.zoom;
+  const zoomBy = (factor: number) =>
+    setView((v) => ({
+      ...v,
+      zoom: Math.min(MAX_ZOOM, Math.max(1, v.zoom * factor)),
+    }));
 
   // Create color scale for income
   const colorScale = useMemo(() => {
@@ -79,7 +116,14 @@ export function WealthMap({
         height={600}
         style={{ width: "100%", height: "100%" }}
       >
-        <ZoomableGroup zoom={1} maxZoom={10} center={[137, 38]}>
+        <ZoomableGroup
+          zoom={view.zoom}
+          center={view.center}
+          maxZoom={MAX_ZOOM}
+          onMoveEnd={({ coordinates, zoom }) =>
+            setView({ center: coordinates, zoom })
+          }
+        >
           <Geographies geography={geoUrl}>
             {({ geographies }) =>
               geographies.map((geo) => (
@@ -88,7 +132,7 @@ export function WealthMap({
                   geography={geo}
                   fill="#e7e5e4" // stone-200
                   stroke="#fafaf9" // stone-50
-                  strokeWidth={0.5}
+                  strokeWidth={0.5 / k}
                   style={{
                     default: { outline: "none" },
                     hover: { outline: "none", fill: "#d6d3d1" },
@@ -101,20 +145,20 @@ export function WealthMap({
 
           {/* Render Base Location */}
           <Marker coordinates={[baseLon, baseLat]}>
-            <circle r={6} fill="#10b981" />
+            <circle r={6 / k} fill="#10b981" />
             <circle
-              r={12}
+              r={12 / k}
               fill="#10b981"
               fillOpacity={0.3}
               className="animate-ping"
             />
             <text
               textAnchor="middle"
-              y={-15}
+              y={-15 / k}
               style={{
                 fontFamily: "sans-serif",
                 fill: "#10b981",
-                fontSize: "10px",
+                fontSize: `${10 / k}px`,
                 fontWeight: "bold",
               }}
             >
@@ -131,26 +175,28 @@ export function WealthMap({
             const marker = resolveWealthMarker(m.astrologyStatus);
             if (!marker) return null;
 
+            const describe = () => {
+              const dirStr = useTrueNorth
+                ? `${m.direction}(真北)`
+                : m.direction !== m.magneticDirection
+                  ? `${m.direction}(真)→${m.magneticDirection}(磁)`
+                  : `${m.direction}(一致)`;
+              setTooltipContent(
+                `${m.areaName}: ${Math.round(m.incomePerCapita / 10000)}万円 (${dirStr} - ${m.astrologyStatus})`,
+              );
+            };
             return (
               <Marker
                 key={m.id}
                 coordinates={[m.lon, m.lat]}
-                onMouseEnter={() => {
-                  const dirStr = useTrueNorth
-                    ? `${m.direction}(真北)`
-                    : m.direction !== m.magneticDirection
-                      ? `${m.direction}(真)→${m.magneticDirection}(磁)`
-                      : `${m.direction}(一致)`;
-                  setTooltipContent(
-                    `${m.areaName}: ${Math.round(m.incomePerCapita / 10000)}万円 (${dirStr} - ${m.astrologyStatus})`,
-                  );
-                }}
+                onMouseEnter={describe}
+                onClick={describe}
                 onMouseLeave={() => {
                   setTooltipContent("");
                 }}
               >
                 <circle
-                  r={marker.radius}
+                  r={marker.radius / k}
                   fill={
                     marker.fill === "income"
                       ? colorScale(m.incomePerCapita)
@@ -158,14 +204,43 @@ export function WealthMap({
                   }
                   fillOpacity={marker.opacity}
                   stroke={marker.stroke ?? "none"}
-                  strokeWidth={marker.strokeWidth}
-                  className="transition-all duration-300 hover:r-8 cursor-pointer"
+                  strokeWidth={marker.strokeWidth / k}
+                  className="cursor-pointer"
                 />
               </Marker>
             );
           })}
         </ZoomableGroup>
       </ComposableMap>
+
+      <div className="absolute top-4 right-4 z-10 flex flex-col gap-1">
+        <button
+          type="button"
+          aria-label="拡大"
+          onClick={() => zoomBy(2)}
+          disabled={k >= MAX_ZOOM}
+          className="flex h-9 w-9 items-center justify-center rounded-lg border border-stone-200 bg-white/90 text-stone-700 shadow hover:bg-white disabled:opacity-40"
+        >
+          <Plus className="h-4 w-4" aria-hidden />
+        </button>
+        <button
+          type="button"
+          aria-label="縮小"
+          onClick={() => zoomBy(0.5)}
+          disabled={k <= 1}
+          className="flex h-9 w-9 items-center justify-center rounded-lg border border-stone-200 bg-white/90 text-stone-700 shadow hover:bg-white disabled:opacity-40"
+        >
+          <Minus className="h-4 w-4" aria-hidden />
+        </button>
+        <button
+          type="button"
+          aria-label="出発地へ戻す"
+          onClick={() => setView({ center: [baseLon, baseLat], zoom: 4 })}
+          className="flex h-9 w-9 items-center justify-center rounded-lg border border-stone-200 bg-white/90 text-stone-700 shadow hover:bg-white"
+        >
+          <LocateFixed className="h-4 w-4" aria-hidden />
+        </button>
+      </div>
 
       {/* Legend / Tooltip Overlay */}
       {tooltipContent && (
