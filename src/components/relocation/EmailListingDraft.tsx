@@ -26,6 +26,7 @@ export function CandidateEmailImport() {
   const router = useRouter();
   return (
     <GmailConnectionPanel
+      showMap
       onSelect={(url, details) => {
         context?.setDraft({ ...details, url });
         router.push("/relocation/arbitrage#candidate-import");
