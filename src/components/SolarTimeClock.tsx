@@ -59,7 +59,10 @@ import {
   settingNumber,
   settingString,
   SETTINGS_KEY,
+  writeLocalSettings,
 } from "@/lib/userSettings";
+import { readWorkingDate, saveWorkingDate } from "@/lib/workingDate";
+import { readDestination, writeDestination } from "@/lib/destinationSetting";
 import type { MunicipalityWealthItem } from "@/lib/municipalityWealth";
 // TenChiJinEvaluation・Loader2 は「総合スコア」タブと一緒に
 // home/ScorecardPanel へ移した。
@@ -734,6 +737,60 @@ export const SolarTimeClock = () => {
   const [targetLat, setTargetLat] = useState<number | null>(null);
   const [targetLon, setTargetLon] = useState<number | null>(null);
   const [targetElevation, setTargetElevation] = useState<number | null>(null);
+
+  /*
+    ## 目的・目標日・目的地を他の頁と共有する（2026-09-28）
+
+    利用者の指摘「今の方位と時刻のページに設定した値がページ遷移したら
+    また設定しないといけない。他のページで設定した値を入れたい」。
+
+    この 3 つは、この頁だけが自分の state に閉じていた。他の頁は既に
+    共通の置き場を持っている。
+      - 移動の目的   … 設定バーの action_intent（端末＋アカウントの
+                       metaphysical_config。/api/user-config は項目ごとに
+                       合わせて保存するので、1 項目だけ送ってよい）
+      - 目標日       … lib/workingDate の target_date（/calendar・時期の
+                       分析・/relocation/arbitrage・移住先比較が読み書きする）
+      - 目的地       … lib/destinationSetting（/profile で入れる。端末だけ）
+    開いたときにそれを読み、利用者が変えたときだけ書き戻す。
+
+    **書くのは利用者が触ったときだけ。**開いただけで「今日」や
+    「目的地なし」を書くと、他の頁で選んだ日と目的地を消してしまう
+    （#1100 と同じ形の事故）。再生（日送り）で動いた日も書かない。
+  */
+  const dateTouched = React.useRef(false);
+  const destTouched = React.useRef(false);
+  const shareTimeOffsetDays: React.Dispatch<React.SetStateAction<number>> = (
+    v,
+  ) => {
+    dateTouched.current = true;
+    setTimeOffsetDays(v);
+  };
+  const shareTargetLat: React.Dispatch<React.SetStateAction<number | null>> = (
+    v,
+  ) => {
+    destTouched.current = true;
+    setTargetLat(v);
+  };
+  const shareTargetLon: React.Dispatch<React.SetStateAction<number | null>> = (
+    v,
+  ) => {
+    destTouched.current = true;
+    setTargetLon(v);
+  };
+  const shareActionIntent: React.Dispatch<
+    React.SetStateAction<ActionIntent>
+  > = (value) => {
+    const v = typeof value === "function" ? value(actionIntent) : value;
+    setActionIntent(v);
+    writeLocalSettings({ action_intent: v });
+    /* 未ログインなら 401 で何もしない。端末には上で書いてある */
+    void fetch("/api/user-config", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action_intent: v }),
+    }).catch(() => {});
+  };
   const [voidZodiacOverride, setVoidZodiacOverride] = useState<string>("");
   const [isAutoSearching, setIsAutoSearching] = useState(false);
 
@@ -928,6 +985,23 @@ export const SolarTimeClock = () => {
     return () => clearInterval(interval);
   }, [isPlaying, playSpeedDays]);
 
+  useEffect(() => {
+    if (!dateTouched.current || !baseTime || isPlaying) return;
+    const f = getZonedDateTimeFields(
+      new Date(baseTime.getTime() + timeOffsetDays * 86400000),
+      9,
+    );
+    const pad = (n: number) => String(n).padStart(2, "0");
+    saveWorkingDate(`${f.year}-${pad(f.month)}-${pad(f.day)}`);
+  }, [timeOffsetDays, baseTime, isPlaying]);
+
+  useEffect(() => {
+    if (!destTouched.current) return;
+    /* 地名はこの頁では分からないので空にする（前の地名を残すと、
+       別の場所の名前が付いたままになる。#78 と同じ） */
+    writeDestination({ lat: targetLat, lon: targetLon, label: "" });
+  }, [targetLat, targetLon]);
+
   const loadFromLocal = React.useCallback(async () => {
     let isLoaded = false;
     // 匿名でも動くように端末の値を土台にし、ログイン中ならクラウドの値と
@@ -1010,6 +1084,27 @@ export const SolarTimeClock = () => {
       } catch (e) {
         console.error("Settings apply error", e);
       }
+    }
+
+    /* 他の頁と共有している 3 つ（上の shareActionIntent の説明を見ること） */
+    const intent = settingString(data, "action_intent");
+    if (intent !== undefined) setActionIntent(parseActionIntent(intent));
+    const workingDate = readWorkingDate();
+    if (workingDate) {
+      const [y, m, d] = workingDate.split("-").map(Number);
+      const today = getZonedDateTimeFields(new Date(), 9);
+      const diffDays = Math.round(
+        (Date.UTC(y, m - 1, d) -
+          Date.UTC(today.year, today.month - 1, today.day)) /
+          86400000,
+      );
+      /* 過ぎた日は読まない（「今日の方位」の頁が過去の日で開くのは誤り） */
+      if (diffDays >= 0) setTimeOffsetDays(diffDays);
+    }
+    const dest = readDestination();
+    if (dest.lat !== null && dest.lon !== null) {
+      setTargetLat(dest.lat);
+      setTargetLon(dest.lon);
     }
 
     /*
@@ -3899,7 +3994,7 @@ export const SolarTimeClock = () => {
                 id="home-action-intent"
                 value={actionIntent}
                 onChange={(e) =>
-                  setActionIntent(parseActionIntent(e.target.value))
+                  shareActionIntent(parseActionIntent(e.target.value))
                 }
                 className="w-full bg-white/70 border border-stone-300 text-sm text-stone-600 rounded px-3 py-2 outline-none focus:border-emerald-500 transition-colors cursor-pointer"
               >
@@ -4086,15 +4181,15 @@ export const SolarTimeClock = () => {
             birthDate={birthDate}
             evalDate={evalDate}
             timeOffsetDays={timeOffsetDays}
-            setTimeOffsetDays={setTimeOffsetDays}
+            setTimeOffsetDays={shareTimeOffsetDays}
             isPlaying={isPlaying}
             setIsPlaying={setIsPlaying}
             playSpeedDays={playSpeedDays}
             setPlaySpeedDays={setPlaySpeedDays}
             targetLat={targetLat}
-            setTargetLat={setTargetLat}
+            setTargetLat={shareTargetLat}
             targetLon={targetLon}
-            setTargetLon={setTargetLon}
+            setTargetLon={shareTargetLon}
             targetElevation={targetElevation}
             setTargetElevation={setTargetElevation}
             targetDirInfo={targetDirInfo}
@@ -4103,7 +4198,7 @@ export const SolarTimeClock = () => {
             showMapPicker={showMapPicker}
             setShowMapPicker={setShowMapPicker}
             actionIntent={actionIntent}
-            setActionIntent={setActionIntent}
+            setActionIntent={shareActionIntent}
             useClassicalBoard={useClassicalBoard}
             setUseClassicalBoard={setUseClassicalBoard}
             useTrueNorth={useTrueNorth}
