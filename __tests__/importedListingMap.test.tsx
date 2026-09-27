@@ -76,6 +76,7 @@ it("sends only deduplicated addresses, wires settings into existing board, selec
   mocks.compute.mockReturnValue(board);
   const onSelect = vi.fn();
   render(<ImportedListingMap listings={listings} onSelect={onSelect} />);
+  fireEvent.click(screen.getByRole("button", { name: "地図に表示する" }));
   await screen.findByTestId("map");
   await waitFor(() =>
     expect(mocks.compute).toHaveBeenCalledWith({
@@ -116,9 +117,10 @@ it("disabled geocoding keeps the list and a clear Japanese explanation", async (
     Response.json({ code: "GEOCODE_DISABLED" }, { status: 503 }),
   );
   render(<ImportedListingMap listings={listings} onSelect={vi.fn()} />);
+  fireEvent.click(screen.getByRole("button", { name: "地図に表示する" }));
   expect(
     await screen.findByText(
-      "地図表示は現在無効です（住所ジオコーディングが無効）",
+      "地図表示は準備中です。下の一覧から物件を選んでください。",
     ),
   ).toBeTruthy();
   expect(screen.queryByTestId("map")).toBeNull();
@@ -132,6 +134,7 @@ it("failed geocoding stays unresolved and addressless listings never make a requ
   );
   expect(fetch).not.toHaveBeenCalled();
   view.rerender(<ImportedListingMap listings={listings} onSelect={vi.fn()} />);
+  fireEvent.click(screen.getByRole("button", { name: "地図に表示する" }));
   expect(await screen.findByText(/位置を検索できませんでした/)).toBeTruthy();
   expect(screen.getByText("位置未確定（2件）")).toBeTruthy();
 });
@@ -141,6 +144,7 @@ it("caps requested addresses and keeps excess listings unresolved", async () => 
     address: `架空市${i + 1}丁目`,
   }));
   render(<ImportedListingMap listings={many} onSelect={vi.fn()} />);
+  fireEvent.click(screen.getByRole("button", { name: "地図に表示する" }));
   await screen.findByTestId("map");
   expect(
     JSON.parse(String(vi.mocked(fetch).mock.calls[0][1]?.body)).addresses,
@@ -161,6 +165,7 @@ it("discards a stale response after the imported addresses change", async () => 
   const view = render(
     <ImportedListingMap listings={[listings[0]]} onSelect={vi.fn()} />,
   );
+  fireEvent.click(screen.getByRole("button", { name: "地図に表示する" }));
   view.rerender(
     <ImportedListingMap
       listings={[{ ...listings[0], address: "架空市2丁目" }]}
@@ -178,4 +183,17 @@ it("discards a stale response after the imported addresses change", async () => 
   );
   expect(screen.queryByTestId("map")).toBeNull();
   expect(screen.getByText("位置未確定（1件）")).toBeTruthy();
+});
+it("does not send any address before the button is pressed, and says where it goes", async () => {
+  /* 2026-09-27。#1550 の初版は取り込んだ直後に黙って国土地理院へ送っていた */
+  render(<ImportedListingMap listings={listings} onSelect={vi.fn()} />);
+  await waitFor(() => expect(mocks.load).toHaveBeenCalled());
+  expect(fetch).not.toHaveBeenCalled();
+  expect(screen.getByText(/国土地理院の住所検索に送って/)).toBeTruthy();
+  expect(
+    screen.getByText(/URL・メール本文・生年月日は送りません/),
+  ).toBeTruthy();
+  expect(screen.queryByText("住所の位置を検索中…")).toBeNull();
+  fireEvent.click(screen.getByRole("button", { name: "地図に表示する" }));
+  await waitFor(() => expect(fetch).toHaveBeenCalledTimes(1));
 });

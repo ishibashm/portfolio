@@ -92,7 +92,9 @@ export function ListingMapPopup({
             : "出発地を設定すると方位・盤を表示します。"}
         </p>
       )}
-      <p>GSIの概算位置です。保存前に地図で位置を確認してください。</p>
+      <p>
+        国土地理院の住所検索による概算位置です。保存前に地図で位置を確認してください。
+      </p>
       <button
         type="button"
         className="underline font-bold"

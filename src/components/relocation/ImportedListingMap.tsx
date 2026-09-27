@@ -61,6 +61,13 @@ export function ImportedListingMap({
   }>();
   const [context, setContext] = useState<DayKigakuInput>();
   const [board, setBoard] = useState<DayKigaku>();
+  /*
+    住所を国土地理院へ送るのは、押してから（2026-09-27）。#1550 の初版は
+    取り込んだ直後に黙って最大 10 件を送っていた。CLAUDE.md 3 節「入力が
+    どこへ行くかは、入れる前に分からないと意味が無い」。送り先と送るものを
+    ボタンの横に書き、押すまでは 1 件も送らない。
+  */
+  const [requested, setRequested] = useState(false);
   useEffect(() => {
     let active = true;
     void loadSettings()
@@ -104,7 +111,7 @@ export function ImportedListingMap({
     };
   }, []);
   useEffect(() => {
-    if (key === "[]") return;
+    if (!requested || key === "[]") return;
     const controller = new AbortController();
     // 本文・物件URLは送らず、上限内の重複しない住所だけを本人の操作に続けて検索。
     void fetch("/api/relocation/candidates/geocode/batch", {
@@ -125,7 +132,7 @@ export function ImportedListingMap({
             disabled: body.code === "GEOCODE_DISABLED",
             message:
               body.code === "GEOCODE_DISABLED"
-                ? "地図表示は現在無効です（住所ジオコーディングが無効）"
+                ? "地図表示は準備中です。下の一覧から物件を選んでください。"
                 : "位置を検索できませんでした。既存入力から住所・地図で確認してください。",
           });
         } else setReply({ key, results: responseSchema.parse(body).results });
@@ -140,7 +147,7 @@ export function ImportedListingMap({
           });
       });
     return () => controller.abort();
-  }, [key]);
+  }, [key, requested]);
   if (!listings.length) return null;
   const current = reply?.key === key ? reply : undefined;
   const groups = groupListingMap(listings, current?.results ?? []);
@@ -154,7 +161,24 @@ export function ImportedListingMap({
       <p>
         メールの住所から推測した概算位置です。保存は既存入力で位置を確認してから行います。
       </p>
-      {key !== "[]" && !current && <p role="status">住所の位置を検索中…</p>}
+      {key !== "[]" && !requested && (
+        <div className="space-y-1">
+          <button
+            type="button"
+            onClick={() => setRequested(true)}
+            className="min-h-[32px] rounded-lg bg-stone-800 px-3 py-1.5 text-xs font-bold text-white hover:bg-stone-700"
+          >
+            地図に表示する
+          </button>
+          <p className="text-stone-600">
+            押すと、所在地（最大{LISTING_MAP_ADDRESS_CAP}
+            件）を国土地理院の住所検索に送って位置を調べます。物件のURL・メール本文・生年月日は送りません。
+          </p>
+        </div>
+      )}
+      {requested && key !== "[]" && !current && (
+        <p role="status">住所の位置を検索中…</p>
+      )}
       {current?.message && <p role="status">{current.message}</p>}
       {addresses.length > LISTING_MAP_ADDRESS_CAP && (
         <p>
