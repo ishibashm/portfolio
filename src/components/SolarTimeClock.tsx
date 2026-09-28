@@ -586,6 +586,16 @@ export const SolarTimeClock = () => {
     }
   };
 
+  /** 要点の枠の「詳しく」から。開いて、その場所まで動かす。 */
+  const openDetail = (tab: typeof activeTab) => {
+    selectTab(tab);
+    requestAnimationFrame(() =>
+      document
+        .getElementById("dashboard-details")
+        ?.scrollIntoView({ behavior: "smooth", block: "start" }),
+    );
+  };
+
   // NBA State
   const [nbaData, setNbaData] = useState<NBAData | null>(null);
 
@@ -3834,7 +3844,7 @@ export const SolarTimeClock = () => {
                     手順 1: 出発地とあなたの星を決める
                   </strong>
                   <p className="text-xs sm:text-xs">
-                    プロフィールのタブで、生年月日と出発地を入れます（地名で探せます）。生年月日からあなたの「本命星」と、伝統的に大きな決断を避けるとされる「天中殺」の期間が決まります。出発地は、すべての方位を測る原点になります。
+                    生年月日と出発地は「生年月日と場所を登録」の頁で入れます（地名で探せます。使用中のプロフィールがそのまま使われます）。生年月日からあなたの「本命星」と、伝統的に大きな決断を避けるとされる「天中殺」の期間が決まります。出発地は、すべての方位を測る原点になります。
                   </p>
                 </div>
                 <div className="flex flex-col gap-2">
@@ -3842,7 +3852,7 @@ export const SolarTimeClock = () => {
                     手順 2: 凶方位を除外する（年・月・日の重ね合わせ）
                   </strong>
                   <p className="text-xs sm:text-xs">
-                    目的地のタブで、出発地から見た八方位を評価します。年盤・月盤・日盤の 3 つを同時に重ね、五黄殺や本命殺などの凶が 1 つでも含まれる方位を凶（赤）として外します。
+                    「詳しく見る」の「目的地と地図」で、出発地から見た八方位を評価します。年盤・月盤・日盤の 3 つを同時に重ね、五黄殺や本命殺などの凶が 1 つでも含まれる方位を凶（赤）として外します。
                   </p>
                 </div>
                 <div className="flex flex-col gap-2">
@@ -3858,7 +3868,7 @@ export const SolarTimeClock = () => {
                     手順 4: 動き出す日時を決める（刻と天中殺）
                   </strong>
                   <p className="text-xs sm:text-xs">
-                    タイミングのタブで、その日の 2 時間ごとの刻を見ます。天中殺の刻を避け、時盤の九星があなたの本命星と相生・比和にあたる刻を「家を出る・契約印を押す」時間として選びます。刻の境目は出発地の真太陽時で切ります。日ごとの一覧は「時期の分析」の頁へ。
+                    「詳しく見る」の「時刻の刻」で、その日の 2 時間ごとの刻を見ます。天中殺の刻を避け、時盤の九星があなたの本命星と相生・比和にあたる刻を「家を出る・契約印を押す」時間として選びます。刻の境目は出発地の真太陽時で切ります。日ごとの一覧は「時期の分析」の頁へ。
                   </p>
                 </div>
               </div>
@@ -3913,57 +3923,79 @@ export const SolarTimeClock = () => {
           </div>
         )}
 
-        <div className="w-full max-w-[1700px] flex items-center justify-center p-1 bg-white/80 border border-stone-200 rounded-3xl xl:rounded-full md:backdrop-blur-sm sticky top-4 z-40 flex-wrap gap-1">
-          {(
-            [
-              { id: "portal", label: "ホーム" },
-              { id: "profile", label: "1. プロフィール" },
-              { id: "destination", label: "2. 目的地と環境" },
-              { id: "timing", label: "3. タイミング" },
-              { id: "consult", label: "4. 盤の内訳" },
-              { id: "scorecard", label: "5. 総合スコア" },
-            ] as const
-          ).map((tab) => {
-            const on = activeTab === tab.id;
-            return (
-              <button
-                key={tab.id}
-                onClick={() => selectTab(tab.id)}
-                aria-current={on ? "page" : undefined}
-                className={`px-4 sm:px-6 py-2 rounded-full text-[11px] sm:text-xs font-mono tracking-wide whitespace-nowrap transition-all ${
-                  on
-                    ? "bg-stone-800 text-white border border-stone-800"
-                    : "text-stone-600 border border-transparent hover:bg-stone-100 hover:text-stone-800"
-                }`}
-              >
-                {tab.label}
-              </button>
-            );
-          })}
-        </div>
-
         {/* --- TAB CONTENT: 1. PROFILE --- */}
-        {/* --- TAB CONTENT: 0. PORTAL（1 枚目。要点だけを枠で並べる） --- */}
-        {activeTab === "portal" && (
-          <HomePortal
-            onOpenTab={selectTab}
-            evalDate={evalDate}
-            vectors={activeVectors}
-            schedule={portalSchedule}
-            personalVoidZodiac={personalVoidZodiac}
-            honmeiStar={honmeiStar}
-            useClassicalBoard={useClassicalBoard}
-            forecast={scorecard30DaysForecast}
-            kpIndex={spaceWeather?.kpIndex ?? null}
-            pressure={pressureData}
-            declination={geoData?.declination ?? null}
-            /* 見本かどうか。値は常に出し、誰の例かは頁の上の帯が書く
-               （2026-09-13 の方針）。初期値（2000-01-01）でも真になる
-               `Boolean(birthDate)` ではなく、「利用者が入れた値か」の旗で
-               見る。 */
-            profileIsSample={!birthDateOwned}
-          />
-        )}
+        {/*
+          ## 要点を 1 画面に、深い内容は「詳しく見る」で開く（2026-09-28）
+
+          利用者の判断「要点 1 画面に絞る」。以前は 7 つのタブで、要点
+          （ホーム）もタブの 1 枚だった。別のタブを開くと要点が消え、
+          「今日どの方位が良いか」を見るのに行き来が要った。
+
+          - 要点（HomePortal）は常に出す
+          - 目的地の地図・時刻の刻・盤の内訳・30 日の見通し・本命星と
+            天中殺は、下の「詳しく見る」で 1 つずつ開く。開いたものだけ
+            描くので、重い部品（地図・表）は押すまで読まない
+          - 要点の各枠の「詳しく」は、対応するものを開いてそこへ移る
+
+          タブ帯の番号（1〜6）は外した。番号は手順の順に見えるが、実際には
+          どこから開いてもよい。
+        */}
+        {/* --- 要点（常に出す） --- */}
+        <HomePortal
+          onOpenTab={openDetail}
+          evalDate={evalDate}
+          vectors={activeVectors}
+          schedule={portalSchedule}
+          personalVoidZodiac={personalVoidZodiac}
+          honmeiStar={honmeiStar}
+          useClassicalBoard={useClassicalBoard}
+          forecast={scorecard30DaysForecast}
+          kpIndex={spaceWeather?.kpIndex ?? null}
+          pressure={pressureData}
+          declination={geoData?.declination ?? null}
+          /* 見本かどうか。値は常に出し、誰の例かは頁の上の帯が書く
+             （2026-09-13 の方針）。初期値（2000-01-01）でも真になる
+             `Boolean(birthDate)` ではなく、「利用者が入れた値か」の旗で
+             見る。 */
+          profileIsSample={!birthDateOwned}
+        />
+
+        <nav
+          id="dashboard-details"
+          aria-label="詳しく見る"
+          className="w-full max-w-[1700px] scroll-mt-4 rounded-2xl border border-stone-200 bg-white/80 p-3"
+        >
+          <h3 className="mb-2 text-xs font-bold text-stone-600">詳しく見る</h3>
+          <div className="flex flex-wrap gap-2">
+            {(
+              [
+                { id: "destination", label: "目的地と地図" },
+                { id: "timing", label: "時刻の刻" },
+                { id: "consult", label: "盤の内訳" },
+                { id: "scorecard", label: "30 日の見通し" },
+                { id: "profile", label: "本命星と天中殺" },
+              ] as const
+            ).map((tab) => {
+              const on = activeTab === tab.id;
+              return (
+                <button
+                  key={tab.id}
+                  type="button"
+                  onClick={() => selectTab(on ? "portal" : tab.id)}
+                  aria-expanded={on}
+                  className={`min-h-[36px] rounded-full px-4 py-1.5 text-xs font-bold transition-colors ${
+                    on
+                      ? "border border-stone-800 bg-stone-800 text-white"
+                      : "border border-stone-300 bg-white text-stone-700 hover:bg-stone-50"
+                  }`}
+                >
+                  {on ? "▾ " : "▸ "}
+                  {tab.label}
+                </button>
+              );
+            })}
+          </div>
+        </nav>
 
         {activeTab === "profile" && (
           <div className="w-full flex flex-col items-center space-y-8 animate-fade-in max-w-[1700px]">
