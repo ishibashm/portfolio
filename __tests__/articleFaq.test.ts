@@ -405,7 +405,7 @@ describe("本物の記事に題を渡す", () => {
   const files = readdirSync(DIR).filter((f) => f.endsWith(".md"));
   const titleOf = (md: string) => md.match(/^title:\s*"?(.+?)"?\s*$/m)?.[1];
 
-  it("FAQPage を出せる記事が 17 → 22 本になる", () => {
+  it("FAQPage を出せる記事が 18 → 23 本になる", () => {
     const count = (withTitle: boolean) =>
       files.filter((f) => {
         const md = readFileSync(join(DIR, f), "utf8");
@@ -436,8 +436,14 @@ describe("本物の記事に題を渡す", () => {
       だけ（「…続くのか？　周期を…確かめる」）で題の組は取れないので、
       題の有無にかかわらず 1 → 2 組
     */
-    expect(count(false)).toBe(17);
-    expect(count(true)).toBe(22);
+    /*
+      2026-09-29: 風水と九星気学の記事（feng-shui-and-kigaku-side-by-side）の
+      見出し「本命卦の出し方」を「本命卦はどうやって出すのか」にして +1。
+      直下の段落は元から「八宅は生年と性別から本命卦を決めます」と答えて
+      いる。題は問いで終わらないので、題の有無にかかわらず 1 → 2 組
+    */
+    expect(count(false)).toBe(18);
+    expect(count(true)).toBe(23);
   });
 
   it("題から作った問いは、記事の題そのもの（言い換えない）", () => {
