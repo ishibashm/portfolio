@@ -49,8 +49,7 @@ export type PortalTab =
   | "destination"
   | "timing"
   | "consult"
-  | "scorecard"
-  | "history";
+  | "scorecard";
 
 export interface HomePortalProps {
   /** 各枠の「詳しく」から、対応するタブへ渡す。 */
@@ -500,12 +499,14 @@ export default function HomePortal({
               </Link>
             </li>
             <li>
-              <button
-                onClick={() => onOpenTab("history")}
+              {/* 以前は頁の「6. 履歴」タブ（全利用者共通の環境の記録）を
+                  開いていた。本人の引越しの振り返りは /relocation/history */}
+              <Link
+                href="/relocation/history"
                 className="inline-flex min-h-[24px] items-center text-indigo-700 hover:underline"
               >
                 過去の引越しを振り返る →
-              </button>
+              </Link>
             </li>
           </ul>
         </Card>
