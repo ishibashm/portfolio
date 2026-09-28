@@ -682,28 +682,34 @@ export default function DestinationMapPanel({
                           const val = fv[dir];
                           let bgClass =
                             "bg-blue-50 border-blue-200 text-blue-700";
-                          let statusLabel = "SAFE";
 
                           if (val === "OPTIMAL") {
                             bgClass =
                               "bg-emerald-50 border-emerald-500 text-emerald-700 shadow-[0_0_8px_rgba(16,185,129,0.15)]";
-                            statusLabel = "GO";
                           } else if (val === "OPTIMAL_REGULAR") {
                             bgClass =
                               "bg-emerald-50 border-emerald-600/30 text-emerald-700";
-                            statusLabel = "OK";
                           } else if (val === "WARNING") {
                             bgClass =
                               "bg-orange-50 border-orange-200 text-orange-700";
-                            statusLabel = "WARN";
                           } else if ((val || "").startsWith("NOISE")) {
                             bgClass = "bg-red-50 border-red-200 text-red-700";
-                            statusLabel = "ALERT";
                           }
 
+                          /*
+                            札は日本語の段階名（directionLabels）。以前は
+                            SAFE / GO / OK / WARN / ALERT の英語で、値が
+                            無い方位まで SAFE と出ていた。
+
+                            🎯 は判定と同じ真北の方位に置く。以前は磁北
+                            （magneticDirection）で置いていて、方位の境目の
+                            近くでは、判定（真北）と別の升目に 🎯 が付いた
+                            （CLAUDE.md 3 節「判定は必ず真北で行う」）。
+                          */
+                          const statusLabel = directionLabelName(val ?? "");
                           const isTarget =
                             targetDirInfo &&
-                            targetDirInfo.magneticDirection === dir;
+                            targetDirInfo.trueDirection === dir;
 
                           return (
                             <div
