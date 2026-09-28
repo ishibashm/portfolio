@@ -210,18 +210,6 @@ const ScorecardPanel = dynamic(() => import("./home/ScorecardPanel"), {
 
 // CosmicCalendar は /calendar に一本化したので、ここでは読み込まない。
 
-/**
- * 環境テレメトリの折れ線（recharts）。「6. 履歴」タブの 1 か所でしか
- * 使わないので、静的に読むとホームを開いた全員が recharts を読むことになる。
- */
-const TelemetryChart = dynamic(() => import("./TelemetryChart"), {
-  ssr: false,
-  loading: () => (
-    <div className="w-full h-64 bg-stone-50 border border-stone-200 flex items-center justify-center font-mono text-xs text-stone-600">
-      [ LOADING TELEMETRY CHART... ]
-    </div>
-  ),
-});
 
 /**
  * 時期のヒートマップ 1 列ぶん。30 日表示は 1 日、12 ヶ月表示は 1 ヶ月。
@@ -541,7 +529,6 @@ export const SolarTimeClock = () => {
     | "destination"
     | "timing"
     | "consult"
-    | "history"
     | "scorecard"
   >("portal");
 
@@ -566,7 +553,6 @@ export const SolarTimeClock = () => {
         "destination",
         "timing",
         "consult",
-        "history",
         "scorecard",
       ].includes(saved)
     ) {
@@ -3936,7 +3922,6 @@ export const SolarTimeClock = () => {
               { id: "timing", label: "3. タイミング" },
               { id: "consult", label: "4. 盤の内訳" },
               { id: "scorecard", label: "5. 総合スコア" },
-              { id: "history", label: "6. 履歴" },
             ] as const
           ).map((tab) => {
             const on = activeTab === tab.id;
@@ -4264,42 +4249,13 @@ export const SolarTimeClock = () => {
           </div>
         )}
 
-        {/* --- TAB CONTENT: 6. INSIGHTS (HISTORY) --- */}
-        {activeTab === "history" && (
-          <div className="w-full max-w-[1700px] flex flex-col gap-6 animate-fade-in mt-4">
-            {/*
-              何を見る画面なのかが書いてなかった。グラフが 5 枚並ぶだけで、
-              利用者から「見方が分からない」と言われた。読み方をここに書く。
-            */}
-            <div className="w-full bg-white/80 border border-stone-200 rounded-xl p-5">
-              <h2 className="text-sm font-bold text-stone-700 mb-2">
-                日ごとの記録
-              </h2>
-              <p className="text-xs text-stone-600 leading-relaxed max-w-[70ch]">
-                {"引越しの前後で環境と体調がどう動いたかを、後から見返すための画面です。夜間の巡回が 1 日 1 件ずつ記録します。"}
-                <strong className="text-stone-700">
-                  ここで吉凶は判定しません。
-                </strong>
-                {"方位と日取りは 2〜5 のタブで決めます。"}
-              </p>
-              <ul className="text-xs text-stone-600 mt-3 space-y-1 list-disc pl-5">
-                <li>
-                  {"天体黄経 — 太陽・月・木星の位置。月盤と年盤の切り替わりがここに出ます"}
-                </li>
-                <li>
-                  {"宇宙天気・地磁気 — Kp 指数と磁場の観測値。並べて見るための参考で、方位の判定には入れません"}
-                </li>
-                <li>
-                  {"生体 — HRV・GSR・自律神経の負荷。入れた基準値と比べます"}
-                </li>
-                <li>
-                  {"気学星・月相 — その日の年盤・月盤・日盤の星と月の満ち欠け"}
-                </li>
-              </ul>
-            </div>
-            <TelemetryChart />
-          </div>
-        )}
+        {/*
+          「6. 履歴」タブは外した（利用者の判断、2026-09-28）。中身の
+          TelemetryChart は /api/telemetry/history の**全利用者共通の**
+          記録で、本人の記録ではなかった。生体（HRV・GSR）は入れる欄も
+          無いのに「入れた基準値と比べます」と書いていた。本人の引越しの
+          振り返りは /relocation/history にある。
+        */}
 
         {/*
           暦カレンダーと選んだ日の詳細は /calendar に同じものがある。
