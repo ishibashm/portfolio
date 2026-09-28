@@ -28,7 +28,8 @@ import { PROFILE_FIELDS } from "@/lib/profileFields";
 import { normalizeBirthDateTimeLocal } from "@/utils/japanDate";
 import { PlaceInput } from "@/components/relocation/PlaceInput";
 import {
-  readLocalSettings,
+  loadSettings,
+  readSettingsSync,
   saveSettings,
   settingString,
   type Settings,
@@ -71,18 +72,53 @@ export function QuickProfileBar() {
   /* 控えの呼び出し・名前を付けて保存は ProfilePicker と /profile・/account に
      一本化した（lib/activeProfile）。ここは入力欄だけを持つ。 */
 
-  // 端末に入っている値を読む。クラウドとの突き合わせは下の
-  // ダッシュボードが起動時にやるので、ここでは端末の値だけを見る
-  // （読み込みを待たずに欄が出るほうが、入力の入口としては速い）。
+  /*
+    ## アカウントの値も読む（2026-09-28 の指摘）
+
+    「プロフィール選んでるのに生年月日が入っていないとでる」。以前は
+    端末の値（readLocalSettings）だけを読み、「クラウドとの突き合わせは
+    下のダッシュボードがやる」と書いていたが、ダッシュボードは
+    /relocation/dashboard へ移っていて、ホームでは誰も突き合わせて
+    いなかった。生年月日をアカウントに登録してあっても、その端末に
+    写しが無ければ欄は空で、赤い「まだ入っていません」が出ていた。
+    同じ枠の ProfilePicker は loadSettings で読むので「Kyoto を使用中」と
+    出しながら、という食い違い（/calendar の #1548 と同じ形）。
+
+    先に端末（readSettingsSync。旧い写しの引き上げを含む）で埋め、
+    後からアカウントの値を重ねる。**欄を触った後は重ねない**（打っている
+    途中の値を、遅れて届いた値で上書きしない）。ProfilePicker で
+    切り替えたとき（metaphysical-config-updated）も読み直す。
+  */
+  const touched = React.useRef(false);
   useEffect(() => {
-    const s = readLocalSettings();
-    if (typeof s.birth_date === "string") setBirthDate(s.birth_date);
-    setBaseLat(toNumber(s.base_lat));
-    setBaseLon(toNumber(s.base_lon));
-    setBirthLat(toNumber(s.birth_lat));
-    setBirthLon(toNumber(s.birth_lon));
-    setBaseLabel(settingString(s, "base_label"));
-    setBirthLabel(settingString(s, "birth_label"));
+    let alive = true;
+    const apply = (s: Settings) => {
+      const birth = settingString(s, "birth_date");
+      if (birth) setBirthDate(birth);
+      if (toNumber(s.base_lat) !== null) setBaseLat(toNumber(s.base_lat));
+      if (toNumber(s.base_lon) !== null) setBaseLon(toNumber(s.base_lon));
+      if (toNumber(s.birth_lat) !== null) setBirthLat(toNumber(s.birth_lat));
+      if (toNumber(s.birth_lon) !== null) setBirthLon(toNumber(s.birth_lon));
+      const baseName = settingString(s, "base_label");
+      if (baseName !== undefined) setBaseLabel(baseName);
+      const birthName = settingString(s, "birth_label");
+      if (birthName !== undefined) setBirthLabel(birthName);
+    };
+    const load = () => {
+      if (touched.current) return;
+      apply(readSettingsSync());
+      void loadSettings()
+        .then(({ settings }) => {
+          if (alive && !touched.current) apply(settings);
+        })
+        .catch(() => {});
+    };
+    load();
+    window.addEventListener("metaphysical-config-updated", load);
+    return () => {
+      alive = false;
+      window.removeEventListener("metaphysical-config-updated", load);
+    };
   }, []);
 
   /** いま画面に入っている 3 つを設定として書く。 */
@@ -220,7 +256,10 @@ export function QuickProfileBar() {
             id="quick-birth-date"
             type="datetime-local"
             value={normalizeBirthDateTimeLocal(birthDate)}
-            onChange={(e) => setBirthDate(e.target.value)}
+            onChange={(e) => {
+              touched.current = true;
+              setBirthDate(e.target.value);
+            }}
             className="w-full bg-white border border-slate-300 rounded-xl px-3 py-2.5 text-sm text-slate-900 outline-none focus:border-rose-400 transition-colors"
           />
           <p className="text-xs text-slate-500 leading-relaxed">
@@ -234,6 +273,7 @@ export function QuickProfileBar() {
           lat={baseLat}
           lon={baseLon}
           onChange={(lat, lon, name) => {
+            touched.current = true;
             setBaseLat(lat);
             setBaseLon(lon);
             /* 名前が無ければ undefined。前の地名を持ち越さない */
@@ -246,6 +286,7 @@ export function QuickProfileBar() {
           onUseCurrentLocation={() => {
             if (!navigator.geolocation) return;
             navigator.geolocation.getCurrentPosition((pos) => {
+              touched.current = true;
               setBaseLat(pos.coords.latitude);
               setBaseLon(pos.coords.longitude);
               /* 現在地には名前が無い */
@@ -260,6 +301,7 @@ export function QuickProfileBar() {
           lat={birthLat}
           lon={birthLon}
           onChange={(lat, lon, name) => {
+            touched.current = true;
             setBirthLat(lat);
             setBirthLon(lon);
             setBirthLabel(name);
