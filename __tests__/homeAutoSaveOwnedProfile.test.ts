@@ -76,16 +76,25 @@ function autoSavePayloadProperties(
 }
 
 describe("ホームの自動保存", () => {
-  const literal = autoSavePayloadProperties();
+  /*
+    2026-09-29 に自動保存を 2 つに分けた（アカウントにも届かせるため）。
+    同期する項目（生年月日・出生地・出発地）は `synced`、設定バーと共有する
+    盤の設定は `shared`。旗の守りは `synced` の側で見る。
+  */
+  const literal = autoSavePayloadProperties(SOURCE, "synced");
+  const shared = autoSavePayloadProperties(SOURCE, "shared");
 
   it("見張りが空回りしていない（保存する項目を読めている）", () => {
-    const names = literal.properties
+    const names = shared.properties
       .filter(ts.isPropertyAssignment)
       .map((p) => p.name.getText());
     /* 盤の設定は今までどおり無条件に書く。**出発地はここに置かない**
        （2026-09-13 から旗で包んだので、素の欄として現れたら回帰） */
     expect(names).toContain("use_classical_board");
-    expect(names).toContain("layer_mode");
+    expect(names).toContain("direction_filter_mode");
+    for (const key of GUARDED) expect(names, key).not.toContain(key);
+    /* 同期する側は旗つきの展開だけ（素の欄は 1 つも無い） */
+    expect(literal.properties.length).toBeGreaterThan(0);
   });
 
   it("生年月日・出生地・出発地を無条件には書かない", () => {

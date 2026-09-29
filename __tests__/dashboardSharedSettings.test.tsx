@@ -170,3 +170,37 @@ describe("この頁で変えた値を他の頁へ渡す", () => {
     expect(localStorage.getItem("arb_targetDate")).toBeNull();
   });
 });
+
+describe("自動保存はアカウントにも届く（変わったときだけ）", () => {
+  const posts = () =>
+    fetchMock.mock.calls
+      .filter(
+        ([url, init]) =>
+          url === "/api/user-config" &&
+          (init as RequestInit | undefined)?.method === "POST",
+      )
+      .map(([, init]) => JSON.parse(String((init as RequestInit).body)));
+
+  it("開いただけでは送らない。盤を切り替えると、その好みだけを送る", async () => {
+    /* 2026-09-29。以前の自動保存は端末だけに書き、ログイン中は次に
+       開くとアカウントの古い値が勝って戻っていた */
+    localStorage.setItem(
+      "tactical_config_v1",
+      JSON.stringify({ use_classical_board: true }),
+    );
+    await open();
+    expect(posts()).toEqual([]);
+
+    const toggle = Array.from(container.querySelectorAll("button")).find((b) =>
+      b.textContent?.includes("盤:"),
+    ) as HTMLButtonElement;
+    await act(async () => toggle.click());
+    expect(config().use_classical_board).toBe(false);
+    const sent = posts();
+    expect(sent).toHaveLength(1);
+    expect(sent[0]).toMatchObject({ use_classical_board: false });
+    /* 生年月日・出発地は触っていないので送らない */
+    expect(sent[0]).not.toHaveProperty("birth_date");
+    expect(sent[0]).not.toHaveProperty("base_lat");
+  });
+});
