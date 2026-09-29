@@ -2,11 +2,15 @@ import Link from "next/link";
 import { ContentDisclaimer } from "@/components/houi/ContentDisclaimer";
 import type { Metadata } from "next";
 import { areasByPref } from "@/lib/areaContent";
-import { prefCodeByName } from "@/lib/prefContent";
+import { PREF_REGION, prefCodeByName } from "@/lib/prefContent";
 import { PREF_EDITORIAL } from "@/lib/prefEditorial";
 import { AdBanner } from "@/components/ads/AdBanner";
 import { AREA_EDITORIAL } from "@/lib/areaEditorial";
 import { BreadcrumbJsonLd } from "@/components/JsonLd";
+import {
+  AreaQuickFind,
+  type QuickFindArea,
+} from "@/components/houi/AreaQuickFind";
 
 export const metadata: Metadata = {
   alternates: { canonical: "/houi/area" },
@@ -17,7 +21,37 @@ export const metadata: Metadata = {
 
 export default function Page() {
   // 県ごとにまとめる。掲載数の多い順だと県が入り混じって探しにくい。
-  const byPref = areasByPref();
+  /*
+    県の並びは JIS の県番号順（北から南）にする（2026-09-30）。以前は
+    データの並び（掲載の多い市区町村を持つ県から）のままで、静岡県が
+    先頭、北海道がずっと下にあった。自分の県を探すにはスクロールする
+    しかない（利用者の指摘「自分の居住都道府県を探すの大変」）。
+  */
+  const prefs = [...areasByPref().entries()]
+    .map(([pref, list]) => ({ pref, code: prefCodeByName(pref) ?? "99", list }))
+    .sort((a, b) => a.code.localeCompare(b.code));
+  /* 地方ごとの目次。地方の並びも県番号の順に最初に出た順 */
+  const regions = new Map<string, typeof prefs>();
+  for (const p of prefs) {
+    const region = PREF_REGION[p.code] ?? "その他";
+    if (!regions.has(region)) regions.set(region, []);
+    regions.get(region)!.push(p);
+  }
+  /* 検索と近道の部品に渡す最小の形（コード・県・表示名・代表点）。
+     代表点は近道の「いちばん近い」を選ぶだけなので小数 3 桁（約 100m）に
+     丸めて HTML を軽くする */
+  const r3 = (v: number) => Math.round(v * 1000) / 1000;
+  const quick: QuickFindArea[] = prefs.flatMap((p) =>
+    p.list.map(
+      (a): QuickFindArea => [
+        a.code,
+        p.code,
+        `${p.pref}${a.city}`,
+        r3(a.lat),
+        r3(a.lon),
+      ],
+    ),
+  );
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#faf7f5] via-[#f5efe9] to-[#f0e9e1] text-slate-900 font-sans">
@@ -56,14 +90,46 @@ export default function Page() {
           エリア）。
         </p>
 
+        <AreaQuickFind areas={quick} />
+
+        {/* 県の目次。JS が無くても効くよう、頁内の飛び先へのリンクにする */}
+        <nav
+          aria-label="都道府県の目次"
+          className="mt-6 rounded-2xl border border-slate-300 bg-white/80 p-4"
+        >
+          <p className="text-xs font-bold text-slate-600">都道府県から探す</p>
+          <dl className="mt-2 space-y-1.5">
+            {[...regions.entries()].map(([region, list]) => (
+              <div
+                key={region}
+                className="flex flex-wrap items-baseline gap-x-3 gap-y-1"
+              >
+                <dt className="w-24 shrink-0 text-xs text-slate-500">
+                  {region}
+                </dt>
+                <dd className="flex flex-wrap gap-x-3 gap-y-1">
+                  {list.map((p) => (
+                    <a
+                      key={p.code}
+                      href={`#pref-${p.code}`}
+                      className="text-sm font-semibold text-slate-800 underline decoration-slate-300 hover:text-rose-600"
+                    >
+                      {p.pref}
+                    </a>
+                  ))}
+                </dd>
+              </div>
+            ))}
+          </dl>
+        </nav>
+
         <div className="mt-8 space-y-6">
-          {[...byPref.entries()].map(([pref, list]) => {
+          {prefs.map(({ pref, code, list }) => {
             /* 県のまとめ頁（/houi/pref）は固有文章を書いた県だけ公開
                している。公開済みの県は見出しから直接入れるようにする。 */
-            const code = prefCodeByName(pref);
-            const hasPrefPage = code !== undefined && code in PREF_EDITORIAL;
+            const hasPrefPage = code in PREF_EDITORIAL;
             return (
-              <section key={pref}>
+              <section key={pref} id={`pref-${code}`} className="scroll-mt-20">
                 <h2 className="text-base font-bold font-serif border-b border-slate-300 pb-2">
                   {pref}
                   <span className="ml-2 text-xs font-normal text-slate-500">
