@@ -37,6 +37,7 @@ import {
 } from "@/utils/tenchusatsuPolicy";
 import { getAuspiciousDayErrorMessage } from "@/lib/auspiciousDayErrors";
 import { directionLabelName } from "@/lib/directionLabels";
+import { TIER_LABELS, type DayTier } from "@/utils/dayTier";
 import {
   DEFAULT_DAY_FILTER,
   filterDays,
@@ -99,6 +100,8 @@ interface DayVerdict {
   blockedByTenchusatsu: boolean;
   voidScopes: { year: boolean; month: boolean; day: boolean };
   tags: string[];
+  /** 段階（S〜C）。scope=noBad で呼んだときに付く */
+  tier?: DayTier;
 }
 
 interface Summary {
@@ -108,6 +111,9 @@ interface Summary {
   tripleAuspiciousDays: number;
   availableDays: number;
   blockedByTenchusatsuDays: number;
+  /** 凶の無い日（S〜C）の数。scope=noBad で呼んだときに付く */
+  noBadDays?: number;
+  availableNoBadDays?: number;
   window: {
     yearBoardValidUntil: string | null;
     afterYearBoardStatus: string | null;
@@ -254,6 +260,9 @@ export function AuspiciousDayFinder() {
         to: `${to.getFullYear()}-${String(to.getMonth() + 1).padStart(2, "0")}-${String(to.getDate()).padStart(2, "0")}`,
         direction,
         tenchusatsuMode,
+        /* 三盤吉だけでなく、凶の無い日（吉2盤・吉1盤・平）まで拾う
+           （利用者の指摘、2026-09-29「凶がないなら他の方角も出したら」） */
+        scope: "noBad",
       });
       const res = await fetch(
         `/api/relocation/auspicious-days?${params.toString()}`,
@@ -303,10 +312,10 @@ export function AuspiciousDayFinder() {
     <section className="mb-10 rounded-3xl border border-slate-300 bg-white/95 p-6 md:p-8 shadow-lg shadow-slate-200/50">
       <h2 className="text-lg font-bold font-serif flex items-center gap-2">
         <CalendarCheck className="w-5 h-5 text-rose-500" />
-        三盤すべてが吉になる日を出す
+        三盤に凶が入らない日を出す
       </h2>
       <p className="mt-3 text-sm text-slate-700 leading-relaxed">
-        年盤・月盤・日盤のどれにも凶が入らない日だけを日付として並べます。年盤は立春で切り替わるため、その方位が吉でいられる期限も併せて出します。
+        年盤・月盤・日盤のどれにも凶が入らない日を、方位ごとに日付で並べます。三盤すべてが吉の日（S）だけでなく、吉が2盤・1盤で残りが平の日（A・B）、すべて平の日（C）も出します。三盤吉だけを見たいときは下の絞り込みで選べます。年盤は立春で切り替わるため、その方位が吉でいられる期限も併せて出します。
       </p>
 
       {/*
@@ -487,16 +496,16 @@ export function AuspiciousDayFinder() {
 
       {summaries && (
         <div className="mt-5 space-y-5">
-          {summaries.every((s) => s.tripleAuspiciousDays === 0) && (
+          {summaries.every((s) => s.days.length === 0) && (
             <p className="text-sm text-amber-700 bg-amber-50 border border-amber-200 rounded-xl px-4 py-3">
-              走査した期間に、三盤すべてが吉になる日はありませんでした。期間を延ばすか、方位を変えて試してください。
+              走査した期間に、三盤のどれにも凶が入らない日はありませんでした。期間を延ばすか、方位を変えて試してください。
             </p>
           )}
 
           {/* 絞り込み。日を決めるときに実際に効く軸だけ置く。
               引越し業者の予約は土日に偏る、縁起日を優先したい人がいる、
               天中殺の日は結局選べない——この 3 つと、月。 */}
-          {summaries.some((s) => s.tripleAuspiciousDays > 0) && (
+          {summaries.some((s) => s.days.length > 0) && (
             <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3">
               <div className="flex flex-wrap items-center gap-x-5 gap-y-2">
                 <span className="text-xs font-bold text-slate-600">
@@ -564,6 +573,18 @@ export function AuspiciousDayFinder() {
                   天中殺の日を隠す
                 </label>
 
+                <label className="flex items-center gap-1.5 text-xs text-slate-700 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={filter.tripleOnly}
+                    onChange={(e) =>
+                      setFilter({ ...filter, tripleOnly: e.target.checked })
+                    }
+                    className="accent-rose-500"
+                  />
+                  三盤吉（S）だけ
+                </label>
+
                 {isFiltering(filter) && (
                   <button
                     type="button"
@@ -578,7 +599,7 @@ export function AuspiciousDayFinder() {
           )}
 
           {summaries
-            .filter((s) => s.tripleAuspiciousDays > 0)
+            .filter((s) => s.days.length > 0)
             .map((s) => (
               <div
                 key={s.direction}
@@ -611,6 +632,15 @@ export function AuspiciousDayFinder() {
                           </b>{" "}
                           日 ／ 実質{" "}
                           <b className="text-emerald-700">{s.availableDays}</b> 日
+                        </>
+                      )}
+                      {/* 天中殺の数と実質は三盤吉のうちの数。凶なしはその後に置く
+                          （並べ替えると「凶なしのうち天中殺で不可」と読める） */}
+                      {s.noBadDays !== undefined && (
+                        <>
+                          {" "}
+                          ／ 凶なし（吉2盤・吉1盤・平を含む）{" "}
+                          <b className="text-slate-800">{s.noBadDays}</b> 日
                         </>
                       )}
                     </span>
@@ -689,6 +719,17 @@ export function AuspiciousDayFinder() {
                             <span className="text-slate-400">
                               （{WEEKDAYS[d.weekday]}）
                             </span>
+                            {d.tier && (
+                              <span
+                                className={`mt-0.5 ml-7 block w-fit rounded px-1.5 py-0.5 font-sans text-xs font-semibold ${
+                                  d.tier === "S"
+                                    ? "bg-rose-50 text-rose-700"
+                                    : "bg-slate-100 text-slate-600"
+                                }`}
+                              >
+                                {d.tier} {TIER_LABELS[d.tier]}
+                              </span>
+                            )}
                           </td>
                           <td className="px-3 py-2">{label(d.yearLayer)}</td>
                           <td className="px-3 py-2">{label(d.monthLayer)}</td>
@@ -778,7 +819,7 @@ export function AuspiciousDayFinder() {
               summaries.length === 0
                 ? null
                 : buildTimingReport({
-                    title: "三盤すべてが吉になる日（引越しの日取り）",
+                    title: "三盤に凶が入らない日（引越しの日取り）",
                     generatedAt: new Date(),
                     honmeiStarName:
                       meta.honmeiStar !== undefined
@@ -795,18 +836,26 @@ export function AuspiciousDayFinder() {
                         TENCHUSATSU_MODES.find((m) => m.id === tenchusatsuMode)
                           ?.label ?? tenchusatsuMode
                       }`,
-                      "段階は三盤吉（年盤・月盤・日盤のすべてが吉）の日だけを数えています",
+                      "年盤・月盤・日盤のどれにも凶が入らない日（S 三盤吉・A 吉2盤・B 吉1盤・C 平）を数えています",
                     ],
                     directions: summaries.map((s) => {
                       const open = s.days.filter(
                         (d) => !d.blockedByTenchusatsu,
                       );
+                      /* 段階の付いた応答なら、塞がれない日のうち最良の
+                         段階を出す。付いていなければ三盤吉だけの一覧 */
+                      const tiers = open.map((d) => d.tier ?? "S");
+                      const best = (["S", "A", "B", "C"] as const).find((t) =>
+                        tiers.includes(t),
+                      );
+                      const firstOfBest = open.find(
+                        (d) => (d.tier ?? "S") === best,
+                      );
                       return {
                         label: s.directionLabel,
-                        bestTier:
-                          s.tripleAuspiciousDays > 0 ? "S 三盤吉" : null,
-                        firstDate: open[0]?.date ?? null,
-                        totalOpen: open.length,
+                        bestTier: best ? `${best} ${TIER_LABELS[best]}` : null,
+                        firstDate: firstOfBest?.date ?? null,
+                        totalOpen: tiers.filter((t) => t === best).length,
                         windows: null,
                       };
                     }),

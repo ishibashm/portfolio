@@ -82,7 +82,7 @@ describe("/calendar: 出した吉日を AI に渡す", () => {
     fireEvent.click(copy);
     await waitFor(() => expect(writeText).toHaveBeenCalledTimes(1));
     const md = writeText.mock.calls[0][0] as string;
-    expect(md).toContain("三盤すべてが吉になる日");
+    expect(md).toContain("三盤に凶が入らない日");
     expect(md).toContain("本命星: 七赤金星");
     expect(md).toContain("| 南東 | S 三盤吉 | 2026-10-12 | 1 |");
     /* 生年月日（既定の 2000-01-01）も座標も文書に入らない */
