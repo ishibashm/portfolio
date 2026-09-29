@@ -110,6 +110,13 @@ it("connect only requests authorization URL and offers an explicit Google link",
   const fetch = network({ confirmed: true });
   mount();
   await screen.findByText("接続状態: 接続済み");
+  /* 接続済みと出た後にラベルの取得が走る。先に押すと順序が入れ替わり、
+     CI の遅い機械で落ちた（2026-09-29、#1563）。取得を待ってから押す */
+  await waitFor(() =>
+    expect(fetch.mock.calls.map(([url]) => String(url))).toContain(
+      `/api/relocation/email/gmail/labels?connectionId=${id}`,
+    ),
+  );
   fireEvent.click(screen.getByRole("button", { name: "Gmailと接続" }));
   expect(
     await screen.findByRole("link", { name: "Googleの認可画面へ進む" }),

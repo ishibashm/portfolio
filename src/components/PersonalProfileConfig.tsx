@@ -76,15 +76,6 @@ export function PersonalProfileConfig({
   onGetGPS,
   voidZodiacOverride,
   setVoidZodiacOverride,
-  baselineHrvMean,
-  setBaselineHrvMean,
-  baselineHrvStd,
-  setBaselineHrvStd,
-  baselineGsrMean,
-  setBaselineGsrMean,
-  baselineGsrStd,
-  setBaselineGsrStd,
-  baseSyncTimestamp,
   setBaseSyncTimestamp,
   usePsychologyScorer,
   setUsePsychologyScorer,
@@ -96,7 +87,7 @@ export function PersonalProfileConfig({
   derivedPersonalVoid,
 }: PersonalProfileProps) {
   /**
-   * 詳細設定（天中殺の上書き・判定に使う要素・生体の基準値・API キー）を
+   * 詳細設定（天中殺の上書き・判定に使う要素）を
    * 畳んでおく。既定は閉じる。初めて開いた人が設定すべきなのは
    * 生年月日と現在地だけで、専門項目が同列に並んでいると、全部
    * 埋めないと使えないように見える（利用者の指摘で画面を整理した）。
@@ -332,103 +323,13 @@ export function PersonalProfileConfig({
             </div>
           </div>
 
-          {/* Bio-Baseline Configuration（詳細設定） */}
-          {showAdvanced && (
-            <div className="mt-4 pt-4 border-t border-stone-200">
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-[10px] text-stone-600 tracking-wider font-bold">
-                  体調の基準値（HRV・GSR / 任意）
-                </span>
-                <span className="text-[10px] text-emerald-700">
-                  {baseSyncTimestamp
-                    ? `同期: ${new Date(baseSyncTimestamp).toLocaleDateString(
-                        "ja-JP",
-                        { timeZone: "Asia/Tokyo" },
-                      )}`
-                    : "未同期"}
-                </span>
-              </div>
-
-              <div className="grid grid-cols-2 gap-2 mt-2">
-                <div className="flex flex-col gap-1">
-                  <label
-                    htmlFor="bio-hrv-mean"
-                    className="text-[10px] text-stone-600 uppercase"
-                  >
-                    HRV 平均 (ms)
-                  </label>
-                  <input
-                    id="bio-hrv-mean"
-                    type="number"
-                    step="0.1"
-                    value={baselineHrvMean ?? ""}
-                    onChange={(e) =>
-                      setBaselineHrvMean?.(Number(e.target.value))
-                    }
-                    className="bg-white border border-stone-300 text-stone-600 px-2 py-1.5 rounded-xl outline-none focus:border-rose-400 transition-colors w-full text-center"
-                  />
-                </div>
-                <div className="flex flex-col gap-1">
-                  <label
-                    htmlFor="bio-hrv-std"
-                    className="text-[10px] text-stone-600 uppercase"
-                  >
-                    HRV 標準偏差
-                  </label>
-                  <input
-                    id="bio-hrv-std"
-                    type="number"
-                    step="0.1"
-                    value={baselineHrvStd ?? ""}
-                    onChange={(e) =>
-                      setBaselineHrvStd?.(Number(e.target.value))
-                    }
-                    className="bg-white border border-stone-300 text-stone-600 px-2 py-1.5 rounded-xl outline-none focus:border-rose-400 transition-colors w-full text-center"
-                  />
-                </div>
-                <div className="flex flex-col gap-1">
-                  <label
-                    htmlFor="bio-gsr-mean"
-                    className="text-[10px] text-stone-600 uppercase"
-                  >
-                    GSR 平均 (μS)
-                  </label>
-                  <input
-                    id="bio-gsr-mean"
-                    type="number"
-                    step="0.1"
-                    value={baselineGsrMean ?? ""}
-                    onChange={(e) =>
-                      setBaselineGsrMean?.(Number(e.target.value))
-                    }
-                    className="bg-white border border-stone-300 text-stone-600 px-2 py-1.5 rounded-xl outline-none focus:border-rose-400 transition-colors w-full text-center"
-                  />
-                </div>
-                <div className="flex flex-col gap-1">
-                  <label
-                    htmlFor="bio-gsr-std"
-                    className="text-[10px] text-stone-600 uppercase"
-                  >
-                    GSR 標準偏差
-                  </label>
-                  <input
-                    id="bio-gsr-std"
-                    type="number"
-                    step="0.1"
-                    value={baselineGsrStd ?? ""}
-                    onChange={(e) =>
-                      setBaselineGsrStd?.(Number(e.target.value))
-                    }
-                    className="bg-white border border-stone-300 text-stone-600 px-2 py-1.5 rounded-xl outline-none focus:border-rose-400 transition-colors w-full text-center"
-                  />
-                </div>
-              </div>
-              <p className="text-xs text-stone-600 mt-1 text-justify">
-                スマートウォッチ等で測った直近1ヶ月の平均・標準偏差を入れると、体調の異常検知があなた基準になります。無くても動きます。
-              </p>
-            </div>
-          )}
-
+          {/*
+            体調の基準値（HRV・GSR）の欄は外した（利用者の判断、2026-09-28
+            「履歴・生体は頁から外す」）。値を比べる「履歴」タブを外したので
+            入れても見る所が無く、GSR 標準偏差の欄は親から値が渡されて
+            おらず常に空だった。受け口（props）は呼び出し側とずらさない
+            ために残す（CLAUDE.md 3 節「未使用に見えても props を消さない」）。
+          */}
           {/* Timing Optimizer Engine Configuration（詳細設定） */}
           {showAdvanced && (
             <div className="mt-4 pt-4 border-t border-stone-200">
@@ -511,7 +412,7 @@ export function PersonalProfileConfig({
         </div>
 
         {/* 詳細設定の開閉。専門項目（天中殺の上書き・判定に使う要素・
-            体調の基準値・API キー）はここを開いたときだけ出す */}
+            ）はここを開いたときだけ出す */}
         <div className="md:col-span-2">
           <button
             type="button"
@@ -521,7 +422,7 @@ export function PersonalProfileConfig({
           >
             {showAdvanced
               ? "▲ 詳細設定を閉じる"
-              : "▼ 詳細設定（天中殺の上書き・判定に使う要素・体調の基準値・API キー）"}
+              : "▼ 詳細設定（天中殺の上書き・判定に使う要素）"}
           </button>
         </div>
 
