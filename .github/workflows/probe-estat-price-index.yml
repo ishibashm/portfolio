@@ -17,6 +17,21 @@ name: Probe estat price index
 on:
   # 探すだけなので手動だけ。定期実行する意味が無い。
   workflow_dispatch:
+    # 2026-09-30: 家賃の統計（民営家賃）も探せるよう、言葉と統計表 ID を
+    # 手動実行のときに渡せるようにした。空なら従来どおり不動産価格指数を探す
+    inputs:
+      words:
+        description: "探す言葉（カンマ区切り）。空なら不動産価格指数"
+        required: false
+        default: ""
+      meta_id:
+        description: "統計表 ID。入れると、その表の項目の一覧を出す"
+        required: false
+        default: ""
+      meta_filter:
+        description: "項目の一覧をこの語を含むものに絞る（例: 家賃）"
+        required: false
+        default: ""
 
 jobs:
   probe:
@@ -45,4 +60,8 @@ jobs:
           echo "$ENV_FILE_CONTENT" > .env
 
       - name: Probe
+        env:
+          PROBE_WORDS: ${{ inputs.words }}
+          PROBE_META_ID: ${{ inputs.meta_id }}
+          PROBE_META_FILTER: ${{ inputs.meta_filter }}
         run: npx tsx scripts/probe_estat_price_index.ts | tee -a "$GITHUB_STEP_SUMMARY"

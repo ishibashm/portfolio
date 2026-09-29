@@ -18,6 +18,17 @@
  * と同じ進め方で、作ってから「取れませんでした」を避ける。
  *
  * 読むだけ。何も書き込まない。
+ *
+ * ## 家賃の統計も探す（2026-09-30）
+ *
+ * 掲載の取り込みを止めたので、家賃市場の頁の「家賃指数の推移」が
+ * 2026-09-13 で止まった（利用者の指摘「このデータは最新？」）。公的な
+ * 毎月の家賃の統計（消費者物価指数の民営家賃、小売物価統計調査の民営家賃）
+ * に置き換えたいが、これも統計表 ID が分からない。同じスクリプトで探す。
+ *
+ * - `PROBE_WORDS`（カンマ区切り）… 探す言葉。空なら従来の不動産価格指数
+ * - `PROBE_META_ID` … 統計表 ID。指定すると、その表の項目（分類）の
+ *   一覧を出す。`PROBE_META_FILTER` に含む語で絞れる（例: 家賃）
  */
 
 import * as fs from "fs";
@@ -40,7 +51,12 @@ if (!APP_ID) {
 const BASE = "https://api.e-stat.go.jp/rest/3.0/app/json";
 
 /** 探す言葉。表記ゆれがあるので複数試す。 */
-const SEARCH_WORDS = ["不動産価格指数", "不動産価格", "住宅価格指数"];
+const SEARCH_WORDS = (process.env.PROBE_WORDS ?? "")
+  .split(",")
+  .map((w) => w.trim())
+  .filter(Boolean);
+if (SEARCH_WORDS.length === 0)
+  SEARCH_WORDS.push("不動産価格指数", "不動産価格", "住宅価格指数");
 
 type StatsListResponse = {
   GET_STATS_LIST?: {
@@ -112,12 +128,78 @@ async function search(word: string): Promise<void> {
   }
 }
 
-async function main() {
-  console.log("## 不動産価格指数を e-Stat で探す\n");
+type MetaResponse = {
+  GET_META_INFO?: {
+    RESULT?: { STATUS?: number; ERROR_MSG?: string };
+    METADATA_INF?: {
+      TABLE_INF?: TableInfo;
+      CLASS_INF?: {
+        CLASS_OBJ?: MetaClassObj | MetaClassObj[];
+      };
+    };
+  };
+};
+type MetaClass = { "@code"?: string; "@name"?: string; "@unit"?: string };
+type MetaClassObj = {
+  "@id"?: string;
+  "@name"?: string;
+  CLASS?: MetaClass | MetaClass[];
+};
+
+const asArray = <T>(v: T | T[] | undefined): T[] =>
+  v === undefined ? [] : Array.isArray(v) ? v : [v];
+
+/** 統計表 1 つの項目（分類）を出す。多い分類は filter で絞り、先頭だけ */
+async function meta(id: string, filter: string): Promise<void> {
+  const url =
+    `${BASE}/getMetaInfo?appId=${encodeURIComponent(APP_ID!)}` +
+    `&statsDataId=${encodeURIComponent(id)}`;
+  const res = await fetch(url);
+  if (!res.ok) {
+    console.log(`  HTTP ${res.status}`);
+    return;
+  }
+  const body: MetaResponse = await res.json();
+  const result = body.GET_META_INFO?.RESULT;
+  if (result?.STATUS !== 0) {
+    console.log(
+      `  e-Stat が拒否: ${result?.STATUS} ${result?.ERROR_MSG ?? ""}`,
+    );
+    return;
+  }
+  const info = body.GET_META_INFO?.METADATA_INF;
   console.log(
-    "不動産情報ライブラリの API には無いことを確認済み。" +
-      "e-Stat 側に統計表があるかを見る。\n",
+    `  表題=${titleOf(info?.TABLE_INF?.TITLE)} / 統計=${info?.TABLE_INF?.STAT_NAME?.$ ?? "?"}`,
   );
+  for (const obj of asArray(info?.CLASS_INF?.CLASS_OBJ)) {
+    const all = asArray(obj.CLASS);
+    const hit = filter
+      ? all.filter((c) => (c["@name"] ?? "").includes(filter))
+      : all;
+    console.log(
+      `  分類 ${obj["@id"]}（${obj["@name"]}）: ${all.length} 項目` +
+        (filter ? `、「${filter}」を含む ${hit.length} 項目` : ""),
+    );
+    for (const c of hit.slice(0, 40)) {
+      console.log(
+        `    ${c["@code"]} ${c["@name"]}${c["@unit"] ? `（${c["@unit"]}）` : ""}`,
+      );
+    }
+  }
+}
+
+async function main() {
+  const metaId = (process.env.PROBE_META_ID ?? "").trim();
+  if (metaId) {
+    console.log(`## 統計表 ${metaId} の項目\n`);
+    try {
+      await meta(metaId, (process.env.PROBE_META_FILTER ?? "").trim());
+    } catch (e) {
+      console.log(`  失敗: ${e instanceof Error ? e.message : String(e)}`);
+    }
+    return;
+  }
+  console.log(`## e-Stat で探す: ${SEARCH_WORDS.join("、")}\n`);
   for (const word of SEARCH_WORDS) {
     console.log(`### 「${word}」`);
     try {
