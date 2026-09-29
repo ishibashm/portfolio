@@ -60,6 +60,7 @@ import {
   settingString,
   SETTINGS_KEY,
   writeLocalSettings,
+  type Settings,
 } from "@/lib/userSettings";
 import { readWorkingDate, saveWorkingDate } from "@/lib/workingDate";
 import { readDestination, writeDestination } from "@/lib/destinationSetting";
@@ -998,6 +999,11 @@ export const SolarTimeClock = () => {
     writeDestination({ lat: targetLat, lon: targetLon, label: "" });
   }, [targetLat, targetLon]);
 
+  /** 自動保存の基準（下の「自動保存をアカウントにも届かせる」を見ること）。
+      読み込むたびに null に戻し、読み込み直後の 1 回を基準にする。 */
+  const syncedBaseline = React.useRef<string | null>(null);
+  const sharedBaseline = React.useRef<string | null>(null);
+
   const loadFromLocal = React.useCallback(async () => {
     let isLoaded = false;
     // 匿名でも動くように端末の値を土台にし、ログイン中ならクラウドの値と
@@ -1111,6 +1117,8 @@ export const SolarTimeClock = () => {
       いた（wealth_* があるなら data は空でない）。2026-09-21 に消した。
     */
 
+    syncedBaseline.current = null;
+    sharedBaseline.current = null;
     setConfigLoaded(true);
     return isLoaded;
   }, []);
@@ -1140,46 +1148,70 @@ export const SolarTimeClock = () => {
       window.removeEventListener("metaphysical-config-updated", reload);
   }, [handleLoadConfig]);
 
+  /*
+    ## 自動保存をアカウントにも届かせる（2026-09-29）
+
+    以前は tactical_config_v1 を直に読み書きする端末だけの保存で、
+    `_savedAt` も進めずアカウントにも送っていなかった。ログイン中に
+    この頁で出発地（「いまいる場所を使う」）や盤の種類を変えても、次に
+    開くとアカウントの古い値が勝って戻っていた（loadSettings はクラウドの
+    ほうが新しければそちらを採る）。
+
+    - 生年月日・出生地・出発地（同期する項目）… **変わったときだけ**
+      saveSettings（端末＋アカウント、`_savedAt` を進める）。開いて
+      読んだ値をそのまま書き戻すことはしない（読んだ値で `_savedAt` を
+      進めると、別の端末で後から直した値を追い越す）
+    - 盤の種類・月盤の方式・方位の見方（設定バーと共有）… 変わったとき
+      だけアカウントの metaphysical_config にも送る（サーバーは項目ごとに
+      合わせる。頁の表示だけの見方 optimal_only / exclude_noise は
+      サーバーが受け取らない）
+    - 表示だけの好み（真北・月相・時間軸）… 端末だけ（writeLocalSettings）
+
+    読み込み（loadFromLocal）のたびに基準を取り直すので、読み込み直後の
+    1 回は「変わった」と数えない。
+  */
   useEffect(() => {
     if (!configLoaded) return;
 
-    const autoSave = async () => {
-      try {
-        const partialConfig = {
-          use_classical_board: useClassicalBoard,
-          physical_month_mode: physicalMonthMode,
-          use_true_north: useTrueNorth,
-          lunar_phase_modifier: lunarPhaseModifier,
-          layer_mode: activeLayerMode,
-          direction_filter_mode: directionFilterMode,
-          /* 利用者の値だけ書く。初期値（2000-01-01・東京駅）を書くと、
-             他の画面がそれを登録内容として読む（上の註） */
-          ...(basePlaceOwned ? { base_lat: lat, base_lon: lon } : {}),
-          ...(birthDateOwned ? { birth_date: birthDate } : {}),
-          ...(birthPlaceOwned
-            ? { birth_lat: birthLat, birth_lon: birthLon }
-            : {}),
-        };
-
-        // Save to localStorage
-        const localData = localStorage.getItem("tactical_config_v1");
-        let currentLocal = {};
-        if (localData) {
-          try {
-            currentLocal = JSON.parse(localData);
-          } catch {}
-        }
-        localStorage.setItem(
-          "tactical_config_v1",
-          JSON.stringify({ ...currentLocal, ...partialConfig }),
-        );
-
-      } catch (e) {
-        console.error("Auto-save configuration failed:", e);
-      }
+    /* 利用者の値だけ書く。初期値（2000-01-01・東京駅）を書くと、
+       他の画面がそれを登録内容として読む（上の註） */
+    const synced: Settings = {
+      ...(basePlaceOwned ? { base_lat: lat, base_lon: lon } : {}),
+      ...(birthDateOwned ? { birth_date: birthDate } : {}),
+      ...(birthPlaceOwned ? { birth_lat: birthLat, birth_lon: birthLon } : {}),
     };
+    const shared: Settings = {
+      use_classical_board: useClassicalBoard,
+      physical_month_mode: physicalMonthMode,
+      direction_filter_mode: directionFilterMode,
+    };
+    writeLocalSettings({
+      ...shared,
+      use_true_north: useTrueNorth,
+      lunar_phase_modifier: lunarPhaseModifier,
+      layer_mode: activeLayerMode,
+    });
 
-    autoSave();
+    const syncedKey = JSON.stringify(synced);
+    if (syncedBaseline.current === null) {
+      syncedBaseline.current = syncedKey;
+    } else if (syncedKey !== syncedBaseline.current) {
+      syncedBaseline.current = syncedKey;
+      if (Object.keys(synced).length > 0) void saveSettings(synced);
+    }
+
+    const sharedKey = JSON.stringify(shared);
+    if (sharedBaseline.current === null) {
+      sharedBaseline.current = sharedKey;
+    } else if (sharedKey !== sharedBaseline.current) {
+      sharedBaseline.current = sharedKey;
+      /* 未ログインなら 401 で何もしない（端末には上で書いた） */
+      void fetch("/api/user-config", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(shared),
+      }).catch(() => {});
+    }
   }, [
     useClassicalBoard,
     physicalMonthMode,
