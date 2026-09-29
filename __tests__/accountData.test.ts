@@ -55,6 +55,7 @@ describe("消す鍵", () => {
       "timing_dest_pref_v1",
       "timing_scan_v1",
       "saved_analyses_v1",
+      "favorite_days_v1",
       "dest_lat",
       "dest_lon",
       "dest_label",

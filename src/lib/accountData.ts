@@ -91,6 +91,8 @@ export const ACCOUNT_LOCAL_KEYS = [
   "timing_scan_v1",
   /* 端末に残した分析（lib/timingReport）。生年月日から出た結果なので消す */
   "saved_analyses_v1",
+  /* 日取りのお気に入り（lib/favoriteDays）。生年月日から出た判定が入る */
+  "favorite_days_v1",
   /*
     目的地。**いまは tactical_config_v1 の中の項目**なので、上の 1 行目で
     既に消えている（destinationSetting は writeLocalSettings 経由で書く）。

@@ -5,6 +5,7 @@ import Link from "next/link";
 import { CosmicCalendar } from "@/components/widgets/CosmicCalendar";
 import { Calendar } from "lucide-react";
 import { AuspiciousDayFinder } from "@/components/relocation/AuspiciousDayFinder";
+import { FavoriteDaysPanel } from "@/components/relocation/FavoriteDaysPanel";
 import { calendarMonths, calendarMonthSlug } from "@/lib/calendarMonths";
 import { coreRouteLabel } from "@/lib/siteStructure";
 
@@ -88,6 +89,10 @@ export default function CalendarPage() {
         {/* 手順の説明だけでは日付が決まらない。実際に三盤を重ねて
             候補日を出すところまでをこのページで完結させる。 */}
         <AuspiciousDayFinder />
+
+        {/* 表の ☆ で残した日（端末の localStorage だけ）。出した日取りの
+            すぐ下に置き、走査をやり直さなくても見返せるようにする。 */}
+        <FavoriteDaysPanel />
 
         <section className="mb-10 rounded-3xl border border-slate-300 bg-white/95 p-6 md:p-8 shadow-lg shadow-slate-200/50">
           <h2 className="text-lg font-bold font-serif">引越しの日取りの決め方</h2>

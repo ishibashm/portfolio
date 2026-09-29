@@ -1,6 +1,11 @@
 "use client";
 
-import React, { useCallback, useEffect, useState } from "react";
+import React, {
+  useCallback,
+  useEffect,
+  useState,
+  useSyncExternalStore,
+} from "react";
 import { ProfilePicker } from "@/components/profile/ProfilePicker";
 import { SavedAnalysisPanel } from "@/components/relocation/SavedAnalysisPanel";
 import { buildTimingReport } from "@/lib/timingReport";
@@ -12,9 +17,16 @@ import {
 } from "@/lib/userSettings";
 import { KYUSEI } from "@/utils/kigaku";
 import { SampleProfileNotice } from "@/components/profile/SampleProfileNotice";
-import { Loader2, CalendarCheck, ArrowRight } from "lucide-react";
+import { Loader2, CalendarCheck, ArrowRight, Star } from "lucide-react";
 import Link from "next/link";
 import { saveWorkingDate } from "@/lib/workingDate";
+import {
+  favoriteDayKey,
+  favoriteDaysSnapshot,
+  parseFavoriteDays,
+  subscribeFavoriteDays,
+  toggleFavoriteDay,
+} from "@/lib/favoriteDays";
 import {
   ALL_DIRECTIONS,
   DIRECTION_LABELS,
@@ -169,6 +181,18 @@ export function AuspiciousDayFinder() {
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
 
   const [summaries, setSummaries] = useState<Summary[] | null>(null);
+  /* お気に入り（lib/favoriteDays。端末の localStorage だけ）。
+     日付 × 方位で持つので、☆ は行ごとに点く */
+  const favoriteRaw = useSyncExternalStore(
+    subscribeFavoriteDays,
+    favoriteDaysSnapshot,
+    () => "",
+  );
+  const favoriteKeys = new Set(
+    parseFavoriteDays(favoriteRaw).map((f) =>
+      favoriteDayKey(f.date, f.direction),
+    ),
+  );
   const [meta, setMeta] = useState<{ honmeiStar?: number; voidZodiacs?: string[] }>({});
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -626,6 +650,41 @@ export function AuspiciousDayFinder() {
                           }`}
                         >
                           <td className="px-3 py-2 font-mono whitespace-nowrap">
+                            {(() => {
+                              const on = favoriteKeys.has(
+                                favoriteDayKey(d.date, s.direction),
+                              );
+                              return (
+                                <button
+                                  type="button"
+                                  aria-pressed={on}
+                                  aria-label={`${d.date} ${s.directionLabel} を${on ? "お気に入りから外す" : "お気に入りに追加"}`}
+                                  title={
+                                    on
+                                      ? "お気に入りから外す"
+                                      : "お気に入りに追加"
+                                  }
+                                  onClick={() =>
+                                    toggleFavoriteDay({
+                                      date: d.date,
+                                      direction: s.direction,
+                                      directionLabel: s.directionLabel,
+                                      yearLabel: label(d.yearLayer),
+                                      monthLabel: label(d.monthLayer),
+                                      dayLabel: label(d.dayLayer),
+                                      tags: d.tags,
+                                      blockedByTenchusatsu:
+                                        d.blockedByTenchusatsu,
+                                    })
+                                  }
+                                  className="mr-1.5 -my-1 rounded p-1 align-middle text-slate-300 hover:text-amber-500"
+                                >
+                                  <Star
+                                    className={`h-4 w-4 ${on ? "fill-amber-400 text-amber-500" : ""}`}
+                                  />
+                                </button>
+                              );
+                            })()}
                             {d.date}
                             <span className="text-slate-400">
                               （{WEEKDAYS[d.weekday]}）
