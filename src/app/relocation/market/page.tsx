@@ -31,6 +31,7 @@ import {
 } from "recharts";
 
 import { GRID_STROKE, SERIES } from "@/lib/chartPalette";
+import { HedonicFactorTable } from "@/components/relocation/HedonicFactorTable";
 
 import marketStats from "@/data/marketStats.json";
 import { listingSnapshotNote } from "@/lib/listingFreshness";
@@ -40,7 +41,6 @@ import { trailingAverage } from "@/utils/marketStats";
 
 const stats = marketStats as unknown as MarketStats;
 
-const yen = (v: number) => `${Math.round(v / 1000).toLocaleString()}千円`;
 const man = (v: number) => `${(v / 10000).toFixed(1)}万`;
 
 function KpiCard({
@@ -404,84 +404,14 @@ export default function MarketAnalyticsPage() {
           </div>
         </Section>
 
-        {/* ヘドニック係数表 */}
+        {/* ヘドニック係数表。係数を 47 行並べるだけだと読めなかった
+            （利用者の指摘、2026-09-30「数値だけだと分かりにくい」）ので、
+            暮らしの場面・円・棒に直して見せる（HedonicFactorTable）。 */}
         <Section
-          title="県別ファクターモデル（ヘドニック回帰）"
-          subtitle="log(総家賃) を 広さ・築年数・駅徒歩 に回帰した係数。株式のマルチファクターモデルと同じ発想で、家賃を要因に分解する。効果はすべて「家賃が何%変わるか」に換算済み。"
+          title="県別：広さ・築年・駅の近さは、家賃にどれだけ効くか"
+          subtitle="掲載の家賃を広さ・築年数・駅徒歩に分解したモデル（ヘドニック回帰、県ごとに別）から、条件が 1 つだけ違う部屋どうしの差を出した。取り込みを止めた 2026-09-13 時点の掲載から推定したもので、以降は更新されない。"
         >
-          <div className="overflow-x-auto">
-            <table className="w-full text-[11px]">
-              <thead>
-                <tr className="border-b border-gray-200 text-left text-[10px] uppercase tracking-wider text-stone-600">
-                  <th className="py-1.5 pr-2">県</th>
-                  <th className="py-1.5 pr-2 text-right">掲載数</th>
-                  <th className="py-1.5 pr-2 text-right">家賃中央値</th>
-                  <th
-                    className="py-1.5 pr-2 text-right"
-                    title="面積を10%広くしたとき家賃が何%上がるか"
-                  >
-                    広さ+10%
-                  </th>
-                  <th
-                    className="py-1.5 pr-2 text-right"
-                    title="築1年ごとの下落率"
-                  >
-                    築1年
-                  </th>
-                  <th
-                    className="py-1.5 pr-2 text-right"
-                    title="駅から徒歩1分遠いごとの下落率"
-                  >
-                    徒歩1分
-                  </th>
-                  <th className="py-1.5 text-right" title="モデルの説明力">
-                    R²
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                {stats.prefectures.map((p) => (
-                  <tr
-                    key={p.prefecture}
-                    className="border-b border-gray-100 last:border-0"
-                  >
-                    <td className="py-1.5 pr-2 font-semibold">
-                      {p.prefecture}
-                    </td>
-                    <td className="py-1.5 pr-2 text-right font-mono">
-                      {p.n.toLocaleString()}
-                    </td>
-                    <td className="py-1.5 pr-2 text-right font-mono">
-                      {yen(p.rent.median)}
-                    </td>
-                    {p.hedonic ? (
-                      <>
-                        <td className="py-1.5 pr-2 text-right font-mono text-emerald-700">
-                          +{p.hedonic.effects.sizeElasticityPct.toFixed(1)}%
-                        </td>
-                        <td className="py-1.5 pr-2 text-right font-mono text-rose-700">
-                          {p.hedonic.effects.agePctPerYear.toFixed(2)}%
-                        </td>
-                        <td className="py-1.5 pr-2 text-right font-mono text-rose-700">
-                          {p.hedonic.effects.stationPctPerMin.toFixed(2)}%
-                        </td>
-                        <td className="py-1.5 text-right font-mono">
-                          {p.hedonic.r2.toFixed(2)}
-                        </td>
-                      </>
-                    ) : (
-                      <td
-                        colSpan={4}
-                        className="py-1.5 text-right text-stone-600"
-                      >
-                        標本不足
-                      </td>
-                    )}
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+          <HedonicFactorTable prefectures={stats.prefectures} />
         </Section>
 
         {/* ボラティリティ */}
