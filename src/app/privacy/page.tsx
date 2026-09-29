@@ -1,12 +1,17 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { Shield, ArrowLeft } from "lucide-react";
+import { pageOpenGraph } from "@/lib/siteUrl";
+
+const TITLE = "プライバシーポリシー";
+const DESCRIPTION =
+  "Cloud Paletteのプライバシーポリシーおよびクッキー、広告配信（Google AdSense等）、アクセス解析に関する取り扱い方針。";
 
 export const metadata: Metadata = {
   alternates: { canonical: "/privacy" },
-  title: "プライバシーポリシー",
-  description:
-    "Cloud Paletteのプライバシーポリシーおよびクッキー、広告配信（Google AdSense等）、アクセス解析に関する取り扱い方針。",
+  title: TITLE,
+  description: DESCRIPTION,
+  openGraph: pageOpenGraph("/privacy", TITLE, DESCRIPTION),
 };
 
 export default function PrivacyPolicyPage() {

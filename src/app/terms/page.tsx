@@ -1,11 +1,17 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { FileText, ArrowLeft } from "lucide-react";
+import { pageOpenGraph } from "@/lib/siteUrl";
+
+const TITLE = "利用規約";
+const DESCRIPTION =
+  "Cloud Paletteのサービス利用規約および免責事項、知的財産権に関する規定。";
 
 export const metadata: Metadata = {
   alternates: { canonical: "/terms" },
-  title: "利用規約",
-  description: "Cloud Paletteのサービス利用規約および免責事項、知的財産権に関する規定。",
+  title: TITLE,
+  description: DESCRIPTION,
+  openGraph: pageOpenGraph("/terms", TITLE, DESCRIPTION),
 };
 
 export default function TermsPage() {

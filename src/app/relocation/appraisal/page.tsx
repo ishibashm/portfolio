@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { AppraisalForm } from "./AppraisalForm";
+import { pageOpenGraph } from "@/lib/siteUrl";
 
 /**
  * 持ち込み査定（/relocation/appraisal）。
@@ -15,12 +16,17 @@ import { AppraisalForm } from "./AppraisalForm";
  * ポータルの相場は売主の希望額を並べたもので、成立した額ではない。
  */
 
+const TITLE = "この物件は高いか安いか";
+const DESCRIPTION =
+  "検討中のマンションを入力すると、近所で実際に成立した成約価格の分布のどこにあるかを出します。売出価格ではなく成約価格で比べます。";
+
 export const metadata: Metadata = {
-  // canonical を書かないとルートの layout の "/" を継承し、ホームの重複に見える
+  // canonical を書かないとルートの layout の "/" を継承し、ホームの重複に見える。
+  // openGraph も同じで、書かないとホームの題・URL で共有される
   alternates: { canonical: "/relocation/appraisal" },
-  title: "この物件は高いか安いか",
-  description:
-    "検討中のマンションを入力すると、近所で実際に成立した成約価格の分布のどこにあるかを出します。売出価格ではなく成約価格で比べます。",
+  title: TITLE,
+  description: DESCRIPTION,
+  openGraph: pageOpenGraph("/relocation/appraisal", TITLE, DESCRIPTION),
 };
 
 export default function AppraisalPage() {
