@@ -875,6 +875,25 @@ model SavedAnalysis {
   @@map("saved_analyses")
 }
 
+/// 日取りのお気に入り（/calendar の表の ☆）。1 行は「日付 × 方位」と、
+/// 保存した時点の判定の表示。生年月日と座標は入れない。
+/// DDL は prisma/sql/20260929_add_favorite_days.sql。
+model FavoriteDay {
+  id         String   @id @default(cuid())
+  /// Supabase の user.id。saved_analyses と同じ安定キー。
+  user_id    String   @db.Uuid
+  /// YYYY-MM-DD（日本時間の暦日）。DB でも CHECK で形を縛る。
+  day        String
+  /// N / NE / … / NW。DB でも CHECK で縛る。
+  direction  String
+  /// 保存時の判定の表示（lib/favoriteDays の FavoriteVerdict）。4096 字まで。
+  verdict    Json
+  created_at DateTime @default(now()) @db.Timestamptz(6)
+
+  @@unique([user_id, day, direction])
+  @@map("favorite_days")
+}
+
 model FavoriteProperty {
   id          String   @id @default(cuid())
   /// Supabase の user.id。user_configs と同じ安定キーを使う。
