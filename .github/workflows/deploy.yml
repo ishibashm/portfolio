@@ -391,3 +391,44 @@ jobs:
                    --format='value(status.url)')"
           echo "デプロイ先: ${{ env.REGION }}" | tee -a "$GITHUB_STEP_SUMMARY"
           echo "サービス URL: $URL" | tee -a "$GITHUB_STEP_SUMMARY"
+          echo "SERVICE_URL=$URL" >> "$GITHUB_ENV"
+
+      # ## 出したリビジョンが実際に頁を返すかを、その場で見る
+      #
+      # これまでデプロイの成否は「gcloud run deploy が 0 で終わったか」だけで、
+      # 新しいリビジョンが頁を返すかは誰も見ていなかった。起動はするが頁が
+      # 500 を返す、という壊れ方をすると、気付くのは翌朝の site-audit
+      # （06:23 JST）か利用者の報告になる。その間ずっと出たままになる。
+      #
+      # gcloud run deploy はトラフィックが新しいリビジョンに移ってから返るので、
+      # ここで叩くのは今まさに利用者が見ている版。run.app の URL を直に叩く
+      # （ドメインの DNS や証明書の都合と切り分けるため）。
+      #
+      # 見るのは入口の数本だけ。全 URL は site-audit が毎晩見ている。
+      # min-instances=0 なので最初の 1 本はコールドスタートを待つ。1 本 60 秒
+      # まで待ち、失敗したら 10 秒おいて 3 回まで試す。
+      #
+      # 落ちても自動では戻さない（戻す判断は人がする）。戻すときは
+      #   gcloud run services update-traffic portfolio-app \
+      #     --region=asia-northeast1 --to-revisions=<前のリビジョン>=100
+      # 前のリビジョンは Cloud Run のコンソールか
+      #   gcloud run revisions list --service=portfolio-app --region=asia-northeast1
+      # で分かる。
+      - name: Smoke test the deployed revision
+        run: |-
+          FAIL=0
+          echo "## デプロイ直後の確認（$SERVICE_URL）" | tee -a "$GITHUB_STEP_SUMMARY"
+          for path in / /houi /blog /robots.txt /llms.txt /sitemap.xml; do
+            code=000
+            for attempt in 1 2 3; do
+              code=$(curl -s -o /dev/null -w "%{http_code}" --max-time 60 -A "cloud-palette-deploy-smoke" "$SERVICE_URL$path" || true)
+              [ "$code" = "200" ] && break
+              sleep 10
+            done
+            echo "- $code $path" | tee -a "$GITHUB_STEP_SUMMARY"
+            if [ "$code" != "200" ]; then
+              echo "::error::デプロイ直後の $path が $code を返した（3 回試行）。新しいリビジョンが壊れている可能性。戻し方はこのステップのコメントにある。"
+              FAIL=1
+            fi
+          done
+          exit $FAIL
