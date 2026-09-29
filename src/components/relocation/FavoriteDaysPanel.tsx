@@ -8,7 +8,7 @@
  * 水和のあとに端末の値に替わる（ずれは React が面倒を見る）。
  */
 
-import React, { useSyncExternalStore } from "react";
+import React, { useEffect, useSyncExternalStore } from "react";
 import Link from "next/link";
 import { ArrowRight, Star, X } from "lucide-react";
 import {
@@ -17,6 +17,7 @@ import {
   parseFavoriteDays,
   removeFavoriteDay,
   subscribeFavoriteDays,
+  syncFavoriteDays,
 } from "@/lib/favoriteDays";
 import { saveWorkingDate } from "@/lib/workingDate";
 
@@ -34,6 +35,11 @@ export function FavoriteDaysPanel() {
     () => "",
   );
   const favorites = parseFavoriteDays(raw);
+  /* ログイン中ならアカウントと揃える。結果は localStorage に書かれ、
+     上の購読で描き直される（ここで setState はしない） */
+  useEffect(() => {
+    void syncFavoriteDays();
+  }, []);
 
   return (
     <section
@@ -59,7 +65,7 @@ export function FavoriteDaysPanel() {
       ) : (
         <>
           <p className="mt-2 max-w-[70ch] text-xs text-slate-500 leading-relaxed">
-            保存したときの判定です。生年月日や出発地を変えた場合は、上で出し直して確かめてください。この端末にだけ保存しています（「登録した内容をすべて消す」で消えます）。
+            保存したときの判定です。生年月日や出発地を変えた場合は、上で出し直して確かめてください。この端末に保存し、ログインしていればアカウントにも保存します（ほかの端末でも見られます。「登録した内容をすべて消す」で両方から消えます）。
           </p>
           <ul className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-3">
             {favorites.map((f) => (
