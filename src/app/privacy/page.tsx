@@ -4,7 +4,7 @@ import { Shield, ArrowLeft } from "lucide-react";
 
 export const metadata: Metadata = {
   alternates: { canonical: "/privacy" },
-  title: "プライバシーポリシー | Cloud Palette",
+  title: "プライバシーポリシー",
   description:
     "Cloud Paletteのプライバシーポリシーおよびクッキー、広告配信（Google AdSense等）、アクセス解析に関する取り扱い方針。",
 };
