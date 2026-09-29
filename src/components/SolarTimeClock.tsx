@@ -832,8 +832,21 @@ export const SolarTimeClock = () => {
   );
   const [showNoiseDirections, setShowNoiseDirections] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
+  /*
+    30 日の見通しで街を並べる県。"base" は「出発地のある県」。
+    以前は誰にでも "愛知県" から始まっていた（京都の人も愛知の街を見て
+    いた）。出発地が利用者の値でなければ全国に倒す（画面の初期値の
+    東京駅から県を決めない。#1100）。
+  */
   const [scorecardPrefecture, setScorecardPrefecture] =
-    useState<string>("愛知県");
+    useState<string>("base");
+  const [scorecardBasePref, setScorecardBasePref] = useState<string | null>(
+    null,
+  );
+  const scorecardPrefectureName =
+    scorecardPrefecture === "base"
+      ? (scorecardBasePref ?? "all")
+      : scorecardPrefecture;
   const [gridModelView, setGridModelView] = useState<
     "consensus" | "classical" | "physicalIndep" | "physicalCoupled"
   >("consensus");
@@ -875,7 +888,17 @@ export const SolarTimeClock = () => {
           wParams.append("layerMode", activeLayerMode);
           wParams.append("useTrueNorth", useTrueNorth.toString());
           wParams.append("lunarPhaseModifier", lunarPhaseModifier.toString());
-          wParams.append("prefecture", scorecardPrefecture);
+          let prefecture = scorecardPrefecture;
+          if (prefecture === "base") {
+            /* 市区町村の代表点の表は重いので、この札を開いたときだけ読む */
+            const { nearestMunicipality } = await import("@/lib/nearestPlace");
+            const basePref = basePlaceOwned
+              ? (nearestMunicipality(lat, lon)?.pref ?? null)
+              : null;
+            setScorecardBasePref(basePref);
+            prefecture = basePref ?? "all";
+          }
+          wParams.append("prefecture", prefecture);
 
           const wRes = await fetch(
             `/api/municipalities-wealth?${wParams.toString()}`,
@@ -904,6 +927,7 @@ export const SolarTimeClock = () => {
     useTrueNorth,
     lunarPhaseModifier,
     scorecardPrefecture,
+    basePlaceOwned,
   ]);
 
   const fetchNBAData = React.useCallback(async () => {
@@ -2736,7 +2760,7 @@ export const SolarTimeClock = () => {
       link.href = url;
       link.setAttribute(
         "download",
-        `30day_pattern_scorecard_${scorecardPrefecture}.csv`,
+        `30day_pattern_scorecard_${scorecardPrefectureName}.csv`,
       );
       document.body.appendChild(link);
       link.click();
@@ -2814,7 +2838,7 @@ export const SolarTimeClock = () => {
       link.href = url;
       link.setAttribute(
         "download",
-        `honmei_stars_scorecard_${scorecardPrefecture}.csv`,
+        `honmei_stars_scorecard_${scorecardPrefectureName}.csv`,
       );
       document.body.appendChild(link);
       link.click();
@@ -4177,6 +4201,7 @@ export const SolarTimeClock = () => {
             setShowNoiseDirections={setShowNoiseDirections}
             scorecardPrefecture={scorecardPrefecture}
             setScorecardPrefecture={setScorecardPrefecture}
+            scorecardBasePref={scorecardBasePref}
             gridModelView={gridModelView}
             setGridModelView={setGridModelView}
             scorecardActiveGridTab={scorecardActiveGridTab}

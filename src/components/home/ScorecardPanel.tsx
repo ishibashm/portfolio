@@ -34,6 +34,24 @@ import type {
   getHonmeiStar,
 } from "../../utils/ephemerisEngine";
 import { todayInJapan, toJapanDateString } from "@/utils/japanDate";
+import { MUNICIPALITY_POINTS } from "@/lib/municipalityCoords";
+
+/**
+ * 対象県の選択肢。47 都道府県を JIS コードの順に並べる。
+ *
+ * 以前は 9 県（愛知・東京・大阪・神奈川・埼玉・千葉・京都・兵庫・福岡）
+ * を手で並べていて、それ以外の県に住む人は自分の県を選べなかった。
+ * 県名は市区町村の代表点の表から取る（API は areaName の前方一致で
+ * 絞るので、同じ綴りの県名が要る）。
+ */
+const PREFECTURES: string[] = Array.from(
+  MUNICIPALITY_POINTS.reduce((byPref, m) => {
+    if (!byPref.has(m.pref)) byPref.set(m.pref, m.code.slice(0, 2));
+    return byPref;
+  }, new Map<string, string>()),
+)
+  .sort((a, b) => a[1].localeCompare(b[1]))
+  .map(([pref]) => pref);
 
 /**
  * 総合スコアが扱う 8 方位（中央を除く）。SolarTimeClock 側の memo も
@@ -238,6 +256,8 @@ export interface ScorecardPanelProps {
   setShowNoiseDirections: React.Dispatch<React.SetStateAction<boolean>>;
   scorecardPrefecture: string;
   setScorecardPrefecture: React.Dispatch<React.SetStateAction<string>>;
+  /** "base"（出発地のある県）を選んでいるとき、実際に引いた県。未登録なら null */
+  scorecardBasePref: string | null;
   gridModelView:
     | "consensus"
     | "classical"
@@ -282,6 +302,7 @@ export default function ScorecardPanel({
   setShowNoiseDirections,
   scorecardPrefecture,
   setScorecardPrefecture,
+  scorecardBasePref,
   gridModelView,
   setGridModelView,
   scorecardActiveGridTab,
@@ -350,16 +371,17 @@ export default function ScorecardPanel({
                   onChange={(e) => setScorecardPrefecture(e.target.value)}
                   className="min-h-[24px] bg-white text-stone-700 border-0 text-[10px] font-mono focus:outline-none focus:ring-0 cursor-pointer"
                 >
-                  <option value="all">全国 (すべて)</option>
-                  <option value="愛知県">愛知県</option>
-                  <option value="東京都">東京都</option>
-                  <option value="大阪府">大阪府</option>
-                  <option value="神奈川県">神奈川県</option>
-                  <option value="埼玉県">埼玉県</option>
-                  <option value="千葉県">千葉県</option>
-                  <option value="京都府">京都府</option>
-                  <option value="兵庫県">兵庫県</option>
-                  <option value="福岡県">福岡県</option>
+                  <option value="base">
+                    {scorecardBasePref
+                      ? `出発地の県（${scorecardBasePref}）`
+                      : "出発地の県（未登録のため全国）"}
+                  </option>
+                  <option value="all">全国</option>
+                  {PREFECTURES.map((pref) => (
+                    <option key={pref} value={pref}>
+                      {pref}
+                    </option>
+                  ))}
                 </select>
               </div>
 
