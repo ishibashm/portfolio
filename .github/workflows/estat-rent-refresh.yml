@@ -1,0 +1,79 @@
+name: Refresh estat rent
+
+# 公的な家賃の統計（消費者物価指数の民営家賃・小売物価統計調査の民営家賃）
+# を e-Stat から取り、家賃市場の頁の写し（src/data/estatRent.json）を
+# 更新する。何を・なぜは src/utils/estatRent.ts の冒頭。
+#
+# 掲載の巡回を規約に従って止めたので、頁の「家賃指数の推移」は
+# 2026-09-13 で止まっていた（利用者の指摘、2026-09-30）。こちらは毎月出る。
+#
+# 両統計とも前月分が毎月 20 日前後に出るので、26 日に回す。
+# DB には触らない（写しを master へ押し戻すだけ）。
+#
+# 規約: 政府統計の総合窓口の利用規約（CC BY 互換・商用可・出典と加工の
+# 明記）と API のクレジット表示（docs/improvement-backlog.md 26 節）。
+
+on:
+  schedule:
+    - cron: "13 1 26 * *"
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: "true なら取って中身を出すだけで、写しを書かない"
+        required: false
+        default: "false"
+
+# 写しを master へ押し戻すので contents: write が要る（import-estat-housing と同じ）
+permissions:
+  contents: write
+
+concurrency:
+  group: estat-rent-refresh
+  cancel-in-progress: false
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci --legacy-peer-deps
+
+      - name: Create .env from Secret
+        env:
+          ENV_FILE_CONTENT: ${{ secrets.ENV_FILE }}
+        run: |
+          if [ -z "$ENV_FILE_CONTENT" ]; then
+            echo "::error::secrets.ENV_FILE is empty. ESTAT_APP_ID is required."
+            exit 1
+          fi
+          echo "$ENV_FILE_CONTENT" > .env
+
+      - name: Fetch
+        env:
+          ESTAT_RENT_DRY_RUN: ${{ inputs.dry_run == 'true' && '1' || '0' }}
+        # tee に通すと失敗しても緑になるので pipefail を付ける
+        run: |
+          set -o pipefail
+          npx tsx scripts/fetch_estat_rent.ts | tee -a "$GITHUB_STEP_SUMMARY"
+
+      - name: Commit snapshot if changed
+        if: ${{ inputs.dry_run != 'true' }}
+        run: |
+          if [ -z "$(git status --porcelain -- src/data/estatRent.json)" ]; then
+            echo "家賃の統計の写しに変化なし。コミットしない。"
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add src/data/estatRent.json
+          git commit -m "chore(data): 公的な家賃の統計（e-Stat の民営家賃）の写しを更新する"
+          git push origin HEAD:master
