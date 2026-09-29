@@ -28,16 +28,29 @@ export default function robots(): MetadataRoute.Robots {
         disallow,
       },
       // Explicit rules for AI Search & Agent Crawlers (LLMO / GEO)
+      //
+      // 中身は "*" と同じ。名前を挙げるのは、AI の検索・回答に引かれて
+      // よいと明示するため。検索用（索引を作る）と、利用者の依頼で頁を
+      // 取りに来るもの（-User）は別の名前で来るので両方挙げる。
+      // Claude-Web は Anthropic が使わなくなった名前なので外した
+      // （外しても "*" に落ちるだけで、許す範囲は変わらない）。
       {
         userAgent: [
           "GPTBot",
+          "OAI-SearchBot",
           "ChatGPT-User",
           "Google-Extended",
           "PerplexityBot",
+          "Perplexity-User",
           "ClaudeBot",
-          "Claude-Web",
+          "Claude-SearchBot",
+          "Claude-User",
           "Bytespider",
           "Applebot-Extended",
+          "Amazonbot",
+          "meta-externalagent",
+          "DuckAssistBot",
+          "MistralAI-User",
           "cohere-ai",
         ],
         allow: ["/", "/llms.txt", "/llms-full.txt"],

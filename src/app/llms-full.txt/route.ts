@@ -4,11 +4,13 @@ import {
   SITE_NAME,
   SITE_TAGLINE,
   SITE_DESCRIPTION,
+  coreRouteLabel,
 } from "@/lib/siteStructure";
 import { loadBlogPosts } from "@/lib/blogStore";
 import { PREF_REGION, prefNameByCode } from "@/lib/prefContent";
 import { PREF_EDITORIAL } from "@/lib/prefEditorial";
 import { AREA_EDITORIAL } from "@/lib/areaEditorial";
+import { AREAS, AREA_GENERATED_AT } from "@/lib/areaContent";
 
 export const runtime = "nodejs";
 export const revalidate = 86400; // 24 hours cache
@@ -63,7 +65,7 @@ License: Proprietary / Citable for Public AI Search Engine Attribution
 ${SITE_DESCRIPTION}
 
 引越し先と日取りを決めるための一連の判断を、同じ計算エンジンで一貫して行います。
-物件検索・地域比較・日取り選び・自分の吉方位の確認が、すべて同一の方位盤と
+${coreRouteLabel("/relocation/arbitrage")}・地域比較・日取り選び・自分の吉方位の確認が、すべて同一の方位盤と
 同一の吉凶判定を共有しています。
 
 ---
@@ -92,8 +94,9 @@ ${prefLines}
 一覧は ${baseUrl}/houi/area にあります。各ページには「その方位にこの一覧の候補が
 1 つも入らない」ことも書いてあります。**これは「その方位に街が無い」という意味では
 ありません。**一覧の母集団は賃貸の掲載を集計できた市区町村（全国 1,917 のうち
-1,119）なので、海や山で本当に行き止まりの場合と、掲載をまだ拾えていない場合を
-区別できません。
+${AREAS.length.toLocaleString("en-US")}。${AREA_GENERATED_AT.slice(0, 10)} 時点）なので、掲載を拾えていない街は
+最初から入っていません。頁では、150km より先にはある・近すぎて外れている・掲載が
+無いだけ・本当に行き止まり、を分けて示しています。
 
 ## 掲載を希望する人向け
 
@@ -127,18 +130,25 @@ ${prefLines}
 - 六曜、天赦日、一粒万倍日、天道方位、土用の期間を突き合わせます。
 - 月相による補正を任意で加えられます。
 
-### 物件データ
-- 複数の掲載元（賃貸ポータル、いい部屋ネット、シャーメゾン）から定期的に取り込んでいます。
-- 同一の部屋が不動産会社ごとに別々の URL で重複して掲載されるため、建物名・階・間取り・面積・賃料の一致でまとめています。
-- 掲載期限を過ぎたもの、一定期間確認できないものは対象から外します。
-- 賃料は専有面積あたり（円/㎡）に正規化し、対象範囲全体の分布に対する偏差で割安さを評価します。
-- 凶方位・天中殺に当たるものは、割安であっても上位に出しません。
+### データの出どころ
+- 家賃の水準と空き家率: e-Stat（総務省 住宅・土地統計調査）の公式 API。
+- 購入の相場と持ち込み査定: 国土交通省 不動産情報ライブラリの成約価格（売り出し価格ではなく、実際に取引が成立した額）と、地価公示・地価調査。
+- 家賃相場の分析（${baseUrl}/relocation/market）: 賃貸ポータルの掲載を集計した結果です。掲載の取り込みは各サイトの規約に従って止めたので、集計はその時点までのものです。物件の掲載そのものは出していません。
+- 市区町村の代表点: geolonia/japanese-addresses の公開データ。
 
 ---
 
-## 公開 API
+## 道具として呼ぶ（MCP）
 
-- GET \`/api/municipalities-wealth\`: 市区町村ごとの所得統計。移住先の比較に使います。
+${baseUrl}/api/mcp で MCP（Model Context Protocol）のサーバーを公開しています。
+Streamable HTTP・stateless・POST のみ。いずれも匿名で、画面から得られる計算だけを返します。
+
+- get_honmei_star: 生年月日から本命星（九星）と天中殺の干支を返す
+- judge_directions: 出発地と生年月日から、指定日の八方位の段階（S 三盤吉〜X 五大凶殺）
+- find_auspicious_days: 期間内で、八方位それぞれに動ける日（三盤吉・吉日）を集計する
+- search_municipality: 名前の一部から市区町村を探し、コードと代表点を返す
+- area_directions: 市区町村から見た八方位それぞれの市区町村と、候補の無い方位の理由
+- prefecture_summary: 都道府県の市区町村と、県の面積重心から見た八方位ごとの市区町村
 
 ---
 
