@@ -4,7 +4,15 @@ import { isInJapan } from "./japanBounds";
 export const LISTING_MAP_ADDRESS_CAP = 10;
 export const listingAddressKey = (address: string) =>
   address.normalize("NFKC").trim().replace(/\s+/g, " ");
-export type ListingMapPoint = { lat: number; lon: number };
+/**
+ * `municipality` があるものは番地までの位置ではなく、その市区町村の
+ * 代表点（lib/municipalityFromAddress。外へ送らずに手元の表で引いたもの）。
+ */
+export type ListingMapPoint = {
+  lat: number;
+  lon: number;
+  municipality?: string;
+};
 export type ListingMapResult = {
   address: string;
   point?: ListingMapPoint;

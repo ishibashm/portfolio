@@ -8,6 +8,7 @@ import {
   groupListingMap,
   listingAddressKey,
   LISTING_MAP_ADDRESS_CAP,
+  type ListingMapPoint,
   type ListingMapResult,
 } from "@/lib/listingCandidateMap";
 import { hasUsableBase } from "@/lib/japanBounds";
@@ -53,6 +54,19 @@ export function ImportedListingMap({
     ),
   ];
   const key = JSON.stringify(addresses.slice(0, LISTING_MAP_ADDRESS_CAP));
+  const allKey = JSON.stringify(addresses);
+  /*
+    市区町村の代表点（2026-09-29。利用者の指摘「メール取り込みで物件の
+    位置がピンで立つように」）。国土地理院の検索は押してから・旗が ON の
+    ときだけなので、旗が OFF の本番では 1 本もピンが立たなかった。
+    手元の表（municipalityCoords）で引くだけで**外へは送らない**ので、
+    押す前から出してよい。番地までは押したときに国土地理院で詰める。
+    表は 270 KB あるので、取り込んだ物件があるときだけ読む。
+  */
+  const [local, setLocal] = useState<{
+    key: string;
+    points: Record<string, ListingMapPoint>;
+  }>();
   const [reply, setReply] = useState<{
     key: string;
     results: ListingMapResult[];
@@ -111,6 +125,37 @@ export function ImportedListingMap({
     };
   }, []);
   useEffect(() => {
+    if (allKey === "[]") return;
+    let active = true;
+    void Promise.all([
+      import("@/lib/municipalityCoords"),
+      import("@/lib/municipalityFromAddress"),
+    ])
+      .then(([coords, lookup]) => {
+        if (!active) return;
+        const points: Record<string, ListingMapPoint> = {};
+        for (const address of JSON.parse(allKey) as string[]) {
+          const hit = lookup.municipalityFromAddress(
+            address,
+            coords.MUNICIPALITY_POINTS,
+          );
+          if (hit)
+            points[address] = {
+              lat: hit.lat,
+              lon: hit.lon,
+              municipality: `${hit.pref}${hit.city}`,
+            };
+        }
+        setLocal({ key: allKey, points });
+      })
+      .catch(() => {
+        /* 表が読めなくても一覧と番地の検索は使える */
+      });
+    return () => {
+      active = false;
+    };
+  }, [allKey]);
+  useEffect(() => {
     if (!requested || key === "[]") return;
     const controller = new AbortController();
     // 本文・物件URLは送らず、上限内の重複しない住所だけを本人の操作に続けて検索。
@@ -150,7 +195,26 @@ export function ImportedListingMap({
   }, [key, requested]);
   if (!listings.length) return null;
   const current = reply?.key === key ? reply : undefined;
-  const groups = groupListingMap(listings, current?.results ?? []);
+  const localPoints = local?.key === allKey ? local.points : {};
+  const hasLocal = Object.keys(localPoints).length > 0;
+  // 番地まで引けたものを優先し、引けなかったもの・上限を超えたものは
+  // 市区町村の代表点に落とす
+  const precise = new Map(
+    (current?.results ?? []).map((r) => [
+      listingAddressKey(r.address),
+      r.point,
+    ]),
+  );
+  const groups = groupListingMap(
+    listings,
+    addresses.map((address) => ({
+      address,
+      point: precise.get(address) ?? localPoints[address],
+    })),
+  );
+  const approximateCount = groups.mapped.filter(
+    ({ point }) => point.municipality,
+  ).length;
   const origin =
     context && hasUsableBase(Number(context.baseLat), Number(context.baseLon))
       ? { lat: Number(context.baseLat), lon: Number(context.baseLon) }
@@ -168,7 +232,7 @@ export function ImportedListingMap({
             onClick={() => setRequested(true)}
             className="min-h-[32px] rounded-lg bg-stone-800 px-3 py-1.5 text-xs font-bold text-white hover:bg-stone-700"
           >
-            地図に表示する
+            {hasLocal ? "番地まで調べる" : "地図に表示する"}
           </button>
           <p className="text-stone-600">
             押すと、所在地（最大{LISTING_MAP_ADDRESS_CAP}
@@ -179,7 +243,19 @@ export function ImportedListingMap({
       {requested && key !== "[]" && !current && (
         <p role="status">住所の位置を検索中…</p>
       )}
-      {current?.message && <p role="status">{current.message}</p>}
+      {current?.message && (
+        <p role="status">
+          {current.disabled && hasLocal
+            ? "番地までの位置検索は準備中です。地図のピンは市区町村の代表点です。"
+            : current.message}
+        </p>
+      )}
+      {approximateCount > 0 && (
+        <p>
+          {approximateCount}
+          件のピンは市区町村の代表点です（手元の表で引いたもので、外部には送っていません）。番地までの位置ではないため、方位は目安です。
+        </p>
+      )}
       {addresses.length > LISTING_MAP_ADDRESS_CAP && (
         <p>
           地図表示は先頭の{LISTING_MAP_ADDRESS_CAP}
@@ -196,7 +272,7 @@ export function ImportedListingMap({
           出発地・生年月日・対象日の確認と変更
         </Link>
       </p>
-      {!current?.disabled && groups.mapped.length > 0 && (
+      {groups.mapped.length > 0 && (
         <MapInner
           mapped={groups.mapped}
           origin={origin}
