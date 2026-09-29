@@ -30,7 +30,12 @@ jobs:
     timeout-minutes: 15
 
     steps:
+      # fetch-depth: 2 は下の「lint の警告が増えていないか」のため。PR の実行は
+      # base との merge commit を checkout するので、HEAD^1 がちょうど
+      # 「この PR が載る先」になる。深さ 1 だとそれが取れない。
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
 
       # Dockerfile が node:20-bookworm-slim なので、そこに合わせる。
       # ここだけ新しくすると、CI が通ってデプロイが落ちる組み合わせが出る。
@@ -62,6 +67,18 @@ jobs:
       # 別の作業として切り出す。
       - name: Lint
         run: npm run lint
+
+      # 上の Lint は error しか止めない。CLAUDE.md 1 節の「PR の前後で警告の
+      # 総数が増えていないこと」は人の目で確かめており、自分の足したコードで
+      # 警告を増やす事故が実際に起きている。
+      #
+      # 上限を数字（--max-warnings）で書かないのは、総数が環境で変わるため
+      # （同じコミットでクラウド 423 / ローカル 434）。同じランナーの中で
+      # 比較元（HEAD^1）も数え直し、差だけを見る。master への push では
+      # 比べる相手が PR ではないので回さない。
+      - name: Lint warnings must not increase
+        if: github.event_name == 'pull_request'
+        run: node scripts/lint-warning-gate.mjs HEAD^1
 
       # 暦・天体計算のテストは年単位で日を回すため、1 本で数秒かかる。
       # vitest.config.ts で testTimeout を 30 秒にしてある。
