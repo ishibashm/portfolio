@@ -119,6 +119,7 @@ describe("重ねがけ", () => {
       luckyOnly: true,
       hideBlocked: true,
       month: "2026-10",
+      tripleOnly: false,
     });
     expect(r.map((d) => d.date)).toEqual(["2026-10-03"]);
   });
@@ -130,5 +131,47 @@ describe("重ねがけ", () => {
       luckyOnly: true,
     });
     expect(r).toEqual([]);
+  });
+});
+
+describe("三盤吉だけ（2026-09-29。一覧が凶の無い日まで拾うようになった）", () => {
+  const tiered: FilterableDay[] = [
+    {
+      date: "2026-10-01",
+      weekday: 4,
+      tags: [],
+      blockedByTenchusatsu: false,
+      tier: "S",
+    },
+    {
+      date: "2026-10-02",
+      weekday: 5,
+      tags: [],
+      blockedByTenchusatsu: false,
+      tier: "A",
+    },
+    {
+      date: "2026-10-03",
+      weekday: 6,
+      tags: [],
+      blockedByTenchusatsu: false,
+      tier: "C",
+    },
+  ];
+
+  it("既定では段階を問わず全部出す", () => {
+    expect(filterDays(tiered, DEFAULT_DAY_FILTER)).toHaveLength(3);
+    expect(isFiltering(DEFAULT_DAY_FILTER)).toBe(false);
+  });
+
+  it("選ぶと S だけになり、「絞り込みを外す」が出る", () => {
+    const f = { ...DEFAULT_DAY_FILTER, tripleOnly: true };
+    expect(filterDays(tiered, f).map((d) => d.date)).toEqual(["2026-10-01"]);
+    expect(isFiltering(f)).toBe(true);
+  });
+
+  it("段階の付いていない一覧（三盤吉だけを拾ったもの）は減らさない", () => {
+    const f = { ...DEFAULT_DAY_FILTER, tripleOnly: true };
+    expect(filterDays(DAYS, f)).toHaveLength(DAYS.length);
   });
 });

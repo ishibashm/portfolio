@@ -19,6 +19,8 @@ export interface FilterableDay {
   weekday: number;
   tags: string[];
   blockedByTenchusatsu: boolean;
+  /** 段階（S〜C）。凶の無い日まで拾った一覧のときだけ付く。 */
+  tier?: string;
 }
 
 export type WeekdayFilter = "all" | "weekend" | "weekday";
@@ -31,6 +33,11 @@ export interface DayFilter {
   hideBlocked: boolean;
   /** "all" か "YYYY-MM"。 */
   month: string;
+  /**
+   * 三盤吉（S）の日だけにする。一覧は凶の無い日（S・A・B・C）まで拾う
+   * （2026-09-29）ので、従来どおり三盤吉だけを見たい人が選ぶ。
+   */
+  tripleOnly: boolean;
 }
 
 export const DEFAULT_DAY_FILTER: DayFilter = {
@@ -45,6 +52,7 @@ export const DEFAULT_DAY_FILTER: DayFilter = {
   */
   hideBlocked: false,
   month: "all",
+  tripleOnly: false,
 };
 
 /** 縁起日として扱う印。判定には使わない、暦の飾り。 */
@@ -64,6 +72,9 @@ export function filterDays<T extends FilterableDay>(
 ): T[] {
   return days.filter((d) => {
     if (filter.hideBlocked && d.blockedByTenchusatsu) return false;
+    // 段階が付いていない一覧は三盤吉だけを拾ったものなので、そのまま残す
+    if (filter.tripleOnly && d.tier !== undefined && d.tier !== "S")
+      return false;
     if (filter.weekday === "weekend" && !isWeekend(d.weekday)) return false;
     if (filter.weekday === "weekday" && isWeekend(d.weekday)) return false;
     if (
@@ -99,6 +110,7 @@ export function isFiltering(filter: DayFilter): boolean {
     filter.weekday !== DEFAULT_DAY_FILTER.weekday ||
     filter.luckyOnly !== DEFAULT_DAY_FILTER.luckyOnly ||
     filter.hideBlocked !== DEFAULT_DAY_FILTER.hideBlocked ||
-    filter.month !== DEFAULT_DAY_FILTER.month
+    filter.month !== DEFAULT_DAY_FILTER.month ||
+    filter.tripleOnly !== DEFAULT_DAY_FILTER.tripleOnly
   );
 }
