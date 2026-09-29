@@ -155,7 +155,9 @@ async function main() {
     console.log("\ndry-run: 書き込まない。");
     return;
   }
-  fs.writeFileSync(OUT, `${JSON.stringify(snapshot, null, 1)}\n`);
+  // 詰めて書く（housingStats.json と同じ）。client が読む配布物で、
+  // .prettierignore に載せてある
+  fs.writeFileSync(OUT, `${JSON.stringify(snapshot)}\n`);
   console.log(`\n${path.relative(process.cwd(), OUT)} に書いた。`);
 }
 

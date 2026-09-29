@@ -13,6 +13,9 @@ public/prefectures.geojson
 # コミットする（import-estat-housing.yml）。整形すると pre-commit で
 # bot のコミットが止まる（run 35472346972 で実際に止まった）。
 src/data/housingStats.json
+# 公的な家賃の統計の写し。estat-rent-refresh.yml が書いて bot がコミットする。
+# 同じ理由で除く（run 36624487656 で bot のコミットが止まった）。
+src/data/estatRent.json
 
 # prettier はこのファイル自体を整形できない（対応する parser が無く、
 # --check が失敗する）。自分自身も除く。
