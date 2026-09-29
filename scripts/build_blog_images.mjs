@@ -1288,6 +1288,23 @@ const FIGURES = [
       </div>
     </div>`,
   },
+  {
+    /*
+      風水（八宅）は住まいの中の向きを見るのか。記事の宅卦の表から、
+      東四宅・西四宅の坐（背にしている向き）を塗る。東四宅の坐の 4 方位が
+      東四命の吉の 4 方位と同じ集合であることは blogFengShuiInsideHomeClaims
+      がエンジンと照合している。
+    */
+    slug: "feng-shui-looks-inside-the-home",
+    kicker: "歴史と背景",
+    title: "八宅が見るのは、<br>引越し先ではなく住まいの中の向き",
+    sub: "宅卦は、家が背にしている向き（坐）で決まるとされます。坐の 4 方位の組が、東四宅と西四宅です。",
+    body: `<div style="display:flex;align-items:center;gap:56px">
+        ${board(["北", "南", "東", "南東"], "東四宅の坐<br>坎・離・震・巽")}
+        ${board(["北西", "南西", "北東", "西"], "西四宅の坐<br>乾・坤・艮・兌")}
+        <div class="note" style="max-width:480px">当てる先は<br><b>玄関・寝室・寝る向き・机・コンロ</b>。<br>移動の方位に並べるのは、そこからの<b>転用</b>です。</div>
+      </div>`,
+  },
 ];
 
 function html(fig) {
