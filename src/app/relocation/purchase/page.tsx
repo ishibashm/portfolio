@@ -33,7 +33,9 @@ import { coreRouteLabel } from "@/lib/siteStructure";
 const stats = purchaseStats as unknown as PurchaseStats;
 
 export const metadata: Metadata = {
-  title: "購入の相場を分析する | Cloud Palette",
+  // canonical を書かないとルートの layout の "/" を継承し、ホームの重複に見える
+  alternates: { canonical: "/relocation/purchase" },
+  title: "購入の相場を分析する",
   description:
     "国交省の成約価格をもとに、㎡単価・土地代と建物代の比率・築年数・構造・都道府県別の相場を集計して並べる。地価公示との対比も出す。",
 };

@@ -16,7 +16,9 @@ import { AppraisalForm } from "./AppraisalForm";
  */
 
 export const metadata: Metadata = {
-  title: "この物件は高いか安いか | Cloud Palette",
+  // canonical を書かないとルートの layout の "/" を継承し、ホームの重複に見える
+  alternates: { canonical: "/relocation/appraisal" },
+  title: "この物件は高いか安いか",
   description:
     "検討中のマンションを入力すると、近所で実際に成立した成約価格の分布のどこにあるかを出します。売出価格ではなく成約価格で比べます。",
 };
