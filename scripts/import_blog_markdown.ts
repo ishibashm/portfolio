@@ -5,6 +5,7 @@ import * as dotenv from "dotenv";
 import * as fs from "fs";
 import * as path from "path";
 import { getBlogPost, getBlogPosts } from "../src/lib/blog";
+import { diffBlogPost, formatBlogPostDiff } from "../src/lib/blogImportDiff";
 
 /**
  * content/blog/*.md を BlogPost へ取り込む。
@@ -32,6 +33,10 @@ import { getBlogPost, getBlogPosts } from "../src/lib/blog";
  *   IMPORT_OVERWRITE=true npx -y tsx scripts/import_blog_markdown.ts
  *   IMPORT_ONLY=my-slug IMPORT_OVERWRITE=true npx -y tsx scripts/import_blog_markdown.ts
  *   IMPORT_DRY_RUN=true npx -y tsx scripts/import_blog_markdown.ts   # 何もしない
+ *
+ * dry-run で上書きの対象になる記事は、DB の中身とファイルの差を出す
+ * （src/lib/blogImportDiff）。「DB にだけある行」が上書きで消える行で、
+ * 管理画面の手直しがあればここに出る。上書きの apply の前に必ず見ること。
  *
  * 取り込んだあとも Markdown のファイルは消さない。DB が空のときは
  * ファイルに落ちる読み方（次の PR）にしてあるので、消すのは移行が
@@ -108,7 +113,16 @@ async function main() {
 
     const existing = await prisma.blogPost.findUnique({
       where: { slug: post.slug },
-      select: { id: true },
+      select: {
+        id: true,
+        title: true,
+        content: true,
+        excerpt: true,
+        category: true,
+        tags: true,
+        published: true,
+        publishedAt: true,
+      },
     });
 
     if (existing && !OVERWRITE) {
@@ -131,6 +145,11 @@ async function main() {
 
     if (DRY_RUN) {
       console.log(`  ${existing ? "~" : "+"} ${post.slug}: ${post.title}`);
+      if (existing) {
+        for (const line of formatBlogPostDiff(diffBlogPost(existing, data))) {
+          console.log(line);
+        }
+      }
       if (existing) updated++;
       else created++;
       continue;
