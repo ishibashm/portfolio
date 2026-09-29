@@ -405,7 +405,7 @@ describe("本物の記事に題を渡す", () => {
   const files = readdirSync(DIR).filter((f) => f.endsWith(".md"));
   const titleOf = (md: string) => md.match(/^title:\s*"?(.+?)"?\s*$/m)?.[1];
 
-  it("FAQPage を出せる記事が 18 → 23 本になる", () => {
+  it("FAQPage を出せる記事が 19 → 24 本になる", () => {
     const count = (withTitle: boolean) =>
       files.filter((f) => {
         const md = readFileSync(join(DIR, f), "utf8");
@@ -442,8 +442,13 @@ describe("本物の記事に題を渡す", () => {
       直下の段落は元から「八宅は生年と性別から本命卦を決めます」と答えて
       いる。題は問いで終わらないので、題の有無にかかわらず 1 → 2 組
     */
-    expect(count(false)).toBe(18);
-    expect(count(true)).toBe(23);
+    /*
+      2026-09-29: どの日で方位が決まるのかの記事（which-day-counts-as-moving-day）
+      を足して +1。見出しをすべて問いの形にし、題も問いで「先に結論」の
+      冒頭を 1 文の答えにしてあるので、題の有無にかかわらず数に入る
+    */
+    expect(count(false)).toBe(19);
+    expect(count(true)).toBe(24);
   });
 
   it("題から作った問いは、記事の題そのもの（言い換えない）", () => {

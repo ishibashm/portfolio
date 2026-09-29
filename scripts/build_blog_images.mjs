@@ -1184,6 +1184,48 @@ const FIGURES = [
         <div style="margin-top:4px;font-size:15px;color:#64748b;text-align:right">1年あたり。2026年・2027年をサイトの判定で数えた</div>
       </div>`,
   },
+  {
+    /*
+      どの日で方位が決まるのか。記事の実例の表から（七赤金星・東・
+      東経 135.7 度）。立冬（11/7 18:52）の前は月盤が東を塞ぎ、後は開く。
+      同じ引越しの 5 つの日付で段階が割れる。blogWhichDayClaims が照合。
+    */
+    slug: "which-day-counts-as-moving-day",
+    kicker: "引越しの考え方",
+    title: "同じ引越しでも、<br>どの日を入れるかで答えが変わる",
+    sub: "七赤金星の人が東へ動く例。立冬をまたぐ 5 つの日付を、サイトの判定に掛けました。",
+    body: `<div style="display:flex;align-items:stretch;gap:12px;width:1080px">
+        ${[
+          ["契約", "10/30", "X", true, false],
+          ["鍵の受け取り", "11/7", "X", true, true],
+          ["荷物の搬入", "11/8", "B", false, false],
+          ["初めて泊まる日", "11/9", "A", false, false],
+          ["住民票の異動", "11/12", "X", true, false],
+        ]
+          .map(
+            ([
+              label,
+              day,
+              tier,
+              bad,
+              split,
+            ]) => `<div style="flex:1;background:#fff;
+              border:1px solid ${bad ? "#e11d48" : "#e2d9d1"};border-radius:12px;
+              padding:14px 10px;text-align:center">
+            <div style="font-size:18px;font-weight:700;color:#475569">${label}</div>
+            <div style="font-size:22px;font-weight:800;color:#0f172a;margin-top:6px">${day}</div>
+            <div style="font-size:52px;font-weight:800;line-height:1.1;margin-top:6px;color:${bad ? "#e11d48" : "#0f172a"}">${tier}</div>
+          </div>${
+            split
+              ? `<div style="width:92px;display:flex;flex-direction:column;align-items:center;justify-content:center;
+                  border-left:2px dashed #94a3b8;border-right:2px dashed #94a3b8;font-size:16px;font-weight:700;color:#475569;line-height:1.5">
+                  立冬<br>11/7<br>18:52</div>`
+              : ""
+          }`,
+          )
+          .join("")}
+      </div>`,
+  },
 ];
 
 function html(fig) {
