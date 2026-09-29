@@ -3,6 +3,11 @@ import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { SolarTimeClock } from "@/components/SolarTimeClock";
 import { getZonedDateTimeFields } from "@/utils/solarTime";
+import {
+  ACTION_INTENTS,
+  ACTION_INTENT_EFFECTS,
+  ACTION_INTENT_LABELS,
+} from "@/utils/directionFilterMode";
 
 /**
  * 今日の方位と時刻（/relocation/dashboard）で、移動の目的・目標日・
@@ -202,5 +207,41 @@ describe("自動保存はアカウントにも届く（変わったときだけ�
     /* 生年月日・出発地は触っていないので送らない */
     expect(sent[0]).not.toHaveProperty("birth_date");
     expect(sent[0]).not.toHaveProperty("base_lat");
+  });
+});
+
+describe("移動の目的を選ぶ所は 1 つ", () => {
+  /* 2026-09-29。本命星タブにも同じ選択があり、目的地タブ・設定バーと
+     選択肢の名前が 3 通りに割れていた */
+  const intentSelects = () =>
+    Array.from(container.querySelectorAll("select")).filter((s) =>
+      s.querySelector('option[value="MIGRATION"]'),
+    );
+
+  it("本命星タブには置かない", async () => {
+    localStorage.setItem("stc_activeTab", "profile");
+    await act(async () => {
+      root.render(<SolarTimeClock />);
+      await new Promise((r) => setTimeout(r, 100));
+    });
+    expect(container.textContent).toContain("詳しく見る");
+    expect(intentSelects()).toEqual([]);
+  });
+
+  it("目的地タブの選択は共通の名前と説明を出す", async () => {
+    localStorage.setItem(
+      "tactical_config_v1",
+      JSON.stringify({ action_intent: "MIGRATION" }),
+    );
+    await open();
+    const selects = intentSelects();
+    expect(selects).toHaveLength(1);
+    expect(
+      Array.from(selects[0].options).map((o) => [o.value, o.textContent]),
+    ).toEqual(ACTION_INTENTS.map((i) => [i, ACTION_INTENT_LABELS[i]]));
+    expect(container.textContent).toContain(ACTION_INTENT_EFFECTS.MIGRATION);
+
+    await act(async () => change(selects[0], "REST"));
+    expect(container.textContent).toContain(ACTION_INTENT_EFFECTS.REST);
   });
 });

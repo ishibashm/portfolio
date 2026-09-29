@@ -32,7 +32,11 @@ import type { Layers } from "./ConsultPanel";
 import type { HeatmapColumn, TrendCell } from "../SolarTimeClock";
 import { getZonedDateTimeFields } from "@/utils/solarTime";
 import {
+  ACTION_INTENTS,
+  ACTION_INTENT_EFFECTS,
+  ACTION_INTENT_LABELS,
   directionFilterModeLabel,
+  parseActionIntent,
   parseDirectionFilterMode,
   type DashboardFilterMode,
 } from "@/utils/directionFilterMode";
@@ -239,8 +243,8 @@ export default function DestinationMapPanel({
                 <label className="text-[10px] font-bold text-stone-700">
                   行動の目的
                 </label>
-                <span className="text-[10px] text-stone-600">
-                  行動の性質により吉凶の計算結果が変わります
+                <span className="text-xs text-stone-600">
+                  {ACTION_INTENT_EFFECTS[actionIntent]}
                 </span>
               </div>
               <select
@@ -248,21 +252,19 @@ export default function DestinationMapPanel({
                 value={actionIntent}
                 onChange={(e) =>
                   /*
-                    ここは cast のまま。下の option が DEFAULT / REST /
-                    BUSINESS / MIGRATION の 4 つだけなので、他の値は来ない。
-                    parseActionIntent に替えると ephemerisEngine を**値として**
-                    import することになり、この client コンポーネントの
-                    バンドルに判定エンジンが丸ごと乗る（#177〜#179 で
-                    重い依存を遅延させた経緯がある）。
+                    以前は cast だった（parseActionIntent が ephemerisEngine に
+                    あり、値で import するとエンジンが client に乗るため。
+                    #553）。今は暦エンジンを引かない葉にあるので通せる。
                   */
-                  setActionIntent(e.target.value as ActionIntent)
+                  setActionIntent(parseActionIntent(e.target.value))
                 }
                 className="min-h-[24px] bg-transparent text-emerald-700 font-bold text-[10px] outline-none cursor-pointer text-right"
               >
-                <option value="DEFAULT">通常の外出</option>
-                <option value="REST">回復・静養</option>
-                <option value="BUSINESS">交渉・ビジネス</option>
-                <option value="MIGRATION">引越し・長期滞在</option>
+                {ACTION_INTENTS.map((intent) => (
+                  <option key={intent} value={intent}>
+                    {ACTION_INTENT_LABELS[intent]}
+                  </option>
+                ))}
               </select>
             </div>
 

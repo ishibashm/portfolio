@@ -4031,32 +4031,11 @@ export const SolarTimeClock = () => {
 
         {activeTab === "profile" && (
           <div className="w-full flex flex-col items-center space-y-8 animate-fade-in max-w-[1700px]">
-            {/* Action Intent Selector */}
-            <div className="w-full bg-white border border-stone-200 rounded-xl p-4 flex flex-col shadow-lg z-10 shrink-0">
-              <label
-                htmlFor="home-action-intent"
-                className="text-[10px] text-stone-600 uppercase font-mono tracking-widest mb-2 flex items-center gap-1"
-              >
-                <span className="text-emerald-700">◆</span> 移住・移動の目的
-              </label>
-              <select
-                id="home-action-intent"
-                value={actionIntent}
-                onChange={(e) =>
-                  shareActionIntent(parseActionIntent(e.target.value))
-                }
-                className="w-full bg-white/70 border border-stone-300 text-sm text-stone-600 rounded px-3 py-2 outline-none focus:border-emerald-500 transition-colors cursor-pointer"
-              >
-                <option value="DEFAULT">日常の行動・短期旅行</option>
-                <option value="REST">休養・療養を目的とした移動</option>
-                <option value="BUSINESS">交渉・ビジネスを目的とした移動</option>
-                <option value="MIGRATION">引越し・長期移住・拠点の変更</option>
-              </select>
-              <p className="text-xs text-stone-600 mt-3 leading-relaxed">
-                「引越し」や「療養」など、目的に応じて方位の吉凶の重みづけ（どの層を重く見るか）が自動的に切り替わります。
-              </p>
-            </div>
-
+            {/*
+              移動の目的の選択はここにもあったが、目的地タブと設定バーに
+              同じものがあり、選択肢の名前が 3 通りに割れていた。この札は
+              「本命星と天中殺」なので外し、目的地タブの 1 つに寄せた。
+            */}
             {/*
               広い画面では 2 枚を横に並べる。1 列に積んだままだと、
               器を 1700px にしても中の札が伸びるだけで幅が何も買わない
