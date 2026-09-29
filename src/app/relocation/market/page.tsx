@@ -105,6 +105,14 @@ export default function MarketAnalyticsPage() {
 
   const snapshotNote = listingSnapshotNote(generated);
   const nat = stats.national;
+  /*
+    推移の 2 つのグラフが止まった日（2026-09-30、利用者の指摘「このデータは
+    最新？」）。掲載の取り込みを 9/13 に止めたので、どちらの系列もそこで
+    終わっている。頁の上の帯には書いてあるが、グラフの題が「推移」のままで、
+    帯を読まないと今も動いているように見えた。題に最終日を出す。
+  */
+  const rentIndexLast = stats.rentIndexSeries.at(-1)?.date;
+  const dailyLast = stats.dailyNewListings.at(-1)?.date;
   const dailySeries = (() => {
     const ma = trailingAverage(
       stats.dailyNewListings.map((d) => d.count),
@@ -227,8 +235,8 @@ export default function MarketAnalyticsPage() {
 
         {/* 家賃指数の推移。株価チャートに相当する時系列 */}
         <Section
-          title="家賃指数の推移（全国・㎡単価中央値）"
-          subtitle="集計のたびに積み上げた時系列。㎡単価の中央値なので、安い物件が増減しても面積構成の変化に引きずられにくい。過去に遡って再構成はできないため、導入日からの蓄積になる。"
+          title={`家賃指数の推移（全国・㎡単価中央値）${rentIndexLast ? `— ${rentIndexLast} で停止` : ""}`}
+          subtitle="掲載の取り込みを止めたため、この系列は上の日付で止まっていて、以降は伸びない。集計のたびに積み上げた時系列で、㎡単価の中央値なので、安い物件が増減しても面積構成の変化に引きずられにくい。"
         >
           {stats.rentIndexSeries.length >= 5 ? (
             <div className="h-56">
@@ -271,8 +279,8 @@ export default function MarketAnalyticsPage() {
 
         {/* 出来高: 新規掲載 */}
         <Section
-          title="新規掲載の推移（出来高）"
-          subtitle="1日に市場へ出てきた新しい掲載の数。太線は7日移動平均。供給の勢いが読める。巡回対象の県を増やした日は段差になる。"
+          title={`新規掲載の推移（出来高）${dailyLast ? `— ${dailyLast} で停止` : ""}`}
+          subtitle="掲載の取り込みを止めたため、この系列は上の日付で止まっている。1日に市場へ出てきた新しい掲載の数で、太線は7日移動平均。最後の日が急に落ちているのは、その日の途中（集計した時点）までしか数えていないため。"
         >
           <div className="h-56">
             <ResponsiveContainer width="100%" height="100%">
