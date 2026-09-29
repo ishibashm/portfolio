@@ -81,6 +81,13 @@ export function yenDelta(v: number): string {
   return h === 0 ? "±0円" : `${sign}${h}円`;
 }
 
+/* JSX の中で日本語を改行すると半角スペースが入る（jsxJapaneseLinebreak）ので、
+   長い注記は文字列にしておく */
+const NOTE =
+  "ほかの条件が同じ部屋どうしを比べたときの差です。円はその県の家賃中央値の部屋に当てた目安。" +
+  "「当てはまり」は広さ・築年・駅徒歩の 3 つだけで家賃のばらつきをどれだけ言い当てられるか（決定係数 R²）。" +
+  "間取り・階数・構造は入れていないので、その分は外れます。";
+
 const man = (v: number) => `${(v / 10000).toFixed(1)}万円`;
 const count = (n: number) =>
   n >= 10000 ? `${(n / 10000).toFixed(1)}万件` : `${n.toLocaleString()}件`;
@@ -283,12 +290,7 @@ export function HedonicFactorTable({
           </tbody>
         </table>
       </div>
-      <p className="text-[11px] leading-relaxed text-stone-500">
-        ほかの条件が同じ部屋どうしを比べたときの差です。円はその県の家賃中央値の部屋に当てた目安。
-        「当てはまり」は広さ・築年・駅徒歩の 3
-        つだけで家賃のばらつきをどれだけ言い当てられるか （決定係数
-        R²）。間取り・階数・構造は入れていないので、その分は外れます。
-      </p>
+      <p className="text-xs leading-relaxed text-stone-500">{NOTE}</p>
     </div>
   );
 }
