@@ -34,6 +34,8 @@ import { GRID_STROKE, SERIES } from "@/lib/chartPalette";
 import { HedonicFactorTable } from "@/components/relocation/HedonicFactorTable";
 
 import marketStats from "@/data/marketStats.json";
+import estatRent from "@/data/estatRent.json";
+import { OfficialRentSection } from "@/components/relocation/OfficialRentSection";
 import { listingSnapshotNote } from "@/lib/listingFreshness";
 import calendarClimatology from "@/data/calendarClimatology.json";
 import type { MarketStats } from "@/utils/marketStats";
@@ -233,10 +235,16 @@ export default function MarketAnalyticsPage() {
           />
         </div>
 
+        {/* 毎月出る公的な家賃の統計（消費者物価指数・小売物価統計調査の
+            民営家賃）。掲載の推移は 2026-09-13 で止まったので、その上に置く
+            （利用者の指摘、2026-09-30「このデータは最新？」）。写しは
+            estat-rent-refresh.yml が毎月更新する。 */}
+        <OfficialRentSection snapshot={estatRent} />
+
         {/* 家賃指数の推移。株価チャートに相当する時系列 */}
         <Section
           title={`家賃指数の推移（全国・㎡単価中央値）${rentIndexLast ? `— ${rentIndexLast} で停止` : ""}`}
-          subtitle="掲載の取り込みを止めたため、この系列は上の日付で止まっていて、以降は伸びない。集計のたびに積み上げた時系列で、㎡単価の中央値なので、安い物件が増減しても面積構成の変化に引きずられにくい。"
+          subtitle="掲載の取り込みを止めたため、この系列は上の日付で止まっていて、以降は伸びない。毎月の家賃の動きは上の公的な統計（民営家賃）で見られる。集計のたびに積み上げた時系列で、㎡単価の中央値なので、安い物件が増減しても面積構成の変化に引きずられにくい。"
         >
           {stats.rentIndexSeries.length >= 5 ? (
             <div className="h-56">
