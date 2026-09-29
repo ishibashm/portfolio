@@ -32,6 +32,7 @@ import {
   CircleUser,
   Clock,
   Compass,
+  HistoryIcon,
   Home,
   LogIn,
   LogOut,
@@ -74,6 +75,17 @@ const PUBLIC_ITEMS = [
   { href: "/account", icon: CircleUser, label: "アカウント" },
   { href: "/guide", icon: BookOpen, label: "使い方ガイド" },
   { href: "/blog", icon: Newspaper, label: "引越しの読みもの" },
+  /*
+    Gmail の取り込みで追加した後から、この行だけ一覧の外に素の Link で
+    足してあり、アイコンが無く、字の大きさも点灯（いま開いている頁の
+    赤帯）も他の行と違っていた（利用者の指摘、2026-09-29）。
+    同じ一覧に入れて、描き方を renderNavItem の 1 つにする。
+  */
+  {
+    href: "/relocation/candidates",
+    icon: HistoryIcon,
+    label: "本人の候補履歴",
+  },
 ];
 
 // ナビは src/lib/siteStructure.ts の中核ルートに合わせる。
@@ -381,13 +393,6 @@ export function GlobalSidebar() {
         {/* Navigation Links */}
         <nav className="shrink-0 py-4 px-3 space-y-1 overflow-x-hidden">
           {PUBLIC_ITEMS.map(renderNavItem)}
-          <Link
-            href="/relocation/candidates"
-            prefetch={false}
-            className={`block px-3 py-2 text-sm ${hideWhenCollapsed}`}
-          >
-            本人の候補履歴
-          </Link>
 
           {/* 見出しは "Public Space" / "Secure Engines" だった。中核ページは
               匿名で開けるようにしたので "Secure" は事実と違い、ログインが
