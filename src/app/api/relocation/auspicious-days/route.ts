@@ -11,6 +11,7 @@ import {
   gradeVerdict,
   judgeDayAllDirections,
   rankRelocationDays,
+  type DayScope,
 } from "@/utils/auspiciousDays";
 import { forecastAnchorMs } from "@/utils/boardInstant";
 import {
@@ -299,6 +300,14 @@ export async function GET(request: Request) {
       });
     }
 
+    /*
+      一覧に拾う日の範囲。既定は三盤吉だけ（従来どおり）。/calendar の
+      日取りの表は "noBad"（凶の無い日。S・A・B・C）で呼ぶ。知らない値は
+      既定に落とす。
+    */
+    const scope: DayScope =
+      searchParams.get("scope") === "noBad" ? "noBad" : "triple";
+
     const directionParam = searchParams.get("direction");
     if (directionParam && directionParam !== "all") {
       /* 一覧から引き当てて、見つかった値（EightDirection）をそのまま
@@ -311,10 +320,15 @@ export async function GET(request: Request) {
           { status: 400 },
         );
       }
-      const summary = findAuspiciousDays(from, to, {
-        ...base,
-        direction,
-      });
+      const summary = findAuspiciousDays(
+        from,
+        to,
+        {
+          ...base,
+          direction,
+        },
+        scope,
+      );
       return NextResponse.json({
         honmeiStar: honmeiStar.classical,
         voidZodiacs,
@@ -327,7 +341,7 @@ export async function GET(request: Request) {
       honmeiStar: honmeiStar.classical,
       voidZodiacs,
       tenchusatsuMode,
-      summaries: findAuspiciousDaysAllDirections(from, to, base),
+      summaries: findAuspiciousDaysAllDirections(from, to, base, scope),
     });
   } catch (error) {
     // このルートの error は「文言」ではなく「コード」で、画面側が

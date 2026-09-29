@@ -130,6 +130,38 @@ export interface DayVerdict {
   isIchiryumanbai: boolean;
   /** 画面に出す暦注などの札。 */
   tags: string[];
+  /**
+   * 段階（gradeVerdict）。一覧が三盤吉以外の日も拾うとき（scope が
+   * "noBad"）だけ付ける。三盤吉だけのときは付けない（従来の応答のまま）。
+   */
+  tier?: DayTier;
+}
+
+/**
+ * 一覧に拾う日の範囲。
+ *
+ * - "triple" … 三盤吉（S）だけ。既定。MCP と従来の呼び出しはこちら
+ * - "noBad"  … 凶の無い日（S・A・B・C）。/calendar の日取りの表
+ *
+ * ## なぜ "noBad" を足したか（利用者の指摘、2026-09-29）
+ *
+ * 「三盤吉の方角しか出ないけど、凶がないなら他の方角も出したらどう？」。
+ * /calendar の表は説明文で「年盤・月盤・日盤のどれにも凶が入らない日だけを
+ * 並べます」と書いていながら、実装は三盤とも**吉**の日しか拾っていなかった。
+ * 三盤吉が 1 日も無い方位は、吉2盤・凶なしの日があっても方位ごと消えていた。
+ *
+ * **判定は変えない。**段階は gradeVerdict のまま、拾う範囲を広げるだけ。
+ * D（軽い凶）と X（五大凶殺）は拾わない。
+ */
+export type DayScope = "triple" | "noBad";
+
+const NO_BAD_TIERS: ReadonlySet<DayTier> = new Set(["S", "A", "B", "C"]);
+
+/** その日を一覧に拾うか。拾うなら "noBad" のときだけ段階を付けて返す。 */
+function pickForScope(v: DayVerdict, scope: DayScope): DayVerdict | null {
+  if (scope === "triple") return v.isTripleAuspicious ? v : null;
+  const tier = gradeVerdict(v);
+  return NO_BAD_TIERS.has(tier) ? { ...v, tier } : null;
 }
 
 /**
@@ -429,8 +461,33 @@ export interface AuspiciousSummary {
   availableDays: number;
   /** 天中殺で落ちた日数。判断の材料として、両方の数を持つ。 */
   blockedByTenchusatsuDays: number;
+  /**
+   * 凶の無い日（S・A・B・C）の数と、そのうち天中殺で塞がれない日の数。
+   * scope が "noBad" のときだけ付ける。上の 3 つは scope によらず
+   * **三盤吉だけ**の数のまま（意味を変えない）。
+   */
+  noBadDays?: number;
+  availableNoBadDays?: number;
   window: AuspiciousWindow;
   days: DayVerdict[];
+}
+
+/** 拾った日から集計を組む。三盤吉の数は scope によらず三盤吉だけで数える。 */
+function countDays(days: DayVerdict[], scope: DayScope) {
+  const triple = days.filter((d) => d.isTripleAuspicious);
+  const blocked = triple.filter((d) => d.blockedByTenchusatsu).length;
+  return {
+    tripleAuspiciousDays: triple.length,
+    availableDays: triple.length - blocked,
+    blockedByTenchusatsuDays: blocked,
+    ...(scope === "noBad"
+      ? {
+          noBadDays: days.length,
+          availableNoBadDays: days.filter((d) => !d.blockedByTenchusatsu)
+            .length,
+        }
+      : {}),
+  };
 }
 
 /**
@@ -444,6 +501,7 @@ export function findAuspiciousDays(
   from: Date,
   to: Date,
   p: AuspiciousDayParams,
+  scope: DayScope = "triple",
 ): AuspiciousSummary {
   const days: DayVerdict[] = [];
   let scanned = 0;
@@ -453,21 +511,17 @@ export function findAuspiciousDays(
   // 走査上限。範囲指定を誤っても止まらなくならないようにする。
   const MAX = 800;
   while (cursor <= end && scanned < MAX) {
-    const verdict = judgeDay(new Date(cursor), p);
+    const picked = pickForScope(judgeDay(new Date(cursor), p), scope);
     scanned++;
-    if (verdict.isTripleAuspicious) days.push(verdict);
+    if (picked) days.push(picked);
     cursor = nextDayOf(cursor);
   }
-
-  const blocked = days.filter((d) => d.blockedByTenchusatsu).length;
 
   return {
     direction: p.direction,
     directionLabel: DIRECTION_LABELS[p.direction],
     scannedDays: scanned,
-    tripleAuspiciousDays: days.length,
-    availableDays: days.length - blocked,
-    blockedByTenchusatsuDays: blocked,
+    ...countDays(days, scope),
     window: findYearBoardWindow(from, p),
     days,
   };
@@ -484,6 +538,7 @@ export function findAuspiciousDaysAllDirections(
   from: Date,
   to: Date,
   p: Omit<AuspiciousDayParams, "direction">,
+  scope: DayScope = "triple",
 ): AuspiciousSummary[] {
   const perDirection: Record<string, DayVerdict[]> = {};
   for (const dir of ALL_DIRECTIONS) perDirection[dir] = [];
@@ -497,7 +552,8 @@ export function findAuspiciousDaysAllDirections(
     const all = judgeDayAllDirections(new Date(cursor), p);
     scanned++;
     for (const dir of ALL_DIRECTIONS) {
-      if (all[dir].isTripleAuspicious) perDirection[dir].push(all[dir]);
+      const picked = pickForScope(all[dir], scope);
+      if (picked) perDirection[dir].push(picked);
     }
     cursor = nextDayOf(cursor);
   }
@@ -509,16 +565,13 @@ export function findAuspiciousDaysAllDirections(
     ? judgeDayAllDirections(boundary.nextDay, p)
     : null;
 
-  return ALL_DIRECTIONS.map((direction) => {
+  const summaries = ALL_DIRECTIONS.map((direction) => {
     const days = perDirection[direction];
-    const blocked = days.filter((d) => d.blockedByTenchusatsu).length;
     return {
       direction,
       directionLabel: DIRECTION_LABELS[direction],
       scannedDays: scanned,
-      tripleAuspiciousDays: days.length,
-      availableDays: days.length - blocked,
-      blockedByTenchusatsuDays: blocked,
+      ...countDays(days, scope),
       window: {
         yearBoardValidUntil: boundary ? formatDate(boundary.lastDay) : null,
         afterYearBoardStatus: afterLayers
@@ -527,7 +580,16 @@ export function findAuspiciousDaysAllDirections(
       },
       days,
     };
-  }).sort((a, b) => b.availableDays - a.availableDays);
+  });
+  // 並びは三盤吉の多い順のまま。"noBad" のときだけ、同数の方位を凶の無い日
+  // の多い順に並べる（三盤吉 0 の方位どうしが、拾える日の多い順になる）。
+  return summaries.sort(
+    (a, b) =>
+      b.availableDays - a.availableDays ||
+      (scope === "noBad"
+        ? (b.availableNoBadDays ?? 0) - (a.availableNoBadDays ?? 0)
+        : 0),
+  );
 }
 
 /**
