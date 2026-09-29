@@ -32,7 +32,7 @@ import {
  */
 
 export const metadata: Metadata = {
-  title: "表面利回りの地図 | Cloud Palette",
+  title: "表面利回りの地図",
   description:
     "成約価格を分母にした中古マンションの表面利回りを、全国の区画ごとに出しています。分子は賃貸の募集賃料です。",
 };
