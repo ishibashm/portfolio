@@ -191,6 +191,51 @@ export function parseActionIntent(
   }
 }
 
+/** 行動の目的の一覧（画面の並び順）。 */
+export const ACTION_INTENTS: readonly ActionIntent[] = [
+  "DEFAULT",
+  "REST",
+  "BUSINESS",
+  "MIGRATION",
+] as const;
+
+/**
+ * 行動の目的の呼び名。**表はここ 1 つ。**
+ *
+ * 以前は 3 か所が別々の名前を持っていた（設定バーは「標準 (Default)」、
+ * ダッシュボードの本命星タブは「日常の行動・短期旅行」、目的地タブは
+ * 「通常の外出」）。同じ値を別の名前で選ばせると、同じものだと分からない。
+ */
+export const ACTION_INTENT_LABELS: Record<ActionIntent, string> = {
+  DEFAULT: "日常の外出",
+  REST: "休養・療養",
+  BUSINESS: "仕事・交渉",
+  MIGRATION: "引越し・移住",
+};
+
+/**
+ * 目的を選ぶと判定の何が変わるか。**判定エンジンが実際にしていること
+ * だけを書く**（ephemerisEngine の calculateVectorCollision）。
+ *
+ * - REST / BUSINESS … 本命星が一白・三碧・四緑の人だけ、相性の星を
+ *   差し替える
+ *
+ * 「方位の判定では」と断るのは、ほかの計算（街を探す地図の点数・時刻の
+ * 刻）にも目的で変わる所があり、そこまでは 1 行で言い切れないため。
+ * - MIGRATION … 年盤・月盤で決め、日盤だけの凶は WARNING（注意）に下げる
+ *
+ * 設定バーの説明には「バイオリズム」「方位価値（Q値）」が残っていた。
+ * どちらも判定に入っておらず、Q 値は #712 で廃止している。
+ */
+export const ACTION_INTENT_EFFECTS: Record<ActionIntent, string> = {
+  DEFAULT: "方位の判定では、年・月・日のどの盤の凶も同じように数えます。",
+  REST: "方位の判定では、本命星が一白・三碧・四緑の人に限り、相性の星を休養に向くものに差し替えます。",
+  BUSINESS:
+    "方位の判定では、本命星が一白・三碧・四緑の人に限り、相性の星を仕事・交渉に向くものに差し替えます。",
+  MIGRATION:
+    "方位の判定では年盤・月盤を重く見ます。日盤だけの凶は「注意」にとどめ、吉も年・月の盤だけで決めます。",
+};
+
 /**
  * 素の文字列を DirectionFilterMode に落とす。
  *

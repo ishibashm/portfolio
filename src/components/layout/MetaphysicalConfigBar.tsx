@@ -16,6 +16,9 @@ import type { ZodiacTimeBasis } from "@/utils/ephemerisEngine";
 /* 絞り込みの見方は葉から取る。ephemerisEngine から値で取ると、
    暦エンジン一式が client のバンドルに乗る（backlog 17 節）。 */
 import {
+  ACTION_INTENTS,
+  ACTION_INTENT_EFFECTS,
+  ACTION_INTENT_LABELS,
   DIRECTION_FILTER_MODES,
   type DirectionFilterMode,
 } from "@/utils/directionFilterMode";
@@ -95,12 +98,12 @@ const FILTER_SHORT_LABELS: Record<DirectionFilterMode, string> = {
   environmental_bazi: "環境＋天中殺",
 };
 
-const INTENT_LABELS = {
-  DEFAULT: "標準 (Default)",
-  REST: "休息・健康 (Rest)",
-  BUSINESS: "ビジネス (Business)",
-  MIGRATION: "長期移住 (Migration)",
-} satisfies Record<MetaphysicalConfig["actionIntent"], string>;
+/* 目的の呼び名と説明は葉（directionFilterMode）の表 1 つを使う。
+   以前はここに英語併記の別の表があり、ダッシュボードと名前が違った。 */
+const INTENT_LABELS = ACTION_INTENT_LABELS satisfies Record<
+  MetaphysicalConfig["actionIntent"],
+  string
+>;
 
 function normalizeDirectionFilterMode(
   value: unknown,
@@ -503,7 +506,7 @@ export const MetaphysicalConfigBar: React.FC<MetaphysicalConfigBarProps> = ({
                 目的:
               </span>
               <span className="text-stone-600 font-semibold">
-                {getIntentLabel(config.actionIntent).split(" ")[0]}
+                {getIntentLabel(config.actionIntent)}
               </span>
             </div>
             {/* 生年月日は判定の前提なので、畳んだ状態でも設定の有無が
@@ -784,31 +787,23 @@ export const MetaphysicalConfigBar: React.FC<MetaphysicalConfigBarProps> = ({
             <div className="min-w-0 space-y-2">
               <label className="text-[10px] uppercase font-bold text-stone-600 tracking-wider flex items-center gap-1">
                 <PlayCircle className="w-3.5 h-3.5 text-indigo-600" />{" "}
-                アクション目的 (重みづけ)
+                移動の目的
               </label>
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5 p-1 bg-white rounded-xl border border-stone-200">
-                {(["DEFAULT", "REST", "BUSINESS", "MIGRATION"] as const).map(
-                  (intent) => (
-                    <button
-                      key={intent}
-                      type="button"
-                      onClick={() => handleIntentChange(intent)}
-                      className={`py-1.5 rounded-lg text-[10px] font-bold transition-all border ${
-                        config.actionIntent === intent
-                          ? "bg-indigo-500/20 text-indigo-600 border-indigo-200"
-                          : "bg-transparent text-stone-600 border-transparent hover:text-stone-800"
-                      }`}
-                    >
-                      {intent === "DEFAULT"
-                        ? "標準"
-                        : intent === "REST"
-                          ? "休息・健康"
-                          : intent === "BUSINESS"
-                            ? "ビジネス"
-                            : "長期移住"}
-                    </button>
-                  ),
-                )}
+                {ACTION_INTENTS.map((intent) => (
+                  <button
+                    key={intent}
+                    type="button"
+                    onClick={() => handleIntentChange(intent)}
+                    className={`py-1.5 rounded-lg text-[10px] font-bold transition-all border ${
+                      config.actionIntent === intent
+                        ? "bg-indigo-500/20 text-indigo-600 border-indigo-200"
+                        : "bg-transparent text-stone-600 border-transparent hover:text-stone-800"
+                    }`}
+                  >
+                    {INTENT_LABELS[intent]}
+                  </button>
+                ))}
               </div>
             </div>
 
@@ -828,14 +823,12 @@ export const MetaphysicalConfigBar: React.FC<MetaphysicalConfigBarProps> = ({
                   </span>
                 )}
                 <span className="block mt-1">
-                  {config.actionIntent === "REST" &&
-                    "※「休息目的」に合わせたバイオリズム・月相・気学の吉方位の重み付け補正がアクティブです。"}
-                  {config.actionIntent === "BUSINESS" &&
-                    "※「ビジネス目的」に合わせたタイミング・方位価値（Q値）の活性化補正がアクティブです。"}
-                  {config.actionIntent === "MIGRATION" &&
-                    "※「長期移住目的」に特化し、年盤・月盤の長期レイヤーを最重要視する評価ロジックが働いています。"}
-                  {config.actionIntent === "DEFAULT" &&
-                    "※「標準目的」で動作中。各レイヤーをフラットに評価します。"}
+                  ※「{getIntentLabel(config.actionIntent)}」：
+                  {
+                    ACTION_INTENT_EFFECTS[
+                      normalizeActionIntent(config.actionIntent)
+                    ]
+                  }
                 </span>
               </div>
             </div>
