@@ -43,6 +43,12 @@ const eslintConfig = defineConfig([
     "test_*.ts",
     "export_*.ts",
     "scratch/**",
+
+    // Claude Code の作業用コピー（git worktree）。リポジトリの写しが丸ごと
+    // 入っているので、eslint が読むと自分の設定と食い違ってエラーで止まり、
+    // 警告の総数も何倍にもなる（2026-09-30 に手元の lint と
+    // scripts/lint-warning-gate.mjs が実際に止まった）。CI には無いフォルダ。
+    ".claude/**",
   ]),
 ]);
 
