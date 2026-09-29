@@ -29,15 +29,21 @@ import purchaseStats from "@/data/purchaseStats.json";
 import type { PurchaseStats } from "@/utils/purchaseStats";
 import type { HistogramBucket } from "@/utils/marketStats";
 import { coreRouteLabel } from "@/lib/siteStructure";
+import { pageOpenGraph } from "@/lib/siteUrl";
 
 const stats = purchaseStats as unknown as PurchaseStats;
 
+const TITLE = "購入の相場を分析する";
+const DESCRIPTION =
+  "国交省の成約価格をもとに、㎡単価・土地代と建物代の比率・築年数・構造・都道府県別の相場を集計して並べる。地価公示との対比も出す。";
+
 export const metadata: Metadata = {
-  // canonical を書かないとルートの layout の "/" を継承し、ホームの重複に見える
+  // canonical を書かないとルートの layout の "/" を継承し、ホームの重複に見える。
+  // openGraph も同じで、書かないとホームの題・URL で共有される
   alternates: { canonical: "/relocation/purchase" },
-  title: "購入の相場を分析する",
-  description:
-    "国交省の成約価格をもとに、㎡単価・土地代と建物代の比率・築年数・構造・都道府県別の相場を集計して並べる。地価公示との対比も出す。",
+  title: TITLE,
+  description: DESCRIPTION,
+  openGraph: pageOpenGraph("/relocation/purchase", TITLE, DESCRIPTION),
 };
 
 /** 円を読みやすい単位に落とす。1 億以上は「億」、それ未満は「万」。 */

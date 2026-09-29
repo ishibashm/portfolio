@@ -70,6 +70,23 @@ function canonicalsIn(file: string): string[] {
  * 値ではない object literal）の title を、書いたままの字面で返す。
  */
 function metadataTitles(file: string): string[] {
+  const sf = parse(file);
+  /* 題を定数（const TITLE = "…"）に出した頁もあるので、同じファイルの
+     const の初期値をたどって読む（2026-09-30。openGraph と題を共有するため） */
+  const consts = new Map<string, ts.Expression>();
+  const collect = (n: ts.Node) => {
+    if (ts.isVariableDeclaration(n) && ts.isIdentifier(n.name) && n.initializer)
+      consts.set(n.name.text, n.initializer);
+    ts.forEachChild(n, collect);
+  };
+  collect(sf);
+  const textOf = (init: ts.Expression): string | null => {
+    if (ts.isStringLiteralLike(init)) return init.text;
+    if (ts.isTemplateExpression(init)) return init.getText();
+    if (ts.isIdentifier(init) && consts.has(init.text))
+      return textOf(consts.get(init.text)!);
+    return null;
+  };
   const out: string[] = [];
   const visit = (n: ts.Node) => {
     if (ts.isObjectLiteralExpression(n)) {
@@ -81,15 +98,14 @@ function metadataTitles(file: string): string[] {
       if (!nested && names.includes("title") && names.includes("description")) {
         const t = n.properties.find((p) => propName(p) === "title");
         if (t && ts.isPropertyAssignment(t)) {
-          const init = t.initializer;
-          if (ts.isStringLiteralLike(init)) out.push(init.text);
-          else if (ts.isTemplateExpression(init)) out.push(init.getText());
+          const text = textOf(t.initializer);
+          if (text !== null) out.push(text);
         }
       }
     }
     ts.forEachChild(n, visit);
   };
-  visit(parse(file));
+  visit(sf);
   return out;
 }
 
@@ -143,4 +159,62 @@ describe("title にサイト名を重ねない", () => {
       ).not.toMatch(/\|\s*(Cloud Palette|\$\{SITE_NAME\})\s*$/);
     }
   });
+});
+
+/**
+ * canonical を書いた metadata は、openGraph も自分で持つ（2026-09-30）。
+ *
+ * ルートの layout の openGraph は**ホームの**題・説明・URL を持つ。子が
+ * openGraph を書かないとそれを丸ごと継承し、共有したカードがホームになる
+ * （about・privacy・terms・/houi・/houi/area・/houi/fengshui・購入の相場・
+ * 持ち込み査定の 8 頁がそうだった）。canonical を書いている＝自分の URL を
+ * 持つ頁なので、カードも自分のものを出す。共通の項目は lib/siteUrl の
+ * pageOpenGraph が埋める。
+ */
+function metadataObjectsWithCanonical(
+  file: string,
+): ts.ObjectLiteralExpression[] {
+  const out: ts.ObjectLiteralExpression[] = [];
+  const visit = (n: ts.Node) => {
+    if (ts.isObjectLiteralExpression(n)) {
+      const alt = n.properties.find((p) => propName(p) === "alternates");
+      if (
+        alt &&
+        ts.isPropertyAssignment(alt) &&
+        ts.isObjectLiteralExpression(alt.initializer) &&
+        alt.initializer.properties.some((p) => propName(p) === "canonical")
+      )
+        out.push(n);
+    }
+    ts.forEachChild(n, visit);
+  };
+  visit(parse(file));
+  return out;
+}
+
+describe("canonical を持つ頁は openGraph も持つ（ホームのカードを継承しない）", () => {
+  const files = metadataFiles(APP).filter(
+    (f) => relative(APP, f) !== "layout.tsx",
+  );
+  const withCanonical = files.filter(
+    (f) => metadataObjectsWithCanonical(f).length > 0,
+  );
+
+  it("検査の対象が見つかっている（空回りしていない）", () => {
+    expect(withCanonical.length).toBeGreaterThan(20);
+  });
+
+  it.each(withCanonical.map((f) => relative(process.cwd(), f)))(
+    "%s",
+    (file) => {
+      for (const obj of metadataObjectsWithCanonical(
+        join(process.cwd(), file),
+      )) {
+        expect(
+          obj.properties.some((p) => propName(p) === "openGraph"),
+          "openGraph が無いとルートの（ホームの）カードを継承する",
+        ).toBe(true);
+      }
+    },
+  );
 });

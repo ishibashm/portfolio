@@ -15,6 +15,7 @@ import { prefNameByCode } from "@/lib/prefContent";
 import { PREF_EDITORIAL } from "@/lib/prefEditorial";
 import { ActiveProfileBadge } from "@/components/profile/ActiveProfileBadge";
 import { coreRouteLabel } from "@/lib/siteStructure";
+import { pageOpenGraph } from "@/lib/siteUrl";
 
 /**
  * 方位コンテンツの入口。
@@ -33,10 +34,13 @@ import { coreRouteLabel } from "@/lib/siteStructure";
 */
 export function generateMetadata(): Metadata {
   const year = currentYearInJapan();
+  const title = `${year}年の吉方位と本命星の早見表（九星気学）`;
+  const description = `生まれ年から本命星を調べ、${year}年の吉方位・五黄殺・暗剣殺・歳破・本命殺がどの方位に当たるかを一覧で確認できます。引越しの方位を決める前の確認に。`;
   return {
     alternates: { canonical: "/houi" },
-    title: `${year}年の吉方位と本命星の早見表（九星気学）`,
-    description: `生まれ年から本命星を調べ、${year}年の吉方位・五黄殺・暗剣殺・歳破・本命殺がどの方位に当たるかを一覧で確認できます。引越しの方位を決める前の確認に。`,
+    title,
+    description,
+    openGraph: pageOpenGraph("/houi", title, description),
   };
 }
 

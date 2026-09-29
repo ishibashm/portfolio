@@ -1,6 +1,7 @@
 import Link from "next/link";
 import type { Metadata } from "next";
 import { SITE_NAME, SITE_TAGLINE, CORE_ROUTES } from "@/lib/siteStructure";
+import { pageOpenGraph } from "@/lib/siteUrl";
 
 /**
  * 運営者情報とデータの出典。
@@ -9,10 +10,14 @@ import { SITE_NAME, SITE_TAGLINE, CORE_ROUTES } from "@/lib/siteStructure";
  * 判定の限界と免責もここに明記しておく。占いの判定を断定的に出すページなので、
  * 何を保証していないかを書いておかないと誤解を招く。
  */
+const TITLE = "このサイトについて";
+const DESCRIPTION = `${SITE_NAME}の運営者情報、データの出典、判定の考え方、免責事項について説明しています。`;
+
 export const metadata: Metadata = {
   alternates: { canonical: "/about" },
-  title: "このサイトについて",
-  description: `${SITE_NAME}の運営者情報、データの出典、判定の考え方、免責事項について説明しています。`,
+  title: TITLE,
+  description: DESCRIPTION,
+  openGraph: pageOpenGraph("/about", TITLE, DESCRIPTION),
 };
 
 export default function AboutPage() {

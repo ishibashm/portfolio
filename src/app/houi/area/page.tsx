@@ -11,12 +11,17 @@ import {
   AreaQuickFind,
   type QuickFindArea,
 } from "@/components/houi/AreaQuickFind";
+import { pageOpenGraph } from "@/lib/siteUrl";
+
+const TITLE = "エリア別の方位と家賃相場";
+const DESCRIPTION =
+  "出発地の市区町村を選ぶと、八方位それぞれにどの市区町村があり、家賃相場がいくらかを確認できます。吉方位が分かっても、その方位に何があるか分からないと引越し先は決められません。";
 
 export const metadata: Metadata = {
   alternates: { canonical: "/houi/area" },
-  title: "エリア別の方位と家賃相場",
-  description:
-    "出発地の市区町村を選ぶと、八方位それぞれにどの市区町村があり、家賃相場がいくらかを確認できます。吉方位が分かっても、その方位に何があるか分からないと引越し先は決められません。",
+  title: TITLE,
+  description: DESCRIPTION,
+  openGraph: pageOpenGraph("/houi/area", TITLE, DESCRIPTION),
 };
 
 export default function Page() {

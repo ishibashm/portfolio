@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import { ContentDisclaimer } from "@/components/houi/ContentDisclaimer";
 import { FengShuiLookup } from "@/components/houi/FengShuiLookup";
 import { AdBanner } from "@/components/ads/AdBanner";
+import { pageOpenGraph } from "@/lib/siteUrl";
 
 /**
  * 風水（八宅）の頁。
@@ -36,6 +37,7 @@ export const metadata: Metadata = {
   title: TITLE,
   description: DESCRIPTION,
   alternates: { canonical: "/houi/fengshui" },
+  openGraph: pageOpenGraph("/houi/fengshui", TITLE, DESCRIPTION),
 };
 
 export const revalidate = 60;
