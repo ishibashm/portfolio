@@ -112,20 +112,30 @@ it("shows missing facts and origin without inventing a board or station walk tim
   expect(screen.queryByText(/徒歩/)).toBeNull();
   expect(mocks.evaluate).not.toHaveBeenCalled();
 });
-it("places one pin for each listing and an origin marker, and fits the same points", () => {
+it("places one pin per position, stacks listings at the same position into one popup, and fits the same points", () => {
+  // 同じ位置に 2 本立てると上の 1 件しか押せない（2026-09-29 に 1 本へまとめた）
   mocks.evaluate.mockReturnValue(null);
+  const onSelect = vi.fn();
+  const second = { ...listing, url: "https://example.com/2" };
   render(
     <MapInner
       mapped={[
         { listing, point },
-        { listing: { ...listing, url: "https://example.com/2" }, point },
+        { listing: second, point },
       ]}
       origin={origin}
       useClassical
-      onSelect={vi.fn()}
+      onSelect={onSelect}
     />,
   );
-  expect(screen.getAllByTestId("pin")).toHaveLength(2);
+  expect(screen.getAllByTestId("pin")).toHaveLength(1);
+  expect(screen.getByText("この位置に2件")).toBeTruthy();
+  const buttons = screen.getAllByRole("button", {
+    name: "この物件を既存入力へ",
+  });
+  expect(buttons).toHaveLength(2);
+  fireEvent.click(buttons[1]);
+  expect(onSelect).toHaveBeenCalledWith(second);
   expect(screen.getByText("出発地")).toBeTruthy();
   expect(mocks.fitBounds).toHaveBeenCalledWith(
     [
@@ -135,4 +145,23 @@ it("places one pin for each listing and an origin marker, and fits the same poin
     ],
     { padding: [32, 32], maxZoom: 16 },
   );
+});
+it("places separate pins for different positions", () => {
+  mocks.evaluate.mockReturnValue(null);
+  render(
+    <MapInner
+      mapped={[
+        { listing, point },
+        {
+          listing: { ...listing, url: "https://example.com/2" },
+          point: { lat: 35.5, lon: 135 },
+        },
+      ]}
+      origin={origin}
+      useClassical
+      onSelect={vi.fn()}
+    />,
+  );
+  expect(screen.getAllByTestId("pin")).toHaveLength(2);
+  expect(screen.queryByText(/この位置に/)).toBeNull();
 });

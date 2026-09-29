@@ -93,7 +93,9 @@ export function ListingMapPopup({
         </p>
       )}
       <p>
-        国土地理院の住所検索による概算位置です。保存前に地図で位置を確認してください。
+        {point.municipality
+          ? `位置は${point.municipality}の代表点です（番地までの位置ではありません）。方位は目安なので、保存前に地図で位置を確認してください。`
+          : "国土地理院の住所検索による概算位置です。保存前に地図で位置を確認してください。"}
       </p>
       <button
         type="button"
@@ -121,6 +123,16 @@ function FitListings({
   }, [map, points]);
   return null;
 }
+export function stackByPoint(mapped: MappedListing[]): MappedListing[][] {
+  const stacks = new Map<string, MappedListing[]>();
+  for (const m of mapped) {
+    const key = `${m.point.lat},${m.point.lon}`;
+    const stack = stacks.get(key);
+    if (stack) stack.push(m);
+    else stacks.set(key, [m]);
+  }
+  return [...stacks.values()];
+}
 export default function ImportedListingMapInner(props: ImportedMapProps) {
   const first = props.mapped[0]?.point ?? props.origin;
   if (!first) return null;
@@ -143,14 +155,36 @@ export default function ImportedListingMapInner(props: ImportedMapProps) {
           <Popup>出発地</Popup>
         </CircleMarker>
       )}
-      {props.mapped.map(({ listing, point }) => (
+      {/*
+        同じ位置の物件は 1 本のピンにまとめ、吹き出しに全部並べる。
+        市区町村の代表点に落ちた物件は同じ区なら同じ点になり、ピンを
+        重ねると上の 1 件しか押せない（番地の検索でも同じ住所なら重なる）。
+      */}
+      {stackByPoint(props.mapped).map((stack) => (
         <Marker
-          key={listing.url}
-          position={[point.lat, point.lon]}
-          title={listing.propertyName ?? "取り込み物件"}
+          key={stack[0].listing.url}
+          position={[stack[0].point.lat, stack[0].point.lon]}
+          opacity={stack[0].point.municipality ? 0.6 : 1}
+          title={
+            stack.length > 1
+              ? `${stack.length}件の取り込み物件`
+              : (stack[0].listing.propertyName ?? "取り込み物件")
+          }
         >
           <Popup>
-            <ListingMapPopup {...props} listing={listing} point={point} />
+            <div className="max-h-72 space-y-3 overflow-y-auto">
+              {stack.length > 1 && (
+                <p className="text-xs font-bold">この位置に{stack.length}件</p>
+              )}
+              {stack.map(({ listing, point }) => (
+                <ListingMapPopup
+                  key={listing.url}
+                  {...props}
+                  listing={listing}
+                  point={point}
+                />
+              ))}
+            </div>
           </Popup>
         </Marker>
       ))}
