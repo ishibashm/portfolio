@@ -240,8 +240,17 @@ export const NON_CORE_DISALLOW = [...NON_CORE_ROUTES, ...OFF_THEME_ROUTES];
 
 export const SITE_NAME = "Cloud Palette";
 export const SITE_TAGLINE = "引越しの方位とタイミングを決める";
+/*
+  「賃貸物件のデータと突き合わせ」と書いていたが、掲載の取り込みは規約に
+  従って止めた（backlog 29 節）。いま方位と突き合わせているのは公的な統計
+  （e-Stat の住宅・土地統計調査の家賃の水準と空き家率）なので、そう書く
+  （2026-09-30）。成約価格（購入の相場）は方位と突き合わせていないので
+  入れない。全頁の meta description・RSS・llms.txt・
+  ホームの説明に出る。public/manifest.json にも同じ文を写してあり、
+  __tests__/siteDescriptionSingleSource.test.ts が突き合わせる
+*/
 export const SITE_DESCRIPTION =
-  "今住んでいる場所から見た方位と、移転に適した時期をもとに、引越し先と日取りを決めるためのサービス。九星気学の方位盤と賃貸物件のデータを同じ基準で突き合わせます。";
+  "今住んでいる場所から見た方位と、移転に適した時期をもとに、引越し先と日取りを決めるためのサービス。九星気学の方位盤と、公的な統計（e-Stat の家賃の水準・空き家率）を同じ基準で突き合わせます。";
 
 /**
  * いま開いている頁に対して、ナビで点灯させる 1 つを選ぶ。
