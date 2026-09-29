@@ -19,7 +19,8 @@
  *
  * 表章項目・地域・時間軸のコードは実物の書式を見ていないので、決め打ち
  * しない。応答の CLASS_INF にある名前（「指数」「全国」「2026年8月」）で
- * 選び、見つからなければ止める（黙って別の系列に落ちない）。
+ * 選び、見つからなければ止める（黙って別の系列に落ちない）。名前の先頭に
+ * コードが重なっていることがあるので、比べる前に外す（plainName）。
  *
  * 型は**この写しが実際に読む枝だけ**を写す（#149 の方針）。
  * scripts/estatWealth の EstatValue は所得の表のために `@area`・`@cat01`
@@ -109,6 +110,17 @@ export interface EstatRentSnapshot {
 export const asArray = <T>(v: T | T[] | undefined): T[] =>
   v === undefined ? [] : Array.isArray(v) ? v : [v];
 
+/**
+ * e-Stat の項目名から先頭のコードを外す（「0047 民営家賃」→「民営家賃」）。
+ * 消費者物価指数の表は項目名にコードを重ねて返す（2026-09-30 の dry-run、
+ * run 36622875930 で「0001 総合」「0002 食料」…と出た）。付いていない名前は
+ * そのまま（「2026年8月」は数字の後ろに空白が無いので外れない）。
+ */
+export function plainName(name: string): string {
+  const m = /^[0-9A-Za-z]+[\s\u3000]+(.+)$/.exec(name.trim());
+  return m ? m[1].trim() : name.trim();
+}
+
 /** 「2026年8月」→ "2026-08"。年・年度・四半期の名前は null */
 export function monthOfTimeName(name: string): string | null {
   const m = /^(\d{4})年(\d{1,2})月$/.exec(name.trim());
@@ -145,10 +157,10 @@ export function codeByName(
   id: string,
   name: string,
 ): string {
-  const hit = classesOf(objs, id).find((c) => c["@name"] === name);
+  const hit = classesOf(objs, id).find((c) => plainName(c["@name"]) === name);
   if (!hit) {
     const names = classesOf(objs, id)
-      .map((c) => c["@name"])
+      .map((c) => plainName(c["@name"]))
       .slice(0, 40)
       .join(" / ");
     throw new Error(`分類 ${id} に「${name}」が無い（あるのは: ${names}）`);
@@ -160,7 +172,7 @@ export function codeByName(
 export function monthCodes(objs: EstatRentClassObj[]): Map<string, string> {
   const out = new Map<string, string>();
   for (const c of classesOf(objs, "time")) {
-    const month = monthOfTimeName(c["@name"]);
+    const month = monthOfTimeName(plainName(c["@name"]));
     if (month) out.set(c["@code"], month);
   }
   return out;
@@ -204,7 +216,7 @@ export function buildCpiRent(
   const indexTab = codeByName(classes, "tab", "指数");
   const months = monthCodes(classes);
   const areaNames = new Map(
-    classesOf(classes, "area").map((c) => [c["@code"], c["@name"]]),
+    classesOf(classes, "area").map((c) => [c["@code"], plainName(c["@name"])]),
   );
 
   /** 地域 → 月 → 指数 */
@@ -262,7 +274,7 @@ export function buildRetailRent(
   const { classes, values } = unpack(data);
   const months = monthCodes(classes);
   const areaNames = new Map(
-    classesOf(classes, "area").map((c) => [c["@code"], c["@name"]]),
+    classesOf(classes, "area").map((c) => [c["@code"], plainName(c["@name"])]),
   );
 
   const byArea = new Map<string, Map<string, number>>();

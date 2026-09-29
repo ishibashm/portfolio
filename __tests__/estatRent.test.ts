@@ -5,6 +5,7 @@ import {
   codeByName,
   monthOfTimeName,
   parseRentValue,
+  plainName,
   type EstatRentResponse,
   type EstatRentValue,
 } from "@/utils/estatRent";
@@ -71,6 +72,45 @@ describe("読み方", () => {
     expect(() =>
       codeByName(Array.isArray(objs) ? objs : [objs], "tab", "指数"),
     ).toThrow(/「指数」が無い/);
+  });
+});
+
+describe("項目名の先頭に重なったコード", () => {
+  it("外して比べる（消費者物価指数の表は「0047 民営家賃」の形で返す）", () => {
+    expect(plainName("0047 民営家賃")).toBe("民営家賃");
+    expect(plainName("3001 民営家賃")).toBe("民営家賃");
+    expect(plainName("00000 全国")).toBe("全国");
+    expect(plainName("13100　東京都区部")).toBe("東京都区部");
+    expect(plainName("2026年8月")).toBe("2026年8月");
+    expect(plainName("民営家賃")).toBe("民営家賃");
+  });
+
+  it("コード付きの名前の表からも、品目・地域・月を選べる", () => {
+    const data = response(
+      {
+        tab: [["01", "01 指数"]],
+        area: [
+          ["00000", "00000 全国"],
+          ["13100", "13100 東京都区部"],
+        ],
+        time: [
+          ["2025000808", "2025年8月"],
+          ["2026000808", "2026年8月"],
+        ],
+      },
+      [
+        { "@tab": "01", "@area": "00000", "@time": "2025000808", $: "100.0" },
+        { "@tab": "01", "@area": "00000", "@time": "2026000808", $: "100.5" },
+        { "@tab": "01", "@area": "13100", "@time": "2026000808", $: "101.0" },
+      ],
+    );
+    const cpi = buildCpiRent(data, "T", ["全国", "東京都区部"]);
+    expect(cpi.latestMonth).toBe("2026-08");
+    expect(cpi.areas.map((a) => a.areaName).sort()).toEqual([
+      "全国",
+      "東京都区部",
+    ]);
+    expect(cpi.areas.find((a) => a.areaName === "全国")?.yoyPct).toBe(0.5);
   });
 });
 
