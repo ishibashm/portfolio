@@ -4,7 +4,7 @@ import { FileText, ArrowLeft } from "lucide-react";
 
 export const metadata: Metadata = {
   alternates: { canonical: "/terms" },
-  title: "利用規約 | Cloud Palette",
+  title: "利用規約",
   description: "Cloud Paletteのサービス利用規約および免責事項、知的財産権に関する規定。",
 };
 
