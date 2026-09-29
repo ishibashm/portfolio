@@ -32,6 +32,9 @@ const PAGES_USING_ESTAT_API = [
   /* MCP の応答（search_municipality / area_directions / prefecture_summary）。
      画面と同じ数字を返すので、出どころも同じものを添える（2026-09-20）。 */
   "src/lib/mcpServer.ts",
+  /* 家賃市場の頁の公的な家賃の統計（消費者物価指数・小売物価統計調査の
+     民営家賃）。掲載の推移が止まったので置いた（2026-09-30）。 */
+  "src/components/relocation/OfficialRentSection.tsx",
 ];
 
 describe("e-Stat の API のクレジット表示", () => {
