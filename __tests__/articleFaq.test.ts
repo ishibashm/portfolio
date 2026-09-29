@@ -405,7 +405,7 @@ describe("本物の記事に題を渡す", () => {
   const files = readdirSync(DIR).filter((f) => f.endsWith(".md"));
   const titleOf = (md: string) => md.match(/^title:\s*"?(.+?)"?\s*$/m)?.[1];
 
-  it("FAQPage を出せる記事が 19 → 24 本になる", () => {
+  it("FAQPage を出せる記事が 20 → 25 本になる", () => {
     const count = (withTitle: boolean) =>
       files.filter((f) => {
         const md = readFileSync(join(DIR, f), "utf8");
@@ -447,8 +447,13 @@ describe("本物の記事に題を渡す", () => {
       を足して +1。見出しをすべて問いの形にし、題も問いで「先に結論」の
       冒頭を 1 文の答えにしてあるので、題の有無にかかわらず数に入る
     */
-    expect(count(false)).toBe(19);
-    expect(count(true)).toBe(24);
+    /*
+      2026-09-29: 凶の無い日の記事（days-without-bad-boards）を足して +1。
+      見出しをすべて問いの形にし、題も問いで「先に結論」の冒頭を 1 文の
+      答えにしてあるので、題の有無にかかわらず数に入る
+    */
+    expect(count(false)).toBe(20);
+    expect(count(true)).toBe(25);
   });
 
   it("題から作った問いは、記事の題そのもの（言い換えない）", () => {

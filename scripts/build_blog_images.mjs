@@ -1226,6 +1226,68 @@ const FIGURES = [
           .join("")}
       </div>`,
   },
+  {
+    /*
+      凶の無い日は使えるのか。記事の 1 年の表から（七赤金星・東経 135.7 度・
+      2026-10-01〜2027-09-30・天中殺は含めない）。三盤吉 0 日の東・西・南西にも
+      凶の無い日が残る。色は段階の塗り（tierDisplay の TIER_FILL）と同じ。
+      北・北東・南は 365 日すべて X。記事の表は blogDaysWithoutBadBoardsClaims が照合。
+    */
+    slug: "days-without-bad-boards",
+    kicker: "引越しの考え方",
+    title: "三盤吉が 0 日でも、<br>凶の無い日は残っている",
+    sub: "七赤金星の人の 1 年。東・西・南西は三盤吉が 0 日ですが、吉2盤・吉1盤・平の日が 30 日以上ありました。",
+    body: `<div style="display:flex;gap:36px;align-items:center">
+      <div style="display:flex;flex-direction:column;gap:9px">
+        ${[
+          ["北西", [38, 48, 6, 0], 92],
+          ["南東", [22, 48, 32, 10], 112],
+          ["南西", [0, 0, 7, 28], 35],
+          ["西", [0, 11, 20, 3], 34],
+          ["東", [0, 12, 18, 0], 30],
+        ]
+          .map(
+            ([
+              label,
+              parts,
+              total,
+            ]) => `<div style="display:flex;align-items:center;gap:12px">
+            <div style="width:52px;font-size:19px;font-weight:700;text-align:right">${label}</div>
+            <div style="width:430px;height:28px;display:flex;background:#f1ece7;border-radius:6px;overflow:hidden">
+              ${parts
+                .map(
+                  (n, i) =>
+                    `<div style="width:${Math.round((430 * n) / 112)}px;height:100%;background:${
+                      ["#047857", "#10b981", "#6ee7b7", "#a8a29e"][i]
+                    }"></div>`,
+                )
+                .join("")}
+            </div>
+            <div style="width:190px;font-size:17px;color:#475569;font-weight:700">${total}日（三盤吉 ${parts[0]}）</div>
+          </div>`,
+          )
+          .join("")}
+        <div style="display:flex;gap:16px;margin-left:64px;margin-top:2px;font-size:15px;color:#475569;font-weight:700">
+          ${[
+            ["S 三盤吉", "#047857"],
+            ["A 吉2盤", "#10b981"],
+            ["B 吉1盤", "#6ee7b7"],
+            ["C 平", "#a8a29e"],
+          ]
+            .map(
+              ([name, color]) =>
+                `<span><span style="display:inline-block;width:12px;height:12px;border-radius:3px;background:${color};margin-right:5px"></span>${name}</span>`,
+            )
+            .join("")}
+        </div>
+      </div>
+      <div class="note">
+        どれも<b>3 枚の盤に凶が 1 枚も無い日</b>です。
+        平の日に動くかどうかは<b>流派の考え方</b>で分かれます。
+        北・北東・南は 365 日すべて五大凶殺でした。
+      </div>
+    </div>`,
+  },
 ];
 
 function html(fig) {
