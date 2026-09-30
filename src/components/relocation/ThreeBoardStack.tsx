@@ -33,6 +33,7 @@ import {
 } from "@/lib/threeBoardCanvas";
 import type { CompassDirection, NodeMapping } from "@/utils/directionGeo";
 import { TIER_BADGE_CLASS } from "@/utils/tierDisplay";
+import { supportsWebGL } from "@/lib/webglSupport";
 
 const ThreeBoardScene = dynamic(() => import("./ThreeBoardScene"), {
   ssr: false,
@@ -84,15 +85,6 @@ function shiftDate(date: string, days: number): string {
   const d = new Date(`${date}T12:00:00+09:00`);
   d.setUTCDate(d.getUTCDate() + days);
   return d.toISOString().slice(0, 10);
-}
-
-export function supportsWebGL(): boolean {
-  try {
-    const c = document.createElement("canvas");
-    return !!(c.getContext("webgl2") || c.getContext("webgl"));
-  } catch {
-    return false;
-  }
 }
 
 /** 上から見た平面の盤。内側から日盤・月盤・年盤、外周に段階の輪 */
