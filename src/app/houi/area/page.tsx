@@ -11,6 +11,7 @@ import {
   AreaQuickFind,
   type QuickFindArea,
 } from "@/components/houi/AreaQuickFind";
+import { GreatCircleGlobe } from "@/components/houi/GreatCircleGlobe";
 import { pageOpenGraph } from "@/lib/siteUrl";
 
 const TITLE = "エリア別の方位と家賃相場";
@@ -169,6 +170,10 @@ export default function Page() {
             );
           })}
         </div>
+
+        {/* 一覧の街を方位の色で打つ。遠くの街ほど、地図に直線を引いた
+            向きと判定（大圏）がずれる理由を見せる */}
+        <GreatCircleGlobe areas={quick} />
 
         <div className="mt-10">
           <AdBanner />
