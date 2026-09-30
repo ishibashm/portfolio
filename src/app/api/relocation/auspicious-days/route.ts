@@ -10,6 +10,7 @@ import {
   findAuspiciousDaysAllDirections,
   gradeVerdict,
   judgeDayAllDirections,
+  judgeDayWithBoards,
   rankRelocationDays,
   type DayScope,
 } from "@/utils/auspiciousDays";
@@ -34,6 +35,18 @@ function parseSafeDate(value: string | null, fallback: Date): Date {
   if (!value) return fallback;
   const d = new Date(value.includes("T") ? value : `${value}T12:00:00+09:00`);
   return isNaN(d.getTime()) ? fallback : d;
+}
+
+/** mode=board の 1 方位ぶん。盤ごとの状態と、合成した段階 */
+interface BoardDirection {
+  yearLayer: string;
+  monthLayer: string;
+  dayLayer: string;
+  finalStatus: string;
+  tier: string;
+  blocked: boolean;
+  doyouSatsu: boolean;
+  tendo: boolean;
 }
 
 /** 生年月日の文字列を日本時間で読む。壊れていれば null。 */
@@ -263,6 +276,39 @@ export async function GET(request: Request) {
     // 帯グラフを描くための素データ。方位ごとの配列ではなく日付ごとの
     // 行にして、8 方位を 1 文字の段階コードに畳んで転送量を抑える
     // （730 日 × 8 方位でも 30KB 程度）。
+    // mode=board: 1 日ぶんの三盤（年盤・月盤・日盤の九星）と 8 方位の
+    // 判定。/calendar の立体の方位盤が描く材料。盤の星と判定を同じ
+    // 1 回の計算から返す（judgeDayWithBoards）。日の代表点は timeline と
+    // 同じく日本時間の正午（forecastAnchorMs）。
+    if (searchParams.get("mode") === "board") {
+      const day = new Date(
+        forecastAnchorMs(parseSafeDate(searchParams.get("date"), today)),
+      );
+      const { verdicts, boards } = judgeDayWithBoards(day, base);
+      const directions: Record<string, BoardDirection> = {};
+      for (const dir of ALL_DIRECTIONS) {
+        const v = verdicts[dir];
+        directions[dir] = {
+          yearLayer: v.yearLayer,
+          monthLayer: v.monthLayer,
+          dayLayer: v.dayLayer,
+          finalStatus: v.finalStatus,
+          tier: gradeVerdict(v),
+          blocked: v.blockedByTenchusatsu,
+          doyouSatsu: v.isDoyouSatsu,
+          tendo: v.hasTendo,
+        };
+      }
+      return NextResponse.json({
+        date: verdicts[ALL_DIRECTIONS[0]].date,
+        honmeiStar: honmeiStar.classical,
+        voidZodiacs,
+        tenchusatsuMode,
+        boards,
+        directions,
+      });
+    }
+
     if (searchParams.get("mode") === "timeline") {
       const days = timelineRows(from, to, base);
       /*
