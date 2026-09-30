@@ -174,6 +174,7 @@ const KEPT: Record<string, string> = {
   map_hazard_tab_v1: "災害情報のタブ",
   stc_activeTab: "ホームの時計のタブ",
   timing_view_v1: "時期ツールの範囲と絞り込み",
+  "threeBoard.orientation": "三盤の方位盤の向き（北を上／南を上）",
   "cloud-palette:chunk-reload-at": "読み込み失敗の再試行時刻",
 };
 

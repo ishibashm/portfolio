@@ -46,3 +46,23 @@ export function boardPointOfCanvas(
 ): [number, number] {
   return [(2 * cx) / size - 1, (2 * cy) / size - 1];
 }
+
+/**
+ * 盤の向き。"north" は北を上（立体では奥）、"south" は南を上。
+ *
+ * 気学の本の方位盤は南を上に描くものが多い。これは地図を 180 度**回した**
+ * もので、裏返しではない（南が上なら東は左、西は右、北は下）。方位の
+ * 割り当ては変わらず、見る向きだけが変わる。
+ */
+export type BoardOrientation = "north" | "south";
+
+/**
+ * 方位角 b の点が、画面の上から時計回りに何度の所に見えるか。北を上なら
+ * そのまま、南を上なら 180 度足す（正規化はしない。三角関数に渡すだけ）。
+ */
+export function screenBearing(
+  bearingDeg: number,
+  orientation: BoardOrientation,
+): number {
+  return orientation === "south" ? bearingDeg + 180 : bearingDeg;
+}
