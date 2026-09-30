@@ -20,17 +20,13 @@
 
 import { useEffect, useRef } from "react";
 import {
-  ACESFilmicToneMapping,
   AdditiveBlending,
-  CanvasTexture,
   CircleGeometry,
   Color,
-  DirectionalLight,
   FrontSide,
   EdgesGeometry,
   ExtrudeGeometry,
   Group,
-  HemisphereLight,
   LatheGeometry,
   LineBasicMaterial,
   LineSegments,
@@ -38,21 +34,11 @@ import {
   MeshBasicMaterial,
   MeshPhysicalMaterial,
   MeshStandardMaterial,
-  PCFShadowMap,
-  PerspectiveCamera,
-  PMREMGenerator,
-  Raycaster,
-  Scene,
   Shape,
-  SRGBColorSpace,
   Vector2,
-  WebGLRenderer,
   type BufferGeometry,
   type Material,
-  type Texture,
 } from "three";
-import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
-import { RoomEnvironment } from "three/examples/jsm/environments/RoomEnvironment.js";
 import {
   STAR_NAMES,
   directionOfPoint,
@@ -66,6 +52,7 @@ import {
   type BoardOrientation,
 } from "@/lib/threeBoardCanvas";
 import type { CompassDirection } from "@/utils/directionGeo";
+import { createStage } from "@/lib/threeStage";
 
 /** 盤の半径（下から年・月・日）。上ほど小さくして、下の盤の縁も見える */
 const RADII = [2.7, 2.3, 1.9];
@@ -404,72 +391,31 @@ export default function ThreeBoardScene({
   useEffect(() => {
     const host = hostRef.current;
     if (!host) return;
-    const renderer = new WebGLRenderer({ antialias: true, alpha: true });
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-    renderer.outputColorSpace = SRGBColorSpace;
-    renderer.toneMapping = ACESFilmicToneMapping;
-    renderer.toneMappingExposure = 0.95;
-    renderer.shadowMap.enabled = true;
-    renderer.shadowMap.type = PCFShadowMap;
-    host.appendChild(renderer.domElement);
-    renderer.domElement.style.touchAction = "none";
-
-    const scene = new Scene();
-    const pmrem = new PMREMGenerator(renderer);
-    const envTex = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
-    scene.environment = envTex;
-
-    const camera = new PerspectiveCamera(32, 1, 0.1, 100);
     // 北を上なら南側（+z）から、南を上なら北側（−z）から見下ろす
     const side = () => (orientationRef.current === "south" ? -1 : 1);
-    camera.position.set(0, 8.3, 10.7 * side());
-    const controls = new OrbitControls(camera, renderer.domElement);
-    controls.target.set(0, 0.2, 0);
-    controls.enableDamping = true;
-    controls.enablePan = false;
-    controls.minDistance = 7;
-    controls.maxDistance = 20;
-    controls.maxPolarAngle = 1.3;
-    controls.autoRotate = !motionRef.current;
-    controls.autoRotateSpeed = 0.45;
-    controls.addEventListener("start", () => {
-      controls.autoRotate = false;
+    const stage = createStage(host, {
+      fov: 32,
+      camera: [0, 8.3, 10.7 * side()],
+      target: [0, 0.2, 0],
+      minDistance: 7,
+      maxDistance: 20,
+      maxPolarAngle: 1.3,
+      autoRotate: !motionRef.current,
+      sunOffset: [4.5, 9, 5.5],
+      shadowExtent: 5,
     });
-
-    scene.add(new HemisphereLight(0xfff4e0, 0x2a1d14, 0.55));
-    const sun = new DirectionalLight(0xfff1d6, 2.1);
-    sun.castShadow = true;
-    sun.shadow.mapSize.set(2048, 2048);
-    sun.shadow.camera.left = -5;
-    sun.shadow.camera.right = 5;
-    sun.shadow.camera.top = 5;
-    sun.shadow.camera.bottom = -5;
-    sun.shadow.bias = -0.0004;
-    scene.add(sun);
+    const { scene, camera, controls, pool } = stage;
 
     const world = new Group();
     scene.add(world);
 
-    /* 作ったものは全部ここに積んで、作り直すときと片付けるときに捨てる */
-    let disposables: (BufferGeometry | Material | Texture)[] = [];
     let discGroups: Group[] = [];
     let faces: Mesh[] = [];
     let selectionLines: LineSegments[] = [];
     let pillars: Mesh[] = [];
     let current: ThreeBoardModel = modelRef.current;
-    const anisotropy = renderer.capabilities.getMaxAnisotropy();
-
-    const texture = (canvas: HTMLCanvasElement) => {
-      const t = new CanvasTexture(canvas);
-      t.colorSpace = SRGBColorSpace;
-      t.anisotropy = anisotropy;
-      disposables.push(t);
-      return t;
-    };
-    const keep = <T extends BufferGeometry | Material>(x: T): T => {
-      disposables.push(x);
-      return x;
-    };
+    const texture = (canvas: HTMLCanvasElement) => pool.texture(canvas);
+    const keep = <T extends BufferGeometry | Material>(x: T): T => pool.keep(x);
 
     const gapOf = () => (spreadRef.current ? 1.2 : 0.24);
     const baseY = -0.5;
@@ -477,8 +423,7 @@ export default function ThreeBoardScene({
     function rebuild(m: ThreeBoardModel) {
       current = m;
       world.clear();
-      for (const d of disposables) d.dispose();
-      disposables = [];
+      pool.clear();
       discGroups = [];
       faces = [];
       selectionLines = [];
@@ -639,86 +584,32 @@ export default function ThreeBoardScene({
     rebuild(modelRef.current);
 
     // 押した点の方位（判定と同じ境目で決める）
-    const ray = new Raycaster();
-    const ndc = new Vector2();
-    let down: [number, number] | null = null;
-    const onDown = (e: PointerEvent) => {
-      down = [e.clientX, e.clientY];
-    };
-    const onUp = (e: PointerEvent) => {
-      if (!down) return;
-      const moved = Math.hypot(e.clientX - down[0], e.clientY - down[1]);
-      down = null;
-      if (moved > 6) return;
-      const rect = renderer.domElement.getBoundingClientRect();
-      ndc.set(
-        ((e.clientX - rect.left) / rect.width) * 2 - 1,
-        -((e.clientY - rect.top) / rect.height) * 2 + 1,
-      );
-      ray.setFromCamera(ndc, camera);
-      const hit = ray.intersectObjects(faces, false)[0];
-      if (!hit) return;
-      const local = hit.object.worldToLocal(hit.point.clone());
-      /* 上面は x 軸まわりに −90 度寝かせてあるので、円の (x, y) が
-         盤の (x, −z)。directionOfPoint は盤の (x, z) を受ける */
-      const dir = directionOfPoint(local.x, -local.y, current.mapping);
-      controls.autoRotate = false;
-      onSelectRef.current(dir);
-    };
-    renderer.domElement.addEventListener("pointerdown", onDown);
-    renderer.domElement.addEventListener("pointerup", onUp);
+    stage.onPick(
+      () => faces,
+      (hit) => {
+        const local = hit.object.worldToLocal(hit.point.clone());
+        /* 上面は x 軸まわりに −90 度寝かせてあるので、円の (x, y) が
+           盤の (x, −z)。directionOfPoint は盤の (x, z) を受ける */
+        onSelectRef.current(
+          directionOfPoint(local.x, -local.y, current.mapping),
+        );
+      },
+    );
 
-    const resize = () => {
-      const w = host.clientWidth;
-      const h = host.clientHeight;
-      renderer.setSize(w, h, false);
-      renderer.domElement.style.width = `${w}px`;
-      renderer.domElement.style.height = `${h}px`;
-      camera.aspect = w / Math.max(1, h);
-      camera.updateProjectionMatrix();
-    };
-    resize();
-    const ro = new ResizeObserver(resize);
-    ro.observe(host);
-
-    // 画面の外にあるときは描かない（電池を食わない）
-    let visible = true;
-    const io =
-      typeof IntersectionObserver === "undefined"
-        ? null
-        : new IntersectionObserver(([entry]) => {
-            visible = entry.isIntersecting;
-          });
-    io?.observe(host);
-
-    renderer.setAnimationLoop(() => {
-      if (!visible) return;
+    stage.onFrame(({ vx, vz }) => {
       // 離す／重ねるを滑らかに
       for (const grp of discGroups) {
         const target = baseY + 0.3 + grp.userData.index * gapOf();
         grp.position.y +=
           (target - grp.position.y) * (motionRef.current ? 1 : 0.12);
       }
-      // 見る側の水平の向き
-      const vx = camera.position.x - controls.target.x;
-      const vz = camera.position.z - controls.target.z;
-      const vl = Math.hypot(vx, vz) || 1;
-      /* 光と映り込みの部屋は見る側について回る。部屋は前後左右が非対称で、
-         固定すると北側から見たときだけ盤面が白く曇る（南を上・自動回転） */
-      const az = Math.atan2(vx, vz);
-      scene.environmentRotation.y = az;
-      sun.position.set(
-        4.5 * Math.cos(az) + 5.5 * Math.sin(az),
-        9,
-        -4.5 * Math.sin(az) + 5.5 * Math.cos(az),
-      );
       // 光の柱は台座から一番上の盤の少し上まで
       const top = discGroups[discGroups.length - 1];
       if (top) {
         for (const p of pillars) {
           p.scale.y = top.position.y + THICK / 2 + 0.3 - p.position.y;
           const [dx, dz] = p.userData.dir as [number, number];
-          const front = Math.max(0, (dx * vx + dz * vz) / vl);
+          const front = Math.max(0, dx * vx + dz * vz);
           (p.material as MeshBasicMaterial).opacity =
             PILLAR_OPACITY * (1 - 0.75 * front);
         }
@@ -727,22 +618,10 @@ export default function ThreeBoardScene({
         controls.target.y +=
           (mid - controls.target.y) * (motionRef.current ? 1 : 0.12);
       }
-      controls.update();
-      renderer.render(scene, camera);
     });
 
     return () => {
-      renderer.setAnimationLoop(null);
-      ro.disconnect();
-      io?.disconnect();
-      renderer.domElement.removeEventListener("pointerdown", onDown);
-      renderer.domElement.removeEventListener("pointerup", onUp);
-      controls.dispose();
-      for (const d of disposables) d.dispose();
-      envTex.dispose();
-      pmrem.dispose();
-      renderer.dispose();
-      renderer.domElement.remove();
+      stage.dispose();
       apiRef.current = null;
     };
   }, []);
