@@ -20,6 +20,7 @@ import {
   Direction,
   EIGHT_DIRECTIONS,
   type DirectionFilterMode,
+  type BoardLayout,
   type EightDirection,
   type StarFrequency,
 } from "@/utils/ephemerisEngine";
@@ -183,6 +184,35 @@ export function judgeDayAllDirections(
   return result;
 }
 
+/** その日の年盤・月盤・日盤（中宮と 8 方位に入る九星）。 */
+export interface DayBoards {
+  year: BoardLayout;
+  month: BoardLayout;
+  day: BoardLayout;
+}
+
+/**
+ * 8 方位の判定と、判定に使った 3 枚の盤をまとめて返す。
+ *
+ * 三盤の方位盤（/calendar の立体の盤）が、盤の九星と方位ごとの吉凶を
+ * **同じ 1 回の計算から**描くために置いた。盤を画面側で組み直すと、
+ * 盤の時刻（directionBoardInstant）や立春・節入りの切り替えの扱いが
+ * 2 か所に分かれ、盤に描いた星と判定が別の日を指しうる。判定は
+ * judgeDayAllDirections と同じ（computeDayLayers と buildVerdict を
+ * そのまま使う）。
+ */
+export function judgeDayWithBoards(
+  date: Date,
+  p: Omit<AuspiciousDayParams, "direction">,
+): { verdicts: Record<string, DayVerdict>; boards: DayBoards } {
+  const shared = computeDayLayers(date, p);
+  const verdicts: Record<string, DayVerdict> = {};
+  for (const dir of ALL_DIRECTIONS) {
+    verdicts[dir] = buildVerdict(date, dir, shared);
+  }
+  return { verdicts, boards: shared.boards };
+}
+
 /** 1 日ぶんの判定。 */
 export function judgeDay(date: Date, p: AuspiciousDayParams): DayVerdict {
   return buildVerdict(date, p.direction, computeDayLayers(date, p));
@@ -190,6 +220,8 @@ export function judgeDay(date: Date, p: AuspiciousDayParams): DayVerdict {
 
 interface DayLayers {
   layers: ReturnType<typeof filterCollisionByMode>;
+  /** 判定に使った 3 枚の盤（中宮と 8 方位の九星）。判定の材料そのもの */
+  boards: DayBoards;
   voidScopes: VoidScopes;
   blocked: boolean;
   rokuyo: string;
@@ -277,6 +309,7 @@ function computeDayLayers(
 
   return {
     layers,
+    boards: { year: yB, month: mB, day: dB },
     voidScopes,
     blocked: verdict.blocks,
     rokuyo,
