@@ -233,21 +233,6 @@ function paintBase(columns: DirectionColumn[]): HTMLCanvasElement {
     g.closePath();
     g.fillStyle = col.color;
     g.fill();
-    if (col.blocked) {
-      /* 天中殺で動かない扱いの日は、段階の色の上に斜線を重ねる
-         （段階を消さない。平面の盤も同じ） */
-      g.save();
-      g.clip();
-      g.strokeStyle = "rgba(30,41,59,0.55)";
-      g.lineWidth = 10;
-      for (let k = -TEX; k < TEX; k += 34) {
-        g.beginPath();
-        g.moveTo(k, 0);
-        g.lineTo(k + TEX, TEX);
-        g.stroke();
-      }
-      g.restore();
-    }
     const mid = (col.startDeg + col.endDeg) / 2;
     const [tx, ty] = canvasPointOfBearing(mid, 0.885, TEX);
     g.fillStyle = "#0c0a09";

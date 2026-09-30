@@ -54,6 +54,9 @@ const KIND_FILL: Record<SectorKind, string> = {
   bad: "#dc2626",
 };
 
+const DAY_BLOCKED_NOTE =
+  "この日は天中殺にあたり、いまの扱いでは動かない日です（日の一覧で「不可」と出る日）。三盤吉の方位があっても、この日には選べません。";
+
 function shiftDate(date: string, days: number): string {
   const d = new Date(`${date}T12:00:00+09:00`);
   d.setUTCDate(d.getUTCDate() + days);
@@ -100,7 +103,7 @@ export function FlatBoard({
   };
   return (
     <svg
-      viewBox="0 0 400 400"
+      viewBox="0 -18 400 418"
       className="mx-auto h-auto w-full max-w-[420px]"
       role="img"
       aria-label="年盤・月盤・日盤を上から見た平面の方位盤（外側から年盤・月盤・日盤、いちばん外が段階）"
@@ -116,27 +119,24 @@ export function FlatBoard({
           className="cursor-pointer"
         />
       ))}
-      <defs>
-        <pattern
-          id="tb-blocked"
-          width="6"
-          height="6"
-          patternUnits="userSpaceOnUse"
-          patternTransform="rotate(45)"
-        >
-          <rect width="3" height="6" fill="rgba(30,41,59,0.55)" />
-        </pattern>
-      </defs>
-      {model.columns
-        .filter((col) => col.blocked)
-        .map((col) => (
-          <path
-            key={`b-${col.direction}`}
-            d={arc(180, 196, col.startDeg, col.endDeg)}
-            fill="url(#tb-blocked)"
+      {model.columns.map((col) => {
+        const [x, y] = label(188, (col.startDeg + col.endDeg) / 2);
+        return (
+          <text
+            key={`tl-${col.direction}`}
+            x={x}
+            y={y}
+            textAnchor="middle"
+            dominantBaseline="central"
+            fontSize={10}
+            fontWeight={800}
+            fill="#0c0a09"
             pointerEvents="none"
-          />
-        ))}
+          >
+            {col.tier}
+          </text>
+        );
+      })}
       {model.discs.map((disc, i) =>
         disc.sectors.map((s) => {
           const [x, y] = label(
@@ -190,7 +190,7 @@ export function FlatBoard({
       </text>
       <text
         x={C}
-        y={12}
+        y={-7}
         textAnchor="middle"
         fontSize={12}
         fontWeight={700}
@@ -277,6 +277,9 @@ export default function ThreeBoardStack({
   );
   const selectedCol = model?.columns.find((c) => c.direction === selected);
   const aligned = model?.columns.filter((c) => c.aligned) ?? [];
+  // 天中殺で動かない扱いは日の単位（8 方位とも同じ）なので、方位ごとに
+  // 塗らず 1 か所で言う
+  const dayBlocked = model?.columns.some((c) => c.blocked) ?? false;
 
   return (
     <section
@@ -429,6 +432,11 @@ export default function ThreeBoardStack({
                 : "なし"}
             </b>
           </p>
+          {dayBlocked && (
+            <p className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800">
+              {DAY_BLOCKED_NOTE}
+            </p>
+          )}
 
           {selectedCol && (
             <div className="rounded-2xl border border-stone-200 bg-white p-3">
