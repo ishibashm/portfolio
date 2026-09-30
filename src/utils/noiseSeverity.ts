@@ -50,6 +50,16 @@ export const NOISE_PRIORITY: readonly string[] = [
 ];
 
 /**
+ * 吉。OPTIMAL 系のうち OPTIMAL と OPTIMAL_REGULAR だけで、SAFE（平）は
+ * 含めない。定義はここだけ（auspiciousDays.isAuspicious もこれを呼ぶ）。
+ * 判定エンジンを引かずに吉凶の色分けをしたい画面（三盤の方位盤）が
+ * 読むので、軽いこのファイルに置く。
+ */
+export function isAuspiciousStatus(status: string | undefined): boolean {
+  return status === "OPTIMAL" || status === "OPTIMAL_REGULAR";
+}
+
+/**
  * 凶かどうか。重さは問わない。
  *
  * エンジンの状態は接頭辞で凶を表す（NOISE_GOU / NOISE_VOID …）。
