@@ -54,7 +54,7 @@ export async function candidateUser(req: NextRequest, write = false) {
     throw new CandidateError(
       401,
       "LOGIN_REQUIRED",
-      "候補履歴にはログインが必要です。",
+      "候補の保存にはログインが必要です。",
     );
   return id;
 }

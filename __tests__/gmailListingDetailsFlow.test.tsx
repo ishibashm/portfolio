@@ -106,11 +106,11 @@ it.each([true, false])(
     if (!enabled) {
       await screen.findByText(/住所検索は準備中/);
       expect(
-        screen.queryByRole("button", { name: "候補履歴に保存" }),
+        screen.queryByRole("button", { name: "候補に保存" }),
       ).not.toBeInTheDocument();
     } else {
       const save = await screen.findByRole("button", {
-        name: "候補履歴に保存",
+        name: "候補に保存",
       });
       expect(save).toBeDisabled();
       expect(screen.getByLabelText("物件名")).toHaveValue("合成ハイツA");

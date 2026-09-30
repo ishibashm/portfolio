@@ -91,7 +91,7 @@ export async function POST(req: NextRequest) {
         throw new CandidateError(
           429,
           "CANDIDATE_LIMIT",
-          "候補は500件までです。不要な履歴を削除してください。",
+          "候補は500件までです。不要な候補を削除してください。",
         );
       const now = new Date().toISOString();
       const candidate = await tx.listingCandidate.create({

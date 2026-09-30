@@ -65,7 +65,7 @@ describe("listing candidate flow", () => {
     expect(fetch).toHaveBeenCalledTimes(1);
     expect(fetch.mock.calls[0][0]).toBe("/api/relocation/email-preview");
     expect(
-      screen.queryByRole("button", { name: "候補履歴に保存" }),
+      screen.queryByRole("button", { name: "候補に保存" }),
     ).not.toBeInTheDocument();
   });
   it("portal paste makes zero requests; asks for location and never persists draft", async () => {
@@ -81,7 +81,7 @@ describe("listing candidate flow", () => {
       screen.getByText(/このURLだけでは物件の住所を特定できません/),
     ).toBeInTheDocument();
     expect(
-      screen.queryByRole("button", { name: "候補履歴に保存" }),
+      screen.queryByRole("button", { name: "候補に保存" }),
     ).not.toBeInTheDocument();
     expect(fetch).not.toHaveBeenCalled();
     expect(store).not.toHaveBeenCalled();
@@ -106,9 +106,7 @@ describe("listing candidate flow", () => {
       { target: { value: "35.4,135.5" } },
     );
     fireEvent.click(screen.getByRole("button", { name: "調べる" }));
-    expect(
-      screen.getByRole("button", { name: "候補履歴に保存" }),
-    ).toBeDisabled();
+    expect(screen.getByRole("button", { name: "候補に保存" })).toBeDisabled();
     expect(screen.getByRole("checkbox")).toBeDisabled();
     fireEvent.click(
       screen.getByRole("button", { name: "地図で所在地を確認する" }),
@@ -119,16 +117,14 @@ describe("listing candidate flow", () => {
       screen.getByRole("textbox", { name: "候補タイトル（任意）" }),
       { target: { value: "候補A" } },
     );
-    fireEvent.click(screen.getByRole("button", { name: "候補履歴に保存" }));
+    fireEvent.click(screen.getByRole("button", { name: "候補に保存" }));
     await screen.findByRole("alert");
     expect(
       screen.getByRole("textbox", { name: "候補タイトル（任意）" }),
     ).toHaveValue("候補A");
-    expect(
-      screen.queryByText("候補履歴に保存しました。"),
-    ).not.toBeInTheDocument();
-    fireEvent.click(screen.getByRole("button", { name: "候補履歴に保存" }));
-    await screen.findByText("候補履歴に保存しました。");
+    expect(screen.queryByText("候補に保存しました。")).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "候補に保存" }));
+    await screen.findByText("候補に保存しました。");
     expect(requests[0].requestKey).toBe(requests[1].requestKey);
     expect(requests[1].target).toMatchObject({
       lat: 35.4,
@@ -144,13 +140,9 @@ describe("listing candidate flow", () => {
       />,
     );
     await waitFor(() =>
-      expect(
-        screen.getByRole("button", { name: "候補履歴に保存" }),
-      ).toBeDisabled(),
+      expect(screen.getByRole("button", { name: "候補に保存" })).toBeDisabled(),
     );
-    expect(
-      screen.queryByText("候補履歴に保存しました。"),
-    ).not.toBeInTheDocument();
+    expect(screen.queryByText("候補に保存しました。")).not.toBeInTheDocument();
   });
   it("same point cannot be judged or saved", () => {
     mount();
@@ -161,7 +153,7 @@ describe("listing candidate flow", () => {
     fireEvent.click(screen.getByRole("button", { name: "調べる" }));
     expect(screen.getByRole("alert")).toHaveTextContent("方位は未定義");
     expect(
-      screen.queryByRole("button", { name: "候補履歴に保存" }),
+      screen.queryByRole("button", { name: "候補に保存" }),
     ).not.toBeInTheDocument();
   });
 });
