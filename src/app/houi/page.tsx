@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { ContentDisclaimer } from "@/components/houi/ContentDisclaimer";
 import { HonmeiLookup } from "@/components/houi/HonmeiLookup";
+import { MagneticCompass } from "@/components/houi/MagneticCompass";
 import type { Metadata } from "next";
 import {
   STAR_NAMES,
@@ -202,6 +203,17 @@ export default function Page() {
           >
             風水（八宅）で自分の吉方位を調べる →
           </Link>
+        </section>
+
+        {/*
+          判定は真北、磁北は注意としてだけ（CLAUDE.md 3 節）。この頁は
+          全国向けで偏角を持てないので、測り方のずれは羅盤で見せる。
+        */}
+        <section className="mt-10">
+          <h2 className="border-b border-slate-300 pb-2 font-serif text-xl font-bold">
+            方位は真北で測ります（方位磁針とのずれ）
+          </h2>
+          <MagneticCompass />
         </section>
 
         <section className="mt-10">
