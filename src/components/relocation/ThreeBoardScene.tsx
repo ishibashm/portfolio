@@ -26,7 +26,7 @@ import {
   CircleGeometry,
   Color,
   DirectionalLight,
-  DoubleSide,
+  FrontSide,
   EdgesGeometry,
   ExtrudeGeometry,
   Group,
@@ -63,6 +63,7 @@ import {
 import {
   canvasAngleOfBearing,
   canvasPointOfBearing,
+  type BoardOrientation,
 } from "@/lib/threeBoardCanvas";
 import type { CompassDirection } from "@/utils/directionGeo";
 
@@ -83,17 +84,45 @@ const FILL = {
   bad: ["#7f1d1d", "#dc2626"],
 } as const;
 
+/** 光の柱の濃さ（奥にあるとき）。手前に回ると 1/4 まで薄める */
+const PILLAR_OPACITY = 0.16;
+
 export interface ThreeBoardSceneProps {
   model: ThreeBoardModel;
   selected: CompassDirection | null;
   onSelect: (d: CompassDirection) => void;
   /** 盤を離して見せるか（重ねるか） */
   spread: boolean;
+  /** 南を上にするときは、北側から見下ろす（文字は正立のまま） */
+  orientation: BoardOrientation;
   reducedMotion: boolean;
 }
 
+/**
+ * 文字を置く。位置は方位に縛られたまま、字だけを見る側へ向ける。南を上に
+ * すると盤を北側から見るので、字をその場で 180 度回して正立させる
+ * （扇形の位置は動かさない。動かすと方位が変わる）。
+ */
+function uprightText(
+  g: CanvasRenderingContext2D,
+  text: string,
+  x: number,
+  y: number,
+  flip: boolean,
+) {
+  if (!flip) {
+    g.fillText(text, x, y);
+    return;
+  }
+  g.save();
+  g.translate(x, y);
+  g.rotate(Math.PI);
+  g.fillText(text, 0, 0);
+  g.restore();
+}
+
 /** 盤面の絵。扇形・金の境目・九星・呼び名・中宮 */
-function paintDisc(disc: BoardDisc): HTMLCanvasElement {
+function paintDisc(disc: BoardDisc, flip: boolean): HTMLCanvasElement {
   const c = document.createElement("canvas");
   c.width = c.height = TEX;
   const g = c.getContext("2d")!;
@@ -124,7 +153,7 @@ function paintDisc(disc: BoardDisc): HTMLCanvasElement {
     g.fill();
     g.globalAlpha = 1;
 
-    // 文字は北を上にしたまま（手前から読める向き）。扇形の真ん中に置く
+    // 文字は手前から読める向き。扇形の真ん中に置く
     const mid = (s.startDeg + s.endDeg) / 2;
     /* 扇形の幅（30〜60 度）に合わせて字を小さくする。狭い扇形で隣へ
        はみ出さないように */
@@ -137,10 +166,10 @@ function paintDisc(disc: BoardDisc): HTMLCanvasElement {
     g.shadowColor = "rgba(0,0,0,0.6)";
     g.shadowBlur = 8;
     g.font = `700 ${Math.round(TEX * 0.05 * (0.75 + 0.25 * scale))}px ${FONT}`;
-    g.fillText(STAR_NAMES[s.star] ?? String(s.star), sx, sy);
+    uprightText(g, STAR_NAMES[s.star] ?? String(s.star), sx, sy, flip);
     g.font = `800 ${Math.round(TEX * 0.036 * (0.7 + 0.3 * scale))}px ${FONT}`;
     g.fillStyle = s.kind === "neutral" ? "#e7e5e4" : "#fffbeb";
-    g.fillText(s.badge, lx, ly);
+    uprightText(g, s.badge, lx, ly, flip);
     g.shadowBlur = 0;
   }
 
@@ -178,6 +207,13 @@ function paintDisc(disc: BoardDisc): HTMLCanvasElement {
   g.beginPath();
   g.arc(h, h, inner - 4, 0, Math.PI * 2);
   g.fill();
+  // 中宮の字は、見る側から読める向きに中心ごと回す
+  g.save();
+  if (flip) {
+    g.translate(h, h);
+    g.rotate(Math.PI);
+    g.translate(-h, -h);
+  }
   g.fillStyle = GOLD;
   g.textAlign = "center";
   g.textBaseline = "middle";
@@ -193,11 +229,15 @@ function paintDisc(disc: BoardDisc): HTMLCanvasElement {
   g.font = `600 ${Math.round(TEX * 0.026)}px ${FONT}`;
   g.fillStyle = GOLD;
   g.fillText("中宮", h, h + inner * 0.55);
+  g.restore();
   return c;
 }
 
 /** 台座の絵。方位角の目盛り・方位名・方位ごとの段階の輪 */
-function paintBase(columns: DirectionColumn[]): HTMLCanvasElement {
+function paintBase(
+  columns: DirectionColumn[],
+  flip: boolean,
+): HTMLCanvasElement {
   const c = document.createElement("canvas");
   c.width = c.height = TEX;
   const g = c.getContext("2d")!;
@@ -239,11 +279,11 @@ function paintBase(columns: DirectionColumn[]): HTMLCanvasElement {
     g.textAlign = "center";
     g.textBaseline = "middle";
     g.font = `800 ${Math.round(TEX * 0.03)}px ${FONT}`;
-    g.fillText(col.tier ?? "", tx, ty);
+    uprightText(g, col.tier ?? "", tx, ty, flip);
     const [nx, ny] = canvasPointOfBearing(mid, 0.965, TEX);
     g.fillStyle = "#fdf6e3";
     g.font = `700 ${Math.round(TEX * 0.026)}px ${FONT}`;
-    g.fillText(col.label, nx, ny);
+    uprightText(g, col.label, nx, ny, flip);
   }
   // 境目
   for (const col of columns) {
@@ -270,7 +310,7 @@ function paintBase(columns: DirectionColumn[]): HTMLCanvasElement {
       const [x, y] = canvasPointOfBearing(deg, (band0 - 70) / h, TEX);
       g.fillStyle = GOLD;
       g.font = `600 ${Math.round(TEX * 0.019)}px ${FONT}`;
-      g.fillText(`${deg}°`, x, y);
+      uprightText(g, `${deg}°`, x, y, flip);
     }
   }
   for (const r of [band0, band1, R]) {
@@ -335,6 +375,7 @@ export default function ThreeBoardScene({
   selected,
   onSelect,
   spread,
+  orientation,
   reducedMotion,
 }: ThreeBoardSceneProps) {
   const hostRef = useRef<HTMLDivElement>(null);
@@ -345,9 +386,11 @@ export default function ThreeBoardScene({
      差し替えは下の effect で行う */
   const modelRef = useRef(model);
   const motionRef = useRef(reducedMotion);
+  const orientationRef = useRef(orientation);
   const apiRef = useRef<{
     rebuild: (m: ThreeBoardModel) => void;
     select: (d: CompassDirection | null) => void;
+    orient: (o: BoardOrientation) => void;
   } | null>(null);
 
   useEffect(() => {
@@ -377,7 +420,9 @@ export default function ThreeBoardScene({
     scene.environment = envTex;
 
     const camera = new PerspectiveCamera(32, 1, 0.1, 100);
-    camera.position.set(0, 8.3, 10.7);
+    // 北を上なら南側（+z）から、南を上なら北側（−z）から見下ろす
+    const side = () => (orientationRef.current === "south" ? -1 : 1);
+    camera.position.set(0, 8.3, 10.7 * side());
     const controls = new OrbitControls(camera, renderer.domElement);
     controls.target.set(0, 0.2, 0);
     controls.enableDamping = true;
@@ -393,7 +438,6 @@ export default function ThreeBoardScene({
 
     scene.add(new HemisphereLight(0xfff4e0, 0x2a1d14, 0.55));
     const sun = new DirectionalLight(0xfff1d6, 2.1);
-    sun.position.set(4.5, 9, 5.5);
     sun.castShadow = true;
     sun.shadow.mapSize.set(2048, 2048);
     sun.shadow.camera.left = -5;
@@ -459,7 +503,7 @@ export default function ThreeBoardScene({
         keep(new CircleGeometry(BASE_R - BEVEL, 192)),
         keep(
           new MeshStandardMaterial({
-            map: texture(paintBase(m.columns)),
+            map: texture(paintBase(m.columns, side() < 0)),
             roughness: 0.6,
             metalness: 0,
             envMapIntensity: 0.35,
@@ -495,7 +539,7 @@ export default function ThreeBoardScene({
           keep(new CircleGeometry(r - BEVEL - 0.02, 192)),
           keep(
             new MeshPhysicalMaterial({
-              map: texture(paintDisc(disc)),
+              map: texture(paintDisc(disc, side() < 0)),
               roughness: 0.5,
               metalness: 0,
               clearcoat: 0.35,
@@ -518,21 +562,26 @@ export default function ThreeBoardScene({
       });
 
       // 三盤とも吉の方位は、3 枚を貫く光の柱
-      const glowMat = keep(
-        new MeshBasicMaterial({
-          color: 0x6ee7b7,
-          transparent: true,
-          opacity: 0.2,
-          depthWrite: false,
-          blending: AdditiveBlending,
-          side: DoubleSide,
-        }),
-      );
       for (const col of m.columns.filter((c) => c.aligned)) {
+        /* 柱ごとに材を分ける。手前に回ってきた柱は薄くする（盤の上に
+           重なって光が足され、盤が白く飛ぶため）。濃さは毎フレーム決める */
+        const mat = keep(
+          new MeshBasicMaterial({
+            color: 0x6ee7b7,
+            transparent: true,
+            opacity: PILLAR_OPACITY,
+            depthWrite: false,
+            blending: AdditiveBlending,
+            side: FrontSide,
+          }),
+        );
         const pillar = new Mesh(
           keep(wedgePrism(col, 0.55, RADII[2] * 0.97, 1)),
-          glowMat,
+          mat,
         );
+        const mid = (((col.startDeg + col.endDeg) / 2) * Math.PI) / 180;
+        // 柱の向き（盤の上の x, z。北が −z）
+        pillar.userData.dir = [Math.sin(mid), -Math.cos(mid)];
         pillar.position.y = baseY + 0.2;
         world.add(pillar);
         pillars.push(pillar);
@@ -569,7 +618,24 @@ export default function ThreeBoardScene({
       });
     }
 
-    apiRef.current = { rebuild, select };
+    /* 向きを変える。見下ろす角度と距離はそのままに、見る側だけを南北で
+       入れ替え、字を描き直す。回っていたら止める（選んだ向きで止まる） */
+    function orient(o: BoardOrientation) {
+      if (orientationRef.current === o) return;
+      orientationRef.current = o;
+      const off = camera.position.clone().sub(controls.target);
+      const flat = Math.hypot(off.x, off.z);
+      camera.position.set(
+        controls.target.x,
+        controls.target.y + off.y,
+        controls.target.z + flat * side(),
+      );
+      controls.autoRotate = false;
+      controls.update();
+      rebuild(current);
+    }
+
+    apiRef.current = { rebuild, select, orient };
     rebuild(modelRef.current);
 
     // 押した点の方位（判定と同じ境目で決める）
@@ -633,11 +699,28 @@ export default function ThreeBoardScene({
         grp.position.y +=
           (target - grp.position.y) * (motionRef.current ? 1 : 0.12);
       }
+      // 見る側の水平の向き
+      const vx = camera.position.x - controls.target.x;
+      const vz = camera.position.z - controls.target.z;
+      const vl = Math.hypot(vx, vz) || 1;
+      /* 光と映り込みの部屋は見る側について回る。部屋は前後左右が非対称で、
+         固定すると北側から見たときだけ盤面が白く曇る（南を上・自動回転） */
+      const az = Math.atan2(vx, vz);
+      scene.environmentRotation.y = az;
+      sun.position.set(
+        4.5 * Math.cos(az) + 5.5 * Math.sin(az),
+        9,
+        -4.5 * Math.sin(az) + 5.5 * Math.cos(az),
+      );
       // 光の柱は台座から一番上の盤の少し上まで
       const top = discGroups[discGroups.length - 1];
       if (top) {
         for (const p of pillars) {
           p.scale.y = top.position.y + THICK / 2 + 0.3 - p.position.y;
+          const [dx, dz] = p.userData.dir as [number, number];
+          const front = Math.max(0, (dx * vx + dz * vz) / vl);
+          (p.material as MeshBasicMaterial).opacity =
+            PILLAR_OPACITY * (1 - 0.75 * front);
         }
         // 見る先は盤の束の中ほど。離すと束が上へ伸びるので一緒に上げる
         const mid = (baseY + top.position.y) / 2 - 0.35;
@@ -671,6 +754,9 @@ export default function ThreeBoardScene({
   useEffect(() => {
     apiRef.current?.select(selected);
   }, [selected]);
+  useEffect(() => {
+    apiRef.current?.orient(orientation);
+  }, [orientation]);
 
   return (
     <div

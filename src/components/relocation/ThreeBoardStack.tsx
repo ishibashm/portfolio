@@ -26,7 +26,11 @@ import {
   type SectorKind,
   type ThreeBoardModel,
 } from "@/lib/threeBoardModel";
-import { canvasAngleOfBearing } from "@/lib/threeBoardCanvas";
+import {
+  canvasAngleOfBearing,
+  screenBearing,
+  type BoardOrientation,
+} from "@/lib/threeBoardCanvas";
 import type { CompassDirection, NodeMapping } from "@/utils/directionGeo";
 import { TIER_BADGE_CLASS } from "@/utils/tierDisplay";
 
@@ -57,6 +61,25 @@ const KIND_FILL: Record<SectorKind, string> = {
 const DAY_BLOCKED_NOTE =
   "この日は天中殺にあたり、いまの扱いでは動かない日です（日の一覧で「不可」と出る日）。三盤吉の方位があっても、この日には選べません。";
 
+const ORIENTATION_KEY = "threeBoard.orientation";
+
+function readOrientation(): BoardOrientation {
+  try {
+    return localStorage.getItem(ORIENTATION_KEY) === "south"
+      ? "south"
+      : "north";
+  } catch {
+    return "north";
+  }
+}
+
+const ORIENTATION_NOTE: Record<BoardOrientation, string> = {
+  north:
+    "北を上（立体では奥）に置いています。地図と同じ向きです。気学の本の方位盤に合わせるなら「南を上」にしてください。",
+  south:
+    "南を上（立体では奥）に置いています。気学の本の方位盤と同じ向きで、東が左・西が右になります。地図と比べるときは「北を上」に戻してください。",
+};
+
 function shiftDate(date: string, days: number): string {
   const d = new Date(`${date}T12:00:00+09:00`);
   d.setUTCDate(d.getUTCDate() + days);
@@ -77,10 +100,12 @@ export function FlatBoard({
   model,
   selected,
   onSelect,
+  orientation = "north",
 }: {
   model: ThreeBoardModel;
   selected: CompassDirection | null;
   onSelect: (d: CompassDirection) => void;
+  orientation?: BoardOrientation;
 }) {
   const C = 200;
   // 立体と同じ並び（下の年盤ほど大きい）を上から見たときの輪
@@ -91,14 +116,14 @@ export function FlatBoard({
   ];
   const arc = (r0: number, r1: number, a: number, b: number) => {
     const p = (r: number, deg: number) => {
-      const t = canvasAngleOfBearing(deg);
+      const t = canvasAngleOfBearing(screenBearing(deg, orientation));
       return `${C + Math.cos(t) * r} ${C + Math.sin(t) * r}`;
     };
     const large = b - a > 180 ? 1 : 0;
     return `M ${p(r1, a)} A ${r1} ${r1} 0 ${large} 1 ${p(r1, b)} L ${p(r0, b)} A ${r0} ${r0} 0 ${large} 0 ${p(r0, a)} Z`;
   };
   const label = (r: number, deg: number) => {
-    const t = canvasAngleOfBearing(deg);
+    const t = canvasAngleOfBearing(screenBearing(deg, orientation));
     return [C + Math.cos(t) * r, C + Math.sin(t) * r] as const;
   };
   return (
@@ -124,6 +149,7 @@ export function FlatBoard({
         return (
           <text
             key={`tl-${col.direction}`}
+            data-direction={col.direction}
             x={x}
             y={y}
             textAnchor="middle"
@@ -196,7 +222,7 @@ export function FlatBoard({
         fontWeight={700}
         fill="#44403c"
       >
-        北
+        {orientation === "south" ? "南" : "北"}
       </text>
     </svg>
   );
@@ -211,6 +237,17 @@ export default function ThreeBoardStack({
 }: ThreeBoardStackProps) {
   const [mapping, setMapping] = useState<NodeMapping>("traditional");
   const [spread, setSpread] = useState(true);
+  // 向きは端末ごとに覚える（気学の本に合わせて南を上で見る人が多い）
+  const [orientation, setOrientationState] =
+    useState<BoardOrientation>(readOrientation);
+  const setOrientation = (o: BoardOrientation) => {
+    setOrientationState(o);
+    try {
+      localStorage.setItem(ORIENTATION_KEY, o);
+    } catch {
+      // 保存できない端末でも、この画面の中では切り替わる
+    }
+  };
   const [selected, setSelected] = useState<CompassDirection | null>(null);
   const [webgl] = useState(supportsWebGL);
   const [reducedMotion] = useState(
@@ -349,6 +386,28 @@ export default function ThreeBoardStack({
               </button>
             ))}
           </div>
+          <div role="group" aria-label="盤の向き" className="flex gap-1">
+            {(
+              [
+                ["north", "北を上"],
+                ["south", "南を上"],
+              ] as const
+            ).map(([o, label]) => (
+              <button
+                key={o}
+                type="button"
+                aria-pressed={orientation === o}
+                onClick={() => setOrientation(o)}
+                className={`rounded-full border px-2.5 py-1 font-semibold ${
+                  orientation === o
+                    ? "border-stone-800 bg-stone-800 text-white"
+                    : "border-stone-300 bg-white text-stone-700"
+                }`}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
           <div role="group" aria-label="見せ方" className="flex gap-1">
             {webgl && (
               <button
@@ -409,6 +468,7 @@ export default function ThreeBoardStack({
             selected={selected}
             onSelect={setSelected}
             spread={spread}
+            orientation={orientation}
             reducedMotion={reducedMotion}
           />
         ) : (
@@ -417,6 +477,7 @@ export default function ThreeBoardStack({
               model={model}
               selected={selected}
               onSelect={setSelected}
+              orientation={orientation}
             />
           </div>
         )}
@@ -527,7 +588,7 @@ export default function ThreeBoardStack({
             </table>
           </details>
           <p className="text-xs text-stone-500">
-            北を奥（平面では上）に置いています。地図と同じ向きです。気学の本の方位盤は南を上に描くものが多いので、向きが逆に見えることがあります。
+            {ORIENTATION_NOTE[orientation]}
           </p>
         </div>
       )}
