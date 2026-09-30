@@ -458,8 +458,14 @@ describe("本物の記事に題を渡す", () => {
       形にし、題も問いで「先に結論」の冒頭を 1 文の答えにしてあるので、
       題の有無にかかわらず数に入る
     */
-    expect(count(false)).toBe(21);
-    expect(count(true)).toBe(26);
+    /*
+      2026-09-30: 風水で部屋の中のどこに何を置くかの記事
+      （feng-shui-where-to-put-things-in-a-room）を足して +1。見出しを問いの
+      形にし、題も問いで「先に結論」の冒頭を 1 文の答えにしてあるので、
+      題の有無にかかわらず数に入る
+    */
+    expect(count(false)).toBe(22);
+    expect(count(true)).toBe(27);
   });
 
   it("題から作った問いは、記事の題そのもの（言い換えない）", () => {

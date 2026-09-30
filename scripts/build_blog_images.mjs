@@ -1305,6 +1305,51 @@ const FIGURES = [
         <div class="note" style="max-width:480px">当てる先は<br><b>玄関・寝室・寝る向き・机・コンロ</b>。<br>移動の方位に並べるのは、そこからの<b>転用</b>です。</div>
       </div>`,
   },
+  {
+    /*
+      風水（八宅）では部屋の中のどこに何を置くとされるのか。記事の表から、
+      1990 年生まれの男性（坎）の 8 区画を間取りの盤に置く。吉 4 つを塗り、
+      凶 4 つは灰。遊星と方位の対応は blogFengShuiRoomLayoutClaims が
+      エンジンと照合している（この図の並びは記事の表の男性の列と同じ）。
+    */
+    slug: "feng-shui-where-to-put-things-in-a-room",
+    kicker: "歴史と背景",
+    title: "置く場所と向く向きに、<br>同じ 8 方位の表を当てる",
+    sub: "1990 年生まれの男性（坎）の場合。家の中心から見た区画ごとに、吉と凶が決まるとされます。",
+    body: `<div style="display:flex;align-items:center;gap:56px">
+      <div style="display:grid;grid-template-columns:repeat(3,112px);grid-template-rows:repeat(3,74px);gap:6px">
+        ${[
+          ["北西", "六殺", false],
+          ["北", "伏位", true],
+          ["北東", "五鬼", false],
+          ["西", "禍害", false],
+          ["中", "中心", null],
+          ["東", "天医", true],
+          ["南西", "絶命", false],
+          ["南", "延年", true],
+          ["南東", "生気", true],
+        ]
+          .map(([dir, yx, good]) => {
+            const style =
+              good === null
+                ? "background:#efe7e0;color:#b6ada5;border-color:#e2d9d1"
+                : good
+                  ? "background:#e11d48;color:#fff;border-color:#be123c"
+                  : "background:#fff;color:#94a3b8;border-color:#e2d9d1";
+            return `<div style="${style};border:1px solid;border-radius:9px;display:flex;flex-direction:column;align-items:center;justify-content:center;font-weight:700">
+              <div style="font-size:15px;opacity:.85">${dir}</div>
+              <div style="font-size:22px">${yx}</div>
+            </div>`;
+          })
+          .join("")}
+      </div>
+      <div class="note" style="max-width:560px">
+        吉の区画に<b>寝室・机</b>、頭や顔を<b>吉の向き</b>へ。<br>
+        <b>コンロ</b>は凶の区画に置き、焚き口を吉へ（坐凶向吉）。<br>
+        <b>トイレ・浴室</b>は凶の区画に、とされます。
+      </div>
+    </div>`,
+  },
 ];
 
 function html(fig) {
