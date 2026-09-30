@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useSyncExternalStore } from "react";
+import { useMemo, useState, useSyncExternalStore } from "react";
 /* kigakuContent からではなく葉の directionGeo から引く。kigakuContent は
    ephemerisEngine（→ lunar-javascript）を値として引くので、ラベルの
    ためだけに /houi のバンドルへ暦が乗る。 */
@@ -17,6 +17,7 @@ import {
   type Sex,
   type FengShuiReading,
 } from "@/utils/fengShuiEngine";
+import { FengShuiRoom } from "@/components/houi/FengShuiRoom";
 
 /**
  * 風水（八宅）の早見。**九星気学とは別の段に置く。**
@@ -66,8 +67,11 @@ export function FengShuiLookup() {
   const parsed = Number(year);
   const validYear =
     /^\d{4}$/.test(year) && parsed >= MIN_YEAR && parsed <= MAX_YEAR;
-  const reading: FengShuiReading | null =
-    validYear && sex ? readFengShui(parsed, sex) : null;
+  /* 間取りの立体はこれを見て組み直すので、入力が変わらない限り同じ物を渡す */
+  const reading: FengShuiReading | null = useMemo(
+    () => (validYear && sex ? readFengShui(parsed, sex) : null),
+    [validYear, parsed, sex],
+  );
 
   return (
     <div className="rounded-2xl border border-slate-300 bg-white/90 p-5">
@@ -167,6 +171,7 @@ export function FengShuiLookup() {
               </li>
             ))}
           </ul>
+          <FengShuiRoom reading={reading} />
         </div>
       )}
 
