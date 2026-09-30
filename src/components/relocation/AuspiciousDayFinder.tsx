@@ -3,9 +3,11 @@
 import React, {
   useCallback,
   useEffect,
+  useRef,
   useState,
   useSyncExternalStore,
 } from "react";
+import dynamic from "next/dynamic";
 import { ProfilePicker } from "@/components/profile/ProfilePicker";
 import { SavedAnalysisPanel } from "@/components/relocation/SavedAnalysisPanel";
 import { buildTimingReport } from "@/lib/timingReport";
@@ -17,7 +19,7 @@ import {
 } from "@/lib/userSettings";
 import { KYUSEI } from "@/utils/kigaku";
 import { SampleProfileNotice } from "@/components/profile/SampleProfileNotice";
-import { Loader2, CalendarCheck, ArrowRight, Star } from "lucide-react";
+import { Loader2, CalendarCheck, ArrowRight, Layers, Star } from "lucide-react";
 import Link from "next/link";
 import { saveWorkingDate } from "@/lib/workingDate";
 import {
@@ -85,6 +87,23 @@ const INITIAL_ROWS = 20;
   そのまま画面に出していた。集約先は「判定なし」に落とす。
 */
 const label = directionLabelName;
+
+/*
+  三盤の方位盤（立体は three.js）。WebGL の有無を見て立体か平面かを決める
+  ので、サーバーでは描かない（ssr: false）。three.js は盤の部品が画面に
+  入ってから読み込む（ThreeBoardStack の中）。
+*/
+const ThreeBoardStack = dynamic(
+  () => import("@/components/relocation/ThreeBoardStack"),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="rounded-3xl border border-stone-200 bg-stone-50 p-6 text-sm text-stone-500">
+        三盤の方位盤を読み込んでいます…
+      </div>
+    ),
+  },
+);
 
 function todayString() {
   const d = new Date();
@@ -165,6 +184,13 @@ export function AuspiciousDayFinder() {
     DEFAULT_TENCHUSATSU_MODE,
   );
   const [from, setFrom] = useState(todayString());
+  /* 三盤の方位盤で見る日。日取りの表の「盤」で切り替える */
+  const [boardDate, setBoardDate] = useState(todayString());
+  const boardRef = useRef<HTMLDivElement>(null);
+  const showBoard = (date: string) => {
+    setBoardDate(date);
+    boardRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+  };
   const [months, setMonths] = useState(12);
 
   // 既定値のまま結果を出したかどうか。方位も吉日も生年月日と現住地で
@@ -494,6 +520,16 @@ export function AuspiciousDayFinder() {
         />
       )}
 
+      <div ref={boardRef} className="mt-5 scroll-mt-20">
+        <ThreeBoardStack
+          birthDate={birthDate}
+          lon={lon}
+          tenchusatsuMode={tenchusatsuMode}
+          date={boardDate}
+          onDateChange={setBoardDate}
+        />
+      </div>
+
       {summaries && (
         <div className="mt-5 space-y-5">
           {summaries.every((s) => s.days.length === 0) && (
@@ -719,6 +755,15 @@ export function AuspiciousDayFinder() {
                             <span className="text-slate-400">
                               （{WEEKDAYS[d.weekday]}）
                             </span>
+                            <button
+                              type="button"
+                              aria-label={`${d.date} の三盤を方位盤で見る`}
+                              title="この日の三盤を方位盤で見る"
+                              onClick={() => showBoard(d.date)}
+                              className="ml-1.5 -my-1 rounded p-1 align-middle text-slate-300 hover:text-rose-500"
+                            >
+                              <Layers className="h-4 w-4" />
+                            </button>
                             {d.tier && (
                               <span
                                 className={`mt-0.5 ml-7 block w-fit rounded px-1.5 py-0.5 font-sans text-xs font-semibold ${
