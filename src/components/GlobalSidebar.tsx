@@ -26,13 +26,13 @@ import { PWAInstallPrompt } from "@/components/PWAInstallPrompt";
 import {
   BarChart3,
   BookOpen,
+  Bookmark,
   Calendar,
   CalendarRange,
   ChevronRight,
   CircleUser,
   Clock,
   Compass,
-  HistoryIcon,
   Home,
   LogIn,
   LogOut,
@@ -83,8 +83,8 @@ const PUBLIC_ITEMS = [
   */
   {
     href: "/relocation/candidates",
-    icon: HistoryIcon,
-    label: "本人の候補履歴",
+    icon: Bookmark,
+    label: "保存した候補",
   },
 ];
 
