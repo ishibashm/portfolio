@@ -28,7 +28,11 @@ import { getRokuyo, getLuckyDays } from "@/utils/lunar";
 import { DIRECTION_LABELS as GEO_DIRECTION_LABELS } from "@/utils/directionGeo";
 import { directionBoardInstant, jstNoonOf } from "@/utils/boardInstant";
 import { getZonedDateTimeFields } from "@/utils/solarTime";
-import { isFatalNoise, isNoise } from "@/utils/noiseSeverity";
+import {
+  isAuspiciousStatus,
+  isFatalNoise,
+  isNoise,
+} from "@/utils/noiseSeverity";
 import { TIER_ORDER, TIER_LABELS, type DayTier } from "@/utils/dayTier";
 import {
   TenchusatsuMode,
@@ -56,7 +60,7 @@ export const DIRECTION_LABELS: Record<string, string> = {
 
 /** 吉と見なす判定。OPTIMAL 系のみを吉とし、SAFE（平）は含めない。 */
 export function isAuspicious(status: string | undefined): boolean {
-  return status === "OPTIMAL" || status === "OPTIMAL_REGULAR";
+  return isAuspiciousStatus(status);
 }
 
 /**
