@@ -230,17 +230,17 @@ export function CandidateSave({
         disabled={!valid || !confirmed || busy || saved === content}
         onClick={() => void save()}
       >
-        {busy ? "保存中…" : "候補履歴に保存"}
+        {busy ? "保存中…" : "候補に保存"}
       </button>
       <Link
         className="ml-3 underline"
         href="/relocation/candidates"
         prefetch={false}
       >
-        本人の候補履歴
+        保存した候補を見る
       </Link>
       <p>
-        履歴保存にはログインが必要です。ログイン画面へ移動すると、この下書きは消えます。
+        候補の保存にはログインが必要です。ログイン画面へ移動すると、この下書きは消えます。
       </p>
       {login && (
         <Link
@@ -256,7 +256,7 @@ export function CandidateSave({
           {error}
         </p>
       )}
-      {saved === content && <p role="status">候補履歴に保存しました。</p>}
+      {saved === content && <p role="status">候補に保存しました。</p>}
     </section>
   );
 }

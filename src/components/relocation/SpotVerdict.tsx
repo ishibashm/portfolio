@@ -260,7 +260,7 @@ export function SpotVerdict({
         setMarkMemo(c.memo || "");
         setShowMark(true);
         setError(
-          "現在の設定で再判定しています。保存時の結果は候補履歴で確認できます。",
+          "現在の設定で再判定しています。保存時の結果は「保存した候補」で確認できます。",
         );
       })
       .catch(() => {
@@ -524,7 +524,7 @@ export function SpotVerdict({
           prefetch={false}
           className="block text-xs underline"
         >
-          本人の候補履歴を見る
+          保存した候補を見る
         </Link>
       )}
       {error && <p className="text-xs text-rose-600">{error}</p>}

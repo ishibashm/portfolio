@@ -224,7 +224,7 @@ it("Gmail URL selection reaches Phase 1, which still requires a location", async
     screen.getByText(/このURLだけでは物件の住所を特定できません/),
   ).toBeInTheDocument();
   expect(
-    screen.queryByRole("button", { name: "候補履歴に保存" }),
+    screen.queryByRole("button", { name: "候補に保存" }),
   ).not.toBeInTheDocument();
   expect(fetch.mock.calls).toHaveLength(3);
 });
