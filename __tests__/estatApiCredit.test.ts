@@ -35,6 +35,10 @@ const PAGES_USING_ESTAT_API = [
   /* 家賃市場の頁の公的な家賃の統計（消費者物価指数・小売物価統計調査の
      民営家賃）。掲載の推移が止まったので置いた（2026-09-30）。 */
   "src/components/relocation/OfficialRentSection.tsx",
+  /* 県・市区町村の頁の、毎月の民営家賃（小売物価統計調査）の札（2026-10-01）。
+     Search Console で「地名 家賃相場」の表示が多く、5 年ごとの統計だけ
+     だった頁に、いつの値かを添えて並べた */
+  "src/components/houi/OfficialRentNote.tsx",
 ];
 
 describe("e-Stat の API のクレジット表示", () => {
