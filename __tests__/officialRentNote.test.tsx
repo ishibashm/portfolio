@@ -53,4 +53,13 @@ describe("民営家賃の札", () => {
     expect(src).toContain("officialRentsForPref(");
     expect(src).toContain("retail.latestMonth");
   });
+
+  it("市区町村の頁にも置いてある（当たる市があるときだけ）", () => {
+    const src = readFileSync(
+      join(process.cwd(), "src/app/houi/area/[code]/page.tsx"),
+      "utf8",
+    );
+    expect(src).toContain("<OfficialRentNote");
+    expect(src).toContain("officialRentForArea(");
+  });
 });

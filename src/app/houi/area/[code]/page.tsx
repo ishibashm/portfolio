@@ -31,6 +31,10 @@ import {
   type HousingSnapshotData,
 } from "@/lib/housingSnapshot";
 import { ESTAT_API_CREDIT } from "@/lib/estatCredit";
+import estatRent from "@/data/estatRent.json";
+import { officialRentForArea } from "@/lib/officialRentForPlace";
+import { OfficialRentNote } from "@/components/houi/OfficialRentNote";
+import type { EstatRentSnapshot } from "@/utils/estatRent";
 
 /**
  * 「○○市から見た方位別のエリアと相場」。
@@ -361,6 +365,23 @@ export default async function Page({
           <p className="mt-1 text-xs text-slate-500 leading-relaxed">
             {ESTAT_API_CREDIT}
           </p>
+          {/* 毎月の公的な値（県庁所在市と人口 15 万以上の市だけ）。政令市の
+              区には市の値を出す。当たる市が無ければ札ごと出さない */}
+          {(() => {
+            const snap = estatRent as EstatRentSnapshot;
+            const r = officialRentForArea(snap, area.code, area.city);
+            return r ? (
+              <OfficialRentNote
+                heading={
+                  r.name === area.city
+                    ? `${r.name}の民営家賃`
+                    : `${r.name}（${area.city}を含む）の民営家賃`
+                }
+                rents={[r]}
+                month={snap.retail.latestMonth}
+              />
+            ) : null;
+          })()}
         </div>
 
         {/* 相場の札のすぐ下。**この頁は「いくらか」までしか答えない。**
