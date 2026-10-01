@@ -15,7 +15,13 @@
 
 import dynamic from "next/dynamic";
 import Link from "next/link";
-import { useEffect, useMemo, useRef, useState } from "react";
+import {
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  useSyncExternalStore,
+} from "react";
 import { LayoutDashboard } from "lucide-react";
 import {
   EXAMPLE_ROOMS,
@@ -102,6 +108,16 @@ function rayToEdge(c: Point, deg: number): number {
   return Math.max(0, Math.min(...ts));
 }
 
+/* スマホの幅では、図の文字を大きくする（図ごと縮むので、そのままだと
+   部屋名や方位が 6〜8px になって読めない） */
+const NARROW = "(max-width: 640px)";
+function subscribeNarrow(cb: () => void) {
+  const m = window.matchMedia?.(NARROW);
+  m?.addEventListener("change", cb);
+  return () => m?.removeEventListener("change", cb);
+}
+const narrowSnapshot = () => !!window.matchMedia?.(NARROW).matches;
+
 const pts = (poly: Point[]) => poly.map(([x, y]) => `${x},${y}`).join(" ");
 
 type Drag =
@@ -135,6 +151,10 @@ export function FlatPlan({
 }) {
   const svgRef = useRef<SVGSVGElement>(null);
   const [drag, setDrag] = useState<Drag | null>(null);
+  /** 文字の倍率 */
+  const k = useSyncExternalStore(subscribeNarrow, narrowSnapshot, () => false)
+    ? 1.5
+    : 1;
 
   const toPlan = (e: React.PointerEvent): Point | null => {
     const svg = svgRef.current;
@@ -257,7 +277,7 @@ export function FlatPlan({
       {rooms.map((room) => {
         const r = byId.get(room.id);
         const selected = room.id === selectedId;
-        const fs = Math.min(0.36, room.w / 5.6, room.h / 2.6);
+        const fs = Math.min(0.36 * k, (room.w / 5.6) * k, (room.h / 2.6) * k);
         return (
           <g key={room.id} data-room={room.id}>
             {r?.shares.map((s) => (
@@ -340,8 +360,16 @@ export function FlatPlan({
             const midDeg = (s.startPlanDeg + s.endPlanDeg) / 2;
             const m = (midDeg * Math.PI) / 180;
             const lt = rayToEdge(c, midDeg) * 0.88;
-            const lx = clamp(c[0] + Math.sin(m) * lt, 0.7, PLAN_W - 0.7);
-            const ly = clamp(c[1] - Math.cos(m) * lt, 0.3, PLAN_H - 0.3);
+            const lx = clamp(
+              c[0] + Math.sin(m) * lt,
+              0.7 * k,
+              PLAN_W - 0.7 * k,
+            );
+            const ly = clamp(
+              c[1] - Math.cos(m) * lt,
+              0.3 * k,
+              PLAN_H - 0.3 * k,
+            );
             return (
               <g key={s.direction} data-sector={s.direction}>
                 <line
@@ -354,10 +382,10 @@ export function FlatPlan({
                   strokeDasharray="0.18 0.12"
                 />
                 <rect
-                  x={lx - 0.62}
-                  y={ly - 0.22}
-                  width={1.24}
-                  height={0.44}
+                  x={lx - 0.62 * k}
+                  y={ly - 0.22 * k}
+                  width={1.24 * k}
+                  height={0.44 * k}
                   rx={0.1}
                   fill="#fffbeb"
                   fillOpacity={0.92}
@@ -366,9 +394,9 @@ export function FlatPlan({
                 />
                 <text
                   x={lx}
-                  y={ly + 0.1}
+                  y={ly + 0.1 * k}
                   textAnchor="middle"
-                  fontSize={0.27}
+                  fontSize={0.27 * k}
                   fontWeight={700}
                   fill={s.auspicious ? "#065f46" : "#9f1239"}
                 >
@@ -397,7 +425,7 @@ export function FlatPlan({
             x={result.center[0]}
             y={result.center[1] - 0.3}
             textAnchor="middle"
-            fontSize={0.26}
+            fontSize={0.26 * k}
             fontWeight={800}
             fill="#1c1917"
           >
@@ -420,7 +448,7 @@ export function FlatPlan({
         x={PLAN_W - 1.2}
         y={-0.55}
         textAnchor="end"
-        fontSize={0.24}
+        fontSize={0.24 * k}
         fontWeight={700}
         fill="#44403c"
         pointerEvents="none"
@@ -546,8 +574,10 @@ export function FloorPlanFengShui({ reading }: { reading: FengShuiReading }) {
         </p>
       </header>
 
-      <div className="grid gap-5 p-4 xl:grid-cols-[minmax(0,1fr)_380px]">
-        <div>
+      {/* grid-cols-1 と min-w-0: 列の幅を中身（立体の canvas）に合わせて
+          広げない。広がるとスマホで頁が横に流れる */}
+      <div className="grid grid-cols-1 gap-5 p-4 xl:grid-cols-[minmax(0,1fr)_380px]">
+        <div className="min-w-0">
           <div className="mb-3 flex flex-wrap items-center gap-2">
             {webgl && (
               <div role="group" aria-label="見せ方" className="flex gap-1">

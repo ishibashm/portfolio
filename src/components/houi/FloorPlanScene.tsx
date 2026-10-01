@@ -452,9 +452,11 @@ export default function FloorPlanScene({
   useEffect(() => {
     const host = hostRef.current;
     if (!host) return;
+    /* 縦長の画面（スマホ）では横の画角が狭く、家の左右が切れる。引いて見る */
+    const narrow = host.clientWidth < 640;
     const stage = createStage(host, {
       fov: 34,
-      camera: [0, 12, 13],
+      camera: narrow ? [0, 20, 22] : [0, 12, 13],
       target: [0, 0, 0.4],
       minDistance: 8,
       maxDistance: 40,
@@ -664,7 +666,7 @@ export default function FloorPlanScene({
   return (
     <div
       ref={hostRef}
-      className="h-[460px] w-full cursor-pointer md:h-[600px]"
+      className="h-[380px] w-full cursor-pointer md:h-[600px]"
       role="img"
       aria-label="描いた間取りの模型。部屋の床に八宅の区画の吉凶を塗ってある。部屋を押すと選べます"
     />
