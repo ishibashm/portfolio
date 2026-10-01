@@ -11,12 +11,17 @@
  * - 方位記号: 台の外に金の矢印。図の上で記号が指す向き（＝真北として
  *   扱う向き）を指す
  * - 床を押すと、その点を含む部屋を選ぶ
+ * - パース: 壁を 1.2 m で切った高さまで立て、部屋の種類ごとに家具・設備を
+ *   置く（fixturesForRoom）。1 マスを 1 m とみなした目安の大きさで、
+ *   部屋の内側に必ず収める
+ * - 書き出し: 立体を .glb にして返す（exportRef）。**端末の中で作る
+ *   だけで、どこにも送らない**
  *
  * 座標: 図の x がそのまま x、図の y（下向き）が z。太極が原点。図の上が
  * −z なので、記号が図の上を指していれば北は −z（三盤の方位盤と同じ）。
  */
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, type MutableRefObject } from "react";
 import {
   BoxGeometry,
   Color,
@@ -39,6 +44,11 @@ import { DIRECTION_LABELS } from "@/utils/directionGeo";
 const TEX = 2048;
 const FONT = '"Noto Sans JP","Hiragino Sans","Yu Gothic",sans-serif';
 const WALL_H = 0.5;
+/**
+ * パースの壁の高さ。天井（2.4 m）まで立てると、斜め上から見たときに
+ * 手前の壁が奥の部屋を隠す。鳥瞰パースの定番どおり 1.2 m で切る
+ */
+const WALL_H_FULL = 1.2;
 const WALL_T = 0.1;
 const PLATE_T = 0.3;
 /** 部屋の外側に足す台の幅（区画の名前を書く所） */
@@ -49,6 +59,177 @@ export interface FloorPlanSceneProps {
   selectedId: string | null;
   onSelect: (id: string | null) => void;
   reducedMotion: boolean;
+  /** 壁を高くして（1.2 m で切る）、家具を置く */
+  perspective?: boolean;
+  /** 書き出しの口。立体を .glb にして返す関数をここに入れる */
+  exportRef?: MutableRefObject<(() => Promise<Blob>) | null>;
+}
+
+/** 家具・設備の箱（図の座標。1 マス = 1 m とみなす） */
+export interface Fixture {
+  kind: string;
+  x: number;
+  y: number;
+  w: number;
+  d: number;
+  /** 床からの高さの下端と上端 */
+  z0: number;
+  z1: number;
+  color: number;
+}
+
+/** 壁から離す */
+const INSET = 0.08;
+
+/**
+ * 部屋の種類ごとの家具・設備。大きさは実寸の目安（m）を、部屋に収まる
+ * ように縮める。**部屋の外には出さない**（テストで固定）。居間・その他は
+ * 種類から置くものが決まらないので、居間にソファだけ置く。
+ */
+export function fixturesForRoom(room: PlanRoom): Fixture[] {
+  const ix = room.x + INSET;
+  const iy = room.y + INSET;
+  const iw = room.w - 2 * INSET;
+  const ih = room.h - 2 * INSET;
+  if (iw < 0.3 || ih < 0.3) return [];
+  const out: Fixture[] = [];
+  const add = (
+    kind: string,
+    x: number,
+    y: number,
+    w: number,
+    d: number,
+    z0: number,
+    z1: number,
+    color: number,
+  ) => {
+    if (w >= 0.15 && d >= 0.15) out.push({ kind, x, y, w, d, z0, z1, color });
+  };
+  const long = iw >= ih;
+  switch (room.kind) {
+    case "bedroom": {
+      // ベッドは長い向きを部屋の長い辺にそろえ、左上の角に寄せる
+      const bw = Math.min(1.0, (long ? ih : iw) * 0.7);
+      const bl = Math.min(2.0, (long ? iw : ih) * 0.85);
+      const [w, d] = long ? [bl, bw] : [bw, bl];
+      add("bed", ix, iy, w, d, 0, 0.45, 0xa16207);
+      add(
+        "bedding",
+        ix + 0.03,
+        iy + 0.03,
+        w - 0.06,
+        d - 0.06,
+        0.45,
+        0.55,
+        0xe2e8f0,
+      );
+      break;
+    }
+    case "study": {
+      const w = Math.min(1.2, iw * 0.8);
+      const d = Math.min(0.6, ih * 0.4);
+      const x = ix + (iw - w) / 2;
+      add("desk", x, iy, w, d, 0.68, 0.72, 0xa16207);
+      const c = Math.min(0.45, ih - d - 0.05);
+      add("chair", x + (w - c) / 2, iy + d + 0.05, c, c, 0, 0.45, 0x334155);
+      break;
+    }
+    case "kitchen": {
+      // 長い辺に沿ってカウンター。左にシンク、右にコンロ
+      const [w, d] = long
+        ? [iw, Math.min(0.65, ih * 0.6)]
+        : [Math.min(0.65, iw * 0.6), ih];
+      add("counter", ix, iy, w, d, 0, 0.85, 0xe7e5e4);
+      const [sw, sd] = long ? [w * 0.28, d * 0.7] : [w * 0.7, d * 0.28];
+      add(
+        "sink",
+        long ? ix + w * 0.12 : ix + (w - sw) / 2,
+        long ? iy + (d - sd) / 2 : iy + d * 0.12,
+        sw,
+        sd,
+        0.85,
+        0.88,
+        0xa1a1aa,
+      );
+      const [cw, cd] = long ? [w * 0.28, d * 0.75] : [w * 0.75, d * 0.28];
+      add(
+        "cooktop",
+        long ? ix + w - cw - 0.05 : ix + (w - cw) / 2,
+        long ? iy + (d - cd) / 2 : iy + d - cd - 0.05,
+        cw,
+        cd,
+        0.85,
+        0.88,
+        0x18181b,
+      );
+      break;
+    }
+    case "bath": {
+      if (Math.min(iw, ih) >= 0.9 && iw * ih >= 1.4) {
+        const w = Math.min(1.4, iw * 0.9);
+        const d = Math.min(0.75, ih * 0.55);
+        add("tub", ix + (iw - w) / 2, iy + ih - d, w, d, 0, 0.55, 0xf8fafc);
+      } else {
+        const w = Math.min(0.75, iw * 0.8);
+        const d = Math.min(0.5, ih * 0.5);
+        add("vanity", ix, iy, w, d, 0, 0.8, 0xf8fafc);
+      }
+      break;
+    }
+    case "toilet": {
+      const w = Math.min(0.4, iw * 0.6);
+      add(
+        "tank",
+        ix + (iw - w) / 2,
+        iy,
+        w,
+        Math.min(0.2, ih * 0.25),
+        0,
+        0.75,
+        0xf8fafc,
+      );
+      const bw = Math.min(0.36, iw * 0.55);
+      add(
+        "bowl",
+        ix + (iw - bw) / 2,
+        iy + Math.min(0.2, ih * 0.25),
+        bw,
+        Math.min(0.5, ih * 0.5),
+        0,
+        0.4,
+        0xf8fafc,
+      );
+      break;
+    }
+    case "entrance": {
+      const w = Math.min(0.35, iw * 0.3);
+      add("shoes", ix + iw - w, iy + ih * 0.1, w, ih * 0.8, 0, 1.0, 0xf5f0e8);
+      break;
+    }
+    case "living": {
+      const w = Math.min(1.8, iw * 0.7);
+      const d = Math.min(0.8, ih * 0.3);
+      const x = ix + (iw - w) / 2;
+      add("sofa", x, iy + ih - d, w, d, 0, 0.42, 0x64748b);
+      if (ih >= 2.2) {
+        const tw = Math.min(0.9, w * 0.6);
+        add(
+          "table",
+          ix + (iw - tw) / 2,
+          iy + ih - d - 0.85,
+          tw,
+          0.5,
+          0.3,
+          0.35,
+          0xa16207,
+        );
+      }
+      break;
+    }
+    default:
+      break;
+  }
+  return out;
 }
 
 /** 台（床の絵）の範囲。図の座標 */
@@ -249,12 +430,16 @@ export default function FloorPlanScene({
   selectedId,
   onSelect,
   reducedMotion,
+  perspective = false,
+  exportRef,
 }: FloorPlanSceneProps) {
   const hostRef = useRef<HTMLDivElement>(null);
   const resultRef = useRef(result);
   const selectedRef = useRef(selectedId);
   const onSelectRef = useRef(onSelect);
   const motionRef = useRef(reducedMotion);
+  const perspectiveRef = useRef(perspective);
+  const exportHolder = useRef(exportRef);
   const apiRef = useRef<{
     rebuild: (r: FloorPlanResult) => void;
     select: (id: string | null) => void;
@@ -267,9 +452,11 @@ export default function FloorPlanScene({
   useEffect(() => {
     const host = hostRef.current;
     if (!host) return;
+    /* 縦長の画面（スマホ）では横の画角が狭く、家の左右が切れる。引いて見る */
+    const narrow = host.clientWidth < 640;
     const stage = createStage(host, {
       fov: 34,
-      camera: [0, 12, 13],
+      camera: narrow ? [0, 20, 22] : [0, 12, 13],
       target: [0, 0, 0.4],
       minDistance: 8,
       maxDistance: 40,
@@ -288,12 +475,14 @@ export default function FloorPlanScene({
     const wallsById = new Map<string, Mesh[]>();
     let wallMat: MeshStandardMaterial | null = null;
     let wallSelMat: MeshStandardMaterial | null = null;
+    let wallH = perspectiveRef.current ? WALL_H_FULL : WALL_H;
 
     function rebuild(r: FloorPlanResult) {
       current = r;
       world.clear();
       pool.clear();
       wallsById.clear();
+      wallH = perspectiveRef.current ? WALL_H_FULL : WALL_H;
       const ctr = r.center;
       const b = plateBounds(r);
       const [x0, z0] = planToWorld([b.minX, b.minY], ctr);
@@ -356,10 +545,10 @@ export default function FloorPlanScene({
         const meshes: Mesh[] = [];
         for (const [cx, cz, sw, sd] of segs) {
           const m = new Mesh(
-            pool.keep(new BoxGeometry(sw, WALL_H, sd)),
+            pool.keep(new BoxGeometry(sw, wallH, sd)),
             wallMat,
           );
-          m.position.set(cx, WALL_H / 2, cz);
+          m.position.set(cx, wallH / 2, cz);
           m.castShadow = true;
           m.receiveShadow = true;
           m.userData.roomId = room.id;
@@ -367,6 +556,22 @@ export default function FloorPlanScene({
           meshes.push(m);
         }
         wallsById.set(room.id, meshes);
+        if (perspectiveRef.current) {
+          for (const f of fixturesForRoom(room)) {
+            const fm = new Mesh(
+              pool.keep(new BoxGeometry(f.w, f.z1 - f.z0, f.d)),
+              pool.keep(
+                new MeshStandardMaterial({ color: f.color, roughness: 0.6 }),
+              ),
+            );
+            const [fx, fz] = planToWorld([f.x + f.w / 2, f.y + f.d / 2], ctr);
+            fm.position.set(fx, (f.z0 + f.z1) / 2, fz);
+            fm.castShadow = true;
+            fm.receiveShadow = true;
+            fm.name = f.kind;
+            world.add(fm);
+          }
+        }
       }
 
       // 方位記号（台の外に金の矢印。記号が指す図の角度を向く）
@@ -398,13 +603,26 @@ export default function FloorPlanScene({
       for (const [rid, meshes] of wallsById) {
         for (const m of meshes) {
           m.material = rid === id ? wallSelMat! : wallMat!;
-          m.position.y = rid === id ? WALL_H / 2 + 0.02 : WALL_H / 2;
+          m.position.y = rid === id ? wallH / 2 + 0.02 : wallH / 2;
         }
       }
     }
 
     apiRef.current = { rebuild, select };
     rebuild(resultRef.current);
+
+    // 書き出し。three.js の書き出し器は使うときに読む。作った .glb は
+    // 呼び出し側に返すだけで、ここからはどこにも送らない
+    const holder = exportHolder.current;
+    if (holder)
+      holder.current = async () => {
+        const { GLTFExporter } =
+          await import("three/examples/jsm/exporters/GLTFExporter.js");
+        const buf = (await new GLTFExporter().parseAsync(world, {
+          binary: true,
+        })) as ArrayBuffer;
+        return new Blob([buf], { type: "model/gltf-binary" });
+      };
 
     // 壁か床を押したら、その点を含む部屋（無ければ選びを外す）
     stage.onPick(
@@ -428,8 +646,14 @@ export default function FloorPlanScene({
     return () => {
       stage.dispose();
       apiRef.current = null;
+      if (holder) holder.current = null;
     };
   }, []);
+
+  useEffect(() => {
+    perspectiveRef.current = perspective;
+    apiRef.current?.rebuild(resultRef.current);
+  }, [perspective]);
 
   useEffect(() => {
     resultRef.current = result;
@@ -442,7 +666,7 @@ export default function FloorPlanScene({
   return (
     <div
       ref={hostRef}
-      className="h-[460px] w-full cursor-pointer md:h-[600px]"
+      className="h-[380px] w-full cursor-pointer md:h-[600px]"
       role="img"
       aria-label="描いた間取りの模型。部屋の床に八宅の区画の吉凶を塗ってある。部屋を押すと選べます"
     />
