@@ -13,6 +13,7 @@
  * 入口の集合で決まる」— この画面に入れたものが出ていく入口は無い。
  */
 
+import dynamic from "next/dynamic";
 import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { LayoutDashboard } from "lucide-react";
@@ -27,8 +28,20 @@ import {
   type PlanRoomKind,
   type Point,
 } from "@/lib/floorPlanModel";
+import { supportsWebGL } from "@/lib/webglSupport";
 import { DIRECTION_LABELS } from "@/utils/directionGeo";
 import type { FengShuiReading } from "@/utils/fengShuiEngine";
+
+/* 立体は three.js を値として引くので、「立体で見る」を押したときに読む */
+const FloorPlanScene = dynamic(
+  () => import("@/components/houi/FloorPlanScene"),
+  {
+    ssr: false,
+    loading: () => (
+      <p className="p-6 text-sm text-stone-500">模型を読み込んでいます…</p>
+    ),
+  },
+);
 
 /** 描く場所の広さ（単位は持たない。比だけが答えに効く） */
 export const PLAN_W = 12;
@@ -464,6 +477,13 @@ export function FloorPlanFengShui({ reading }: { reading: FengShuiReading }) {
   const [mode, setMode] = useState<"select" | "draw">("select");
   const [imageUrl, setImageUrl] = useState<string | null>(null);
   const [imageOpacity, setImageOpacity] = useState(0.6);
+  const [webgl] = useState(supportsWebGL);
+  const [view, setView] = useState<"flat" | "3d">("flat");
+  const [reducedMotion] = useState(
+    () =>
+      typeof window !== "undefined" &&
+      !!window.matchMedia?.("(prefers-reduced-motion: reduce)").matches,
+  );
   const nextId = useRef(1);
 
   // 下敷きの画像は object URL。差し替え・片付けのときに手放す
@@ -523,7 +543,34 @@ export function FloorPlanFengShui({ reading }: { reading: FengShuiReading }) {
       <div className="grid gap-5 p-4 xl:grid-cols-[minmax(0,1fr)_380px]">
         <div>
           <div className="mb-3 flex flex-wrap items-center gap-2">
-            <div role="group" aria-label="操作" className="flex gap-1">
+            {webgl && (
+              <div role="group" aria-label="見せ方" className="flex gap-1">
+                <button
+                  type="button"
+                  aria-pressed={view === "flat"}
+                  onClick={() => setView("flat")}
+                  className={button(view === "flat")}
+                >
+                  平面で描く
+                </button>
+                <button
+                  type="button"
+                  aria-pressed={view === "3d"}
+                  onClick={() => {
+                    setView("3d");
+                    setMode("select");
+                  }}
+                  className={button(view === "3d")}
+                >
+                  立体で見る
+                </button>
+              </div>
+            )}
+            <div
+              role="group"
+              aria-label="操作"
+              className={`flex gap-1 ${view === "3d" ? "hidden" : ""}`}
+            >
               <button
                 type="button"
                 aria-pressed={mode === "select"}
@@ -566,23 +613,34 @@ export function FloorPlanFengShui({ reading }: { reading: FengShuiReading }) {
               全部消す
             </button>
           </div>
-          {mode === "draw" && (
+          {mode === "draw" && view === "flat" && (
             <p className="mb-2 text-xs text-amber-800">
               空いている所をなぞると、四角い部屋ができます。
             </p>
           )}
-          <FlatPlan
-            rooms={rooms}
-            result={result}
-            northArrowDeg={northArrowDeg}
-            imageUrl={imageUrl}
-            imageOpacity={imageOpacity}
-            selectedId={selectedId}
-            mode={mode}
-            onSelect={setSelectedId}
-            onAdd={addRoom}
-            onChange={update}
-          />
+          {view === "3d" && result ? (
+            <div className="overflow-hidden rounded-2xl border border-stone-200 bg-gradient-to-b from-stone-50 to-amber-50/40">
+              <FloorPlanScene
+                result={result}
+                selectedId={selectedId}
+                onSelect={setSelectedId}
+                reducedMotion={reducedMotion}
+              />
+            </div>
+          ) : (
+            <FlatPlan
+              rooms={rooms}
+              result={result}
+              northArrowDeg={northArrowDeg}
+              imageUrl={imageUrl}
+              imageOpacity={imageOpacity}
+              selectedId={selectedId}
+              mode={mode}
+              onSelect={setSelectedId}
+              onAdd={addRoom}
+              onChange={update}
+            />
+          )}
           {!result && (
             <p className="mt-2 text-sm text-stone-600">
               部屋が 1
