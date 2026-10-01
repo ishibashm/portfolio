@@ -1,6 +1,9 @@
 import { describe, expect, it } from "vitest";
 import { Object3D, Vector3 } from "three";
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 import {
+  fixturesForRoom,
   northArrowPlacement,
   plateBounds,
   planToWorld,
@@ -9,10 +12,12 @@ import {
 } from "@/components/houi/FloorPlanScene";
 import {
   EXAMPLE_ROOMS,
+  ROOM_KIND_LABELS,
   bearingOfPlanPoint,
   buildFloorPlan,
 } from "@/lib/floorPlanModel";
 import { readFengShui } from "@/utils/fengShuiEngine";
+import type { PlanRoom, PlanRoomKind } from "@/lib/floorPlanModel";
 
 /**
  * 自分の間取りの立体。描くこと自体は jsdom で見られないので、立体が
@@ -86,4 +91,77 @@ describe("方位記号の矢印", () => {
       expect(roomAtPlanPoint([...EXAMPLE_ROOMS], at)).toBeNull();
     });
   }
+});
+
+describe("パースの家具・設備", () => {
+  /** 再現できる乱数 */
+  let seed = 42;
+  const rnd = () => {
+    seed = (seed * 1664525 + 1013904223) >>> 0;
+    return seed / 2 ** 32;
+  };
+  const kinds = Object.keys(ROOM_KIND_LABELS) as PlanRoomKind[];
+
+  it("どの種類・大きさの部屋でも、家具は部屋の内側に収まる", () => {
+    for (let i = 0; i < 2000; i++) {
+      const room: PlanRoom = {
+        id: `r${i}`,
+        kind: kinds[i % kinds.length],
+        name: "",
+        x: rnd() * 10,
+        y: rnd() * 10,
+        w: 0.2 + rnd() * 6,
+        h: 0.2 + rnd() * 6,
+      };
+      for (const f of fixturesForRoom(room)) {
+        expect(f.w).toBeGreaterThan(0);
+        expect(f.d).toBeGreaterThan(0);
+        expect(f.z1).toBeGreaterThan(f.z0);
+        expect(f.x).toBeGreaterThanOrEqual(room.x - 1e-9);
+        expect(f.y).toBeGreaterThanOrEqual(room.y - 1e-9);
+        expect(f.x + f.w).toBeLessThanOrEqual(room.x + room.w + 1e-9);
+        expect(f.y + f.d).toBeLessThanOrEqual(room.y + room.h + 1e-9);
+        // 天井（2.4 m）より低い
+        expect(f.z1).toBeLessThanOrEqual(2.4);
+      }
+    }
+  });
+
+  it("例の間取りでは、種類ごとに置くものが決まっている", () => {
+    const kindsOf = (id: string) =>
+      fixturesForRoom(EXAMPLE_ROOMS.find((r) => r.id === id)!).map(
+        (f) => f.kind,
+      );
+    expect(kindsOf("ex-bed")).toContain("bed");
+    expect(kindsOf("ex-study")).toContain("desk");
+    expect(kindsOf("ex-kit")).toEqual(["counter", "sink", "cooktop"]);
+    expect(kindsOf("ex-bath")).toContain("tub");
+    expect(kindsOf("ex-wc")).toContain("bowl");
+    expect(kindsOf("ex-ent")).toContain("shoes");
+    expect(kindsOf("ex-ldk")).toContain("sofa");
+    expect(kindsOf("ex-hall")).toEqual([]);
+  });
+});
+
+describe("書き出しは端末の中だけ", () => {
+  it("立体と画面のコードに、外へ出す・残す経路が無い", () => {
+    for (const file of [
+      "src/components/houi/FloorPlanScene.tsx",
+      "src/components/houi/FloorPlanFengShui.tsx",
+    ]) {
+      const src = readFileSync(join(process.cwd(), file), "utf8");
+      for (const w of [
+        "fetch(",
+        "XMLHttpRequest",
+        "localStorage",
+        "sessionStorage",
+        "indexedDB",
+        "sendBeacon",
+        "FormData",
+        "WebSocket",
+      ]) {
+        expect(src.includes(w), `${file}: ${w}`).toBe(false);
+      }
+    }
+  });
 });

@@ -58,6 +58,9 @@ const LEAD =
 const PRIVACY =
   "間取り図の画像は、この端末の画面に下敷きとして表示するだけです。送信も保存もしません。描いた部屋も保存しないので、頁を離れると消えます。";
 
+const EXPORT_NOTE =
+  "パースの家具は部屋の種類から置いた目安で、1 マスを 1 m として大きさを決めています。書き出した .glb はこの端末に保存されるだけで、送信しません。Blender などで開けます。";
+
 const NOT_A_VERDICT =
   "八宅で一般に説明される当て方に照らしたもので、効果を保証するものではありません。家の中心の取り方、磁北で測るか真北で測るか、だれの本命卦で見るかは、流派によって説明が分かれます。";
 
@@ -479,6 +482,9 @@ export function FloorPlanFengShui({ reading }: { reading: FengShuiReading }) {
   const [imageOpacity, setImageOpacity] = useState(0.6);
   const [webgl] = useState(supportsWebGL);
   const [view, setView] = useState<"flat" | "3d">("flat");
+  const [perspective, setPerspective] = useState(false);
+  const [exporting, setExporting] = useState(false);
+  const exportRef = useRef<(() => Promise<Blob>) | null>(null);
   const [reducedMotion] = useState(
     () =>
       typeof window !== "undefined" &&
@@ -625,7 +631,61 @@ export function FloorPlanFengShui({ reading }: { reading: FengShuiReading }) {
                 selectedId={selectedId}
                 onSelect={setSelectedId}
                 reducedMotion={reducedMotion}
+                perspective={perspective}
+                exportRef={exportRef}
               />
+              <div className="flex flex-wrap items-center gap-2 border-t border-stone-200 bg-white/80 px-3 py-2">
+                <div
+                  role="group"
+                  aria-label="立体の見せ方"
+                  className="flex gap-1"
+                >
+                  <button
+                    type="button"
+                    aria-pressed={!perspective}
+                    onClick={() => setPerspective(false)}
+                    className={button(!perspective)}
+                  >
+                    区画を見る
+                  </button>
+                  <button
+                    type="button"
+                    aria-pressed={perspective}
+                    onClick={() => setPerspective(true)}
+                    className={button(perspective)}
+                  >
+                    パース（家具つき）
+                  </button>
+                </div>
+                <button
+                  type="button"
+                  disabled={exporting}
+                  onClick={async () => {
+                    const make = exportRef.current;
+                    if (!make) return;
+                    setExporting(true);
+                    try {
+                      // 端末の中で作って、そのまま保存させる。どこにも送らない
+                      const url = URL.createObjectURL(await make());
+                      const a = document.createElement("a");
+                      a.href = url;
+                      a.download = "madori.glb";
+                      a.click();
+                      setTimeout(() => URL.revokeObjectURL(url), 1000);
+                    } finally {
+                      setExporting(false);
+                    }
+                  }}
+                  className={button(false)}
+                >
+                  {exporting
+                    ? "書き出しています…"
+                    : "3D モデルを書き出す（.glb）"}
+                </button>
+              </div>
+              <p className="px-3 pb-2 text-xs leading-relaxed text-stone-600">
+                {EXPORT_NOTE}
+              </p>
             </div>
           ) : (
             <FlatPlan
