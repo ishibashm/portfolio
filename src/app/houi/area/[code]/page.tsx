@@ -105,7 +105,14 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const area = findArea((await params).code);
   if (!area) return {};
-  const title = `${area.full}から見た方位別のエリアと家賃相場`;
+  /*
+    検索語に合わせて「家賃相場」を前に出す（2026-10-01）。Search Console の
+    3 か月の実測で、この頁に表示が付くのはほぼ「深谷市 家賃相場」「諫早市
+    家賃相場」の形（27〜45 位）。以前の「〜から見た方位別のエリアと家賃
+    相場」は、地名のすぐ後ろに検索語が来ない。頁はその市区町村の借家の
+    家賃（住宅・土地統計調査）を冒頭に出しているので、名乗りと中身は合う
+  */
+  const title = `${area.full}の家賃相場と、方位別に見た周辺の街`;
   /* 文章のある頁は、その 1 段落目から作る。既定の 1 文は地名しか
      変わらず、索引に戻した頁どうしで description が同じになる */
   const description = metaDescriptionFromIntro(
@@ -234,7 +241,7 @@ export default async function Page({
         地名を除いた地の文だけで 50 字を超える長さにしてある。
       */}
       <DatasetJsonLd
-        name={`${area.full}から見た方位別のエリアと家賃相場`}
+        name={`${area.full}の家賃相場と、方位別に見た周辺の街`}
         description={`${area.full}を出発地として、北・北東・東・南東・南・南西・西・北西の八方位ごとに、その方角に位置する市区町村の一覧と、住宅・土地統計調査から作った借家の家賃と空き家率をまとめたデータ。九星気学の吉方位から引越し先を探すときの判断材料に使う。`}
         path={path}
         dateModified={areaAsOf(area)}
@@ -275,7 +282,7 @@ export default async function Page({
         </nav>
 
         <h1 className="text-3xl md:text-4xl font-bold font-serif tracking-tight leading-snug">
-          {area.full}から見た方位別のエリアと家賃相場
+          {area.full}の家賃相場と、方位別に見た周辺の街
         </h1>
 
         <p className="mt-5 text-sm leading-relaxed text-slate-700">
