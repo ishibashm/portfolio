@@ -18,6 +18,7 @@ import {
   type FengShuiReading,
 } from "@/utils/fengShuiEngine";
 import { FengShuiRoom } from "@/components/houi/FengShuiRoom";
+import { FloorPlanFengShui } from "@/components/houi/FloorPlanFengShui";
 
 /**
  * 風水（八宅）の早見。**九星気学とは別の段に置く。**
@@ -172,6 +173,7 @@ export function FengShuiLookup() {
             ))}
           </ul>
           <FengShuiRoom reading={reading} />
+          <FloorPlanFengShui reading={reading} />
         </div>
       )}
 
