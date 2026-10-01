@@ -21,6 +21,10 @@ import {
   type HousingSnapshotData,
 } from "@/lib/housingSnapshot";
 import { ESTAT_API_CREDIT } from "@/lib/estatCredit";
+import estatRent from "@/data/estatRent.json";
+import { officialRentsForPref } from "@/lib/officialRentForPlace";
+import { OfficialRentNote } from "@/components/houi/OfficialRentNote";
+import type { EstatRentSnapshot } from "@/utils/estatRent";
 import { DIRECTION_LABELS } from "@/lib/kigakuContent";
 import { metaDescriptionFromIntro } from "@/lib/editorialMeta";
 import { AREA_EDITORIAL } from "@/lib/areaEditorial";
@@ -244,6 +248,13 @@ export default async function Page({
           <p className="mt-1 text-xs leading-relaxed text-slate-500">
             {ESTAT_API_CREDIT}
           </p>
+          {/* 毎月の公的な値。本体（住宅・土地統計調査）は 5 年ごとなので、
+              いまの水準と前年からの動きをここで補う */}
+          <OfficialRentNote
+            heading={`${pref}の市の民営家賃`}
+            rents={officialRentsForPref(estatRent as EstatRentSnapshot, code)}
+            month={(estatRent as EstatRentSnapshot).retail.latestMonth}
+          />
           <div className="mt-4 grid gap-4 sm:grid-cols-2">
             <div>
               <h3 className="text-xs font-bold text-slate-600">
