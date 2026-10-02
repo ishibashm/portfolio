@@ -87,4 +87,36 @@ jobs:
           IMPORT_DRY_RUN: ${{ inputs.mode == 'dry-run' }}
           IMPORT_OVERWRITE: ${{ inputs.overwrite }}
           IMPORT_ONLY: ${{ inputs.only }}
-        run: npx -y tsx scripts/import_blog_markdown.ts
+        run: |
+          set -o pipefail
+          npx -y tsx scripts/import_blog_markdown.ts | tee "$RUNNER_TEMP/import.log"
+
+      # 取り込んで**中身が変わった記事だけ**を IndexNow（Bing など。ChatGPT の
+      # 検索が使う索引）へ知らせる。Google は IndexNow に参加していない。
+      #
+      # 2026-10-02 まで、記事を出しても誰にも知らせていなかった。IndexNow の
+      # 呼び口は夜間の巡回（scrape-rentals.yml）にしか無く、それも 9/13 に
+      # 巡回ごと止まっていた。記事を DB に入れたこの時点が「本当に中身が
+      # 変わった」とき（indexnow.yml の註の条件）なので、ここで送る。
+      #
+      # 拾うのは取り込みのログの「+ slug: 追加」「~ slug: 上書き」の行だけ。
+      # 既にあって飛ばした記事（= slug: 既にある）は中身が変わっていないので
+      # 送らない。記事一覧（/blog）は 1 本でも変わったら一緒に送る。
+      #
+      # 送れなくても取り込みは成功している。ここで落とすと「入ったのに赤い」
+      # になり、記事が入っていないと読み違えるので、警告だけにする。
+      - name: Notify IndexNow
+        if: ${{ inputs.mode == 'apply' }}
+        continue-on-error: true
+        env:
+          INDEXNOW_KEY: ${{ secrets.INDEXNOW_KEY }}
+        run: |
+          SLUGS=$(grep -E '^  [~+] [a-z0-9-]+: (上書き|追加)$' "$RUNNER_TEMP/import.log" \
+                    | sed -E 's/^  [~+] ([a-z0-9-]+):.*$/\1/' || true)
+          if [ -z "$SLUGS" ]; then
+            echo "変わった記事が無いので送らない"
+            exit 0
+          fi
+          URLS=$(printf 'https://cloud-palette.com/blog/%s\n' $SLUGS | paste -sd, -)
+          npx -y tsx scripts/submit_indexnow.ts --urls "$URLS,https://cloud-palette.com/blog" --apply \
+            || echo "::warning::IndexNow へ送れなかった（取り込み自体は成功）: $URLS"
