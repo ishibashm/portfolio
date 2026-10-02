@@ -32,8 +32,19 @@ export async function GET() {
   // 記事は DB（blogStore）から。管理画面で公開した記事が Markdown を
   // 経由せずここへ載るようにする。DB が読めないときは Markdown に
   // 倒れる（blogStore の既定の挙動）。
+  //
+  // 題だけでなく説明文も載せる。記事の説明文は「先に結論」を縮めた
+  // 答え（数字・期間・流派の違い）として書いてあり、AI が記事を開かずに
+  // 引ける。題だけだと「天中殺に引越しすると影響はあるのか」という
+  // 問いしか渡らず、答え（年に 108〜114 日、午未は 2028 年 2 月 4 日まで）
+  // が抜けていた。管理画面で書いた説明文に改行があると箇条書きが
+  // 割れるので、空白は 1 つに畳む。
   const blogPosts = (await loadBlogPosts())
-    .map((post) => `- [${post.title}](${baseUrl}/blog/${post.slug})`)
+    .map((post) => {
+      const line = `- [${post.title}](${baseUrl}/blog/${post.slug})`;
+      const description = post.description.replace(/\s+/g, " ").trim();
+      return description ? `${line}: ${description}` : line;
+    })
     .join("\n");
 
   /* 都道府県ページは 47 県ぶん手で文章を書いてある。Search Console の
