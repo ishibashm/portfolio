@@ -16,6 +16,51 @@
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const nonCoreRoutes = require("./src/lib/nonCoreRoutes.json");
 const { routes: NON_CORE, offTheme: OFF_THEME } = nonCoreRoutes;
+// 記事の更新日を Markdown の frontmatter から読む（下の BLOG_LASTMOD）。
+// eslint-disable-next-line @typescript-eslint/no-require-imports
+const fs = require("fs");
+// eslint-disable-next-line @typescript-eslint/no-require-imports
+const path = require("path");
+
+/**
+ * サイトマップの lastmod。**本当に変わった日だけを書く。**
+ *
+ * 以前は next-sitemap の既定（autoLastmod）のままで、ビルドした時刻が
+ * 全 URL に入っていた。master へのマージ＝デプロイなので、ほぼ毎日
+ * 全頁が「今日更新された」と名乗っていた。Google は lastmod が実際の
+ * 更新と合っているときだけ参考にするので、**全部が毎日変わる値は
+ * 読まれない。**Search Console（2026-10-02）で「検出 - インデックス
+ * 未登録」が 361 件あり、どれから読みに来るかの手がかりを自分で
+ * 潰していた。
+ *
+ * 記事は frontmatter の updatedAt（無ければ publishedAt）を入れる。
+ * 記事一覧（/blog）はその最新日。**それ以外は書かない**（日付を
+ * 持っていない頁に、それらしい日付を作らない）。
+ *
+ * 記事の正は DB（lib/blogStore）だが、この設定は CommonJS で DB も
+ * TypeScript も読めない。Markdown は取り込みの元で、管理画面での
+ * 書き直しは使っていない（利用者の判断）ので、ずれは起きない。
+ */
+function blogLastmods() {
+  const dir = path.join(__dirname, "content", "blog");
+  const out = {};
+  for (const file of fs.readdirSync(dir)) {
+    if (!file.endsWith(".md")) continue;
+    const head =
+      fs.readFileSync(path.join(dir, file), "utf-8").split(/^---$/m)[1] ?? "";
+    const field = (key) =>
+      head.match(
+        new RegExp(`^${key}:\\s*(\\d{4}-\\d{2}-\\d{2})\\s*$`, "m"),
+      )?.[1];
+    if (/^draft:\s*true\s*$/m.test(head)) continue;
+    const date = field("updatedAt") ?? field("publishedAt");
+    if (date) out[`/blog/${file.replace(/\.md$/, "")}`] = date;
+  }
+  const dates = Object.values(out).sort();
+  if (dates.length > 0) out["/blog"] = dates[dates.length - 1];
+  return out;
+}
+const BLOG_LASTMOD = blogLastmods();
 
 // ルートハンドラ（robots.txt / ads.txt / llms.txt など）まで
 // サイトマップに載ってしまうため除外する。ログイン画面も索引する意味がない。
@@ -432,6 +477,21 @@ module.exports = {
   siteUrl: process.env.NEXT_PUBLIC_BASE_URL || "https://cloud-palette.com",
   generateRobotsTxt: false, // src/app/robots.ts を使用するため
   sitemapSize: 7000,
+  /* ビルド時刻を全 URL に入れない（上の BLOG_LASTMOD の説明） */
+  autoLastmod: false,
+  /* next-sitemap の既定の transform と同じ形で、lastmod だけ差し替える。
+     additionalPaths（市区町村・/blog）もここを通る */
+  transform: async (config, loc) => ({
+    loc,
+    lastmod: BLOG_LASTMOD[loc],
+    changefreq: config.changefreq,
+    priority: config.priority,
+    alternateRefs: config.alternateRefs ?? [],
+    trailingSlash: config.trailingSlash,
+  }),
+  /* 記事の更新日の表。検査（sitemapLastmod）が読む。next-sitemap は
+     知らない鍵を無視する */
+  blogLastmod: BLOG_LASTMOD,
   exclude: [
     "/relocation/candidates",
     "/admin/*",
