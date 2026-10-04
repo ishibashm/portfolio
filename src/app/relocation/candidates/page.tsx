@@ -2,7 +2,7 @@ import { CandidateEmailImport } from "@/components/relocation/EmailListingDraft"
 import { GmailFeature } from "@/components/relocation/GmailFeature";
 import { getAuthUser, toUserId } from "@/lib/userConfig";
 import Link from "next/link";
-import { Bookmark, Mail, MapPin } from "lucide-react";
+import { Bookmark, MapPin } from "lucide-react";
 import CandidateHistory from "@/components/relocation/CandidateHistory";
 
 /*
@@ -92,20 +92,9 @@ export default async function CandidatesPage() {
         </header>
 
         {gmailEnabled && (
-          <details className="group rounded-2xl border border-stone-200 bg-white/90 shadow-sm">
-            <summary className="flex cursor-pointer items-center gap-2 px-5 py-3 text-sm font-bold text-stone-700">
-              <Mail className="h-4 w-4 text-rose-500" aria-hidden />
-              Gmail の物件通知から候補を取り込む（任意）
-              <span className="ml-auto text-xs font-normal text-stone-500 group-open:hidden">
-                開く
-              </span>
-            </summary>
-            <div className="border-t border-stone-100 p-4">
-              <GmailFeature enabled>
-                <CandidateEmailImport />
-              </GmailFeature>
-            </div>
-          </details>
+          <GmailFeature enabled>
+            <CandidateEmailImport />
+          </GmailFeature>
         )}
 
         <CandidateHistory />
