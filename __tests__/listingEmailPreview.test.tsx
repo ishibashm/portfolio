@@ -29,6 +29,13 @@ it("extracts pasted text locally without login, network or persistence", async (
     }),
   );
   expect(select).toHaveBeenCalledWith("https://suumo.jp/a", {});
+  expect(screen.getByLabelText("メール本文")).toHaveValue(
+    "test https://suumo.jp/a",
+  );
+  expect(screen.getByRole("status")).toHaveTextContent(
+    "住所は読み取れなかったため本文を残しています",
+  );
+  fireEvent.click(screen.getByRole("button", { name: "メール入力をクリア" }));
   expect(screen.getByLabelText("メール本文")).toHaveValue("");
   expect(fetch).not.toHaveBeenCalled();
   expect(store).not.toHaveBeenCalled();
@@ -116,6 +123,9 @@ it("keeps pasted property details separate and passes only the selected listing 
   });
   fireEvent.click(screen.getByRole("button", { name: "URLをプレビュー" }));
   await screen.findByText("合成ハイツA");
+  expect(screen.getByLabelText("メール本文")).toHaveValue(
+    "物件名: 合成ハイツA\n賃料: 6万円\n所在地: 架空県見本市1-2\nhttps://suumo.jp/a\n物件名: 合成ハイツB\n賃料: 8万円\n所在地: 架空県見本市3-4\nhttps://suumo.jp/b",
+  );
   expect(screen.getByText("合成ハイツB")).toBeInTheDocument();
   expect(screen.getByText("60,000円")).toBeInTheDocument();
   fireEvent.click(

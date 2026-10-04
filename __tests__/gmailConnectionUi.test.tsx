@@ -386,7 +386,9 @@ it("an empty import explains the time window instead of a bare 'no URLs'", async
   vi.spyOn(globalThis, "fetch").mockImplementation(async (url) =>
     String(url).endsWith("status")
       ? reply({ connections: [{ id, labelId: "Label_1", startedAt }] })
-      : reply({ urls: [], truncated: false, nextCursor: null }),
+      : String(url).includes("labels?")
+        ? reply({ labels: [{ id: "Label_1", name: "物件通知" }] })
+        : reply({ urls: [], truncated: false, nextCursor: null }),
   );
   mount();
   await screen.findByText("接続状態: 接続済み");

@@ -83,7 +83,6 @@ export function ListingEmailPreview({
             .slice(0, 20)
         : [];
       setUrls(safeUrls);
-      if (safeUrls.length) setSource("");
       setMessage(
         result.truncated
           ? "先頭20件を表示しています。"
@@ -119,7 +118,7 @@ export function ListingEmailPreview({
           {format === "text"
             ? "テキストはこの端末内だけで解析し、送信・保存しません。"
             : "HTML・生MIMEはログインが必要です。貼り付けた内容をこのサイトへ送信して解析します。本文は保存しません。"}
-          候補が見つかったとき・クリア・閉じる操作で入力を消します。
+          住所付きの候補を選んだとき・クリア・閉じる操作で入力を消します。住所を読み取れない場合は、転記できるよう本文を残します。
         </p>
         <details>
           <summary>貼り付け形式を変更（通常は不要）</summary>
@@ -180,7 +179,14 @@ export function ListingEmailPreview({
               const { url: selectedUrl, ...details } = listing;
               onSelect(selectedUrl, details);
             } else onSelect(url);
-            clear();
+            if (listing?.address) clear();
+            else {
+              setUrls([]);
+              setListings([]);
+              setMessage(
+                "URLを選びました。住所は読み取れなかったため本文を残しています。物件の住所をコピーし、上の入力欄に貼り付けてください。転記が済んだら「メール入力をクリア」で本文を消せます。",
+              );
+            }
           }}
         />
         <p>
