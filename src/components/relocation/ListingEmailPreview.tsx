@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { classifyCandidateInput } from "@/lib/listingCandidateInput";
 import type { ListingDetails } from "@/lib/listingDetails";
+import { useGmailEnabled } from "./GmailFeature";
 import { GmailConnectionPanel } from "./GmailConnectionPanel";
 import { EmailUrlChoices } from "./EmailUrlChoices";
 
@@ -11,6 +12,12 @@ export function ListingEmailPreview({
 }: {
   onSelect: (url: string, details?: ListingDetails) => void;
 }) {
+  const gmailEnabled = useGmailEnabled();
+  const [showGmail, setShowGmail] = useState(false);
+  useEffect(() => {
+    if (new URL(window.location.href).searchParams.has("emailConnection"))
+      setShowGmail(true);
+  }, []);
   const [source, setSource] = useState("");
   const [format, setFormat] = useState("text");
   const [urls, setUrls] = useState<string[]>([]);
@@ -93,7 +100,6 @@ export function ListingEmailPreview({
   };
   return (
     <>
-      <GmailConnectionPanel onSelect={onSelect} />
       <details
         className="rounded-xl border border-stone-200 p-3 text-xs space-y-2"
         onToggle={(e) => {
@@ -169,6 +175,19 @@ export function ListingEmailPreview({
           リンク先・画像は取得しません。メール内の住所は確定情報ではありません。URL選択後も住所入力・地図確認が必要です。
         </p>
       </details>
+      {gmailEnabled && (
+        <div className="rounded-xl border border-stone-200 p-3 text-xs space-y-2">
+          <button
+            type="button"
+            aria-expanded={showGmail}
+            onClick={() => setShowGmail((shown) => !shown)}
+            className="min-h-[32px] font-semibold text-stone-600 underline"
+          >
+            Gmailの物件通知をまとめて取り込む（任意）
+          </button>
+          {showGmail && <GmailConnectionPanel onSelect={onSelect} />}
+        </div>
+      )}
     </>
   );
 }

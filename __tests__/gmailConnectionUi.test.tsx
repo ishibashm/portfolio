@@ -59,6 +59,11 @@ function mount() {
       <ListingEmailPreview onSelect={(url) => selected.push(url)} />
     </Layout>,
   );
+  const toggle = screen.queryByRole("button", {
+    name: "Gmailの物件通知をまとめて取り込む（任意）",
+  });
+  if (toggle?.getAttribute("aria-expanded") === "false")
+    fireEvent.click(toggle);
   return selected;
 }
 afterEach(() => {
@@ -209,6 +214,11 @@ it("Gmail URL selection reaches Phase 1, which still requires a location", async
       />
     </Layout>,
   );
+  fireEvent.click(
+    screen.getByRole("button", {
+      name: "Gmailの物件通知をまとめて取り込む（任意）",
+    }),
+  );
   await screen.findByText("接続状態: 接続済み");
   fireEvent.click(screen.getByRole("button", { name: "取り込み" }));
   fireEvent.click(
@@ -254,6 +264,11 @@ it("unmount cancels a pending import and never hands off a late response", async
     <Layout>
       <ListingEmailPreview onSelect={(url) => selected.push(url)} />
     </Layout>,
+  );
+  fireEvent.click(
+    screen.getByRole("button", {
+      name: "Gmailの物件通知をまとめて取り込む（任意）",
+    }),
   );
   await screen.findByText("接続状態: 接続済み");
   let resolve!: (r: Response) => void;
@@ -396,4 +411,31 @@ it("buttons look like buttons (not bare text run into the paragraph)", async () 
       /rounded-lg/,
     );
   }
+});
+
+it("does not check Gmail until chosen; closing cancels its request", async () => {
+  vi.stubEnv("LISTING_EMAIL_GMAIL_ENABLED", "true");
+  const fetch = vi
+    .spyOn(globalThis, "fetch")
+    .mockImplementation(() => new Promise(() => {}));
+  render(
+    <Layout>
+      <ListingEmailPreview onSelect={vi.fn()} />
+    </Layout>,
+  );
+  expect(fetch).not.toHaveBeenCalled();
+  expect(
+    screen.queryByRole("region", { name: "Gmail接続" }),
+  ).not.toBeInTheDocument();
+  const toggle = screen.getByRole("button", {
+    name: "Gmailの物件通知をまとめて取り込む（任意）",
+  });
+  fireEvent.click(toggle);
+  expect(fetch).toHaveBeenCalledTimes(1);
+  const signal = fetch.mock.calls[0][1]?.signal;
+  fireEvent.click(toggle);
+  expect(signal?.aborted).toBe(true);
+  expect(
+    screen.queryByRole("region", { name: "Gmail接続" }),
+  ).not.toBeInTheDocument();
 });
