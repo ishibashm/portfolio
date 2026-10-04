@@ -107,7 +107,7 @@ it("callback preselects 物件通知 but requires confirmation before importing 
     fetch.mock.calls.map(([url]) => String(url).split("/").at(-1)),
   ).toEqual(["status", `labels?connectionId=${id}`, "select-label", "read"]);
   expect(
-    screen.getByText(/Testingモードの場合、7日ごとに再接続/),
+    screen.getByText(/試験公開中の場合、7日ごとに再接続/),
   ).toBeInTheDocument();
 });
 it("connect only requests authorization URL and offers an explicit Google link", async () => {
