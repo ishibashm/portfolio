@@ -346,13 +346,21 @@ export function SpotVerdict({
 
       setBusy(true);
       try {
-        const res = candidateContext
+        let res = candidateContext
           ? await fetch("/api/relocation/candidates/geocode", {
               method: "POST",
               headers: { "Content-Type": "application/json" },
               body: JSON.stringify({ address: text }),
             })
           : await fetch(`/api/geocode?q=${encodeURIComponent(text)}`);
+        if (seq !== lookupSeq.current) return;
+        // Anonymous manual input uses the existing public address search.
+        // Other failures (including provider OFF) must retain their explanation.
+        if (candidateContext && res.status === 401 && address === undefined) {
+          res = await fetch(`/api/geocode?q=${encodeURIComponent(text)}`, {
+            cache: "no-store",
+          });
+        }
         const body = await res.json();
         if (seq !== lookupSeq.current) return;
         if (!res.ok || typeof body?.lat !== "number") {
@@ -435,7 +443,15 @@ export function SpotVerdict({
   const precisionNote = geocodePrecisionNote(target?.source ?? null);
 
   return (
-    <div className="space-y-1.5">
+    <div
+      id={candidateContext ? "candidate-import" : undefined}
+      className="space-y-1.5 scroll-mt-20"
+    >
+      {candidateContext && (
+        <p className="text-xs font-semibold text-stone-700">
+          まずは物件URL・住所を入力するか、下でメール本文を貼り付けてください。調べるだけならログイン・メール接続は不要です。候補の保存にはログインが必要です。
+        </p>
+      )}
       <label
         htmlFor="arb-spot-query"
         className="text-[10px] font-semibold text-stone-600 dark:text-stone-500 block"
@@ -480,11 +496,12 @@ export function SpotVerdict({
       {candidateContext ? (
         <>
           <p className="text-xs text-stone-600 leading-relaxed">
+            住所検索では国土地理院などの検索サービスに住所を送ります。氏名・連絡先・部屋番号は入れないでください。住所を送らずに地図で場所を指定することもできます。
+          </p>
+          <p className="text-xs text-stone-600 leading-relaxed">
             URLは参照リンクのみで、中身を取得しません。住所または座標を入力し、地図で所在地を確認してください。地図クリックで位置を修正できます。
           </p>
-          <div id="candidate-import">
-            <ListingEmailPreview onSelect={selectEmail} />
-          </div>
+          <ListingEmailPreview onSelect={selectEmail} />
           {markUrl && !target && (
             <p className="text-xs break-all">
               参照リンク: {markUrl}
