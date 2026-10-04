@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { classifyCandidateInput } from "@/lib/listingCandidateInput";
-import type { ListingDetails } from "@/lib/listingDetails";
+import type { EmailListing, ListingDetails } from "@/lib/listingDetails";
 import { useGmailEnabled } from "./GmailFeature";
 import { GmailConnectionPanel } from "./GmailConnectionPanel";
 import { EmailUrlChoices } from "./EmailUrlChoices";
@@ -21,6 +21,7 @@ export function ListingEmailPreview({
   const [source, setSource] = useState("");
   const [format, setFormat] = useState("text");
   const [urls, setUrls] = useState<string[]>([]);
+  const [listings, setListings] = useState<EmailListing[]>([]);
   const [message, setMessage] = useState("");
   const [busy, setBusy] = useState(false);
   const request = useRef<AbortController | null>(null);
@@ -30,6 +31,7 @@ export function ListingEmailPreview({
     request.current = null;
     setSource("");
     setUrls([]);
+    setListings([]);
     setMessage("");
     setBusy(false);
   };
@@ -39,14 +41,17 @@ export function ListingEmailPreview({
     request.current = controller;
     setBusy(true);
     setUrls([]);
+    setListings([]);
     setMessage("");
     try {
       let result;
       if (format === "text") {
         // Load the bounded parser only on demand; plain text needs no mailbox or API.
-        const { extractEmailUrls } = await import("@/lib/listingEmailIngest");
+        const { extractEmailListings } =
+          await import("@/lib/listingEmailDetails");
         if (controller.signal.aborted) return;
-        result = extractEmailUrls(source, "text");
+        result = extractEmailListings(source, "text");
+        setListings(result.listings);
       } else {
         const response = await fetch("/api/relocation/email-preview", {
           method: "POST",
@@ -83,7 +88,7 @@ export function ListingEmailPreview({
         result.truncated
           ? "先頭20件を表示しています。"
           : safeUrls.length
-            ? "物件URLを1件選び、上の「調べる」へ進んでください。"
+            ? "物件を1件選んでください。住所が読み取れた場合は住所検索へ進みます。住所がなければ上の入力欄に住所を入力してください。"
             : "利用できるURLがありません。メール内の物件URLをコピーして上の入力欄に貼るか、住所を入力してください。",
       );
     } catch {
@@ -127,6 +132,7 @@ export function ListingEmailPreview({
               onChange={(e) => {
                 setFormat(e.target.value);
                 setUrls([]);
+                setListings([]);
                 setMessage("");
               }}
             >
@@ -149,6 +155,7 @@ export function ListingEmailPreview({
             onChange={(e) => {
               setSource(e.target.value);
               setUrls([]);
+              setListings([]);
               setMessage("");
             }}
           />
@@ -166,13 +173,18 @@ export function ListingEmailPreview({
         {message && <p role="status">{message}</p>}
         <EmailUrlChoices
           urls={urls}
+          listings={listings}
           onSelect={(url) => {
-            onSelect(url);
+            const listing = listings.find((item) => item.url === url);
+            if (listing) {
+              const { url: selectedUrl, ...details } = listing;
+              onSelect(selectedUrl, details);
+            } else onSelect(url);
             clear();
           }}
         />
         <p>
-          リンク先・画像は取得しません。メール内の住所は確定情報ではありません。URL選択後も住所入力・地図確認が必要です。
+          リンク先・画像は取得しません。物件名・賃料・住所は読み取れた場合だけ表示します。住所付きの候補を選ぶと、国土地理院などの検索サービスに住所を送って検索します。メール内の住所は確定情報ではないため、地図で所在地を確認してください。
         </p>
       </details>
       {gmailEnabled && (

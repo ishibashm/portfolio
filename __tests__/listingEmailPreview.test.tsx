@@ -1,6 +1,7 @@
 import { afterEach, expect, it, vi } from "vitest";
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { extractEmailUrls } from "@/lib/listingEmailIngest";
+import { extractEmailListings } from "@/lib/listingEmailDetails";
 import { ListingEmailPreview } from "@/components/relocation/ListingEmailPreview";
 afterEach(() => {
   cleanup();
@@ -27,7 +28,7 @@ it("extracts pasted text locally without login, network or persistence", async (
       name: /https:\/\/suumo.jp\/a を既存入力へ/,
     }),
   );
-  expect(select).toHaveBeenCalledWith("https://suumo.jp/a");
+  expect(select).toHaveBeenCalledWith("https://suumo.jp/a", {});
   expect(screen.getByLabelText("メール本文")).toHaveValue("");
   expect(fetch).not.toHaveBeenCalled();
   expect(store).not.toHaveBeenCalled();
@@ -86,8 +87,44 @@ it("plain text parsing works in a browser without Node Buffer", () => {
   let result;
   try {
     result = extractEmailUrls("物件 https://suumo.jp/a", "text");
+    expect(
+      extractEmailListings("物件名: 合成A\nhttps://suumo.jp/a", "text")
+        .listings,
+    ).toEqual([{ url: "https://suumo.jp/a", propertyName: "合成A" }]);
   } finally {
     vi.unstubAllGlobals();
   }
   expect(result?.urls).toEqual(["https://suumo.jp/a"]);
+});
+
+it("keeps pasted property details separate and passes only the selected listing without network", async () => {
+  const select = vi.fn();
+  const fetch = vi
+    .spyOn(globalThis, "fetch")
+    .mockRejectedValue(new Error("No network"));
+  const store = vi.spyOn(Storage.prototype, "setItem");
+  render(<ListingEmailPreview onSelect={select} />);
+  fireEvent.click(screen.getByText(/自分の通知メールから/));
+  fireEvent.change(screen.getByLabelText("メール本文"), {
+    target: {
+      value:
+        "物件名: 合成ハイツA\n賃料: 6万円\n所在地: 架空県見本市1-2\nhttps://suumo.jp/a\n物件名: 合成ハイツB\n賃料: 8万円\n所在地: 架空県見本市3-4\nhttps://suumo.jp/b",
+    },
+  });
+  fireEvent.click(screen.getByRole("button", { name: "URLをプレビュー" }));
+  await screen.findByText("合成ハイツA");
+  expect(screen.getByText("合成ハイツB")).toBeInTheDocument();
+  expect(screen.getByText("60,000円")).toBeInTheDocument();
+  fireEvent.click(
+    screen.getByRole("button", { name: "https://suumo.jp/b を既存入力へ" }),
+  );
+  expect(select).toHaveBeenCalledWith("https://suumo.jp/b", {
+    propertyName: "合成ハイツB",
+    rentYen: 80000,
+    address: "架空県見本市3-4",
+  });
+  expect(screen.queryByText("合成ハイツA")).not.toBeInTheDocument();
+  expect(screen.getByLabelText("メール本文")).toHaveValue("");
+  expect(fetch).not.toHaveBeenCalled();
+  expect(store).not.toHaveBeenCalled();
 });
