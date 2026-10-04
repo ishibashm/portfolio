@@ -470,8 +470,13 @@ describe("本物の記事に題を渡す", () => {
       してあるので、題の有無にかかわらず数に入る（Search Console で
       「日取り」「日取りとは」が 35 位前後に出ていた受け皿）
     */
-    expect(count(false)).toBe(23);
-    expect(count(true)).toBe(28);
+    /*
+      2026-10-04: 地磁気が動いたら、方位盤は作り直すべきなのかの記事
+      （geomagnetism-and-honmei-star）を足して +1 / +1。問いの見出しが
+      5 つあるので、題の有無にかかわらず数に入る
+    */
+    expect(count(false)).toBe(24);
+    expect(count(true)).toBe(29);
   });
 
   it("題から作った問いは、記事の題そのもの（言い換えない）", () => {
