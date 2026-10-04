@@ -34,24 +34,32 @@ export function ListingEmailPreview({
     setUrls([]);
     setMessage("");
     try {
-      const response = await fetch("/api/relocation/email-preview", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "same-origin",
-        cache: "no-store",
-        body: JSON.stringify({ source, format }),
-        signal: controller.signal,
-      });
-      if (controller.signal.aborted) return;
-      if (!response.ok) {
-        setMessage(
-          response.status === 401
-            ? "プレビューにはログインが必要です。"
-            : "解析できませんでした。形式・サイズを確認するか、通常URLを直接貼り付けてください。",
-        );
-        return;
+      let result;
+      if (format === "text") {
+        // Load the bounded parser only on demand; plain text needs no mailbox or API.
+        const { extractEmailUrls } = await import("@/lib/listingEmailIngest");
+        if (controller.signal.aborted) return;
+        result = extractEmailUrls(source, "text");
+      } else {
+        const response = await fetch("/api/relocation/email-preview", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          credentials: "same-origin",
+          cache: "no-store",
+          body: JSON.stringify({ source, format }),
+          signal: controller.signal,
+        });
+        if (controller.signal.aborted) return;
+        if (!response.ok) {
+          setMessage(
+            response.status === 401
+              ? "この形式のプレビューにはログインが必要です。メール本文をコピーし、テキスト形式で貼り付ければログインなしで使えます。"
+              : "解析できませんでした。形式・サイズを確認するか、物件URLを直接貼り付けてください。",
+          );
+          return;
+        }
+        result = await response.json();
       }
-      const result = await response.json();
       if (controller.signal.aborted) return;
       const safeUrls = Array.isArray(result.urls)
         ? result.urls
@@ -68,12 +76,14 @@ export function ListingEmailPreview({
         result.truncated
           ? "先頭20件を表示しています。"
           : safeUrls.length
-            ? "URLを1件選び、既存入力の「調べる」へ進んでください。"
-            : "利用できるURLがありません。通常URLを直接貼り付けてください。",
+            ? "物件URLを1件選び、上の「調べる」へ進んでください。"
+            : "利用できるURLがありません。メール内の物件URLをコピーして上の入力欄に貼るか、住所を入力してください。",
       );
     } catch {
       if (!controller.signal.aborted)
-        setMessage("解析できませんでした。通常URLを直接貼り付けてください。");
+        setMessage(
+          "解析できませんでした。物件1件分の短い本文で試してください。メール内の物件URLをコピーして上の入力欄に貼るか、住所を入力してください。",
+        );
     } finally {
       if (request.current === controller) {
         request.current = null;
@@ -90,31 +100,40 @@ export function ListingEmailPreview({
           if (!e.currentTarget.open) clear();
         }}
       >
-        <summary>自分の通知メールからURLを選ぶ（試験版）</summary>
+        <summary>自分の通知メールからURLを選ぶ（接続不要）</summary>
         <p>
-          ログインが必要です。貼り付けた内容をこのサイトで解析します。本文は保存せず、解析成功・クリア・閉じる操作で入力を消します。氏名などを除いたテスト用の内容を使ってください。
+          メール本文のテキストはログイン・メール接続なしで使えます。Gmail以外のメールも、物件の部分をコピーして貼り付けてください。氏名や連絡先は除いてください。
         </p>
+        <p>
+          {format === "text"
+            ? "テキストはこの端末内だけで解析し、送信・保存しません。"
+            : "HTML・生MIMEはログインが必要です。貼り付けた内容をこのサイトへ送信して解析します。本文は保存しません。"}
+          解析成功・クリア・閉じる操作で入力を消します。
+        </p>
+        <details>
+          <summary>貼り付け形式を変更（通常は不要）</summary>
+          <label className="block">
+            メールの形式
+            <select
+              aria-label="メールの形式"
+              value={format}
+              disabled={busy}
+              onChange={(e) => {
+                setFormat(e.target.value);
+                setUrls([]);
+                setMessage("");
+              }}
+            >
+              <option value="text">テキスト</option>
+              <option value="html">HTML（hrefのみ）</option>
+              <option value="mime">生MIME</option>
+            </select>
+          </label>
+        </details>
         <label className="block">
-          メールの形式
-          <select
-            aria-label="メールの形式"
-            value={format}
-            disabled={busy}
-            onChange={(e) => {
-              setFormat(e.target.value);
-              setUrls([]);
-              setMessage("");
-            }}
-          >
-            <option value="text">テキスト</option>
-            <option value="html">HTML（hrefのみ）</option>
-            <option value="mime">生MIME</option>
-          </select>
-        </label>
-        <label className="block">
-          テスト用メール
+          メール本文
           <textarea
-            aria-label="テスト用メール"
+            aria-label="メール本文"
             value={source}
             disabled={busy}
             maxLength={12000}
