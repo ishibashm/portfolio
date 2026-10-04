@@ -83,13 +83,13 @@ export function ListingEmailPreview({
             .slice(0, 20)
         : [];
       setUrls(safeUrls);
-      setSource("");
+      if (safeUrls.length) setSource("");
       setMessage(
         result.truncated
           ? "先頭20件を表示しています。"
           : safeUrls.length
             ? "物件を1件選んでください。住所が読み取れた場合は住所検索へ進みます。住所がなければ上の入力欄に住所を入力してください。"
-            : "利用できるURLがありません。メール内の物件URLをコピーして上の入力欄に貼るか、住所を入力してください。",
+            : "利用できるURLがありません。本文は残してあります。メール内の物件URLか住所をコピーして、上の入力欄に貼り付けてください。",
       );
     } catch {
       if (!controller.signal.aborted)
@@ -119,7 +119,7 @@ export function ListingEmailPreview({
           {format === "text"
             ? "テキストはこの端末内だけで解析し、送信・保存しません。"
             : "HTML・生MIMEはログインが必要です。貼り付けた内容をこのサイトへ送信して解析します。本文は保存しません。"}
-          解析成功・クリア・閉じる操作で入力を消します。
+          候補が見つかったとき・クリア・閉じる操作で入力を消します。
         </p>
         <details>
           <summary>貼り付け形式を変更（通常は不要）</summary>

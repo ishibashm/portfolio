@@ -79,6 +79,9 @@ it("keeps text for correction when the byte limit is exceeded and explains URL-f
   fireEvent.change(input, { target: { value: "架空の物件のお知らせ" } });
   fireEvent.click(screen.getByRole("button", { name: "URLをプレビュー" }));
   await screen.findByText(/利用できるURLがありません/);
+  expect(input).toHaveValue("架空の物件のお知らせ");
+  fireEvent.click(screen.getByRole("button", { name: "メール入力をクリア" }));
+  expect(input).toHaveValue("");
   expect(fetch).not.toHaveBeenCalled();
 });
 
