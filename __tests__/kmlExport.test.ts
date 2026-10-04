@@ -157,4 +157,56 @@ describe("KML Export Validation and Inconsistency Tests", () => {
     expect(kml).toContain("<name>注意</name>");
     expect(kml).toContain("<styleUrl>#label_WARNING</styleUrl>");
   });
+
+  /*
+    扇形とラベルは、画面の「基準」が磁北でも**真北**で置く（判定は真北で
+    出しているため。画面の地図 MagneticMapInner と同じ扱い）。以前は偏角の
+    ぶん全体を回して書き出していて、北の扇形の中心が北北西に寄っていた。
+    磁北線だけは偏角で引く。
+  */
+  it("扇形とラベルは基準が磁北でも真北で置き、磁北線だけが偏角で傾く", () => {
+    const magnetic = generateMagneticMapKML(
+      sampleLat,
+      sampleLon,
+      sampleDeclination,
+      false,
+      sampleVectors,
+    );
+    const trueNorth = generateMagneticMapKML(
+      sampleLat,
+      sampleLon,
+      sampleDeclination,
+      true,
+      sampleVectors,
+    );
+    /* 説明に残す「画面の基準」以外は同じものが出る（扇形・ラベル・
+       境界の赤帯・磁北線） */
+    const withoutNote = (k: string) => k.replace(/画面の基準: ..）/, "");
+    expect(withoutNote(magnetic)).toBe(withoutNote(trueNorth));
+    expect(magnetic).toContain("扇形は真北で描いています");
+    expect(magnetic).toContain("画面の基準: 磁北");
+
+    /* 北の扇形のラベル（N の判定は五黄殺）は出発地の真北にある */
+    const block = magnetic
+      .split("<Placemark>")
+      .find((p) => p.includes("N Sector Label"))!;
+    const [lon, lat] = block
+      .match(/<coordinates>([^<]+)<\/coordinates>/)![1]
+      .split(",")
+      .map(Number);
+    expect(lon).toBeCloseTo(sampleLon, 9);
+    expect(lat).toBeGreaterThan(sampleLat);
+
+    /* 磁北線は偏角（西偏）のぶん西へ傾いている */
+    const mag = magnetic
+      .split("<Placemark>")
+      .find((p) => p.includes("Magnetic North Vector"))!;
+    const end = mag
+      .match(/<coordinates>([^<]+)<\/coordinates>/)![1]
+      .trim()
+      .split(/\s+/)[1]
+      .split(",")
+      .map(Number);
+    expect(end[0]).toBeLessThan(sampleLon);
+  });
 });
