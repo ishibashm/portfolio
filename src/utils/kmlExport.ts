@@ -88,7 +88,22 @@ export function generateMagneticMapKML(
   },
   maxRadiusKm: number = 1000,
 ): string {
-  const magNorthBearing = useTrueNorth ? 0 : declination;
+  /*
+    扇形・ラベル・境界の赤帯は**必ず真北**で置く。`useTrueNorth`（画面の
+    「基準」）は向きには使わず、書き出した KML の説明に「画面の基準」として
+    残すだけにする。
+
+    以前は `useTrueNorth` が偽（画面の既定の「基準: 磁北」）のとき、全体を
+    偏角のぶん回していた。塗り分けている吉凶は真北で出した判定なので、
+    真北の判定を磁北の位置に置いて書き出していたことになる。画面の地図
+    （MagneticMapInner）は同じ理由で先に真北に直してあり、書き出した
+    KML だけが画面と判定から偏角ぶん（東京で約 8 度、四正の幅 30 度の
+    4 分の 1 強）ずれていた。
+
+    磁北は「方位磁針で測るとずれる」注意としてだけ使う（CLAUDE.md 3 節）。
+    下の青い磁北線だけが偏角を使う。
+  */
+  const sectorBaseBearing = 0;
 
   // Directions mapping
   const directions = [
@@ -131,7 +146,7 @@ export function generateMagneticMapKML(
     const coords = generateArcPolygonCoords(
       lat,
       lon,
-      magNorthBearing + d.deg,
+      sectorBaseBearing + d.deg,
       spread,
       maxRadiusKm,
     );
@@ -151,7 +166,7 @@ export function generateMagneticMapKML(
       const [labelLon, labelLat] = getDestinationKML(
         lat,
         lon,
-        magNorthBearing + d.deg,
+        sectorBaseBearing + d.deg,
         maxRadiusKm * 0.4,
       );
       labelsKML += `
@@ -174,7 +189,7 @@ export function generateMagneticMapKML(
 
   let dangerWedgesKML = "";
   boundaries.forEach((b, idx) => {
-    const baseBearing = magNorthBearing + b;
+    const baseBearing = sectorBaseBearing + b;
     const coords = generateArcPolygonCoords(
       lat,
       lon,
@@ -237,7 +252,7 @@ export function generateMagneticMapKML(
 <kml xmlns="http://www.opengis.net/kml/2.2">
   <Document>
     <name>Bio-Magnetic Spatial System</name>
-    <description>Generated sector data aligned with current active evaluations.</description>
+    <description>Generated sector data aligned with current active evaluations. 扇形は真北で描いています（判定と同じ基準。画面の基準: ${useTrueNorth ? "真北" : "磁北"}）。磁北は青い線だけです。</description>
     
     <!-- Style definitions mapping to status colors -->
     <Style id="style_OPTIMAL">
