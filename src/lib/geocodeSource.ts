@@ -53,7 +53,8 @@ export function geocodePrecisionNote(
   /**
    * 正確な地点にする手段。その画面に何があるかで変わる。
    *
-   *   map     地図がある画面（SpotVerdict）。クリックで指し直せる
+   *   map     地図がある画面（SpotVerdict）。ピンを動かすか、クリックで
+   *           指し直せる（物件検索の地図のピンは引きずれる）
    *   coords  地図が無い入力欄（PlaceInput）。緯度経度を直接入れる
    *
    * 文言を画面ごとに書き分けると出どころの説明まで割れるので、
@@ -63,7 +64,7 @@ export function geocodePrecisionNote(
 ): string | null {
   const how =
     retry === "map"
-      ? "地図をクリックすると正確な地点で調べ直せます。"
+      ? "地図のピンを動かすか、地図をクリックすると正確な地点で調べ直せます。"
       : "緯度経度を直接入れると正確な地点にできます。";
   switch (source) {
     case "gsi":

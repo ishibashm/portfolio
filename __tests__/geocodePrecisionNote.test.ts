@@ -79,9 +79,11 @@ describe("粗さの断り", () => {
     expect(n).toContain("物件そのものの場所ではありません");
   });
 
-  it("直せる手を添えている（地図をクリック）", () => {
-    /* 断るだけで終わらせない。次に取れる手を書く */
+  it("直せる手を添えている（ピンを動かす・地図をクリック）", () => {
+    /* 断るだけで終わらせない。次に取れる手を書く。物件検索の地図の
+       ピンは引きずれるので、クリックより先にそれを言う */
     for (const s of ["normalize", "nominatim"] as const) {
+      expect(geocodePrecisionNote(s), s).toContain("ピンを動かす");
       expect(geocodePrecisionNote(s), s).toContain("地図をクリック");
     }
   });
