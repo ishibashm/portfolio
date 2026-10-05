@@ -52,6 +52,8 @@ interface ArbitrageMapProps {
   hasBase?: boolean;
   /** mapCenter の意味。area=出発地 / spot=調べている地点 */
   focusKind?: "area" | "spot";
+  /** 調べている地点。あればピンを立てる（住所を入れて「調べる」で立つ） */
+  spotPin?: { lat: number; lon: number; name?: string } | null;
   prefecture?: string;
   useClassical?: boolean;
   onBoundsChange?: (bounds: {
