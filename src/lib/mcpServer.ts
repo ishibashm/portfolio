@@ -56,7 +56,7 @@ import {
 } from "@/lib/housingSnapshot";
 import { ESTAT_API_CREDIT } from "@/lib/estatCredit";
 import { coreRouteLabel } from "@/lib/siteStructure";
-import { toJapanDateString } from "@/utils/japanDate";
+import { parseJapanDateTime, toJapanDateString } from "@/utils/japanDate";
 import {
   getPrefStats,
   prefCodeByName,
@@ -67,8 +67,19 @@ export const SITE_NAME = "Cloud Palette";
 export const SITE_URL = "https://cloud-palette.com";
 
 /** 生年月日・日付の受け口。YYYY-MM-DD を日本時間の正午に寄せる（4.1 節）。 */
+/*
+  日付だけ（YYYY-MM-DD）は日本時間の正午。時刻つきは utils/japanDate の
+  parseJapanDateTime（時差の指定が無ければ +09:00 を補う）に通す。
+
+  以前は時刻つきを素の new Date に渡していた。時差の指定が無い
+  "2026-11-08T20:00" は実行環境の時刻で読まれ、本番（UTC）では日本時間の
+  翌 05:00 になって**判定する日が 1 日ずれる**（CLAUDE.md 3 節の罠。
+  画面側は #1092〜 で塞いだが、ここだけ残っていた）。
+*/
 function parseJstDate(value: string): Date | null {
-  const d = new Date(value.includes("T") ? value : `${value}T12:00:00+09:00`);
+  const d = value.includes("T")
+    ? parseJapanDateTime(value)
+    : new Date(`${value}T12:00:00+09:00`);
   return Number.isNaN(d.getTime()) ? null : d;
 }
 
