@@ -73,6 +73,7 @@ import {
   BLOCKED_FILL,
 } from "@/utils/tierDisplay";
 import { MapClickPicker } from "@/components/map/MapClickPicker";
+import { evaluateSpot } from "@/lib/spotEvaluation";
 
 // 既定アイコンの下ごしらえ。理由と型の話は @/lib/leafletDefaultIcon に集約。
 applyLeafletDefaultIcon();
@@ -386,11 +387,41 @@ export default function ArbitrageMapInner({
 }: ArbitrageMapInnerProps) {
   const [mounted, setMounted] = useState(false);
   /* ピンの位置。spotPin が無いときは従来どおり、地点へ寄せた中心に立てる */
-  const spotPinPosition: [number, number] | null = spotPin
-    ? [spotPin.lat, spotPin.lon]
-    : focusKind === "spot" && mapCenter
-      ? mapCenter
-      : null;
+  const spotPinPosition = useMemo<[number, number] | null>(
+    () =>
+      spotPin
+        ? [spotPin.lat, spotPin.lon]
+        : focusKind === "spot" && mapCenter
+          ? mapCenter
+          : null,
+    [spotPin, focusKind, mapCenter],
+  );
+  /*
+    ピンの吹き出しに出す判定。**SpotVerdict と同じ関数**（evaluateSpot）で、
+    盤も同じ dirKigaku を借りるので、左の札と食い違わない。
+
+    狭い画面では札（左の列）と地図（下）が同時に見えない。住所を入れて
+    地図まで送られた人が、ピンだけ見て判定を知れるようにする。
+  */
+  const spotPinVerdict = useMemo(() => {
+    if (!spotPinPosition || !hasBase) return null;
+    const ev = evaluateSpot(
+      baseLat,
+      baseLon,
+      spotPinPosition[0],
+      spotPinPosition[1],
+      useClassical,
+      dirKigaku,
+    );
+    if (!ev) return null;
+    const cell = dirKigaku?.[ev.direction];
+    return {
+      directionLabel: cell?.directionLabel ?? ev.direction,
+      tier: cell ? (TIER_JP[cell.tier as DayTier] ?? cell.tier) : null,
+      blocked: cell?.blocked ?? false,
+      distanceKm: ev.distanceKm,
+    };
+  }, [spotPinPosition, hasBase, baseLat, baseLon, useClassical, dirKigaku]);
   const [zoom, setZoom] = useState(5);
   const [currentBounds, setCurrentBounds] = useState<{
     minLat: number;
@@ -1438,11 +1469,37 @@ export default function ArbitrageMapInner({
         )}
 
         {spotPinPosition && (
-          <Marker position={spotPinPosition} alt="確認する候補の所在地">
+          /* key で地点ごとに立て直す。add は地図に載った瞬間に 1 度だけ
+             来るので、同じ Marker の位置を動かしただけでは吹き出しが
+             開き直らない */
+          <Marker
+            key={`${spotPinPosition[0]},${spotPinPosition[1]}`}
+            position={spotPinPosition}
+            alt="確認する候補の所在地"
+            eventHandlers={{
+              /* 立った瞬間に吹き出しを開く。住所から来た人は地図を見に
+                 来ただけで、ピンを押さないと判定が出ないのでは気付けない */
+              add: (e) => e.target.openPopup(),
+            }}
+          >
             <Popup>
               {spotPin?.name ? (
                 <div className="font-bold mb-1">{spotPin.name}</div>
               ) : null}
+              {spotPinVerdict && (
+                <div className="mb-1 flex flex-wrap items-center gap-1.5">
+                  <span className="font-bold">
+                    {spotPinVerdict.directionLabel}
+                  </span>
+                  {spotPinVerdict.tier && (
+                    <span className="font-bold">{spotPinVerdict.tier}</span>
+                  )}
+                  {spotPinVerdict.blocked && <span>天中殺</span>}
+                  <span className="font-mono text-stone-500">
+                    約{spotPinVerdict.distanceKm.toFixed(1)}km
+                  </span>
+                </div>
+              )}
               確認する候補の所在地です。違う場合は地図をクリックして修正してください。
             </Popup>
           </Marker>
