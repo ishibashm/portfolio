@@ -127,6 +127,7 @@ export function SpotVerdict({
   kigakuUnavailableReason,
   requestedPoint,
   onFocus,
+  onOpenMap,
   onTargetChange,
   candidateContext,
 }: {
@@ -158,6 +159,12 @@ export function SpotVerdict({
   } | null;
   /** 地図をその地点へ寄せる */
   onFocus?: (lat: number, lon: number) => void;
+  /**
+   * 地図を見せる（地点は指さない）。住所が引けなかったときの「地図で
+   * 場所を指定する →」から呼ぶ。狭い画面では地図が下にあって、
+   * 「地図をクリックしてください」と言われてもどこか分からない。
+   */
+  onOpenMap?: () => void;
   /**
    * 調べている地点が決まった・消えたことを頁へ知らせる。
    *
@@ -583,7 +590,23 @@ export function SpotVerdict({
           保存した候補を見る
         </Link>
       )}
-      {error && <p className="text-xs text-rose-600">{error}</p>}
+      {error && (
+        <p className="text-xs text-rose-600">
+          {error}
+          {onOpenMap && (
+            <>
+              {" "}
+              <button
+                type="button"
+                onClick={onOpenMap}
+                className="font-bold text-indigo-600 underline"
+              >
+                地図で場所を指定する →
+              </button>
+            </>
+          )}
+        </p>
+      )}
 
       {/* 出発地が無いと方位が決まらない。判定を出さずに理由を言う。
           ここで既定の座標に落とすと、他人の出発地から見た方位を

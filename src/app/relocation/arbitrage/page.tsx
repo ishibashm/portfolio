@@ -814,6 +814,11 @@ export default function DirectionTownsPage() {
                 kigakuUnavailableReason={kigakuUnavailableReason}
                 requestedPoint={spotRequest}
                 onTargetChange={onSpotTargetChange}
+                onOpenMap={() =>
+                  document
+                    .getElementById("candidate-location-map")
+                    ?.scrollIntoView({ behavior: "smooth", block: "center" })
+                }
                 onFocus={(lat, lon) => {
                   patch({
                     mapCenter: [lat, lon],
