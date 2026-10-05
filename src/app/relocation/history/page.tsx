@@ -414,12 +414,21 @@ export default function RelocationHistoryPage() {
           <div className="flex flex-wrap items-center gap-x-6 gap-y-2 text-stone-500">
             <div className="flex items-center gap-2">
               <Compass className="w-4 h-4 text-indigo-400" />
-              <span>方位偏角:</span>
-              <span
-                className={`px-2 py-0.5 rounded font-bold ${useTrueNorth ? "bg-indigo-500/20 text-indigo-600" : "bg-amber-500/20 text-amber-300"}`}
-              >
-                {useTrueNorth ? "真北基準 (物理)" : "磁北基準 (磁気偏角補正)"}
+              {/*
+                判定は設定に関わらず真北（api/relocation/history の註）。
+                以前はここが設定に応じて「磁北基準 (磁気偏角補正)」と出て
+                いて、判定まで磁北で出しているように読めた。磁北の設定で
+                変わるのは、方位磁針で測ったときの見え方を添えるかだけ。
+              */}
+              <span>方位の判定:</span>
+              <span className="px-2 py-0.5 rounded font-bold bg-indigo-500/20 text-indigo-600">
+                真北
               </span>
+              {!useTrueNorth && (
+                <span className="text-stone-600">
+                  （方位磁針で測ったときの見え方も添えます）
+                </span>
+              )}
             </div>
             <div className="flex items-center gap-2">
               <span>方位盤基準:</span>
