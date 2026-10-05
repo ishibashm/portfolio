@@ -730,7 +730,10 @@ export default function DirectionTownsPage() {
             {/* 方位ごとの街（e-Stat の市区町村の統計）。判定があれば開いている
                 方位の順に並び、段階の札が付く。方位の切り方は地図と同じ
                 （#1297・#1298）。 */}
-            <div className="rounded-3xl border border-stone-200 bg-white/80 p-4 space-y-3">
+            <div
+              id="arb-towns-section"
+              className="scroll-mt-4 rounded-3xl border border-stone-200 bg-white/80 p-4 space-y-3"
+            >
               <div className="flex flex-wrap items-baseline justify-between gap-2">
                 <h2 className="text-sm font-bold text-stone-900">
                   方位ごとの街
@@ -819,6 +822,14 @@ export default function DirectionTownsPage() {
                     .getElementById("candidate-location-map")
                     ?.scrollIntoView({ behavior: "smooth", block: "center" })
                 }
+                /* 調べた地点と同じ方位に絞って「方位ごとの街」へ。住所を
+                   1 つ調べた人が、同じ方位で他の街を見比べる口 */
+                onBrowseDirection={(dir) => {
+                  patch({ selectedDirection: dir });
+                  document
+                    .getElementById("arb-towns-section")
+                    ?.scrollIntoView({ behavior: "smooth", block: "start" });
+                }}
                 onFocus={(lat, lon) => {
                   patch({
                     mapCenter: [lat, lon],

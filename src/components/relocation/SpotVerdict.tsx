@@ -128,6 +128,7 @@ export function SpotVerdict({
   requestedPoint,
   onFocus,
   onOpenMap,
+  onBrowseDirection,
   onTargetChange,
   candidateContext,
 }: {
@@ -165,6 +166,12 @@ export function SpotVerdict({
    * 「地図をクリックしてください」と言われてもどこか分からない。
    */
   onOpenMap?: () => void;
+  /**
+   * 調べた地点と同じ方位の街の一覧へ。頁が「方位ごとの街」をその方位に
+   * 絞って画面を送る。住所を 1 つ調べた人が「同じ方位で他に無いか」を
+   * 見る口。方位の記号（"E" など）を渡す。
+   */
+  onBrowseDirection?: (direction: string) => void;
   /**
    * 調べている地点が決まった・消えたことを頁へ知らせる。
    *
@@ -726,6 +733,15 @@ export function SpotVerdict({
                 className="text-[10px] font-bold text-indigo-600 hover:underline"
               >
                 地図でこの地点を見る →
+              </button>
+            )}
+            {onBrowseDirection && (
+              <button
+                type="button"
+                onClick={() => onBrowseDirection(direction)}
+                className="min-h-[24px] text-[10px] font-bold text-indigo-600 hover:underline"
+              >
+                {`${cell?.directionLabel ?? direction}の他の街を見る →`}
               </button>
             )}
             {/* 端末の localStorage に置き、ログイン中はクラウドにも同期する
