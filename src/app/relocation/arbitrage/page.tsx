@@ -512,6 +512,7 @@ export default function DirectionTownsPage() {
     seq: number;
     name?: string;
     source?: GeocodeSource | null;
+    note?: string;
   } | null>(null);
   /*
     開いたとき、覚えていた目的地があれば調べる地点として戻す。
@@ -527,6 +528,7 @@ export default function DirectionTownsPage() {
       seq: 1,
       name: dest.label || undefined,
       source: null,
+      note: "前回調べた地点を戻しました。別の場所は入力欄か地図から。",
     });
   }, []);
 
@@ -830,6 +832,11 @@ export default function DirectionTownsPage() {
                     .getElementById("arb-towns-section")
                     ?.scrollIntoView({ behavior: "smooth", block: "start" });
                 }}
+                /* 「× この地点を消す」は覚えていた目的地も消す。次に開いた
+                   とき同じ点が戻ってこないように */
+                onClearTarget={() =>
+                  writeDestination({ lat: null, lon: null, label: "" })
+                }
                 onFocus={(lat, lon) => {
                   patch({
                     mapCenter: [lat, lon],

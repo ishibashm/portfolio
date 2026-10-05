@@ -129,6 +129,7 @@ export function SpotVerdict({
   onFocus,
   onOpenMap,
   onBrowseDirection,
+  onClearTarget,
   onTargetChange,
   candidateContext,
 }: {
@@ -157,6 +158,12 @@ export function SpotVerdict({
      * 覚えていた目的地を戻すときは null（住所で決めた点で、断りが要らない）。
      */
     source?: GeocodeSource | null;
+    /**
+     * 札に添える 1 行。覚えていた目的地を戻したとき「前回調べた地点を
+     * 戻しました」と言う。黙って点が入っていると、自分で入れた覚えが
+     * 無いぶん何が起きたか分からない。
+     */
+    note?: string;
   } | null;
   /** 地図をその地点へ寄せる */
   onFocus?: (lat: number, lon: number) => void;
@@ -172,6 +179,12 @@ export function SpotVerdict({
    * 見る口。方位の記号（"E" など）を渡す。
    */
   onBrowseDirection?: (direction: string) => void;
+  /**
+   * 「× この地点を消す」で、頁が覚えている目的地も消す。onTargetChange の
+   * null では消さない（開いた直後にも null が来るので、覚えていた目的地を
+   * 戻す前に飛ばしてしまう）。消すのは、利用者が押したときだけ。
+   */
+  onClearTarget?: () => void;
   /**
    * 調べている地点が決まった・消えたことを頁へ知らせる。
    *
@@ -250,6 +263,9 @@ export function SpotVerdict({
   const requestedLon = requestedPoint?.lon;
   const requestedName = requestedPoint?.name;
   const requestedSource = requestedPoint?.source;
+  const requestedNote = requestedPoint?.note;
+  /* 札に添える 1 行。点を入れ直す・消すと消える */
+  const [note, setNote] = useState<string | null>(null);
   useEffect(() => {
     if (requestedLat === undefined || requestedLon === undefined) return;
     const text =
@@ -257,6 +273,7 @@ export function SpotVerdict({
     lookupSeq.current++;
     setQuery(text);
     setError(null);
+    setNote(requestedNote ?? null);
     /* 街の一覧から来たときは代表点。点の粗さの断りを出す */
     setTarget({
       lat: requestedLat,
@@ -278,6 +295,7 @@ export function SpotVerdict({
     requestedLon,
     requestedName,
     requestedSource,
+    requestedNote,
   ]);
 
   // Re-evaluate an owned candidate by id only; coordinates never go into the URL.
@@ -377,6 +395,7 @@ export function SpotVerdict({
       const text = (address ?? query).trim();
       if (!text) return;
       setError(null);
+      setNote(null);
       const seq = ++lookupSeq.current;
       if (candidateContext) {
         const input = classifyCandidateInput(text);
@@ -647,6 +666,9 @@ export function SpotVerdict({
 
       {target && hasBase && direction && (
         <div className="rounded-xl border border-stone-200 bg-white/80 dark:bg-stone-50 p-2.5 space-y-1.5">
+          {note && (
+            <p className="text-xs text-stone-500 leading-snug">{note}</p>
+          )}
           <div className="text-[10px] text-stone-500 leading-snug">
             {nameIsCoordinates && shownNearCity ? (
               <>
@@ -744,6 +766,22 @@ export function SpotVerdict({
                 {`${cell?.directionLabel ?? direction}の他の街を見る →`}
               </button>
             )}
+            {/* 入力欄を空にして札とピンを消す。覚えていた目的地も頁が消す
+                （onClearTarget）。入力欄を書き換えるだけでは目的地は残る */}
+            <button
+              type="button"
+              onClick={() => {
+                lookupSeq.current++;
+                setQuery("");
+                setTarget(null);
+                setError(null);
+                setNote(null);
+                onClearTarget?.();
+              }}
+              className="min-h-[24px] text-[10px] font-bold text-stone-500 hover:underline"
+            >
+              × この地点を消す
+            </button>
             {/* 端末の localStorage に置き、ログイン中はクラウドにも同期する
                 （lib/userSpots。#25 で DB 保存を足した）。地図の
                 UserSpotLayer が購読して ★ で出す。 */}
