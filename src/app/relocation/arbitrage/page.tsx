@@ -14,6 +14,8 @@ import {
   type HousingStatsData,
 } from "@/components/relocation/HousingStatsByDirection";
 import { SpotVerdict } from "@/components/relocation/SpotVerdict";
+import { readDestination, writeDestination } from "@/lib/destinationSetting";
+import type { GeocodeSource } from "@/lib/geocodeSource";
 import { PlaceInput } from "@/components/relocation/PlaceInput";
 import { ActiveProfileBadge } from "@/components/profile/ActiveProfileBadge";
 import type { DirectionTierRow } from "@/components/relocation/DirectionTierOverview";
@@ -477,6 +479,20 @@ export default function DirectionTownsPage() {
       fromMap: boolean,
     ) => {
       setSpotPin(target);
+      /*
+        調べた地点は目的地として端末に覚える（lib/destinationSetting。
+        クラウドには送らない）。/profile・今日の方位と時刻と同じ置き場
+        なので、ここで住所を調べれば他の頁の目的地にもなり、開き直しても
+        消えない（利用者の「再設定しなくてもいいように」）。消したときは
+        目的地を消さない（入力欄を直しただけで目的地が飛ばないように）。
+      */
+      if (target) {
+        writeDestination({
+          lat: target.lat,
+          lon: target.lon,
+          label: target.name,
+        });
+      }
       /* 入力欄から決めた点は地図をそこへ寄せる（寄せないと、畳まれた
          地図の外にピンが立って見えない）。地図のクリックは寄せ直さない */
       if (target && !fromMap) {
@@ -495,7 +511,24 @@ export default function DirectionTownsPage() {
     lon: number;
     seq: number;
     name?: string;
+    source?: GeocodeSource | null;
   } | null>(null);
+  /*
+    開いたとき、覚えていた目的地があれば調べる地点として戻す。
+    保存済み候補（?candidate=）を開いているときは、そちらが勝つので戻さない。
+  */
+  useEffect(() => {
+    if (new URLSearchParams(window.location.search).has("candidate")) return;
+    const dest = readDestination();
+    if (dest.lat === null || dest.lon === null) return;
+    setSpotRequest({
+      lat: dest.lat,
+      lon: dest.lon,
+      seq: 1,
+      name: dest.label || undefined,
+      source: null,
+    });
+  }, []);
 
   const basePlace = useMemo(
     () =>

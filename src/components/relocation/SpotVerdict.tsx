@@ -150,6 +150,11 @@ export function SpotVerdict({
     seq: number;
     /** 街の一覧から渡すときの名前。地図のクリックには無い（座標を出す） */
     name?: string;
+    /**
+     * 点の粗さ。省くと、名前つきなら代表点（"municipality"）と見なす。
+     * 覚えていた目的地を戻すときは null（住所で決めた点で、断りが要らない）。
+     */
+    source?: GeocodeSource | null;
   } | null;
   /** 地図をその地点へ寄せる */
   onFocus?: (lat: number, lon: number) => void;
@@ -219,6 +224,7 @@ export function SpotVerdict({
   const requestedLat = requestedPoint?.lat;
   const requestedLon = requestedPoint?.lon;
   const requestedName = requestedPoint?.name;
+  const requestedSource = requestedPoint?.source;
   useEffect(() => {
     if (requestedLat === undefined || requestedLon === undefined) return;
     const text =
@@ -231,12 +237,23 @@ export function SpotVerdict({
       lat: requestedLat,
       lon: requestedLon,
       name: text,
-      source: requestedName ? "municipality" : undefined,
+      source:
+        requestedSource !== undefined
+          ? requestedSource
+          : requestedName
+            ? "municipality"
+            : undefined,
       /* 街の一覧の代表点は地図のクリックではないが、地図から指された
          扱いにして頁が寄せ直さないようにする（一覧側が寄せる） */
       inputSource: "pin",
     });
-  }, [requestedSeq, requestedLat, requestedLon, requestedName]);
+  }, [
+    requestedSeq,
+    requestedLat,
+    requestedLon,
+    requestedName,
+    requestedSource,
+  ]);
 
   // Re-evaluate an owned candidate by id only; coordinates never go into the URL.
   useEffect(() => {
@@ -429,7 +446,13 @@ export function SpotVerdict({
 
   /* 決まった点を頁へ。requestedPoint（地図のクリック・街の一覧）から
      来た点は fromMap。入力欄から決めた点は name が入力そのもの */
-  const targetName = target?.name;
+  /* 座標だけの点（地図のクリック・座標入力）は名前を空で知らせる。
+     "35.0116, 135.7681" を地名として持ち回らせない。名前が座標の字面か
+     どうかで見る（覚えていた目的地を戻すときは地名つき・source 無し） */
+  const targetName =
+    target && /^-?\d+(\.\d+)?[,、\s]\s*-?\d+(\.\d+)?$/.test(target.name)
+      ? ""
+      : target?.name;
   const targetFromMap = target?.inputSource === "pin";
   useEffect(() => {
     if (!onTargetChange) return;
