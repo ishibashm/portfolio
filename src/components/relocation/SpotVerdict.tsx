@@ -212,6 +212,17 @@ export function SpotVerdict({
     渡す。URL を貼らせるのではなく、こちらが組む。
   */
   const [portal, setPortal] = useState<SpotPortal | null>(null);
+  /*
+    座標だけで指した点（地図のクリック・座標入力）に添える街の名前。
+    "35.1815, 136.9066" のままでは、どこを調べているのか画面から
+    読めない。逆引き（/api/geocode/reverse）の一番近い市区町村を
+    「〇〇市 付近」として出す。portal と同じ応答から取るが、入口の
+    リンクが無い街でも名前は出すので別に持つ。
+  */
+  const [nearCity, setNearCity] = useState<{
+    key: string;
+    name: string;
+  } | null>(null);
 
   /*
     **`Number.isFinite` では足りない。**呼び出し側は `Number(baseLat)` で
@@ -329,8 +340,9 @@ export function SpotVerdict({
       .then((body) => {
         const city = body?.data?.name;
         const p = body?.portal;
-        if (!alive || typeof city !== "string" || !p) return;
-        if (!Array.isArray(p.links) || p.links.length === 0) return;
+        if (!alive || typeof city !== "string" || !city) return;
+        setNearCity({ key, name: city });
+        if (!p || !Array.isArray(p.links) || p.links.length === 0) return;
         setPortal({
           key,
           city,
@@ -348,6 +360,10 @@ export function SpotVerdict({
   /* 今の地点の答えだけを出す。前の地点のものは鍵が合わない */
   const shownPortal =
     portal && targetKey !== null && portal.key === targetKey ? portal : null;
+  const shownNearCity =
+    nearCity && targetKey !== null && nearCity.key === targetKey
+      ? nearCity.name
+      : null;
 
   const lookup = useCallback(
     async (address?: string) => {
@@ -456,10 +472,15 @@ export function SpotVerdict({
   /* 座標だけの点（地図のクリック・座標入力）は名前を空で知らせる。
      "35.0116, 135.7681" を地名として持ち回らせない。名前が座標の字面か
      どうかで見る（覚えていた目的地を戻すときは地名つき・source 無し） */
-  const targetName =
-    target && /^-?\d+(\.\d+)?[,、\s]\s*-?\d+(\.\d+)?$/.test(target.name)
-      ? ""
-      : target?.name;
+  /* 逆引きが済んでいれば「〇〇市 付近」を名前にする（ピンの吹き出しと
+     目的地の控えに入る。断定しないよう「付近」を付ける） */
+  const nameIsCoordinates =
+    !!target && /^-?\d+(\.\d+)?[,、\s]\s*-?\d+(\.\d+)?$/.test(target.name);
+  const targetName = nameIsCoordinates
+    ? shownNearCity
+      ? `${shownNearCity} 付近`
+      : ""
+    : target?.name;
   const targetFromMap = target?.inputSource === "pin";
   useEffect(() => {
     if (!onTargetChange) return;
@@ -620,7 +641,16 @@ export function SpotVerdict({
       {target && hasBase && direction && (
         <div className="rounded-xl border border-stone-200 bg-white/80 dark:bg-stone-50 p-2.5 space-y-1.5">
           <div className="text-[10px] text-stone-500 leading-snug">
-            {target.name}
+            {nameIsCoordinates && shownNearCity ? (
+              <>
+                <span className="font-bold text-stone-700">
+                  {shownNearCity} 付近
+                </span>{" "}
+                <span className="font-mono">{target.name}</span>
+              </>
+            ) : (
+              target.name
+            )}
           </div>
           <div className="flex items-center gap-2 flex-wrap">
             <span className="text-sm font-bold text-stone-800">
