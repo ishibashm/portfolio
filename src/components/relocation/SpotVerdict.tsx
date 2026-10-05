@@ -127,6 +127,7 @@ export function SpotVerdict({
   kigakuUnavailableReason,
   requestedPoint,
   onFocus,
+  onTargetChange,
   candidateContext,
 }: {
   candidateContext?: DayKigakuInput;
@@ -152,6 +153,19 @@ export function SpotVerdict({
   } | null;
   /** 地図をその地点へ寄せる */
   onFocus?: (lat: number, lon: number) => void;
+  /**
+   * 調べている地点が決まった・消えたことを頁へ知らせる。
+   *
+   * 頁はこれで地図にピンを立てる。以前は「地図でこの地点を見る →」を
+   * 押したときだけピンが立ち、住所を入れて「調べる」を押しても地図には
+   * 何も出なかった（利用者の報告 2026-10-05「住所入力したけどピン
+   * 立たない」）。`fromMap` は地図のクリックで決まった点。頁はそのとき
+   * 地図を寄せ直さない（押した所へ毎回ずれると操作しにくい）。
+   */
+  onTargetChange?: (
+    target: { lat: number; lon: number; name: string } | null,
+    fromMap: boolean,
+  ) => void;
 }) {
   const draftContext = useEmailListingDraft();
   const consumedDraft = useRef<unknown>(null);
@@ -218,6 +232,9 @@ export function SpotVerdict({
       lon: requestedLon,
       name: text,
       source: requestedName ? "municipality" : undefined,
+      /* 街の一覧の代表点は地図のクリックではないが、地図から指された
+         扱いにして頁が寄せ直さないようにする（一覧側が寄せる） */
+      inputSource: "pin",
     });
   }, [requestedSeq, requestedLat, requestedLon, requestedName]);
 
@@ -409,6 +426,22 @@ export function SpotVerdict({
     setDraft?.(null);
     selectEmail(url, details);
   }, [draft, setDraft, selectEmail, candidateContext]);
+
+  /* 決まった点を頁へ。requestedPoint（地図のクリック・街の一覧）から
+     来た点は fromMap。入力欄から決めた点は name が入力そのもの */
+  const targetName = target?.name;
+  const targetFromMap = target?.inputSource === "pin";
+  useEffect(() => {
+    if (!onTargetChange) return;
+    if (targetLat === undefined || targetLon === undefined) {
+      onTargetChange(null, false);
+      return;
+    }
+    onTargetChange(
+      { lat: targetLat, lon: targetLon, name: targetName ?? "" },
+      targetFromMap,
+    );
+  }, [onTargetChange, targetLat, targetLon, targetName, targetFromMap]);
 
   // 方位は物件・県の塗り分けと同じ経路で出す。判定の基準は真北。
   const evaluation =

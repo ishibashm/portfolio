@@ -462,6 +462,33 @@ export default function DirectionTownsPage() {
     });
   }, [dayKigaku, townCounts]);
 
+  /**
+   * 調べている地点（SpotVerdict が決めた点）。地図のピンに使う。
+   * 住所を入れて「調べる」を押した時点で立つ。
+   */
+  const [spotPin, setSpotPin] = useState<{
+    lat: number;
+    lon: number;
+    name: string;
+  } | null>(null);
+  const onSpotTargetChange = useCallback(
+    (
+      target: { lat: number; lon: number; name: string } | null,
+      fromMap: boolean,
+    ) => {
+      setSpotPin(target);
+      /* 入力欄から決めた点は地図をそこへ寄せる（寄せないと、畳まれた
+         地図の外にピンが立って見えない）。地図のクリックは寄せ直さない */
+      if (target && !fromMap) {
+        patch({
+          mapCenter: [target.lat, target.lon],
+          mapFocusKind: "spot",
+          openOverview: false,
+        });
+      }
+    },
+    [patch],
+  );
   /** 地図でクリックされた地点。seq は同じ場所の押し直しを区別する。 */
   const [spotRequest, setSpotRequest] = useState<{
     lat: number;
@@ -753,6 +780,7 @@ export default function DirectionTownsPage() {
                 dirKigaku={dayKigaku?.byDirection}
                 kigakuUnavailableReason={kigakuUnavailableReason}
                 requestedPoint={spotRequest}
+                onTargetChange={onSpotTargetChange}
                 onFocus={(lat, lon) => {
                   patch({
                     mapCenter: [lat, lon],
@@ -821,6 +849,7 @@ export default function DirectionTownsPage() {
               targetDate={targetDate}
               hasBase={hasBaseLocation}
               focusKind={mapFocusKind}
+              spotPin={spotPin}
               useClassical={useClassical}
             />
           </div>

@@ -184,6 +184,14 @@ interface ArbitrageMapInnerProps {
   hasBase?: boolean;
   /** mapCenter の意味。area=出発地 / spot=調べている地点 */
   focusKind?: "area" | "spot";
+  /**
+   * 調べている地点（SpotVerdict で決まった点）。あればピンを立てる。
+   *
+   * 以前は focusKind が "spot" のときだけ mapCenter にピンを立てていて、
+   * 住所を入れて「調べる」を押しただけでは地図に何も出なかった
+   * （「地図でこの地点を見る →」を押して初めて立つ）。
+   */
+  spotPin?: { lat: number; lon: number; name?: string } | null;
   useClassical?: boolean;
   onBoundsChange?: (bounds: {
     minLat: number;
@@ -372,10 +380,17 @@ export default function ArbitrageMapInner({
   targetDate,
   hasBase = false,
   focusKind = "area",
+  spotPin = null,
   useClassical = false,
   onBoundsChange,
 }: ArbitrageMapInnerProps) {
   const [mounted, setMounted] = useState(false);
+  /* ピンの位置。spotPin が無いときは従来どおり、地点へ寄せた中心に立てる */
+  const spotPinPosition: [number, number] | null = spotPin
+    ? [spotPin.lat, spotPin.lon]
+    : focusKind === "spot" && mapCenter
+      ? mapCenter
+      : null;
   const [zoom, setZoom] = useState(5);
   const [currentBounds, setCurrentBounds] = useState<{
     minLat: number;
@@ -1422,9 +1437,12 @@ export default function ArbitrageMapInner({
           </div>
         )}
 
-        {focusKind === "spot" && mapCenter && (
-          <Marker position={mapCenter} alt="確認する候補の所在地">
+        {spotPinPosition && (
+          <Marker position={spotPinPosition} alt="確認する候補の所在地">
             <Popup>
+              {spotPin?.name ? (
+                <div className="font-bold mb-1">{spotPin.name}</div>
+              ) : null}
               確認する候補の所在地です。違う場合は地図をクリックして修正してください。
             </Popup>
           </Marker>
