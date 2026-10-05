@@ -12,6 +12,7 @@ import {
 import { getHonmeiStar, getPersonalVoidZodiac } from "@/utils/ephemerisEngine";
 import { forecastAnchorMs } from "@/utils/boardInstant";
 import { emptyDirections, findArea } from "@/lib/areaContent";
+import { computeDayKigaku } from "@/lib/dayKigakuClient";
 
 /**
  * MCP サーバーの検査。HTTP を通さず、SDK の in-memory transport で
@@ -89,6 +90,78 @@ describe("MCP サーバー", () => {
       expect(row.tier, dir).toBe(gradeVerdict(all[dir]));
       expect(row.status, dir).toBe(all[dir].finalStatus);
     }
+  });
+
+  /*
+    利用者の報告（2026-10-05）「11/8 は MCP では吉2盤、サイトは吉1盤」。
+    調べると、同じ人・同じ日・同じ経度なら両者は同じ関数で同じ答えになり、
+    京都から東は 七赤なら吉1盤（11/9 なら吉2盤）、二黒・五黄なら吉2盤
+    だった。食い違いは入力（生年月日か日付）の違いで、判定の分岐では
+    ない。それを 9 星ぶん固定する（画面の computeDayKigaku と突き合わせ）。
+  */
+  it("京都から見た 2026-11-08 の東は、画面（computeDayKigaku）と 9 星すべてで一致する", async () => {
+    const c = await connect();
+    /* 立春基準の本命星 1〜9 になる生年（6 月生まれ。境目を避ける） */
+    const births = [
+      "1990-06-15", // 一白
+      "1989-06-15", // 二黒
+      "1988-06-15", // 三碧
+      "1987-06-15", // 四緑
+      "1986-06-15", // 五黄
+      "1985-06-15", // 六白
+      "1984-06-15", // 七赤
+      "1983-06-15", // 八白
+      "1982-06-15", // 九紫
+    ];
+    const seen = new Set<string>();
+    for (const [i, birthDate] of births.entries()) {
+      const page = computeDayKigaku({
+        birthDate,
+        targetDate: "2026-11-08",
+        baseLat: "35.0116",
+        baseLon: "135.7681",
+        tenchusatsuMode: "strict",
+        involuntaryMove: false,
+        directionFilterMode: "composite",
+        useClassical: true,
+      })!;
+      const out = parse(
+        await c.callTool({
+          name: "judge_directions",
+          arguments: { birthDate, lon: 135.7681, date: "2026-11-08" },
+        }),
+      );
+      expect(out.honmeiStar, birthDate).toBe(i + 1);
+      const east = out.directions.find(
+        (d: { direction: string }) => d.direction === "E",
+      );
+      expect(east.tier, `star ${i + 1}`).toBe(page.byDirection.E.tier);
+      seen.add(east.tier);
+    }
+    /* 七赤は B、二黒・五黄は A。報告の 2 つの答えはどちらも実在する */
+    expect(seen.has("A")).toBe(true);
+    expect(seen.has("B")).toBe(true);
+  });
+
+  it("時刻つきで時差の指定が無い日付は、日本時間の日として読む", async () => {
+    /*
+      以前は "2026-11-08T20:00" を素の new Date に渡していて、本番（UTC）
+      では日本時間の 11/9 05:00 になり判定する日が 1 日ずれた。七赤なら
+      東が 11/8 は吉1盤、11/9 は吉2盤なので、ここでそのまま見える。
+    */
+    const c = await connect();
+    const ask = async (date: string) =>
+      parse(
+        await c.callTool({
+          name: "judge_directions",
+          arguments: { birthDate: "1984-06-15", lon: 135.7681, date },
+        }),
+      );
+    const plain = await ask("2026-11-08");
+    const withTime = await ask("2026-11-08T20:00");
+    expect(plain.date).toBe("2026-11-08");
+    expect(withTime.date).toBe("2026-11-08");
+    expect(withTime.directions).toEqual(plain.directions);
   });
 
   it("壊れた生年月日は isError で返し、例外にしない", async () => {
