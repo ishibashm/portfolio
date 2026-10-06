@@ -113,6 +113,20 @@ describe("物件の情報", () => {
 });
 
 describe("一覧", () => {
+  it("保存したときの条件は設定の鍵ではなく設定バーと同じ日本語で出す", async () => {
+    mockList([candidate("1", { tier: "A", km: 120 })]);
+    render(<CandidateHistory />);
+    await screen.findByText("候補1");
+    const { DIRECTION_FILTER_MODE_LABELS } =
+      await import("@/utils/directionFilterMode");
+    const { getTenchusatsuMode } = await import("@/utils/tenchusatsuPolicy");
+    const text = document.body.textContent ?? "";
+    expect(text).toContain(DIRECTION_FILTER_MODE_LABELS.composite);
+    expect(text).toContain(getTenchusatsuMode("strict").label);
+    expect(text).not.toMatch(/\bcomposite\b/);
+    expect(text).not.toMatch(/\bstrict\b/);
+  });
+
   it("札に段階・日本語の方位・距離を出し、NE をそのまま出さない", async () => {
     mockList([candidate("1", { tier: "S", km: 12.3 })]);
     render(<CandidateHistory />);

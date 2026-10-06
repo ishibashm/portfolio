@@ -41,6 +41,15 @@ import {
   type ListingDetails,
 } from "@/lib/listingDetails";
 import { normalizeCandidateUrl } from "@/lib/listingCandidateInput";
+/* 条件の名前は設定バーと同じ表から（どちらも暦エンジンを引かない葉） */
+import {
+  DIRECTION_FILTER_MODE_LABELS,
+  type DirectionFilterMode,
+} from "@/utils/directionFilterMode";
+import {
+  getTenchusatsuMode,
+  isTenchusatsuMode,
+} from "@/utils/tenchusatsuPolicy";
 
 export type Candidate = ListingDetails & {
   id: string;
@@ -343,11 +352,27 @@ function CandidateCard({
               出発地 {c.judgment.context.baseLat}, {c.judgment.context.baseLon}{" "}
               ／ 候補 {c.lat}, {c.lon}
             </p>
+            {/* 見方と天中殺の扱いは、保存したときの設定の鍵（composite /
+                strict …）がそのまま出ていた。設定バーと同じ日本語に。
+                知らない鍵はそのまま出す（古い保存を壊さない）。1 本の
+                文字列に組む（JSX の改行は日本語の間に半角空白を入れる） */}
             <p>
-              {c.judgment.context.useClassical ? "伝統方位" : "均等方位"} ／{" "}
-              {c.judgment.context.directionFilterMode} ／ 天中殺{" "}
-              {c.judgment.context.tenchusatsuMode} ／ やむを得ない移動{" "}
-              {c.judgment.context.involuntaryMove ? "はい" : "いいえ"}
+              {[
+                c.judgment.context.useClassical ? "伝統方位" : "均等方位",
+                `見方 ${
+                  DIRECTION_FILTER_MODE_LABELS[
+                    c.judgment.context
+                      .directionFilterMode as DirectionFilterMode
+                  ] ?? c.judgment.context.directionFilterMode
+                }`,
+                `天中殺 ${
+                  isTenchusatsuMode(c.judgment.context.tenchusatsuMode)
+                    ? getTenchusatsuMode(c.judgment.context.tenchusatsuMode)
+                        .label
+                    : c.judgment.context.tenchusatsuMode
+                }`,
+                `やむを得ない移動 ${c.judgment.context.involuntaryMove ? "はい" : "いいえ"}`,
+              ].join(" ／ ")}
             </p>
           </div>
         </details>
