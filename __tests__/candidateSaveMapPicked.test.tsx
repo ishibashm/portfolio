@@ -58,8 +58,11 @@ describe("候補の保存: 入口の手間", () => {
   it("地図で指した点は、地図を開かなくても印を付けられる", () => {
     renderSave({ ...NAGOYA, name: "35.1815, 136.9066", inputSource: "pin" });
     expect(confirmBox().disabled).toBe(false);
+    /* 次にすることを言う（「状態: 位置確認」では段階の名前でしかなかった） */
+    expect(screen.getByText("下の印を付けると保存できます。")).toBeTruthy();
     fireEvent.click(confirmBox());
     expect(confirmBox().checked).toBe(true);
+    expect(screen.getByText("この内容で保存できます。")).toBeTruthy();
     expect(screen.getByRole("button", { name: "候補に保存" })).toBeEnabled();
   });
 
@@ -85,6 +88,9 @@ describe("候補の保存: 入口の手間", () => {
       />,
     );
     expect(confirmBox().disabled).toBe(true);
+    expect(
+      screen.getByText("地図で所在地を確かめて印を付けると保存できます。"),
+    ).toBeTruthy();
     fireEvent.click(
       screen.getByRole("button", { name: "地図で所在地を確認する" }),
     );

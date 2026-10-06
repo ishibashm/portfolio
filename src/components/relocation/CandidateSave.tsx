@@ -134,9 +134,16 @@ export function CandidateSave({
         短距離や方位の境界付近では、ピンの位置によって方位が変わるため再確認してください。
       </p>
       <p>候補への方位です。部屋の窓・玄関の向きではありません。</p>
-      <p>
-        状態:{" "}
-        {saved === content ? "保存済み" : confirmed ? "判定可能" : "位置確認"}
+      {/* 次に何をすれば保存できるかを言う。以前は「状態: 位置確認／判定可能／
+          保存済み」で、位置確認が「何をする段階か」読めなかった */}
+      <p className="font-semibold text-stone-800">
+        {saved === content
+          ? "この内容で保存済みです。"
+          : confirmed
+            ? "この内容で保存できます。"
+            : pickedOnMap
+              ? "下の印を付けると保存できます。"
+              : "地図で所在地を確かめて印を付けると保存できます。"}
       </p>
       {target.source && (
         <p className="text-amber-700">
