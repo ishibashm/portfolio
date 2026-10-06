@@ -277,8 +277,17 @@ it("revoke failure with successful local deletion reports the remaining Google a
   const fetch = network({ confirmed: true });
   mount();
   await screen.findByText("接続状態: 接続済み");
-  fetch.mockResolvedValueOnce(
-    reply({ code: "GMAIL_REVOKE_FAILED_LOCAL_DELETED" }, 503),
+  /*
+    once では足りない。「接続済み」が出た後も status の取り直しが走る
+    ことがあり、503 がそちらに渡って切断は通常どおり成功、画面は汎用の
+    失敗文（コード: GMAIL_REVOKE_FAILED_LOCAL_DELETED）、という形で
+    CI だけ落ちた（2026-10-06。手元では 3 回とも通る）。経路で返す。
+  */
+  const base = fetch.getMockImplementation()!;
+  fetch.mockImplementation(async (url, init) =>
+    String(url).endsWith("disconnect")
+      ? reply({ code: "GMAIL_REVOKE_FAILED_LOCAL_DELETED" }, 503)
+      : base(url, init),
   );
   fireEvent.click(screen.getByRole("button", { name: "Gmailを切断" }));
   fireEvent.click(screen.getByRole("button", { name: "切断を確定" }));
