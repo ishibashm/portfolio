@@ -1476,10 +1476,20 @@ export default function ArbitrageMapInner({
             key={`${spotPinPosition[0]},${spotPinPosition[1]}`}
             position={spotPinPosition}
             alt="確認する候補の所在地"
+            /* ピンを引きずって直せる。住所が市の中心に潰れたとき
+               （精度の断り）や、地図のクリックで少しずれたとき、
+               もう一度クリックするより直感的。離した位置を判定へ送る
+               （地図のクリックと同じ受け口） */
+            draggable={!!onInspectSpot}
             eventHandlers={{
               /* 立った瞬間に吹き出しを開く。住所から来た人は地図を見に
                  来ただけで、ピンを押さないと判定が出ないのでは気付けない */
               add: (e) => e.target.openPopup(),
+              dragend: (e) => {
+                if (!onInspectSpot) return;
+                const p = e.target.getLatLng();
+                onInspectSpot(p.lat, p.lng);
+              },
             }}
           >
             <Popup>
@@ -1500,7 +1510,9 @@ export default function ArbitrageMapInner({
                   </span>
                 </div>
               )}
-              確認する候補の所在地です。違う場合は地図をクリックして修正してください。
+              {onInspectSpot
+                ? "確認する候補の所在地です。違う場合はピンを動かすか、地図をクリックして修正してください。"
+                : "確認する候補の所在地です。違う場合は地図をクリックして修正してください。"}
             </Popup>
           </Marker>
         )}
