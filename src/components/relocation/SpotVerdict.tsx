@@ -336,7 +336,9 @@ export function SpotVerdict({
         setMarkUrl(c.url || "");
         setMarkMemo(c.memo || "");
         setShowMark(true);
-        setError(
+        /* 失敗ではなく断り。error に入れると赤字になり、#1638 からは
+           「地図で場所を指定する →」まで付いて、失敗したように読めた */
+        setNote(
           "現在の設定で再判定しています。保存時の結果は「保存した候補」で確認できます。",
         );
       })
