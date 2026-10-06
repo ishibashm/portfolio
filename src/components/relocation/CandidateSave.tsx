@@ -172,41 +172,55 @@ export function CandidateSave({
           onChange={(e) => onTitleChange(e.target.value)}
         />
       </label>
+      {/*
+        物件情報の 11 欄は畳んでおく。メールから取り込んだとき（値が入って
+        いる）だけ開く。住所や地図から来た人には空欄が 11 個並ぶだけで、
+        「候補に保存」のボタンが画面の下へ押し出されていた（実機 390px で
+        1 画面ぶん）。
+      */}
       {onDetailsChange && (
-        <fieldset className="space-y-2">
-          <legend>物件情報（メールからの推測・修正できます）</legend>
-          <p>
-            住所を直した場合は、住所検索または地図ピンで位置も確認してください。
-          </p>
-          {Object.entries(listingDetailLabels).map(([rawKey, label]) => {
-            const key = rawKey as keyof ListingDetails;
-            const numeric = numericListingFields.has(key);
-            return (
-              <label className="block" key={key}>
-                {label}
-                <input
-                  className="block w-full rounded border p-2"
-                  type={numeric ? "number" : "text"}
-                  min={0}
-                  step={key === "floorAreaM2" ? "any" : 1}
-                  maxLength={key === "address" ? 256 : 120}
-                  value={details[key] ?? ""}
-                  onChange={(event) =>
-                    onDetailsChange({
-                      ...details,
-                      [key]:
-                        event.target.value === ""
-                          ? null
-                          : numeric
-                            ? Number(event.target.value)
-                            : event.target.value,
-                    })
-                  }
-                />
-              </label>
-            );
-          })}
-        </fieldset>
+        <details
+          className="rounded-lg border border-stone-200 p-2"
+          open={Object.values(details).some((v) => v != null && v !== "")}
+        >
+          <summary className="cursor-pointer font-semibold">
+            物件情報（任意。賃料・間取りなど）
+          </summary>
+          <fieldset className="mt-2 space-y-2">
+            <legend className="sr-only">物件情報</legend>
+            <p>
+              メールから取り込んだ値は推測です。住所を直した場合は、住所検索または地図ピンで位置も確認してください。
+            </p>
+            {Object.entries(listingDetailLabels).map(([rawKey, label]) => {
+              const key = rawKey as keyof ListingDetails;
+              const numeric = numericListingFields.has(key);
+              return (
+                <label className="block" key={key}>
+                  {label}
+                  <input
+                    className="block w-full rounded border p-2"
+                    type={numeric ? "number" : "text"}
+                    min={0}
+                    step={key === "floorAreaM2" ? "any" : 1}
+                    maxLength={key === "address" ? 256 : 120}
+                    value={details[key] ?? ""}
+                    onChange={(event) =>
+                      onDetailsChange({
+                        ...details,
+                        [key]:
+                          event.target.value === ""
+                            ? null
+                            : numeric
+                              ? Number(event.target.value)
+                              : event.target.value,
+                      })
+                    }
+                  />
+                </label>
+              );
+            })}
+          </fieldset>
+        </details>
       )}
       {normalizedUrl && (
         <p className="break-all">
