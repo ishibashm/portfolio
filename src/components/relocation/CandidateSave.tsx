@@ -36,7 +36,15 @@ export function CandidateSave({
   onTitleChange: (title: string) => void;
   onFocus?: (lat: number, lon: number) => void;
 }) {
-  const [viewed, setViewed] = useState(false);
+  /*
+    地図で指した点（クリック・ピンを引きずった）は、もう地図で見ている。
+    それでも「地図で所在地を確認する」を押すまで印が付けられず、押すと
+    地図へ送られて戻って来る往復になっていた（狭い画面では画面の外）。
+    住所で引いた点・戻した点（source が付く）は従来どおり地図で確かめる。
+  */
+  const pickedOnMap =
+    target.inputSource === "pin" && target.source === undefined;
+  const [viewed, setViewed] = useState(pickedOnMap);
   const [confirmed, setConfirmed] = useState(false);
   const [busy, setBusy] = useState(false);
   const [saved, setSaved] = useState<string | null>(null);
@@ -221,7 +229,9 @@ export function CandidateSave({
       )}
       {!valid && (
         <p>
-          生年月日・対象日・出発地を設定し、物件の所在地を指定すると保存できます。
+          {target.source === "municipality"
+            ? "街の代表点は候補として保存できません。住所を入れるか、地図で物件の位置を指定してください。"
+            : "生年月日・対象日・出発地を設定し、物件の所在地を指定すると保存できます。"}
         </p>
       )}
       <button
