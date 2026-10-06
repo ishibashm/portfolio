@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import dynamic from "next/dynamic";
 import Link from "next/link";
 import { Compass } from "lucide-react";
@@ -473,6 +473,8 @@ export default function DirectionTownsPage() {
     lon: number;
     name: string;
   } | null>(null);
+  /* ?candidate= で開いた直後か。地図を候補へ 1 度寄せるための印 */
+  const openedCandidate = useRef(false);
   const onSpotTargetChange = useCallback(
     (
       target: { lat: number; lon: number; name: string } | null,
@@ -495,7 +497,10 @@ export default function DirectionTownsPage() {
       }
       /* 入力欄から決めた点は地図をそこへ寄せる（寄せないと、畳まれた
          地図の外にピンが立って見えない）。地図のクリックは寄せ直さない */
-      if (target && !fromMap) {
+      /* 保存した候補を開いたときは、地図のクリックではなくても寄せる
+         （候補は inputSource が "pin" で fromMap になる）。1 度だけ */
+      if (target && (!fromMap || openedCandidate.current)) {
+        openedCandidate.current = false;
         patch({
           mapCenter: [target.lat, target.lon],
           mapFocusKind: "spot",
@@ -519,7 +524,19 @@ export default function DirectionTownsPage() {
     保存済み候補（?candidate=）を開いているときは、そちらが勝つので戻さない。
   */
   useEffect(() => {
-    if (new URLSearchParams(window.location.search).has("candidate")) return;
+    if (new URLSearchParams(window.location.search).has("candidate")) {
+      /* 保存した候補の「現在の条件で再判定」から来た人。札は左の列の
+         4 番目にあり、頁の頭に着地すると何も起きていないように見える
+         （狭い画面では 1 画面以上下）。札まで送る。地図は候補が読めた
+         ときに onSpotTargetChange が寄せる */
+      openedCandidate.current = true;
+      requestAnimationFrame(() =>
+        document
+          .getElementById("arb-spot-section")
+          ?.scrollIntoView?.({ behavior: "smooth", block: "start" }),
+      );
+      return;
+    }
     const dest = readDestination();
     if (dest.lat === null || dest.lon === null) return;
     setSpotRequest({
