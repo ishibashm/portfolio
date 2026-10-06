@@ -576,6 +576,30 @@ export default function DirectionTownsPage() {
               " で見て、その日に開いている方位の街をここで見ます。同行者がいる場合の判定もそちらにあります。"
             }
           </p>
+          {/* 頁の中の行き先。住所の欄は左の列の 4 番目で、狭い画面では
+              設定・方位の一覧・街の一覧を全部通り過ぎないと届かない
+              （利用者の依頼 2026-10-05。住所から調べる人が最初に探す
+              のはこの欄）。器の id は各節に元からある */}
+          <nav
+            aria-label="この頁の中"
+            className="mt-3 flex flex-wrap gap-2 text-xs"
+          >
+            {(
+              [
+                ["#arb-spot-section", "住所・物件URLから調べる"],
+                ["#arb-towns-section", "方位ごとの街"],
+                ["#candidate-location-map", "地図"],
+              ] as const
+            ).map(([href, label]) => (
+              <a
+                key={href}
+                href={href}
+                className="inline-flex min-h-[24px] items-center rounded-full border border-stone-300 bg-white/80 px-3 font-bold text-stone-700 hover:bg-stone-100"
+              >
+                {label}
+              </a>
+            ))}
+          </nav>
         </div>
 
         {/* 対象日・盤・絞り込みの見方・目的。他の頁と同じ設定バー。 */}
@@ -882,7 +906,7 @@ export default function DirectionTownsPage() {
           {/* 右: 地図。扇形と県塗りは dayKigaku から。物件は描かない。 */}
           <div
             id="candidate-location-map"
-            className="w-full lg:w-[64%] xl:w-[68%] h-[60vh] lg:h-[calc(100vh-220px)] min-h-[420px] lg:min-h-[600px] rounded-3xl overflow-hidden shadow-lg border border-stone-200 relative bg-stone-50 shrink-0"
+            className="scroll-mt-4 w-full lg:w-[64%] xl:w-[68%] h-[60vh] lg:h-[calc(100vh-220px)] min-h-[420px] lg:min-h-[600px] rounded-3xl overflow-hidden shadow-lg border border-stone-200 relative bg-stone-50 shrink-0"
           >
             <ArbitrageMap
               baseLat={hasBaseLocation ? baseLatNum : mapCenter[0]}
