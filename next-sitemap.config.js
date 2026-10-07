@@ -79,6 +79,7 @@ const NOT_A_PAGE = [
   "/login",
   "/profile",
   "/account",
+  "/contact", // 連絡用フォーム。公開は続けるが検索の入口にはしない
 ];
 
 /**

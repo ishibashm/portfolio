@@ -92,6 +92,7 @@ describe("noindex とサイトマップが食い違わない", () => {
     expect(routes).toContain("/profile");
     /* レイアウトで索引を切っている頁。page.tsx だけを見ていると漏れる */
     expect(routes).toContain("/login");
+    expect(routes).toContain("/contact");
   });
 });
 

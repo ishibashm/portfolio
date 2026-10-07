@@ -119,10 +119,10 @@ export async function generateMetadata({
   const title = `${area.full}の家賃相場と、方位別に見た周辺の街`;
   /* 文章のある頁は、その 1 段落目から作る。既定の 1 文は地名しか
      変わらず、索引に戻した頁どうしで description が同じになる */
-  const description = metaDescriptionFromIntro(
+  const description = `${area.full}の家賃相場（住宅・土地統計調査）。${metaDescriptionFromIntro(
     AREA_EDITORIAL[area.code]?.intro,
     `${area.full}を出発地としたとき、北・北東・東・南東・南・南西・西・北西それぞれにどの市区町村があり、家賃相場がいくらかをまとめています。引越しの方位を決めるときの比較に。`,
-  );
+  )}`;
   return {
     title,
     description,

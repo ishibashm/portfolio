@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import { ContentDisclaimer } from "@/components/houi/ContentDisclaimer";
 import { FengShuiLookup } from "@/components/houi/FengShuiLookup";
 import { AdBanner } from "@/components/ads/AdBanner";
+import { FaqJsonLd } from "@/components/JsonLd";
 import { pageOpenGraph } from "@/lib/siteUrl";
 
 /**
@@ -34,9 +35,22 @@ import { pageOpenGraph } from "@/lib/siteUrl";
   表示が付く語は「八宅風水」「八宅風水 生年月日」で、以前の「風水（八宅）」
   の書き方では検索語がそのまま title に出ない
 */
-const TITLE = "八宅風水で自分の吉方位を調べる（生まれ年と性別から本命卦）";
+const TITLE = "八宅風水とは｜生まれ年と性別から本命卦・吉方位を調べる";
 const DESCRIPTION =
-  "生まれ年と性別から本命卦を引き、八宅風水でいう生気・天医・延年・伏位の四吉方と、絶命・五鬼・六殺・禍害の四凶方がどの方位に当たるかを一覧で確認できます。九星気学とは別の流派として、並べて読めます。";
+  "八宅風水とは、住まいの向きと本命卦から方位を読む風水の流派です。生まれ年と性別から本命卦を調べ、四吉方・四凶方を一覧で確認できます。九星気学との違いと、結果が食い違うときの読み方も説明します。";
+
+const FAQ = [
+  {
+    question: "八宅風水とは何ですか？",
+    answer:
+      "住まいの向きと、その人の本命卦の組み合わせから方位を読む風水の流派です。このページでは生まれ年と性別から本命卦を引き、その人にとっての四吉方と四凶方を一覧にします。住まいの向きを含む鑑定とは範囲が違います。",
+  },
+  {
+    question: "八宅風水と九星気学は何が違いますか？",
+    answer:
+      "八宅風水は住まいの向きと本命卦を見る考え方で、引越しの方位や時期を見る九星気学とは別の流派です。結果が食い違っても点数を足して合計せず、それぞれの体系の答えとして読みます。効果が科学的に確認されたものではありません。",
+  },
+];
 
 export const metadata: Metadata = {
   title: TITLE,
@@ -51,6 +65,7 @@ export default function Page() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-rose-50/80 via-stone-50 to-amber-50/50 p-4 font-sans text-slate-800 md:p-8">
       <div className="mx-auto max-w-[1700px]">
+        <FaqJsonLd items={FAQ} />
         {/* 県ページに無くて指摘された（#802）ので、ここには最初から
             付けておく。検索結果に階層が出る */}
         <nav className="text-[11px] text-slate-500">
@@ -71,6 +86,18 @@ export default function Page() {
             "です。当サイトの判定（段階評価）は九星気学で行っていて、八宅は既定では使っていません。"
           }
         </p>
+
+        <section className="mt-8 rounded-2xl border border-slate-300 bg-white/90 p-5">
+          <h2 className="text-sm font-bold">八宅風水のよくある問い</h2>
+          {FAQ.map(({ question, answer }) => (
+            <div key={question} className="mt-4">
+              <h3 className="text-sm font-bold">{question}</h3>
+              <p className="mt-2 max-w-[70ch] text-xs leading-relaxed text-slate-700">
+                {answer}
+              </p>
+            </div>
+          ))}
+        </section>
 
         <section className="mt-8">
           <FengShuiLookup />
