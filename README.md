@@ -96,7 +96,7 @@
 
 ```bash
 cp .env.local.example .env.local   # これが無いと dev が本番 DB を向く
-npm ci --legacy-peer-deps          # 素の npm ci は ERESOLVE で落ちる
+npm ci
 npm run dev:db:up                  # ローカル Postgres（docker）
 npm run dev:db:push
 npm run dev
@@ -110,7 +110,7 @@ npm run dev
 PR を出す前に全部通す。1 つでも落ちたら出さない。
 
 ```bash
-npm ci --legacy-peer-deps
+npm ci
 npx prisma generate    # これが無いと tsc が @prisma/client を解決できない
 npx tsc --noEmit
 npm test

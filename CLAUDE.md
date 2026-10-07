@@ -15,7 +15,7 @@ Cloud Palette（`cloud-palette.com`）— 引越しの方位とタイミング�
 **PR を出す前に必ず全部通す。** 1 つでも落ちたら出さない。
 
 ```bash
-npm ci --legacy-peer-deps   # 素の npm ci は ERESOLVE で落ちる
+npm ci                      # --legacy-peer-deps は不要（付けない）
 npx prisma generate         # これが無いと tsc が @prisma/client を解決できない
 npx tsc --noEmit
 npm test

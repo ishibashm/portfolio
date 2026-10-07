@@ -14,8 +14,8 @@ import { isJapaneseHoliday } from "@/utils/lunar";
  * 元日を「12/31」として見ていた（#456 と同じ罠）。曜日も 1 日ずれるので、
  * 振替休日と国民の休日の判定まで巻き添えになる。
  *
- * このテストは **TZ=UTC で走る**（vitest も CI も本番も UTC）。直す前の
- * 実装ではここが落ちる。
+ * UTC と日本時間を明示して切り替え、同じ瞬間がどちらでも元日になる
+ * ことを見る。実行環境の TZ を前提にしない。
  */
 
 const jst = (s: string) => new Date(`${s}+09:00`);
@@ -56,9 +56,24 @@ describe("祝日は日本時間の暦日で見る", () => {
     expect(isJapaneseHoliday(jst("2026-05-06T00:30:00")).isHoliday).toBe(true);
   });
 
-  it("実行環境のタイムゾーンに依らない（UTC で走っていることの確認）", () => {
-    /* この検査が意味を持つのは UTC で走っているときだけ。TZ が変わって
-       空回りしていないかを見る */
-    expect(new Date("2026-01-01T00:30:00+09:00").getDate()).toBe(31);
+  it.each([
+    ["UTC", 31],
+    ["Asia/Tokyo", 1],
+  ])("実行環境が %s でも日本時間の元日を判定する", (tz, localDay) => {
+    const originalTz = process.env.TZ;
+    try {
+      process.env.TZ = tz;
+      const date = jst("2026-01-01T00:30:00");
+      // TZ が実際に切り替わったことも見る。UTC で getDate に戻すと落ちる。
+      expect(date.getDate()).toBe(localDay);
+      expect(isJapaneseHoliday(date)).toEqual({
+        isHoliday: true,
+        name: "元日",
+      });
+    } finally {
+      // 次の検査へ TZ を持ち越さない。未設定だった場合も元に戻す。
+      if (originalTz === undefined) delete process.env.TZ;
+      else process.env.TZ = originalTz;
+    }
   });
 });

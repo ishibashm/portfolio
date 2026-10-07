@@ -29,7 +29,7 @@ jobs:
           cache: npm
 
       - name: Install dependencies
-        run: npm ci --legacy-peer-deps
+        run: npm ci
 
       - name: Import
         # tee に繋ぐと、左側（tsx）が落ちても終了コードは tee の 0 になり、

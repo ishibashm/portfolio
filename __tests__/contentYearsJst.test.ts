@@ -9,8 +9,8 @@ import { todayInJapan } from "@/utils/japanDate";
  * UTC で走るので、元日の 0〜9 時（日本時間）に焼くと**前年**になり、
  * その年に必要な頁が 1 年ぶん足りないまま配られていた。
  *
- * このテストは TZ=UTC で走る（vitest も CI も本番も UTC）。直す前の
- * 実装ではここが落ちる。
+ * UTC での旧実装が読む年と、日本時間で用意する年を分けて確かめる。
+ * テストを動かす TZ に依らず、元日のずれを再現する。
  */
 
 afterEach(() => {
@@ -23,14 +23,14 @@ describe("記事を用意する年", () => {
     vi.setSystemTime(new Date("2027-01-01T00:30:00+09:00"));
 
     /* この時刻の UTC は 2026-12-31。日本時間では 2027 年 */
-    expect(new Date().getFullYear()).toBe(2026);
+    expect(new Date().getUTCFullYear()).toBe(2026);
     expect(todayInJapan()).toBe("2027-01-01");
 
     expect(contentYears()).toEqual([2027, 2028, 2029]);
     expect(monthContentYears()).toEqual([2027, 2028]);
   });
 
-  it("9 時を過ぎれば実行環境の年とも一致する", () => {
+  it("9 時を過ぎれば UTC の年とも一致する", () => {
     vi.useFakeTimers();
     vi.setSystemTime(new Date("2027-01-01T12:00:00+09:00"));
     expect(contentYears()[0]).toBe(2027);

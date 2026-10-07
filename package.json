@@ -42,7 +42,7 @@
     "cytoscape": "^3.33.2",
     "d3-scale": "^4.0.2",
     "date-fns": "^4.2.1",
-    "defuddle": "^0.8.0",
+    "defuddle": "^0.19.4",
     "dotenv": "^17.3.1",
     "framer-motion": "^12.38.0",
     "geomagnetism": "^0.2.0",
@@ -110,5 +110,11 @@
     "typescript": "^5",
     "vite": "^8.0.16",
     "vitest": "^3.2.4"
+  },
+  "overrides": {
+    "react-simple-maps": {
+      "react": "$react",
+      "react-dom": "$react-dom"
+    }
   }
 }

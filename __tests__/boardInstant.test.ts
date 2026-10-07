@@ -42,7 +42,7 @@ describe("directionBoardInstant", () => {
     const midnight = directionBoardInstant(clockAt(0), 0, NAGOYA_LON);
     const noon = directionBoardInstant(clockAt(12), 0, NAGOYA_LON);
     expect(midnight.getTime()).toBe(noon.getTime());
-    expect(midnight.getDate()).toBe(2);
+    expect(jstDate(midnight)).toBe("2026-08-02");
   });
 
   it("地図（当日）とヒートマップ先頭列（dayOffset=0）が一致する", () => {
@@ -78,7 +78,8 @@ describe("directionBoardInstant", () => {
     const day0 = directionBoardInstant(clockAt(9), 0, NAGOYA_LON, 0);
     const day1 = directionBoardInstant(clockAt(9), 0, NAGOYA_LON, 1);
     expect(day1.getTime() - day0.getTime()).toBeCloseTo(86400000, -4);
-    expect(day1.getDate()).toBe(day0.getDate() + 1);
+    expect(jstDate(day0)).toBe("2026-08-02");
+    expect(jstDate(day1)).toBe("2026-08-03");
   });
 
   it("timeOffsetDays と dayOffset は足し合わせで同じ日を指す", () => {
@@ -128,23 +129,23 @@ describe("directionBoardInstant", () => {
  *
  * ここでは 3 つを置く。
  *
- *   1. 旧実装を legacyForecastAnchorMs として写す
+ *   1. 旧実装を legacyForecastAnchorMsInUtc として写す
  *   2. 新実装が「日本時間の正午」であることを広い範囲で固定する
  *   3. **旧実装だと落ちる**ことを、食い違いが実際に出る立春で示す
  *
  * 3 が無いと、何を変えたのかを自分でも確かめられない。
  */
 
-/** 変更前の丸め方。**現行実装のどこからも呼ばれていない。** */
-function legacyForecastAnchorMs(baseTime: Date): number {
+/** 旧実装の setHours を UTC で動かした結果を、実行環境の TZ に依らず再現する。 */
+function legacyForecastAnchorMsInUtc(baseTime: Date): number {
   const anchor = new Date(baseTime);
-  anchor.setHours(12, 0, 0, 0);
+  anchor.setUTCHours(12, 0, 0, 0);
   return anchor.getTime();
 }
 
 /** 旧実装の anchor から評価時刻を組み立てる（太陽時補正だけを同じ形で当てる）。 */
-function legacyBoardInstant(baseTime: Date, lon: number): Date {
-  return calculateSolarTime(new Date(legacyForecastAnchorMs(baseTime)), lon)
+function legacyBoardInstantInUtc(baseTime: Date, lon: number): Date {
+  return calculateSolarTime(new Date(legacyForecastAnchorMsInUtc(baseTime)), lon)
     .solarTime;
 }
 
@@ -193,10 +194,10 @@ describe("forecastAnchorMs は日本時間の正午に寄せる", () => {
     // 2028年の立春は 2月4日 16時31分 JST。12時 JST は切り替わりの前、
     // 21時 JST は後なので、年盤の星が 1 つずれる。
     const now = new Date("2028-02-04T00:00:00Z"); // 9時 JST
-    const legacy = legacyBoardInstant(now, NAGOYA_LON);
+    const legacy = legacyBoardInstantInUtc(now, NAGOYA_LON);
     const fixed = directionBoardInstant(now, 0, NAGOYA_LON);
 
-    // CI も本番も UTC。旧実装だとここが 20 時台になる（太陽時補正ぶん）。
+    // UTC での旧実装は 20 時台になる（太陽時補正ぶん）。
     expect(jstHm(legacy).slice(0, 2)).toBe("20");
     expect(jstHm(fixed).slice(0, 2)).toBe("11");
 
@@ -216,7 +217,7 @@ describe("forecastAnchorMs は日本時間の正午に寄せる", () => {
     // （content/blog/year-board-blocks-a-whole-year.md）の表が、この修正で
     // 変わらないことの確認。
     const now = new Date("2027-02-04T00:00:00Z");
-    expect(getClassicalYearStar(legacyBoardInstant(now, NAGOYA_LON))).toBe(
+    expect(getClassicalYearStar(legacyBoardInstantInUtc(now, NAGOYA_LON))).toBe(
       getClassicalYearStar(directionBoardInstant(now, 0, NAGOYA_LON)),
     );
   });

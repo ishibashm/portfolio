@@ -18,12 +18,12 @@ import { baziEngine } from "@/utils/baziEngine";
  * +09:00 を足して読んでいたので、**同じ人でも画面によって本命星と
  * 時柱が違っていた。**
  *
- * このテストは TZ=UTC で走る（vitest も CI も本番も UTC）。下の LEGACY
- * が直す前の読み方で、**戻すと落ちる**。
+ * 旧実装は本番と同じ UTC での読み方を再現する。テストを動かす TZ に
+ * 依らず、**旧実装との差が残る**ことを見る。
  */
 
-/** 直す前の読み方。実行環境のタイムゾーンで読んでいた。 */
-const legacyParse = (s: string) => new Date(s);
+/** 旧実装を UTC で動かしたときの読み方。この比較で使う時差なしの入力だけを扱う。 */
+const legacyParseInUtc = (s: string) => new Date(s.includes("T") ? `${s}Z` : s);
 
 const TOKYO_LON = 139.7671;
 const hourPillar = (d: Date) => {
@@ -37,7 +37,7 @@ describe("生年月日時を日本時間として読む", () => {
       "1985-02-03T20:00:00.000Z",
     );
     /* 直す前は 9 時間ずれていた */
-    expect(legacyParse("1985-02-04T05:00").toISOString()).toBe(
+    expect(legacyParseInUtc("1985-02-04T05:00").toISOString()).toBe(
       "1985-02-04T05:00:00.000Z",
     );
   });
@@ -46,13 +46,13 @@ describe("生年月日時を日本時間として読む", () => {
     const s = "1985-02-04T05:00";
     /* 節年の切り替わりをまたぐので、9 時間の差が本命星に出る */
     expect(getHonmeiStar(parseJapanDateTime(s)).classical).toBe(7);
-    expect(getHonmeiStar(legacyParse(s)).classical).toBe(6);
+    expect(getHonmeiStar(legacyParseInUtc(s)).classical).toBe(6);
   });
 
   it("時刻を入れた人の時柱が変わる（旧実装との差）", () => {
     const s = "1990-01-02T05:30";
     expect(hourPillar(parseJapanDateTime(s))).toBe("癸卯");
-    expect(hourPillar(legacyParse(s))).toBe("丁未");
+    expect(hourPillar(legacyParseInUtc(s))).toBe("丁未");
   });
 
   it("日付だけの文字列は今までどおり（答えを変えない）", () => {
@@ -62,10 +62,10 @@ describe("生年月日時を日本時間として読む", () => {
        巳から子へ動いてしまう。**変えていないことを固定する。** */
     for (const s of ["1990-01-02", "1985-02-04", "2000-12-31"]) {
       expect(parseJapanDateTime(s).toISOString()).toBe(
-        legacyParse(s).toISOString(),
+        legacyParseInUtc(s).toISOString(),
       );
       expect(hourPillar(parseJapanDateTime(s))).toBe(
-        hourPillar(legacyParse(s)),
+        hourPillar(legacyParseInUtc(s)),
       );
     }
   });
