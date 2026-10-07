@@ -35,8 +35,8 @@ import { pageOpenGraph } from "@/lib/siteUrl";
 */
 export function generateMetadata(): Metadata {
   const year = currentYearInJapan();
-  const title = `${year}年の吉方位と本命星の早見表（九星気学）`;
-  const description = `生まれ年から本命星を調べ、${year}年の吉方位・五黄殺・暗剣殺・歳破・本命殺がどの方位に当たるかを一覧で確認できます。引越しの方位を決める前の確認に。`;
+  const title = `${year}年の吉方位早見表｜生年月日から本命星・引越し方位を確認`;
+  const description = `${year}年の吉方位を九星気学の本命星別に確認できる早見表です。生年月日から本命星を調べ、引越しで避けるとされる五黄殺・暗剣殺・歳破・本命殺と、月ごとの方位を確認できます。`;
   return {
     alternates: { canonical: "/houi" },
     title,
@@ -246,6 +246,9 @@ export default function Page() {
 
         <section className="mt-10 rounded-2xl border border-slate-300 bg-white/90 p-5">
           <h2 className="text-sm font-bold">用語について</h2>
+          <p className="mt-3 text-xs text-slate-700">
+            方位と日取りを確認する順序は、<Link href="/guide" className="underline hover:text-rose-600">使い方ガイド</Link>にまとめています。
+          </p>
           <dl className="mt-3 text-xs text-slate-700 leading-relaxed space-y-2">
             <div>
               <dt className="font-bold inline">五黄殺　</dt>
@@ -277,6 +280,9 @@ export default function Page() {
               <dt className="font-bold inline">天中殺　</dt>
               <dd className="inline">
                 生年月日ごとに決まる期間。本命星では決まらないため、この早見表には含まれません。
+                <Link href="/blog/moving-during-tenchusatsu" className="ml-1 underline hover:text-rose-600">
+                  天中殺に引っ越ししても大丈夫か、影響と対処を読む
+                </Link>
               </dd>
             </div>
           </dl>

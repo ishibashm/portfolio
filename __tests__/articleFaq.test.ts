@@ -508,3 +508,28 @@ describe("本物の記事に題を渡す", () => {
     }
   });
 });
+
+// 検索語に答える本文が、そのまま FAQPage の材料になることを確かめる。
+describe("天中殺の引越し記事の検索意図", () => {
+  it("大丈夫か・影響・大殺界との違い・対処を本文から拾う", () => {
+    const body = readFileSync(
+      join(__dirname, "../content/blog/moving-during-tenchusatsu.md"),
+      "utf-8",
+    );
+    const faq = extractFaq(body);
+    expect(hasEnoughFaq(faq)).toBe(true);
+    for (const question of [
+      "天中殺に引っ越ししても大丈夫ですか？",
+      "大殺界と天中殺の違いは何ですか？",
+      "天中殺の引越しには、どんな影響があると言われているのか",
+      "天中殺にどうしても引越しする場合はどうすればよいですか？",
+    ]) {
+      expect(
+        faq.find((item) => item.question === question)?.answer.length,
+      ).toBeGreaterThanOrEqual(MIN_ANSWER);
+    }
+    expect(
+      faq.find((item) => item.question === "天中殺に引っ越ししても大丈夫ですか？")?.answer,
+    ).toContain("確かめた資料はありません");
+  });
+});
