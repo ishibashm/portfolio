@@ -130,3 +130,15 @@ export function listingSnapshotNote(
   if (f.kind === "unknown" || f.kind === "fresh") return null;
   return "掲載の取り込みは、提供元の規約に従って止めています。この相場と一覧はその時点のもので、以降は更新していません。方位・距離・公的な統計は今までどおりです。";
 }
+
+/** 賃貸の巡回停止日。静的な方位一覧の収録範囲を説明するための事実。 */
+export const LISTING_CRAWL_STOPPED_ON = "2026-09-13";
+
+/**
+ * 県の方位一覧に載る市区町村の範囲。家賃は公開統計へ移したので、
+ * listingSnapshotNote の「相場も更新していない」という断りとは分ける。
+ * 日付は暦日として扱い、実行環境のタイムゾーンで変換しない。
+ */
+export function listingCoverageScope(): string {
+  return `${LISTING_CRAWL_STOPPED_ON} に巡回を止めた時点で掲載を集計できていた市区町村だけ`;
+}
