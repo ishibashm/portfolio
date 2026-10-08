@@ -37,6 +37,7 @@ import {
   isRecommendedRelocationStatus,
 } from "@/lib/relocationPresentation";
 import { todayInJapan } from "@/utils/japanDate";
+import { nodeMappingForBoard } from "@/utils/directionGeo";
 // 応答の形は 1 か所で持つ。以前はこのページと WealthMap に同じ形を
 // 書き写しており、SolarTimeClock は any で受けていた。宣言が散って
 // いたため、存在しない項目名を読んでいるのに気付けなかった（#231）。
@@ -401,7 +402,7 @@ export default function RegionalWealthPage() {
         params.append("engineType", currentEngineType);
         params.append(
           "nodeMapping",
-          currentEngineType === "classical" ? "traditional" : "physical",
+          nodeMappingForBoard(currentEngineType === "classical"),
         );
       }
       if (currentLayerMode) params.append("layerMode", currentLayerMode);

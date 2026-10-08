@@ -5,6 +5,7 @@ import dynamic from "next/dynamic";
 import { Crosshair, Download, Box } from "lucide-react";
 import { MagneticSpatialHUD } from "./MagneticSpatialHUD";
 import { downloadKML } from "../utils/kmlExport";
+import { nodeMappingForBoard } from "@/utils/directionGeo";
 import {
   layerModeLabel,
   vectorsForLayerMode,
@@ -303,7 +304,7 @@ export function TacticalMagneticMapComponent({
                           declination || 0,
                           useTrueNorth,
                           activeVectors as Record<string, string>,
-                          isPhysical ? "physical" : "traditional",
+                          nodeMappingForBoard(!isPhysical),
                           hudLayers,
                         )
                       }
@@ -362,7 +363,7 @@ export function TacticalMagneticMapComponent({
             onSelectTarget={onSelectTarget}
             targetLat={targetLat}
             targetLon={targetLon}
-            nodeMapping={isPhysical ? "physical" : "traditional"}
+            nodeMapping={nodeMappingForBoard(!isPhysical)}
             highlightDirection={highlightDirection}
           />
         </div>

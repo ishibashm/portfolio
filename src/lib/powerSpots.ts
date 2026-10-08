@@ -2,6 +2,7 @@ import {
   bearingBetween,
   directionFromBearing,
   distanceKmBetween,
+  nodeMappingForBoard,
   DIRECTION_LABELS,
   type CompassDirection,
 } from "@/utils/directionGeo";
@@ -85,7 +86,7 @@ export function spotFromBase(
   const bearing = bearingBetween(baseLat, baseLon, spot.lat, spot.lon);
   const direction = directionFromBearing(
     bearing,
-    useClassical ? "traditional" : "physical",
+    nodeMappingForBoard(useClassical),
   );
   const distanceKm = distanceKmBetween(baseLat, baseLon, spot.lat, spot.lon);
   const cell = dirKigaku?.[direction];
