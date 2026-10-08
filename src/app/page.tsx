@@ -26,7 +26,6 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#faf7f5] via-[#f5efe9] to-[#f0e9e1] text-slate-900 relative flex flex-col items-center justify-start overflow-y-auto py-8 px-4 md:px-8 gap-8 font-sans">
-      
       {/* Background Soft Glow Auras */}
       <div className="fixed top-[-10vw] left-[-10vw] w-[40vw] h-[40vw] bg-rose-200/25 rounded-full blur-[100px] pointer-events-none -z-10" />
       <div className="fixed bottom-[-10vw] right-[-10vw] w-[40vw] h-[40vw] bg-amber-200/25 rounded-full blur-[100px] pointer-events-none -z-10" />
@@ -51,7 +50,15 @@ export default function Home() {
           {SITE_TAGLINE}
         </h1>
         <p className="text-sm text-slate-700 mt-4 leading-relaxed max-w-[70ch]">
-          {SITE_DESCRIPTION}
+          {SITE_DESCRIPTION} 出発地から見た街の並びと家賃は
+          <Link href="/houi/area" className="underline hover:text-rose-600">
+            エリア別の方位と家賃相場
+          </Link>
+          で確認できます。初めて使うときは
+          <Link href="/guide" className="underline hover:text-rose-600">
+            使い方ガイド
+          </Link>
+          をご覧ください。
         </p>
         <Link
           href={CORE_ROUTES[0].href}
@@ -151,11 +158,17 @@ export default function Home() {
             このサイトについて
           </Link>
           <span>•</span>
-          <Link href="/contact" className="hover:text-rose-600 transition-colors">
+          <Link
+            href="/contact"
+            className="hover:text-rose-600 transition-colors"
+          >
             お問い合わせ
           </Link>
           <span>•</span>
-          <Link href="/privacy" className="hover:text-rose-600 transition-colors">
+          <Link
+            href="/privacy"
+            className="hover:text-rose-600 transition-colors"
+          >
             プライバシーポリシー
           </Link>
           <span>•</span>
@@ -163,7 +176,11 @@ export default function Home() {
             利用規約
           </Link>
           <span>•</span>
-          <Link href="/llms.txt" target="_blank" className="hover:text-rose-600 transition-colors font-mono text-[11px]">
+          <Link
+            href="/llms.txt"
+            target="_blank"
+            className="hover:text-rose-600 transition-colors font-mono text-[11px]"
+          >
             AI Agent Spec (/llms.txt)
           </Link>
         </div>

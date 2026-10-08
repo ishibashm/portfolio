@@ -427,7 +427,9 @@ CI（.github/workflows/ci.yml）  PR ごとに tsc / lint / vitest
 CI では `next build` を回さない。ビルドは `.env`（DB 接続文字列を含む）を
 前提にしており、PR の実行に渡すと公開リポジトリで秘密情報を晒す。
 
-`npm ci` は `--legacy-peer-deps` が要る（`defuddle` が `jsdom@^24` を要求する）。
+`npm ci` は旗なしで通る。以前は `defuddle@0.8.0` が `jsdom@^24` を要求して
+`--legacy-peer-deps` が要ったが、`defuddle` を 0.19 に上げ、`react-simple-maps` の
+react の peer は `package.json` の `overrides` で揃えた（2026-10-08）。
 Node は Dockerfile と同じ 20 に固定する。
 
 lint の警告は落とさない（現在 509 件）。止まるのは error だけ。

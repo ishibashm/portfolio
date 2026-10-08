@@ -44,11 +44,13 @@ jobs:
           node-version: 20
           cache: npm
 
-      # --legacy-peer-deps は Dockerfile と同じ。素の npm ci は
-      # defuddle@0.8.0 が jsdom@^24 を要求するのに対して jsdom@^27 が
-      # 入っているため ERESOLVE で落ちる。ここを揃えないと、CI だけが
-      # 依存解決の段階で赤くなる。
-      - run: npm ci --legacy-peer-deps
+      # 素の npm ci で通す（Dockerfile と同じ）。以前は defuddle@0.8.0 が
+      # jsdom@^24 を要求して ERESOLVE で落ちたため --legacy-peer-deps を
+      # 付けていた。defuddle を jsdom を要求しない 0.19 に上げ、
+      # react-simple-maps の react@^18 までの宣言は package.json の
+      # overrides で手元の react に揃えた。旗を戻すと peer の食い違いが
+      # 再び見えなくなるので付けない。
+      - run: npm ci
 
       # Prisma Client は生成物で、リポジトリには入っていない。
       # 生成しないと tsc が @prisma/client の型を解決できずに落ちる。

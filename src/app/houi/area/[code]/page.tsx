@@ -29,6 +29,7 @@ import {
   getYearDirections,
 } from "@/lib/kigakuContent";
 import { DatasetJsonLd, BreadcrumbJsonLd } from "@/components/JsonLd";
+import { editorialFirst } from "@/lib/editorialAreaLinks";
 import { AREA_EDITORIAL } from "@/lib/areaEditorial";
 import { ESTAT_API_CREDIT } from "@/lib/estatCredit";
 import { prefCodeByName } from "@/lib/prefContent";
@@ -240,11 +241,14 @@ export default async function Page({
   const deadEnd = empty.filter(
     (e) => !e.hasAnyMunicipality && !e.hasNearMunicipality,
   );
-  const siblings = siblingAreas(area);
+  const siblings = editorialFirst(siblingAreas(area, AREAS.length)).slice(
+    0,
+    24,
+  );
   /* 県ページは 47 県ぶん全部ある（prefEditorial に 47 県そろっている）。
      市区町村ページからは今まで上へ辿れず、県 → 市区町村の片道だった。 */
   const prefCode = prefCodeByName(area.pref);
-  /* siblingAreas は掲載の多い順に 24 件で切る。県によっては 60 件以上
+  /* 解説のある頁を先にして 24 件で切る。県によっては 60 件以上
      あるので、切っていることを黙っていると「これで全部」に見える。 */
   const prefAreaCount = AREAS.filter((a) => a.pref === area.pref).length - 1;
 
@@ -685,7 +689,7 @@ export default async function Page({
               出発地が変われば方位も変わります。近くにお住まいの場合はこちらから。
               {siblings.length < prefAreaCount && (
                 <>
-                  掲載の多い順に{siblings.length}件（{area.pref}の
+                  解説のある街を先に{siblings.length}件（{area.pref}の
                   {prefAreaCount}件中）を出しています。
                 </>
               )}
