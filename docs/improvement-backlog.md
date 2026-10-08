@@ -3456,6 +3456,14 @@ run #48 で取り込み済み。翌晩の `site-audit.yml`（記事の取り込�
 - **記事の図**（`public/blog/<slug>.png`）。天赦日の記事に無い。無いと
   本文に図が出ず、Discover の対象外（`blogImage`）。
   `build_blog_images.mjs` は Chromium と Noto CJK が要る
+  - **2026-10-09**: `geomagnetism-and-honmei-star`（偏角と盤の配置）、
+    `how-we-link-to-property-sites`（リンク先と URL の扱い）、
+    `what-is-hidori-for-moving`（決める順序と候補日数）の図を `FIGURES` に追加。
+    PNG は `CHROMIUM_PATH=<Chrome のパス> ONLY=<slug,…> node scripts/build_blog_images.mjs`
+    で生成して `public/blog/` に置いた（1800×945。フォントは Noto Serif/Sans CJK JP）。
+    絞り込みは位置引数ではなく `ONLY`（カンマ区切り）。`blogImage` と既存テストは
+    ファイルの有無を直接見るため一覧の更新は不要。図の数字は記事本文の表
+    （偏角の表、月ごとの「引越しに向く日」の表）と照合した。
 - **年次コンテンツ**（「2027 年の引越し吉方位」）は `/houi/{年}/{星}`
   が既にその形。title に「引越し」の語を足すかは Search Console の
   検索語を見てから
