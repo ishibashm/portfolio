@@ -1,5 +1,6 @@
 import Link from "next/link";
-import { AREAS, topAreasByPref } from "@/lib/areaContent";
+import { AREAS, areasByPref } from "@/lib/areaContent";
+import { AREA_EDITORIAL } from "@/lib/areaEditorial";
 
 /**
  * 九星気学の記事（年盤・月盤）から、エリア別のページへ入るための導線。
@@ -12,7 +13,15 @@ import { AREAS, topAreasByPref } from "@/lib/areaContent";
  * リンクが 1 本も無く、/houi/area の一覧だけが唯一の入口だった。
  */
 export function AreaEntryLinks({ heading }: { heading: string }) {
-  const byPref = topAreasByPref(3);
+  const byPref = [...areasByPref().entries()]
+    .sort((a, b) => b[1].length - a[1].length)
+    .map(
+      ([pref, list]) =>
+        [
+          pref,
+          list.filter((a) => a.code in AREA_EDITORIAL).slice(0, 3),
+        ] as const,
+    );
 
   return (
     <section className="mt-10">
@@ -20,7 +29,8 @@ export function AreaEntryLinks({ heading }: { heading: string }) {
         {heading}
       </h2>
       <p className="mt-4 text-sm leading-relaxed text-slate-700">
-        方位は<b>今住んでいる場所から見た向き</b>で決まるため、同じ吉方位でも出発地が違えば行き先は変わります。いま住んでいる市区町村を選ぶと、そこから見た八方位それぞれにどの街があり家賃相場がいくらかを確認できます。
+        方位は<b>今住んでいる場所から見た向き</b>
+        で決まるため、同じ吉方位でも出発地が違えば行き先は変わります。いま住んでいる市区町村を選ぶと、そこから見た八方位それぞれにどの街があり家賃相場がいくらかを確認できます。
       </p>
 
       <div className="mt-5 space-y-3">
@@ -30,7 +40,8 @@ export function AreaEntryLinks({ heading }: { heading: string }) {
               {pref}
             </span>
             {list.map((a) => (
-              <Link prefetch={false}
+              <Link
+                prefetch={false}
                 key={a.code}
                 href={`/houi/area/${a.code}`}
                 className="px-3 py-1.5 rounded-full border border-slate-300 bg-white text-xs font-semibold hover:border-rose-400 transition-colors"

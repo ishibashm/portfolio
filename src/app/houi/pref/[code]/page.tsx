@@ -27,6 +27,7 @@ import { OfficialRentNote } from "@/components/houi/OfficialRentNote";
 import type { EstatRentSnapshot } from "@/utils/estatRent";
 import { DIRECTION_LABELS } from "@/lib/kigakuContent";
 import { metaDescriptionFromIntro } from "@/lib/editorialMeta";
+import { editorialFirst } from "@/lib/editorialAreaLinks";
 import { AREA_EDITORIAL } from "@/lib/areaEditorial";
 import { todayInJapan } from "@/utils/japanDate";
 import { coreRouteLabel } from "@/lib/siteStructure";
@@ -168,6 +169,10 @@ export default async function Page({
   /* 県全体の真ん中。**公表値のあるものだけ**で数える。 */
   const medianRentPerSqm =
     ranked.length > 0 ? ranked[Math.floor(ranked.length / 2)].rent : null;
+  const directions = stats.byDirection.map((g) => ({
+    ...g,
+    areas: editorialFirst(g.areas),
+  }));
   const path = `/houi/pref/${code}`;
 
   return (
@@ -304,7 +309,7 @@ export default async function Page({
               高低や吉凶と読まれかねない。/houi/area の説明と同じ文言。 */}
           <p className="mt-2 text-xs text-slate-500">
             <span className="mr-1.5 inline-block h-2 w-2 rounded-full bg-rose-500 align-middle" />
-            が付いている市区町村には、方位ごとの街の並びを書いた解説があります。
+            が付いている市区町村には、方位ごとの街の並びを書いた解説があります。各方位では解説のある街を先に並べています。
           </p>
           {stats.emptyDirections.length > 0 && (
             <p className="mt-4 max-w-[70ch] rounded-2xl border border-amber-300 bg-amber-50/80 px-4 py-3 text-xs leading-relaxed text-amber-900">
@@ -321,7 +326,7 @@ export default async function Page({
             </p>
           )}
           <div className="mt-5 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-            {stats.byDirection.map((g) => (
+            {directions.map((g) => (
               <div
                 key={g.dir}
                 className="rounded-2xl border border-slate-300 bg-white/90 p-4"

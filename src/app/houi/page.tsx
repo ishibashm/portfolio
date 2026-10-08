@@ -77,7 +77,8 @@ export default function Page() {
           九星気学の本命星と吉方位の早見表
         </h1>
         <p className="mt-5 max-w-[70ch] text-sm leading-relaxed text-slate-700">
-          引越しの方位は、自分の<b>本命星</b>と、その年の<b>年盤</b>で決まります。まず生まれ年から本命星を確認し、その年の方位一覧に進んでください。
+          引越しの方位は、自分の<b>本命星</b>と、その年の<b>年盤</b>
+          で決まります。まず生まれ年から本命星を確認し、その年の方位一覧に進んでください。
         </p>
 
         <section className="mt-10">
@@ -85,8 +86,13 @@ export default function Page() {
             生まれ年から本命星を調べる
           </h2>
           <p className="text-xs text-slate-600 mt-3 leading-relaxed">
-            九星気学の一年は<b>立春</b>で切り替わります（2月3日〜4日ごろ）。切り替わるのは<b>その日の 0 時ではなく、立春の瞬間</b>です。時刻は年ごとに違います（2026年は2月4日 5時1分ごろ、2027年は2月4日 10時46分ごろ）。
-            1月1日から立春前までに生まれた方は、<b>前年</b>の本命星になります。<b>立春の日に生まれた方は、生まれた時刻で分かれます。</b>
+            九星気学の一年は<b>立春</b>
+            で切り替わります（2月3日〜4日ごろ）。切り替わるのは
+            <b>その日の 0 時ではなく、立春の瞬間</b>
+            です。時刻は年ごとに違います（2026年は2月4日
+            5時1分ごろ、2027年は2月4日 10時46分ごろ）。
+            1月1日から立春前までに生まれた方は、<b>前年</b>の本命星になります。
+            <b>立春の日に生まれた方は、生まれた時刻で分かれます。</b>
           </p>
           {/* 生年月日で引く早見。立春前の生まれの繰り下げを自動で行うので、
               上の断りを読み飛ばしても 1 年ずれない。星の名前と行き先の年は
@@ -136,7 +142,21 @@ export default function Page() {
             吉方位が分かったら、その方位に何があるか
           </h2>
           <p className="mt-3 text-xs text-slate-700 leading-relaxed">
-            方位の吉凶だけでは引越し先は決まりません。いま住んでいる市区町村を選ぶと、そこから見た八方位それぞれのエリアと家賃相場を確認できます。県単位のまとめ（相場の傾きと方位の対応）も、県ごとに順次公開しています。
+            方位の吉凶だけでは引越し先は決まりません。いま住んでいる市区町村を選ぶと、そこから見た八方位それぞれのエリアと家賃相場を確認できます。県単位のまとめでは、相場の傾きと方位の対応を確認できます。たとえば
+            <Link
+              href="/houi/area/12203"
+              className="underline hover:text-rose-600"
+            >
+              市川市
+            </Link>
+            や
+            <Link
+              href="/houi/area/23101"
+              className="underline hover:text-rose-600"
+            >
+              名古屋市千種区
+            </Link>
+            には、出発地から見た街の並びを解説しています。
           </p>
           <div className="mt-4 flex flex-wrap gap-3">
             <Link
@@ -171,13 +191,17 @@ export default function Page() {
         <section className="mt-8 rounded-2xl border border-slate-300 bg-white/90 p-5">
           <h2 className="text-sm font-bold">算出方法が2種類あります</h2>
           <p className="mt-3 text-xs text-slate-700 leading-relaxed">
-            上の表は<b>一般的な九星気学</b>（9年周期）によるものです。このサイトのスキャナーには、木星の黄経から星を求める
-            <b>独自モデル</b>も用意しており、設定で切り替えられます。独自モデルでは木星の公転周期（約11.86年）にもとづくため
-            9年周期にならず、{differing.length}件の生まれ年で本命星が変わります。一般的な資料と照らし合わせる場合は上の表を使ってください。
+            上の表は<b>一般的な九星気学</b>
+            （9年周期）によるものです。このサイトのスキャナーには、木星の黄経から星を求める
+            <b>独自モデル</b>
+            も用意しており、設定で切り替えられます。独自モデルでは木星の公転周期（約11.86年）にもとづくため
+            9年周期にならず、{differing.length}
+            件の生まれ年で本命星が変わります。一般的な資料と照らし合わせる場合は上の表を使ってください。
           </p>
           <p className="mt-2 text-xs text-slate-500 leading-relaxed">
             例: 1980年生まれは一般的な九星気学で
-            {STAR_NAMES[starForBirthYear(1980, "classical")]}、独自モデルでは{STAR_NAMES[starForBirthYear(1980, "physical")]}
+            {STAR_NAMES[starForBirthYear(1980, "classical")]}、独自モデルでは
+            {STAR_NAMES[starForBirthYear(1980, "physical")]}
             になります。
           </p>
         </section>
@@ -230,7 +254,8 @@ export default function Page() {
                 <ul className="space-y-1">
                   {STARS.map((s) => (
                     <li key={s}>
-                      <Link prefetch={false}
+                      <Link
+                        prefetch={false}
                         href={`/houi/${y}/${s}`}
                         className="text-xs text-slate-700 hover:text-rose-600"
                       >
@@ -247,7 +272,11 @@ export default function Page() {
         <section className="mt-10 rounded-2xl border border-slate-300 bg-white/90 p-5">
           <h2 className="text-sm font-bold">用語について</h2>
           <p className="mt-3 text-xs text-slate-700">
-            方位と日取りを確認する順序は、<Link href="/guide" className="underline hover:text-rose-600">使い方ガイド</Link>にまとめています。
+            方位と日取りを確認する順序は、
+            <Link href="/guide" className="underline hover:text-rose-600">
+              使い方ガイド
+            </Link>
+            にまとめています。
           </p>
           <dl className="mt-3 text-xs text-slate-700 leading-relaxed space-y-2">
             <div>
@@ -280,7 +309,10 @@ export default function Page() {
               <dt className="font-bold inline">天中殺　</dt>
               <dd className="inline">
                 生年月日ごとに決まる期間。本命星では決まらないため、この早見表には含まれません。
-                <Link href="/blog/moving-during-tenchusatsu" className="ml-1 underline hover:text-rose-600">
+                <Link
+                  href="/blog/moving-during-tenchusatsu"
+                  className="ml-1 underline hover:text-rose-600"
+                >
                   天中殺に引っ越ししても大丈夫か、影響と対処を読む
                 </Link>
               </dd>
@@ -290,7 +322,8 @@ export default function Page() {
 
         <div className="mt-10 rounded-2xl border border-amber-200 bg-amber-50 p-5">
           <p className="text-xs text-amber-900 leading-relaxed">
-            方位は<b>今住んでいる場所から見た向き</b>で決まります。方位ごとにどの街があるかを見るには、出発地と生年月日を入れてください。
+            方位は<b>今住んでいる場所から見た向き</b>
+            で決まります。方位ごとにどの街があるかを見るには、出発地と生年月日を入れてください。
           </p>
           <Link
             href="/relocation/arbitrage"

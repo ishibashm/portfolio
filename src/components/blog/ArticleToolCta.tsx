@@ -30,6 +30,33 @@ export function ArticleToolCta({ tags }: { tags: readonly string[] }) {
       <p className="mt-2 text-xs leading-relaxed text-slate-700 max-w-[70ch]">
         この記事で説明している判定は、サイト内の道具と同じ計算で出しています。生年月日と今住んでいる場所を一度入れれば、どの道具も同じ設定を読みます。
       </p>
+      {tags.some((tag) => ["方位", "距離", "引越し", "家賃"].includes(tag)) && (
+        <p className="mt-2 text-xs leading-relaxed text-slate-700 max-w-[70ch]">
+          出発地から見た街の並びは
+          <Link href="/houi/area" className="underline hover:text-rose-600">
+            エリア別の解説
+          </Link>
+          で確認できます。たとえば、
+          <Link href="/houi/pref/13" className="underline hover:text-rose-600">
+            東京都
+          </Link>
+          の中でも出発地が変われば方位は変わります。
+          <Link
+            href="/houi/area/13108"
+            className="underline hover:text-rose-600"
+          >
+            江東区を出発地にした街の並び
+          </Link>
+          と県の一覧を比べ、実際の住所で確かめる手順は
+          <Link
+            href="/guide/compare-areas"
+            className="underline hover:text-rose-600"
+          >
+            地域を比べるガイド
+          </Link>
+          をご覧ください。
+        </p>
+      )}
       <ul className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
         {tools.map((t) => (
           <li key={t.href}>
