@@ -84,7 +84,8 @@ export default function Page() {
         </h1>
         <p className="mt-5 max-w-[70ch] text-sm leading-relaxed text-slate-700">
           吉方位が分かっても、その方位に実際どんな街があっていくらなのかが分からないと引越し先は決められません。
-          <b>いま住んでいる市区町村</b>を選ぶと、そこから見た八方位それぞれのエリアと家賃相場を確認できます。
+          <b>いま住んでいる市区町村</b>
+          を選ぶと、そこから見た八方位それぞれのエリアと家賃相場を確認できます。
         </p>
         {/* 固有の文章を書いた頁だけ索引に載せている（#750〜）。一覧では
             どれがそれか分からず、全部同じ札に見えていた。読み手にとっては
@@ -93,7 +94,7 @@ export default function Page() {
           <span className="mr-1.5 inline-block h-2 w-2 rounded-full bg-rose-500 align-middle" />
           が付いている市区町村には、方位ごとの街の並びを書いた解説があります（
           {Object.keys(AREA_EDITORIAL).length}
-          エリア）。
+          エリア）。一覧には解説のある街を載せています。それ以外の街も、下の検索欄や各県のまとめから選べます。
         </p>
 
         <AreaQuickFind areas={quick} />
@@ -152,19 +153,21 @@ export default function Page() {
                   )}
                 </h2>
                 <div className="mt-3 flex flex-wrap gap-2">
-                  {list.map((a) => (
-                    <Link
-                      prefetch={false}
-                      key={a.code}
-                      href={`/houi/area/${a.code}`}
-                      className="px-3 py-1.5 rounded-full border border-slate-300 bg-white text-xs font-semibold hover:border-rose-400 transition-colors"
-                    >
-                      {a.code in AREA_EDITORIAL && (
-                        <span className="mr-1.5 inline-block h-2 w-2 rounded-full bg-rose-500 align-middle" />
-                      )}
-                      {a.city}
-                    </Link>
-                  ))}
+                  {list
+                    .filter((a) => a.code in AREA_EDITORIAL)
+                    .map((a) => (
+                      <Link
+                        prefetch={false}
+                        key={a.code}
+                        href={`/houi/area/${a.code}`}
+                        className="px-3 py-1.5 rounded-full border border-slate-300 bg-white text-xs font-semibold hover:border-rose-400 transition-colors"
+                      >
+                        {a.code in AREA_EDITORIAL && (
+                          <span className="mr-1.5 inline-block h-2 w-2 rounded-full bg-rose-500 align-middle" />
+                        )}
+                        {a.city}
+                      </Link>
+                    ))}
                 </div>
               </section>
             );

@@ -19,6 +19,7 @@ import {
   getYearDirections,
 } from "@/lib/kigakuContent";
 import { DatasetJsonLd, BreadcrumbJsonLd } from "@/components/JsonLd";
+import { editorialFirst } from "@/lib/editorialAreaLinks";
 import { AREA_EDITORIAL } from "@/lib/areaEditorial";
 import { prefCodeByName } from "@/lib/prefContent";
 import { metaDescriptionFromIntro } from "@/lib/editorialMeta";
@@ -158,7 +159,11 @@ export async function generateMetadata({
     */
     robots: AREA_EDITORIAL[area.code] ? INDEXED_ROBOTS : NOINDEX_ROBOTS,
     openGraph: {
-      images: ["/ogp.png"], title, description, type: "article" },
+      images: ["/ogp.png"],
+      title,
+      description,
+      type: "article",
+    },
   };
 }
 
@@ -226,11 +231,14 @@ export default async function Page({
   const deadEnd = empty.filter(
     (e) => !e.hasAnyMunicipality && !e.hasNearMunicipality,
   );
-  const siblings = siblingAreas(area);
+  const siblings = editorialFirst(siblingAreas(area, AREAS.length)).slice(
+    0,
+    24,
+  );
   /* 県ページは 47 県ぶん全部ある（prefEditorial に 47 県そろっている）。
      市区町村ページからは今まで上へ辿れず、県 → 市区町村の片道だった。 */
   const prefCode = prefCodeByName(area.pref);
-  /* siblingAreas は掲載の多い順に 24 件で切る。県によっては 60 件以上
+  /* 解説のある頁を先にして 24 件で切る。県によっては 60 件以上
      あるので、切っていることを黙っていると「これで全部」に見える。 */
   const prefAreaCount = AREAS.filter((a) => a.pref === area.pref).length - 1;
 
@@ -290,7 +298,9 @@ export default async function Page({
         </h1>
 
         <p className="mt-5 text-sm leading-relaxed text-slate-700">
-          吉方位が分かっても、その方位に実際どんな街があっていくらなのかが分からないと引越し先は決められません。{area.full}を出発地として、八方位それぞれにある市区町村と、住宅・土地統計調査から作った借家の家賃をまとめました。
+          吉方位が分かっても、その方位に実際どんな街があっていくらなのかが分からないと引越し先は決められません。
+          {area.full}
+          を出発地として、八方位それぞれにある市区町村と、住宅・土地統計調査から作った借家の家賃をまとめました。
         </p>
 
         {/* 固有の文章。書いた市区町村だけが索引に載る（AREA_EDITORIAL）。
@@ -590,7 +600,8 @@ export default async function Page({
             {year}年、自分にとっての吉方位はどれか
           </h2>
           <p className="mt-4 text-sm leading-relaxed text-slate-700">
-            方位の吉凶は本命星ごとに違います。{year}年の年盤では次のとおりです。上の表と突き合わせてください。
+            方位の吉凶は本命星ごとに違います。{year}
+            年の年盤では次のとおりです。上の表と突き合わせてください。
           </p>
           <div className="mt-4 overflow-x-auto">
             <table className="w-full text-xs border-collapse">
@@ -608,7 +619,8 @@ export default async function Page({
                 {goodByStar.map((g) => (
                   <tr key={g.star}>
                     <td className="border border-slate-300 p-2">
-                      <Link prefetch={false}
+                      <Link
+                        prefetch={false}
                         href={`/houi/${year}/${g.star}`}
                         className="font-semibold hover:text-rose-600"
                       >
@@ -640,10 +652,12 @@ export default async function Page({
           </h2>
           <ul className="mt-3 text-xs text-amber-900 leading-relaxed list-disc pl-5 space-y-1.5">
             <li>
-              方位は市区町村の<b>中心どうし</b>で計算しています。同じ市の中でも端のほうは方位が変わることがあります。実際の物件で確認してください。
+              方位は市区町村の<b>中心どうし</b>
+              で計算しています。同じ市の中でも端のほうは方位が変わることがあります。実際の物件で確認してください。
             </li>
             <li>
-              家賃は住宅・土地統計調査の 1 畳当たり家賃を 1 ㎡あたりに直したものです。間取りや築年数の構成がエリアごとに違うため、単純比較には限界があります。公表値の無い市区町村は「—」で出しています。
+              家賃は住宅・土地統計調査の 1 畳当たり家賃を 1
+              ㎡あたりに直したものです。間取りや築年数の構成がエリアごとに違うため、単純比較には限界があります。公表値の無い市区町村は「—」で出しています。
             </li>
             <li>
               九星気学は伝統的な考え方であり、科学的に効果が確認されたものではありません。
@@ -668,7 +682,7 @@ export default async function Page({
               出発地が変われば方位も変わります。近くにお住まいの場合はこちらから。
               {siblings.length < prefAreaCount && (
                 <>
-                  掲載の多い順に{siblings.length}件（{area.pref}の
+                  解説のある街を先に{siblings.length}件（{area.pref}の
                   {prefAreaCount}件中）を出しています。
                 </>
               )}
@@ -681,7 +695,8 @@ export default async function Page({
             </p>
             <div className="mt-4 flex flex-wrap gap-2">
               {siblings.map((s) => (
-                <Link prefetch={false}
+                <Link
+                  prefetch={false}
                   key={s.code}
                   href={`/houi/area/${s.code}`}
                   className="px-3 py-1.5 rounded-full border border-slate-300 bg-white text-xs font-semibold hover:border-rose-400 transition-colors"
