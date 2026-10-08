@@ -10,7 +10,7 @@
 
 ```bash
 git fetch origin master && git checkout -B <作業ブランチ> origin/master
-npm ci --legacy-peer-deps
+npm ci
 npx prisma generate
 ```
 

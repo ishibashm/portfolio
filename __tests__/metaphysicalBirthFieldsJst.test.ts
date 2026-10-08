@@ -17,14 +17,14 @@ import { parseJapanDateTime } from "@/utils/japanDate";
  * 生年月日の文字列を日本時間として読むよう直した（parseJapanDateTime）
  * ので、**読む側をそろえないと元に戻る。**この 2 つは対で意味を持つ。
  *
- * 直す前の読み方を LEGACY として写してある。戻すと落ちる。
+ * 直す前の読み方を UTC で再現する。実行環境の TZ が変わっても差を見張る。
  */
 
-/** 直す前の読み方。実行環境のタイムゾーンで読んでいた。 */
-const legacyFields = (d: Date) => ({
-  year: d.getFullYear(),
-  month: d.getMonth() + 1,
-  day: d.getDate(),
+/** 旧実装を本番と同じ UTC で動かしたときの年月日。 */
+const legacyFieldsInUtc = (d: Date) => ({
+  year: d.getUTCFullYear(),
+  month: d.getUTCMonth() + 1,
+  day: d.getUTCDate(),
 });
 
 const TODAY = new Date("2026-09-07T12:00:00+09:00");
@@ -36,7 +36,7 @@ describe("生年月日を日本時間で読む", () => {
     expect(birth.toISOString()).toBe("1990-01-01T20:30:00.000Z");
 
     /* 直す前は前日（1 月 1 日）として数えていた */
-    expect(legacyFields(birth)).toEqual({ year: 1990, month: 1, day: 1 });
+    expect(legacyFieldsInUtc(birth)).toEqual({ year: 1990, month: 1, day: 1 });
 
     /* 入れた日付（1 月 2 日）で数える */
     expect(getLifePathNumber(birth).lifePathNumber).toBe(4);
@@ -63,7 +63,7 @@ describe("生年月日を日本時間で読む", () => {
     /* 山羊座は 12/22 から。12/22 05:00 JST は UTC では 12/21 20:00 で
        射手座に落ちていた */
     const birth = parseJapanDateTime("1990-12-22T05:00");
-    expect(legacyFields(birth).day).toBe(21);
+    expect(legacyFieldsInUtc(birth).day).toBe(21);
 
     const m = fetchMetaphysicalData(birth, TODAY, null, true);
     expect(m.astrologyApi.horoscope).toContain("山羊座");
@@ -74,7 +74,7 @@ describe("生年月日を日本時間で読む", () => {
        同じ日を読むので、既に出ている答えが動かないことを固定する */
     for (const s of ["1990-01-02", "1985-02-04", "2000-12-31"]) {
       const d = parseJapanDateTime(s);
-      expect(legacyFields(d)).toEqual({
+      expect(legacyFieldsInUtc(d)).toEqual({
         year: Number(s.slice(0, 4)),
         month: Number(s.slice(5, 7)),
         day: Number(s.slice(8, 10)),

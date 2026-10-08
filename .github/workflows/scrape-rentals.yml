@@ -144,7 +144,7 @@ jobs:
           cache: npm
 
       - name: Install dependencies
-        run: npm ci --legacy-peer-deps
+        run: npm ci
 
       - name: Install Playwright Chromium
         # 上限・再試行・落ち方の記録は scripts/install-playwright-chromium.sh に
@@ -247,7 +247,7 @@ jobs:
           cache: npm
 
       - name: Install dependencies
-        run: npm ci --legacy-peer-deps
+        run: npm ci
 
       - name: Create .env from Secret
         env:
