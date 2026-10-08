@@ -1,4 +1,10 @@
 import Link from "next/link";
+import {
+  RentOverview,
+  RentComparisonTable,
+  RentFaq,
+} from "@/components/houi/RentOverview";
+import { rankRents, rentFaqs } from "@/lib/rentOverview";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import { ContentDisclaimer } from "@/components/houi/ContentDisclaimer";
@@ -20,7 +26,6 @@ import {
   housingFiguresFor,
   type HousingSnapshotData,
 } from "@/lib/housingSnapshot";
-import { ESTAT_API_CREDIT } from "@/lib/estatCredit";
 import estatRent from "@/data/estatRent.json";
 import { officialRentsForPref } from "@/lib/officialRentForPlace";
 import { OfficialRentNote } from "@/components/houi/OfficialRentNote";
@@ -28,7 +33,7 @@ import type { EstatRentSnapshot } from "@/utils/estatRent";
 import { DIRECTION_LABELS } from "@/lib/kigakuContent";
 import { metaDescriptionFromIntro } from "@/lib/editorialMeta";
 import { AREA_EDITORIAL } from "@/lib/areaEditorial";
-import { todayInJapan } from "@/utils/japanDate";
+import { ESTAT_API_CREDIT } from "@/lib/estatCredit";
 import { coreRouteLabel } from "@/lib/siteStructure";
 
 /**
@@ -153,21 +158,9 @@ export default async function Page({
     にしない**（安い順のはずが別の基準で並ぶ）。公表値の無い
     市区町村は安い側にも高い側にも入れない。
   */
-  const ranked = stats.municipalities
-    .map((a) => ({ area: a, rent: rentOf(a.code) }))
-    .filter(
-      (r): r is { area: (typeof stats.municipalities)[0]; rent: number } =>
-        r.rent !== null,
-    )
-    .sort((x, y) => x.rent - y.rent);
-  const cheapest = ranked.slice(0, 5).map((r) => r.area);
-  const priciest = ranked
-    .slice(-5)
-    .reverse()
-    .map((r) => r.area);
-  /* 県全体の真ん中。**公表値のあるものだけ**で数える。 */
-  const medianRentPerSqm =
-    ranked.length > 0 ? ranked[Math.floor(ranked.length / 2)].rent : null;
+  const ranked = rankRents(HOUSING, stats.municipalities);
+  const expensive = rankRents(HOUSING, stats.municipalities, "desc");
+  const faqs = rentFaqs(HOUSING, pref, stats.municipalities);
   const path = `/houi/pref/${code}`;
 
   return (
@@ -182,7 +175,7 @@ export default async function Page({
         name={`${pref}の市区町村別家賃相場`}
         description={`${pref}の市区町村ごとに、住宅・土地統計調査から作った借家の 1 ㎡あたりの家賃をまとめたデータ。県の面積重心から見た八方位の区分つき。`}
         path={path}
-        dateModified={HOUSING.generatedAt ?? todayInJapan()}
+        dateModified={HOUSING.generatedAt}
       />
       {/* 市区町村ページ（/houi/area/[code]）と同じ並びにする。
           方位の早見表 → エリア別 → 県 → 市区町村 で 1 本に繋がる。 */}
@@ -210,6 +203,34 @@ export default async function Page({
           {pref}の家賃と方位別の市区町村
         </h1>
 
+        <RentOverview
+          snapshot={HOUSING}
+          name={pref}
+          count={ranked.length}
+          source={
+            <>
+              <p className="mt-3 text-xs leading-relaxed text-slate-500">
+                {HOUSING.year} 年 住宅・土地統計調査（e-Stat 表 ID{" "}
+                <a
+                  href="https://www.e-stat.go.jp/dbview?sid=0000020108"
+                  className="underline"
+                >
+                  0000020108
+                </a>
+                ）／{ESTAT_SOURCE}
+              </p>
+              <p className="mt-1 text-xs leading-relaxed text-slate-500">
+                {ESTAT_API_CREDIT}
+              </p>
+            </>
+          }
+        />
+        {ranked.length > 0 && (
+          <p className="mt-3 text-sm leading-relaxed text-slate-700">
+            {`比較対象の1㎡あたり家賃は、${ranked[0].figures.rentPerSqm.toLocaleString()}円/月から${ranked[ranked.length - 1].figures.rentPerSqm.toLocaleString()}円/月です。安い順と高い順の表から、それぞれの街の広さや近隣の家賃も確認できます。`}
+          </p>
+        )}
+
         {editorial.intro.map((p, i) => (
           <p
             key={i}
@@ -219,35 +240,7 @@ export default async function Page({
           </p>
         ))}
 
-        <section className="mt-8 rounded-2xl border border-slate-300 bg-white/90 p-5">
-          <h2 className="text-sm font-bold">
-            {pref}の借家の家賃（{HOUSING.year} 年 住宅・土地統計調査）
-          </h2>
-          {ranked.length > 0 && medianRentPerSqm !== null ? (
-            <p className="mt-3 text-xs leading-relaxed text-slate-700">
-              この県で頁のある {stats.municipalities.length}{" "}
-              市区町村のうち、家賃の公表値があるのは <b>{ranked.length}</b>{" "}
-              件です。1 ㎡あたりの家賃は{" "}
-              <b>
-                {ranked[0].rent.toLocaleString()}円〜
-                {ranked[ranked.length - 1].rent.toLocaleString()}円
-              </b>
-              の幅があり、真ん中は{" "}
-              <b>{medianRentPerSqm.toLocaleString()}円/㎡</b>です。
-            </p>
-          ) : (
-            <p className="mt-3 text-xs leading-relaxed text-slate-700">
-              この県で頁のある {stats.municipalities.length}{" "}
-              市区町村には、家賃の公表値がありません。住宅・土地統計調査には、市区町村ごとに集計できない項目があります。
-            </p>
-          )}
-          {/* 出どころと調査年。数字そのものより先に、いつの何かを書く。 */}
-          <p className="mt-2 text-xs leading-relaxed text-slate-500">
-            {ESTAT_SOURCE}
-          </p>
-          <p className="mt-1 text-xs leading-relaxed text-slate-500">
-            {ESTAT_API_CREDIT}
-          </p>
+        <div>
           {/* 毎月の公的な値。本体（住宅・土地統計調査）は 5 年ごとなので、
               いまの水準と前年からの動きをここで補う */}
           <OfficialRentNote
@@ -255,39 +248,26 @@ export default async function Page({
             rents={officialRentsForPref(estatRent as EstatRentSnapshot, code)}
             month={(estatRent as EstatRentSnapshot).retail.latestMonth}
           />
-          <div className="mt-4 grid gap-4 sm:grid-cols-2">
-            <div>
-              <h3 className="text-xs font-bold text-slate-600">
-                安い側の 5 市区町村
-              </h3>
-              <ul className="mt-2 space-y-1 text-xs">
-                {cheapest.map((a) => (
-                  <AreaLink
-                    key={a.code}
-                    code={a.code}
-                    city={a.city}
-                    rentPerSqm={rentOf(a.code)}
-                  />
-                ))}
-              </ul>
-            </div>
-            <div>
-              <h3 className="text-xs font-bold text-slate-600">
-                高い側の 5 市区町村
-              </h3>
-              <ul className="mt-2 space-y-1 text-xs">
-                {priciest.map((a) => (
-                  <AreaLink
-                    key={a.code}
-                    code={a.code}
-                    city={a.city}
-                    rentPerSqm={rentOf(a.code)}
-                  />
-                ))}
-              </ul>
-            </div>
-          </div>
-        </section>
+        </div>
+        <p className="mt-4 text-xs leading-relaxed text-slate-600">
+          以下は県内で頁があり、家賃の公表値がある市区町村の比較です。1㎡あたりの月額で並べ、同額は同順位としています。政令市は区単位で、県内の全自治体を網羅した順位ではありません。
+        </p>
+        <div className="grid gap-4 lg:grid-cols-2">
+          <RentComparisonTable
+            title="家賃が安い順（先頭5件）"
+            rows={ranked.slice(0, 5)}
+          />
+          <RentComparisonTable
+            title="家賃が高い順（先頭5件）"
+            rows={expensive.slice(0, 5)}
+          />
+        </div>
+        <details className="mt-4">
+          <summary className="cursor-pointer text-xs font-bold text-slate-600">
+            比較対象の全{ranked.length}市区町村を安い順で見る
+          </summary>
+          <RentComparisonTable title="県内の比較対象一覧" rows={ranked} />
+        </details>
 
         <section className="mt-10">
           <h2 className="text-xl font-bold font-serif border-b border-slate-300 pb-2">
@@ -414,12 +394,13 @@ export default async function Page({
         )}
 
         <p className="mt-8 max-w-[70ch] text-xs leading-relaxed text-slate-500">
-          相場は当サイトが収集した賃貸掲載から集計した参考値です。市区町村によって収集の網羅度に差があり、掲載件数の少ない街の数字は振れやすい点に注意してください。
+          家賃と空き家率は住宅・土地統計調査の公表値を加工した参考値です。調査年・住宅の広さ・対象の違いに注意し、現在の募集条件は個別に確かめてください。
         </p>
 
         {/* 県内のニュース（他社の RSS の見出し）は 2026-09-21 に外した。
             市区町村ページと同じ理由（規約を確認できていない。backlog 33 節）。 */}
 
+        <RentFaq items={faqs} />
         <ContentDisclaimer />
       </article>
     </div>

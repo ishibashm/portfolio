@@ -82,7 +82,10 @@ describe("市区町村ページの家賃は公開統計から出す", () => {
     expect(prefSource).not.toContain("medianOfMedians");
     expect(prefSource).not.toContain("listingSnapshotNote");
     expect(prefSource).toContain("housingFiguresFor");
-    expect(prefSource).toMatch(/\.sort\(\(x, y\) => x\.rent - y\.rent\)/);
+    expect(prefSource).toContain("rankRents(HOUSING, stats.municipalities)");
+    expect(prefSource).toContain(
+      'rankRents(HOUSING, stats.municipalities, "desc")',
+    );
   });
 
   it("MCP も同じ出どころを返す", () => {

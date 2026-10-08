@@ -1,10 +1,20 @@
 import Link from "next/link";
+import {
+  RentOverview,
+  RentComparisonTable,
+  RentFaq,
+} from "@/components/houi/RentOverview";
+import {
+  rankRents,
+  rentRows,
+  nearbyRentPlaces,
+  rentFaqs,
+} from "@/lib/rentOverview";
 import { ContentDisclaimer } from "@/components/houi/ContentDisclaimer";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import {
   AREAS,
-  areaAsOf,
   emptyDirections,
   findArea,
   neighboursByDirection,
@@ -20,6 +30,7 @@ import {
 } from "@/lib/kigakuContent";
 import { DatasetJsonLd, BreadcrumbJsonLd } from "@/components/JsonLd";
 import { AREA_EDITORIAL } from "@/lib/areaEditorial";
+import { ESTAT_API_CREDIT } from "@/lib/estatCredit";
 import { prefCodeByName } from "@/lib/prefContent";
 import { metaDescriptionFromIntro } from "@/lib/editorialMeta";
 import { INDEXED_ROBOTS, NOINDEX_ROBOTS } from "@/lib/siteStructure";
@@ -30,7 +41,6 @@ import {
   rentDiffPct,
   type HousingSnapshotData,
 } from "@/lib/housingSnapshot";
-import { ESTAT_API_CREDIT } from "@/lib/estatCredit";
 import estatRent from "@/data/estatRent.json";
 import { officialRentForArea } from "@/lib/officialRentForPlace";
 import { OfficialRentNote } from "@/components/houi/OfficialRentNote";
@@ -60,6 +70,10 @@ import type { EstatRentSnapshot } from "@/utils/estatRent";
   知らない URL を叩かれたときの仕事は false のときとほぼ変わらない。
   同じ作りの /blog/[slug] は元から true で、この記録が 1 件も無い。
 */
+/** e-Stat の利用規約が求める出典と加工の明記。文言は規約の指定どおり。 */
+const ESTAT_SOURCE =
+  "「統計でみる市区町村のすがた」（総務省）を加工して作成。出典：政府統計の総合窓口(e-Stat)（https://www.e-stat.go.jp/）";
+
 export const dynamicParams = true;
 
 /*
@@ -69,10 +83,6 @@ export const dynamicParams = true;
   「外部 JSON は読む枝だけ型にして 1 か所に閉じ込める」と同じ扱い）。
 */
 const HOUSING = housingStats as unknown as HousingSnapshotData;
-
-/** e-Stat の利用規約が求める出典と加工の明記。文言は規約の指定どおり。 */
-const ESTAT_SOURCE =
-  "「統計でみる市区町村のすがた」（総務省）を加工して作成。出典：政府統計の総合窓口(e-Stat)（https://www.e-stat.go.jp/）";
 
 /*
   **事前生成するのは、索引に載せる頁だけ。**残りは要求が来たときに作る。
@@ -158,7 +168,11 @@ export async function generateMetadata({
     */
     robots: AREA_EDITORIAL[area.code] ? INDEXED_ROBOTS : NOINDEX_ROBOTS,
     openGraph: {
-      images: ["/ogp.png"], title, description, type: "article" },
+      images: ["/ogp.png"],
+      title,
+      description,
+      type: "article",
+    },
   };
 }
 
@@ -234,6 +248,14 @@ export default async function Page({
      あるので、切っていることを黙っていると「これで全部」に見える。 */
   const prefAreaCount = AREAS.filter((a) => a.pref === area.pref).length - 1;
 
+  const prefPlaces = AREAS.filter((a) => a.pref === area.pref);
+  const ranking = rankRents(HOUSING, prefPlaces);
+  const rank = ranking.find((r) => r.code === area.code)?.rank;
+  const nearby = nearbyRentPlaces(
+    Object.values(groups).flat(),
+    area.code.slice(0, 2),
+  );
+  const faqs = rentFaqs(HOUSING, area.full, prefPlaces, area.code);
   const path = `/houi/area/${area.code}`;
 
   return (
@@ -248,7 +270,7 @@ export default async function Page({
         name={`${area.full}の家賃相場と、方位別に見た周辺の街`}
         description={`${area.full}を出発地として、北・北東・東・南東・南・南西・西・北西の八方位ごとに、その方角に位置する市区町村の一覧と、住宅・土地統計調査から作った借家の家賃と空き家率をまとめたデータ。九星気学の吉方位から引越し先を探すときの判断材料に使う。`}
         path={path}
-        dateModified={areaAsOf(area)}
+        dateModified={HOUSING.generatedAt}
       />
       <BreadcrumbJsonLd
         items={[
@@ -290,8 +312,35 @@ export default async function Page({
         </h1>
 
         <p className="mt-5 text-sm leading-relaxed text-slate-700">
-          吉方位が分かっても、その方位に実際どんな街があっていくらなのかが分からないと引越し先は決められません。{area.full}を出発地として、八方位それぞれにある市区町村と、住宅・土地統計調査から作った借家の家賃をまとめました。
+          吉方位が分かっても、その方位に実際どんな街があっていくらなのかが分からないと引越し先は決められません。
+          {area.full}
+          を出発地として、八方位それぞれにある市区町村と、住宅・土地統計調査から作った借家の家賃をまとめました。
         </p>
+
+        <RentOverview
+          snapshot={HOUSING}
+          code={area.code}
+          name={area.full}
+          rank={rank}
+          count={ranking.length}
+          source={
+            <>
+              <p className="mt-3 text-xs leading-relaxed text-slate-500">
+                {HOUSING.year} 年 住宅・土地統計調査（e-Stat 表 ID{" "}
+                <a
+                  href="https://www.e-stat.go.jp/dbview?sid=0000020108"
+                  className="underline"
+                >
+                  0000020108
+                </a>
+                ）／{ESTAT_SOURCE}
+              </p>
+              <p className="mt-1 text-xs leading-relaxed text-slate-500">
+                {ESTAT_API_CREDIT}
+              </p>
+            </>
+          }
+        />
 
         {/* 固有の文章。書いた市区町村だけが索引に載る（AREA_EDITORIAL）。
             数字は下の札とデータ側が持ち、ここは地理の構造だけを書く */}
@@ -308,63 +357,17 @@ export default async function Page({
           </div>
         )}
 
-        <div className="mt-5 rounded-2xl border border-slate-300 bg-white/90 p-4">
-          {figures && figures.rentPerSqm !== null ? (
-            <p className="text-xs text-slate-700 leading-relaxed">
-              <b>{area.full}の借家</b>: 家賃は 1 ㎡あたり{" "}
-              <b>{figures.rentPerSqm.toLocaleString()}円/月</b>
-              {figures.monthlyRentEstimate !== null && (
-                <>
-                  、1 戸あたりの目安は{" "}
-                  <b>{figures.monthlyRentEstimate.toLocaleString()}円/月</b>
-                </>
-              )}
-              {figures.floorAreaPerRental !== null && (
-                <>（平均 {figures.floorAreaPerRental}㎡）</>
-              )}
-              。以下の増減率はこの 1 ㎡あたりの家賃を基準にした差です。
-            </p>
-          ) : (
-            <p className="text-xs text-slate-700 leading-relaxed">
-              <b>{area.full}の借家</b>:{" "}
-              {figures
-                ? "家賃は、この市区町村では公表されていません。"
-                : "住宅・土地統計調査の市区町村別の集計に、この市区町村の行がありません。"}
-              空き家率や総住宅数は下に出しています。方位ごとの一覧では、公表値のある市区町村だけ家賃が入ります。
-            </p>
-          )}
-          {figures &&
-            (figures.vacancyRate !== null ||
-              figures.totalDwellings !== null) && (
-              <p className="mt-2 text-xs text-slate-700 leading-relaxed">
-                {figures.vacancyRate !== null && (
-                  <>
-                    空き家率 <b>{(figures.vacancyRate * 100).toFixed(1)}%</b>
-                  </>
-                )}
-                {figures.vacancyRate !== null &&
-                  figures.totalDwellings !== null &&
-                  "、"}
-                {figures.totalDwellings !== null && (
-                  <>
-                    総住宅数 <b>{figures.totalDwellings.toLocaleString()}戸</b>
-                  </>
-                )}
-                。
-              </p>
-            )}
-          {/*
-            出どころと調査年。**数字そのものより先に、いつの何かを書く。**
-            以前ここに出していた掲載由来の中央値は毎晩動く前提の数字で、
-            巡回を止めた日で凍結していた。住宅・土地統計調査は 5 年ごと
-            なので、次は 2028 年の調査が出たときに year を上げて取り込む。
-          */}
-          <p className="mt-2 text-xs text-slate-500 leading-relaxed">
-            {HOUSING.year} 年 住宅・土地統計調査／{ESTAT_SOURCE}
+        {prefCode && (
+          <p className="mt-3 text-xs text-slate-600">
+            <Link
+              href={`/houi/pref/${prefCode}`}
+              className="underline hover:text-rose-600"
+            >
+              {area.pref}の家賃を安い順・高い順で比べる
+            </Link>
           </p>
-          <p className="mt-1 text-xs text-slate-500 leading-relaxed">
-            {ESTAT_API_CREDIT}
-          </p>
+        )}
+        <div>
           {/* 毎月の公的な値（県庁所在市と人口 15 万以上の市だけ）。政令市の
               区には市の値を出す。当たる市が無ければ札ごと出さない */}
           {(() => {
@@ -394,6 +397,16 @@ export default async function Page({
           cityName={area.full}
           className="mt-3"
         />
+
+        <RentComparisonTable
+          title="近隣の市区町村と家賃・空き家率を比べる"
+          rows={rentRows(HOUSING, nearby)}
+          origin={figures}
+        />
+        <p className="mt-3 text-xs leading-relaxed text-slate-600">
+          下の方位一覧にある同県の市区町村から、距離が近い順に最大8件を選びました。境界が接している自治体の一覧ではありません。
+          {`家賃差＝（比較先の1㎡あたり家賃−${area.city}の1㎡あたり家賃）÷${area.city}の1㎡あたり家賃×100（整数に丸め）。公表値がない場合は比較しません。`}
+        </p>
 
         <section className="mt-10">
           <h2 className="text-xl font-bold font-serif border-b border-slate-300 pb-2">
@@ -590,7 +603,8 @@ export default async function Page({
             {year}年、自分にとっての吉方位はどれか
           </h2>
           <p className="mt-4 text-sm leading-relaxed text-slate-700">
-            方位の吉凶は本命星ごとに違います。{year}年の年盤では次のとおりです。上の表と突き合わせてください。
+            方位の吉凶は本命星ごとに違います。{year}
+            年の年盤では次のとおりです。上の表と突き合わせてください。
           </p>
           <div className="mt-4 overflow-x-auto">
             <table className="w-full text-xs border-collapse">
@@ -608,7 +622,8 @@ export default async function Page({
                 {goodByStar.map((g) => (
                   <tr key={g.star}>
                     <td className="border border-slate-300 p-2">
-                      <Link prefetch={false}
+                      <Link
+                        prefetch={false}
                         href={`/houi/${year}/${g.star}`}
                         className="font-semibold hover:text-rose-600"
                       >
@@ -640,10 +655,12 @@ export default async function Page({
           </h2>
           <ul className="mt-3 text-xs text-amber-900 leading-relaxed list-disc pl-5 space-y-1.5">
             <li>
-              方位は市区町村の<b>中心どうし</b>で計算しています。同じ市の中でも端のほうは方位が変わることがあります。実際の物件で確認してください。
+              方位は市区町村の<b>中心どうし</b>
+              で計算しています。同じ市の中でも端のほうは方位が変わることがあります。実際の物件で確認してください。
             </li>
             <li>
-              家賃は住宅・土地統計調査の 1 畳当たり家賃を 1 ㎡あたりに直したものです。間取りや築年数の構成がエリアごとに違うため、単純比較には限界があります。公表値の無い市区町村は「—」で出しています。
+              家賃は住宅・土地統計調査の 1 畳当たり家賃を 1
+              ㎡あたりに直したものです。間取りや築年数の構成がエリアごとに違うため、単純比較には限界があります。公表値の無い市区町村は「—」で出しています。
             </li>
             <li>
               九星気学は伝統的な考え方であり、科学的に効果が確認されたものではありません。
@@ -681,7 +698,8 @@ export default async function Page({
             </p>
             <div className="mt-4 flex flex-wrap gap-2">
               {siblings.map((s) => (
-                <Link prefetch={false}
+                <Link
+                  prefetch={false}
                   key={s.code}
                   href={`/houi/area/${s.code}`}
                   className="px-3 py-1.5 rounded-full border border-slate-300 bg-white text-xs font-semibold hover:border-rose-400 transition-colors"
@@ -716,6 +734,7 @@ export default async function Page({
             各社の RSS 利用規約をこちらで確認できていないため（backlog 33 節）。
             台帳（data/newsSources）は残してあるので、規約を確かめたら戻せる。 */}
 
+        <RentFaq items={faqs} />
         <ContentDisclaimer />
       </article>
     </div>
