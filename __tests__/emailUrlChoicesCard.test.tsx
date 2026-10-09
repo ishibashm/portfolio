@@ -71,6 +71,8 @@ it("ボタンは URL で区別でき、押すとその物件を渡す", () => {
       onSelect={onSelect}
     />,
   );
-  fireEvent.click(screen.getByRole("button", { name: `${long} を既存入力へ` }));
+  fireEvent.click(
+    screen.getByRole("button", { name: `${long}：この物件を選ぶ` }),
+  );
   expect(onSelect).toHaveBeenCalledWith(long);
 });

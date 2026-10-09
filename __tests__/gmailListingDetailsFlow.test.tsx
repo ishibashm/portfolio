@@ -106,7 +106,7 @@ it.each([true, false])(
       fetch.mock.calls.some(([url]) => String(url).endsWith("/geocode")),
     ).toBe(false);
     fireEvent.click(
-      screen.getByRole("button", { name: `${listing.url} を既存入力へ` }),
+      screen.getByRole("button", { name: `${listing.url}：この物件を選ぶ` }),
     );
     if (!enabled) {
       await screen.findByText(/住所検索は準備中/);

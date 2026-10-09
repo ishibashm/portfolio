@@ -11,8 +11,8 @@ import type { EmailListing } from "@/lib/listingDetails";
 
   - 物件名を見出しにし、賃料・間取り・駅・所在地を 3〜4 行にまとめる
   - URL は出さず、どのサイトの物件かだけ書く（転送 URL の中身は読めない）
-  - ボタンの名前は「<URL> を既存入力へ」のまま。読み上げでは URL で
-    どの物件か区別でき、見た目は「既存入力へ」だけになる
+  - ボタンは「この物件を選ぶ」。読み上げでは URL も付けて
+    どの物件か区別できるようにする
 */
 
 const yen = (v: number) => `${v.toLocaleString("ja-JP")}円`;
@@ -93,7 +93,7 @@ export function EmailUrlChoices({
                 className="min-h-[44px] rounded-lg border border-stone-300 bg-white px-3 py-1.5 font-bold text-stone-800 hover:bg-stone-50"
                 onClick={() => onSelect(url)}
               >
-                <span className="sr-only">{url} を</span>既存入力へ
+                <span className="sr-only">{url}：</span>この物件を選ぶ
               </button>
             </div>
           </li>

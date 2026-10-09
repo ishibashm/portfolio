@@ -48,7 +48,7 @@ describe("listing candidate flow", () => {
     fireEvent.click(screen.getByRole("button", { name: "URLをプレビュー" }));
     fireEvent.click(
       await screen.findByRole("button", {
-        name: /https:\/\/suumo.jp\/a を既存入力へ/,
+        name: /https:\/\/suumo.jp\/a：この物件を選ぶ/,
       }),
     );
     expect(
