@@ -1,5 +1,5 @@
 import { EightDirection } from "./ephemerisEngine";
-import { directionFromBearing } from "./directionGeo";
+import { directionFromBearing, nodeMappingForBoard } from "./directionGeo";
 
 /**
  * 方位角（0°〜360°）を八方位に落とす。
@@ -31,8 +31,5 @@ export function getKigakuSector(
   // あり、そこで「北西」と出ると入力漏れだと気付けない。
   if (isNaN(bearing)) return "N";
 
-  return directionFromBearing(
-    bearing,
-    useClassical ? "traditional" : "physical",
-  );
+  return directionFromBearing(bearing, nodeMappingForBoard(useClassical));
 }

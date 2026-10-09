@@ -2,6 +2,7 @@ import {
   bearingBetween,
   directionFromBearing,
   distanceKmBetween,
+  nodeMappingForBoard,
 } from "@/utils/directionGeo";
 import type { DayKigakuCell } from "@/lib/dayKigakuClient";
 
@@ -23,7 +24,7 @@ export function evaluateSpot(
   const bearingDeg = bearingBetween(baseLat, baseLon, lat, lon);
   const direction = directionFromBearing(
     bearingDeg,
-    classical ? "traditional" : "physical",
+    nodeMappingForBoard(classical),
   );
   return { bearingDeg, direction, distanceKm, cell: board?.[direction] };
 }

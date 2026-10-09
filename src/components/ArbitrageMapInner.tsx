@@ -64,6 +64,8 @@ import {
   directionWedgeHalfWidth,
   directionWedgePoints,
   wedgeRangeKmForBounds,
+  nodeMappingForBoard,
+  type NodeMapping,
   type CompassDirection,
 } from "@/utils/directionGeo";
 import {
@@ -706,9 +708,7 @@ export default function ArbitrageMapInner({
    */
 
   /** 八方位の区切り方。県の塗り分け（dayKigaku）と同じ規則を使う。 */
-  const sectorNodeMapping: "traditional" | "physical" = useClassical
-    ? "traditional"
-    : "physical";
+  const sectorNodeMapping: NodeMapping = nodeMappingForBoard(useClassical);
 
   /**
    * 扇形（方位）の判定。

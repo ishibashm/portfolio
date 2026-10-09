@@ -6,6 +6,7 @@ import fs from "fs/promises";
 import path from "path";
 import {
   directionFromBearing,
+  nodeMappingForBoard,
   type CompassDirection,
 } from "@/utils/directionGeo";
 import {
@@ -365,7 +366,7 @@ export async function GET(request: Request) {
     );
     const dB = generateBoard(useClassical ? env.classicalDayStar : env.dayStar);
 
-    const nodeMapping = useClassical ? "traditional" : "physical";
+    const nodeMapping = nodeMappingForBoard(useClassical);
     const rawVectorCollision = calculateVectorCollision(
       useClassical ? honmeiStar.classical : honmeiStar.physical,
       yB,
