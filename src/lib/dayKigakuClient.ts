@@ -7,6 +7,7 @@ import {
 import { getHonmeiStar, getPersonalVoidZodiac } from "@/utils/ephemerisEngine";
 import type { DirectionFilterMode } from "@/utils/directionFilterMode";
 import { prefectureDirections } from "@/lib/prefectureDirection";
+import { nodeMappingForBoard } from "@/utils/directionGeo";
 
 /**
  * 物件検索の「選択日の盤」。方位別と県別の段階を 1 回で組む。
@@ -93,7 +94,7 @@ export function computeDayKigaku(p: DayKigakuInput): DayKigaku | undefined {
     const prefDirs = prefectureDirections(
       Number(p.baseLat),
       Number(p.baseLon),
-      p.useClassical ? "traditional" : "physical",
+      nodeMappingForBoard(p.useClassical),
     );
     const byPrefecture: Record<string, DayKigakuCell> = {};
     for (const [name, dir] of Object.entries(prefDirs)) {

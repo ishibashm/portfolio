@@ -80,6 +80,7 @@ import {
   destinationForDirection,
   directionFromBearing,
   distanceKmBetween,
+  nodeMappingForBoard,
 } from "@/utils/directionGeo";
 import {
   directionBoardInstant,
@@ -881,10 +882,7 @@ export const SolarTimeClock = () => {
             "engineType",
             useClassicalBoard ? "classical" : "physical",
           );
-          wParams.append(
-            "nodeMapping",
-            useClassicalBoard ? "traditional" : "physical",
-          );
+          wParams.append("nodeMapping", nodeMappingForBoard(useClassicalBoard));
           wParams.append("layerMode", activeLayerMode);
           wParams.append("useTrueNorth", useTrueNorth.toString());
           wParams.append("lunarPhaseModifier", lunarPhaseModifier.toString());
@@ -1378,10 +1376,7 @@ export const SolarTimeClock = () => {
          finalVectors を引く所（下の targetDirInfo.trueDirection）に
          cast が要る嘘の型になる。 */
       const getDir = (bearing: number): EightDirection =>
-        directionFromBearing(
-          bearing,
-          useClassicalBoard ? "traditional" : "physical",
-        );
+        directionFromBearing(bearing, nodeMappingForBoard(useClassicalBoard));
 
       return {
         trueDirection: getDir(trueBrng),
