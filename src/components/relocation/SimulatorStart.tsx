@@ -210,7 +210,7 @@ export function SimulatorStart({
             type="date"
             value={birthDate}
             onChange={(e) => setBirthDate(e.target.value)}
-            className="w-full rounded-xl border border-stone-300 p-2.5 text-sm"
+            className="min-h-[44px] w-full rounded-xl border border-stone-300 p-2.5 text-base sm:text-sm"
           />
           <span className="mt-1 block text-[11px] text-stone-600">
             本命星と天中殺を出すのに使います。プロフィールには保存しません（この端末の下書きにだけ残ります）。プロフィールに保存済みなら自動で入ります。
@@ -226,7 +226,7 @@ export function SimulatorStart({
             value={place}
             onChange={(e) => setPlace(e.target.value)}
             placeholder="例: 京都市下京区"
-            className="w-full rounded-xl border border-stone-300 p-2.5 text-sm"
+            className="min-h-[44px] w-full rounded-xl border border-stone-300 p-2.5 text-base sm:text-sm"
           />
         </label>
 
@@ -239,7 +239,7 @@ export function SimulatorStart({
             value={destination}
             onChange={(e) => setDestination(e.target.value)}
             placeholder="例: 名古屋市中区"
-            className="w-full rounded-xl border border-stone-300 p-2.5 text-sm"
+            className="min-h-[44px] w-full rounded-xl border border-stone-300 p-2.5 text-base sm:text-sm"
           />
           <span className="mt-1 block text-[11px] text-stone-600">
             {
@@ -256,7 +256,7 @@ export function SimulatorStart({
             type="date"
             value={departureDate}
             onChange={(e) => setDepartureDate(e.target.value)}
-            className="w-full rounded-xl border border-stone-300 p-2.5 text-sm"
+            className="min-h-[44px] w-full rounded-xl border border-stone-300 p-2.5 text-base sm:text-sm"
           />
         </label>
 
@@ -269,7 +269,7 @@ export function SimulatorStart({
         <button
           type="submit"
           disabled={busy}
-          className="w-full rounded-full bg-stone-800 px-5 py-2.5 text-sm text-white transition disabled:opacity-40"
+          className="min-h-[44px] w-full rounded-full bg-stone-800 px-5 py-2.5 text-sm text-white transition disabled:opacity-40"
         >
           {busy ? "調べています…" : "この引越しを試算する"}
         </button>
@@ -278,7 +278,7 @@ export function SimulatorStart({
       <button
         type="button"
         onClick={onShowExample}
-        className="mt-4 text-[11px] text-stone-500 underline"
+        className="mt-4 min-h-[44px] w-full rounded-xl border border-stone-300 px-3 py-2 text-xs font-bold text-stone-700 hover:bg-stone-50"
       >
         先に例で動きを見る（京都市 → 名古屋市）
       </button>
