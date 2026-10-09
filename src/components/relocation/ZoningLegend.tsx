@@ -54,7 +54,7 @@ export function ZoningLegend({
           type="button"
           onClick={() => setOpen((v) => !v)}
           aria-expanded={open}
-          className="flex items-baseline gap-1.5 text-xs font-bold text-stone-700"
+          className="flex min-h-11 items-center gap-1.5 text-xs font-bold text-stone-700"
         >
           <span aria-hidden>{open ? "▾" : "▸"}</span>
           <span>用途地域</span>
@@ -69,7 +69,7 @@ export function ZoningLegend({
           <button
             type="button"
             onClick={() => onSelect(null)}
-            className="text-[10px] text-indigo-700 underline"
+            className="min-h-11 px-2 text-xs text-indigo-700 underline"
           >
             全部を出す
           </button>
@@ -98,7 +98,7 @@ export function ZoningLegend({
                     onClick={() => onSelect(active ? null : name)}
                     aria-pressed={active}
                     title={ZONING_SUMMARY[name]}
-                    className={`flex w-full items-center gap-2 rounded-lg px-1.5 py-1 text-left transition-colors ${
+                    className={`flex min-h-11 w-full items-center gap-2 rounded-lg px-1.5 py-1 text-left transition-colors ${
                       active ? "bg-indigo-50" : "hover:bg-stone-50"
                     }`}
                   >
@@ -107,7 +107,7 @@ export function ZoningLegend({
                       className="h-3 w-3 shrink-0 rounded-[2px] border border-stone-300"
                       style={{ background: ZONING_FILL[name] }}
                     />
-                    <span className="min-w-0 flex-1 truncate text-[11px] text-stone-700">
+                    <span className="min-w-0 flex-1 text-xs text-stone-700">
                       {name}
                     </span>
                   </button>
