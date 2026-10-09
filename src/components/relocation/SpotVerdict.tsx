@@ -566,35 +566,37 @@ export function SpotVerdict({
       )}
       <label
         htmlFor="arb-spot-query"
-        className="text-[10px] font-semibold text-stone-600 dark:text-stone-500 block"
+        className="text-xs font-semibold text-stone-600 dark:text-stone-500 block"
       >
         物件URL・住所・座標から調べる
       </label>
-      <div className="relative">
-        <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-emerald-600" />
-        <input
-          id="arb-spot-query"
-          type="text"
-          placeholder="物件URL、住所、または 35.0116, 135.7681"
-          value={query}
-          onChange={(e) => {
-            lookupSeq.current++;
-            setQuery(e.target.value);
-            if (candidateContext) setTarget(null);
-          }}
-          onKeyDown={(e) => {
-            if (e.key === "Enter") {
-              e.preventDefault();
-              void lookup();
-            }
-          }}
-          className="w-full pl-9 pr-16 py-2 bg-emerald-50/40 dark:bg-white border border-emerald-200/70 dark:border-stone-200 rounded-xl text-xs focus:ring-2 focus:ring-emerald-400 outline-none transition-all"
-        />
+      <div className="flex items-stretch gap-2">
+        <div className="relative min-w-0 flex-1">
+          <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-emerald-600" />
+          <input
+            id="arb-spot-query"
+            type="text"
+            placeholder="物件URL、住所、または 35.0116, 135.7681"
+            value={query}
+            onChange={(e) => {
+              lookupSeq.current++;
+              setQuery(e.target.value);
+              if (candidateContext) setTarget(null);
+            }}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                e.preventDefault();
+                void lookup();
+              }
+            }}
+            className="min-h-11 w-full pl-9 pr-3 py-2 bg-emerald-50/40 dark:bg-white border border-emerald-200/70 dark:border-stone-200 rounded-xl text-base sm:text-sm focus:ring-2 focus:ring-emerald-400 outline-none transition-all"
+          />
+        </div>
         <button
           type="button"
           onClick={() => void lookup()}
           disabled={busy}
-          className="absolute right-1.5 top-1/2 -translate-y-1/2 px-2.5 py-1 rounded-lg bg-stone-800 text-white text-[10px] font-bold hover:bg-stone-700 disabled:opacity-50"
+          className="min-h-11 shrink-0 px-3 py-2 rounded-lg bg-stone-800 text-white text-sm font-bold hover:bg-stone-700 disabled:opacity-50"
         >
           {busy ? <Loader2 className="w-3 h-3 animate-spin" /> : "調べる"}
         </button>

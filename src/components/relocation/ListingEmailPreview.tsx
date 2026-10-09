@@ -110,7 +110,9 @@ export function ListingEmailPreview({
           if (!e.currentTarget.open) clear();
         }}
       >
-        <summary>自分の通知メールからURLを選ぶ（接続不要）</summary>
+        <summary className="min-h-11 cursor-pointer py-3 font-semibold">
+          自分の通知メールからURLを選ぶ（接続不要）
+        </summary>
         <p>
           メール本文のテキストはログイン・メール接続なしで使えます。Gmail以外のメールも、物件の部分をコピーして貼り付けてください。氏名や連絡先は除いてください。
         </p>
@@ -121,11 +123,14 @@ export function ListingEmailPreview({
           住所付きの候補を選んだとき・クリア・閉じる操作で入力を消します。住所を読み取れない場合は、転記できるよう本文を残します。
         </p>
         <details>
-          <summary>貼り付け形式を変更（通常は不要）</summary>
+          <summary className="min-h-11 cursor-pointer py-3">
+            貼り付け形式を変更（通常は不要）
+          </summary>
           <label className="block">
             メールの形式
             <select
               aria-label="メールの形式"
+              className="ml-2 min-h-11 max-w-full rounded-lg border border-stone-300 bg-white px-2 text-base sm:text-sm"
               value={format}
               disabled={busy}
               onChange={(e) => {
@@ -150,7 +155,7 @@ export function ListingEmailPreview({
             maxLength={12000}
             autoComplete="off"
             spellCheck={false}
-            className="block w-full border rounded p-2"
+            className="block min-h-32 w-full border border-stone-300 rounded-lg p-2 text-base sm:text-sm"
             onChange={(e) => {
               setSource(e.target.value);
               setUrls([]);
@@ -159,16 +164,23 @@ export function ListingEmailPreview({
             }}
           />
         </label>
-        <button
-          type="button"
-          disabled={busy || !source.trim()}
-          onClick={() => void preview()}
-        >
-          {busy ? "解析中…" : "URLをプレビュー"}
-        </button>{" "}
-        <button type="button" onClick={clear}>
-          メール入力をクリア
-        </button>
+        <div className="flex flex-wrap gap-2">
+          <button
+            type="button"
+            disabled={busy || !source.trim()}
+            onClick={() => void preview()}
+            className="min-h-11 rounded-lg bg-stone-800 px-3 py-2 text-sm font-bold text-white hover:bg-stone-700 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            {busy ? "解析中…" : "URLをプレビュー"}
+          </button>
+          <button
+            type="button"
+            onClick={clear}
+            className="min-h-11 rounded-lg border border-stone-300 bg-white px-3 py-2 text-sm font-semibold text-stone-700 hover:bg-stone-50"
+          >
+            メール入力をクリア
+          </button>
+        </div>
         {message && <p role="status">{message}</p>}
         <EmailUrlChoices
           urls={urls}
@@ -199,7 +211,7 @@ export function ListingEmailPreview({
             type="button"
             aria-expanded={showGmail}
             onClick={() => setShowGmail((shown) => !shown)}
-            className="min-h-[32px] font-semibold text-stone-600 underline"
+            className="min-h-11 text-left font-semibold text-stone-600 underline"
           >
             Gmailの物件通知をまとめて取り込む（任意）
           </button>
