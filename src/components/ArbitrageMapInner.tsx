@@ -80,6 +80,13 @@ import { evaluateSpot } from "@/lib/spotEvaluation";
 // 既定アイコンの下ごしらえ。理由と型の話は @/lib/leafletDefaultIcon に集約。
 applyLeafletDefaultIcon();
 
+/** React のイベントより先に Leaflet が拾うため、地図内の操作は DOM 側で止める。 */
+function mapControlRef(el: HTMLDivElement | null) {
+  if (!el) return;
+  L.DomEvent.disableClickPropagation(el);
+  L.DomEvent.disableScrollPropagation(el);
+}
+
 /**
  * 俯瞰と近景の境目のズーム。これ未満なら県の塗り分け、以上なら扇形と
  * 起点の目印だけ。
@@ -1003,6 +1010,7 @@ export default function ArbitrageMapInner({
           列ごと消えるため（0 に丸められる）。
         */}
         <div
+          ref={mapControlRef}
           className={`absolute top-4 right-4 z-[1000] pointer-events-auto flex flex-col items-end gap-1.5 overflow-y-auto ${
             zoningOn
               ? "max-h-[max(8rem,calc(100%-17rem))]"
@@ -1381,7 +1389,10 @@ export default function ArbitrageMapInner({
             以前は判定が無いとき掲載件数の色に落ちていたが、物件を
             描かなくなったので、判定が無ければ塗らない。 */}
         {zoom < 10 && (
-          <div className="absolute bottom-4 left-4 z-[1000] pointer-events-auto bg-white/85 backdrop-blur rounded-xl shadow-lg border border-stone-200 p-2.5 text-[10px] text-stone-700 space-y-1.5">
+          <div
+            ref={mapControlRef}
+            className="absolute bottom-4 left-4 z-[1000] pointer-events-auto bg-white/85 backdrop-blur rounded-xl shadow-lg border border-stone-200 p-2.5 text-[10px] text-stone-700 space-y-1.5"
+          >
             <div className="font-bold text-stone-600">
               {prefFilled ? "県の塗り分け" : "方位の塗り分け"}
             </div>
