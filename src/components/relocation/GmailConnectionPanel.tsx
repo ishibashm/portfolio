@@ -279,7 +279,24 @@ function EnabledGmailPanel({
       aria-label="Gmail接続"
       className="rounded-xl border border-stone-200 p-3 space-y-3 text-xs"
     >
-      <h3 className="font-bold">Gmailから物件通知を取り込む</h3>
+      <h3 className="font-bold">Gmailから物件通知を取り込む（任意）</h3>
+      <p>
+        Gmailに物件通知が届く人向けの便利機能です。使わなくても、物件URL・住所・メール本文の貼り付けで候補を調べられます。
+      </p>
+      <ul className="list-disc pl-5 space-y-1">
+        <li>
+          Googleにはメールを読む権限を許可します。この権限自体は特定のラベルに限定されません。
+        </li>
+        <li>
+          このサイトはラベルの一覧を取得し、あなたが選んだラベルと対象期間に合うメールだけを「取り込み」を押したときに読みます。ラベルを確定するまでは本文を読みません。
+        </li>
+        <li>
+          メールの送信・削除・変更はしません。本文は保存せず、添付ファイルは解析しません。ラベルには物件通知だけを入れてください。
+        </li>
+        <li>
+          接続後は下の「Gmailを切断」からいつでも解除できます。保存した候補は残ります。
+        </li>
+      </ul>
       <p>
         接続状態:{" "}
         {loading
@@ -292,7 +309,7 @@ function EnabledGmailPanel({
                 : "接続済み・ラベル未確定"
               : "未接続"}
       </p>
-      <p>OAuth同意画面がTestingモードの場合、7日ごとに再接続が必要です。</p>
+      <p>Google側の接続が試験公開中の場合、7日ごとに再接続が必要です。</p>
       <button
         type="button"
         disabled={disabled}
@@ -388,12 +405,31 @@ function EnabledGmailPanel({
           )}
           {choosing && (
             <div>
+              <p className="font-bold">物件通知だけをまとめる準備</p>
               <p>
-                Gmailで本人専用ラベル「物件通知」を作成してください。選択候補が表示されても、確定するまで取り込みません。
+                ラベルはGmailでメールを分類する目印です。まずは手動で付ければ使えます。
               </p>
+              <ol className="list-decimal pl-5 space-y-1 my-2">
+                <li>Gmailを開き、取り込みたい物件通知のメールを選びます。</li>
+                <li>
+                  Gmailのラベル操作で「物件通知」というラベルを作り、そのメールに付けます。既にある専用ラベルも使えます。
+                </li>
+                <li>
+                  この画面に戻り「ラベルを再読み込み」を押し、付けたラベルを選んで「このラベルで確定」を押します。
+                </li>
+                <li>「取り込み」を押して、候補にしたい物件を選びます。</li>
+              </ol>
               <p className="text-stone-600">
-                確定した時点の7日前から後に届いた、このラベルのメールを読みます。先にGmailで既存の通知にラベルを付けてから確定してください。「フィルタを作成」で物件サイトからの通知に自動でラベルが付くようにしておくと、以後の通知もそのまま対象になります。
+                対象は、確定した時点の7日前から後に届いたメールです。古い通知に今ラベルを付けても対象外です。その場合はメール本文の貼り付けを使えます。
               </p>
+              <details className="my-2">
+                <summary className="cursor-pointer underline">
+                  今後の通知にも自動でラベルを付けたいとき（任意）
+                </summary>
+                <p>
+                  パソコン版Gmailの検索オプションで、物件通知の送信元や件名を指定して検索します。物件通知だけが出ることを確認してから、その条件でフィルタを作成し「ラベルを付ける」で専用ラベルを選びます。分からなければ手動のままで大丈夫です。
+                </p>
+              </details>
               <div className="flex flex-wrap items-end gap-2">
                 <button
                   type="button"

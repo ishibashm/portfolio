@@ -59,6 +59,11 @@ function mount() {
       <ListingEmailPreview onSelect={(url) => selected.push(url)} />
     </Layout>,
   );
+  const toggle = screen.queryByRole("button", {
+    name: "Gmailの物件通知をまとめて取り込む（任意）",
+  });
+  if (toggle?.getAttribute("aria-expanded") === "false")
+    fireEvent.click(toggle);
   return selected;
 }
 afterEach(() => {
@@ -102,7 +107,7 @@ it("callback preselects 物件通知 but requires confirmation before importing 
     fetch.mock.calls.map(([url]) => String(url).split("/").at(-1)),
   ).toEqual(["status", `labels?connectionId=${id}`, "select-label", "read"]);
   expect(
-    screen.getByText(/Testingモードの場合、7日ごとに再接続/),
+    screen.getByText(/試験公開中の場合、7日ごとに再接続/),
   ).toBeInTheDocument();
 });
 it("connect only requests authorization URL and offers an explicit Google link", async () => {
@@ -209,6 +214,11 @@ it("Gmail URL selection reaches Phase 1, which still requires a location", async
       />
     </Layout>,
   );
+  fireEvent.click(
+    screen.getByRole("button", {
+      name: "Gmailの物件通知をまとめて取り込む（任意）",
+    }),
+  );
   await screen.findByText("接続状態: 接続済み");
   fireEvent.click(screen.getByRole("button", { name: "取り込み" }));
   fireEvent.click(
@@ -254,6 +264,11 @@ it("unmount cancels a pending import and never hands off a late response", async
     <Layout>
       <ListingEmailPreview onSelect={(url) => selected.push(url)} />
     </Layout>,
+  );
+  fireEvent.click(
+    screen.getByRole("button", {
+      name: "Gmailの物件通知をまとめて取り込む（任意）",
+    }),
   );
   await screen.findByText("接続状態: 接続済み");
   let resolve!: (r: Response) => void;
@@ -380,7 +395,9 @@ it("an empty import explains the time window instead of a bare 'no URLs'", async
   vi.spyOn(globalThis, "fetch").mockImplementation(async (url) =>
     String(url).endsWith("status")
       ? reply({ connections: [{ id, labelId: "Label_1", startedAt }] })
-      : reply({ urls: [], truncated: false, nextCursor: null }),
+      : String(url).includes("labels?")
+        ? reply({ labels: [{ id: "Label_1", name: "物件通知" }] })
+        : reply({ urls: [], truncated: false, nextCursor: null }),
   );
   mount();
   await screen.findByText("接続状態: 接続済み");
@@ -405,4 +422,31 @@ it("buttons look like buttons (not bare text run into the paragraph)", async () 
       /rounded-lg/,
     );
   }
+});
+
+it("does not check Gmail until chosen; closing cancels its request", async () => {
+  vi.stubEnv("LISTING_EMAIL_GMAIL_ENABLED", "true");
+  const fetch = vi
+    .spyOn(globalThis, "fetch")
+    .mockImplementation(() => new Promise(() => {}));
+  render(
+    <Layout>
+      <ListingEmailPreview onSelect={vi.fn()} />
+    </Layout>,
+  );
+  expect(fetch).not.toHaveBeenCalled();
+  expect(
+    screen.queryByRole("region", { name: "Gmail接続" }),
+  ).not.toBeInTheDocument();
+  const toggle = screen.getByRole("button", {
+    name: "Gmailの物件通知をまとめて取り込む（任意）",
+  });
+  fireEvent.click(toggle);
+  expect(fetch).toHaveBeenCalledTimes(1);
+  const signal = fetch.mock.calls[0][1]?.signal;
+  fireEvent.click(toggle);
+  expect(signal?.aborted).toBe(true);
+  expect(
+    screen.queryByRole("region", { name: "Gmail接続" }),
+  ).not.toBeInTheDocument();
 });

@@ -2,7 +2,7 @@ import { CandidateEmailImport } from "@/components/relocation/EmailListingDraft"
 import { GmailFeature } from "@/components/relocation/GmailFeature";
 import { getAuthUser, toUserId } from "@/lib/userConfig";
 import Link from "next/link";
-import { Bookmark, Mail, MapPin } from "lucide-react";
+import { Bookmark, MapPin } from "lucide-react";
 import CandidateHistory from "@/components/relocation/CandidateHistory";
 
 /*
@@ -37,14 +37,21 @@ export default async function CandidatesPage() {
           <header className="rounded-3xl border border-stone-200 bg-white/90 p-6 shadow-sm">
             <h1 className="text-2xl font-bold text-stone-800">保存した候補</h1>
             <p className="mt-2 text-sm text-stone-600">
-              候補はアカウントに保存します。見るにはログインしてください。
+              物件URL・住所・メール本文から、ログインもメール接続もせずに候補を調べられます。候補をアカウントに保存したり、保存済みの候補を見るときにログインが必要です。
             </p>
             <Link
-              href="/login?next=%2Frelocation%2Fcandidates"
+              href="/relocation/arbitrage#candidate-import"
               prefetch={false}
               className="mt-4 inline-flex rounded-xl bg-rose-600 px-4 py-2 text-sm font-bold text-white hover:bg-rose-700"
             >
-              ログイン
+              URL・住所・メール本文から候補を調べる（ログイン不要）
+            </Link>
+            <Link
+              href="/login?next=%2Frelocation%2Fcandidates"
+              prefetch={false}
+              className="mt-4 ml-3 inline-flex rounded-xl border border-stone-300 px-4 py-2 text-sm font-bold text-stone-700 hover:bg-stone-50"
+            >
+              ログインして保存した候補を見る
             </Link>
           </header>
         </main>
@@ -74,31 +81,20 @@ export default async function CandidatesPage() {
               </p>
             </div>
             <Link
-              href="/relocation/arbitrage"
+              href="/relocation/arbitrage#candidate-import"
               prefetch={false}
               className="inline-flex shrink-0 items-center gap-1.5 self-start rounded-xl bg-rose-600 px-4 py-2.5 text-sm font-bold text-white shadow-sm hover:bg-rose-700 lg:self-auto"
             >
               <MapPin className="h-4 w-4" aria-hidden />
-              地図・住所・物件URLから候補を探す
+              URL・住所・メール本文から候補を追加
             </Link>
           </div>
         </header>
 
         {gmailEnabled && (
-          <details className="group rounded-2xl border border-stone-200 bg-white/90 shadow-sm">
-            <summary className="flex cursor-pointer items-center gap-2 px-5 py-3 text-sm font-bold text-stone-700">
-              <Mail className="h-4 w-4 text-rose-500" aria-hidden />
-              Gmail の物件通知から候補を取り込む
-              <span className="ml-auto text-xs font-normal text-stone-500 group-open:hidden">
-                開く
-              </span>
-            </summary>
-            <div className="border-t border-stone-100 p-4">
-              <GmailFeature enabled>
-                <CandidateEmailImport />
-              </GmailFeature>
-            </div>
-          </details>
+          <GmailFeature enabled>
+            <CandidateEmailImport />
+          </GmailFeature>
         )}
 
         <CandidateHistory />

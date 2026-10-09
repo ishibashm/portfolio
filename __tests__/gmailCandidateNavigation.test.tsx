@@ -85,6 +85,10 @@ it("moves only selected fields from candidate history to confirmation in memory,
       <Navigation />
     </StrictMode>,
   );
+  expect(fetch).not.toHaveBeenCalled();
+  fireEvent.click(
+    screen.getByText("Gmail の物件通知から候補を取り込む（任意）"),
+  );
   await screen.findByText((content, element) => {
     return (
       element?.tagName === "P" &&
@@ -113,4 +117,26 @@ it("moves only selected fields from candidate history to confirmation in memory,
   ).toHaveValue(address);
   expect(storage).not.toHaveBeenCalled();
   expect(window.location.href).not.toContain(encodeURIComponent(address));
+});
+
+it("does not read connection status until opened and removes the panel on close", async () => {
+  const fetch = vi
+    .spyOn(globalThis, "fetch")
+    .mockResolvedValue(new Response(JSON.stringify({ connections: [] })));
+  render(
+    <GmailFeature enabled>
+      <CandidateEmailImport />
+    </GmailFeature>,
+  );
+  expect(fetch).not.toHaveBeenCalled();
+  const toggle = screen.getByText("Gmail の物件通知から候補を取り込む（任意）");
+  fireEvent.click(toggle);
+  await screen.findByRole("region", { name: "Gmail接続" });
+  await waitFor(() => expect(fetch).toHaveBeenCalledTimes(1));
+  fireEvent.click(toggle);
+  await waitFor(() =>
+    expect(
+      screen.queryByRole("region", { name: "Gmail接続" }),
+    ).not.toBeInTheDocument(),
+  );
 });

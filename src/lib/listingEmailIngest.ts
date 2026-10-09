@@ -33,7 +33,7 @@ export function extractEmailUrls(
     !Number.isInteger(maxHeaderBytes) ||
     maxHeaderBytes < 1 ||
     maxHeaderBytes > 64 * 1024 ||
-    Buffer.byteLength(source, "utf8") > maxBytes
+    new TextEncoder().encode(source).byteLength > maxBytes
   )
     throw new EmailPreviewError();
   const urls = new Set<string>();

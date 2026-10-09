@@ -88,6 +88,11 @@ it.each([true, false])(
         />
       </Layout>,
     );
+    fireEvent.click(
+      screen.getByRole("button", {
+        name: "Gmailの物件通知をまとめて取り込む（任意）",
+      }),
+    );
     await screen.findByText((content, element) => {
       return (
         element?.tagName === "P" &&

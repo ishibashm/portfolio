@@ -39,14 +39,10 @@ describe("listing candidate flow", () => {
   it("email selection only fills the Phase 1 input and still requires location", async () => {
     const fetch = vi
       .spyOn(globalThis, "fetch")
-      .mockResolvedValue(
-        new Response(
-          JSON.stringify({ urls: ["https://suumo.jp/a"], truncated: false }),
-        ),
-      );
+      .mockRejectedValue(new Error("No network"));
     mount();
     fireEvent.click(screen.getByText(/自分の通知メールから/));
-    fireEvent.change(screen.getByLabelText("テスト用メール"), {
+    fireEvent.change(screen.getByLabelText("メール本文"), {
       target: { value: "https://suumo.jp/a" },
     });
     fireEvent.click(screen.getByRole("button", { name: "URLをプレビュー" }));
@@ -62,8 +58,7 @@ describe("listing candidate flow", () => {
     expect(
       screen.getByText(/このURLだけでは物件の住所を特定できません/),
     ).toBeInTheDocument();
-    expect(fetch).toHaveBeenCalledTimes(1);
-    expect(fetch.mock.calls[0][0]).toBe("/api/relocation/email-preview");
+    expect(fetch).not.toHaveBeenCalled();
     expect(
       screen.queryByRole("button", { name: "候補に保存" }),
     ).not.toBeInTheDocument();
@@ -157,3 +152,57 @@ describe("listing candidate flow", () => {
     ).not.toBeInTheDocument();
   });
 });
+
+it("anonymous address lookup reaches the public search and still needs map confirmation", async () => {
+  const fetch = vi
+    .spyOn(globalThis, "fetch")
+    .mockImplementation(async (url) => {
+      if (url === "/api/relocation/candidates/geocode")
+        return new Response(
+          JSON.stringify({ error: "候補の保存にはログインが必要です。" }),
+          { status: 401 },
+        );
+      if (url === `/api/geocode?q=${encodeURIComponent("京都市中京区")}`)
+        return new Response(
+          JSON.stringify({ lat: 35.4, lon: 135.5, source: "gsi" }),
+        );
+      if (String(url).startsWith("/api/geocode/reverse?"))
+        return new Response("{}");
+      throw new Error("Unexpected network request");
+    });
+  mount();
+  expect(screen.getByText(/検索サービスに住所を送ります/)).toBeInTheDocument();
+  fireEvent.change(
+    screen.getByRole("textbox", { name: "物件URL・住所・座標から調べる" }),
+    { target: { value: "京都市中京区" } },
+  );
+  fireEvent.click(screen.getByRole("button", { name: "調べる" }));
+  expect(
+    await screen.findByRole("button", { name: "地図で所在地を確認する" }),
+  ).toBeEnabled();
+  expect(screen.getByRole("button", { name: "候補に保存" })).toBeDisabled();
+  expect(fetch.mock.calls[1][0]).toBe(
+    `/api/geocode?q=${encodeURIComponent("京都市中京区")}`,
+  );
+});
+it.each([403, 503])(
+  "does not fall back to public search for status %s",
+  async (status) => {
+    const fetch = vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      new Response(
+        JSON.stringify({
+          error: "住所検索は準備中です。地図をクリックしてください。",
+        }),
+        { status },
+      ),
+    );
+    mount();
+    fireEvent.change(
+      screen.getByRole("textbox", { name: "物件URL・住所・座標から調べる" }),
+      { target: { value: "京都市中京区" } },
+    );
+    fireEvent.click(screen.getByRole("button", { name: "調べる" }));
+    await screen.findByText(/住所検索は準備中/);
+    expect(fetch).toHaveBeenCalledTimes(1);
+  },
+);
