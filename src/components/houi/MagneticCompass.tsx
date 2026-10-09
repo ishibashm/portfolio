@@ -14,7 +14,13 @@
  */
 
 import dynamic from "next/dynamic";
-import { useEffect, useMemo, useRef, useState } from "react";
+import {
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  useSyncExternalStore,
+} from "react";
 import { Compass } from "lucide-react";
 import {
   buildCompassModel,
@@ -33,6 +39,10 @@ const CompassScene = dynamic(() => import("@/components/houi/CompassScene"), {
     <p className="p-6 text-sm text-stone-500">羅盤を読み込んでいます…</p>
   ),
 });
+
+const subscribeHydration = () => () => {};
+const clientSnapshot = () => true;
+const serverSnapshot = () => false;
 
 const PREFS = Object.keys(PREFECTURE_CENTERS);
 
@@ -145,8 +155,15 @@ export function MagneticCompass() {
   const [from, setFrom] = useState("東京都");
   const [to, setTo] = useState("");
   const [mapping, setMapping] = useState<NodeMapping>("traditional");
-  const [webgl] = useState(supportsWebGL);
-  const [view, setView] = useState<"3d" | "flat">(webgl ? "3d" : "flat");
+  // サーバーと初回描画は平面に揃え、接続後に端末の立体表示対応を調べる。
+  const hydrated = useSyncExternalStore(
+    subscribeHydration,
+    clientSnapshot,
+    serverSnapshot,
+  );
+  const webgl = useMemo(() => hydrated && supportsWebGL(), [hydrated]);
+  const [selectedView, setView] = useState<"3d" | "flat" | null>(null);
+  const view = selectedView ?? (webgl ? "3d" : "flat");
   const [reducedMotion] = useState(
     () =>
       typeof window !== "undefined" &&
