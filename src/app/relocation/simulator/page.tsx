@@ -48,6 +48,7 @@ import {
   bearingBetween,
   directionAngleRange,
   distanceKmBetween,
+  nodeMappingForBoard,
 } from "@/utils/directionGeo";
 import { SimulatorStart } from "@/components/relocation/SimulatorStart";
 import { PlaceInput } from "@/components/relocation/PlaceInput";
@@ -1184,7 +1185,7 @@ export default function RelocationSimulatorPage() {
     /* 境目は utils/directionGeo から引く。以前はここに
        N: [345, 15] … の表を写しており、区切りの定義が 2 か所に
        あった（#776 の扇形と同じ事故が起きうる形）。 */
-    const nodeMapping = useClassical ? "traditional" : "physical";
+    const nodeMapping = nodeMappingForBoard(useClassical);
     const angleRanges = Object.fromEntries(
       COMPASS_DIRECTIONS.map((d) => [d, directionAngleRange(d, nodeMapping)]),
     ) as Record<string, [number, number]>;

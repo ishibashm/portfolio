@@ -25,7 +25,10 @@ import {
   bearingBetween,
   directionFromBearing,
   distanceKmBetween,
+  nodeMappingForBoard,
+  parseNodeMapping,
 } from "@/utils/directionGeo";
+import { parsePhysicalMonthMode } from "@/utils/physicalMonthMode";
 
 export const dynamic = "force-dynamic";
 
@@ -73,11 +76,15 @@ export async function GET(request: Request) {
     常に載せてあるので、方位磁針で測ったときの向きは画面側で出せる。
   */
   const useClassical = engineType === "classical";
-  const nodeMapping = (searchParams.get("nodeMapping") ||
-    (useClassical ? "traditional" : "physical")) as "traditional" | "physical";
+  // 不正値も未指定と同じ盤の既定へ。以前は素通しで常に伝統区分になっていた。
+  const nodeMapping = parseNodeMapping(
+    searchParams.get("nodeMapping"),
+    nodeMappingForBoard(useClassical),
+  );
   const lunarPhaseModifier = searchParams.get("lunarPhaseModifier") !== "false";
-  const physicalMonthMode = (searchParams.get("physicalMonthMode") ||
-    "independent") as "coupled" | "independent";
+  const physicalMonthMode = parsePhysicalMonthMode(
+    searchParams.get("physicalMonthMode"),
+  );
   const prefecture = searchParams.get("prefecture") || "all";
 
   // Fallback to local config if parameters are missing
@@ -133,9 +140,8 @@ export async function GET(request: Request) {
   const hasBirthDate = Boolean(birthDateStr && birthDateStr.trim() !== "");
 
   // datetime-localが秒を含まない場合があるため、有効なDate形式にする
-  const bDate = hasBirthDate
-    ? parseJapanDateTime(birthDateStr as string)
-    : null;
+  const bDate =
+    hasBirthDate && birthDateStr ? parseJapanDateTime(birthDateStr) : null;
   if (bDate && isNaN(bDate.getTime())) {
     return NextResponse.json(
       { success: false, error: "Invalid birthDate" },

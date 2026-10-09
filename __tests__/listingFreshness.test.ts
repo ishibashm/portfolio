@@ -3,6 +3,8 @@ import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import {
   LISTING_STALE_AFTER_DAYS,
+  LISTING_CRAWL_STOPPED_ON,
+  listingCoverageScope,
   describeListingFreshness,
   listingFreshnessMessage,
   listingSnapshotNote,
@@ -224,5 +226,25 @@ describe("静止した数字の断り", () => {
       "utf8",
     );
     expect(page).not.toContain("listingSnapshotNote");
+  });
+});
+
+describe("県の方位一覧の収録範囲", () => {
+  it("停止日を helper から出し、当時集計できた街だけと断る", () => {
+    expect(LISTING_CRAWL_STOPPED_ON).toBe("2026-09-13");
+    expect(listingCoverageScope()).toBe(
+      `${LISTING_CRAWL_STOPPED_ON} に巡回を止めた時点で掲載を集計できていた市区町村だけ`,
+    );
+    const page = readFileSync(
+      join(process.cwd(), "src/app/houi/pref/[code]/page.tsx"),
+      "utf8",
+    );
+    expect(page).toContain(
+      'import { listingCoverageScope } from "@/lib/listingFreshness"',
+    );
+    expect(page).toContain("<b>{listingCoverageScope()}</b>");
+    expect(page).toContain("以降は更新していません");
+    expect(page).toContain("「その方位に街が無い」とは限りません。");
+    expect(page).not.toContain("巡回がまだ届いていない");
   });
 });

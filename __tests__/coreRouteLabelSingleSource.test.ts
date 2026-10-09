@@ -86,8 +86,9 @@ describe("写しを増やさない", () => {
   const BASELINE: Record<string, number> = {
     /* 2026-09-20 に「物件を方位で探す」から改名し、画面の字面は
        coreRouteLabel で引く形に寄せた（17 → 2）。残る 2 つはコメント
-       （HomePortal・arbitrage/page の経緯）。 */
-    方位で街を探す: 2,
+       （HomePortal・arbitrage/page の経緯）。2026-10-09 に workingDate の
+       古い頁名も直したため 3。増えたのは註で、画面の写しではない。 */
+    方位で街を探す: 3,
   };
 
   for (const [label, max] of Object.entries(BASELINE)) {
