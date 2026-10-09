@@ -35,6 +35,7 @@ import { metaDescriptionFromIntro } from "@/lib/editorialMeta";
 import { editorialFirst } from "@/lib/editorialAreaLinks";
 import { AREA_EDITORIAL } from "@/lib/areaEditorial";
 import { ESTAT_API_CREDIT } from "@/lib/estatCredit";
+import { listingCoverageScope } from "@/lib/listingFreshness";
 import { coreRouteLabel } from "@/lib/siteStructure";
 
 /**
@@ -299,8 +300,8 @@ export default async function Page({
                   .map((d) => DIRECTION_LABELS[d])
                   .join("・")}
               </b>
-              。この一覧は<b>掲載を集計できている市区町村だけ</b>
-              を並べています。県がその方位に伸びていない場合もあれば、巡回がまだ届いていないだけの場合もあります。
+              。この一覧は<b>{listingCoverageScope()}</b>
+              を並べており、以降は更新していません。県がその方位に伸びていない場合もあれば、掲載を集計できていなかった市区町村がある場合もあります。
               <b>「その方位に街が無い」とは限りません。</b>
               吉方位がこの方位に出た年は、隣の県も含めて探してください。
             </p>
