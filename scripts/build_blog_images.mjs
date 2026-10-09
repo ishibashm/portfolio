@@ -29,6 +29,9 @@
  *
  *
  *   node scripts/build_blog_images.mjs
+ *   ONLY=<slug>[,<slug>] node scripts/build_blog_images.mjs
+ *
+ * slug の位置引数では絞れない。対象指定には ONLY を使う。
  *
  * Chromium が playwright の既定の場所に無い環境では、実行ファイルの場所を
  * CHROMIUM_PATH で渡す（`npx playwright install` を打てない環境向け）。
@@ -120,6 +123,130 @@ function board(hit, caption) {
  * 画像のために新しい主張を作らない（記事と食い違う）。
  */
 const FIGURES = [
+  {
+    /* 「北の磁極は、どれくらい動いたのか」の IGRF-14 の表と、
+       「方位盤は作り直さないといけないのか」の配置／向きの区別から。 */
+    slug: "geomagnetism-and-honmei-star",
+    kicker: "地磁気と方位盤",
+    title: "磁北が動いても、<br>星の配置は変わらない",
+    sub: "変わるのは、方位磁針で盤を地面に合わせる向き。このサイトは真北で判定します。",
+    body: `<div style="display:flex;gap:36px;width:100%;align-items:center">
+      <div style="flex:1">
+        <div style="font-size:20px;font-weight:700;margin-bottom:12px">偏角の変化（IGRF-14）</div>
+        <div style="display:grid;grid-template-columns:90px 110px 32px 110px 90px;gap:8px;text-align:center;align-items:center;font-size:19px">
+          <span></span><span>1950 年</span><span></span><span>2025 年</span><span>変化</span>
+          ${[
+            ["札幌", "−8.6度", "−9.9度", "1.3度"],
+            ["東京", "−6.3度", "−7.9度", "1.6度"],
+            ["那覇", "−2.9度", "−5.8度", "2.9度"],
+          ]
+            .map(
+              ([
+                city,
+                before,
+                after,
+                change,
+              ]) => `<b>${city}</b><span>${before}</span><span style="color:#94a3b8">→</span><span>${after}</span>
+              <b style="background:#fff;border:1px solid #e11d48;border-radius:7px;padding:8px;color:#e11d48">${change}</b>`,
+            )
+            .join("")}
+        </div>
+        <div style="font-size:17px;color:#64748b;margin-top:12px">各年 7 月 1 日の計算値。負の値は真北より西。</div>
+      </div>
+      <div style="width:490px;display:flex;flex-direction:column;gap:14px">
+        <div style="background:#fff;border:1px solid #e2d9d1;border-radius:12px;padding:16px 20px">
+          <div style="font-size:23px;font-weight:700">暦の規則 → 星の配置・本命星</div>
+          <div class="note" style="max-width:none">地磁気の値は使わない</div>
+        </div>
+        <div style="background:#fff;border:1px solid #e11d48;border-radius:12px;padding:16px 20px">
+          <div style="font-size:23px;font-weight:700;color:#e11d48">地磁気の変化 → 磁北の向き</div>
+          <div class="note" style="max-width:none">真北で重ねる盤には影響しない</div>
+        </div>
+      </div>
+    </div>`,
+  },
+  {
+    /* 「どこにリンクを置いているか」の表と
+       「物件サイトの URL を貼ると、何が起きる？」の処理の流れから。 */
+    slug: "how-we-link-to-property-sites",
+    kicker: "物件サイトへのリンク",
+    title: "物件サイトへのリンクは、規定で分ける",
+    sub: "募集中の部屋は自前で持たず、各社へ渡します。いずれとも提携・協力関係はありません。",
+    body: `<div style="width:100%;display:flex;flex-direction:column;gap:22px">
+      <div style="display:flex;align-items:center;gap:24px">
+        <div style="width:280px;background:#efe7e0;border-radius:12px;padding:20px;font-size:22px;font-weight:700;text-align:center">
+          Cloud Palette<br><span style="font-size:18px;font-weight:400">市区町村の方位ページ<br>この地点を調べる</span>
+        </div>
+        <div style="font-size:32px;color:#e11d48">→</div>
+        <div style="flex:1;display:flex;flex-direction:column;gap:12px">
+          <div style="background:#fff;border:1px solid #e11d48;border-radius:12px;padding:12px 20px">
+            <div style="font-size:23px;font-weight:700">SUUMO → 市区町村の賃貸一覧</div>
+            <div style="font-size:18px;color:#475569">個人のホームページの例外に当たると判断</div>
+          </div>
+          <div style="background:#fff;border:1px solid #e2d9d1;border-radius:12px;padding:12px 20px">
+            <div style="font-size:23px;font-weight:700">LIFULL HOME'S → トップページ</div>
+            <div style="font-size:18px;color:#475569">リンクポリシーの指定先へ</div>
+          </div>
+        </div>
+      </div>
+      <div class="note" style="max-width:none;border-top:1px solid #d6cec6;padding-top:12px">
+        <b>貼った URL → 綴りにある市区町村を読む</b><br>
+        URL は開きに行かず、よそへも送らない。街が決まらなければ市区町村名で入力。
+      </div>
+    </div>`,
+  },
+  {
+    /* 「日取りはどう決めればよいか」の手順と
+       「2026年10月〜2027年3月の『引越しに向く日』は何日あるのか」の表から。 */
+    slug: "what-is-hidori-for-moving",
+    kicker: "引越しの日取り",
+    title: "日取りは、動ける期間から順番に絞る",
+    sub: "日の吉は方位の凶を消さないとされます。同じ方位の段階の中で、暦注を見ます。",
+    body: `<div style="width:100%;display:flex;flex-direction:column;gap:18px">
+      <div style="display:flex;align-items:center;gap:10px">
+        ${[
+          ["動ける期間", "退去・入居・仕事"],
+          ["方位", "年盤・月盤を確認"],
+          ["段階の高い日", "方位の S〜X"],
+          ["同じ段階で暦注", "大安・天赦日など"],
+          ["業者の空き・料金", "見積もりで決める"],
+        ]
+          .map(
+            ([
+              label,
+              detail,
+            ]) => `<div style="flex:1;background:#fff;border:1px solid #e2d9d1;border-radius:12px;padding:14px 6px;text-align:center">
+              <div style="font-size:20px;font-weight:700">${label}</div>
+              <div style="font-size:16px;color:#475569;margin-top:6px">${detail}</div>
+            </div>`,
+          )
+          .join('<span style="font-size:23px;color:#e11d48">→</span>')}
+      </div>
+      <div style="font-size:19px;font-weight:700">暦注だけで選んだ「引越しに向く日」／うち土日</div>
+      <div style="display:flex;gap:12px">
+        ${[
+          ["2026 年 10 月", 7, 2],
+          ["2026 年 11 月", 9, 4],
+          ["2026 年 12 月", 7, 1],
+          ["2027 年 1 月", 3, 2],
+          ["2027 年 2 月", 6, 2],
+          ["2027 年 3 月", 8, 1],
+        ]
+          .map(
+            ([
+              month,
+              days,
+              weekend,
+            ]) => `<div style="flex:1;background:#fff;border:1px solid #e2d9d1;border-radius:9px;padding:10px;text-align:center">
+              <div style="font-size:17px;color:#475569">${month}</div>
+              <div style="font-size:23px;font-weight:700;margin-top:4px">${days} 日 <span style="color:#e11d48">／ ${weekend} 日</span></div>
+            </div>`,
+          )
+          .join("")}
+      </div>
+      <div style="font-size:18px;color:#475569">この日数には方位・天中殺を含みません。動く方位は別に確かめます。</div>
+    </div>`,
+  },
   {
     /* 記事の 2026 年盤の表から。年盤の段階で 8 方位のうち 2〜3 しか残らない。 */
     slug: "what-this-tool-can-and-cannot-decide",
