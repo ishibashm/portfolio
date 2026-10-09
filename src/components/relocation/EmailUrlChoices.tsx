@@ -90,7 +90,7 @@ export function EmailUrlChoices({
               <span className="text-stone-500">{siteName(url)} の物件</span>
               <button
                 type="button"
-                className="min-h-[32px] rounded-lg border border-stone-300 bg-white px-3 py-1.5 font-bold text-stone-800 hover:bg-stone-50"
+                className="min-h-[44px] rounded-lg border border-stone-300 bg-white px-3 py-1.5 font-bold text-stone-800 hover:bg-stone-50"
                 onClick={() => onSelect(url)}
               >
                 <span className="sr-only">{url} を</span>既存入力へ

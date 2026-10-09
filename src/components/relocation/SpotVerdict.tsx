@@ -653,7 +653,7 @@ export function SpotVerdict({
         <Link
           href="/relocation/candidates"
           prefetch={false}
-          className="block text-xs underline"
+          className="inline-flex min-h-[44px] items-center rounded-lg border border-stone-300 px-3 text-xs font-bold text-stone-700 hover:bg-stone-50"
         >
           保存した候補を見る
         </Link>
@@ -667,7 +667,7 @@ export function SpotVerdict({
               <button
                 type="button"
                 onClick={onOpenMap}
-                className="font-bold text-indigo-600 underline"
+                className="mt-2 inline-flex min-h-[44px] items-center rounded-lg border border-indigo-200 bg-indigo-50 px-3 font-bold text-indigo-700 hover:bg-indigo-100"
               >
                 地図で場所を指定する →
               </button>
