@@ -1004,22 +1004,22 @@ export default function ArbitrageMapInner({
           実機の画面）。どちらも右側で、片方は上から下へ、もう片方は
           下から上へ伸びるので、画面が短いと必ずぶつかる。
 
-          凡例を出しているあいだは、下の凡例のぶん（見出し＋7 行＋説明で
-          実測 13〜15rem）を空けて、列はその中でスクロールさせる。
+          下の塗り分けと凡例のぶん（見出し＋7 行＋説明で
+          実測 13〜15rem）を空けて、列はその中でスクロールさせる。戻す・閉じる操作は上端に残す。
           `max()` で下限を置いているのは、器が低いと calc が負になって
           列ごと消えるため（0 に丸められる）。
         */}
         <div
           ref={mapControlRef}
-          className={`absolute top-4 right-4 z-[1000] pointer-events-auto flex flex-col items-end gap-1.5 overflow-y-auto ${
-            zoningOn
+          className={`absolute top-4 right-4 z-[1000] pointer-events-auto flex flex-col items-end gap-1.5 max-w-[calc(100%-2rem)] overflow-y-auto overscroll-contain [&>button]:shrink-0 [&>div]:shrink-0 ${
+            zoningOn || legendOpen
               ? "max-h-[max(8rem,calc(100%-17rem))]"
-              : "max-h-[calc(100%-2rem)]"
+              : "max-h-[max(8rem,calc(100%-12rem))] sm:max-h-[max(8rem,calc(100%-17rem))]"
           }`}
         >
           {/* 器の大きさと、操作をたたむかどうか。**この 2 つは常に出す。**
               たたんだときに開き直せなくなるのを避ける。 */}
-          <div className="flex gap-0.5 p-0.5 rounded-lg bg-white/90 border border-stone-200 shadow-lg">
+          <div className="sticky top-0 z-10 flex gap-0.5 p-0.5 rounded-lg bg-white border border-stone-200 shadow-lg">
             <button
               onClick={() => {
                 setFullscreen((v) => !v);
@@ -1064,14 +1064,14 @@ export default function ArbitrageMapInner({
             <>
               {/* 目的のプリセット。個別の切り替え（下）の前に置く。
               どちらも見え方だけの変更で、判定にも絞り込みにも入らない。 */}
-              <div className="flex gap-0.5 p-0.5 rounded-lg bg-white/90 border border-stone-200 shadow-lg">
+              <div className="flex flex-wrap justify-end gap-0.5 p-0.5 rounded-lg bg-white/90 border border-stone-200 shadow-lg">
                 {LAYER_PRESET_ORDER.map((id) => (
                   <button
                     key={id}
                     onClick={() => applyLayerPreset(id)}
                     aria-pressed={activeLayerPreset === id}
                     title={LAYER_PRESETS[id].note}
-                    className={`px-2.5 py-1.5 rounded-md font-mono text-[10px] font-bold transition-colors active:scale-95 cursor-pointer ${
+                    className={`min-h-11 min-w-11 px-2.5 py-1.5 rounded-md text-xs font-bold transition-colors active:scale-95 cursor-pointer ${
                       activeLayerPreset === id
                         ? "bg-stone-700 text-white"
                         : "text-stone-600 hover:bg-white"
@@ -1083,7 +1083,7 @@ export default function ArbitrageMapInner({
               </div>
               {/* 地図の下地。ハザード・用途地域と同じ列に置く。
               どれも「見え方だけ」で、判定にも絞り込みにも入らない。 */}
-              <div className="flex gap-0.5 p-0.5 rounded-lg bg-white/80 border border-stone-200 shadow-lg">
+              <div className="flex flex-wrap justify-end gap-0.5 p-0.5 rounded-lg bg-white/80 border border-stone-200 shadow-lg">
                 {BASE_MAP_ORDER.map((id) => (
                   <button
                     key={id}
@@ -1093,7 +1093,7 @@ export default function ArbitrageMapInner({
                     }}
                     aria-pressed={baseMap === id}
                     title={BASE_MAPS[id].note}
-                    className={`px-2.5 py-1.5 rounded-md font-mono text-[10px] font-bold transition-colors active:scale-95 cursor-pointer ${
+                    className={`min-h-11 min-w-11 px-2.5 py-1.5 rounded-md text-xs font-bold transition-colors active:scale-95 cursor-pointer ${
                       baseMap === id
                         ? "bg-indigo-600 text-white"
                         : "text-stone-600 hover:bg-white"
@@ -1106,7 +1106,7 @@ export default function ArbitrageMapInner({
                   onClick={() => setHillshade((v) => !v)}
                   aria-pressed={hillshade}
                   title={HILLSHADE.note}
-                  className={`px-2.5 py-1.5 rounded-md font-mono text-[10px] font-bold transition-colors active:scale-95 cursor-pointer ${
+                  className={`min-h-11 min-w-11 px-2.5 py-1.5 rounded-md text-xs font-bold transition-colors active:scale-95 cursor-pointer ${
                     hillshade
                       ? "bg-indigo-600 text-white"
                       : "text-stone-600 hover:bg-white"
@@ -1118,7 +1118,7 @@ export default function ArbitrageMapInner({
               {/* ハザードマップ（国交省「重ねるハザードマップ」）のタブ。
               「なし」を明示的に置くのは、消す操作を選び直しではなく
               1 押しにするため。選択は端末に残す。 */}
-              <div className="flex gap-0.5 p-0.5 rounded-lg bg-white/80 border border-stone-200 shadow-lg">
+              <div className="flex flex-wrap justify-end gap-0.5 p-0.5 rounded-lg bg-white/80 border border-stone-200 shadow-lg">
                 {(
                   [
                     ["none", "なし"],
@@ -1139,7 +1139,7 @@ export default function ArbitrageMapInner({
                         ? "ハザードの重ね描きを消す"
                         : `${label}の想定区域を重ねて表示（出典: ハザードマップポータルサイト）`
                     }
-                    className={`px-2.5 py-1.5 rounded-md font-mono text-[10px] font-bold transition-colors active:scale-95 cursor-pointer ${
+                    className={`min-h-11 min-w-11 px-2.5 py-1.5 rounded-md text-xs font-bold transition-colors active:scale-95 cursor-pointer ${
                       hazardTab === id
                         ? "bg-rose-600 text-white"
                         : "text-stone-600 hover:bg-white"
@@ -1162,7 +1162,7 @@ export default function ArbitrageMapInner({
                 }}
                 aria-pressed={zoningOn}
                 title="用途地域（商業地域・住居地域など）を重ねて表示（出典: 不動産情報ライブラリ）"
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg border font-mono text-[10px] font-bold transition-colors shadow-lg active:scale-95 cursor-pointer ${
+                className={`flex min-h-11 items-center gap-1.5 px-3 py-1.5 rounded-lg border text-xs font-bold transition-colors shadow-lg active:scale-95 cursor-pointer ${
                   zoningOn
                     ? "bg-indigo-600 text-white border-indigo-600"
                     : "bg-white/80 text-stone-700 border-stone-200 hover:bg-white"
@@ -1172,7 +1172,7 @@ export default function ArbitrageMapInner({
               </button>
               <button
                 onClick={toggleMapTheme}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border font-mono text-[10px] font-bold bg-white/80 text-stone-700 border-stone-200 hover:bg-white transition-colors shadow-lg active:scale-95 cursor-pointer"
+                className="flex min-h-11 items-center gap-1.5 px-3 py-1.5 rounded-lg border text-xs font-bold bg-white/80 text-stone-700 border-stone-200 hover:bg-white transition-colors shadow-lg active:scale-95 cursor-pointer"
               >
                 {mapTheme === "dark" ? "☀️ ライトマップ" : "🌙 ダークマップ"}
               </button>
@@ -1202,7 +1202,7 @@ export default function ArbitrageMapInner({
                       : "現在地の表示を消す"
                 }
                 aria-pressed={locateOn}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg border font-mono text-[10px] font-bold transition-colors shadow-lg active:scale-95 cursor-pointer ${
+                className={`flex min-h-11 items-center gap-1.5 px-3 py-1.5 rounded-lg border text-xs font-bold transition-colors shadow-lg active:scale-95 cursor-pointer ${
                   locateFollow
                     ? "bg-blue-600 text-white border-blue-600 hover:bg-blue-700"
                     : locateOn
@@ -1241,7 +1241,7 @@ export default function ArbitrageMapInner({
                       : "方位の扇形を表示する"
                   }
                   aria-pressed={showSectors}
-                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg border font-mono text-[10px] font-bold transition-colors shadow-lg active:scale-95 cursor-pointer ${
+                  className={`flex min-h-11 items-center gap-1.5 px-3 py-1.5 rounded-lg border text-xs font-bold transition-colors shadow-lg active:scale-95 cursor-pointer ${
                     showSectors
                       ? "bg-indigo-600 text-white border-indigo-600 hover:bg-indigo-700"
                       : "bg-white/80 text-stone-500 border-stone-200 hover:bg-white"
@@ -1264,7 +1264,7 @@ export default function ArbitrageMapInner({
                       : "出発地からの距離の輪を出す（縮尺の目安）"
                   }
                   aria-pressed={showRings}
-                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg border font-mono text-[10px] font-bold transition-colors shadow-lg active:scale-95 cursor-pointer ${
+                  className={`flex min-h-11 items-center gap-1.5 px-3 py-1.5 rounded-lg border text-xs font-bold transition-colors shadow-lg active:scale-95 cursor-pointer ${
                     showRings
                       ? "bg-stone-600 text-white border-stone-600 hover:bg-stone-700"
                       : "bg-white/80 text-stone-500 border-stone-200 hover:bg-white"
@@ -1288,7 +1288,7 @@ export default function ArbitrageMapInner({
                     : "名所（一宮・名勝）を出す。押すと出発地からの方位と段階が見られます"
                 }
                 aria-pressed={showSpots}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg border font-mono text-[10px] font-bold transition-colors shadow-lg active:scale-95 cursor-pointer ${
+                className={`flex min-h-11 items-center gap-1.5 px-3 py-1.5 rounded-lg border text-xs font-bold transition-colors shadow-lg active:scale-95 cursor-pointer ${
                   showSpots
                     ? "bg-amber-600 text-white border-amber-600 hover:bg-amber-700"
                     : "bg-white/80 text-stone-500 border-stone-200 hover:bg-white"
@@ -1310,7 +1310,7 @@ export default function ArbitrageMapInner({
                     : "駅を出す。押すと出発地からの方位と段階が見られます（国土数値情報 N02）"
                 }
                 aria-pressed={showStations}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg border font-mono text-[10px] font-bold transition-colors shadow-lg active:scale-95 cursor-pointer ${
+                className={`flex min-h-11 items-center gap-1.5 px-3 py-1.5 rounded-lg border text-xs font-bold transition-colors shadow-lg active:scale-95 cursor-pointer ${
                   showStations
                     ? "bg-blue-700 text-white border-blue-700 hover:bg-blue-800"
                     : "bg-white/80 text-stone-500 border-stone-200 hover:bg-white"
@@ -1324,7 +1324,7 @@ export default function ArbitrageMapInner({
               2 つを並べて現在地を反転表示にすると、切り替えられること
               自体が見える。押した側が実際のズームと食い違わないよう、
               選択状態は状態変数ではなく現在のズームから引く。 */}
-              <div className="flex gap-0.5 p-0.5 rounded-lg bg-white/80 border border-stone-200 shadow-lg">
+              <div className="flex flex-wrap justify-end gap-0.5 p-0.5 rounded-lg bg-white/80 border border-stone-200 shadow-lg">
                 {hasBase && (
                   <button
                     onClick={() =>
@@ -1334,7 +1334,7 @@ export default function ArbitrageMapInner({
                       )
                     }
                     title="出発地を中心に、検索半径が収まるズームへ"
-                    className={`px-2.5 py-1 rounded-md font-mono text-[10px] font-bold transition-colors active:scale-95 cursor-pointer ${
+                    className={`min-h-11 min-w-11 px-2.5 py-1 rounded-md text-xs font-bold transition-colors active:scale-95 cursor-pointer ${
                       isOverview
                         ? "text-stone-500 hover:bg-stone-100"
                         : "bg-indigo-600 text-white"
@@ -1348,7 +1348,7 @@ export default function ArbitrageMapInner({
                     mapRef.current?.setView(OVERVIEW_CENTER, OVERVIEW_ZOOM)
                   }
                   title="全国を俯瞰して県ごとの方位の吉凶を見る"
-                  className={`px-2.5 py-1 rounded-md font-mono text-[10px] font-bold transition-colors active:scale-95 cursor-pointer ${
+                  className={`min-h-11 min-w-11 px-2.5 py-1 rounded-md text-xs font-bold transition-colors active:scale-95 cursor-pointer ${
                     isOverview
                       ? "bg-indigo-600 text-white"
                       : "text-stone-500 hover:bg-stone-100"
