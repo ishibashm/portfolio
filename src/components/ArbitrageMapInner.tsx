@@ -1037,7 +1037,7 @@ export default function ArbitrageMapInner({
                   ? "画面いっぱいの表示をやめる"
                   : "地図を画面いっぱいに広げる"
               }
-              className="px-2.5 py-1.5 rounded-md font-mono text-[10px] font-bold text-stone-700 hover:bg-white transition-colors active:scale-95 cursor-pointer"
+              className="min-h-11 min-w-11 px-2.5 py-1.5 rounded-md text-xs font-bold text-stone-700 hover:bg-white transition-colors active:scale-95 cursor-pointer"
             >
               {fullscreen ? "⤡ 戻す" : "⛶ 全画面"}
             </button>
@@ -1049,7 +1049,7 @@ export default function ArbitrageMapInner({
                   ? "地図の設定をたたむ"
                   : "地図の設定（下地・ハザード・用途地域）を開く"
               }
-              className={`px-2.5 py-1.5 rounded-md font-mono text-[10px] font-bold transition-colors active:scale-95 cursor-pointer ${
+              className={`min-h-11 min-w-11 px-2.5 py-1.5 rounded-md text-xs font-bold transition-colors active:scale-95 cursor-pointer ${
                 controlsOpen
                   ? "bg-stone-700 text-white"
                   : "text-stone-700 hover:bg-white"
@@ -1414,7 +1414,7 @@ export default function ArbitrageMapInner({
                   type="button"
                   aria-pressed={overviewPaint === id}
                   onClick={() => changeOverviewPaint(id)}
-                  className={`min-h-[24px] rounded-md border px-2 text-[10px] font-bold ${
+                  className={`min-h-11 min-w-11 rounded-md border px-2 text-xs font-bold ${
                     overviewPaint === id
                       ? "border-indigo-500 bg-indigo-600 text-white"
                       : "border-stone-300 bg-white text-stone-600 hover:bg-stone-100"
@@ -1720,7 +1720,7 @@ export default function ArbitrageMapInner({
           type="button"
           onClick={() => setLegendOpen((v) => !v)}
           aria-expanded={legendOpen}
-          className="sm:hidden px-2.5 py-1.5 rounded-lg border border-stone-200 bg-white/85 text-[10px] font-bold text-stone-700 shadow-lg backdrop-blur cursor-pointer"
+          className="sm:hidden min-h-11 min-w-11 px-2.5 py-1.5 rounded-lg border border-stone-200 bg-white/85 text-xs font-bold text-stone-700 shadow-lg backdrop-blur cursor-pointer"
         >
           {legendOpen ? "凡例 ▴" : "凡例 ▾"}
         </button>
