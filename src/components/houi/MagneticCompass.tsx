@@ -219,7 +219,7 @@ export function MagneticCompass() {
             <select
               value={from}
               onChange={(e) => setFrom(e.target.value)}
-              className="mt-1 rounded-lg border border-stone-300 bg-white px-2 py-1.5"
+              className="mt-1 min-h-11 rounded-lg border border-stone-300 bg-white px-2 py-1.5 text-base sm:text-xs"
             >
               {PREFS.map((p) => (
                 <option key={p} value={p}>
@@ -235,7 +235,7 @@ export function MagneticCompass() {
             <select
               value={to}
               onChange={(e) => setTo(e.target.value)}
-              className="mt-1 rounded-lg border border-stone-300 bg-white px-2 py-1.5"
+              className="mt-1 min-h-11 rounded-lg border border-stone-300 bg-white px-2 py-1.5 text-base sm:text-xs"
             >
               <option value="">選ばない</option>
               {PREFS.filter((p) => p !== from).map((p) => (
@@ -257,7 +257,7 @@ export function MagneticCompass() {
                 type="button"
                 aria-pressed={mapping === m}
                 onClick={() => setMapping(m)}
-                className={`rounded-full border px-2.5 py-1 font-semibold ${
+                className={`min-h-11 min-w-11 rounded-full border px-2.5 py-1 font-semibold ${
                   mapping === m
                     ? "border-stone-800 bg-stone-800 text-white"
                     : "border-stone-300 bg-white text-stone-700"
@@ -273,7 +273,7 @@ export function MagneticCompass() {
                 type="button"
                 aria-pressed={view === "3d"}
                 onClick={() => setView("3d")}
-                className={`rounded-full border px-2.5 py-1 font-semibold ${
+                className={`min-h-11 min-w-11 rounded-full border px-2.5 py-1 font-semibold ${
                   view === "3d"
                     ? "border-rose-600 bg-rose-600 text-white"
                     : "border-stone-300 bg-white text-stone-700"
@@ -286,7 +286,7 @@ export function MagneticCompass() {
               type="button"
               aria-pressed={view === "flat"}
               onClick={() => setView("flat")}
-              className={`rounded-full border px-2.5 py-1 font-semibold ${
+              className={`min-h-11 min-w-11 rounded-full border px-2.5 py-1 font-semibold ${
                 view === "flat"
                   ? "border-rose-600 bg-rose-600 text-white"
                   : "border-stone-300 bg-white text-stone-700"

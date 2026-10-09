@@ -104,13 +104,13 @@ export function HonmeiLookup({ starNames, linkYear }: Props) {
             min={`${MIN_BIRTH_YEAR}-01-01`}
             max={`${MAX_BIRTH_YEAR}-12-31`}
             onChange={(e) => void applyDate(e.target.value)}
-            className="mt-1.5 w-44 rounded-lg border border-slate-300 px-3 py-2 text-sm"
+            className="mt-1.5 min-h-11 w-44 rounded-lg border border-slate-300 px-3 py-2 text-base sm:text-sm"
           />
         </label>
         <button
           type="button"
           onClick={() => void loadFromProfile()}
-          className="rounded-full border border-slate-300 bg-white px-4 py-2 text-xs font-bold text-slate-700 transition-colors hover:bg-slate-50"
+          className="min-h-11 rounded-full border border-slate-300 bg-white px-4 py-2 text-xs font-bold text-slate-700 transition-colors hover:bg-slate-50"
         >
           プロフィールから読み込む
         </button>
@@ -142,7 +142,7 @@ export function HonmeiLookup({ starNames, linkYear }: Props) {
           <Link
             prefetch={false}
             href={`/houi/${linkYear}/${result.dayStart.classical}`}
-            className="mt-2 inline-flex text-xs font-bold text-rose-600 hover:underline"
+            className="mt-2 inline-flex min-h-11 items-center text-xs font-bold text-rose-600 hover:underline"
           >
             {linkYear}年の吉方位を見る →
           </Link>
@@ -161,7 +161,7 @@ export function HonmeiLookup({ starNames, linkYear }: Props) {
               <Link
                 prefetch={false}
                 href={`/houi/${linkYear}/${result.dayStart.classical}`}
-                className="ml-2 font-bold text-rose-600 hover:underline"
+                className="ml-2 inline-flex min-h-11 items-center font-bold text-rose-600 hover:underline"
               >
                 {linkYear}年の吉方位 →
               </Link>
@@ -172,7 +172,7 @@ export function HonmeiLookup({ starNames, linkYear }: Props) {
               <Link
                 prefetch={false}
                 href={`/houi/${linkYear}/${result.dayEnd.classical}`}
-                className="ml-2 font-bold text-rose-600 hover:underline"
+                className="ml-2 inline-flex min-h-11 items-center font-bold text-rose-600 hover:underline"
               >
                 {linkYear}年の吉方位 →
               </Link>
