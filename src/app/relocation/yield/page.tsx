@@ -1,4 +1,6 @@
 import type { Metadata } from "next";
+import { NOINDEX_ROBOTS } from "@/lib/siteStructure";
+import { pageOpenGraph } from "@/lib/siteUrl";
 import { YieldMap } from "@/components/relocation/YieldMap";
 import yieldStatsJson from "@/data/yieldStats.json";
 import type { YieldStats } from "@/utils/yieldStats";
@@ -31,10 +33,18 @@ import {
  * 見つからない場所には置かない。
  */
 
+const TITLE = "表面利回りの地図";
+const DESCRIPTION =
+  "成約価格を分母にした中古マンションの表面利回りを、全国の区画ごとに出しています。分子は賃貸の募集賃料です。";
+
 export const metadata: Metadata = {
-  title: "表面利回りの地図",
-  description:
-    "成約価格を分母にした中古マンションの表面利回りを、全国の区画ごとに出しています。分子は賃貸の募集賃料です。",
+  title: TITLE,
+  description: DESCRIPTION,
+  alternates: { canonical: "/relocation/yield" },
+  // テーマ外の頁にホームの canonical・index 指示を継承させない。
+  // robots.txt の既存の巡回制限は維持するため、noindex の取得は保証しない。
+  robots: NOINDEX_ROBOTS,
+  openGraph: pageOpenGraph("/relocation/yield", TITLE, DESCRIPTION),
 };
 
 const stats: YieldStats = yieldStatsJson as YieldStats;
