@@ -51,7 +51,53 @@ export type PortalTab =
   | "consult"
   | "scorecard";
 
+interface DashboardDateInputProps {
+  id: string;
+  label?: string;
+  evalDate: Date;
+  baseTime: Date | null;
+  setTimeOffsetDays: React.Dispatch<React.SetStateAction<number>>;
+}
+
+/** 要点と地図の入力で、日本時間の日付差と共有設定への反映を揃える。 */
+export function DashboardDateInput({
+  id,
+  label = "目標日",
+  evalDate,
+  baseTime,
+  setTimeOffsetDays,
+}: DashboardDateInputProps) {
+  const f = getZonedDateTimeFields(evalDate, 9);
+  return (
+    <input
+      id={id}
+      type="date"
+      aria-label={label}
+      value={`${f.year}-${String(f.month).padStart(2, "0")}-${String(f.day).padStart(2, "0")}`}
+      onChange={(e) => {
+        if (!e.target.value) return;
+        /* 日の差は日本時間の暦日で数える。以前は setHours(12) で
+           端末のタイムゾーンの正午どうしを引いていたので、日本より
+           西の端末では選んだ日の 1 日前が評価日になった。 */
+        const [y, m, d] = e.target.value.split("-").map(Number);
+        const b = getZonedDateTimeFields(baseTime || new Date(), 9);
+        const diffDays = Math.round(
+          (Date.UTC(y, m - 1, d) - Date.UTC(b.year, b.month - 1, b.day)) /
+            86400000,
+        );
+        setTimeOffsetDays(diffDays);
+      }}
+      className="min-h-11 w-full min-w-0 rounded-lg border border-stone-300 bg-white px-3 text-stone-800 text-base focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600 cursor-pointer [color-scheme:light]"
+    />
+  );
+}
+
 export interface HomePortalProps {
+  /** 日付入力は地図と同じ共有ハンドラーに渡す。 */
+  dateControls?: Pick<
+    DashboardDateInputProps,
+    "baseTime" | "setTimeOffsetDays"
+  >;
   /** 各枠の「詳しく」から、対応するタブへ渡す。 */
   onOpenTab: (tab: PortalTab) => void;
   /** 判定に使っている日。今日とは限らない（時間送りができる）。 */
@@ -124,6 +170,7 @@ function Card({
 }
 
 export default function HomePortal({
+  dateControls,
   onOpenTab,
   evalDate,
   vectors,
@@ -310,6 +357,46 @@ export default function HomePortal({
             <p className="text-xs text-stone-600 leading-relaxed">
               8 方位を計算中です。
             </p>
+          )}
+          {dateControls && (
+            <details className="mt-3 border-t border-stone-200">
+              <summary className="min-h-11 cursor-pointer content-center rounded-lg text-sm font-bold text-indigo-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600">
+                日付を変えて比べる
+              </summary>
+              <div className="flex flex-col gap-2 pb-1">
+                <label
+                  htmlFor="dashboard-summary-date"
+                  className="text-sm text-stone-700"
+                >
+                  比較する日付（日本時間）
+                </label>
+                <DashboardDateInput
+                  id="dashboard-summary-date"
+                  label="比較する日付"
+                  evalDate={evalDate}
+                  {...dateControls}
+                />
+                <div className="flex flex-wrap gap-2">
+                  {[
+                    { label: "前の日", change: (day: number) => day - 1 },
+                    { label: "今日に戻す", change: () => 0 },
+                    { label: "次の日", change: (day: number) => day + 1 },
+                  ].map(({ label, change }) => (
+                    <button
+                      key={label}
+                      type="button"
+                      onClick={() => dateControls.setTimeOffsetDays(change)}
+                      className="min-h-11 rounded-lg border border-stone-300 px-3 text-sm text-stone-700 hover:bg-stone-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600"
+                    >
+                      {label}
+                    </button>
+                  ))}
+                </div>
+                <p className="text-xs text-stone-600">
+                  上の方位と時間帯が変わります。場所や日付の自動送りは「日付・場所を変更」から開けます。
+                </p>
+              </div>
+            </details>
           )}
         </Card>
 

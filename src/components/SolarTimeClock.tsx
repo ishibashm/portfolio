@@ -3911,6 +3911,7 @@ export const SolarTimeClock = () => {
         */}
         {/* --- 要点（常に出す） --- */}
         <HomePortal
+          dateControls={{ baseTime, setTimeOffsetDays: shareTimeOffsetDays }}
           onOpenTab={openDetail}
           evalDate={evalDate}
           vectors={activeVectors}

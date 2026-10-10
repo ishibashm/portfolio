@@ -11,6 +11,7 @@
  */
 
 import React from "react";
+import { DashboardDateInput } from "./HomePortal";
 import dynamic from "next/dynamic";
 import type { SpaceWeatherData } from "../../utils/spaceWeather";
 import type { GeomagneticData } from "../../utils/geomagnetism";
@@ -288,26 +289,11 @@ export default function DestinationMapPanel({
                 >
                   {isAutoSearching ? "検索中..." : "自動検索"}
                 </button>
-                <input
+                <DashboardDateInput
                   id="dashboard-date"
-                  type="date"
-                  aria-label="目標日"
-                  value={jstDateInputValue(evalDate)}
-                  onChange={(e) => {
-                    if (!e.target.value) return;
-                    /* 日の差は日本時間の暦日で数える。以前は setHours(12) で
-                       端末のタイムゾーンの正午どうしを引いていたので、日本より
-                       西の端末では選んだ日の 1 日前が評価日になった。 */
-                    const [y, m, d] = e.target.value.split("-").map(Number);
-                    const b = getZonedDateTimeFields(baseTime || new Date(), 9);
-                    const diffDays = Math.round(
-                      (Date.UTC(y, m - 1, d) -
-                        Date.UTC(b.year, b.month - 1, b.day)) /
-                        86400000,
-                    );
-                    setTimeOffsetDays(diffDays);
-                  }}
-                  className="min-h-11 w-full min-w-0 rounded-lg border border-stone-300 bg-white px-3 text-stone-800 text-base focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600 cursor-pointer [color-scheme:light]"
+                  evalDate={evalDate}
+                  baseTime={baseTime}
+                  setTimeOffsetDays={setTimeOffsetDays}
                 />
               </div>
             </div>
