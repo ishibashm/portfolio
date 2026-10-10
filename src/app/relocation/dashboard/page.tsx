@@ -83,7 +83,7 @@ export default function DashboardPage() {
         <header className="pt-14 md:pt-0">
           <h1 className="text-xl font-bold">今日の方位と時刻を確かめる</h1>
           <p className="mt-2 text-sm leading-relaxed text-stone-600">
-            出発地から見た8方位の吉凶と、動き出す時間帯を確かめます。未登録なら見本を表示します。自分の結果を見るには生年月日と場所を登録してください。
+            出発地から見た8方位の吉凶と、動き出す時間帯を確かめます。
           </p>
           {/* どのプロフィールで判定しているかを頭に 1 行。他の道具の頁と
               同じ帯（利用者の指摘、2026-09-12）。この頁だけ無かった。 */}

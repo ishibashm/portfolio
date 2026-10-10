@@ -105,17 +105,14 @@ function Card({
   return (
     <section className="bg-white border border-stone-200 rounded-xl shadow-sm flex flex-col overflow-hidden">
       <header className="flex items-center justify-between gap-2 px-3 py-2 border-b border-stone-100">
-        <h2 className="flex items-center gap-1.5 text-[11px] font-bold text-stone-600 tracking-wide">
+        <h2 className="flex items-center gap-1.5 text-sm font-bold text-stone-700">
           <span className={`w-1.5 h-1.5 rounded-full ${accent}`} />
           {title}
         </h2>
         {onDetail && (
           <button
             onClick={onDetail}
-            /* 押し所は 24px 角より小さくしない（WCAG 2.2 の Target Size
-               (Minimum)）。実測で 43〜63 × 15px だった。字の大きさは変えず、
-               縦に 24px を確保して中央に置く */
-            className="inline-flex min-h-[24px] shrink-0 items-center text-[10px] text-indigo-700 hover:text-indigo-700 hover:underline"
+            className="inline-flex min-h-11 shrink-0 items-center px-1 text-sm text-indigo-700 hover:underline"
           >
             {detailLabel} →
           </button>
@@ -219,24 +216,24 @@ export default function HomePortal({
       {/* 一番上の帯。「今どうなのか」を 1 行で答える */}
       <div className="w-full bg-white border border-stone-200 rounded-xl px-4 py-3 flex flex-wrap items-center gap-x-6 gap-y-2 shadow-sm">
         <div className="flex items-baseline gap-2">
-          <span className="text-[10px] text-stone-600">いま良い方位</span>
+          <span className="text-xs text-stone-600">方位の比較で最上位</span>
           {best?.rating ? (
             <>
               <strong className="text-xl font-bold text-stone-700">
                 {best.ja}
               </strong>
-              <span className="text-xs text-emerald-700 font-bold">
+              <span
+                className={`rounded px-2 py-1 text-sm font-bold ${best.rating.color}`}
+              >
                 {best.rating.rating}
               </span>
             </>
           ) : (
-            <span className="text-xs text-stone-600">
-              いま吉方位はありません
-            </span>
+            <span className="text-xs text-stone-600">方位を計算中です</span>
           )}
         </div>
         <div className="flex items-baseline gap-2">
-          <span className="text-[10px] text-stone-600">いまの時間帯</span>
+          <span className="text-xs text-stone-600">時間帯の判定</span>
           {timing?.current ? (
             <strong
               className={`text-sm font-bold ${
@@ -257,6 +254,15 @@ export default function HomePortal({
             <span className="text-xs text-stone-600">—</span>
           )}
         </div>
+        {timing?.current && (
+          <p className="text-sm text-stone-700">
+            この時間帯は
+            <strong>{hhmm(timing.current.item.endStandard)}まで</strong>
+            <span className="ml-1 text-xs">
+              （日本時間・方位の切替時刻とは別）
+            </span>
+          </p>
+        )}
         {timing?.next && (
           <div className="flex items-baseline gap-2">
             <span className="text-[10px] text-stone-600">次に動ける</span>
@@ -265,31 +271,32 @@ export default function HomePortal({
             </strong>
           </div>
         )}
-        <div className="ml-auto text-[10px] text-stone-600">
-          {evalJst.year}/{evalJst.month}/{evalJst.day} 基準
+        <div className="ml-auto text-xs text-stone-600">
+          {evalJst.year}/{evalJst.month}/{evalJst.day} {hhmm(evalDate)} 日本時間
+          {profileIsSample ? "・見本" : ""}
         </div>
       </div>
 
       {/* 枠を多段に。画面が広いほど列を増やす（CLAUDE.md 3 節） */}
-      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
+      <div className="grid grid-cols-1 md:grid-cols-2 2xl:grid-cols-3 gap-3">
         <Card
           /* 見本のときは札にも書く。頁の上の帯だけだと、長い頁を
              下まで送った人には見えない */
           title={`今日の 8 方位${profileIsSample ? "（見本）" : ""}`}
           accent="bg-emerald-500"
           onDetail={() => onOpenTab("destination")}
-          detailLabel="地図で見る"
+          detailLabel="日付・場所を変更"
         >
           {rankedDirections.length > 0 ? (
             <ul className="grid grid-cols-2 gap-x-3 gap-y-1">
               {rankedDirections.map((d) => (
                 <li
                   key={d.dir}
-                  className="flex items-center justify-between text-xs border-b border-stone-100 py-1"
+                  className="flex items-center justify-between gap-1 text-sm border-b border-stone-100 py-1"
                 >
                   <span className="font-bold text-stone-600">{d.ja}</span>
                   <span
-                    className={`text-[10px] px-1.5 py-0.5 rounded ${
+                    className={`text-xs px-1.5 py-0.5 rounded ${
                       d.rating?.color ?? "text-stone-600"
                     }`}
                   >
@@ -309,6 +316,7 @@ export default function HomePortal({
           title="今日の時間帯"
           accent="bg-indigo-500"
           onDetail={() => onOpenTab("timing")}
+          detailLabel="時間帯の一覧を見る"
         >
           {timing ? (
             <div className="flex flex-col gap-2">
