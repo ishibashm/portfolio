@@ -80,54 +80,44 @@ export default function DashboardPage() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-rose-50/80 via-stone-50 to-amber-50/50 p-4 font-sans text-stone-800 md:p-8">
       <div className="mx-auto max-w-[1700px] space-y-5">
-        <header>
+        <header className="pt-14 md:pt-0">
           <h1 className="text-xl font-bold">今日の方位と時刻を確かめる</h1>
-          {/*
-            以前は「日盤の吉凶は真太陽時で切り替わります」と書いていたが、
-            実装と合っていなかった。年盤・月盤・日盤は日本時間の暦日で
-            決まる（utils/boardInstant は JST の正午に太陽時の補正を足す
-            だけで、日はまたがない）。真太陽時で切るのは 2 時間ごとの刻
-            （十二支・時盤の九星）だけ。書くなら実装のとおりに書く。
-          */}
-          <p className="mt-1 text-xs leading-relaxed text-stone-600">
-            年盤・月盤・日盤は日本時間の暦日で決まります。2
-            時間ごとの刻（十二支・時盤の九星）だけ、出発地の経度と均時差を補正した真太陽時で切ります。引越し当日の動き出す時刻を決めるときに使います。
-          </p>
-          {/* 「時期を選ぶ」道具は 3 本ある。役割の違いを冒頭に書かないと、
-              どちらを開けばいいか初見で分からない（timing・calendar と
-              同じ作法）。 */}
-          <p className="mt-2 text-xs leading-relaxed text-stone-600">
-            この頁は「今日・いま」の判定です。日ごとの一覧は
-            <Link
-              href="/relocation/timing"
-              className="mx-1 font-semibold text-indigo-600 underline"
-            >
-              時期の分析
-            </Link>
-            、暦注を突き合わせて日を選ぶには
-            <Link
-              href="/calendar"
-              className="mx-1 font-semibold text-indigo-600 underline"
-            >
-              日取りのカレンダー
-            </Link>
-            を使ってください。
+          <p className="mt-2 text-sm leading-relaxed text-stone-600">
+            出発地から見た8方位の吉凶と、動き出す時間帯を確かめます。未登録なら見本を表示します。自分の結果を見るには生年月日と場所を登録してください。
           </p>
           {/* どのプロフィールで判定しているかを頭に 1 行。他の道具の頁と
               同じ帯（利用者の指摘、2026-09-12）。この頁だけ無かった。 */}
           <ActiveProfileBadge purpose="今日の方位と時刻" className="mt-3" />
         </header>
 
-        <section
-          aria-labelledby="dashboard-sections"
-          className="rounded-2xl border border-stone-200 bg-white/80 p-4"
-        >
-          <h2
-            id="dashboard-sections"
-            className="text-sm font-bold text-stone-700"
-          >
-            この頁で分かること
-          </h2>
+        {/* SolarTimeClock は自分で min-h-screen と地色を持つ（ホームに
+            埋め込まれていた頃からの作り）。ここでは器を重ねない。 */}
+        <SolarTimeClock />
+
+        <details className="rounded-2xl border border-stone-200 bg-white/80 px-4">
+          <summary className="min-h-11 cursor-pointer py-3 text-sm font-bold text-stone-700">
+            使い方・計算の基準を見る
+          </summary>
+          <p className="mb-3 text-sm leading-relaxed text-stone-600">
+            年盤・月盤・日盤は日本時間の日付で決まります。約2時間ごとの時間帯（刻）だけ、出発地と太陽の動きに合わせた時刻（真太陽時）で区切ります。方位と時間帯は別の判定です。効果を保証するものではありません。
+          </p>
+          <p className="text-sm leading-relaxed text-stone-600">
+            日ごとの一覧は
+            <Link
+              href="/relocation/timing"
+              className="inline-flex min-h-11 items-center px-1 text-indigo-700 underline"
+            >
+              時期の分析
+            </Link>
+            、 暦から日を選ぶには
+            <Link
+              href="/calendar"
+              className="inline-flex min-h-11 items-center px-1 text-indigo-700 underline"
+            >
+              日取りのカレンダー
+            </Link>
+            へ。
+          </p>
           <dl className="mt-2 grid grid-cols-1 gap-x-6 gap-y-2 text-xs text-stone-600 md:grid-cols-2 xl:grid-cols-3">
             {SECTIONS.map((s) => (
               <div key={s.title}>
@@ -136,11 +126,7 @@ export default function DashboardPage() {
               </div>
             ))}
           </dl>
-        </section>
-
-        {/* SolarTimeClock は自分で min-h-screen と地色を持つ（ホームに
-            埋め込まれていた頃からの作り）。ここでは器を重ねない。 */}
-        <SolarTimeClock />
+        </details>
       </div>
     </div>
   );

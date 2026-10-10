@@ -3821,7 +3821,7 @@ export const SolarTimeClock = () => {
     );
 
   return (
-    <div className="min-h-screen flex flex-col items-center bg-gradient-to-br from-[#fdfbf7] via-[#fff5f5] to-[#fef2f2] text-stone-800 font-sans selection:bg-rose-100 pt-2 md:pt-8 pb-8 md:pb-16 relative overflow-x-hidden">
+    <div className="min-h-screen flex flex-col items-center bg-gradient-to-br from-[#fdfbf7] via-[#fff5f5] to-[#fef2f2] text-stone-800 font-sans selection:bg-rose-100 pt-0 pb-8 md:pb-16 relative overflow-x-hidden">
       <div
         className="fixed inset-0 pointer-events-none z-0 opacity-40"
         style={{
@@ -3852,88 +3852,6 @@ export const SolarTimeClock = () => {
       )}
 
       <div className="flex flex-col items-center space-y-4 md:space-y-6 z-10 w-full max-w-[1700px] px-3 md:px-4 animate-fade-in-up mt-4">
-        <div className="w-full max-w-[1700px] text-center mb-2 px-4">
-          {/* このコンポーネントは頁（/relocation/dashboard。以前はトップページ）
-              の中に埋め込まれており、ページの h1 は別にある。h1 を 2 つ置くと
-              文書構造が壊れるので h2 にする。 */}
-          {/* 以前は "Bio-Location Simulator" と「データサイエンス・
-              ダッシュボード」。サイトの言葉ではなく、計算の中身とも
-              合っていない（/about は「計算条件を整理する道具」）。 */}
-          <h2 className="text-stone-700 font-serif text-xl font-bold mb-2 flex items-center justify-center gap-3">
-            いまの方位と時刻
-          </h2>
-          <p className="text-stone-600 text-xs sm:text-sm leading-relaxed max-w-[70ch] mx-auto mb-4">
-            引越しや長期の滞在で、出発地から見た
-            <strong className="text-stone-700">方位の吉凶</strong>
-            と
-            <strong className="text-stone-700">動き出す日時</strong>
-            を同じ画面で確かめるための道具です。計算条件を整理するもので、効果を保証するものではありません。
-          </p>
-          <button
-            onClick={() => setShowHowItWorks(!showHowItWorks)}
-            className="text-[11px] text-emerald-700 hover:text-emerald-800 tracking-widest border border-emerald-200 bg-emerald-50 px-4 py-1.5 transition-colors"
-          >
-            {showHowItWorks
-              ? "[-] 閉じる"
-              : "[?] 方位と日時をどう決めているか（4 つの手順）"}
-          </button>
-        </div>
-
-
-        {showHowItWorks && (
-          <div className="w-full max-w-[1700px] animate-fade-in px-4">
-            <div className="bg-stone-50 border border-stone-200 p-4 sm:p-6 shadow-2xl relative overflow-hidden flex flex-col gap-4 text-justify text-stone-600 text-xs sm:text-sm font-sans leading-relaxed">
-              <div className="absolute top-0 left-0 w-1 h-full bg-emerald-500/50"></div>
-              <h2 className="text-emerald-700 font-bold uppercase tracking-widest border-b border-stone-200 pb-2 mb-2 font-mono text-[11px] sm:text-xs flex items-center gap-2">
-                <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse"></span>
-                方位と日時を決める 4 つの手順
-              </h2>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div className="flex flex-col gap-2">
-                  <strong className="text-stone-700 bg-white px-2 py-1 border border-stone-200 text-[10px] sm:text-[11px] font-mono">
-                    手順 1: 出発地とあなたの星を決める
-                  </strong>
-                  <p className="text-xs sm:text-xs">
-                    生年月日と出発地は「生年月日と場所を登録」の頁で入れます（地名で探せます。使用中のプロフィールがそのまま使われます）。生年月日からあなたの「本命星」と、伝統的に大きな決断を避けるとされる「天中殺」の期間が決まります。出発地は、すべての方位を測る原点になります。
-                  </p>
-                </div>
-                <div className="flex flex-col gap-2">
-                  <strong className="text-stone-700 bg-white px-2 py-1 border border-stone-200 text-[10px] sm:text-[11px] font-mono">
-                    手順 2: 凶方位を除外する（年・月・日の重ね合わせ）
-                  </strong>
-                  <p className="text-xs sm:text-xs">
-                    「詳しく見る」の「目的地と地図」で、出発地から見た八方位を評価します。年盤・月盤・日盤の 3 つを同時に重ね、五黄殺や本命殺などの凶が 1 つでも含まれる方位を凶（赤）として外します。
-                  </p>
-                </div>
-                <div className="flex flex-col gap-2">
-                  <strong className="text-stone-700 bg-white px-2 py-1 border border-stone-200 text-[10px] sm:text-[11px] font-mono">
-                    手順 3: 相性の良い方位から目的地を決める
-                  </strong>
-                  <p className="text-xs sm:text-xs">
-                    凶の無い方位（青）の中から、さらにその方位の星とあなたの本命星が陰陽五行（木火土金水）で「相生」または「比和」の関係にある方位（緑）を探し、目的地を決めます。
-                  </p>
-                </div>
-                <div className="flex flex-col gap-2">
-                  <strong className="text-stone-700 bg-white px-2 py-1 border border-stone-200 text-[10px] sm:text-[11px] font-mono">
-                    手順 4: 動き出す日時を決める（刻と天中殺）
-                  </strong>
-                  <p className="text-xs sm:text-xs">
-                    「詳しく見る」の「時刻の刻」で、その日の 2 時間ごとの刻を見ます。天中殺の刻を避け、時盤の九星があなたの本命星と相生・比和にあたる刻を「家を出る・契約印を押す」時間として選びます。刻の境目は出発地の真太陽時で切ります。日ごとの一覧は「時期の分析」の頁へ。
-                  </p>
-                </div>
-              </div>
-
-              <div className="bg-emerald-50 border border-emerald-200 p-3 mt-2 text-[10px] sm:text-[11px]">
-                <strong className="text-emerald-700 font-bold mb-1 block">
-                  なぜこの統合計算が必要なのか？
-                </strong>
-                九星気学は伝統的に、引越しを「方位」と「時期」の両方で選びます。方位だけ良くても日が悪い、日だけ良くても方位が悪い、という片落ちを避けるため、方位（凶の無い向き）と時間（天中殺でない日・時間帯）を同じ画面で突き合わせられるようにしたのがこの道具です。効果を保証するものではなく、伝統的な選び方を計算で再現しています。
-              </div>
-            </div>
-          </div>
-        )}
-
         {/*
             タブは常に折り返す。以前は sm 以上で flex-nowrap にしていたが、
             7 つの札が 1 行に収まらない幅（タブレット）では札の側が縮み、
@@ -4010,6 +3928,73 @@ export const SolarTimeClock = () => {
              見る。 */
           profileIsSample={!birthDateOwned}
         />
+
+        <div className="w-full max-w-[1700px] text-center px-4">
+          <button
+            onClick={() => setShowHowItWorks(!showHowItWorks)}
+            aria-expanded={showHowItWorks}
+            className="min-h-11 text-sm text-stone-700 hover:bg-stone-50 border border-stone-200 bg-white rounded-lg px-4 py-2 transition-colors"
+          >
+            {showHowItWorks
+              ? "[-] 閉じる"
+              : "[?] 方位と日時をどう決めているか（4 つの手順）"}
+          </button>
+        </div>
+
+
+        {showHowItWorks && (
+          <div className="w-full max-w-[1700px] animate-fade-in px-4">
+            <div className="bg-stone-50 border border-stone-200 p-4 sm:p-6 shadow-2xl relative overflow-hidden flex flex-col gap-4 text-justify text-stone-600 text-xs sm:text-sm font-sans leading-relaxed">
+              <div className="absolute top-0 left-0 w-1 h-full bg-emerald-500/50"></div>
+              <h2 className="text-emerald-700 font-bold uppercase tracking-widest border-b border-stone-200 pb-2 mb-2 font-mono text-[11px] sm:text-xs flex items-center gap-2">
+                <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse"></span>
+                方位と日時を決める 4 つの手順
+              </h2>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="flex flex-col gap-2">
+                  <strong className="text-stone-700 bg-white px-2 py-1 border border-stone-200 text-[10px] sm:text-[11px] font-mono">
+                    手順 1: 出発地とあなたの星を決める
+                  </strong>
+                  <p className="text-xs sm:text-xs">
+                    生年月日と出発地は「生年月日と場所を登録」の頁で入れます（地名で探せます。使用中のプロフィールがそのまま使われます）。生年月日からあなたの「本命星」と、伝統的に大きな決断を避けるとされる「天中殺」の期間が決まります。出発地は、すべての方位を測る原点になります。
+                  </p>
+                </div>
+                <div className="flex flex-col gap-2">
+                  <strong className="text-stone-700 bg-white px-2 py-1 border border-stone-200 text-[10px] sm:text-[11px] font-mono">
+                    手順 2: 凶方位を除外する（年・月・日の重ね合わせ）
+                  </strong>
+                  <p className="text-xs sm:text-xs">
+                    「詳しく見る」の「目的地と地図」で、出発地から見た八方位を評価します。年盤・月盤・日盤の 3 つを同時に重ね、五黄殺や本命殺などの凶が 1 つでも含まれる方位を凶（赤）として外します。
+                  </p>
+                </div>
+                <div className="flex flex-col gap-2">
+                  <strong className="text-stone-700 bg-white px-2 py-1 border border-stone-200 text-[10px] sm:text-[11px] font-mono">
+                    手順 3: 相性の良い方位から目的地を決める
+                  </strong>
+                  <p className="text-xs sm:text-xs">
+                    凶の無い方位（青）の中から、さらにその方位の星とあなたの本命星が陰陽五行（木火土金水）で「相生」または「比和」の関係にある方位（緑）を探し、目的地を決めます。
+                  </p>
+                </div>
+                <div className="flex flex-col gap-2">
+                  <strong className="text-stone-700 bg-white px-2 py-1 border border-stone-200 text-[10px] sm:text-[11px] font-mono">
+                    手順 4: 動き出す日時を決める（刻と天中殺）
+                  </strong>
+                  <p className="text-xs sm:text-xs">
+                    「詳しく見る」の「時刻の刻」で、その日の 2 時間ごとの刻を見ます。天中殺の刻を避け、時盤の九星があなたの本命星と相生・比和にあたる刻を「家を出る・契約印を押す」時間として選びます。刻の境目は出発地の真太陽時で切ります。日ごとの一覧は「時期の分析」の頁へ。
+                  </p>
+                </div>
+              </div>
+
+              <div className="bg-emerald-50 border border-emerald-200 p-3 mt-2 text-[10px] sm:text-[11px]">
+                <strong className="text-emerald-700 font-bold mb-1 block">
+                  なぜこの統合計算が必要なのか？
+                </strong>
+                九星気学は伝統的に、引越しを「方位」と「時期」の両方で選びます。方位だけ良くても日が悪い、日だけ良くても方位が悪い、という片落ちを避けるため、方位（凶の無い向き）と時間（天中殺でない日・時間帯）を同じ画面で突き合わせられるようにしたのがこの道具です。効果を保証するものではなく、伝統的な選び方を計算で再現しています。
+              </div>
+            </div>
+          </div>
+        )}
 
         <nav
           id="dashboard-details"
