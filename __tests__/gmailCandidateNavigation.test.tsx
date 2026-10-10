@@ -99,7 +99,7 @@ it("moves only selected fields from candidate history to confirmation in memory,
   fireEvent.click(screen.getByRole("button", { name: "取り込み" }));
   fireEvent.click(
     await screen.findByRole("button", {
-      name: "https://suumo.jp/a を既存入力へ",
+      name: "https://suumo.jp/a：この物件を選ぶ",
     }),
   );
   await waitFor(() =>

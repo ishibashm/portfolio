@@ -72,12 +72,12 @@ function failureMessage(code: string): string {
   読めていた（利用者の指摘、2026-09-25）。役割ごとに 3 種に分ける。
 */
 const BTN =
-  "min-h-[32px] px-3 py-1.5 rounded-lg text-xs font-bold disabled:opacity-40 disabled:cursor-not-allowed";
+  "min-h-[44px] px-3 py-1.5 rounded-lg text-xs font-bold disabled:opacity-40 disabled:cursor-not-allowed";
 const PRIMARY = `${BTN} bg-stone-800 text-white hover:bg-stone-700`;
 const SECONDARY = `${BTN} border border-stone-300 bg-white text-stone-700 hover:bg-stone-50`;
 const DANGER = `${BTN} border border-rose-200 bg-white text-rose-700 hover:bg-rose-50`;
 const SELECT =
-  "min-h-[32px] px-2 py-1 bg-white border border-stone-300 rounded-lg text-xs";
+  "min-h-[44px] px-2 py-1 bg-white border border-stone-300 rounded-lg text-base sm:text-xs";
 
 /** 取り込みの起点（ラベルを確定した時刻の 7 日前）を日本時間で。 */
 function startedLabel(iso: string): string {

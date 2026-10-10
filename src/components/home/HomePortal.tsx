@@ -4,7 +4,7 @@
  * ホームの 1 枚目。要点だけを枠に分けて並べる。
  *
  * これまでのホームは 6 つのタブで、1 タブが縦にとても長かった。
- * 「今日はどの方位が良くて、いつ動けるのか」を知るだけでも、タブを
+ * 「この日はどの方位が良くて、いつ動けるのか」を知るだけでも、タブを
  * 開いて長い画面を下まで見る必要があった。利用者の要望で、開かなくても
  * 要点が見える形（多段の枠）に組み直した。
  *
@@ -51,7 +51,53 @@ export type PortalTab =
   | "consult"
   | "scorecard";
 
+interface DashboardDateInputProps {
+  id: string;
+  label?: string;
+  evalDate: Date;
+  baseTime: Date | null;
+  setTimeOffsetDays: React.Dispatch<React.SetStateAction<number>>;
+}
+
+/** 要点と地図の入力で、日本時間の日付差と共有設定への反映を揃える。 */
+export function DashboardDateInput({
+  id,
+  label = "目標日",
+  evalDate,
+  baseTime,
+  setTimeOffsetDays,
+}: DashboardDateInputProps) {
+  const f = getZonedDateTimeFields(evalDate, 9);
+  return (
+    <input
+      id={id}
+      type="date"
+      aria-label={label}
+      value={`${f.year}-${String(f.month).padStart(2, "0")}-${String(f.day).padStart(2, "0")}`}
+      onChange={(e) => {
+        if (!e.target.value) return;
+        /* 日の差は日本時間の暦日で数える。以前は setHours(12) で
+           端末のタイムゾーンの正午どうしを引いていたので、日本より
+           西の端末では選んだ日の 1 日前が評価日になった。 */
+        const [y, m, d] = e.target.value.split("-").map(Number);
+        const b = getZonedDateTimeFields(baseTime || new Date(), 9);
+        const diffDays = Math.round(
+          (Date.UTC(y, m - 1, d) - Date.UTC(b.year, b.month - 1, b.day)) /
+            86400000,
+        );
+        setTimeOffsetDays(diffDays);
+      }}
+      className="min-h-11 w-full min-w-0 rounded-lg border border-stone-300 bg-white px-3 text-stone-800 text-base focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600 cursor-pointer [color-scheme:light]"
+    />
+  );
+}
+
 export interface HomePortalProps {
+  /** 日付入力は地図と同じ共有ハンドラーに渡す。 */
+  dateControls?: Pick<
+    DashboardDateInputProps,
+    "baseTime" | "setTimeOffsetDays"
+  >;
   /** 各枠の「詳しく」から、対応するタブへ渡す。 */
   onOpenTab: (tab: PortalTab) => void;
   /** 判定に使っている日。今日とは限らない（時間送りができる）。 */
@@ -105,17 +151,14 @@ function Card({
   return (
     <section className="bg-white border border-stone-200 rounded-xl shadow-sm flex flex-col overflow-hidden">
       <header className="flex items-center justify-between gap-2 px-3 py-2 border-b border-stone-100">
-        <h2 className="flex items-center gap-1.5 text-[11px] font-bold text-stone-600 tracking-wide">
+        <h2 className="flex items-center gap-1.5 text-sm font-bold text-stone-700">
           <span className={`w-1.5 h-1.5 rounded-full ${accent}`} />
           {title}
         </h2>
         {onDetail && (
           <button
             onClick={onDetail}
-            /* 押し所は 24px 角より小さくしない（WCAG 2.2 の Target Size
-               (Minimum)）。実測で 43〜63 × 15px だった。字の大きさは変えず、
-               縦に 24px を確保して中央に置く */
-            className="inline-flex min-h-[24px] shrink-0 items-center text-[10px] text-indigo-700 hover:text-indigo-700 hover:underline"
+            className="inline-flex min-h-11 shrink-0 items-center px-1 text-sm text-indigo-700 hover:underline"
           >
             {detailLabel} →
           </button>
@@ -127,6 +170,7 @@ function Card({
 }
 
 export default function HomePortal({
+  dateControls,
   onOpenTab,
   evalDate,
   vectors,
@@ -219,24 +263,24 @@ export default function HomePortal({
       {/* 一番上の帯。「今どうなのか」を 1 行で答える */}
       <div className="w-full bg-white border border-stone-200 rounded-xl px-4 py-3 flex flex-wrap items-center gap-x-6 gap-y-2 shadow-sm">
         <div className="flex items-baseline gap-2">
-          <span className="text-[10px] text-stone-600">いま良い方位</span>
+          <span className="text-xs text-stone-600">方位の比較で最上位</span>
           {best?.rating ? (
             <>
               <strong className="text-xl font-bold text-stone-700">
                 {best.ja}
               </strong>
-              <span className="text-xs text-emerald-700 font-bold">
+              <span
+                className={`rounded px-2 py-1 text-sm font-bold ${best.rating.color}`}
+              >
                 {best.rating.rating}
               </span>
             </>
           ) : (
-            <span className="text-xs text-stone-600">
-              いま吉方位はありません
-            </span>
+            <span className="text-xs text-stone-600">方位を計算中です</span>
           )}
         </div>
         <div className="flex items-baseline gap-2">
-          <span className="text-[10px] text-stone-600">いまの時間帯</span>
+          <span className="text-xs text-stone-600">時間帯の判定</span>
           {timing?.current ? (
             <strong
               className={`text-sm font-bold ${
@@ -257,6 +301,15 @@ export default function HomePortal({
             <span className="text-xs text-stone-600">—</span>
           )}
         </div>
+        {timing?.current && (
+          <p className="text-sm text-stone-700">
+            この時間帯は
+            <strong>{hhmm(timing.current.item.endStandard)}まで</strong>
+            <span className="ml-1 text-xs">
+              （日本時間・方位の切替時刻とは別）
+            </span>
+          </p>
+        )}
         {timing?.next && (
           <div className="flex items-baseline gap-2">
             <span className="text-[10px] text-stone-600">次に動ける</span>
@@ -265,31 +318,33 @@ export default function HomePortal({
             </strong>
           </div>
         )}
-        <div className="ml-auto text-[10px] text-stone-600">
-          {evalJst.year}/{evalJst.month}/{evalJst.day} 基準
+        <div className="ml-auto text-xs text-stone-600">
+          基準：{evalJst.year}/{evalJst.month}/{evalJst.day} {hhmm(evalDate)}{" "}
+          日本時間
+          {profileIsSample ? "・見本" : ""}
         </div>
       </div>
 
       {/* 枠を多段に。画面が広いほど列を増やす（CLAUDE.md 3 節） */}
-      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
+      <div className="grid grid-cols-1 md:grid-cols-2 2xl:grid-cols-3 gap-3">
         <Card
           /* 見本のときは札にも書く。頁の上の帯だけだと、長い頁を
              下まで送った人には見えない */
-          title={`今日の 8 方位${profileIsSample ? "（見本）" : ""}`}
+          title={`選択日の 8 方位${profileIsSample ? "（見本）" : ""}`}
           accent="bg-emerald-500"
           onDetail={() => onOpenTab("destination")}
-          detailLabel="地図で見る"
+          detailLabel="日付・場所を変更"
         >
           {rankedDirections.length > 0 ? (
             <ul className="grid grid-cols-2 gap-x-3 gap-y-1">
               {rankedDirections.map((d) => (
                 <li
                   key={d.dir}
-                  className="flex items-center justify-between text-xs border-b border-stone-100 py-1"
+                  className="flex items-center justify-between gap-1 text-sm border-b border-stone-100 py-1"
                 >
                   <span className="font-bold text-stone-600">{d.ja}</span>
                   <span
-                    className={`text-[10px] px-1.5 py-0.5 rounded ${
+                    className={`text-xs px-1.5 py-0.5 rounded ${
                       d.rating?.color ?? "text-stone-600"
                     }`}
                   >
@@ -303,17 +358,58 @@ export default function HomePortal({
               8 方位を計算中です。
             </p>
           )}
+          {dateControls && (
+            <details className="mt-3 border-t border-stone-200">
+              <summary className="min-h-11 cursor-pointer content-center rounded-lg text-sm font-bold text-indigo-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600">
+                日付を変えて比べる
+              </summary>
+              <div className="flex flex-col gap-2 pb-1">
+                <label
+                  htmlFor="dashboard-summary-date"
+                  className="text-sm text-stone-700"
+                >
+                  比較する日付（日本時間）
+                </label>
+                <DashboardDateInput
+                  id="dashboard-summary-date"
+                  label="比較する日付"
+                  evalDate={evalDate}
+                  {...dateControls}
+                />
+                <div className="flex flex-wrap gap-2">
+                  {[
+                    { label: "前の日", change: (day: number) => day - 1 },
+                    { label: "今日に戻す", change: () => 0 },
+                    { label: "次の日", change: (day: number) => day + 1 },
+                  ].map(({ label, change }) => (
+                    <button
+                      key={label}
+                      type="button"
+                      onClick={() => dateControls.setTimeOffsetDays(change)}
+                      className="min-h-11 rounded-lg border border-stone-300 px-3 text-sm text-stone-700 hover:bg-stone-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600"
+                    >
+                      {label}
+                    </button>
+                  ))}
+                </div>
+                <p className="text-xs text-stone-600">
+                  上の方位と時間帯が変わります。場所や日付の自動送りは「日付・場所を変更」から開けます。
+                </p>
+              </div>
+            </details>
+          )}
         </Card>
 
         <Card
-          title="今日の時間帯"
+          title="選択日の時間帯"
           accent="bg-indigo-500"
           onDetail={() => onOpenTab("timing")}
+          detailLabel="時間帯の一覧を見る"
         >
           {timing ? (
             <div className="flex flex-col gap-2">
               <p className="text-xs text-stone-600">
-                今日は{" "}
+                この日は{" "}
                 <strong className="text-emerald-700">
                   {timing.goCount} つ
                 </strong>{" "}
@@ -340,7 +436,7 @@ export default function HomePortal({
                 </div>
               ) : (
                 <p className="text-xs text-stone-600">
-                  今日はこの先「動いてよい」時間帯がありません。
+                  この日はこの先「動いてよい」時間帯がありません。
                 </p>
               )}
             </div>
