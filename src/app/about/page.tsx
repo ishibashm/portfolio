@@ -1,6 +1,6 @@
 import Link from "next/link";
 import type { Metadata } from "next";
-import { SITE_NAME, SITE_TAGLINE, CORE_ROUTES } from "@/lib/siteStructure";
+import { SITE_NAME, SITE_DESCRIPTION, CORE_ROUTES } from "@/lib/siteStructure";
 import { pageOpenGraph } from "@/lib/siteUrl";
 
 /**
@@ -34,9 +34,10 @@ export default function AboutPage() {
             何をするサイトか
           </h2>
           <p className="mt-4 text-sm leading-relaxed text-slate-700">
-            {SITE_NAME}は、{SITE_TAGLINE}
-            ためのサービスです。九星気学の方位盤と、公開されている住まいの統計（家賃の水準・空き家率・地価・成約価格）を同じ基準で突き合わせ、「いつ、どの方位のどの街へ動くか」を検討できるようにしています。募集中の部屋の一覧は出していません（2026-09-20
-            に、掲載元の規約に従って取り込みを止めました）。実際の募集は各社のサイトでご確認ください。
+            {SITE_DESCRIPTION}
+            募集中の部屋の一覧は出していません（掲載元の規約に従って取り込みを
+            2026-09-13 に止め、9 月 20
+            日に物件検索の掲載を閉じました）。実際の募集は各社のサイトでご確認ください。
           </p>
           <ul className="mt-4 text-sm text-slate-700 space-y-2 list-disc pl-5">
             {CORE_ROUTES.map((r) => (
