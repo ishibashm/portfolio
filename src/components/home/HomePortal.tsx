@@ -4,7 +4,7 @@
  * ホームの 1 枚目。要点だけを枠に分けて並べる。
  *
  * これまでのホームは 6 つのタブで、1 タブが縦にとても長かった。
- * 「今日はどの方位が良くて、いつ動けるのか」を知るだけでも、タブを
+ * 「この日はどの方位が良くて、いつ動けるのか」を知るだけでも、タブを
  * 開いて長い画面を下まで見る必要があった。利用者の要望で、開かなくても
  * 要点が見える形（多段の枠）に組み直した。
  *
@@ -272,7 +272,8 @@ export default function HomePortal({
           </div>
         )}
         <div className="ml-auto text-xs text-stone-600">
-          {evalJst.year}/{evalJst.month}/{evalJst.day} {hhmm(evalDate)} 日本時間
+          基準：{evalJst.year}/{evalJst.month}/{evalJst.day} {hhmm(evalDate)}{" "}
+          日本時間
           {profileIsSample ? "・見本" : ""}
         </div>
       </div>
@@ -282,7 +283,7 @@ export default function HomePortal({
         <Card
           /* 見本のときは札にも書く。頁の上の帯だけだと、長い頁を
              下まで送った人には見えない */
-          title={`今日の 8 方位${profileIsSample ? "（見本）" : ""}`}
+          title={`選択日の 8 方位${profileIsSample ? "（見本）" : ""}`}
           accent="bg-emerald-500"
           onDetail={() => onOpenTab("destination")}
           detailLabel="日付・場所を変更"
@@ -313,7 +314,7 @@ export default function HomePortal({
         </Card>
 
         <Card
-          title="今日の時間帯"
+          title="選択日の時間帯"
           accent="bg-indigo-500"
           onDetail={() => onOpenTab("timing")}
           detailLabel="時間帯の一覧を見る"
@@ -321,7 +322,7 @@ export default function HomePortal({
           {timing ? (
             <div className="flex flex-col gap-2">
               <p className="text-xs text-stone-600">
-                今日は{" "}
+                この日は{" "}
                 <strong className="text-emerald-700">
                   {timing.goCount} つ
                 </strong>{" "}
@@ -348,7 +349,7 @@ export default function HomePortal({
                 </div>
               ) : (
                 <p className="text-xs text-stone-600">
-                  今日はこの先「動いてよい」時間帯がありません。
+                  この日はこの先「動いてよい」時間帯がありません。
                 </p>
               )}
             </div>

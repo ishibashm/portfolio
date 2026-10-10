@@ -268,24 +268,28 @@ export default function DestinationMapPanel({
               </select>
             </div>
 
-            <div className="flex justify-between items-center bg-white/70 p-2 border border-stone-200 rounded-xl mt-1">
+            <div className="flex flex-col gap-2 bg-white/70 p-2 border border-stone-200 rounded-xl mt-1">
               <div className="flex flex-col">
-                <label className="text-[10px] font-bold text-stone-700">
+                <label
+                  htmlFor="dashboard-date"
+                  className="text-sm font-bold text-stone-700"
+                >
                   目標日
                 </label>
-                <span className="text-[10px] text-stone-600">
-                  評価する目標日を指定します
+                <span className="text-sm text-stone-600">
+                  上の方位と時間帯にも反映されます（日本時間）
                 </span>
               </div>
-              <div className="flex items-center gap-2">
+              <div className="flex flex-wrap items-center gap-2">
                 <button
                   onClick={handleAutoSearch}
                   disabled={isAutoSearching}
-                  className="inline-flex min-h-[24px] items-center justify-center text-[10px] text-emerald-700 border border-emerald-200 bg-emerald-50 px-2 py-1 rounded-xl hover:bg-emerald-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed uppercase tracking-widest shadow-[0_0_10px_rgba(16,185,129,0.1)]"
+                  className="inline-flex min-h-11 items-center justify-center text-sm text-emerald-700 border border-emerald-200 bg-emerald-50 px-2 py-1 rounded-xl hover:bg-emerald-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed uppercase tracking-widest shadow-[0_0_10px_rgba(16,185,129,0.1)]"
                 >
                   {isAutoSearching ? "検索中..." : "自動検索"}
                 </button>
                 <input
+                  id="dashboard-date"
                   type="date"
                   aria-label="目標日"
                   value={jstDateInputValue(evalDate)}
@@ -303,25 +307,25 @@ export default function DestinationMapPanel({
                     );
                     setTimeOffsetDays(diffDays);
                   }}
-                  className="min-h-[24px] w-24 bg-transparent text-emerald-700 font-bold text-[10px] outline-none cursor-pointer text-right [color-scheme:dark]"
+                  className="min-h-11 w-full min-w-0 rounded-lg border border-stone-300 bg-white px-3 text-stone-800 text-base focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600 cursor-pointer [color-scheme:light]"
                 />
               </div>
             </div>
 
             <div className="flex justify-between items-center mt-1 gap-2 flex-wrap">
-              <div className="flex items-center gap-1 bg-white/70 p-0.5 border border-stone-200 rounded-xl">
+              <div className="flex flex-wrap items-center gap-2 bg-white/70 p-0.5 border border-stone-200 rounded-xl">
                 <button
                   onClick={() => setIsPlaying(!isPlaying)}
-                  className={`text-[10px] inline-flex min-h-[24px] items-center justify-center font-mono px-2 py-0.5 rounded-xl transition-colors border ${isPlaying ? "bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-50 shadow-[0_0_8px_rgba(245,158,11,0.2)]" : "bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-50 shadow-[0_0_8px_rgba(59,130,246,0.2)]"}`}
+                  className={`text-sm inline-flex min-h-11 items-center justify-center px-3 py-0.5 rounded-xl transition-colors border ${isPlaying ? "bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-50 shadow-[0_0_8px_rgba(245,158,11,0.2)]" : "bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-50 shadow-[0_0_8px_rgba(59,130,246,0.2)]"}`}
                 >
-                  {isPlaying ? "⏸ 一時停止" : "▶ 再生"}
+                  {isPlaying ? "⏸ 一時停止" : "▶ 日付を自動で進める"}
                 </button>
                 <select
-                  aria-label="再生の刻み"
+                  aria-label="日付を進める間隔"
                   value={playSpeedDays}
                   onChange={(e) => setPlaySpeedDays(Number(e.target.value))}
                   disabled={isPlaying}
-                  className="min-h-[24px] bg-transparent text-stone-600 text-[10px] font-mono outline-none cursor-pointer"
+                  className="min-h-11 bg-transparent text-stone-600 text-sm font-mono focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600 cursor-pointer"
                 >
                   <option value={1}>1 日ずつ</option>
                   <option value={7}>1 週ずつ</option>
@@ -329,53 +333,53 @@ export default function DestinationMapPanel({
                   <option value={365}>1 年ずつ</option>
                 </select>
               </div>
-              <div className="flex justify-end gap-1 flex-wrap items-center">
+              <div className="flex gap-2 flex-wrap items-center">
                 <button
                   onClick={() => setTimeOffsetDays((prev) => prev - 1)}
-                  className="text-[10px] inline-flex min-h-[24px] items-center justify-center font-mono px-2 py-0.5 rounded-xl transition-colors border bg-white/80 text-stone-600 border-stone-200 hover:border-emerald-200 hover:text-emerald-600"
+                  className="text-sm inline-flex min-h-11 items-center justify-center px-3 py-0.5 rounded-xl transition-colors border bg-white/80 text-stone-600 border-stone-200 hover:border-emerald-200 hover:text-emerald-600"
                   title="前の日"
                   aria-label="前の日"
                 >
-                  ◀
+                  ◀ 前の日
                 </button>
                 <button
                   onClick={() => setTimeOffsetDays((prev) => prev + 1)}
-                  className="text-[10px] inline-flex min-h-[24px] items-center justify-center font-mono px-2 py-0.5 rounded-xl transition-colors border bg-white/80 text-stone-600 border-stone-200 hover:border-emerald-200 hover:text-emerald-600"
+                  className="text-sm inline-flex min-h-11 items-center justify-center px-3 py-0.5 rounded-xl transition-colors border bg-white/80 text-stone-600 border-stone-200 hover:border-emerald-200 hover:text-emerald-600"
                   title="次の日"
                   aria-label="次の日"
                 >
-                  ▶
+                  次の日 ▶
                 </button>
                 <div className="w-px h-3 bg-stone-100 my-auto mx-0.5"></div>
                 <button
                   onClick={() => setTimeOffsetDays(0)}
-                  className={`text-[10px] inline-flex min-h-[24px] items-center justify-center font-mono px-2 py-0.5 rounded-xl transition-colors border ${timeOffsetDays === 0 ? "bg-emerald-50 text-emerald-700 border-emerald-200" : "bg-white/80 text-stone-600 border-stone-200 hover:border-emerald-200 hover:text-emerald-600"}`}
+                  className={`text-sm inline-flex min-h-11 items-center justify-center px-3 py-0.5 rounded-xl transition-colors border ${timeOffsetDays === 0 ? "bg-emerald-50 text-emerald-700 border-emerald-200" : "bg-white/80 text-stone-600 border-stone-200 hover:border-emerald-200 hover:text-emerald-600"}`}
                 >
                   今日
                 </button>
                 <button
                   onClick={() => setTimeOffsetDays(30)}
-                  className={`text-[10px] inline-flex min-h-[24px] items-center justify-center font-mono px-2 py-0.5 rounded-xl transition-colors border ${timeOffsetDays === 30 ? "bg-emerald-50 text-emerald-700 border-emerald-200" : "bg-white/80 text-stone-600 border-stone-200 hover:border-emerald-200 hover:text-emerald-600"}`}
+                  className={`text-sm inline-flex min-h-11 items-center justify-center px-3 py-0.5 rounded-xl transition-colors border ${timeOffsetDays === 30 ? "bg-emerald-50 text-emerald-700 border-emerald-200" : "bg-white/80 text-stone-600 border-stone-200 hover:border-emerald-200 hover:text-emerald-600"}`}
                 >
-                  +30D
+                  30日後
                 </button>
                 <button
                   onClick={() => setTimeOffsetDays(90)}
-                  className={`text-[10px] inline-flex min-h-[24px] items-center justify-center font-mono px-2 py-0.5 rounded-xl transition-colors border ${timeOffsetDays === 90 ? "bg-emerald-50 text-emerald-700 border-emerald-200" : "bg-white/80 text-stone-600 border-stone-200 hover:border-emerald-200 hover:text-emerald-600"}`}
+                  className={`text-sm inline-flex min-h-11 items-center justify-center px-3 py-0.5 rounded-xl transition-colors border ${timeOffsetDays === 90 ? "bg-emerald-50 text-emerald-700 border-emerald-200" : "bg-white/80 text-stone-600 border-stone-200 hover:border-emerald-200 hover:text-emerald-600"}`}
                 >
-                  +90D
+                  90日後
                 </button>
                 <button
                   onClick={() => setTimeOffsetDays(180)}
-                  className={`text-[10px] inline-flex min-h-[24px] items-center justify-center font-mono px-2 py-0.5 rounded-xl transition-colors border ${timeOffsetDays === 180 ? "bg-emerald-50 text-emerald-700 border-emerald-200" : "bg-white/80 text-stone-600 border-stone-200 hover:border-emerald-200 hover:text-emerald-600"}`}
+                  className={`text-sm inline-flex min-h-11 items-center justify-center px-3 py-0.5 rounded-xl transition-colors border ${timeOffsetDays === 180 ? "bg-emerald-50 text-emerald-700 border-emerald-200" : "bg-white/80 text-stone-600 border-stone-200 hover:border-emerald-200 hover:text-emerald-600"}`}
                 >
-                  +180D
+                  180日後
                 </button>
                 <button
                   onClick={() => setTimeOffsetDays(365)}
-                  className={`text-[10px] inline-flex min-h-[24px] items-center justify-center font-mono px-2 py-0.5 rounded-xl transition-colors border ${timeOffsetDays === 365 ? "bg-emerald-50 text-emerald-700 border-emerald-200" : "bg-white/80 text-stone-600 border-stone-200 hover:border-emerald-200 hover:text-emerald-600"}`}
+                  className={`text-sm inline-flex min-h-11 items-center justify-center px-3 py-0.5 rounded-xl transition-colors border ${timeOffsetDays === 365 ? "bg-emerald-50 text-emerald-700 border-emerald-200" : "bg-white/80 text-stone-600 border-stone-200 hover:border-emerald-200 hover:text-emerald-600"}`}
                 >
-                  +1Y
+                  365日後
                 </button>
               </div>
             </div>
