@@ -61,7 +61,7 @@ const detailButton = (label: string) =>
   ) as HTMLButtonElement;
 const summaryVisible = () =>
   Array.from(container.querySelectorAll("h2")).some((h) =>
-    h.textContent?.includes("今日の時間帯"),
+    h.textContent?.includes("選択日の時間帯"),
   );
 
 it("要点を出し、詳しく見るは 5 つ。番号付きのタブ帯と「履歴」は無い", async () => {
