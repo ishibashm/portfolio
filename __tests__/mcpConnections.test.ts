@@ -233,3 +233,76 @@ describe("connection profile reduction", () => {
     ).rejects.toThrow("LOGIN_REQUIRED");
   });
 });
+
+describe("revoke all connections", () => {
+  it("denies all owned grants in one statement before bounded protocol cleanup", async () => {
+    const { service, db, store } = setup();
+    const rows = Array.from({ length: 100 }, (_, i) => ({
+      id: `row-${i}`,
+      providerGrantId: `protocol-${i}`,
+    }));
+    db.mcpGrant.findMany
+      .mockResolvedValueOnce(rows)
+      .mockResolvedValueOnce([{ id, providerGrantId: "last" }]);
+    expect(await service.revokeAll(userId)).toEqual({ revoked: true });
+    expect(db.mcpGrant.updateMany).toHaveBeenCalledWith({
+      where: { userId, revokedAt: null },
+      data: { revokedAt: at },
+    });
+    expect(db.mcpGrant.updateMany.mock.invocationCallOrder[0]).toBeLessThan(
+      db.mcpGrant.findMany.mock.invocationCallOrder[0],
+    );
+    expect(db.mcpGrant.findMany.mock.calls.map(([arg]) => arg)).toEqual([
+      {
+        where: { userId, revokedAt: { lte: at } },
+        orderBy: { id: "asc" },
+        take: 100,
+        select: { id: true, providerGrantId: true },
+      },
+      {
+        where: { userId, revokedAt: { lte: at }, id: { gt: "row-99" } },
+        orderBy: { id: "asc" },
+        take: 100,
+        select: { id: true, providerGrantId: true },
+      },
+    ]);
+    expect(store.revokeByGrantId).toHaveBeenCalledTimes(101);
+    expect(store.revokeByGrantId).toHaveBeenLastCalledWith("last");
+  });
+  it("is idempotent for an empty account and rejects bypass identity before IO", async () => {
+    const { service, db } = setup();
+    await expect(service.revokeAll("dev-bypass-id")).rejects.toThrow(
+      "LOGIN_REQUIRED",
+    );
+    expect(db.mcpGrant.updateMany).not.toHaveBeenCalled();
+    db.mcpGrant.findMany.mockResolvedValue([]);
+    expect(await service.revokeAll(userId)).toEqual({ revoked: true });
+  });
+  it("keeps all denied on partial cleanup failure and retries previously revoked rows", async () => {
+    const { service, db, store } = setup();
+    db.mcpGrant.findMany.mockResolvedValue([
+      { id, providerGrantId: "protocol" },
+    ]);
+    store.revokeByGrantId.mockRejectedValueOnce(new Error("private-token"));
+    await expect(service.revokeAll(userId)).rejects.toThrow(
+      "TEMPORARILY_UNAVAILABLE",
+    );
+    expect(db.mcpGrant.updateMany).toHaveBeenCalledOnce();
+    db.mcpGrant.updateMany.mockResolvedValue({ count: 0 });
+    expect(await service.revokeAll(userId)).toEqual({ revoked: true });
+    expect(store.revokeByGrantId).toHaveBeenCalledTimes(2);
+  });
+  it("fails closed when application revocation or cleanup enumeration fails", async () => {
+    const { service, db, store } = setup();
+    db.mcpGrant.updateMany.mockRejectedValueOnce(new Error("private"));
+    await expect(service.revokeAll(userId)).rejects.toThrow(
+      "TEMPORARILY_UNAVAILABLE",
+    );
+    expect(db.mcpGrant.findMany).not.toHaveBeenCalled();
+    db.mcpGrant.findMany.mockRejectedValue(new Error("private"));
+    await expect(service.revokeAll(userId)).rejects.toThrow(
+      "TEMPORARILY_UNAVAILABLE",
+    );
+    expect(store.revokeByGrantId).not.toHaveBeenCalled();
+  });
+});

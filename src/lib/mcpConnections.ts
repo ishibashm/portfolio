@@ -103,6 +103,38 @@ export function createMcpConnectionService(deps: {
         return { revoked: true as const };
       });
     },
+    revokeAll(user: unknown) {
+      return safe(async () => {
+        const userId = subject(user);
+        const at = now();
+        // One database statement denies all existing consents before any slow
+        // protocol cleanup. A fresh consent after this operation is independent.
+        await deps.db.mcpGrant.updateMany({
+          where: { userId, revokedAt: null },
+          data: { revokedAt: at },
+        });
+        // Include previously revoked rows so a failed cleanup is retryable.
+        // Keyset pages bound memory; denial does not depend on finishing the loop.
+        let cursor: string | undefined;
+        for (;;) {
+          const rows = await deps.db.mcpGrant.findMany({
+            where: {
+              userId,
+              revokedAt: { lte: at },
+              ...(cursor ? { id: { gt: cursor } } : {}),
+            },
+            orderBy: { id: "asc" },
+            take: 100,
+            select: { id: true, providerGrantId: true },
+          });
+          for (const row of rows)
+            await deps.store.revokeByGrantId(row.providerGrantId);
+          if (rows.length < 100) break;
+          cursor = rows[rows.length - 1].id;
+        }
+        return { revoked: true as const };
+      });
+    },
     reduceProfiles(user: unknown, connection: unknown, profiles: unknown) {
       return safe(async () => {
         const userId = subject(user);
