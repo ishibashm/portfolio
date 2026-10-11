@@ -33,6 +33,7 @@ import { createMcpProviderStore } from "@/lib/mcpProviderStore";
 import { createMcpProviderAdapter } from "@/lib/mcpProviderAdapter";
 import { createMcpStateCrypto } from "@/lib/mcpStateCrypto";
 import { createMcpAuthenticator } from "@/lib/mcpAuth";
+import { createMcpConnectionService } from "@/lib/mcpConnections";
 import { mcpPersistence } from "./helpers/mcpPersistence";
 
 const { getUser, createClient } = vi.hoisted(() => ({
@@ -382,7 +383,7 @@ describe.skipIf(Number(process.versions.node.split(".")[0]) < 22)(
     it("connects selection, encrypted persistence, code exchange, RS authentication, refresh and replay revocation", async () => {
       const { jar, code, grant } = await authorize();
       const response = await exchange(jar, codeParams(code));
-      expect(response.status, response.body).toBe(200);
+      expect(response.status).toBe(200);
       const tokens = JSON.parse(response.body);
       const headers = (token: string) =>
         new Headers({ authorization: `Bearer ${token}` });
@@ -423,6 +424,57 @@ describe.skipIf(Number(process.versions.node.split(".")[0]) < 22)(
         "UNAUTHORIZED",
       );
     });
+    it.each([false, true])(
+      "connection revocation denies issued tokens immediately (protocol cleanup failure=%s)",
+      async (failCleanup) => {
+        const { jar, code, grant } = await authorize();
+        const response = await exchange(jar, codeParams(code));
+        expect(response.status).toBe(200);
+        const tokens = JSON.parse(response.body);
+        const headers = new Headers({
+          authorization: `Bearer ${tokens.access_token}`,
+        });
+        await expect(authenticate(headers)).resolves.toHaveProperty(
+          "grantId",
+          grant.id,
+        );
+        const cleanup = vi.fn(store.revokeByGrantId);
+        const service = createMcpConnectionService({
+          db: persistence.db,
+          store: { revokeByGrantId: cleanup },
+        });
+        await expect(service.revoke(other, grant.id)).rejects.toThrow(
+          "NOT_FOUND",
+        );
+        await expect(authenticate(headers)).resolves.toHaveProperty(
+          "grantId",
+          grant.id,
+        );
+        if (failCleanup)
+          cleanup.mockRejectedValueOnce(new Error("private-store-error"));
+        if (failCleanup)
+          await expect(service.revoke(userId, grant.id)).rejects.toThrow(
+            "TEMPORARILY_UNAVAILABLE",
+          );
+        else
+          await expect(service.revoke(userId, grant.id)).resolves.toEqual({
+            revoked: true,
+          });
+        await expect(authenticate(headers)).rejects.toThrow("UNAUTHORIZED");
+        const refresh = await exchange(jar, {
+          grant_type: "refresh_token",
+          refresh_token: tokens.refresh_token,
+        });
+        expect(refresh.status).toBe(400);
+        expect(JSON.parse(refresh.body)).not.toHaveProperty("access_token");
+        await expect(service.revoke(userId, grant.id)).resolves.toEqual({
+          revoked: true,
+        });
+        expect(
+          await provider.Grant.find(grant.providerGrantId),
+        ).toBeUndefined();
+      },
+    );
     it.each(["missing", "revoked", "expired"])(
       "refuses token exchange when application consent becomes %s",
       async (condition) => {
