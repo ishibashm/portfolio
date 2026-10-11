@@ -1,9 +1,9 @@
 // @vitest-environment node
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { InMemoryTransport } from "@modelcontextprotocol/sdk/inMemory.js";
 import { createMcpServer } from "@/lib/mcpServer";
-import { GET, POST } from "@/app/api/mcp/route";
+import { DELETE, GET, POST } from "@/app/api/mcp/route";
 import {
   judgeDayAllDirections,
   gradeVerdict,
@@ -35,7 +35,7 @@ const parse = (r: Awaited<ReturnType<Client["callTool"]>>) =>
   JSON.parse((r.content as { text: string }[])[0].text);
 
 describe("MCP サーバー", () => {
-  it("6 つの道具を公開している", async () => {
+  it("7 つの道具を公開している", async () => {
     const c = await connect();
     const names = (await c.listTools()).tools.map((t) => t.name).sort();
     expect(names).toEqual([
@@ -43,6 +43,7 @@ describe("MCP サーバー", () => {
       "find_auspicious_days",
       "get_honmei_star",
       "judge_directions",
+      "judge_hours",
       "prefecture_summary",
       "search_municipality",
     ]);
@@ -268,11 +269,63 @@ describe("MCP サーバー", () => {
       expect(d.scannedDays).toBeGreaterThan(0);
     }
   });
+
+  it("日付省略時もDSTを持つ実行環境でJSTの走査日をずらさない", async () => {
+    // JST 2026-03-08 00:30。LAでは翌日から夏時間になる。
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(new Date("2026-03-07T15:30:00Z"));
+    try {
+      const c = await connect();
+      const out = parse(
+        await c.callTool({
+          name: "find_auspicious_days",
+          arguments: { birthDate: "1957-09-22", lon: 135.5, days: 30 },
+        }),
+      );
+      expect(out.from).toBe("2026-03-08");
+      // 既存の検索関数は開始日と30日後の両端を含む。
+      expect(out.directions[0].scannedDays).toBe(31);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
 });
 
 describe("/api/mcp の入口", () => {
+  it("未知のOriginをPOST・GET・DELETEで拒否し、同じサイトだけ許可する", async () => {
+    const request = (method: string, origin: string) =>
+      new Request("https://cloud-palette.com/api/mcp", {
+        method,
+        headers: {
+          Origin: origin,
+          "content-type": "application/json",
+          accept: "application/json, text/event-stream",
+        },
+        ...(method === "POST"
+          ? {
+              body: JSON.stringify({
+                jsonrpc: "2.0",
+                id: 1,
+                method: "tools/list",
+                params: {},
+              }),
+            }
+          : {}),
+      });
+    expect((await POST(request("POST", "https://evil.example"))).status).toBe(
+      403,
+    );
+    expect((await GET(request("GET", "null"))).status).toBe(403);
+    expect(
+      (await DELETE(request("DELETE", "https://evil.example"))).status,
+    ).toBe(403);
+    expect(
+      (await POST(request("POST", "https://cloud-palette.com"))).status,
+    ).toBe(200);
+  });
+
   it("GET は 405（stateless なので SSE の待受は無い）", async () => {
-    const res = await GET();
+    const res = await GET(new Request("https://cloud-palette.com/api/mcp"));
     expect(res.status).toBe(405);
     expect(res.headers.get("Allow")).toBe("POST");
   });
@@ -317,6 +370,6 @@ describe("/api/mcp の入口", () => {
       }),
     );
     expect(list.status).toBe(200);
-    expect((await list.json()).result.tools.length).toBe(6);
+    expect((await list.json()).result.tools.length).toBe(7);
   });
 });

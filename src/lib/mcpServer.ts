@@ -24,6 +24,9 @@
  */
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
+import { isValidIsoDate } from "@/utils/dateValidation";
+import { getDailySolarSchedule } from "@/utils/solarTime";
+import { evaluateTimePhase, isVoidTimeHour } from "@/lib/timePhase";
 import {
   ALL_DIRECTIONS,
   type AuspiciousDayParams,
@@ -77,6 +80,19 @@ export const SITE_URL = "https://cloud-palette.com";
   画面側は #1092〜 で塞いだが、ここだけ残っていた）。
 */
 function parseJstDate(value: string): Date | null {
+  // Date は 2/30 や 24:00 を翌月・翌日に繰り上げるので、先に実在を確認。
+  const parts =
+    /^(\d{4}-\d{2}-\d{2})(?:T(\d{2}):(\d{2})(?::(\d{2})(?:\.\d+)?)?(?:Z|[+-]\d{2}:?\d{2})?)?$/.exec(
+      value,
+    );
+  if (!parts || !isValidIsoDate(parts[1])) return null;
+  if (
+    parts[2] !== undefined &&
+    (Number(parts[2]) > 23 ||
+      Number(parts[3]) > 59 ||
+      Number(parts[4] ?? 0) > 59)
+  )
+    return null;
   const d = value.includes("T")
     ? parseJapanDateTime(value)
     : new Date(`${value}T12:00:00+09:00`);
@@ -186,6 +202,122 @@ function rentOf(code: string): number | null {
   return housingFiguresFor(HOUSING, code)?.rentPerSqm ?? null;
 }
 
+export type McpJudgmentInput = Parameters<typeof buildBase>[0] & {
+  date?: string;
+};
+
+/** 匿名・保存済みプロフィールの両方が同じ判定を通る。 */
+export function judgeMcpDirections(input: McpJudgmentInput) {
+  const built = buildBase(input);
+  if (!built.ok) return fail(built.error);
+  const day = input.date ? parseJstDate(input.date) : new Date();
+  if (!day) return fail("date は YYYY-MM-DD で指定してください。");
+  const all = judgeDayAllDirections(
+    new Date(forecastAnchorMs(day)),
+    built.base,
+  );
+  const any = all[ALL_DIRECTIONS[0]];
+  const directions = ALL_DIRECTIONS.map((dir) => {
+    const v = all[dir];
+    return {
+      direction: dir,
+      label: DIRECTION_LABELS[dir as keyof typeof DIRECTION_LABELS],
+      tier: gradeVerdict(v),
+      status: v.finalStatus,
+      yearLayer: v.yearLayer,
+      monthLayer: v.monthLayer,
+      dayLayer: v.dayLayer,
+      isTripleAuspicious: v.isTripleAuspicious,
+      hasTendo: v.hasTendo,
+      isDoyouSatsu: v.isDoyouSatsu,
+    };
+  });
+  return text({
+    date: any.date,
+    weekday: any.weekday,
+    rokuyo: any.rokuyo,
+    tags: any.tags,
+    blockedByTenchusatsu: any.blockedByTenchusatsu,
+    honmeiStar: built.honmei.classical,
+    voidZodiacs: built.voidZodiacs,
+    tenchusatsuMode: built.tenchusatsuMode,
+    directions,
+    tiers:
+      "S 三盤吉 / A 吉2盤 / B 吉1盤 / C 平 / D 軽い凶 / X 五大凶殺・天中殺",
+  });
+}
+
+/** 時計とホームと同じ真太陽時・五行・天中殺の判定。 */
+export function judgeMcpHours(input: McpJudgmentInput) {
+  const built = buildBase(input);
+  if (!built.ok) return fail(built.error);
+  const day = input.date ? parseJstDate(input.date) : new Date();
+  if (!day) return fail("date は YYYY-MM-DD で指定してください。");
+  const asJst = (date: Date) =>
+    new Date(date.getTime() + 9 * 3600000).toISOString().replace("Z", "+09:00");
+  const date = toJapanDateString(day);
+  const startOfDay = new Date(`${date}T00:00:00+09:00`).getTime();
+  const endOfDay = startOfDay + 86400000;
+  // 画面の1日12刻だけでは、今日の終わりに始まる翌日の子の刻を落とす。
+  // 前後の日も同じ関数で作り、今日のJST暦日に重なる刻をすべて返す。
+  const hours = [-1, 0, 1].flatMap((offset) => {
+    const solarDay = new Date(startOfDay + (offset * 24 + 12) * 3600000);
+    return getDailySolarSchedule(solarDay, built.base.lon, 9)
+      .filter(
+        (item) =>
+          item.startStandard.getTime() < endOfDay &&
+          item.endStandard.getTime() > startOfDay,
+      )
+      .map((item) => {
+        const phase = evaluateTimePhase(item, built.honmei, true);
+        const isVoid = isVoidTimeHour(item, built.voidZodiacs);
+        const isRecommended = phase.isOptimal && !isVoid;
+        return {
+          solarDate: toJapanDateString(solarDay),
+          zodiac: item.japanese,
+          eto: item.etoKanji,
+          start: asJst(item.startStandard),
+          end: asJst(item.endStandard),
+          // The original solar-hour interval may cross the requested JST date.
+          onDateStart: asJst(
+            new Date(Math.max(item.startStandard.getTime(), startOfDay)),
+          ),
+          onDateEnd: asJst(
+            new Date(Math.min(item.endStandard.getTime(), endOfDay)),
+          ),
+          star: item.kyusei.number,
+          relation: phase.relation,
+          isFavorable: phase.isOptimal,
+          isVoid,
+          isRecommended,
+          status: isRecommended ? "recommended" : "not_recommended",
+          reasons: [
+            `五行: ${phase.relation}`,
+            isVoid
+              ? "時の天中殺（空亡）に該当"
+              : "時の天中殺（空亡）には該当しない",
+          ],
+        };
+      });
+  });
+  return text({
+    date: toJapanDateString(day),
+    timeZone: "Asia/Tokyo",
+    board: "classical",
+    hours,
+    recommendedWindows: hours
+      .filter((hour) => hour.isRecommended)
+      .map(({ zodiac, eto, onDateStart, onDateEnd, relation }) => ({
+        zodiac,
+        eto,
+        start: onDateStart,
+        end: onDateEnd,
+        relation,
+      })),
+    note: "画面と同じ正午の補正による真太陽時の十二支（1刻は約2時間で、24個の独立した毎時判定ではありません）。hours の start/end は刻全体、onDateStart/onDateEnd と recommendedWindows は指定した日本標準時の暦日内に切った時間帯です。終了時刻は含みません。日ごとの近似補正のため日境界で数秒程度の隙間・重なりが生じる場合があります。推奨は五行の相生・相比かつ時の天中殺でない時間帯。方位の日判定とは別で、効果を保証しません。",
+  });
+}
+
 export function createMcpServer(): McpServer {
   const server = new McpServer(
     { name: "cloud-palette", version: "1.0.0" },
@@ -244,44 +376,33 @@ export function createMcpServer(): McpServer {
       },
     },
     async (input) => {
-      const built = buildBase(input);
-      if (!built.ok) return fail(built.error);
-      const day = input.date ? parseJstDate(input.date) : new Date();
-      if (!day) return fail("date は YYYY-MM-DD で指定してください。");
-      const all = judgeDayAllDirections(
-        new Date(forecastAnchorMs(day)),
-        built.base,
-      );
-      const any = all[ALL_DIRECTIONS[0]];
-      const directions = ALL_DIRECTIONS.map((dir) => {
-        const v = all[dir];
-        return {
-          direction: dir,
-          label: DIRECTION_LABELS[dir as keyof typeof DIRECTION_LABELS],
-          tier: gradeVerdict(v),
-          status: v.finalStatus,
-          yearLayer: v.yearLayer,
-          monthLayer: v.monthLayer,
-          dayLayer: v.dayLayer,
-          isTripleAuspicious: v.isTripleAuspicious,
-          hasTendo: v.hasTendo,
-          isDoyouSatsu: v.isDoyouSatsu,
-        };
-      });
-      return text({
-        date: any.date,
-        weekday: any.weekday,
-        rokuyo: any.rokuyo,
-        tags: any.tags,
-        blockedByTenchusatsu: any.blockedByTenchusatsu,
-        honmeiStar: built.honmei.classical,
-        voidZodiacs: built.voidZodiacs,
-        tenchusatsuMode: built.tenchusatsuMode,
-        directions,
-        tiers:
-          "S 三盤吉 / A 吉2盤 / B 吉1盤 / C 平 / D 軽い凶 / X 五大凶殺・天中殺",
-      });
+      return judgeMcpDirections(input);
     },
+  );
+
+  server.registerTool(
+    "judge_hours",
+    {
+      title: "指定日の吉時間",
+      description:
+        "生年月日と出発地の経度から、画面と同じ真太陽時の十二支（約2時間ずつ）の吉時間を返します。推奨時間帯は指定した日本時間の日付内に切って返します。古典九星の五行の相生・相比から時の天中殺を除きます。日・方位の判定とは別です。",
+      annotations: {
+        readOnlyHint: true,
+        destructiveHint: false,
+        openWorldHint: false,
+      },
+      inputSchema: {
+        birthDate: z
+          .string()
+          .describe("生年月日。YYYY-MM-DD または日本時間の日時"),
+        lon: z.number().min(122).max(154).describe("出発地の経度（日本国内）"),
+        date: z
+          .string()
+          .optional()
+          .describe("YYYY-MM-DD。省略時は今日（日本時間）"),
+      },
+    },
+    async (input) => judgeMcpHours(input),
   );
 
   server.registerTool(
@@ -322,8 +443,8 @@ export function createMcpServer(): McpServer {
       const from = input.from ? parseJstDate(input.from) : new Date();
       if (!from) return fail("from は YYYY-MM-DD で指定してください。");
       const days = input.days ?? 180;
-      const to = new Date(from);
-      to.setDate(to.getDate() + days);
+      // setDate は実行環境の夏時間で1時間ずれる。JSTには夏時間が無い。
+      const to = new Date(from.getTime() + days * 86400000);
       const cap = input.maxDaysPerDirection ?? 10;
       const summaries = findAuspiciousDaysAllDirections(from, to, built.base);
       return text({

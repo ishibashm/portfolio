@@ -19,7 +19,30 @@ import { toLogMessage } from "@/lib/errorMessage";
 
 export const dynamic = "force-dynamic";
 
+function originAllowed(request: Request): boolean {
+  const origin = request.headers.get("Origin");
+  // Browserからの越境リクエストを拒否。通常のMCPクライアントはOriginを送らない。
+  if (origin === null) return true;
+  if (origin === "https://cloud-palette.com") return true;
+  return (
+    process.env.NODE_ENV === "development" &&
+    (origin === "http://localhost:3000" || origin === "http://127.0.0.1:3000")
+  );
+}
+
+function forbiddenOrigin(): Response {
+  return Response.json(
+    {
+      jsonrpc: "2.0",
+      error: { code: -32000, message: "Forbidden origin" },
+      id: null,
+    },
+    { status: 403, headers: { "Cache-Control": "no-store" } },
+  );
+}
+
 export async function POST(request: Request): Promise<Response> {
+  if (!originAllowed(request)) return forbiddenOrigin();
   const server = createMcpServer();
   const transport = new WebStandardStreamableHTTPServerTransport({
     sessionIdGenerator: undefined,
@@ -45,8 +68,9 @@ export async function POST(request: Request): Promise<Response> {
   }
 }
 
-const methodNotAllowed = () =>
-  Response.json(
+function methodNotAllowed(request: Request): Response {
+  if (!originAllowed(request)) return forbiddenOrigin();
+  return Response.json(
     {
       jsonrpc: "2.0",
       error: {
@@ -57,11 +81,12 @@ const methodNotAllowed = () =>
     },
     { status: 405, headers: { Allow: "POST" } },
   );
-
-export async function GET(): Promise<Response> {
-  return methodNotAllowed();
 }
 
-export async function DELETE(): Promise<Response> {
-  return methodNotAllowed();
+export async function GET(request: Request): Promise<Response> {
+  return methodNotAllowed(request);
+}
+
+export async function DELETE(request: Request): Promise<Response> {
+  return methodNotAllowed(request);
 }
