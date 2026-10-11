@@ -152,14 +152,21 @@ ${AREAS.length.toLocaleString("en-US")}。${AREA_GENERATED_AT.slice(0, 10)} 時�
 ## 道具として呼ぶ（MCP）
 
 ${baseUrl}/api/mcp で MCP（Model Context Protocol）のサーバーを公開しています。
-Streamable HTTP・stateless・POST のみ。いずれも匿名で、画面から得られる計算だけを返します。
+Streamable HTTP・stateless・POST のみ。いずれも匿名で、画面から得られる計算だけを返します。道具は7つです。
 
 - get_honmei_star: 生年月日から本命星（九星）と天中殺の干支を返す
 - judge_directions: 出発地と生年月日から、指定日の八方位の段階（S 三盤吉〜X 五大凶殺）
+- judge_time_slots: 明示した生年月日・緯度・経度から、画面と同じ1日12刻の可否（天中殺／動いてよい／ふつう）と刻の九星を返す。includeBoard=true なら九星配置も返す
 - find_auspicious_days: 期間内で、八方位それぞれに動ける日（三盤吉・吉日）を集計する
 - search_municipality: 名前の一部から市区町村を探し、コードと代表点を返す
 - area_directions: 市区町村から見た八方位それぞれの市区町村と、候補の無い方位の理由
 - prefecture_summary: 都道府県の市区町村と、県の面積重心から見た八方位ごとの市区町村
+
+刻ツールは出生と出発地の明示入力が必須で、保存プロフィール・端末設定を読みません。
+対象日は YYYY-MM-DD（省略時は要求開始時のJSTの今日）、暦は1900〜2099年、緯度20〜46・経度122〜154です。この座標範囲は日本の領域を厳密に判定するものではありません。古典設定のみ対応し、非古典・未知の設定はエラーにします。
+日の方位は judge_directions で別に確認してください。刻別・方位別の吉凶は提供しません。12刻は前日夜から当日夜までで、当日夜の残りは翌日の表に含まれます。
+日付だけの出生は刻ツールでは画面互換のJST 9時、既存の日判定ではJST正午として扱います。端末だけの設定は再現しません。
+個人用 /api/mcp/personal は未提供です。保存プロフィールを読むOAuth連携は準備中です。
 
 ---
 

@@ -1896,10 +1896,11 @@ hours=24、run 34700536126）。**走った 77 回 + 行数の門で止めた 12
 `lib/mcpServer`、検査は `__tests__/mcpServer.test.ts`（in-memory transport
 で道具を直接呼び、**画面と同じ関数を同じ入力で呼んだ結果と突き合わせる**）。
 
-道具は 6 つ。全部 in-process の計算と静的 JSON で、DB に触らない。
+道具は 7 つ（2026-10-11に刻の明示入力版を追加）。全部 in-process の計算と静的 JSON で、DB に触らない。
 
     get_honmei_star       本命星と天中殺の干支
     judge_directions      指定日の八方位の段階（S〜X）と状態
+    judge_time_slots      画面と同じ12刻の可否・空亡と九星（明示入力のみ）
     find_auspicious_days  期間内の吉日を方位ごとに集計
     search_municipality   名前から市区町村コードを引く
     area_directions       市区町村ページと同じ方位別一覧（空の方位は 3 分類）
@@ -1909,6 +1910,12 @@ hours=24、run 34700536126）。**走った 77 回 + 行数の門で止めた 12
 物件の走査（数秒・DB）は載せず、案内だけ返す。
 
 依存は `@modelcontextprotocol/sdk` 1.30.0（zod v4 と互換）。
+
+刻は `lib/timeSlots` の画面互換アダプターを呼び、計算式を変更しない。
+刻別の方位吉凶は作らず、日の方位を別ツールで確認する。公開入口は保存プロフィール指定を実行時にも拒否する。
+案内の更新はMCP計画PR 21の公開部分だけをPR 4直後に先行した。
+個人用 `/api/mcp/personal` は未提供。OAuth・プロフィール選択・解除の結合検証まで入口を無効に保つ。
+詳細な契約は `docs/mcp-personal.md`。PR 21の個人用公開案内は結合検証後に残す。
 
 ---
 
