@@ -47,6 +47,8 @@ export async function createMcpAuthorizationPolicy(): Promise<Configuration> {
       },
     },
     ttl: {
+      Interaction: 600,
+      Session: 3600,
       AuthorizationCode: 60,
       AccessToken: 600,
       Grant: CONNECTION_SECONDS,
