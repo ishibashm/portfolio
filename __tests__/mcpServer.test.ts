@@ -1,5 +1,14 @@
 // @vitest-environment node
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
+import { calculateTimeSlots } from "@/lib/timeSlots";
+import { timeSlotsOutputSchema } from "@/lib/mcpTimeTools";
+// DBをimportした時点で失敗させる。公開ツールの実行には不要。
+vi.mock("@/lib/prisma", () => {
+  throw new Error("Public MCP must not load DB");
+});
+vi.mock("@/utils/supabase/server", () => {
+  throw new Error("Public MCP must not load login");
+});
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { InMemoryTransport } from "@modelcontextprotocol/sdk/inMemory.js";
 import { createMcpServer } from "@/lib/mcpServer";
@@ -35,7 +44,7 @@ const parse = (r: Awaited<ReturnType<Client["callTool"]>>) =>
   JSON.parse((r.content as { text: string }[])[0].text);
 
 describe("MCP サーバー", () => {
-  it("6 つの道具を公開している", async () => {
+  it("7 つの道具を公開している", async () => {
     const c = await connect();
     const names = (await c.listTools()).tools.map((t) => t.name).sort();
     expect(names).toEqual([
@@ -43,6 +52,7 @@ describe("MCP サーバー", () => {
       "find_auspicious_days",
       "get_honmei_star",
       "judge_directions",
+      "judge_time_slots",
       "prefecture_summary",
       "search_municipality",
     ]);
@@ -317,6 +327,90 @@ describe("/api/mcp の入口", () => {
       }),
     );
     expect(list.status).toBe(200);
-    expect((await list.json()).result.tools.length).toBe(6);
+    expect((await list.json()).result.tools.length).toBe(7);
+  });
+});
+
+describe("公開の刻ツール", () => {
+  const args = {
+    birthDate: "1990-06-15",
+    lat: 35.18,
+    lon: 136.91,
+    date: "2026-10-11",
+  };
+  it("outputSchemaと注釈を公開しprofileを広告しない", async () => {
+    const c = await connect();
+    const tool = (await c.listTools()).tools.find(
+      (t) => t.name === "judge_time_slots",
+    )!;
+    expect(tool.outputSchema?.properties).toHaveProperty("slots");
+    expect(tool.inputSchema.properties).not.toHaveProperty("profile");
+    expect(tool.inputSchema.additionalProperties).toBe(false);
+    expect(tool.annotations).toMatchObject({
+      readOnlyHint: true,
+      destructiveHint: false,
+      openWorldHint: false,
+    });
+  });
+  it.each([false, true])(
+    "盤表示 %s: textとstructuredContentと画面互換adapterが一致する",
+    async (includeBoard) => {
+      const c = await connect();
+      const input = { ...args, includeBoard };
+      const r = await c.callTool({
+        name: "judge_time_slots",
+        arguments: input,
+      });
+      expect(r.isError).not.toBe(true);
+      expect(parse(r)).toEqual(r.structuredContent);
+      expect(r.structuredContent).toEqual(calculateTimeSlots(input));
+      expect(timeSlotsOutputSchema.safeParse(r.structuredContent).success).toBe(
+        true,
+      );
+      expect(JSON.stringify(r.structuredContent)).not.toContain(args.birthDate);
+    },
+  );
+  it.each([
+    { ...args, profile: { id: "private" } },
+    { profile: { name: "private" } },
+    { ...args, userId: "private" },
+    { ...args, date: "2026-02-30" },
+    { ...args, settings: { unknown: true } },
+    { ...args, settings: { useClassicalBoard: false } },
+  ])("無効入力と個人selectorを実行時にも拒否する: %j", async (input) => {
+    const c = await connect();
+    expect(
+      (await c.callTool({ name: "judge_time_slots", arguments: input }))
+        .isError,
+    ).toBe(true);
+  });
+  it("HTTP経由でも計算とselector拒否が通る", async () => {
+    const call = async (input: Record<string, unknown>) => {
+      const response = await POST(
+        new Request("http://localhost/api/mcp", {
+          method: "POST",
+          headers: {
+            "content-type": "application/json",
+            accept: "application/json, text/event-stream",
+          },
+          body: JSON.stringify({
+            jsonrpc: "2.0",
+            id: 3,
+            method: "tools/call",
+            params: { name: "judge_time_slots", arguments: input },
+          }),
+        }),
+      );
+      expect(response.status).toBe(200);
+      return (await response.json()).result;
+    };
+    const result = await call(args);
+    expect(JSON.parse(result.content[0].text)).toEqual(
+      result.structuredContent,
+    );
+    expect(result.structuredContent).toEqual(calculateTimeSlots(args));
+    expect((await call({ ...args, profile: { id: "private" } })).isError).toBe(
+      true,
+    );
   });
 });
