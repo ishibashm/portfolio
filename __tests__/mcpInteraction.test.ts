@@ -17,7 +17,7 @@ import {
 import { createHash, generateKeyPairSync, randomBytes } from "node:crypto";
 import type { AddressInfo } from "node:net";
 import type { PrismaClient } from "@prisma/client";
-import type { AdapterPayload, Provider } from "oidc-provider";
+import type { Provider } from "oidc-provider";
 import {
   createMcpInteractionHandler,
   mcpInteractionPolicy,
@@ -28,6 +28,12 @@ import {
   MCP_PERSONAL_RESOURCE,
 } from "@/lib/mcpAuthorizationConfig";
 import { MCP_AUTHORIZATION_ISSUER } from "@/lib/mcpDiscovery";
+
+import { createMcpProviderStore } from "@/lib/mcpProviderStore";
+import { createMcpProviderAdapter } from "@/lib/mcpProviderAdapter";
+import { createMcpStateCrypto } from "@/lib/mcpStateCrypto";
+import { createMcpAuthenticator } from "@/lib/mcpAuth";
+import { mcpPersistence } from "./helpers/mcpPersistence";
 
 const { getUser, createClient } = vi.hoisted(() => ({
   getUser: vi.fn(),
@@ -109,48 +115,6 @@ describe("Node Supabase login boundary", () => {
   });
 });
 
-// This adapter/claim exists only in tests. No in-memory production fallback.
-class MemoryAdapter {
-  static rows = new Map<string, { payload: AdapterPayload; expires: number }>();
-  constructor(private model: string) {}
-  async upsert(id: string, payload: AdapterPayload, ttl: number) {
-    MemoryAdapter.rows.set(`${this.model}:${id}`, {
-      payload: structuredClone(payload),
-      expires: Date.now() + ttl * 1000,
-    });
-  }
-  async find(id: string) {
-    const row = MemoryAdapter.rows.get(`${this.model}:${id}`);
-    return row && row.expires > Date.now()
-      ? structuredClone(row.payload)
-      : undefined;
-  }
-  async findByUid(uid: string) {
-    for (const [key, row] of MemoryAdapter.rows)
-      if (
-        key.startsWith(`${this.model}:`) &&
-        row.payload.uid === uid &&
-        row.expires > Date.now()
-      )
-        return structuredClone(row.payload);
-  }
-  async findByUserCode() {
-    return undefined;
-  }
-  async destroy(id: string) {
-    MemoryAdapter.rows.delete(`${this.model}:${id}`);
-  }
-  async consume(id: string) {
-    const row = MemoryAdapter.rows.get(`${this.model}:${id}`);
-    if (!row || row.payload.consumed) throw new Error("test replay");
-    row.payload.consumed = Math.floor(Date.now() / 1000);
-  }
-  async revokeByGrantId(grantId: string) {
-    for (const [key, row] of MemoryAdapter.rows)
-      if (row.payload.grantId === grantId) MemoryAdapter.rows.delete(key);
-  }
-}
-
 describe.skipIf(Number(process.versions.node.split(".")[0]) < 22)(
   "real provider browser interaction (loopback only)",
   () => {
@@ -158,15 +122,21 @@ describe.skipIf(Number(process.versions.node.split(".")[0]) < 22)(
     let server: ReturnType<typeof createServer>;
     let port: number;
     const findFirst = vi.fn();
-    const create = vi.fn();
-    const updateMany = vi.fn();
-    const verifySiteUser = vi.fn();
-    const claims = new Set<string>();
-    const claimInteraction = vi.fn(async (uid: string) => {
-      if (claims.has(uid)) return false;
-      claims.add(uid);
-      return true;
+    const persistence = mcpPersistence();
+    const { create, updateMany } = persistence.app;
+    const crypto = createMcpStateCrypto({
+      lookupKey: randomBytes(32),
+      activeVersion: "test",
+      encryptionKeys: new Map([["test", randomBytes(32)]]),
     });
+    const store = createMcpProviderStore({
+      db: persistence.db,
+      grantKeyHash: (id) => crypto.digest("Grant", "id", id),
+    });
+    const verifySiteUser = vi.fn();
+    const claimInteraction =
+      vi.fn<(uid: string, expiresAt: Date) => Promise<boolean>>();
+    let authenticate: ReturnType<typeof createMcpAuthenticator>;
     type Jar = Map<string, string>;
     async function http(
       path: string,
@@ -199,7 +169,9 @@ describe.skipIf(Number(process.versions.node.split(".")[0]) < 22)(
               ...(options.body === undefined
                 ? {}
                 : {
-                    origin: "https://cloud-palette.com",
+                    ...(url.pathname.startsWith("/oauth/interaction/")
+                      ? { origin: "https://cloud-palette.com" }
+                      : {}),
                     "content-type": "application/x-www-form-urlencoded",
                     "content-length": Buffer.byteLength(options.body),
                   }),
@@ -258,10 +230,12 @@ describe.skipIf(Number(process.versions.node.split(".")[0]) < 22)(
       const { privateKey } = generateKeyPairSync("rsa", {
         modulusLength: 2048,
       });
+      const adapter = await createMcpProviderAdapter({ crypto, store });
+      claimInteraction.mockImplementation(adapter.claimInteraction);
       provider = new Provider(MCP_AUTHORIZATION_ISSUER, {
         ...(await createMcpAuthorizationPolicy()),
         ...mcpInteractionPolicy,
-        adapter: MemoryAdapter,
+        adapter: adapter.adapter,
         jwks: {
           keys: [
             {
@@ -285,6 +259,11 @@ describe.skipIf(Number(process.versions.node.split(".")[0]) < 22)(
         ],
       });
       provider.proxy = true;
+      authenticate = createMcpAuthenticator({
+        issuer: MCP_AUTHORIZATION_ISSUER,
+        provider,
+        db: persistence.db,
+      });
       const handler = createMcpInteractionHandler({
         provider,
         db: {
@@ -317,15 +296,14 @@ describe.skipIf(Number(process.versions.node.split(".")[0]) < 22)(
     });
     beforeEach(() => {
       vi.clearAllMocks();
-      claims.clear();
+      persistence.rows.clear();
+      persistence.grants.clear();
       findFirst.mockResolvedValue({
         presets: [
           { id: "one", name: "A", birthDate: "1990-01-01" },
           { id: "two", name: "B" },
         ],
       });
-      create.mockResolvedValue({});
-      updateMany.mockResolvedValue({ count: 1 });
       verifySiteUser.mockResolvedValue(userId);
     });
     it("connects authorization, consent, selection and callback using real signed interaction cookies", async () => {
@@ -371,6 +349,106 @@ describe.skipIf(Number(process.versions.node.split(".")[0]) < 22)(
       ).toBe(400);
       expect(create).toHaveBeenCalledOnce();
     });
+    async function authorize() {
+      const { jar, path, ticket } = await start();
+      const accepted = await http(path, jar, {
+        method: "POST",
+        body: form(ticket, "allow", ["two"]),
+      });
+      expect(accepted.status).toBe(303);
+      const resumed = await http(accepted.headers.location!, jar);
+      const code = new URL(resumed.headers.location!).searchParams.get("code")!;
+      expect(code).toBeTruthy();
+      return { jar, code, grant: create.mock.calls.at(-1)![0].data };
+    }
+    async function exchange(jar: Jar, params: Record<string, string>) {
+      return http("/oauth/token", jar, {
+        method: "POST",
+        body: new URLSearchParams({
+          client_id: "test-client",
+          resource: MCP_PERSONAL_RESOURCE,
+          ...params,
+        }).toString(),
+      });
+    }
+    function codeParams(code: string) {
+      return {
+        grant_type: "authorization_code",
+        code,
+        code_verifier: "v".repeat(43),
+        redirect_uri: "https://client.invalid/callback",
+      };
+    }
+    it("connects selection, encrypted persistence, code exchange, RS authentication, refresh and replay revocation", async () => {
+      const { jar, code, grant } = await authorize();
+      const response = await exchange(jar, codeParams(code));
+      expect(response.status, response.body).toBe(200);
+      const tokens = JSON.parse(response.body);
+      const headers = (token: string) =>
+        new Headers({ authorization: `Bearer ${token}` });
+      expect(await authenticate(headers(tokens.access_token))).toMatchObject({
+        userId,
+        grantId: grant.id,
+        allowedProfileIds: ["two"],
+      });
+      const refreshed = await exchange(jar, {
+        grant_type: "refresh_token",
+        refresh_token: tokens.refresh_token,
+      });
+      expect(refreshed.status).toBe(200);
+      const rotated = JSON.parse(refreshed.body);
+      expect(rotated.refresh_token).not.toBe(tokens.refresh_token);
+      expect(await authenticate(headers(rotated.access_token))).toHaveProperty(
+        "allowedProfileIds",
+        ["two"],
+      );
+      const stored = JSON.stringify([...persistence.rows.values()]);
+      for (const secret of [
+        code,
+        tokens.access_token,
+        tokens.refresh_token,
+        "1990-01-01",
+      ])
+        expect(stored).not.toContain(secret);
+      expect(
+        (
+          await exchange(jar, {
+            grant_type: "refresh_token",
+            refresh_token: tokens.refresh_token,
+          })
+        ).status,
+      ).toBe(400);
+      expect(persistence.grants.get(grant.id)?.revokedAt).toBeInstanceOf(Date);
+      await expect(authenticate(headers(rotated.access_token))).rejects.toThrow(
+        "UNAUTHORIZED",
+      );
+    });
+    it.each(["missing", "revoked", "expired"])(
+      "refuses token exchange when application consent becomes %s",
+      async (condition) => {
+        const { jar, code, grant } = await authorize();
+        if (condition === "missing") persistence.grants.delete(grant.id);
+        else
+          persistence.grants.set(grant.id, {
+            ...grant,
+            ...(condition === "revoked"
+              ? { revokedAt: new Date() }
+              : { expiresAt: new Date(0) }),
+          });
+        const response = await exchange(jar, codeParams(code));
+        expect(response.status).toBe(400);
+        expect(JSON.parse(response.body)).toHaveProperty(
+          "error",
+          "invalid_grant",
+        );
+        expect(JSON.parse(response.body)).not.toHaveProperty("access_token");
+        expect(
+          [...persistence.rows.values()].filter(
+            (row) => row.model === "AccessToken",
+          ),
+        ).toHaveLength(0);
+      },
+    );
     it("refusal returns access_denied without creating any grant", async () => {
       const { jar, path, ticket } = await start();
       const denied = await http(path, jar, {
