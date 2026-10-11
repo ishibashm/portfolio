@@ -67,7 +67,10 @@
    **どちらか一方の経路だけ**を選びます。新しい `McpOauthRecord` /
    `McpOauthConnection` 表以外の既存表は変更しません。両表は RLS を有効にし、
    ブラウザー側の DB ロールからの直接アクセスを禁止します。OAuth サービスに使う
-   DB ロールの必要な表へのアクセスを実環境で検証してください。
+   DB ロールの必要な表へのアクセスを実環境で検証してください。RLS に許可ポリシーを
+   置かないため、別の非所有者ロールは表の権限だけを付けても読めません。その場合は
+   実行前の承認後に専用ロールへ最小限のポリシーと権限を設けます。広域の
+   `BYPASSRLS` は与えないでください。
 2. `oauth-service/Dockerfile` を検証・ビルドし、認可ドメインを持つ別の Cloud Run
    サービスとして配置する。既存 Next コンテナはそのままです。認可ドメインの HTTPS と
    Supabase Auth redirect allowlist に `https://<認可ドメイン>/supabase/callback` を設定する。
