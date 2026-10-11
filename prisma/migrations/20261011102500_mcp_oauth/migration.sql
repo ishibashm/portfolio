@@ -28,3 +28,17 @@ CREATE TABLE IF NOT EXISTS "McpOauthConnection" (
 );
 
 CREATE INDEX IF NOT EXISTS "McpOauthConnection_userId_revokedAt_expiresAt_idx" ON "McpOauthConnection"("userId","revokedAt","expiresAt");
+
+-- OAuth credentials are server-only. Browser-facing Supabase roles must not
+-- access even the encrypted payloads or connection metadata directly.
+ALTER TABLE "McpOauthRecord" ENABLE ROW LEVEL SECURITY;
+ALTER TABLE "McpOauthConnection" ENABLE ROW LEVEL SECURITY;
+REVOKE ALL ON "McpOauthRecord", "McpOauthConnection" FROM PUBLIC;
+DO $$ BEGIN
+  IF EXISTS (SELECT FROM pg_roles WHERE rolname = 'anon') THEN
+    REVOKE ALL ON "McpOauthRecord", "McpOauthConnection" FROM anon;
+  END IF;
+  IF EXISTS (SELECT FROM pg_roles WHERE rolname = 'authenticated') THEN
+    REVOKE ALL ON "McpOauthRecord", "McpOauthConnection" FROM authenticated;
+  END IF;
+END $$;
