@@ -34,7 +34,10 @@ function setup() {
   };
   const tx = {
     mcpProviderState: state,
-    mcpGrant: { updateMany: vi.fn().mockResolvedValue({ count: 1 }) },
+    mcpGrant: {
+      updateMany: vi.fn().mockResolvedValue({ count: 1 }),
+      findFirst: vi.fn().mockResolvedValue({ id: "app-grant" }),
+    },
     $queryRaw: vi.fn().mockResolvedValue([{ locked: 1 }]),
   };
   const db = {
@@ -88,6 +91,42 @@ describe("MCP persistence query contract (no database connection)", () => {
       "MCP_STATE_UNAVAILABLE",
     );
     expect(state.upsert).not.toHaveBeenCalled();
+  });
+
+  it("requires live application consent for token saves and consumes but allows the initial protocol Grant", async () => {
+    const { store, tx, state } = setup();
+    tx.mcpGrant.findFirst.mockResolvedValue(null);
+    await expect(store.put(row())).rejects.toThrow("MCP_STATE_UNAVAILABLE");
+    expect(await store.consume("RefreshToken", "RefreshToken-hash")).toBe(
+      false,
+    );
+    expect(state.upsert).not.toHaveBeenCalled();
+    expect(state.updateMany).not.toHaveBeenCalled();
+    expect(tx.mcpGrant.findFirst).toHaveBeenCalledWith({
+      where: {
+        providerGrantId: "grant",
+        revokedAt: null,
+        createdAt: { lte: at },
+        expiresAt: { gt: at },
+      },
+      select: { id: true },
+    });
+    state.findUnique.mockResolvedValue(null);
+    await store.put(row("Grant"));
+    expect(state.upsert).toHaveBeenCalledOnce();
+  });
+
+  it("sanitizes application consent lookup failures without issuing tokens", async () => {
+    const { store, tx, state } = setup();
+    tx.mcpGrant.findFirst.mockRejectedValue(
+      new Error("private-database-input"),
+    );
+    await expect(store.put(row())).rejects.toThrow("MCP_STATE_UNAVAILABLE");
+    await expect(store.consume("RefreshToken", "hash")).rejects.toThrow(
+      "MCP_STATE_UNAVAILABLE",
+    );
+    expect(state.upsert).not.toHaveBeenCalled();
+    expect(state.updateMany).not.toHaveBeenCalled();
   });
 
   it("does not allow a saved token to move to another grant", async () => {

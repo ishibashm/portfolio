@@ -49,7 +49,18 @@ export function createMcpProviderStore(deps: {
     const grant = await tx.mcpProviderState.findUnique({
       where: key("Grant", deps.grantKeyHash(grantId)),
     });
-    return !!grant && !grant.consumedAt && grant.expiresAt > at;
+    if (!grant || grant.consumedAt || grant.expiresAt <= at) return false;
+    // A protocol grant is saved before the consent selection. Tokens may only
+    // follow once that selection exists, and must stop when it is revoked.
+    return !!(await tx.mcpGrant.findFirst({
+      where: {
+        providerGrantId: grantId,
+        revokedAt: null,
+        createdAt: { lte: at },
+        expiresAt: { gt: at },
+      },
+      select: { id: true },
+    }));
   }
 
   return {
