@@ -3,7 +3,8 @@
  */
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
-import { judgeMcpDirections, judgeMcpHours } from "@/lib/mcpServer";
+import { judgeMcpDirections } from "@/lib/mcpServer";
+import { calculateTimeSlots } from "@/lib/timeSlots";
 import { todayInJapan } from "@/utils/japanDate";
 
 // 一覧は保存済みプロフィールのIDと名前だけで成立する。既存の保存APIは
@@ -17,6 +18,7 @@ const profileSummarySchema = z.object({
 // 判定に必要な値だけを選択時に検査する。出生地・健康指標・古い鍵は読まない。
 const profileJudgmentSchema = profileSummarySchema.extend({
   birthDate: z.string().min(1).max(50),
+  baseLat: z.number().finite().min(20).max(46),
   baseLon: z.number().finite().min(122).max(154),
 });
 
@@ -99,7 +101,7 @@ export function createProfileMcpServer(
     {
       title: "保存済みプロフィールの今日の方位と吉時間",
       description:
-        "本人の保存済みプロフィールのIDまたは完全一致の名前から、八方位と真太陽時の吉時間をまとめて返します。日時を省略すると今日（日本時間）。古典九星・総合判定・既定の天中殺設定を使い、保存された分析日の指定は使いません。同名が複数ならIDを指定してください。",
+        "本人の保存済みプロフィールのIDまたは完全一致の名前から、八方位と、公開 judge_time_slots と同じ画面互換の12刻をまとめて返します。日時を省略すると今日（日本時間）。古典九星・総合判定・既定の天中殺設定を使い、保存された分析日の指定は使いません。同名が複数ならIDを指定してください。",
       annotations,
       inputSchema: {
         profileId: z.string().min(1).max(200).optional(),
@@ -132,7 +134,7 @@ export function createProfileMcpServer(
         const parsed = profileJudgmentSchema.safeParse(matches[0].value);
         if (!parsed.success)
           return fail(
-            "このプロフィールは判定に必要な生年月日・出発地の経度が未設定か無効です。保存内容を確認してください。",
+            "このプロフィールは判定に必要な生年月日・出発地の緯度経度が未設定か無効です。保存内容を確認してください。",
           );
         const profile = parsed.data;
         const input = {
@@ -142,12 +144,17 @@ export function createProfileMcpServer(
         };
         const directions = judgeMcpDirections(input);
         if ("isError" in directions) return directions;
-        const hours = judgeMcpHours(input);
-        if ("isError" in hours) return hours;
+        // 刻は公開 judge_time_slots と同じ共通関数（画面と同じ12刻）に一本化する。
+        const timeSlots = calculateTimeSlots({
+          birthDate: profile.birthDate,
+          lat: profile.baseLat,
+          lon: profile.baseLon,
+          date: input.date,
+        });
         return result({
           profile: summary(profile),
           directions: directions.structuredContent,
-          hours: hours.structuredContent,
+          timeSlots,
           source: "https://cloud-palette.com",
           note: "古典九星・総合判定の既定値で計算。画面で判定モードや天中殺の上書きを変更している場合は条件を揃えてください。生年月日・正確な座標は応答に含めません。",
         });

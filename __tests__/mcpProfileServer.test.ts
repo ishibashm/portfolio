@@ -2,11 +2,8 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { InMemoryTransport } from "@modelcontextprotocol/sdk/inMemory.js";
-import {
-  createMcpServer,
-  judgeMcpDirections,
-  judgeMcpHours,
-} from "@/lib/mcpServer";
+import { createMcpServer, judgeMcpDirections } from "@/lib/mcpServer";
+import { calculateTimeSlots } from "@/lib/timeSlots";
 import { createProfileMcpServer } from "@/lib/mcpProfileServer";
 
 const fixture = {
@@ -94,17 +91,26 @@ describe("本人のプロフィール用MCP", () => {
       date: "2026-10-11",
     };
     const directions = judgeMcpDirections(input);
-    const hours = judgeMcpHours(input);
+
     expect("structuredContent" in directions && out.directions).toEqual(
       "structuredContent" in directions && directions.structuredContent,
     );
-    expect("structuredContent" in hours && out.hours).toEqual(
-      "structuredContent" in hours && hours.structuredContent,
+    // 刻は公開 judge_time_slots と同じ共通関数の結果そのもの。
+    expect(out.timeSlots).toEqual(
+      calculateTimeSlots({
+        birthDate: fixture.birthDate,
+        lat: fixture.baseLat,
+        lon: fixture.baseLon,
+        date: "2026-10-11",
+      }),
     );
+    expect(out).not.toHaveProperty("hours");
     for (const sensitive of [
-      "birthDate",
-      "baseLat",
-      "baseLon",
+      '"birthDate"',
+      '"baseLat"',
+      '"baseLon"',
+      "35.1815",
+      "136.9066",
       "encryptedGeminiKey",
       "baselineHrvMean",
       "private-address",
@@ -126,7 +132,7 @@ describe("本人のプロフィール用MCP", () => {
       }),
     );
     expect(out.directions.date).toBe("2026-10-11");
-    expect(out.hours.date).toBe("2026-10-11");
+    expect(out.timeSlots.date).toBe("2026-10-11");
   });
   it("曖昧な名前・選択なし・他人のIDには推測で答えない", async () => {
     const c = await connect(async () => [
@@ -267,9 +273,7 @@ describe("プロフィール用MCPのHTTP統合", () => {
       expect(response.headers.get("Cache-Control")).toBe("private, no-store");
       const body = await response.json();
       expect(body.result.structuredContent.profile.name).toBe("名古屋");
-      expect(
-        body.result.structuredContent.hours.hours.length,
-      ).toBeGreaterThanOrEqual(13);
+      expect(body.result.structuredContent.timeSlots.slots.length).toBe(12);
       expect(httpMocks.findUnique).toHaveBeenLastCalledWith({
         where: { user_id: id },
         select: { presets: true },

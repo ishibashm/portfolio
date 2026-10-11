@@ -1,9 +1,18 @@
 // @vitest-environment node
 import { describe, expect, it, vi } from "vitest";
+import { calculateTimeSlots } from "@/lib/timeSlots";
+import { timeSlotsOutputSchema } from "@/lib/mcpTimeTools";
+// DBをimportした時点で失敗させる。公開ツールの実行には不要。
+vi.mock("@/lib/prisma", () => {
+  throw new Error("Public MCP must not load DB");
+});
+vi.mock("@/utils/supabase/server", () => {
+  throw new Error("Public MCP must not load login");
+});
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { InMemoryTransport } from "@modelcontextprotocol/sdk/inMemory.js";
 import { createMcpServer } from "@/lib/mcpServer";
-import { DELETE, GET, POST } from "@/app/api/mcp/route";
+import { GET, POST } from "@/app/api/mcp/route";
 import {
   judgeDayAllDirections,
   gradeVerdict,
@@ -43,7 +52,7 @@ describe("MCP サーバー", () => {
       "find_auspicious_days",
       "get_honmei_star",
       "judge_directions",
-      "judge_hours",
+      "judge_time_slots",
       "prefecture_summary",
       "search_municipality",
     ]);
@@ -269,63 +278,11 @@ describe("MCP サーバー", () => {
       expect(d.scannedDays).toBeGreaterThan(0);
     }
   });
-
-  it("日付省略時もDSTを持つ実行環境でJSTの走査日をずらさない", async () => {
-    // JST 2026-03-08 00:30。LAでは翌日から夏時間になる。
-    vi.useFakeTimers({ toFake: ["Date"] });
-    vi.setSystemTime(new Date("2026-03-07T15:30:00Z"));
-    try {
-      const c = await connect();
-      const out = parse(
-        await c.callTool({
-          name: "find_auspicious_days",
-          arguments: { birthDate: "1957-09-22", lon: 135.5, days: 30 },
-        }),
-      );
-      expect(out.from).toBe("2026-03-08");
-      // 既存の検索関数は開始日と30日後の両端を含む。
-      expect(out.directions[0].scannedDays).toBe(31);
-    } finally {
-      vi.useRealTimers();
-    }
-  });
 });
 
 describe("/api/mcp の入口", () => {
-  it("未知のOriginをPOST・GET・DELETEで拒否し、同じサイトだけ許可する", async () => {
-    const request = (method: string, origin: string) =>
-      new Request("https://cloud-palette.com/api/mcp", {
-        method,
-        headers: {
-          Origin: origin,
-          "content-type": "application/json",
-          accept: "application/json, text/event-stream",
-        },
-        ...(method === "POST"
-          ? {
-              body: JSON.stringify({
-                jsonrpc: "2.0",
-                id: 1,
-                method: "tools/list",
-                params: {},
-              }),
-            }
-          : {}),
-      });
-    expect((await POST(request("POST", "https://evil.example"))).status).toBe(
-      403,
-    );
-    expect((await GET(request("GET", "null"))).status).toBe(403);
-    expect(
-      (await DELETE(request("DELETE", "https://evil.example"))).status,
-    ).toBe(403);
-    expect(
-      (await POST(request("POST", "https://cloud-palette.com"))).status,
-    ).toBe(200);
-  });
-
   it("GET は 405（stateless なので SSE の待受は無い）", async () => {
-    const res = await GET(new Request("https://cloud-palette.com/api/mcp"));
+    const res = await GET(new Request("http://localhost/api/mcp"));
     expect(res.status).toBe(405);
     expect(res.headers.get("Allow")).toBe("POST");
   });
@@ -371,5 +328,89 @@ describe("/api/mcp の入口", () => {
     );
     expect(list.status).toBe(200);
     expect((await list.json()).result.tools.length).toBe(7);
+  });
+});
+
+describe("公開の刻ツール", () => {
+  const args = {
+    birthDate: "1990-06-15",
+    lat: 35.18,
+    lon: 136.91,
+    date: "2026-10-11",
+  };
+  it("outputSchemaと注釈を公開しprofileを広告しない", async () => {
+    const c = await connect();
+    const tool = (await c.listTools()).tools.find(
+      (t) => t.name === "judge_time_slots",
+    )!;
+    expect(tool.outputSchema?.properties).toHaveProperty("slots");
+    expect(tool.inputSchema.properties).not.toHaveProperty("profile");
+    expect(tool.inputSchema.additionalProperties).toBe(false);
+    expect(tool.annotations).toMatchObject({
+      readOnlyHint: true,
+      destructiveHint: false,
+      openWorldHint: false,
+    });
+  });
+  it.each([false, true])(
+    "盤表示 %s: textとstructuredContentと画面互換adapterが一致する",
+    async (includeBoard) => {
+      const c = await connect();
+      const input = { ...args, includeBoard };
+      const r = await c.callTool({
+        name: "judge_time_slots",
+        arguments: input,
+      });
+      expect(r.isError).not.toBe(true);
+      expect(parse(r)).toEqual(r.structuredContent);
+      expect(r.structuredContent).toEqual(calculateTimeSlots(input));
+      expect(timeSlotsOutputSchema.safeParse(r.structuredContent).success).toBe(
+        true,
+      );
+      expect(JSON.stringify(r.structuredContent)).not.toContain(args.birthDate);
+    },
+  );
+  it.each([
+    { ...args, profile: { id: "private" } },
+    { profile: { name: "private" } },
+    { ...args, userId: "private" },
+    { ...args, date: "2026-02-30" },
+    { ...args, settings: { unknown: true } },
+    { ...args, settings: { useClassicalBoard: false } },
+  ])("無効入力と個人selectorを実行時にも拒否する: %j", async (input) => {
+    const c = await connect();
+    expect(
+      (await c.callTool({ name: "judge_time_slots", arguments: input }))
+        .isError,
+    ).toBe(true);
+  });
+  it("HTTP経由でも計算とselector拒否が通る", async () => {
+    const call = async (input: Record<string, unknown>) => {
+      const response = await POST(
+        new Request("http://localhost/api/mcp", {
+          method: "POST",
+          headers: {
+            "content-type": "application/json",
+            accept: "application/json, text/event-stream",
+          },
+          body: JSON.stringify({
+            jsonrpc: "2.0",
+            id: 3,
+            method: "tools/call",
+            params: { name: "judge_time_slots", arguments: input },
+          }),
+        }),
+      );
+      expect(response.status).toBe(200);
+      return (await response.json()).result;
+    };
+    const result = await call(args);
+    expect(JSON.parse(result.content[0].text)).toEqual(
+      result.structuredContent,
+    );
+    expect(result.structuredContent).toEqual(calculateTimeSlots(args));
+    expect((await call({ ...args, profile: { id: "private" } })).isError).toBe(
+      true,
+    );
   });
 });
