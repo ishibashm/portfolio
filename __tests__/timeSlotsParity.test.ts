@@ -6,6 +6,7 @@ import { getDailySolarSchedule } from "@/utils/solarTime";
 import { getHonmeiStar, getPersonalVoidZodiac } from "@/utils/ephemerisEngine";
 import { parseJapanDateTime } from "@/utils/japanDate";
 import { getKyusei, getKyuseiBoard } from "@/utils/kigaku";
+import { calculateTimeSlots, TimeSlotsError } from "@/lib/timeSlots";
 
 // 2026-10-11 SolarTimeClock → SolarTimeTable の呼出し・表示優先順位の写し。
 // adapter の導入前に固定する。計算式は共通関数、表示の期待値はここが持つ。
@@ -53,6 +54,201 @@ const dates = [
   "2099-12-31",
 ];
 const longitudes = [122, 124.16, 139.69, 154];
+
+describe("刻の通信アダプター", () => {
+  const input = {
+    birthDate: "1990-05-15T12:00",
+    date: "2026-06-21",
+    lat: 35.18,
+    lon: 136.91,
+  };
+  const directions = [
+    "SE",
+    "S",
+    "SW",
+    "E",
+    "CENTER",
+    "W",
+    "NE",
+    "N",
+    "NW",
+  ] as const;
+
+  it("既存画面の全出力に一致しミリ秒を落とさない", () => {
+    for (const birthDate of [
+      ...births,
+      "1990-05-15",
+      "2026-02-04T00:00",
+      "2026-02-04T23:59:59+09:00",
+      "1990-05-15T03:00:00Z",
+    ]) {
+      for (const date of dates)
+        for (const lon of longitudes) {
+          const actual = calculateTimeSlots({
+            ...input,
+            birthDate,
+            date,
+            lon,
+            includeBoard: true,
+          });
+          const expected = screenRows(birthDate, date, lon);
+          expect(
+            actual.slots.map((row) => ({
+              branch: row.branch,
+              stemBranch: row.stemBranch,
+              start: Date.parse(row.start),
+              end: Date.parse(row.end),
+              hourStar: row.hourStar,
+              label: row.label,
+              isVoid: row.isVoid,
+              isElementFavorable: row.isElementFavorable,
+              relation: row.relation,
+              myElement: row.myElement?.id,
+              timeElement: row.timeElement?.id,
+              board: directions.map((d) => row.board![d].number),
+            })),
+          ).toEqual(expected);
+          expect(actual.coverage).toEqual({
+            start: actual.slots[0].start,
+            end: actual.slots[11].end,
+          });
+          for (const [index, row] of actual.slots.entries()) {
+            expect(row.index).toBe(index);
+            expect(row.start).toMatch(/\.\d{3}\+09:00$/);
+            expect(row.status).toBe(
+              row.isVoid
+                ? "void"
+                : row.isElementFavorable
+                  ? "favorable"
+                  : "neutral",
+            );
+          }
+        }
+    }
+  });
+
+  it("空亡overrideを優先し、空文字なら出生から計算する", () => {
+    const base = calculateTimeSlots(input);
+    expect(
+      calculateTimeSlots({ ...input, settings: { voidZodiacOverride: "" } })
+        .slots,
+    ).toEqual(base.slots);
+    const branch = base.slots.find((s) => s.isElementFavorable)!.branch;
+    const override = branch + (branch === "子" ? "丑" : "子");
+    const actual = calculateTimeSlots({
+      ...input,
+      settings: { useClassicalBoard: true, voidZodiacOverride: override },
+    });
+    expect(actual.slots.find((s) => s.branch === branch)).toMatchObject({
+      status: "void",
+      isElementFavorable: true,
+    });
+    expect(actual.settingsUsed.voidZodiacSource).toBe("override");
+    expect(actual.settingsSources).toEqual({
+      useClassicalBoard: "explicit",
+      voidZodiacOverride: "explicit",
+    });
+  });
+
+  it("JST深夜の省略日・区間境界・盤の方向と名前を守る", () => {
+    const { date: _date, ...withoutDate } = input;
+    void _date;
+    expect(
+      calculateTimeSlots(withoutDate, new Date("2026-06-20T15:00:00Z")).date,
+    ).toBe("2026-06-21");
+    const actual = calculateTimeSlots({ ...input, includeBoard: true });
+    expect(Date.parse(actual.coverage.start)).toBeLessThan(
+      Date.parse("2026-06-21T00:00:00+09:00"),
+    );
+    expect(Date.parse(actual.coverage.end)).toBeLessThan(
+      Date.parse("2026-06-22T00:00:00+09:00"),
+    );
+    for (const [index, row] of actual.slots.entries()) {
+      const start = Date.parse(row.start);
+      const containing = (ms: number) =>
+        actual.slots.find(
+          (s) => Date.parse(s.start) <= ms && ms < Date.parse(s.end),
+        );
+      expect(containing(start)).toBe(row);
+      expect(containing(start - 1)).toBe(
+        index ? actual.slots[index - 1] : undefined,
+      );
+      expect(containing(Date.parse(row.end))).toBe(actual.slots[index + 1]);
+      expect(row.board!.CENTER).toEqual(row.hourStar);
+      expect(directions.map((d) => row.board![d])).toEqual(
+        getKyuseiBoard(getKyusei(row.hourStar.number)).map((s) => ({
+          number: s.number,
+          name: s.japanese,
+        })),
+      );
+    }
+  });
+
+  it.each([
+    { birthDate: "2026-02-30" },
+    { birthDate: "2026-02-30T12:00" },
+    { birthDate: "2026-01-01T24:00" },
+    { birthDate: "2026-01-01T12:00+99:99" },
+    { birthDate: "" },
+    { birthDate: "1899-12-31" },
+    { birthDate: "2100-01-01" },
+    { date: "2026-02-29" },
+    { date: "2100-01-01" },
+    { date: "2026-06-21T12:00" },
+    { lat: undefined },
+    { lon: undefined },
+    { lat: NaN },
+    { lon: Infinity },
+    { lat: 19.99 },
+    { lat: 46.01 },
+    { lon: 121.99 },
+    { lon: 154.01 },
+    { settings: { voidZodiacOverride: "子子" } },
+    { settings: { voidZodiacOverride: "辰" } },
+    { settings: { voidZodiacOverride: "辰巳午" } },
+    { settings: { voidZodiacOverride: "ab" } },
+    { settings: { zodiacTimeBasis: "solar" } },
+    { profile: { name: "テスト" } },
+    { includeBoard: "true" },
+    { userId: "other" },
+  ])("不正入力を値の復唱なしで拒否する: %j", (patch) => {
+    expect(() => calculateTimeSlots({ ...input, ...patch })).toThrowError(
+      new TimeSlotsError("INVALID_INPUT"),
+    );
+  });
+
+  it("非古典は別の計算へ切り替えず明示エラーにする", () => {
+    expect(() =>
+      calculateTimeSlots({ ...input, settings: { useClassicalBoard: false } }),
+    ).toThrowError(new TimeSlotsError("UNSUPPORTED_SETTINGS"));
+  });
+
+  it("計算応答は入力値や不要な画面のCSSを返さない", () => {
+    const result = calculateTimeSlots({ ...input, birthDate: "1990-05-15" });
+    expect(result.slots.every((s) => !("board" in s))).toBe(true);
+    expect(result.warnings.map((w) => w.code)).toContain("DATE_ONLY_BIRTH");
+    expect(result.directionJudgment).toBe("not_provided_by_time_table");
+    const json = JSON.stringify(result);
+    for (const privateValue of [
+      "1990-05-15",
+      "35.18",
+      "136.91",
+      "text-blue",
+      'birthDate":',
+      'lat":',
+      'lon":',
+    ])
+      expect(json).not.toContain(privateValue);
+    expect(() => calculateTimeSlots(input, new Date(NaN))).toThrowError(
+      "INVALID_INPUT",
+    );
+    const { date: _date, ...withoutDate } = input;
+    void _date;
+    expect(() =>
+      calculateTimeSlots(withoutDate, new Date("2100-01-01")),
+    ).toThrowError("INVALID_INPUT");
+  });
+});
 
 describe("刻の画面互換（adapter 導入前の固定）", () => {
   it("全9本命星・季節・端年・東西端の全出力を固定する", () => {
