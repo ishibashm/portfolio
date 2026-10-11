@@ -1,8 +1,10 @@
 import { PROFILE_RESOURCE, profileOAuthIssuer } from "@/lib/mcpOAuth";
+import { profileMcpEnabled, profileMcpNotFound } from "@/lib/mcpProfileGate";
 
 export const dynamic = "force-dynamic";
 
 export function GET(): Response {
+  if (!profileMcpEnabled()) return profileMcpNotFound();
   const issuer = profileOAuthIssuer();
   if (!issuer)
     return new Response(null, {

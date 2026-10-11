@@ -262,6 +262,7 @@ describe("プロフィール用MCPのHTTP統合", () => {
     const id = "11111111-1111-4111-8111-111111111111";
     httpMocks.verifyToken.mockResolvedValue({ status: "ok", userId: id });
     httpMocks.findUnique.mockResolvedValue({ presets: [fixture] });
+    vi.stubEnv("MCP_PROFILE_ENABLED", "1");
     try {
       const response = await POST(
         request("get_profile_daily", {
@@ -291,6 +292,8 @@ describe("プロフィール用MCPのHTTP統合", () => {
     httpMocks.findUnique.mockRejectedValue(
       new Error("secret-connection-string"),
     );
+    vi.stubEnv("MCP_PROFILE_ENABLED", "1");
+    vi.stubEnv("MCP_PROFILE_ENABLED", "1");
     try {
       const response = await POST(request("list_profiles", {}));
       const body = await response.json();

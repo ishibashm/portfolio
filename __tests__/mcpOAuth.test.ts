@@ -18,6 +18,7 @@ const good = () => ({
 
 describe("profile OAuth introspection", () => {
   beforeEach(() => {
+    vi.stubEnv("MCP_PROFILE_ENABLED", "1");
     vi.stubEnv("MCP_OAUTH_ISSUER", "https://auth.cloud-palette.com");
     vi.stubEnv("MCP_OAUTH_INTROSPECTION_SECRET", "secret".repeat(8));
     vi.stubEnv("MCP_OAUTH_CLIENT_ID", "chatgpt-cloud-palette");

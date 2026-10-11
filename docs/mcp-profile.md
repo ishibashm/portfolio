@@ -97,14 +97,21 @@ Next 側のリソース URI は誤ってプレビュー環境から本番プロ�
 本番 URL に固定しています。プレビューで OAuth 接続を検証するには、別の audience、
 別の認可サービスと DB 環境について設計・承認してからコードを調整します。
 
+## 公開スイッチ（既定は閉）
+
+`/api/mcp/profile` と `/.well-known/oauth-protected-resource/api/mcp/profile` は、
+Next 側の環境変数 `MCP_PROFILE_ENABLED=1` のときだけ開きます。未設定・`0`・`true`
+などでは 404（本文なし、`WWW-Authenticate` なし）を返し、DB も認可サービスも呼びません。
+DDL 適用・鍵設定・OAuth サービス配備・実クライアント試験がすべて済むまで設定しないでください。
+スイッチを開けても `MCP_OAUTH_*` が揃わなければ 503 で閉じます。
+
 ## 道具の判定条件
 
-- 匿名 `/api/mcp` の `judge_hours` は生年月日・経度・任意の日付を受け取り、Web の
-  `getDailySolarSchedule` / `evaluateTimePhase` / `isVoidTimeHour` と同じ
-  十二支の時間帯を返します。従来の六つの公開ツールも残ります。
-  `judge_hours` と保存済み `get_profile_daily` には、各刻の推奨状態・理由と
-  `recommendedWindows` を含みます。これは約 2 時間の十二支の刻であり、
-  24 個の独立した毎時スコアではありません。時間の推奨は方位の日判定とは別です。
+- 刻（時間帯）は master の公開ツール `judge_time_slots`（`src/lib/timeSlots.ts` の
+  `calculateTimeSlots`、画面と同じ12刻）に一本化しました。以前この PR にあった
+  `judge_hours` は削除しています。保存済み `get_profile_daily` の `timeSlots` は、
+  保存済みの生年月日・緯度・経度で同じ `calculateTimeSlots` を呼んだ結果そのものです。
+  刻の可否は方位の日判定とは別で、刻ごとの方位吉凶は返しません。
 - `list_profiles` は本人がクラウド保存したプロフィールの ID・名前・使用中の旗だけを
   返します。名前は完全一致の任意フィルターです。生年月日が未入力の控えも一覧に残し、
   判定時だけ必要な値を保存するよう案内します。

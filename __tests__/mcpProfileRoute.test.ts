@@ -55,6 +55,7 @@ describe("/api/mcp/profile OAuth resource server", () => {
   beforeEach(() => {
     vi.resetAllMocks();
     mocks.loaders.length = 0;
+    vi.stubEnv("MCP_PROFILE_ENABLED", "1");
     vi.stubEnv("NODE_ENV", "test");
     mocks.verify.mockResolvedValue({ status: "ok", userId: USER_A });
     mocks.findUnique.mockResolvedValue({ presets: [{ id: "preset-a" }] });

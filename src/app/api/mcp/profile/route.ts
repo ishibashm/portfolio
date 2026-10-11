@@ -7,6 +7,7 @@ import { WebStandardStreamableHTTPServerTransport } from "@modelcontextprotocol/
 import { createProfileMcpServer } from "@/lib/mcpProfileServer";
 import prisma from "@/lib/prisma";
 import { PROFILE_RESOURCE_METADATA, verifyProfileToken } from "@/lib/mcpOAuth";
+import { profileMcpEnabled, profileMcpNotFound } from "@/lib/mcpProfileGate";
 
 export const dynamic = "force-dynamic";
 
@@ -47,6 +48,8 @@ function originAllowed(request: Request): boolean {
 }
 
 export async function POST(request: Request): Promise<Response> {
+  // 公開スイッチが無ければ、認証の案内も出さず存在しない入口として扱う。
+  if (!profileMcpEnabled()) return profileMcpNotFound();
   if (!originAllowed(request)) return errorResponse(403, "Forbidden origin");
 
   const authorization = request.headers.get("Authorization");
@@ -100,6 +103,7 @@ export async function POST(request: Request): Promise<Response> {
 }
 
 function methodNotAllowed(request: Request): Response {
+  if (!profileMcpEnabled()) return profileMcpNotFound();
   if (!originAllowed(request)) return errorResponse(403, "Forbidden origin");
   return errorResponse(405, "Method not allowed. Use POST.");
 }
