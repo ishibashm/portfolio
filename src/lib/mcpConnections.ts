@@ -103,5 +103,49 @@ export function createMcpConnectionService(deps: {
         return { revoked: true as const };
       });
     },
+    reduceProfiles(user: unknown, connection: unknown, profiles: unknown) {
+      return safe(async () => {
+        const userId = subject(user);
+        const connectionId = id(connection);
+        const parsed = z
+          .array(z.string().min(1).max(512))
+          .max(100)
+          .safeParse(profiles);
+        if (!parsed.success || new Set(parsed.data).size !== parsed.data.length)
+          throw new McpConnectionError("INVALID_REQUEST");
+        const at = now();
+        const row = await deps.db.mcpGrant.findFirst({
+          where: {
+            id: connectionId,
+            userId,
+            revokedAt: null,
+            createdAt: { lte: at },
+            expiresAt: { gt: at },
+          },
+          select: { allowedProfileIds: true },
+        });
+        if (!row) throw new McpConnectionError("NOT_FOUND");
+        if (
+          parsed.data.some(
+            (profile) => !row.allowedProfileIds.includes(profile),
+          )
+        )
+          throw new McpConnectionError("INVALID_REQUEST");
+        // Compare-and-swap prevents a stale tab from restoring a profile that
+        // another request just removed. Additions always require fresh consent.
+        const result = await deps.db.mcpGrant.updateMany({
+          where: {
+            id: connectionId,
+            userId,
+            revokedAt: null,
+            expiresAt: { gt: now() },
+            allowedProfileIds: { equals: row.allowedProfileIds },
+          },
+          data: { allowedProfileIds: parsed.data },
+        });
+        if (result.count !== 1) throw new McpConnectionError("INVALID_REQUEST");
+        return { updated: true as const };
+      });
+    },
   };
 }

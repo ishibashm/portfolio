@@ -152,3 +152,84 @@ describe("dormant owner-only connection service", () => {
     expect(store.revokeByGrantId).not.toHaveBeenCalled();
   });
 });
+
+describe("connection profile reduction", () => {
+  it("only writes a subset with owner, lifetime and compare-and-swap conditions", async () => {
+    const { service, db, store } = setup();
+    db.mcpGrant.findFirst.mockResolvedValue({
+      allowedProfileIds: ["one", "two"],
+    });
+    expect(await service.reduceProfiles(userId, id, ["two"])).toEqual({
+      updated: true,
+    });
+    expect(db.mcpGrant.updateMany).toHaveBeenCalledWith({
+      where: {
+        id,
+        userId,
+        revokedAt: null,
+        expiresAt: { gt: at },
+        allowedProfileIds: { equals: ["one", "two"] },
+      },
+      data: { allowedProfileIds: ["two"] },
+    });
+    expect(db.mcpGrant.findFirst).toHaveBeenCalledWith({
+      where: {
+        id,
+        userId,
+        revokedAt: null,
+        createdAt: { lte: at },
+        expiresAt: { gt: at },
+      },
+      select: { allowedProfileIds: true },
+    });
+    expect(store.revokeByGrantId).not.toHaveBeenCalled();
+  });
+  it("allows removing every profile but never adds a new or removed ID", async () => {
+    const { service, db } = setup();
+    db.mcpGrant.findFirst.mockResolvedValue({ allowedProfileIds: ["one"] });
+    await expect(service.reduceProfiles(userId, id, ["two"])).rejects.toThrow(
+      "INVALID_REQUEST",
+    );
+    expect(db.mcpGrant.updateMany).not.toHaveBeenCalled();
+    expect(await service.reduceProfiles(userId, id, [])).toEqual({
+      updated: true,
+    });
+  });
+  it("rejects a lost race with another reduction, revocation, deletion or expiry", async () => {
+    const { service, db } = setup();
+    db.mcpGrant.findFirst.mockResolvedValue({
+      allowedProfileIds: ["one", "two"],
+    });
+    db.mcpGrant.updateMany.mockResolvedValue({ count: 0 });
+    await expect(service.reduceProfiles(userId, id, ["one"])).rejects.toThrow(
+      "INVALID_REQUEST",
+    );
+    expect(db.mcpGrant.updateMany).toHaveBeenCalledOnce();
+  });
+  it.each(
+    [null, ["one", "one"], [""], ["x".repeat(513)], Array(101).fill("one")].map(
+      (profiles) => ({ profiles }),
+    ),
+  )("rejects malformed selection before IO: %j", async ({ profiles }) => {
+    const { service, db } = setup();
+    await expect(service.reduceProfiles(userId, id, profiles)).rejects.toThrow(
+      "INVALID_REQUEST",
+    );
+    expect(db.mcpGrant.findFirst).not.toHaveBeenCalled();
+  });
+  it("rejects absent/other-owner/expired connections and sanitizes DB failure", async () => {
+    const { service, db } = setup();
+    db.mcpGrant.findFirst.mockResolvedValue(null);
+    await expect(service.reduceProfiles(userId, id, [])).rejects.toThrow(
+      "NOT_FOUND",
+    );
+    db.mcpGrant.findFirst.mockRejectedValue(new Error("private"));
+    await expect(service.reduceProfiles(userId, id, [])).rejects.toThrow(
+      "TEMPORARILY_UNAVAILABLE",
+    );
+    expect(db.mcpGrant.updateMany).not.toHaveBeenCalled();
+    await expect(
+      service.reduceProfiles("dev-bypass-id", id, []),
+    ).rejects.toThrow("LOGIN_REQUIRED");
+  });
+});
