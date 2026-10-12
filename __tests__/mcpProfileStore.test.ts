@@ -62,7 +62,7 @@ describe("dormant bounded MCP profile pool", () => {
     await store.close();
     expect(pool.end).toHaveBeenCalledOnce();
   });
-  it.each([0, -1, NaN, Infinity])(
+  it.each([0, -1, NaN, Infinity, 5001])(
     "refuses an invalid budget %s without acquiring a connection",
     async (remaining) => {
       const store = createMcpProfileStore(connection);
