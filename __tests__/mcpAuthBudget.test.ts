@@ -141,6 +141,7 @@ it("HTTP forwards its original remaining budget and request cancellation to auth
     throw new Error("guard must not run");
   });
   const handle = createMcpPersonalHttp({
+    audit: { record: vi.fn().mockResolvedValue(undefined) },
     authenticate,
     monotonicNow: () => tick,
     profileReader: () => async () => null,

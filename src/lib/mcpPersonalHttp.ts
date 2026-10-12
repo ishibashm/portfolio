@@ -1,4 +1,6 @@
 import type { McpProfileReader } from "@/lib/mcpProfiles";
+import type { McpAuditStore } from "@/lib/mcpAuditStore";
+import { createMcpHttpRejectionAudit } from "@/lib/mcpHttpRejectionAudit";
 import {
   McpAuthError,
   type McpAuthContext,
@@ -40,6 +42,7 @@ export function createMcpPersonalHttp(deps: {
     remainingMs: () => number,
   ) => McpProfileReader;
   run: ReturnType<typeof createMcpPrivacyGuard>;
+  audit: Pick<McpAuditStore, "record">;
   discovery: Pick<
     ReturnType<typeof createMcpDiscoveryContract>,
     "unauthorizedResponse"
@@ -50,6 +53,8 @@ export function createMcpPersonalHttp(deps: {
 }) {
   if (typeof deps.profileReader !== "function")
     throw new Error("MCP_PROFILE_READER_REQUIRED");
+  if (typeof deps.audit?.record !== "function")
+    throw new Error("MCP_HTTP_AUDIT_REQUIRED");
   const origins = new Set(deps.allowedOrigins ?? ["https://cloud-palette.com"]);
   for (const origin of origins) {
     const parsed = new URL(origin);
@@ -57,16 +62,35 @@ export function createMcpPersonalHttp(deps: {
       throw new Error("MCP_ORIGIN_CONFIGURATION_INVALID");
   }
   const now = deps.monotonicNow ?? (() => performance.now());
+  const auditRejection = createMcpHttpRejectionAudit({
+    audit: deps.audit,
+    monotonicNow: now,
+  });
   return async function handle(request: Request): Promise<Response> {
     const startedAt = now();
     if (!Number.isFinite(startedAt))
       return failure(503, "TEMPORARILY_UNAVAILABLE");
+    const rejectEnvelope = async (
+      result: "denied" | "invalid",
+      response: Response,
+    ) => {
+      try {
+        await auditRejection(result, startedAt);
+        return response;
+      } catch {
+        return failure(503, "TEMPORARILY_UNAVAILABLE");
+      }
+    };
     if (request.method !== "POST")
-      return failure(405, "METHOD_NOT_ALLOWED", { Allow: "POST" });
+      return rejectEnvelope(
+        "invalid",
+        failure(405, "METHOD_NOT_ALLOWED", { Allow: "POST" }),
+      );
     const origin = request.headers.get("origin");
     if (origin !== null && !origins.has(origin))
-      return failure(403, "ORIGIN_DENIED");
+      return rejectEnvelope("denied", failure(403, "ORIGIN_DENIED"));
     const controller = new AbortController();
+    let guardStarted = false;
     let rejectDeadline: (error: McpGuardError) => void;
     const deadline = new Promise<never>((_, reject) => {
       rejectDeadline = reject;
@@ -107,6 +131,7 @@ export function createMcpPersonalHttp(deps: {
         body = await readMcpPersonalBody(request, controller.signal);
       } catch (error) {
         check();
+        guardStarted = true;
         return deps.run<Response>(
           context,
           "invalid_request",
@@ -118,6 +143,7 @@ export function createMcpPersonalHttp(deps: {
       }
       check();
       const classified = classifyMcpPersonalRequest(body);
+      guardStarted = true;
       return deps.run(
         context,
         classified.event,
@@ -149,6 +175,23 @@ export function createMcpPersonalHttp(deps: {
       response.headers.set("Cache-Control", "private, no-store");
       return response;
     } catch (error) {
+      // The execution guard owns audit after dispatch. Do not duplicate its
+      // records or attribute pre-dispatch failures to a claimed token subject.
+      if (!guardStarted && !controller.signal.aborted) {
+        try {
+          await auditRejection(
+            error instanceof McpAuthError &&
+              error.code !== "TEMPORARILY_UNAVAILABLE"
+              ? "denied"
+              : "unavailable",
+            startedAt,
+          );
+        } catch {
+          return failure(503, "TEMPORARILY_UNAVAILABLE");
+        }
+      }
+      if (controller.signal.aborted)
+        return failure(503, "TEMPORARILY_UNAVAILABLE");
       if (
         error instanceof McpAuthError &&
         error.code !== "TEMPORARILY_UNAVAILABLE"

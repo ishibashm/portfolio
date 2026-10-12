@@ -65,6 +65,7 @@ function setup() {
       authenticate,
       profileReader,
       run,
+      audit,
       discovery,
       monotonicNow,
     }),
@@ -171,7 +172,7 @@ describe("personal HTTP composition, not mounted", () => {
     ["INSUFFICIENT_SCOPE", 403],
     ["TEMPORARILY_UNAVAILABLE", 503],
   ] as const)(
-    "maps %s before any body, DB, or tool execution",
+    "maps %s before body or profile access and records only anonymous rejection",
     async (code, status) => {
       const s = setup();
       s.authenticate.mockRejectedValue(new McpAuthError(code));
@@ -192,6 +193,13 @@ describe("personal HTTP composition, not mounted", () => {
       }
       expect(s.rate.reserve).not.toHaveBeenCalled();
       expect(findFirst).not.toHaveBeenCalled();
+      expect(s.audit.record).toHaveBeenCalledExactlyOnceWith({
+        userId: null,
+        grantId: null,
+        event: "invalid_request",
+        result: status === 503 ? "unavailable" : "denied",
+        durationMs: 0,
+      });
     },
   );
   it("rejects methods and untrusted Origins while allowing absent or listed Origins", async () => {
@@ -220,6 +228,22 @@ describe("personal HTTP composition, not mounted", () => {
       ).toBe(403);
     }
     expect(s.authenticate).not.toHaveBeenCalled();
+    expect(s.audit.record.mock.calls.map(([input]) => input)).toEqual([
+      ...Array.from({ length: 6 }, () => ({
+        userId: null,
+        grantId: null,
+        event: "invalid_request",
+        result: "invalid",
+        durationMs: 0,
+      })),
+      ...Array.from({ length: 4 }, () => ({
+        userId: null,
+        grantId: null,
+        event: "invalid_request",
+        result: "denied",
+        durationMs: 0,
+      })),
+    ]);
     expect((await s.handle(request("ping"))).status).toBe(200);
     expect(
       (
@@ -376,6 +400,36 @@ describe("personal HTTP composition, not mounted", () => {
     await vi.advanceTimersByTimeAsync(5000);
     expect((await waiting).status).toBe(503);
     expect(slow.rate.reserve).not.toHaveBeenCalled();
+    expect(slow.audit.record).not.toHaveBeenCalled();
+  });
+  it("requires rejection audit and fails closed when its persistence fails or stalls", async () => {
+    const s = setup();
+    expect(() =>
+      createMcpPersonalHttp({ ...s, discovery, audit: undefined! }),
+    ).toThrow("MCP_HTTP_AUDIT_REQUIRED");
+    s.audit.record.mockRejectedValue(new Error("private-audit-error"));
+    s.authenticate.mockRejectedValue(new McpAuthError("UNAUTHORIZED"));
+    const response = await s.handle(request("private-tool", { userId: user }));
+    expect(response.status).toBe(503);
+    expect(await response.text()).toBe(
+      JSON.stringify({ error: "TEMPORARILY_UNAVAILABLE" }),
+    );
+    expect(s.audit.record).toHaveBeenCalledTimes(1);
+    expect(findFirst).not.toHaveBeenCalled();
+
+    vi.useFakeTimers();
+    const slow = setup();
+    slow.authenticate.mockImplementation(async () => {
+      slow.advance(4800);
+      throw new McpAuthError("UNAUTHORIZED");
+    });
+    slow.audit.record.mockReturnValue(new Promise(() => {}));
+    const pending = slow.handle(request());
+    await vi.advanceTimersByTimeAsync(200);
+    expect((await pending).status).toBe(503);
+    expect(slow.audit.record).toHaveBeenCalledTimes(1);
+    expect(slow.rate.reserve).not.toHaveBeenCalled();
+    expect(vi.getTimerCount()).toBe(0);
   });
   it("cancels stalled body reading and refuses late authentication without further work", async () => {
     vi.useFakeTimers();
