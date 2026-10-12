@@ -5,6 +5,7 @@ import {
   getMcpProfile,
   listMcpProfiles,
   McpProfileError,
+  type McpProfileReader,
 } from "@/lib/mcpProfiles";
 import { DIRECTION_FILTER_MODES } from "@/utils/directionFilterMode";
 import { timeSlotsInputSchema } from "@/lib/timeSlots";
@@ -87,6 +88,7 @@ function failure(error: unknown) {
 export function registerPersonalProfileTools(
   server: McpServer,
   auth: McpAuthContext,
+  read?: McpProfileReader,
 ) {
   // 呼出し元の配列変更やツール引数から本人・許可集合を変更させない。
   const context = {
@@ -105,7 +107,9 @@ export function registerPersonalProfileTools(
     async (input) => {
       try {
         return result(
-          listProfilesOutputSchema.parse(await listMcpProfiles(context, input)),
+          listProfilesOutputSchema.parse(
+            await listMcpProfiles(context, input, read),
+          ),
         );
       } catch (error) {
         return failure(error);
@@ -127,7 +131,9 @@ export function registerPersonalProfileTools(
     async (input) => {
       try {
         return result(
-          getProfileOutputSchema.parse(await getMcpProfile(context, input)),
+          getProfileOutputSchema.parse(
+            await getMcpProfile(context, input, read),
+          ),
         );
       } catch (error) {
         return failure(error);

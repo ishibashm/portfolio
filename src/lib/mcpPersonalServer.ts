@@ -1,3 +1,4 @@
+import type { McpProfileReader } from "@/lib/mcpProfiles";
 import type { McpAuthContext } from "@/lib/mcpAuth";
 import { createMcpBaseServer } from "@/lib/mcpServer";
 import { registerPersonalProfileTools } from "@/lib/mcpPersonalTools";
@@ -11,9 +12,10 @@ import { registerPersonalCalculationTools } from "@/lib/mcpPersonalCalculationTo
 export function createMcpPersonalServer(
   auth: McpAuthContext,
   requestedAt = new Date(),
+  read?: McpProfileReader,
 ) {
   const server = createMcpBaseServer();
-  registerPersonalProfileTools(server, auth);
-  registerPersonalCalculationTools(server, auth, requestedAt);
+  registerPersonalProfileTools(server, auth, read);
+  registerPersonalCalculationTools(server, auth, requestedAt, read);
   return server;
 }

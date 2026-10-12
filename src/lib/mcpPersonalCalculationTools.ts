@@ -1,7 +1,11 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import type { McpAuthContext } from "@/lib/mcpAuth";
-import { getMcpProfile, McpProfileError } from "@/lib/mcpProfiles";
+import {
+  getMcpProfile,
+  McpProfileError,
+  type McpProfileReader,
+} from "@/lib/mcpProfiles";
 import { profileSelectorSchema } from "@/lib/mcpPersonalTools";
 import { calculateMcpDirections } from "@/lib/mcpDirections";
 import {
@@ -152,6 +156,7 @@ export function registerPersonalCalculationTools(
   server: McpServer,
   auth: McpAuthContext,
   requestedAt = new Date(),
+  read?: McpProfileReader,
 ) {
   const context = {
     userId: auth.userId,
@@ -175,10 +180,14 @@ export function registerPersonalCalculationTools(
     },
     async (input) => {
       try {
-        const p = await getMcpProfile(context, {
-          profile: input.profile,
-          includeCalculationInputs: true,
-        });
+        const p = await getMcpProfile(
+          context,
+          {
+            profile: input.profile,
+            includeCalculationInputs: true,
+          },
+          read,
+        );
         if (!p.calculationInputs)
           throw new McpProfileError("PROFILE_INCOMPLETE");
         // 保存された非対応モードを明示上書きで黙って隠すこともしない。
@@ -267,10 +276,14 @@ export function registerPersonalCalculationTools(
             ),
           );
         }
-        const p = await getMcpProfile(context, {
-          profile: input.profile,
-          includeCalculationInputs: true,
-        });
+        const p = await getMcpProfile(
+          context,
+          {
+            profile: input.profile,
+            includeCalculationInputs: true,
+          },
+          read,
+        );
         if (!p.calculationInputs)
           throw new McpProfileError("PROFILE_INCOMPLETE");
         const settings = {
