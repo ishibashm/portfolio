@@ -63,6 +63,11 @@ export type McpAuthContext = Readonly<{
   allowedProfileIds: readonly string[];
 }>;
 
+export type McpAuthBudget = Readonly<{
+  signal: AbortSignal;
+  remainingMs: () => number;
+}>;
+
 /**
  * Dormant RS adapter. Pass the locally configured provider with its persistent
  * adapter, not an issuer/token verifier selected by a request or a remote URL.
@@ -95,15 +100,31 @@ export function createMcpAuthenticator(dependencies: {
 
   return async function authenticate(
     headers: Headers,
+    budget?: McpAuthBudget,
   ): Promise<McpAuthContext> {
     // Reject multiple credentials, JWTs and non-opaque input before any lookup.
     const authorization = headers.get("authorization");
     const match = authorization?.match(/^Bearer ([A-Za-z0-9_-]{32,512})$/i);
     if (!match) throw new McpAuthError("UNAUTHORIZED");
     try {
+      // Stop the lookup chain after a late provider/DB completion. The provider's
+      // own adapter still needs bounded I/O; this cannot cancel an active query.
+      const checkBudget = () => {
+        if (!budget) return;
+        const remaining = budget.remainingMs();
+        if (
+          budget.signal.aborted ||
+          !Number.isFinite(remaining) ||
+          remaining <= 0 ||
+          remaining > 5000
+        )
+          throw new McpAuthError("TEMPORARILY_UNAVAILABLE");
+      };
+      checkBudget();
       const token = protocolToken.safeParse(
         await provider.AccessToken.find(match[1]),
       );
+      checkBudget();
       if (!token.success) throw new McpAuthError("UNAUTHORIZED");
       const now = (dependencies.now ?? Date.now)();
       const seconds = Math.floor(now / 1000);
@@ -121,6 +142,7 @@ export function createMcpAuthenticator(dependencies: {
         throw new McpAuthError("INSUFFICIENT_SCOPE");
       // The provider's protocol grant may have been revoked by refresh replay.
       const pg = protocolGrant.safeParse(await provider.Grant.find(t.grantId));
+      checkBudget();
       if (
         !pg.success ||
         pg.data.accountId !== t.accountId ||
@@ -143,6 +165,7 @@ export function createMcpAuthenticator(dependencies: {
           },
         }),
       );
+      checkBudget();
       if (!row.success) throw new McpAuthError("UNAUTHORIZED");
       const grant = row.data;
       const completedAt = (dependencies.now ?? Date.now)();

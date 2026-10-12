@@ -1,5 +1,9 @@
 import type { McpProfileReader } from "@/lib/mcpProfiles";
-import { McpAuthError, type McpAuthContext } from "@/lib/mcpAuth";
+import {
+  McpAuthError,
+  type McpAuthContext,
+  type McpAuthBudget,
+} from "@/lib/mcpAuth";
 import type { createMcpDiscoveryContract } from "@/lib/mcpDiscovery";
 import {
   createMcpPrivacyGuard,
@@ -26,7 +30,10 @@ function failure(status: number, code: string, headers?: HeadersInit) {
  * Deployment still needs pre-auth ingress limits and bounded, non-logging DB I/O.
  */
 export function createMcpPersonalHttp(deps: {
-  authenticate: (headers: Headers) => Promise<McpAuthContext>;
+  authenticate: (
+    headers: Headers,
+    budget: McpAuthBudget,
+  ) => Promise<McpAuthContext>;
   // Required even when a request only lists tools. No site DB fallback.
   profileReader: (
     signal: AbortSignal,
@@ -87,7 +94,13 @@ export function createMcpPersonalHttp(deps: {
       const authHeaders = new Headers();
       if (request.headers.has("authorization"))
         authHeaders.set("authorization", request.headers.get("authorization")!);
-      const context = await deps.authenticate(authHeaders);
+      const context = await deps.authenticate(authHeaders, {
+        signal: controller.signal,
+        remainingMs: () => {
+          check();
+          return Math.max(0, 5000 - (now() - startedAt));
+        },
+      });
       check();
       let body: string;
       try {
