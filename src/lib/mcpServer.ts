@@ -113,7 +113,8 @@ function rentOf(code: string): number | null {
   return housingFiguresFor(HOUSING, code)?.rentPerSqm ?? null;
 }
 
-export function createMcpServer(): McpServer {
+/** Six shared tools; each caller supplies exactly one time-tool variant. */
+export function createMcpBaseServer(): McpServer {
   const server = new McpServer(
     { name: "cloud-palette", version: "1.0.0" },
     {
@@ -422,6 +423,11 @@ export function createMcpServer(): McpServer {
     },
   );
 
+  return server;
+}
+
+export function createMcpServer(): McpServer {
+  const server = createMcpBaseServer();
   registerPublicTimeTools(server);
   return server;
 }
