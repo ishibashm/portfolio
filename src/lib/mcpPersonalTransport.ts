@@ -1,3 +1,4 @@
+import type { McpProfileReader } from "@/lib/mcpProfiles";
 import { WebStandardStreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/webStandardStreamableHttp.js";
 import { z } from "zod";
 import type { McpAuthContext } from "@/lib/mcpAuth";
@@ -37,9 +38,10 @@ export async function executeMcpPersonalRequest(
   classified: Extract<McpPersonalRequest, { accepted: true }>,
   headers: Headers,
   signal: AbortSignal,
+  read?: McpProfileReader,
 ) {
   if (signal.aborted) throw new McpGuardError("TEMPORARILY_UNAVAILABLE");
-  const server = createMcpPersonalServer(context);
+  const server = createMcpPersonalServer(context, new Date(), read);
   const transport = new WebStandardStreamableHTTPServerTransport({
     sessionIdGenerator: undefined,
     enableJsonResponse: true,

@@ -1,7 +1,9 @@
 // @vitest-environment node
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 const { findFirst } = vi.hoisted(() => ({ findFirst: vi.fn() }));
-vi.mock("@/lib/prisma", () => ({ default: { user_configs: { findFirst } } }));
+vi.mock("@/lib/prisma", () => {
+  throw new Error("HTTP must not import the site DB");
+});
 import { createMcpPersonalHttp } from "@/lib/mcpPersonalHttp";
 import { createMcpPrivacyGuard } from "@/lib/mcpPrivacyGuard";
 import { McpAuthError, createMcpAuthenticator } from "@/lib/mcpAuth";
@@ -34,6 +36,12 @@ const discovery = createMcpDiscoveryContract({
   grant_types_supported: ["authorization_code", "refresh_token"],
 });
 function setup() {
+  const profileReader = vi.fn<
+    (
+      signal: AbortSignal,
+      remainingMs: () => number,
+    ) => (userId: string) => ReturnType<typeof findFirst>
+  >(() => (userId: string) => findFirst({ where: { user_id: userId } }));
   const authenticate = vi.fn().mockResolvedValue(context);
   const audit = { record: vi.fn().mockResolvedValue(undefined) };
   const rate = {
@@ -45,6 +53,7 @@ function setup() {
   const run = createMcpPrivacyGuard({ audit, rate, monotonicNow });
   return {
     authenticate,
+    profileReader,
     audit,
     rate,
     run,
@@ -54,6 +63,7 @@ function setup() {
     },
     handle: createMcpPersonalHttp({
       authenticate,
+      profileReader,
       run,
       discovery,
       monotonicNow,
@@ -102,6 +112,28 @@ afterEach(() => {
   vi.restoreAllMocks();
 });
 describe("personal HTTP composition, not mounted", () => {
+  it("passes the remaining HTTP budget and abort signal to the reader without loading the site DB", async () => {
+    const s = setup();
+    s.authenticate.mockImplementation(async () => {
+      s.advance(1200);
+      return context;
+    });
+    await s.handle(
+      request("tools/call", { name: "list_profiles", arguments: {} }),
+    );
+    const [signal, remainingMs] = s.profileReader.mock.calls[0];
+    expect(signal.aborted).toBe(false);
+    expect(remainingMs()).toBe(3800);
+    expect(findFirst).toHaveBeenCalledExactlyOnceWith({
+      where: { user_id: user },
+    });
+  });
+  it("refuses HTTP composition without an explicit reader", () => {
+    const s = setup();
+    expect(() =>
+      createMcpPersonalHttp({ ...s, discovery, profileReader: undefined! }),
+    ).toThrow("MCP_PROFILE_READER_REQUIRED");
+  });
   it.each([
     [
       "initialize",

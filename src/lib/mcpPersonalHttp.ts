@@ -1,3 +1,4 @@
+import type { McpProfileReader } from "@/lib/mcpProfiles";
 import { McpAuthError, type McpAuthContext } from "@/lib/mcpAuth";
 import type { createMcpDiscoveryContract } from "@/lib/mcpDiscovery";
 import {
@@ -26,6 +27,11 @@ function failure(status: number, code: string, headers?: HeadersInit) {
  */
 export function createMcpPersonalHttp(deps: {
   authenticate: (headers: Headers) => Promise<McpAuthContext>;
+  // Required even when a request only lists tools. No site DB fallback.
+  profileReader: (
+    signal: AbortSignal,
+    remainingMs: () => number,
+  ) => McpProfileReader;
   run: ReturnType<typeof createMcpPrivacyGuard>;
   discovery: Pick<
     ReturnType<typeof createMcpDiscoveryContract>,
@@ -35,6 +41,8 @@ export function createMcpPersonalHttp(deps: {
   // Must be the same monotonic clock as the guard; only injected in tests.
   monotonicNow?: () => number;
 }) {
+  if (typeof deps.profileReader !== "function")
+    throw new Error("MCP_PROFILE_READER_REQUIRED");
   const origins = new Set(deps.allowedOrigins ?? ["https://cloud-palette.com"]);
   for (const origin of origins) {
     const parsed = new URL(origin);
@@ -107,6 +115,16 @@ export function createMcpPersonalHttp(deps: {
             classified,
             request.headers,
             signal,
+            async (userId) => {
+              check();
+              const read = deps.profileReader(signal, () => {
+                check();
+                return Math.max(0, 5000 - (now() - startedAt));
+              });
+              const row = await read(userId);
+              check();
+              return row;
+            },
           );
         },
         { startedAt, signal: controller.signal },
