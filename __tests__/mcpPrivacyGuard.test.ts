@@ -213,6 +213,69 @@ describe("MCP privacy execution guard (unmounted)", () => {
     expect(await second).toMatchObject({ status: 503 });
   });
 
+  it("shares the HTTP start time and only allows the remaining budget", async () => {
+    vi.useFakeTimers();
+    const { run, advance, audit } = setup();
+    advance(4200); // Authentication and body reading already used this time.
+    const parent = new AbortController();
+    const outcome = run(context, "get_profile", () => new Promise(() => {}), {
+      startedAt: 0,
+      signal: parent.signal,
+    }).catch((e: Error) => e);
+    await vi.advanceTimersByTimeAsync(799);
+    expect(audit.record).not.toHaveBeenCalled();
+    await vi.advanceTimersByTimeAsync(1);
+    expect(await outcome).toMatchObject({ status: 503 });
+    expect(audit.record.mock.calls[0][0].durationMs).toBe(4200);
+  });
+
+  it("rejects exhausted, future, invalid and aborted budgets before reservation", async () => {
+    const { run, rate, advance } = setup();
+    const controller = new AbortController();
+    const work = vi.fn();
+    advance(5000);
+    for (const startedAt of [0, -1, 5001, NaN, Infinity])
+      await expect(
+        run(context, "get_profile", work, {
+          startedAt,
+          signal: controller.signal,
+        }),
+      ).rejects.toMatchObject({ status: 503 });
+    controller.abort();
+    await expect(
+      run(context, "get_profile", work, {
+        startedAt: 5000,
+        signal: controller.signal,
+      }),
+    ).rejects.toMatchObject({ status: 503 });
+    expect(rate.reserve).not.toHaveBeenCalled();
+    expect(work).not.toHaveBeenCalled();
+  });
+
+  it("propagates HTTP cancellation without freeing unfinished work's lease", async () => {
+    const { run, rate } = setup();
+    const parent = new AbortController();
+    const pending = deferred<{ value: string; result: "success" }>();
+    const begun = deferred<AbortSignal>();
+    const outcome = run(
+      context,
+      "judge_time_slots",
+      (signal) => {
+        begun.resolve(signal);
+        return pending.promise;
+      },
+      { startedAt: 0, signal: parent.signal },
+    ).catch((e: Error) => e);
+    const signal = await begun.promise;
+    parent.abort();
+    expect(await outcome).toMatchObject({ status: 503 });
+    expect(signal.aborted).toBe(true);
+    expect(rate.release).not.toHaveBeenCalled();
+    pending.resolve({ value: "private-late", result: "success" });
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    expect(rate.release).toHaveBeenCalledTimes(1);
+  });
+
   it("rejects synchronous work exceeding the deadline even before the timer can fire", async () => {
     const { run, advance } = setup();
     await expect(

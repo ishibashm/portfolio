@@ -90,7 +90,9 @@ export async function readMcpPersonalBody(
 
 /** Unmounted, per-request execution boundary. Only authenticated internal context
  * enters here; no body/arguments/result/credential is passed to either store.
- * One run per HTTP request, after its fixed event has been validated. Unknown
+ * One run per HTTP request, after its fixed event has been validated.
+ * HTTP callers pass their original monotonic start and cancellation signal;
+ * authentication/body reading must not grant another five seconds here. Unknown
  * methods/tools must be rejected by the HTTP dispatcher, never used as events.
  *
  * Async work must honor the signal and use bounded DB operations. JS cannot
@@ -110,6 +112,7 @@ export function createMcpPrivacyGuard(deps: {
     work: (
       signal: AbortSignal,
     ) => Promise<{ value: T; result: z.infer<typeof mcpAuditResult> }>,
+    budget?: { startedAt: number; signal: AbortSignal },
   ): Promise<T> {
     if (
       !z.uuid().safeParse(context.userId).success ||
@@ -121,11 +124,10 @@ export function createMcpPrivacyGuard(deps: {
     const { userId, grantId } = context;
     const requestId = randomUUID();
     const timeCalculation = event === "judge_time_slots";
-    const started = now();
+    const started = budget?.startedAt ?? now();
     if (!Number.isFinite(started))
       throw new McpGuardError("TEMPORARILY_UNAVAILABLE");
     const controller = new AbortController();
-    let timer: ReturnType<typeof setTimeout> | undefined;
     let settledWork: Promise<unknown> = Promise.resolve();
     let acquired = false;
     let recorded = false;
@@ -146,6 +148,26 @@ export function createMcpPrivacyGuard(deps: {
         durationMs: elapsed(),
       });
     };
+    // Refuse exhausted/cancelled requests before touching shared stores.
+    const remaining = 5000 - (now() - started);
+    if (
+      !Number.isFinite(remaining) ||
+      remaining <= 0 ||
+      remaining > 5000 ||
+      budget?.signal.aborted
+    )
+      throw new McpGuardError("TEMPORARILY_UNAVAILABLE");
+    let rejectDeadline: (error: McpGuardError) => void;
+    const deadline = new Promise<never>((_, reject) => {
+      rejectDeadline = reject;
+    });
+    const abort = () => {
+      controller.abort();
+      result = "unavailable";
+      rejectDeadline(new McpGuardError("TEMPORARILY_UNAVAILABLE"));
+    };
+    budget?.signal.addEventListener("abort", abort, { once: true });
+    const timer = setTimeout(abort, remaining);
     const execution = (async () => {
       try {
         const decision = await deps.rate.reserve({
@@ -192,13 +214,6 @@ export function createMcpPrivacyGuard(deps: {
         }
       }
     })();
-    const deadline = new Promise<never>((_, reject) => {
-      timer = setTimeout(() => {
-        controller.abort();
-        result = "unavailable";
-        reject(new McpGuardError("TEMPORARILY_UNAVAILABLE"));
-      }, 5000);
-    });
     try {
       const value = await Promise.race([execution, deadline]);
       await Promise.race([record(), deadline]);
@@ -221,6 +236,7 @@ export function createMcpPrivacyGuard(deps: {
       throw new McpGuardError("TEMPORARILY_UNAVAILABLE");
     } finally {
       clearTimeout(timer);
+      budget?.signal.removeEventListener("abort", abort);
     }
   };
 }
