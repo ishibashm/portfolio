@@ -1,5 +1,4 @@
 import { z } from "zod";
-import prisma from "@/lib/prisma";
 import { timeSlotsInputSchema } from "@/lib/timeSlots";
 import {
   DIRECTION_FILTER_MODES,
@@ -61,15 +60,35 @@ const storedSettings = z.object({
   layerMode: z.literal("day").optional(),
 });
 
-async function readSelected(context: McpProfileContext) {
+/** Internal read dependency. It must use a non-logging, bounded DB client.
+ * Only validated owner IDs reach it; projection and selection remain here.
+ */
+export type McpProfileReader = (userId: string) => Promise<{
+  presets: unknown;
+  metaphysical_config: unknown;
+  updated_at: Date;
+} | null>;
+
+// Compatibility for the dormant standalone tools. HTTP composition supplies its
+// own reader; importing this module must never construct the site DB singleton.
+let legacyModule: Promise<typeof import("@/lib/prisma")> | undefined;
+const legacyReader: McpProfileReader = async (userId) => {
+  const { default: prisma } = await (legacyModule ??= import("@/lib/prisma"));
+  return prisma.user_configs.findFirst({
+    where: { user_id: userId },
+    select: { presets: true, metaphysical_config: true, updated_at: true },
+  });
+};
+
+async function readSelected(
+  context: McpProfileContext,
+  read: McpProfileReader,
+) {
   const checked = contextSchema.safeParse(context);
   if (!checked.success) throw new McpProfileError("INVALID_INPUT");
   let row;
   try {
-    row = await prisma.user_configs.findFirst({
-      where: { user_id: checked.data.userId },
-      select: { presets: true, metaphysical_config: true, updated_at: true },
-    });
+    row = await read(checked.data.userId);
   } catch {
     // Prismaの生例外には値が入る可能性がある。causeにも残さない。
     throw new McpProfileError("TEMPORARILY_UNAVAILABLE");
@@ -125,12 +144,13 @@ function inspect(raw: unknown, account: unknown) {
 export async function listMcpProfiles(
   context: McpProfileContext,
   input: unknown = {},
+  read: McpProfileReader = legacyReader,
 ) {
   const parsed = z
     .strictObject({ name: identity.shape.name.optional() })
     .safeParse(input);
   if (!parsed.success) throw new McpProfileError("INVALID_INPUT");
-  const data = await readSelected(context);
+  const data = await readSelected(context, read);
   return {
     profiles: data.profiles
       .filter(
@@ -154,6 +174,7 @@ export async function listMcpProfiles(
 export async function getMcpProfile(
   context: McpProfileContext,
   input: unknown,
+  read: McpProfileReader = legacyReader,
 ) {
   const parsed = z
     .strictObject({
@@ -162,7 +183,7 @@ export async function getMcpProfile(
     })
     .safeParse(input);
   if (!parsed.success) throw new McpProfileError("INVALID_INPUT");
-  const data = await readSelected(context);
+  const data = await readSelected(context, read);
   const selected = parsed.data.profile;
   const matches = data.profiles.filter((p) =>
     "id" in selected
