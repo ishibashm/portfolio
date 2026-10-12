@@ -14,6 +14,7 @@ const context: McpAuthContext = {
 };
 function setup() {
   const audit = { record: vi.fn().mockResolvedValue(undefined) };
+  const usage = { markUsed: vi.fn().mockResolvedValue(undefined) };
   const rate = {
     reserve: vi.fn().mockResolvedValue({ allowed: true }),
     release: vi.fn().mockResolvedValue(undefined),
@@ -21,8 +22,14 @@ function setup() {
   let time = 0;
   return {
     audit,
+    usage,
     rate,
-    run: createMcpPrivacyGuard({ audit, rate, monotonicNow: () => time }),
+    run: createMcpPrivacyGuard({
+      audit,
+      rate,
+      usage,
+      monotonicNow: () => time,
+    }),
     advance: (ms: number) => {
       time += ms;
     },
@@ -112,14 +119,15 @@ describe("MCP privacy execution guard (unmounted)", () => {
     expect(audit.record.mock.calls[0][0].result).toBe("limited");
   });
 
-  it.each(["reserve", "work", "release", "audit"])(
+  it.each(["reserve", "work", "release", "usage", "audit"])(
     "fails closed without logging raw %s errors",
     async (failure) => {
-      const { run, audit, rate } = setup();
+      const { run, audit, rate, usage } = setup();
       const raw = new Error("private-birth private-token\nforged-log");
       if (failure === "reserve") rate.reserve.mockRejectedValue(raw);
       if (failure === "release") rate.release.mockRejectedValue(raw);
       if (failure === "audit") audit.record.mockRejectedValue(raw);
+      if (failure === "usage") usage.markUsed.mockRejectedValue(raw);
       const spies = [
         vi.spyOn(console, "log"),
         vi.spyOn(console, "warn"),
@@ -135,9 +143,74 @@ describe("MCP privacy execution guard (unmounted)", () => {
       });
       expect(error).not.toHaveProperty("cause");
       expect(JSON.stringify(audit.record.mock.calls)).not.toContain("private-");
+      if (failure === "usage")
+        expect(audit.record.mock.calls[0][0].result).toBe("unavailable");
       for (const spy of spies) expect(spy).not.toHaveBeenCalled();
     },
   );
+
+  it("marks only successful use before audit with original remaining budget and immutable identity", async () => {
+    const s = setup();
+    const mutable = { ...context };
+    const value = await s.run(mutable, "get_profile", async () => {
+      mutable.userId = "33333333-3333-4333-8333-333333333333";
+      s.advance(4200);
+      return { value: "private-result", result: "success" };
+    });
+    expect(value).toBe("private-result");
+    expect(s.usage.markUsed).toHaveBeenCalledExactlyOnceWith(
+      context.userId,
+      context.grantId,
+      {
+        signal: expect.any(AbortSignal),
+        remainingMs: expect.any(Function),
+      },
+    );
+    expect(s.usage.markUsed.mock.calls[0][2].remainingMs()).toBe(800);
+    expect(s.usage.markUsed.mock.invocationCallOrder[0]).toBeLessThan(
+      s.audit.record.mock.invocationCallOrder[0],
+    );
+    for (const result of [
+      "denied",
+      "invalid",
+      "limited",
+      "unavailable",
+      "revoked",
+    ] as const)
+      await s.run(context, "get_profile", async () => ({
+        value: null,
+        result,
+      }));
+    expect(s.usage.markUsed).toHaveBeenCalledTimes(1);
+    expect(JSON.stringify(s.usage.markUsed.mock.calls)).not.toContain(
+      "private-",
+    );
+  });
+
+  it("bounds slow usage writes, propagates cancellation and never publishes late success", async () => {
+    vi.useFakeTimers();
+    const s = setup();
+    const pending = deferred<void>();
+    s.usage.markUsed.mockReturnValue(pending.promise);
+    s.advance(4500);
+    const parent = new AbortController();
+    const outcome = s
+      .run(
+        context,
+        "get_profile",
+        async () => ({ value: "private-result", result: "success" }),
+        { startedAt: 0, signal: parent.signal },
+      )
+      .catch((e: Error) => e);
+    await vi.advanceTimersByTimeAsync(500);
+    expect(await outcome).toMatchObject({ status: 503 });
+    expect(s.usage.markUsed.mock.calls[0][2].signal.aborted).toBe(true);
+    expect(s.audit.record.mock.calls[0][0].result).toBe("unavailable");
+    pending.resolve();
+    await vi.advanceTimersByTimeAsync(0);
+    expect(s.audit.record).toHaveBeenCalledTimes(1);
+    expect(s.usage.markUsed).toHaveBeenCalledTimes(1);
+  });
 
   it("records tool denial explicitly and keeps parallel users' identities separate", async () => {
     const { run, audit, rate } = setup();

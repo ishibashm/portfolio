@@ -44,17 +44,19 @@ function setup() {
   >(() => (userId: string) => findFirst({ where: { user_id: userId } }));
   const authenticate = vi.fn().mockResolvedValue(context);
   const audit = { record: vi.fn().mockResolvedValue(undefined) };
+  const usage = { markUsed: vi.fn().mockResolvedValue(undefined) };
   const rate = {
     reserve: vi.fn().mockResolvedValue({ allowed: true }),
     release: vi.fn().mockResolvedValue(undefined),
   };
   let time = 0;
   const monotonicNow = () => time;
-  const run = createMcpPrivacyGuard({ audit, rate, monotonicNow });
+  const run = createMcpPrivacyGuard({ audit, rate, usage, monotonicNow });
   return {
     authenticate,
     profileReader,
     audit,
+    usage,
     rate,
     run,
     monotonicNow,
@@ -166,6 +168,8 @@ describe("personal HTTP composition, not mounted", () => {
     expect(s.rate.reserve).toHaveBeenCalledTimes(1);
     expect(s.audit.record).toHaveBeenCalledTimes(1);
     expect(s.audit.record.mock.calls[0][0].result).toBe("success");
+    expect(s.usage.markUsed).toHaveBeenCalledTimes(1);
+    expect(s.usage.markUsed.mock.calls[0].slice(0, 2)).toEqual([user, grant]);
   });
   it.each([
     ["UNAUTHORIZED", 401],
@@ -193,6 +197,7 @@ describe("personal HTTP composition, not mounted", () => {
       }
       expect(s.rate.reserve).not.toHaveBeenCalled();
       expect(findFirst).not.toHaveBeenCalled();
+      expect(s.usage.markUsed).not.toHaveBeenCalled();
       expect(s.audit.record).toHaveBeenCalledExactlyOnceWith({
         userId: null,
         grantId: null,
@@ -304,6 +309,24 @@ describe("personal HTTP composition, not mounted", () => {
     const failed = await s.handle(request("tools/list"));
     expect(failed.status).toBe(503);
     expect(await failed.text()).not.toContain("tools");
+  });
+  it("withholds a successful tool response when last-use persistence fails", async () => {
+    const s = setup();
+    s.usage.markUsed.mockRejectedValue(new Error("private-token"));
+    const response = await s.handle(
+      request("tools/call", { name: "list_profiles", arguments: {} }),
+    );
+    expect(response.status).toBe(503);
+    expect(await response.text()).toBe(
+      JSON.stringify({ error: "TEMPORARILY_UNAVAILABLE" }),
+    );
+    expect(s.audit.record).toHaveBeenCalledExactlyOnceWith({
+      userId: user,
+      grantId: grant,
+      event: "list_profiles",
+      result: "unavailable",
+      durationMs: 0,
+    });
   });
   it("releases exactly one time lease and only returns calculation inputs when explicitly requested", async () => {
     const s = setup();

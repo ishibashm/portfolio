@@ -7,6 +7,7 @@ import {
   type McpAuditStore,
 } from "@/lib/mcpAuditStore";
 import type { McpRateStore } from "@/lib/mcpRateStore";
+import type { createMcpUsageStore } from "@/lib/mcpUsageStore";
 
 export class McpGuardError extends Error {
   constructor(
@@ -103,8 +104,11 @@ export async function readMcpPersonalBody(
 export function createMcpPrivacyGuard(deps: {
   audit: Pick<McpAuditStore, "record">;
   rate: Pick<McpRateStore, "reserve" | "release">;
+  usage: ReturnType<typeof createMcpUsageStore>;
   monotonicNow?: () => number;
 }) {
+  if (typeof deps.usage?.markUsed !== "function")
+    throw new Error("MCP_USAGE_STORE_REQUIRED");
   const now = deps.monotonicNow ?? (() => performance.now());
   return async function run<T>(
     context: McpAuthContext,
@@ -190,7 +194,7 @@ export function createMcpPrivacyGuard(deps: {
         const parsed = mcpAuditResult.safeParse(output.result);
         if (!parsed.success) throw new McpGuardError("TEMPORARILY_UNAVAILABLE");
         result = parsed.data;
-        return output.value;
+        return output;
       } catch (error) {
         if (error instanceof McpGuardError) {
           if (
@@ -215,11 +219,28 @@ export function createMcpPrivacyGuard(deps: {
       }
     })();
     try {
-      const value = await Promise.race([execution, deadline]);
+      const output = await Promise.race([execution, deadline]);
+      if (controller.signal.aborted || elapsed() >= 5000)
+        throw new McpGuardError("TEMPORARILY_UNAVAILABLE");
+      if (output.result === "success") {
+        // Successful use, not an assertion that the response reached the client.
+        // A subsequent audit/transport failure cannot undo this timestamp.
+        result = "unavailable";
+        await Promise.race([
+          deps.usage.markUsed(userId, grantId, {
+            signal: controller.signal,
+            remainingMs: () => 5000 - elapsed(),
+          }),
+          deadline,
+        ]);
+        if (controller.signal.aborted || elapsed() >= 5000)
+          throw new McpGuardError("TEMPORARILY_UNAVAILABLE");
+        result = "success";
+      }
       await Promise.race([record(), deadline]);
       if (controller.signal.aborted || elapsed() >= 5000)
         throw new McpGuardError("TEMPORARILY_UNAVAILABLE");
-      return value;
+      return output.value;
     } catch (error) {
       // Failed/late work can never publish a result. Timeout audit is attempted
       // without waiting beyond the deadline; failure never becomes fail-open.
