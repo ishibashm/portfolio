@@ -41,6 +41,17 @@ function resolveSubdomainPath(host: string, pathname: string): string | null {
 export async function middleware(request: NextRequest) {
   const url = request.nextUrl.clone();
 
+  // Personal MCP authenticates every request with its own Bearer boundary.
+  // Site cookie refresh must not introduce login redirects, Set-Cookie or a
+  // Supabase dependency here. Keep sibling APIs and consent/management pages
+  // on the normal site session path. The route itself remains hard-disabled.
+  if (
+    url.pathname === "/api/mcp/personal" ||
+    url.pathname === "/api/mcp/personal/"
+  ) {
+    return NextResponse.next();
+  }
+
   const forwardedHost = request.headers.get("x-forwarded-host") || "";
   const directHost = request.headers.get("host") || "";
   const host = (forwardedHost || directHost).toLowerCase();
