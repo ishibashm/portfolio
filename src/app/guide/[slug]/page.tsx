@@ -47,13 +47,15 @@ export async function generateMetadata({
   if (!page) return {};
 
   const path = `/guide/${page.slug}`;
+  // 道具と同名の章も、検索結果では操作の説明だと分かるようにする。
+  const title = `${page.title} — 使い方ガイド`;
   return {
-    title: page.title,
+    title,
     description: page.description,
     alternates: { canonical: path },
     openGraph: {
       images: ["/ogp.png"],
-      title: `${page.title} | ${SITE_NAME}`,
+      title: `${title} | ${SITE_NAME}`,
       description: page.description,
       url: `https://cloud-palette.com${path}`,
       type: "article",

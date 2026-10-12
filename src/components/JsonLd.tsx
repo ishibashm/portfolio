@@ -16,7 +16,10 @@ function Script({ data }: { data: unknown }) {
   return (
     <script
       type="application/ld+json"
-      dangerouslySetInnerHTML={{ __html: JSON.stringify(data) }}
+      // 記事・FAQに </script> があってもHTML側でJSONが途中終了しないようにする。
+      dangerouslySetInnerHTML={{
+        __html: JSON.stringify(data).replace(/</g, "\\u003c"),
+      }}
     />
   );
 }
@@ -100,8 +103,10 @@ export function DatasetJsonLd({
         */
         license: `${BASE}/terms`,
         creator: { "@id": `${BASE}/#organization` },
-        // 掲載中の賃貸情報から自前で集計したもの、という出所を明示する
-        measurementTechnique: "掲載中の賃貸物件から算出した専有面積あたりの賃料",
+        // 利用先の県・市区町村ページは公表統計へ移行済み。本文と出所を揃える。
+        measurementTechnique:
+          "住宅・土地統計調査の公表値を加工。借家の1畳当たり家賃を1.62㎡で換算し、空き家数を総住宅数で除して空き家率を算出。",
+        citation: "https://www.e-stat.go.jp/dbview?sid=0000020108",
       }}
     />
   );

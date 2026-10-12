@@ -101,8 +101,8 @@ ${blogPosts}
 
 ${prefLines}
 
-市区町村ごとのページ（${baseUrl}/houi/area/[市区町村コード]）は ${Object.keys(AREA_EDITORIAL).length} 市区町村ぶん公開しています。
-一覧は ${baseUrl}/houi/area にあります。各ページには「その方位にこの一覧の候補が
+市区町村ごとのページ（${baseUrl}/houi/area/[市区町村コード]）は ${AREAS.length.toLocaleString("en-US")} 市区町村ぶん公開しています。
+このうち固有の地域解説を添えた ${Object.keys(AREA_EDITORIAL).length} 頁を、一覧（${baseUrl}/houi/area）で案内しています。各ページには「その方位にこの一覧の候補が
 1 つも入らない」ことも書いてあります。**これは「その方位に街が無い」という意味では
 ありません。**一覧の母集団は賃貸の掲載を集計できた市区町村（全国 1,917 のうち
 ${AREAS.length.toLocaleString("en-US")}。${AREA_GENERATED_AT.slice(0, 10)} 時点）なので、掲載を拾えていない街は
@@ -172,6 +172,8 @@ Streamable HTTP・stateless・POST のみ。いずれも匿名で、画面から
 
 ## AI アシスタント向けの注意
 
+- [このサイトについて](${baseUrl}/about) に運営者、統計の出典、計算方法と判定の限界をまとめています。
+- 九星気学は伝統的な考え方であり、科学的に効果が確認されたものではありません。公表統計の数値と占術上の解釈を区別し、家賃・災害リスク・契約条件などは別に確認してください。
 - 方位と日取りの判定は、出発地・生年月日・対象日に依存します。個別の結果を一般化して断定しないでください。
 - 引用する場合の出典表記: ${SITE_NAME}（${baseUrl}）
 `;

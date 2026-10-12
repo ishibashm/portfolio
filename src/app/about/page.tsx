@@ -1,6 +1,6 @@
 import Link from "next/link";
 import type { Metadata } from "next";
-import { SITE_NAME, SITE_TAGLINE, CORE_ROUTES } from "@/lib/siteStructure";
+import { SITE_NAME, SITE_DESCRIPTION, CORE_ROUTES } from "@/lib/siteStructure";
 import { pageOpenGraph } from "@/lib/siteUrl";
 
 /**
@@ -34,9 +34,10 @@ export default function AboutPage() {
             何をするサイトか
           </h2>
           <p className="mt-4 text-sm leading-relaxed text-slate-700">
-            {SITE_NAME}は、{SITE_TAGLINE}
-            ためのサービスです。九星気学の方位盤と、公開されている住まいの統計（家賃の水準・空き家率・地価・成約価格）を同じ基準で突き合わせ、「いつ、どの方位のどの街へ動くか」を検討できるようにしています。募集中の部屋の一覧は出していません（2026-09-20
-            に、掲載元の規約に従って取り込みを止めました）。実際の募集は各社のサイトでご確認ください。
+            {SITE_DESCRIPTION}
+            募集中の部屋の一覧は出していません（掲載元の規約に従って取り込みを
+            2026-09-13 に止め、9 月 20
+            日に物件検索の掲載を閉じました）。実際の募集は各社のサイトでご確認ください。
           </p>
           <ul className="mt-4 text-sm text-slate-700 space-y-2 list-disc pl-5">
             {CORE_ROUTES.map((r) => (
@@ -94,7 +95,7 @@ export default function AboutPage() {
                 分からないことは、分からないと書く
               </dt>
               <dd className="leading-relaxed">
-                方位ごとの一覧で候補が出ないとき、「掲載を集計できていないだけ」と「陸が尽きている」を分けて書きます。流派によって算出が分かれる箇所は、どちらかを選ばず両方を併記します。方位磁針で測ると別の方位に見える地点には、その注意を添えます。
+                方位ごとの一覧には、家賃や空き家率の統計がある街を表示します。候補が出ないときは、指定した距離の範囲に統計のある街がない場合もあります。流派によって算出が分かれる箇所は、どちらかを選ばず両方を併記します。方位磁針で測ると別の方位に見える地点には、その注意を添えます。
               </dd>
             </div>
             <div>
