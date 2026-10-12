@@ -116,7 +116,7 @@ const VARIANT_STYLES = {
     label: "text-[10px] uppercase font-bold text-stone-500",
     optionalBadge: "ml-1.5 text-[10px] font-normal text-stone-600",
     currentLocation:
-      "text-[10px] text-emerald-600 hover:text-emerald-700 hover:underline shrink-0",
+      "min-h-11 rounded-lg px-2 text-xs font-semibold text-emerald-700 hover:bg-emerald-50 shrink-0",
     input:
       "w-full px-3 py-2 bg-white border border-stone-200 rounded-xl text-xs text-stone-700 placeholder-stone-300 focus:outline-none focus:border-indigo-300",
     searching: "text-[10px] text-stone-600 animate-pulse",
@@ -128,10 +128,9 @@ const VARIANT_STYLES = {
     picked: "flex items-center gap-1.5 text-[10px] text-stone-500",
     pinSize: 10,
     help: "text-xs text-stone-600 leading-relaxed",
-    /* 押し所は 24px 角より小さくしない（WCAG 2.2 の Target Size
-       (Minimum)）。実測 102 × 14px。字は変えず高さだけ確保する */
+    /* 地図・座標の入口もスマートフォンで押しやすい高さを確保する。 */
     coordsToggle:
-      "inline-flex min-h-[24px] items-center self-start text-[10px] text-stone-600 hover:text-stone-800",
+      "inline-flex min-h-11 items-center self-start rounded-lg px-2 text-xs text-stone-600 hover:bg-stone-100 hover:text-stone-800",
     coordInput:
       "px-2 py-1.5 bg-white border border-stone-200 rounded-lg text-[11px] font-mono text-stone-700",
   },
@@ -139,7 +138,7 @@ const VARIANT_STYLES = {
     label: "text-sm font-bold text-slate-800",
     optionalBadge: "ml-1.5 text-xs font-normal text-slate-400",
     currentLocation:
-      "text-xs text-emerald-600 hover:text-emerald-700 hover:underline shrink-0",
+      "min-h-11 rounded-lg px-2 text-xs font-semibold text-emerald-700 hover:bg-emerald-50 shrink-0",
     input:
       "w-full px-3 py-2.5 bg-white border border-slate-300 rounded-xl text-sm text-slate-900 placeholder-slate-300 outline-none focus:border-rose-400 transition-colors",
     searching: "text-xs text-slate-400 animate-pulse",
@@ -152,7 +151,7 @@ const VARIANT_STYLES = {
     pinSize: 12,
     help: "text-xs text-slate-500 leading-relaxed",
     coordsToggle:
-      "inline-flex min-h-[24px] items-center self-start text-xs text-slate-400 hover:text-slate-600",
+      "inline-flex min-h-11 items-center self-start rounded-lg px-2 text-xs text-slate-600 hover:bg-slate-100 hover:text-slate-800",
     coordInput:
       "px-2 py-2 bg-white border border-slate-300 rounded-lg text-sm font-mono text-slate-700",
   },

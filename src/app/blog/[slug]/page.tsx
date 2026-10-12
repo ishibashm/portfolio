@@ -134,7 +134,7 @@ export default async function BlogPostPage({
           <span>{post.category}</span>
         </nav>
 
-        <div className="mt-8 grid gap-10 lg:grid-cols-[minmax(0,1fr)_300px] lg:items-start">
+        <div className="mt-8 grid grid-cols-1 gap-10 lg:grid-cols-[minmax(0,1fr)_300px] lg:items-start">
           <article>
             <div className="flex flex-wrap items-center gap-3 text-xs text-slate-500">
               <span className="rounded-full bg-rose-50 px-3 py-1 font-bold text-rose-700">

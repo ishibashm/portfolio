@@ -3821,7 +3821,7 @@ export const SolarTimeClock = () => {
     );
 
   return (
-    <div className="min-h-screen flex flex-col items-center bg-gradient-to-br from-[#fdfbf7] via-[#fff5f5] to-[#fef2f2] text-stone-800 font-sans selection:bg-rose-100 pt-2 md:pt-8 pb-8 md:pb-16 relative overflow-x-hidden">
+    <div className="min-h-screen flex flex-col items-center bg-gradient-to-br from-[#fdfbf7] via-[#fff5f5] to-[#fef2f2] text-stone-800 font-sans selection:bg-rose-100 pt-0 pb-8 md:pb-16 relative overflow-x-hidden">
       <div
         className="fixed inset-0 pointer-events-none z-0 opacity-40"
         style={{
@@ -3852,26 +3852,89 @@ export const SolarTimeClock = () => {
       )}
 
       <div className="flex flex-col items-center space-y-4 md:space-y-6 z-10 w-full max-w-[1700px] px-3 md:px-4 animate-fade-in-up mt-4">
-        <div className="w-full max-w-[1700px] text-center mb-2 px-4">
-          {/* このコンポーネントは頁（/relocation/dashboard。以前はトップページ）
-              の中に埋め込まれており、ページの h1 は別にある。h1 を 2 つ置くと
-              文書構造が壊れるので h2 にする。 */}
-          {/* 以前は "Bio-Location Simulator" と「データサイエンス・
-              ダッシュボード」。サイトの言葉ではなく、計算の中身とも
-              合っていない（/about は「計算条件を整理する道具」）。 */}
-          <h2 className="text-stone-700 font-serif text-xl font-bold mb-2 flex items-center justify-center gap-3">
-            いまの方位と時刻
-          </h2>
-          <p className="text-stone-600 text-xs sm:text-sm leading-relaxed max-w-[70ch] mx-auto mb-4">
-            引越しや長期の滞在で、出発地から見た
-            <strong className="text-stone-700">方位の吉凶</strong>
-            と
-            <strong className="text-stone-700">動き出す日時</strong>
-            を同じ画面で確かめるための道具です。計算条件を整理するもので、効果を保証するものではありません。
-          </p>
+        {/*
+            タブは常に折り返す。以前は sm 以上で flex-nowrap にしていたが、
+            7 つの札が 1 行に収まらない幅（タブレット）では札の側が縮み、
+            「ホーム」が「ホ／ー／ム」と 1 文字ずつ縦に割れていた。
+            横スクロールにはしない。流れる帯は「押して選ぶのか分からない」
+            と利用者から指摘された形そのものなので、2 段に積む。
+
+            ## 配色を揃えた理由（利用者の指摘）
+
+            以前は札ごとに色を変えていたが、次の 3 つが問題だった。
+
+            1. **「2. 目的地/健康」と「5. 総合スコア」がどちらも emerald**
+               だった。text の濃さ（500 と 600）しか違わず、選択中の札が
+               どちらなのか見分けられない
+            2. **段階色と衝突していた。**このサイトは緑＝吉・赤＝凶を
+               判定の意味に使っている。移動の手段でしかないタブに緑や
+               琥珀を割り当てると、「緑のタブ＝良い」と読めてしまう
+            3. 9px は小さすぎた（極小フォントを読める大きさへ、という
+               以前の対応から漏れていた）
+
+            **札の識別は色ではなく番号と語で行う。**選択中だけを濃い地色に
+            して、それ以外は地色を持たない。7 つ並んでも意味が濁らない。
+
+            uppercase も外した。日本語には効かず、英数字（ホーム以外の
+            「1.」など）だけが対象になって揃わない。
+          */}
+        {/* 生年月日が利用者のものでないときは、**見本だと断ってから**出す。
+            初期値（2000-01-01）で計算した本命星と方位の吉凶が「あなたの」
+            として出ていた（2026-09-13 に実測）。出すのをやめると初めて来た
+            人に道具の中身が伝わらないので、利用者の判断で「見本と明記して
+            出す」を採った。 */}
+        {!birthDateOwned && (
+          <div className="w-full max-w-[1700px] px-3 md:px-4 mb-2">
+            <SampleProfileNotice
+              birthLabel={sampleBirthLabel}
+              starLabel={sampleStarLabel}
+            />
+          </div>
+        )}
+
+        {/* --- TAB CONTENT: 1. PROFILE --- */}
+        {/*
+          ## 要点を 1 画面に、深い内容は「詳しく見る」で開く（2026-09-28）
+
+          利用者の判断「要点 1 画面に絞る」。以前は 7 つのタブで、要点
+          （ホーム）もタブの 1 枚だった。別のタブを開くと要点が消え、
+          「今日どの方位が良いか」を見るのに行き来が要った。
+
+          - 要点（HomePortal）は常に出す
+          - 目的地の地図・時刻の刻・盤の内訳・30 日の見通し・本命星と
+            天中殺は、下の「詳しく見る」で 1 つずつ開く。開いたものだけ
+            描くので、重い部品（地図・表）は押すまで読まない
+          - 要点の各枠の「詳しく」は、対応するものを開いてそこへ移る
+
+          タブ帯の番号（1〜6）は外した。番号は手順の順に見えるが、実際には
+          どこから開いてもよい。
+        */}
+        {/* --- 要点（常に出す） --- */}
+        <HomePortal
+          dateControls={{ baseTime, setTimeOffsetDays: shareTimeOffsetDays }}
+          onOpenTab={openDetail}
+          evalDate={evalDate}
+          vectors={activeVectors}
+          schedule={portalSchedule}
+          personalVoidZodiac={personalVoidZodiac}
+          honmeiStar={honmeiStar}
+          useClassicalBoard={useClassicalBoard}
+          forecast={scorecard30DaysForecast}
+          kpIndex={spaceWeather?.kpIndex ?? null}
+          pressure={pressureData}
+          declination={geoData?.declination ?? null}
+          /* 見本かどうか。値は常に出し、誰の例かは頁の上の帯が書く
+             （2026-09-13 の方針）。初期値（2000-01-01）でも真になる
+             `Boolean(birthDate)` ではなく、「利用者が入れた値か」の旗で
+             見る。 */
+          profileIsSample={!birthDateOwned}
+        />
+
+        <div className="w-full max-w-[1700px] text-center px-4">
           <button
             onClick={() => setShowHowItWorks(!showHowItWorks)}
-            className="text-[11px] text-emerald-700 hover:text-emerald-800 tracking-widest border border-emerald-200 bg-emerald-50 px-4 py-1.5 transition-colors"
+            aria-expanded={showHowItWorks}
+            className="min-h-11 text-sm text-stone-700 hover:bg-stone-50 border border-stone-200 bg-white rounded-lg px-4 py-2 transition-colors"
           >
             {showHowItWorks
               ? "[-] 閉じる"
@@ -3933,83 +3996,6 @@ export const SolarTimeClock = () => {
             </div>
           </div>
         )}
-
-        {/*
-            タブは常に折り返す。以前は sm 以上で flex-nowrap にしていたが、
-            7 つの札が 1 行に収まらない幅（タブレット）では札の側が縮み、
-            「ホーム」が「ホ／ー／ム」と 1 文字ずつ縦に割れていた。
-            横スクロールにはしない。流れる帯は「押して選ぶのか分からない」
-            と利用者から指摘された形そのものなので、2 段に積む。
-
-            ## 配色を揃えた理由（利用者の指摘）
-
-            以前は札ごとに色を変えていたが、次の 3 つが問題だった。
-
-            1. **「2. 目的地/健康」と「5. 総合スコア」がどちらも emerald**
-               だった。text の濃さ（500 と 600）しか違わず、選択中の札が
-               どちらなのか見分けられない
-            2. **段階色と衝突していた。**このサイトは緑＝吉・赤＝凶を
-               判定の意味に使っている。移動の手段でしかないタブに緑や
-               琥珀を割り当てると、「緑のタブ＝良い」と読めてしまう
-            3. 9px は小さすぎた（極小フォントを読める大きさへ、という
-               以前の対応から漏れていた）
-
-            **札の識別は色ではなく番号と語で行う。**選択中だけを濃い地色に
-            して、それ以外は地色を持たない。7 つ並んでも意味が濁らない。
-
-            uppercase も外した。日本語には効かず、英数字（ホーム以外の
-            「1.」など）だけが対象になって揃わない。
-          */}
-        {/* 生年月日が利用者のものでないときは、**見本だと断ってから**出す。
-            初期値（2000-01-01）で計算した本命星と方位の吉凶が「あなたの」
-            として出ていた（2026-09-13 に実測）。出すのをやめると初めて来た
-            人に道具の中身が伝わらないので、利用者の判断で「見本と明記して
-            出す」を採った。 */}
-        {!birthDateOwned && (
-          <div className="w-full max-w-[1700px] px-3 md:px-4 mb-2">
-            <SampleProfileNotice
-              birthLabel={sampleBirthLabel}
-              starLabel={sampleStarLabel}
-            />
-          </div>
-        )}
-
-        {/* --- TAB CONTENT: 1. PROFILE --- */}
-        {/*
-          ## 要点を 1 画面に、深い内容は「詳しく見る」で開く（2026-09-28）
-
-          利用者の判断「要点 1 画面に絞る」。以前は 7 つのタブで、要点
-          （ホーム）もタブの 1 枚だった。別のタブを開くと要点が消え、
-          「今日どの方位が良いか」を見るのに行き来が要った。
-
-          - 要点（HomePortal）は常に出す
-          - 目的地の地図・時刻の刻・盤の内訳・30 日の見通し・本命星と
-            天中殺は、下の「詳しく見る」で 1 つずつ開く。開いたものだけ
-            描くので、重い部品（地図・表）は押すまで読まない
-          - 要点の各枠の「詳しく」は、対応するものを開いてそこへ移る
-
-          タブ帯の番号（1〜6）は外した。番号は手順の順に見えるが、実際には
-          どこから開いてもよい。
-        */}
-        {/* --- 要点（常に出す） --- */}
-        <HomePortal
-          onOpenTab={openDetail}
-          evalDate={evalDate}
-          vectors={activeVectors}
-          schedule={portalSchedule}
-          personalVoidZodiac={personalVoidZodiac}
-          honmeiStar={honmeiStar}
-          useClassicalBoard={useClassicalBoard}
-          forecast={scorecard30DaysForecast}
-          kpIndex={spaceWeather?.kpIndex ?? null}
-          pressure={pressureData}
-          declination={geoData?.declination ?? null}
-          /* 見本かどうか。値は常に出し、誰の例かは頁の上の帯が書く
-             （2026-09-13 の方針）。初期値（2000-01-01）でも真になる
-             `Boolean(birthDate)` ではなく、「利用者が入れた値か」の旗で
-             見る。 */
-          profileIsSample={!birthDateOwned}
-        />
 
         <nav
           id="dashboard-details"

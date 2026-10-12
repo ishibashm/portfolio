@@ -24,6 +24,7 @@
  */
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
+import { registerPublicTimeTools } from "@/lib/mcpTimeTools";
 import {
   ALL_DIRECTIONS,
   type AuspiciousDayParams,
@@ -530,6 +531,7 @@ export function createMcpServer(): McpServer {
     },
   );
 
+  registerPublicTimeTools(server);
   return server;
 }
 

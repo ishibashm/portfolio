@@ -99,7 +99,7 @@ it("callback preselects 物件通知 but requires confirmation before importing 
   fireEvent.click(screen.getByRole("button", { name: "取り込み" }));
   fireEvent.click(
     await screen.findByRole("button", {
-      name: "https://suumo.jp/a を既存入力へ",
+      name: "https://suumo.jp/a：この物件を選ぶ",
     }),
   );
   expect(selected).toEqual(["https://suumo.jp/a"]);
@@ -223,7 +223,7 @@ it("Gmail URL selection reaches Phase 1, which still requires a location", async
   fireEvent.click(screen.getByRole("button", { name: "取り込み" }));
   fireEvent.click(
     await screen.findByRole("button", {
-      name: "https://suumo.jp/a を既存入力へ",
+      name: "https://suumo.jp/a：この物件を選ぶ",
     }),
   );
   expect(

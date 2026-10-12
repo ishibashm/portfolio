@@ -127,7 +127,7 @@ const components: Components = {
   ),
   th: ({ children, ...props }) => (
     <th
-      className="whitespace-nowrap px-4 py-3 text-left text-xs font-bold text-slate-700"
+      className="min-w-32 whitespace-nowrap px-4 py-3 text-left text-xs font-bold text-slate-700"
       {...props}
     >
       {children}

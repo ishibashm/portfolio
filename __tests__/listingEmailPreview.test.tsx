@@ -25,7 +25,7 @@ it("extracts pasted text locally without login, network or persistence", async (
   fireEvent.click(screen.getByRole("button", { name: "URLをプレビュー" }));
   fireEvent.click(
     await screen.findByRole("button", {
-      name: /https:\/\/suumo.jp\/a を既存入力へ/,
+      name: /https:\/\/suumo.jp\/a：この物件を選ぶ/,
     }),
   );
   expect(select).toHaveBeenCalledWith("https://suumo.jp/a", {});
@@ -68,7 +68,7 @@ it("shows login requirement, permits clearing, and ignores an aborted response",
   expect(screen.getByLabelText("メール本文")).toHaveValue("");
   expect(select).not.toHaveBeenCalled();
   expect(
-    screen.queryByRole("button", { name: /を既存入力へ/ }),
+    screen.queryByRole("button", { name: /この物件を選ぶ/ }),
   ).not.toBeInTheDocument();
 });
 
@@ -129,7 +129,7 @@ it("keeps pasted property details separate and passes only the selected listing 
   expect(screen.getByText("合成ハイツB")).toBeInTheDocument();
   expect(screen.getByText("60,000円")).toBeInTheDocument();
   fireEvent.click(
-    screen.getByRole("button", { name: "https://suumo.jp/b を既存入力へ" }),
+    screen.getByRole("button", { name: "https://suumo.jp/b：この物件を選ぶ" }),
   );
   expect(select).toHaveBeenCalledWith("https://suumo.jp/b", {
     propertyName: "合成ハイツB",
