@@ -2,6 +2,7 @@
 import { readFileSync } from "node:fs";
 import { Prisma } from "@prisma/client";
 import { describe, expect, it } from "vitest";
+import { mcpAuditEvent, mcpAuditResult } from "@/lib/mcpAuditStore";
 
 const sql = readFileSync("prisma/sql/20261011_mcp_grants.sql", "utf8");
 const schema = readFileSync("prisma/schema.prisma", "utf8");
@@ -84,6 +85,44 @@ describe("MCP storage contract (no database access or DDL execution)", () => {
     expect(sql).not.toMatch(
       /\b(?:DEFAULT|REFERENCES|CREATE POLICY|GRANT|DROP|DELETE|INSERT|UPDATE)\b/,
     );
+  });
+
+  it("keeps the fixed audit vocabulary identical to the unapplied DDL", () => {
+    for (const [column, values] of [
+      ["event", mcpAuditEvent.options],
+      ["result", mcpAuditResult.options],
+    ] as const) {
+      const list = sql.split(`CHECK ("${column}" IN (`)[1].split(")")[0];
+      expect([...list.matchAll(/'([^']+)'/g)].map((m) => m[1])).toEqual(values);
+    }
+    expect(mcpAuditEvent.options).toEqual([
+      "authorize",
+      "refresh",
+      "revoke",
+      "initialize",
+      "tools/list",
+      "ping",
+      "notification",
+      "unknown_method",
+      "unknown_tool",
+      "invalid_request",
+      "get_honmei_star",
+      "judge_directions",
+      "find_auspicious_days",
+      "search_municipality",
+      "area_directions",
+      "prefecture_summary",
+      "list_profiles",
+      "get_profile",
+      "judge_profile_directions",
+      "judge_time_slots",
+    ]);
+    for (const untrusted of [
+      "private-profile",
+      "get_profile\nforged",
+      "__proto__",
+    ])
+      expect(mcpAuditEvent.safeParse(untrusted).success).toBe(false);
   });
 
   it("limits audit fields and retention, and bounds selections and leased slots", () => {
