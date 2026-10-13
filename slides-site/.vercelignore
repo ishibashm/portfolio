@@ -1,5 +1,0 @@
-# Slides Viewer
-
-このディレクトリは slides.cloud-palette.com 用の独立したスライドビューアーサイトです。
-
-メインサイト (cloud-palette.com) には一切影響を与えず、Vercel で別プロジェクトとしてデプロイされます。
