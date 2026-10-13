@@ -14,6 +14,7 @@ import {
 import { getRokuyo, getLuckyDays, isJapaneseHoliday } from "@/utils/lunar";
 import { AstroEngine, getPersonalVoidZodiac } from "@/utils/ephemerisEngine";
 import { baziEngine } from "@/utils/baziEngine";
+import { KanshiDayDetails } from "@/components/widgets/KanshiDayDetails";
 import { Solar } from "lunar-javascript";
 import { getZonedDateTimeFields } from "@/utils/solarTime";
 import { parseJapanDateTime } from "@/utils/japanDate";
@@ -950,6 +951,10 @@ export function CosmicCalendar({
                 </span>
               )}
             </div>
+
+            <KanshiDayDetails
+              date={`${selectedDay.date.getFullYear()}-${String(selectedDay.date.getMonth() + 1).padStart(2, "0")}-${String(selectedDay.date.getDate()).padStart(2, "0")}`}
+            />
 
             {/* Score & Gauge */}
             <div className="mb-6">
