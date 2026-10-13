@@ -24,6 +24,13 @@
  */
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
+import {
+  KANSHI_BASIS,
+  kanshiAt,
+  kanshiForBirth,
+  parseKanshiBirth,
+  solarTermsForYear,
+} from "@/lib/kanshi";
 import { registerPublicTimeTools } from "@/lib/mcpTimeTools";
 import {
   ALL_DIRECTIONS,
@@ -201,6 +208,35 @@ export function createMcpServer(): McpServer {
   );
 
   server.registerTool(
+    "get_kanshi",
+    {
+      title: "年月日の干支・空亡・干支併臨を調べる",
+      description:
+        "生年月日から年月日の六十干支、日柱由来の空亡、各柱と年干支が一致する年（出生暦年〜120年後）、出生年の二十四節気の計算時刻（JST）を返します。年は立春、月は節入り、日はJST0時。日付のみは正午の代表値とし、節入り当日は前後両候補を返します。吉凶の予言ではありません。",
+      inputSchema: {
+        birthDate: z
+          .string()
+          .describe(
+            "1900〜2100年。YYYY-MM-DD または YYYY-MM-DDTHH:mm[:ss][+09:00]。時差省略はJST",
+          ),
+      },
+      annotations: {
+        readOnlyHint: true,
+        destructiveHint: false,
+        idempotentHint: true,
+        openWorldHint: false,
+      },
+    },
+    async ({ birthDate }) => {
+      if (!parseKanshiBirth(birthDate))
+        return fail(
+          "birthDateは1900〜2100年の実在する日付または日時で指定してください。",
+        );
+      return text(kanshiForBirth(birthDate));
+    },
+  );
+
+  server.registerTool(
     "get_honmei_star",
     {
       title: "本命星を調べる",
@@ -214,8 +250,15 @@ export function createMcpServer(): McpServer {
       const birth = parseJstDate(birthDate);
       if (!birth) return fail("birthDate は YYYY-MM-DD で指定してください。");
       const honmei = getHonmeiStar(birth);
+      const calendar = parseKanshiBirth(birthDate)
+        ? kanshiForBirth(birthDate)
+        : null;
       return text({
         birthDate,
+        kanshi: calendar?.kanshi ?? null,
+        solarTerms: calendar?.solarTerms ?? [],
+        boundaryAlternatives: calendar?.boundaryAlternatives ?? null,
+        calendarBasis: KANSHI_BASIS,
         honmeiStar: honmei.classical,
         physicalStar: honmei.physical,
         voidZodiacs: getPersonalVoidZodiac(birth),
@@ -327,9 +370,24 @@ export function createMcpServer(): McpServer {
       to.setDate(to.getDate() + days);
       const cap = input.maxDaysPerDirection ?? 10;
       const summaries = findAuspiciousDaysAllDirections(from, to, built.base);
+      const firstYear = Number(toJapanDateString(from).slice(0, 4));
+      const lastYear = Number(toJapanDateString(to).slice(0, 4));
+      const solarTerms = Array.from(
+        { length: lastYear - firstYear + 1 },
+        (_, i) => firstYear + i,
+      )
+        .filter((year) => year >= 1900 && year <= 2100)
+        .flatMap((year) => [...solarTermsForYear(year)])
+        .filter(
+          (term) =>
+            term.atJst.slice(0, 10) >= toJapanDateString(from) &&
+            term.atJst.slice(0, 10) <= toJapanDateString(to),
+        );
       return text({
         // 走査は JST の暦日で回る。from を省いた呼び出し（＝いま）を UTC で
         // 切ると 0〜9 時は前日を名乗る
+        solarTerms,
+        calendarBasis: KANSHI_BASIS,
         from: toJapanDateString(from),
         days,
         honmeiStar: built.honmei.classical,
@@ -345,6 +403,7 @@ export function createMcpServer(): McpServer {
           yearBoardWindow: s.window,
           bestDays: s.days.slice(0, cap).map((d) => ({
             date: d.date,
+            kanshi: kanshiAt(new Date(`${d.date}T12:00:00+09:00`)),
             tier: gradeVerdict(d),
             status: d.finalStatus,
             rokuyo: d.rokuyo,

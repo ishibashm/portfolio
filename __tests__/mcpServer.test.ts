@@ -20,6 +20,7 @@ import {
 } from "@/utils/auspiciousDays";
 import { getHonmeiStar, getPersonalVoidZodiac } from "@/utils/ephemerisEngine";
 import { forecastAnchorMs } from "@/utils/boardInstant";
+import { kanshiAt, kanshiForBirth } from "@/lib/kanshi";
 import { emptyDirections, findArea } from "@/lib/areaContent";
 import { computeDayKigaku } from "@/lib/dayKigakuClient";
 
@@ -44,13 +45,14 @@ const parse = (r: Awaited<ReturnType<Client["callTool"]>>) =>
   JSON.parse((r.content as { text: string }[])[0].text);
 
 describe("MCP サーバー", () => {
-  it("7 つの道具を公開している", async () => {
+  it("8 つの道具を公開している", async () => {
     const c = await connect();
     const names = (await c.listTools()).tools.map((t) => t.name).sort();
     expect(names).toEqual([
       "area_directions",
       "find_auspicious_days",
       "get_honmei_star",
+      "get_kanshi",
       "judge_directions",
       "judge_time_slots",
       "prefecture_summary",
@@ -71,6 +73,43 @@ describe("MCP サーバー", () => {
     expect(out.voidZodiacs).toEqual(
       getPersonalVoidZodiac(new Date("1957-09-22T12:00:00+09:00")),
     );
+    expect(out.kanshi).toEqual(kanshiForBirth("1957-09-22").kanshi);
+    expect(out.solarTerms).toHaveLength(24);
+  });
+
+  it("get_kanshi は空亡・各柱の併臨年・時刻不明の境界候補を返す", async () => {
+    const c = await connect();
+    const out = parse(
+      await c.callTool({
+        name: "get_kanshi",
+        arguments: { birthDate: "2026-02-04" },
+      }),
+    );
+    expect(out).toEqual(kanshiForBirth("2026-02-04"));
+    expect(out.kanshiHeirin.year).toEqual([2026, 2086, 2146]);
+    expect(out.boundaryAlternatives.before.year).toBe("乙巳");
+    const error = await c.callTool({
+      name: "get_kanshi",
+      arguments: { birthDate: "2026-02-30" },
+    });
+    expect(error.isError).toBe(true);
+    await c.close();
+  });
+
+  it("get_honmei_star の節入り当日にも前後の干支を追加する", async () => {
+    const c = await connect();
+    const out = parse(
+      await c.callTool({
+        name: "get_honmei_star",
+        arguments: { birthDate: "2026-02-04" },
+      }),
+    );
+    expect(out.boundaryAlternatives.before.year).toBe("乙巳");
+    expect(out.boundaryAlternatives.after.year).toBe("丙午");
+    expect(out.honmeiStar).toBe(
+      getHonmeiStar(new Date("2026-02-04T12:00:00+09:00")).classical,
+    );
+    await c.close();
   });
 
   it("judge_directions は画面と同じ段階を返す（8 方位ぶん突き合わせ）", async () => {
@@ -258,6 +297,28 @@ describe("MCP サーバー", () => {
     expect(byCode.byDirection).toHaveLength(byName.byDirection.length);
   });
 
+  it("find_auspicious_days の節気一覧は年越しと走査の最終日を含む", async () => {
+    const c = await connect();
+    const out = parse(
+      await c.callTool({
+        name: "find_auspicious_days",
+        arguments: {
+          birthDate: "1957-09-22",
+          lon: 135.5,
+          from: "2025-12-06",
+          days: 30,
+          maxDaysPerDirection: 1,
+        },
+      }),
+    );
+    expect(out.solarTerms.map((t: { name: string }) => t.name)).toEqual([
+      "大雪",
+      "冬至",
+      "小寒",
+    ]);
+    await c.close();
+  });
+
   it("find_auspicious_days は 8 方位ぶん集計し、日数の上限を守る", async () => {
     const c = await connect();
     const out = parse(
@@ -273,9 +334,25 @@ describe("MCP サーバー", () => {
       }),
     );
     expect(out.directions).toHaveLength(8);
+    expect(out.solarTerms.map((t: { name: string }) => t.name)).toEqual([
+      "白露",
+      "秋分",
+      "寒露",
+      "霜降",
+    ]);
+    expect(out.calendarBasis).toContain("正午");
+    expect(
+      out.directions.some(
+        (d: { bestDays: unknown[] }) => d.bestDays.length > 0,
+      ),
+    ).toBe(true);
     for (const d of out.directions) {
       expect(d.bestDays.length).toBeLessThanOrEqual(3);
       expect(d.scannedDays).toBeGreaterThan(0);
+      for (const day of d.bestDays)
+        expect(day.kanshi).toEqual(
+          kanshiAt(new Date(`${day.date}T12:00:00+09:00`)),
+        );
     }
   });
 });
@@ -327,7 +404,7 @@ describe("/api/mcp の入口", () => {
       }),
     );
     expect(list.status).toBe(200);
-    expect((await list.json()).result.tools.length).toBe(7);
+    expect((await list.json()).result.tools.length).toBe(8);
   });
 });
 
