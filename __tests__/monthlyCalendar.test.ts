@@ -168,3 +168,16 @@ describe("土用の期間は暦月で切らない", () => {
     expect(buildMonthlyCalendar(2026, 9).doyou).toBeNull();
   });
 });
+
+describe("年月日の干支と節気時刻", () => {
+  it("2月の立春前後を正午の年月干支で表示する", () => {
+    const cal = buildMonthlyCalendar(2026, 2);
+    expect(cal.solarTerms.map((t) => t.name)).toEqual(["立春", "雨水"]);
+    expect(cal.solarTerms.every((t) => t.atJst.endsWith("+09:00"))).toBe(true);
+    expect(cal.days[2].kanshi.year).toBe("乙巳");
+    expect(cal.days[2].kanshi.month).toBe("己丑");
+    expect(cal.days[3].kanshi.year).toBe("丙午");
+    expect(cal.days[3].kanshi.month).toBe("庚寅");
+    expect(cal.days[18].kanshi.month).toBe("庚寅");
+  });
+});

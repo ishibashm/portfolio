@@ -1,3 +1,4 @@
+import { KANSHI_BASIS } from "@/lib/kanshi";
 import Link from "next/link";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
@@ -242,12 +243,21 @@ export default async function Page({
           <h2 className="text-xl font-bold font-serif border-b border-slate-300 pb-2">
             {month}月の暦
           </h2>
+          <p className="mt-3 text-xs text-slate-600">{KANSHI_BASIS}</p>
+          <ul className="mt-3 space-y-1 text-sm">
+            {cal.solarTerms.map((term) => (
+              <li key={term.name}>
+                {term.name}：{term.atJst.replace("T", " ").replace("+09:00", " JST")}（計算値・{term.changesMonth ? "月の境界" : "中気"}）
+              </li>
+            ))}
+          </ul>
           <div className="mt-4 overflow-x-auto">
             <table className="w-full min-w-[520px] text-left border-collapse text-xs">
               <thead>
                 <tr className="border-b border-slate-300 text-slate-500">
                   <th className="py-2 pr-3 whitespace-nowrap">日</th>
                   <th className="py-2 pr-3 whitespace-nowrap">六曜</th>
+                  <th className="py-2 pr-3 whitespace-nowrap">干支（年／月／日・正午）</th>
                   <th className="py-2 whitespace-nowrap">暦注</th>
                 </tr>
               </thead>
@@ -263,6 +273,7 @@ export default async function Page({
                       {d.day}日（{weekdayLabel(d.weekday)}）
                     </td>
                     <td className="py-1.5 pr-3 whitespace-nowrap">{d.rokuyo}</td>
+                    <td className="py-1.5 pr-3 whitespace-nowrap">{d.kanshi.year}／{d.kanshi.month}／{d.kanshi.day}</td>
                     <td className="py-1.5 text-slate-600">
                       {[
                         ...d.luckyLabels,
