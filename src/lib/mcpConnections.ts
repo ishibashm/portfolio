@@ -1,3 +1,4 @@
+import type { McpAuditStore } from "@/lib/mcpAuditStore";
 import type { PrismaClient } from "@prisma/client";
 import { z } from "zod";
 import type { McpProviderStore } from "@/lib/mcpProviderStore";
@@ -21,6 +22,7 @@ export function createMcpConnectionService(deps: {
   db: Pick<PrismaClient, "mcpGrant">;
   store: Pick<McpProviderStore, "revokeByGrantId">;
   now?: () => Date;
+  audit?: Pick<McpAuditStore, "record">;
 }) {
   const now = deps.now ?? (() => new Date());
   function subject(value: unknown): string {
@@ -86,6 +88,7 @@ export function createMcpConnectionService(deps: {
     },
     revoke(user: unknown, connection: unknown) {
       return safe(async () => {
+        const started = performance.now();
         const userId = subject(user);
         const connectionId = id(connection);
         const row = await deps.db.mcpGrant.findFirst({
@@ -100,11 +103,19 @@ export function createMcpConnectionService(deps: {
           data: { revokedAt: now() },
         });
         await deps.store.revokeByGrantId(row.providerGrantId);
+        await deps.audit?.record({
+          userId,
+          grantId: connectionId,
+          event: "revoke",
+          result: "revoked",
+          durationMs: Math.floor(performance.now() - started),
+        });
         return { revoked: true as const };
       });
     },
     revokeAll(user: unknown) {
       return safe(async () => {
+        const started = performance.now();
         const userId = subject(user);
         const at = now();
         // One database statement denies all existing consents before any slow
@@ -132,6 +143,13 @@ export function createMcpConnectionService(deps: {
           if (rows.length < 100) break;
           cursor = rows[rows.length - 1].id;
         }
+        await deps.audit?.record({
+          userId,
+          grantId: null,
+          event: "revoke",
+          result: "revoked",
+          durationMs: Math.floor(performance.now() - started),
+        });
         return { revoked: true as const };
       });
     },

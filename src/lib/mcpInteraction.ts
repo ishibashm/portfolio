@@ -1,4 +1,5 @@
 import { randomUUID } from "node:crypto";
+import type { McpAuditStore } from "@/lib/mcpAuditStore";
 import type { IncomingMessage, ServerResponse } from "node:http";
 import type { PrismaClient } from "@prisma/client";
 import type { Configuration, Provider } from "oidc-provider";
@@ -99,6 +100,7 @@ export function createMcpInteractionHandler(deps: {
   ) => Promise<unknown>;
   claimInteraction: (uid: string, expiresAt: Date) => Promise<boolean>;
   now?: () => number;
+  audit?: Pick<McpAuditStore, "record">;
 }) {
   if (deps.provider.issuer !== MCP_AUTHORIZATION_ISSUER)
     throw new McpConsentError("TEMPORARILY_UNAVAILABLE");
@@ -107,6 +109,7 @@ export function createMcpInteractionHandler(deps: {
   return async (req: IncomingMessage, res: ServerResponse) => {
     for (const [name, value] of Object.entries(MCP_CONSENT_HEADERS))
       res.setHeader(name, value);
+    const started = performance.now();
     let protocolGrant: InstanceType<Provider["Grant"]> | undefined;
     let appGrantId: string | undefined;
     try {
@@ -183,6 +186,13 @@ export function createMcpInteractionHandler(deps: {
       )
         throw new McpConsentError("INVALID_REQUEST");
       if (submission.decision === "deny") {
+        await deps.audit?.record({
+          userId: view.userId,
+          grantId: null,
+          event: "authorize",
+          result: "denied",
+          durationMs: Math.floor(performance.now() - started),
+        });
         await deps.provider.interactionFinished(
           req,
           res,
@@ -224,6 +234,13 @@ export function createMcpInteractionHandler(deps: {
           revokedAt: null,
           lastUsedAt: null,
         },
+      });
+      await deps.audit?.record({
+        userId: view.userId,
+        grantId: appGrantId,
+        event: "authorize",
+        result: "success",
+        durationMs: Math.floor(performance.now() - started),
       });
       // Redirect only through the provider's saved returnTo; no submitted redirect.
       await deps.provider.interactionFinished(
