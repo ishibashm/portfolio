@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
 import type { McpAuditStore } from "@/lib/mcpAuditStore";
 import type { IncomingMessage, ServerResponse } from "node:http";
-import type { PrismaClient } from "@prisma/client";
+import type { McpGrant, PrismaClient } from "@prisma/client";
 import type { Configuration, Provider } from "oidc-provider";
 import { z } from "zod";
 import { createMcpConsentService, McpConsentError } from "@/lib/mcpConsent";
@@ -101,6 +101,10 @@ export function createMcpInteractionHandler(deps: {
   claimInteraction: (uid: string, expiresAt: Date) => Promise<boolean>;
   now?: () => number;
   audit?: Pick<McpAuditStore, "record">;
+  saveConsentGrant?: (
+    data: McpGrant,
+    profiles: { id: string; name: string }[],
+  ) => Promise<void>;
 }) {
   if (deps.provider.issuer !== MCP_AUTHORIZATION_ISSUER)
     throw new McpConsentError("TEMPORARILY_UNAVAILABLE");
@@ -222,19 +226,20 @@ export function createMcpInteractionHandler(deps: {
       if (expiresAt <= createdAt)
         throw new McpConsentError("TEMPORARILY_UNAVAILABLE");
       appGrantId = randomUUID();
-      await deps.db.mcpGrant.create({
-        data: {
-          id: appGrantId,
-          providerGrantId,
-          userId: view.userId,
-          clientId: view.clientId,
-          allowedProfileIds: submission.profileIds,
-          createdAt,
-          expiresAt,
-          revokedAt: null,
-          lastUsedAt: null,
-        },
-      });
+      const grantData: McpGrant = {
+        id: appGrantId,
+        providerGrantId,
+        userId: view.userId,
+        clientId: view.clientId,
+        allowedProfileIds: submission.profileIds,
+        createdAt,
+        expiresAt,
+        revokedAt: null,
+        lastUsedAt: null,
+      };
+      if (deps.saveConsentGrant)
+        await deps.saveConsentGrant(grantData, view.profiles);
+      else await deps.db.mcpGrant.create({ data: grantData });
       await deps.audit?.record({
         userId: view.userId,
         grantId: appGrantId,

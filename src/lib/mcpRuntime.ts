@@ -1,3 +1,4 @@
+import { createMcpConsentGrantWriter } from "@/lib/mcpDeletion";
 import type { Configuration } from "oidc-provider";
 import { createMcpAuthorizationPolicy } from "@/lib/mcpAuthorizationConfig";
 import { createMcpStateCrypto } from "@/lib/mcpStateCrypto";
@@ -122,6 +123,7 @@ export async function createMcpRuntime(config: McpRuntimeConfig) {
       signingKey: config.consentKey,
       verifySiteUser: createMcpSiteLoginVerifier(config.login),
       claimInteraction: adapter.claimInteraction,
+      saveConsentGrant: createMcpConsentGrantWriter(db),
       audit,
     });
     const connections = createMcpConnectionService({ db, store, audit });
