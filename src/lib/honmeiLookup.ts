@@ -11,6 +11,7 @@
  * #553 の `import type` の注意と同じ）。ここでは**調べるときだけ**
  * 動的 import で読み込む。型だけは `import type` で借りる。
  */
+import type { kanshiForBirth } from "@/lib/kanshi";
 import type { StarFrequency } from "@/utils/ephemerisEngine";
 
 export type HonmeiStars = {
@@ -19,6 +20,7 @@ export type HonmeiStars = {
 };
 
 export type HonmeiLookupResult = {
+  calendar: ReturnType<typeof kanshiForBirth>;
   /** その日の始まり（日本時間 0 時）時点の本命星 */
   dayStart: HonmeiStars;
   /** その日の終わり（日本時間 23:59:59）時点の本命星 */
@@ -67,9 +69,11 @@ export async function lookupHonmei(
 ): Promise<HonmeiLookupResult | null> {
   if (!isValidBirthDateInput(value)) return null;
   const { getHonmeiStar } = await import("@/utils/ephemerisEngine");
+  const { kanshiForBirth } = await import("@/lib/kanshi");
   const dayStart = getHonmeiStar(new Date(`${value}T00:00:00+09:00`));
   const dayEnd = getHonmeiStar(new Date(`${value}T23:59:59+09:00`));
   return {
+    calendar: kanshiForBirth(value),
     dayStart,
     dayEnd,
     classicalChanges: dayStart.classical !== dayEnd.classical,

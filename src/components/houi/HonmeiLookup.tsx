@@ -126,6 +126,56 @@ export function HonmeiLookup({ starNames, linkYear }: Props) {
         <p className="mt-3 text-xs leading-relaxed text-amber-800">{notice}</p>
       )}
 
+      {result && (
+        <section
+          className="mt-4 rounded-xl border border-slate-200 p-4 text-sm"
+          aria-label="生年月日の干支"
+        >
+          <h3 className="font-bold">年月日の六十干支</h3>
+          <p className="mt-2">
+            年：{result.calendar.kanshi.year} ／ 月：
+            {result.calendar.kanshi.month} ／ 日：{result.calendar.kanshi.day}
+            （JST正午の代表値）
+          </p>
+          {result.calendar.boundaryAlternatives && (
+            <p className="mt-2 text-amber-900">
+              この日は節入りです。出生時刻が不明なため確定できません。
+              {result.calendar.boundaryAlternatives.boundary?.atJst
+                .replace("T", " ")
+                .replace("+09:00", " JST")}
+              の前は 年{result.calendar.boundaryAlternatives.before.year}・月
+              {result.calendar.boundaryAlternatives.before.month}、以後は 年
+              {result.calendar.boundaryAlternatives.after.year}・月
+              {result.calendar.boundaryAlternatives.after.month}です。
+            </p>
+          )}
+          <p className="mt-2">
+            日柱の空亡：{result.calendar.kanshi.voidBranches.join("・")}
+          </p>
+          <p className="mt-2 text-xs text-slate-600">{result.calendar.basis}</p>
+          <details className="mt-3">
+            <summary className="cursor-pointer">
+              出生年の二十四節気・節入り時刻（JST・計算値）
+            </summary>
+            <ul className="mt-2 space-y-1 text-xs">
+              {result.calendar.solarTerms.map((term) => (
+                <li key={term.name}>
+                  {term.name}：
+                  {term.atJst.replace("T", " ").replace("+09:00", " JST")}
+                  {term.changesMonth ? "（月の境界）" : "（中気）"}
+                </li>
+              ))}
+            </ul>
+          </details>
+          <Link
+            href="/blog/kuubou-schools-and-directions"
+            className="mt-3 inline-block text-xs underline"
+          >
+            空亡と方位凶殺は別体系です
+          </Link>
+        </section>
+      )}
+
       {result && !result.classicalChanges && (
         <div className="mt-4">
           <p className="text-sm">

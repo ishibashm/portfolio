@@ -55,6 +55,10 @@ describe("lookupHonmei", () => {
     // 立春（5時1分ごろ）より前は前年 2025 の星、後は 2026 の星
     expect(r!.dayStart.classical).toBe(2);
     expect(r!.dayEnd.classical).toBe(1);
+    expect(r!.calendar.kanshi.year).toBe("丙午");
+    expect(r!.calendar.boundaryAlternatives?.before.year).toBe("乙巳");
+    expect(r!.calendar.boundaryAlternatives?.after.month).toBe("庚寅");
+    expect(r!.calendar.solarTerms).toHaveLength(24);
   });
 
   it("立春の前日・翌日は変わらない", async () => {
