@@ -14,12 +14,16 @@ import Page, { dynamic } from "@/app/profile/connections/page";
 import { GET as metadataGET } from "@/app/.well-known/oauth-protected-resource/api/mcp/personal/route";
 
 describe("personal connection release gates", () => {
-  it("always refuses the page without loading personal UI or database dependencies", () => {
-    expect(() => Page()).toThrow("NEXT_HTTP_ERROR_FALLBACK;404");
-    expect(dynamic).toBe("force-static");
+  it("always refuses the page without loading personal UI or database dependencies", async () => {
+    await expect(Page()).rejects.toThrow("NEXT_HTTP_ERROR_FALLBACK;404");
+    expect(dynamic).toBe("force-dynamic");
   });
   it("keeps protected-resource discovery closed and uncacheable", async () => {
-    const response = metadataGET();
+    const response = await metadataGET(
+      new Request(
+        "https://cloud-palette.com/.well-known/oauth-protected-resource/api/mcp/personal",
+      ),
+    );
     expect(response.status).toBe(404);
     expect(response.headers.get("Cache-Control")).toContain("no-store");
     expect(await response.text()).not.toContain("authorization_servers");

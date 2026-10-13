@@ -18,7 +18,14 @@ describe("personal MCP middleware boundary", () => {
     "%s bypasses site auth even with cookies and spoofed host headers",
     async (method) => {
       updateSession.mockRejectedValue(new Error("site auth unavailable"));
-      for (const path of ["/api/mcp/personal", "/api/mcp/personal/"]) {
+      for (const path of [
+        "/api/mcp/personal",
+        "/api/mcp/personal/",
+        "/oauth/interaction",
+        "/api/mcp/connections",
+        "/api/mcp-authorization/token",
+        "/.well-known/oauth-authorization-server/oauth",
+      ]) {
         const response = await middleware(
           new NextRequest(`https://cloud-palette.com${path}?ignored=1`, {
             method,
@@ -46,7 +53,6 @@ describe("personal MCP middleware boundary", () => {
     "/api/user-config",
     "/api/profile/connections",
     "/profile/connections",
-    "/oauth/interaction",
     "/login",
     "/admin",
   ])("preserves site session handling for %s", async (path) => {

@@ -1,15 +1,13 @@
-import { personalMcpUnavailableResponse } from "@/lib/mcpDiscovery";
+import { personalMcpEntry } from "@/lib/mcpRuntimeEntry";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
 
-// Hard gate until the entire consent → use → revoke → reject flow passes in
-// the deployed AS and target clients. Do not import personal server/DB modules
-// here while incomplete. An environment flag cannot enable this endpoint.
-export const POST = personalMcpUnavailableResponse;
-export const GET = personalMcpUnavailableResponse;
-export const DELETE = personalMcpUnavailableResponse;
-export const PUT = personalMcpUnavailableResponse;
-export const PATCH = personalMcpUnavailableResponse;
-export const HEAD = personalMcpUnavailableResponse;
-export const OPTIONS = personalMcpUnavailableResponse;
+// Disabled by default; secrets and DB dependencies load only behind the gate.
+export const POST = personalMcpEntry;
+export const GET = personalMcpEntry;
+export const DELETE = personalMcpEntry;
+export const PUT = personalMcpEntry;
+export const PATCH = personalMcpEntry;
+export const HEAD = personalMcpEntry;
+export const OPTIONS = personalMcpEntry;

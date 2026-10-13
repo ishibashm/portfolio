@@ -30,7 +30,11 @@ describe("MCP discovery remains closed pending full integration", () => {
   it("serves no metadata, challenge or redirect, even with env flags", async () => {
     vi.stubEnv("MCP_PERSONAL_ENABLED", "true");
     try {
-      const response = GET();
+      const response = await GET(
+        new Request(
+          "https://cloud-palette.com/.well-known/oauth-protected-resource/api/mcp/personal",
+        ),
+      );
       expect(response.status).toBe(404);
       expect(await response.text()).toBe("");
       expect(response.headers.get("www-authenticate")).toBeNull();

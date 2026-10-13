@@ -44,10 +44,15 @@ export async function middleware(request: NextRequest) {
   // Personal MCP authenticates every request with its own Bearer boundary.
   // Site cookie refresh must not introduce login redirects, Set-Cookie or a
   // Supabase dependency here. Keep sibling APIs and consent/management pages
-  // on the normal site session path. The route itself remains hard-disabled.
+  // on their own verified-login path. Release gates remain inside each entry.
   if (
     url.pathname === "/api/mcp/personal" ||
-    url.pathname === "/api/mcp/personal/"
+    url.pathname === "/api/mcp/personal/" ||
+    url.pathname === "/api/mcp/connections" ||
+    url.pathname.startsWith("/oauth/") ||
+    url.pathname.startsWith("/api/mcp-authorization/") ||
+    url.pathname.startsWith("/.well-known/oauth-") ||
+    url.pathname === "/.well-known/openid-configuration/oauth"
   ) {
     return NextResponse.next();
   }

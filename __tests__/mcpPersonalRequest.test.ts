@@ -32,7 +32,9 @@ describe("personal HTTP release gate and bounded request classification", () => 
       "HEAD",
       "OPTIONS",
     ] as const) {
-      const response = route[method]();
+      const response = await route[method](
+        new Request("https://cloud-palette.com/api/mcp/personal", { method }),
+      );
       expect(response.status).toBe(404);
       expect(response.headers.get("Cache-Control")).toBe("private, no-store");
       expect(await response.text()).toBe("");
