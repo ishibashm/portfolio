@@ -78,6 +78,7 @@ const NOT_A_PAGE = [
   "/blog/feed.xml",
   "/login",
   "/profile",
+  "/profile/connections",
   "/account",
   "/contact", // 連絡用フォーム。公開は続けるが検索の入口にはしない
 ];

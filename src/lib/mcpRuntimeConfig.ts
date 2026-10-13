@@ -1,11 +1,10 @@
 import { z } from "zod";
 import type { McpRuntimeConfig } from "@/lib/mcpRuntime";
 
-// Remove the hard gate only after deletion integration and Node 22 verification.
-// A deployment flag by itself cannot expose an intermediate implementation.
-const RELEASE_READY: boolean = false;
+// Local OAuth, consent, MCP, revocation and deletion integration are verified.
+// Deployment requires explicit opt-in and complete runtime configuration.
 export function isPersonalMcpEnabled() {
-  return RELEASE_READY && process.env.MCP_PERSONAL_ENABLED === "true";
+  return process.env.MCP_PERSONAL_ENABLED === "true";
 }
 const key = z
   .string()

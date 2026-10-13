@@ -39,9 +39,13 @@ it("maps explicit keys and static clients without exposing validation details", 
   ]);
   expect(result.clients[0].response_types).toEqual(["code"]);
 });
-it("keeps the incomplete release closed even when a deployment flag is set", () => {
+it("requires the exact explicit deployment flag", () => {
+  for (const value of ["", "false", "1", "TRUE"]) {
+    vi.stubEnv("MCP_PERSONAL_ENABLED", value);
+    expect(isPersonalMcpEnabled()).toBe(false);
+  }
   vi.stubEnv("MCP_PERSONAL_ENABLED", "true");
-  expect(isPersonalMcpEnabled()).toBe(false);
+  expect(isPersonalMcpEnabled()).toBe(true);
 });
 it("rejects malformed, duplicate, weak or mixed secrets and unsafe callbacks", () => {
   vi.stubEnv("DEBUG", "");

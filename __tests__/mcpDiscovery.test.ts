@@ -26,24 +26,27 @@ const metadata = () => ({
   grant_types_supported: ["authorization_code", "refresh_token"],
 });
 
-describe("MCP discovery remains closed pending full integration", () => {
-  it("serves no metadata, challenge or redirect, even with env flags", async () => {
-    vi.stubEnv("MCP_PERSONAL_ENABLED", "true");
-    try {
-      const response = await GET(
-        new Request(
-          "https://cloud-palette.com/.well-known/oauth-protected-resource/api/mcp/personal",
-        ),
-      );
-      expect(response.status).toBe(404);
-      expect(await response.text()).toBe("");
-      expect(response.headers.get("www-authenticate")).toBeNull();
-      expect(response.headers.get("location")).toBeNull();
-      expect(response.headers.get("cache-control")).toBe("private, no-store");
-    } finally {
-      vi.unstubAllEnvs();
-    }
-  });
+describe("MCP discovery deployment gate and contract", () => {
+  it.each(["", "false", "1", "TRUE"])(
+    "serves no metadata, challenge or redirect with flag=%s",
+    async (flag) => {
+      vi.stubEnv("MCP_PERSONAL_ENABLED", flag);
+      try {
+        const response = await GET(
+          new Request(
+            "https://cloud-palette.com/.well-known/oauth-protected-resource/api/mcp/personal",
+          ),
+        );
+        expect(response.status).toBe(404);
+        expect(await response.text()).toBe("");
+        expect(response.headers.get("www-authenticate")).toBeNull();
+        expect(response.headers.get("location")).toBeNull();
+        expect(response.headers.get("cache-control")).toBe("private, no-store");
+      } finally {
+        vi.unstubAllEnvs();
+      }
+    },
+  );
   it("builds the RFC 9728 resource contract with the canonical AS issuer", async () => {
     const response =
       createMcpDiscoveryContract(metadata()).resourceMetadataResponse();
