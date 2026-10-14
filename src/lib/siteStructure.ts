@@ -239,6 +239,14 @@ export const OFF_THEME_ROUTES: string[] = nonCore.offTheme;
 export const NON_CORE_DISALLOW = [...NON_CORE_ROUTES, ...OFF_THEME_ROUTES];
 
 export const SITE_NAME = "Cloud Palette";
+/*
+  ホームの title・h1・og:title・JSON-LD の WebSite.name に出る。
+  「引越しの方位とタイミングを決める」だけでは、検索で来る人が打つ語
+  （本命星・吉方位）が title にも h1 にも説明文にも無く、札の 1 枚に
+  しか出ていなかった（2026-10-14）。語を並べる
+  のではなく、道具が実際にやる順（本命星を引く → 吉方位を出す → 決める）
+  の 1 文にしてある。
+*/
 export const SITE_TAGLINE =
   "本命星・吉方位を調べて引越しの方位とタイミングを決める";
 /*
@@ -249,10 +257,6 @@ export const SITE_TAGLINE =
   入れない。全頁の meta description・RSS・llms.txt・
   ホームの説明に出る。public/manifest.json にも同じ文を写してあり、
   __tests__/siteDescriptionSingleSource.test.ts が突き合わせる
-  
-  2026-10-14: 検索語（吉方位・本命星・引越し方位）をタグラインと
-  説明文に自然な形で含めた。キーワード詰め込みを避け、サイトの機能
-  （本命星を調べる・吉方位を出す・引越し先を決める）を明示する文に変更
 */
 export const SITE_DESCRIPTION =
   "生年月日から本命星を調べ、九星気学で吉方位を出して、引越しの方位とタイミングを決めるサービス。今住んでいる場所から見た方位と、公的な統計（e-Stat の家賃の水準・空き家率）を突き合わせて引越し先と日取りを選べます。";
