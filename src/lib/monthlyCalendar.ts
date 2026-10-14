@@ -1,3 +1,4 @@
+import { kanshiAt, solarTermsForYear, type SolarTerm } from "@/lib/kanshi";
 import { getRokuyo, getLuckyDays, plainRokuyo } from "@/utils/lunar";
 import {
   DOYOU_MABI,
@@ -41,6 +42,7 @@ export interface CalendarDay {
   rokuyo: string;
   /** 天赦日・一粒万倍日など */
   luckyLabels: string[];
+  kanshi: ReturnType<typeof kanshiAt>;
   /** 土用の期間内か */
   inDoyou: boolean;
   /** 土用でも障りが無いとされる間日 */
@@ -57,6 +59,7 @@ export interface StarDirections {
 }
 
 export interface MonthlyCalendar {
+  solarTerms: readonly SolarTerm[];
   year: number;
   month: number;
   /** 節入りで区切った、この月の盤が効く期間 */
@@ -105,6 +108,7 @@ export function buildMonthlyCalendar(
 
     days.push({
       date: iso,
+      kanshi: kanshiAt(date),
       day: d,
       weekday: new Date(Date.UTC(year, month - 1, d)).getUTCDay(),
       rokuyo: plainRokuyo(getRokuyo(date)),
@@ -139,6 +143,9 @@ export function buildMonthlyCalendar(
   });
 
   return {
+    solarTerms: solarTermsForYear(year).filter(
+      (term) => Number(term.atJst.slice(5, 7)) === month,
+    ),
     year,
     month,
     termStart: toJapanDateString(start),
