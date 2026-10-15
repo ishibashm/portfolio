@@ -69,7 +69,7 @@ describe("unmounted personal SDK Web transport", () => {
     });
     expect((await init.value.json()).result.protocolVersion).toBe("2025-03-26");
     const list = await run("tools/list");
-    expect((await list.value.json()).result.tools).toHaveLength(10);
+    expect((await list.value.json()).result.tools).toHaveLength(11);
     expect(list.value.headers.has("mcp-session-id")).toBe(false);
     expect((await (await run("ping")).value.json()).result).toEqual({});
     expect(
@@ -175,3 +175,4 @@ describe("unmounted personal SDK Web transport", () => {
     }
   });
 });
+
