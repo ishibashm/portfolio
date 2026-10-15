@@ -1,19 +1,15 @@
 import prisma from "@/lib/prisma";
 import { createClient } from "@/utils/supabase/server";
 
-/**
- * user_configs の行を引くための共通処理。
- *
- * 以前は user_email だけで引いていたが、Supabase 側でメールアドレスを変更すると
- * 行が孤児になり保存済みプロフィールが丸ごと見えなくなる。安定キーは user.id。
- *
- * 既存行は user_id が NULL のことがあるため、id で見つからなければ
- * メールアドレスで拾い、その場で user_id を埋めて次回以降 id で引けるようにする。
- */
+/** サイトの検証済みセッション。メール確認は旧NULL行の連携だけに使う。 */
 export interface AuthUser {
   id: string;
   email: string;
+  emailVerified?: boolean;
 }
+
+const UUID_RE =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 export async function getAuthUser(): Promise<AuthUser | null> {
   const supabase = await createClient();
@@ -23,54 +19,51 @@ export async function getAuthUser(): Promise<AuthUser | null> {
   } = await supabase.auth.getUser();
 
   if (error || !user?.email || !user.id) return null;
-  return { id: user.id, email: user.email.toLowerCase() };
+  return {
+    id: user.id,
+    email: user.email.toLowerCase(),
+    // user_metadata は本人が変更できるので確認の根拠にしない。
+    emailVerified: Boolean(user.email_confirmed_at),
+  };
 }
-
-const UUID_RE =
-  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-
-/**
- * 行が無ければ null。見つかった行の user_id が空なら埋めてから返す。
- *
- * 開発用バイパス（utils/supabase/server.ts）は id に "dev-bypass-id" を入れる。
- * uuid 列にそのまま渡すと問い合わせ自体が落ちるうえ、書き込めば本物の
- * user_id を偽の値で潰してしまう。UUID でない id は照合にも書き込みにも使わない。
- */
-/**
- * 以前ここに ADMIN_EMAIL による許可判定（isAuthorizedUser）を置き、
- * user_configs / profile-presets を管理者 1 人に限っていた。
- * 中核ページを匿名に開放して利用者を増やす方針にした以上、
- * 設定を持てるのが 1 人だけでは「別の端末で開くと消える」から抜けられない。
- *
- * 行は user_id（無ければ user_email）で分かれ、findUserConfig は
- * 常にログイン中の本人の行しか返さないので、他人の設定には触れない。
- * 管理者専用ページは middleware 側で従来どおり ADMIN_EMAIL で守っている。
- */
 
 /** 新規行に入れてよい user_id。開発バイパスの偽 id なら null。 */
 export function toUserId(user: AuthUser): string | null {
   return UUID_RE.test(user.id) ? user.id : null;
 }
 
+/**
+ * 本人IDを先に照合する。旧行の救済は確認済みメールかつNULL所有者だけ。
+ * MCPの読取から呼ばない。サイトでの通常ログイン・保存時だけ連携する。
+ * user_id / user_email の既存unique制約と条件付き更新で競合時は閉じる。
+ */
 export async function findUserConfig(user: AuthUser) {
   const usableId = toUserId(user);
+  if (!usableId) return null;
 
   const existing = await prisma.user_configs.findFirst({
-    // user_id の一致を優先したいが、移行前の行は NULL なのでメールでも探す。
-    where: usableId
-      ? { OR: [{ user_id: usableId }, { user_email: user.email }] }
-      : { user_email: user.email },
-    orderBy: { user_id: { sort: "desc", nulls: "last" } },
+    where: { user_id: usableId },
   });
+  if (existing) return existing;
+  if (user.emailVerified !== true) return null;
 
-  if (!existing) return null;
+  const email = user.email.toLowerCase();
+  const legacy = await prisma.user_configs.findFirst({
+    where: { user_id: null, user_email: email },
+    select: { id: true },
+  });
+  if (!legacy) return null;
 
-  if (usableId && existing.user_id !== usableId) {
-    return prisma.user_configs.update({
-      where: { id: existing.id },
-      data: { user_id: usableId, user_email: user.email },
-    });
-  }
+  // 読取後に別のログインが連携していても、非NULLの所有者を上書きしない。
+  // 同じsubjectで別行が同時作成された場合はDBのunique制約で拒否する。
+  const linked = await prisma.user_configs.updateMany({
+    where: { id: legacy.id, user_id: null, user_email: email },
+    data: { user_id: usableId },
+  });
+  if (linked.count !== 1) throw new Error("PROFILE_LINK_CONFLICT");
 
-  return existing;
+  // 連携前のJSONは返さず、連携後も所有者条件を付けて読み直す。
+  return prisma.user_configs.findFirst({
+    where: { id: legacy.id, user_id: usableId },
+  });
 }

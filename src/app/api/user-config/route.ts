@@ -1,3 +1,4 @@
+import { revokeMcpOnRegistrationDeletion } from "@/lib/mcpDeletion";
 import { isSameOrigin } from "@/lib/apiGuard";
 import { lockCandidateOwner, privateHeaders } from "@/lib/listingCandidateApi";
 import { NextRequest, NextResponse } from "next/server";
@@ -285,6 +286,7 @@ export async function DELETE(request: NextRequest) {
     const existing = await findUserConfig(user);
     await prisma.$transaction(async (tx) => {
       await lockCandidateOwner(tx, userId);
+      await revokeMcpOnRegistrationDeletion(tx, userId);
       await tx.listingCandidate.deleteMany({ where: { userId } });
       /* 登録した地点（user_spots）と残した分析（saved_analyses）も本人の
          登録内容。以前は地点が残っていた（画面は「すべて」と書いている） */

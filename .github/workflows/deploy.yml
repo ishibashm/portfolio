@@ -240,6 +240,11 @@ jobs:
             echo "API_SECRET_KEY: **未設定**（リポジトリ既定の鍵で暗号化中。要対応）" | tee -a "$GITHUB_STEP_SUMMARY"
           fi
 
+      # Keep this code-only release closed even if ENV_FILE has an older true value.
+      # convert_env.py uses the final assignment; a later, reviewed rollout may remove this guard.
+      - name: Keep personal MCP disabled until rollout
+        run: echo 'MCP_PERSONAL_ENABLED=false' >> .env
+
       - name: Convert .env to env.json for Cloud Run
         run: python scripts/convert_env.py
 
@@ -432,3 +437,4 @@ jobs:
             fi
           done
           exit $FAIL
+

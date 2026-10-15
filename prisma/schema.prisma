@@ -1023,3 +1023,77 @@ model ListingEmailOAuthState {
 
   @@map("listing_email_oauth_states")
 }
+
+// MCP personal: dormant until the complete authorization flow is verified.
+// Supabase UUIDs do not reference the legacy NextAuth User table.
+model McpGrant {
+  id                String    @id @db.Uuid
+  providerGrantId   String    @unique
+  userId            String    @db.Uuid
+  clientId          String
+  allowedProfileIds String[]
+  createdAt         DateTime  @db.Timestamptz(3)
+  expiresAt         DateTime  @db.Timestamptz(3)
+  revokedAt         DateTime? @db.Timestamptz(3)
+  lastUsedAt        DateTime? @db.Timestamptz(3)
+
+  @@index([userId, revokedAt])
+  @@index([expiresAt])
+}
+
+// Provider-owned protocol state. The adapter must encrypt payloads before writing;
+// lookup keys are digests, never bearer tokens/codes. No duplicate application tokens.
+model McpProviderState {
+  model        String
+  keyHash      String
+  payload      Bytes
+  keyVersion   String
+  grantId      String?
+  uidHash      String?   @unique
+  userCodeHash String?   @unique
+  expiresAt    DateTime  @db.Timestamptz(3)
+  consumedAt   DateTime? @db.Timestamptz(3)
+
+  @@id([model, keyHash])
+  @@index([grantId])
+  @@index([expiresAt])
+}
+
+// Fixed event/result vocabularies only; no arbitrary message/JSON/arguments.
+// Retention: 30 days; identifiers remain personal data. Collection is not enabled.
+model McpAccessAudit {
+  requestId  String   @id @db.Uuid
+  userId     String?  @db.Uuid
+  grantId    String?  @db.Uuid
+  occurredAt DateTime @db.Timestamptz(3)
+  expiresAt  DateTime @db.Timestamptz(3)
+  event      String
+  result     String
+  durationMs Int
+
+  @@index([userId, occurredAt])
+  @@index([expiresAt])
+}
+
+// Shared token buckets: atomic update under a DB transaction, never read-modify-write.
+model McpRateBucket {
+  userId    String   @db.Uuid
+  category  String
+  tokens    Float
+  updatedAt DateTime @db.Timestamptz(3)
+  expiresAt DateTime @db.Timestamptz(3)
+
+  @@id([userId, category])
+  @@index([expiresAt])
+}
+
+// Two leased slots per user for time calculations; expiry recovers crashed workers.
+model McpCalculationLease {
+  userId    String   @db.Uuid
+  slot      Int
+  requestId String   @unique @db.Uuid
+  expiresAt DateTime @db.Timestamptz(3)
+
+  @@id([userId, slot])
+  @@index([expiresAt])
+}

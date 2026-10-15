@@ -214,6 +214,21 @@ jobs:
             sleep 0.3
           done
 
+          # 個人用接続画面は明示flagが無い間404。ログイン遷移も許容する。
+          for path in /profile/connections; do
+            code=$(curl -s -o /dev/null -w "%{http_code}" -A "cloud-palette-site-audit" "$BASE$path")
+            if [ "$code" = "200" ]; then
+              BODY=$(curl -s --compressed -A "cloud-palette-site-audit" "$BASE$path")
+              if [[ "$BODY" != *"noindex"* ]]; then
+                echo "::error::$path に noindex が無い"
+                echo "FAIL=1" >> "$GITHUB_ENV"
+              fi
+            elif [ "$code" != "404" ] && [ "$code" != "307" ]; then
+              echo "::error::$path が $code"
+              echo "FAIL=1" >> "$GITHUB_ENV"
+            fi
+          done
+
       - name: Check structured data on core pages
         run: |
           set -uo pipefail

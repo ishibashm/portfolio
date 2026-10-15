@@ -29,7 +29,7 @@
 #
 # Python が要る処理を足すなら、**この base ではなくその段だけに入れること。**
 # base に戻すと runner にも乗り、また同じことになる。
-FROM node:20-bookworm-slim AS base
+FROM node:22-bookworm-slim AS base
 
 # Install dependencies only when needed
 FROM base AS deps

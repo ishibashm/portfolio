@@ -68,6 +68,16 @@ self.addEventListener("activate", (event) => {
 self.addEventListener("fetch", (event) => {
   const request = event.request;
   if (request.method !== "GET") return;
+  const url = new URL(request.url);
+  // Personal responses and consent must never enter offline storage or fallback.
+  if (
+    url.pathname.startsWith("/oauth/") ||
+    url.pathname.startsWith("/api/mcp") ||
+    url.pathname.startsWith("/.well-known/") ||
+    url.pathname === "/profile/connections" ||
+    url.pathname.startsWith("/profile/connections/")
+  )
+    return;
 
   if (request.mode === "navigate") {
     event.respondWith(
@@ -91,7 +101,6 @@ self.addEventListener("fetch", (event) => {
     return;
   }
 
-  const url = new URL(request.url);
   if (
     url.origin === self.location.origin &&
     url.pathname.startsWith("/_next/static/")

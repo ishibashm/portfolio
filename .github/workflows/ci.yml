@@ -37,11 +37,11 @@ jobs:
         with:
           fetch-depth: 2
 
-      # Dockerfile が node:20-bookworm-slim なので、そこに合わせる。
+      # Dockerfile が node:22-bookworm-slim なので、そこに合わせる。
       # ここだけ新しくすると、CI が通ってデプロイが落ちる組み合わせが出る。
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
           cache: npm
 
       # 素の npm ci で通す（Dockerfile と同じ）。以前は defuddle@0.8.0 が

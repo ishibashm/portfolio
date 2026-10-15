@@ -2,6 +2,24 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   output: "standalone",
+  // Native Node API handlers keep oidc-provider's request/cookie semantics.
+  serverExternalPackages: ["oidc-provider"],
+  async rewrites() {
+    return [
+      {
+        source: "/oauth/:oauthPath*",
+        destination: "/api/mcp-authorization/:oauthPath*",
+      },
+      {
+        source: "/.well-known/oauth-authorization-server/oauth",
+        destination: "/api/mcp-authorization/.well-known/openid-configuration",
+      },
+      {
+        source: "/.well-known/openid-configuration/oauth",
+        destination: "/api/mcp-authorization/.well-known/openid-configuration",
+      },
+    ];
+  },
   typescript: {
     ignoreBuildErrors: true,
   },
