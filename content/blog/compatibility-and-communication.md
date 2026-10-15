@@ -61,3 +61,5 @@ draft: false
 四柱推命と九星気学は別体系です。Cloud Paletteは真北で方位を判定し、暗剣殺・五黄殺は誰にとっても凶として扱います。家族同士の相性がよいという解釈で、移動先の凶を打ち消す判定は行いません。人間関係と道具の判定を分ける範囲は、[この道具で決められること・決められないこと](/blog/what-this-tool-can-and-cannot-decide)にもまとめています。
 
 [子どもの年齢と親の関与](/blog/parental-involvement-and-age-milestones)では、分類の比喩を具体的な判断に移す際の数字と確認例を整理しています。
+
+[相談で聞いてほしいことと助言を分ける方法](/blog/consultation-purpose-and-five-elements)も参照できます。
