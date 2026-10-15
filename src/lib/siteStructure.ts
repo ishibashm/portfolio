@@ -239,7 +239,16 @@ export const OFF_THEME_ROUTES: string[] = nonCore.offTheme;
 export const NON_CORE_DISALLOW = [...NON_CORE_ROUTES, ...OFF_THEME_ROUTES];
 
 export const SITE_NAME = "Cloud Palette";
-export const SITE_TAGLINE = "引越しの方位とタイミングを決める";
+/*
+  ホームの title・h1・og:title・JSON-LD の WebSite.name に出る。
+  「引越しの方位とタイミングを決める」だけでは、検索で来る人が打つ語
+  （本命星・吉方位）が title にも h1 にも説明文にも無く、札の 1 枚に
+  しか出ていなかった（2026-10-14）。語を並べる
+  のではなく、道具が実際にやる順（本命星を引く → 吉方位を出す → 決める）
+  の 1 文にしてある。
+*/
+export const SITE_TAGLINE =
+  "本命星・吉方位を調べて引越しの方位とタイミングを決める";
 /*
   「賃貸物件のデータと突き合わせ」と書いていたが、掲載の取り込みは規約に
   従って止めた（backlog 29 節）。いま方位と突き合わせているのは公的な統計
@@ -250,7 +259,7 @@ export const SITE_TAGLINE = "引越しの方位とタイミングを決める";
   __tests__/siteDescriptionSingleSource.test.ts が突き合わせる
 */
 export const SITE_DESCRIPTION =
-  "今住んでいる場所から見た方位と、移転に適した時期をもとに、引越し先と日取りを決めるためのサービス。九星気学の方位盤と、公的な統計（e-Stat の家賃の水準・空き家率）を同じ基準で突き合わせます。";
+  "生年月日から本命星を調べ、九星気学で吉方位を出して、引越しの方位とタイミングを決めるサービス。今住んでいる場所から見た方位と、公的な統計（e-Stat の家賃の水準・空き家率）を突き合わせて引越し先と日取りを選べます。";
 
 /**
  * いま開いている頁に対して、ナビで点灯させる 1 つを選ぶ。
