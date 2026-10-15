@@ -232,6 +232,21 @@ describe("sw.js のナビゲーション", () => {
   });
 });
 
+it.each([
+  "/oauth/interaction/test",
+  "/oauth/auth",
+  "/api/mcp/personal",
+  "/api/mcp/connections",
+  "/api/mcp-authorization/token",
+  "/.well-known/oauth-protected-resource/api/mcp/personal",
+  "/profile/connections",
+])("個人用経路 %s はオフライン保存も応答代替もしない", async (path) => {
+  fetchMock.mockResolvedValue(makeResponse("PRIVATE_TEST_ONLY"));
+  expect((await navigate(path)).responded).toBe(false);
+  expect(fetchMock).not.toHaveBeenCalled();
+  expect(caches.stores.size).toBe(0);
+});
+
 describe("sw.js の静的資産", () => {
   it("/_next/static/ は cache-first（2 回目はネットワークへ行かない）", async () => {
     const asset = {

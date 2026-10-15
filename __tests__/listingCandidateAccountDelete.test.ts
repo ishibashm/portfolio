@@ -1,5 +1,5 @@
 // @vitest-environment node
-import { beforeEach, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import { NextRequest } from "next/server";
 const mock = vi.hoisted(() => ({
   user: vi.fn(),
@@ -12,6 +12,8 @@ const mock = vi.hoisted(() => ({
   spots: vi.fn(),
   analyses: vi.fn(),
   favoriteDays: vi.fn(),
+  revoke: vi.fn(),
+  audit: vi.fn(),
 }));
 vi.mock("@/lib/prisma", () => ({ default: { $transaction: mock.tx } }));
 vi.mock("@/lib/userConfig", () => ({
@@ -23,6 +25,8 @@ import { DELETE } from "@/app/api/user-config/route";
 const id = "11111111-2222-4333-8444-555555555555";
 beforeEach(() => {
   vi.resetAllMocks();
+  vi.stubEnv("MCP_RUNTIME_CONFIG", "");
+  vi.stubEnv("MCP_PERSONAL_ENABLED", "false");
   mock.user.mockResolvedValue({ id });
   mock.config.mockResolvedValue(null);
   mock.tx.mockImplementation(async (fn) =>
@@ -34,6 +38,8 @@ beforeEach(() => {
       userSpot: { deleteMany: mock.spots },
       savedAnalysis: { deleteMany: mock.analyses },
       favoriteDay: { deleteMany: mock.favoriteDays },
+      mcpGrant: { updateMany: mock.revoke },
+      mcpAccessAudit: { create: mock.audit },
     }),
   );
 });
@@ -71,4 +77,45 @@ it("does not clear registered data from another origin", async () => {
   );
   expect(res.status).toBe(403);
   expect(mock.tx).not.toHaveBeenCalled();
+});
+
+afterEach(() => vi.unstubAllEnvs());
+it("revokes every owner grant in the deletion transaction even while the endpoint is disabled", async () => {
+  vi.stubEnv("MCP_RUNTIME_CONFIG", "TEST_ONLY_CONFIG_PRESENT");
+  const res = await DELETE(
+    new NextRequest("https://example.com/api/user-config", {
+      method: "DELETE",
+      headers: { origin: "https://example.com" },
+    }),
+  );
+  expect(res.status).toBe(200);
+  expect(mock.revoke).toHaveBeenCalledWith({
+    where: { userId: id, revokedAt: null },
+    data: { revokedAt: expect.any(Date) },
+  });
+  expect(mock.audit.mock.calls[0][0].data).toMatchObject({
+    userId: id,
+    grantId: null,
+    event: "revoke",
+    result: "revoked",
+  });
+  expect(mock.lock.mock.invocationCallOrder[0]).toBeLessThan(
+    mock.revoke.mock.invocationCallOrder[0],
+  );
+  expect(mock.revoke.mock.invocationCallOrder[0]).toBeLessThan(
+    mock.candidates.mock.invocationCallOrder[0],
+  );
+});
+it("does not delete registration when revocation fails", async () => {
+  vi.stubEnv("MCP_RUNTIME_CONFIG", "TEST_ONLY_CONFIG_PRESENT");
+  mock.revoke.mockRejectedValue(new Error("TEST_ONLY_PRIVATE_DB_ERROR"));
+  const res = await DELETE(
+    new NextRequest("https://example.com/api/user-config", {
+      method: "DELETE",
+      headers: { origin: "https://example.com" },
+    }),
+  );
+  expect(res.status).toBe(500);
+  expect(await res.text()).not.toContain("PRIVATE_DB_ERROR");
+  expect(mock.candidates).not.toHaveBeenCalled();
 });
