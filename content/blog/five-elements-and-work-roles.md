@@ -67,3 +67,5 @@ Cloud Paletteの方位判定は真北を基準とし、暗剣殺・五黄殺は�
 家族や身近な相手への伝え方については、[五行の相性と会話の確認方法](/blog/compatibility-and-communication)で、分類の矢印と実際の役割を分けています。
 
 組織で自分と違う人を迎える場面については、[採用時の期待と評価を照合する](/blog/hiring-expectations-and-evaluation)で、数字と実際の確認条件を整理しています。
+
+[事業承継で引き継ぐ決定権](/blog/business-succession-decision-rights)では、分類の比喩を具体的な判断に移す際の数字と確認例を整理しています。
