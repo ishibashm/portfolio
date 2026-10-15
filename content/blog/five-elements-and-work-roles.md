@@ -65,3 +65,5 @@ Cloud Paletteの方位判定は真北を基準とし、暗剣殺・五黄殺は�
 役割への適性とは別に、経験する職業の数が気になる場合は、[命式で転職回数は決まるのか](/blog/career-changes-and-destiny-chart)で数え方と予測の違いを確認できます。
 
 家族や身近な相手への伝え方については、[五行の相性と会話の確認方法](/blog/compatibility-and-communication)で、分類の矢印と実際の役割を分けています。
+
+組織で自分と違う人を迎える場面については、[採用時の期待と評価を照合する](/blog/hiring-expectations-and-evaluation)で、数字と実際の確認条件を整理しています。
