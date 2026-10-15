@@ -475,8 +475,13 @@ describe("本物の記事に題を渡す", () => {
       （geomagnetism-and-honmei-star）を足して +1 / +1。問いの見出しが
       5 つあるので、題の有無にかかわらず数に入る
     */
-    expect(count(false)).toBe(24);
-    expect(count(true)).toBe(29);
+    /*
+      2026-10-16: 大運は何歳で切り替わるかの記事（daiun-start-age-calculation）
+      を足して +1 / +1。問いの見出しが 2 つあり、直下の段落が答えから
+      始まるので、題の有無にかかわらず数に入る
+    */
+    expect(count(false)).toBe(25);
+    expect(count(true)).toBe(30);
   });
 
   it("題から作った問いは、記事の題そのもの（言い換えない）", () => {
