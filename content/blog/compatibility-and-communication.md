@@ -63,3 +63,5 @@ draft: false
 [子どもの年齢と親の関与](/blog/parental-involvement-and-age-milestones)では、分類の比喩を具体的な判断に移す際の数字と確認例を整理しています。
 
 [相談で聞いてほしいことと助言を分ける方法](/blog/consultation-purpose-and-five-elements)も参照できます。
+
+関連する数字の読み方は、[友人の五行が偏るのはなぜか。アプリの登録人数と交友関係を分ける](/blog/friend-app-counts-and-selection)でも検討しています。
