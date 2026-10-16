@@ -15,6 +15,7 @@ import {
   streamText,
   tool,
   type LanguageModel,
+  type ModelMessage,
   type ToolSet,
 } from "ai";
 import { z } from "zod";
@@ -24,7 +25,7 @@ import { toolCallKey } from "./mcpToolCallKey";
 import { chainLlmState } from "./mcpAgentConfig";
 
 export const AGENT_LIMITS = {
-  steps: 5,
+  steps: 8,
   calls: 20,
   callMs: 8000,
   totalMs: 60000,
@@ -88,6 +89,74 @@ function summarizeTool(toolName: string, output: unknown): string {
   return "計算結果を取得しました。詳しい値と出典は生JSONで確認できます。";
 }
 
+/** Server-authored prose uses only validated result fields, never model callouts. */
+function serverSummary(sources: BlockSources): string {
+  const lines = new Set<string>();
+  const plain = (value: string) =>
+    value
+      .replace(/[<>\[\]()`*_#~!\\&]/g, "")
+      .replace(/https?:\/\/\S+/gi, "")
+      .replace(/[\u0000-\u001f\u007f]/g, " ")
+      .slice(0, 200);
+  for (const source of sources.values()) {
+    if (source.tool === "get_honmei_star") {
+      const star = z.number().int().min(1).max(9);
+      const parsed = z
+        .object({
+          honmeiStar: star.optional(),
+          candidates: z
+            .object({ beforeSetsubun: star, afterSetsubun: star })
+            .optional(),
+        })
+        .safeParse(source.output);
+      if (parsed.success) {
+        if (parsed.data.honmeiStar !== undefined)
+          lines.add(`本命星は${parsed.data.honmeiStar}です。`);
+        else if (parsed.data.candidates)
+          lines.add(
+            `本命星の候補は立春前が${parsed.data.candidates.beforeSetsubun}、立春後が${parsed.data.candidates.afterSetsubun}です。`,
+          );
+      }
+    }
+    for (const block of blocksFromTool(source.tool, source.output, sources)) {
+      if (block.type === "towns" && block.towns.length)
+        lines.add(
+          `市区町村の候補：${block.towns
+            .slice(0, 6)
+            .map((t) => plain(t.name))
+            .join("、")}。`,
+        );
+      if (block.type === "days")
+        lines.add(
+          block.days.length
+            ? `吉日の候補：${block.days
+                .slice(0, 8)
+                .map((d) => `${d.date}（${plain(d.label)}）`)
+                .join("、")}。`
+            : "取得した範囲では吉日の候補はありませんでした。",
+        );
+      if (block.type === "articles" && block.articles.length)
+        lines.add(
+          `参考記事：${block.articles.map((a) => plain(a.title)).join("、")}。`,
+        );
+      if (block.type === "compass")
+        lines.add(
+          `方位の結果：${block.directions.map((d) => `${plain(d.label)}：${plain(d.status)}`).join("、")}。`,
+        );
+    }
+  }
+  return [
+    sources.size
+      ? "取得できた結果をお知らせします。"
+      : "回答に必要な結果を取得できませんでした。時間をおいて再度お試しください。",
+    ...lines,
+    ...(sources.size && !lines.size
+      ? ["道具の結果を取得しました。詳細は表示された結果をご確認ください。"]
+      : []),
+    "九星気学は参考情報です。",
+  ].join("\n");
+}
+
 /** SDKの中断に従わない処理にも待機の上限を設ける。同期CPU処理は復帰後に確認する。 */
 export async function withinSignal<T>(
   work: Promise<T>,
@@ -141,9 +210,16 @@ export async function runAgent(
     ]),
   ) as typeof AGENT_LIMITS;
   const controller = new AbortController();
-  const abort = AbortSignal.any([signal, controller.signal]);
-  const timer = setTimeout(() => controller.abort(), limits.totalMs);
+  const totalController = new AbortController();
+  const totalAbort = AbortSignal.any([signal, totalController.signal]);
+  const abort = AbortSignal.any([totalAbort, controller.signal]);
+  const timer = setTimeout(() => totalController.abort(), limits.totalMs);
   const deadline = Date.now() + limits.totalMs;
+  const toolDeadline = deadline - Math.min(10000, limits.totalMs / 2);
+  const toolTimer = setTimeout(
+    () => controller.abort(),
+    toolDeadline - Date.now(),
+  );
   const pending = new Set<Promise<unknown>>();
   const executions = new Map<string, Promise<unknown>>();
   const sources: BlockSources = new Map();
@@ -153,6 +229,20 @@ export async function runAgent(
     if (fresh.length) emit({ type: "blocks", blocks: fresh });
   };
   let dailyQuotaExceeded = false;
+  let hasText = false;
+  let switched = false;
+  let summaryFallback = false;
+  const history: ModelMessage[] = [{ role: "user", content: question }];
+  const sendText = (text: string) => {
+    if (!text.trim()) return;
+    hasText = true;
+    emit({ type: "text-delta", text });
+  };
+  const switchModel = async (signal: AbortSignal) => {
+    if (switched || !recovery.fallback) return;
+    switched = true;
+    model = await withinSignal(recovery.fallback(), signal);
+  };
   let finished = false;
   let calls = 0;
   let steps = 0;
@@ -194,7 +284,7 @@ export async function runAgent(
               stop("道具の回数上限で打ち切りました。");
               throw new Error("呼び出し上限");
             }
-            if (Date.now() >= deadline) {
+            if (Date.now() >= toolDeadline) {
               stop("全体の時間上限で打ち切りました。");
               throw new Error("時間上限");
             }
@@ -221,7 +311,7 @@ export async function runAgent(
               return { error: UNKNOWN_BIRTH_DATE };
             }
             const callAbort = new AbortController();
-            const timeout = Math.min(limits.callMs, deadline - started);
+            const timeout = Math.min(limits.callMs, toolDeadline - started);
             const callTimer = setTimeout(() => callAbort.abort(), timeout);
             try {
               const combined = AbortSignal.any([abort, callAbort.signal]);
@@ -281,16 +371,16 @@ export async function runAgent(
       },
     });
     let retried = 0;
-    let switched = false;
     while (true) {
       const textParts: string[] = [];
+      const previousMessages = [...history];
       try {
         abort.throwIfAborted();
         recovery.onModel?.(typeof model === "string" ? model : model.modelId);
         const result = streamText({
           model,
           system: AGENT_SYSTEM,
-          prompt: question,
+          messages: previousMessages,
           tools,
           stopWhen: stepCountIs(Math.max(1, limits.steps - steps)),
           maxOutputTokens: limits.outputTokens,
@@ -298,8 +388,14 @@ export async function runAgent(
           // SDKの既定onErrorは例外をconsole.errorへ出す。入力を含みうるため抑制する。
           onError: () => {},
           abortSignal: abort,
-          onStepFinish: () => {
+          onStepFinish: ({ response }) => {
             steps++;
+            history.splice(
+              0,
+              history.length,
+              ...previousMessages,
+              ...response.messages,
+            );
           },
         });
         const iterator = result.fullStream[Symbol.asyncIterator]();
@@ -324,11 +420,18 @@ export async function runAgent(
           if (part.type === "finish" && part.finishReason === "length")
             reasons.add("回答のトークン上限に達しました。");
         }
-        for (const text of textParts) emit({ type: "text-delta", text });
+        sendText(textParts.join(""));
         break;
       } catch (error) {
         const reason = classifyModelError(error);
         if (reason === "daily-quota") dailyQuotaExceeded = true;
+        // Once results exist, recovery is a no-tools continuation, never a replay.
+        if (sources.size) {
+          summaryFallback = reason !== "permanent";
+          if (abort.aborted)
+            reasons.add("全体の時間上限または接続の中断で終了しました。");
+          break;
+        }
         if (
           abort.aborted ||
           reason === "permanent" ||
@@ -342,8 +445,7 @@ export async function runAgent(
           continue;
         }
         if (switched || !recovery.fallback) throw error;
-        model = await withinSignal(recovery.fallback(), abort);
-        switched = true;
+        await switchModel(abort);
         retried = 0;
       }
     }
@@ -364,7 +466,7 @@ export async function runAgent(
           : "AIの処理を続けられませんでした。",
       );
   } finally {
-    clearTimeout(timer);
+    clearTimeout(toolTimer);
     controller.abort();
     await Promise.allSettled([...pending]);
     emitBlocks(
@@ -372,6 +474,74 @@ export async function runAgent(
         blocksFromTool(s.tool, s.output, sources),
       ),
     );
+    try {
+      if (!hasText && !totalAbort.aborted) {
+        if (summaryFallback) await switchModel(totalAbort);
+        const summarize = async () => {
+          recovery.onModel?.(typeof model === "string" ? model : model.modelId);
+          const result = streamText({
+            model,
+            system: AGENT_SYSTEM,
+            messages: [
+              { role: "user", content: question },
+              {
+                role: "user",
+                content:
+                  "取得済みの結果だけから最終回答を短くまとめてください。追加の道具は使えません。結果が不十分ならその旨を説明してください。\n" +
+                  [...sources.values()]
+                    .map(
+                      (source) =>
+                        "BEGIN_UNTRUSTED_TOOL_DATA\n" +
+                        JSON.stringify(source).slice(0, 6000) +
+                        "\nEND_UNTRUSTED_TOOL_DATA",
+                    )
+                    .join("\n"),
+              },
+            ],
+            toolChoice: "none",
+            maxOutputTokens: limits.outputTokens,
+            maxRetries: 0,
+            onError: () => {},
+            abortSignal: totalAbort,
+          });
+          const parts: string[] = [];
+          const iterator = result.fullStream[Symbol.asyncIterator]();
+          while (true) {
+            const next = await withinSignal(iterator.next(), totalAbort);
+            if (next.done) break;
+            if (next.value.type === "error") throw next.value.error;
+            if (next.value.type === "text-delta") parts.push(next.value.text);
+          }
+          sendText(parts.join(""));
+        };
+        try {
+          await summarize();
+        } catch (error) {
+          if (
+            classifyModelError(error) === "permanent" ||
+            switched ||
+            !recovery.fallback
+          )
+            throw error;
+          await switchModel(totalAbort);
+          await summarize();
+        }
+      }
+    } catch {
+      // Never expose provider errors or user input, including through SDK logging.
+    } finally {
+      clearTimeout(timer);
+      totalController.abort();
+    }
+    if (!hasText && !signal.aborted) {
+      if (dailyQuotaExceeded) {
+        reasons.clear();
+        reasons.add(
+          "本日のAI回答の枠が終わりました。道具で計算した結果だけを表示しています。",
+        );
+      }
+      sendText(serverSummary(sources));
+    }
     emit({ type: "done", calls, reasons: [...reasons] });
   }
 }
