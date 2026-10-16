@@ -18,24 +18,26 @@ export interface UsageLedger {
 }
 /** インスタンス内だけの台帳。識別子もログには出さない。 */
 export class MemoryUsageLedger implements UsageLedger {
-  private day = "";
-  private totals = new Map<string, { requests: number; tokens: number }>();
+  private days = new Map<
+    string,
+    Map<string, { requests: number; tokens: number }>
+  >();
   private roll(at: number) {
-    if (this.day !== jstDayKey(at)) {
-      this.day = jstDayKey(at);
-      this.totals.clear();
-    }
+    const key = jstDayKey(at);
+    if (!this.days.has(key)) this.days.set(key, new Map());
+    // 日付を跨いで完了した実行は開始日に記録する。新しい日の台帳を消さない。
+    if (this.days.size > 2) this.days.delete([...this.days.keys()].sort()[0]);
+    return this.days.get(key);
   }
   daily(at: number, subject = "*") {
-    this.roll(at);
-    return this.totals.get(subject) ?? { requests: 0, tokens: 0 };
+    return this.roll(at)?.get(subject) ?? { requests: 0, tokens: 0 };
   }
   recordUsage(r: UsageRecord) {
-    this.roll(r.at);
+    const totals = this.roll(r.at);
     if (r.mode === "llm") {
       for (const key of ["*", r.subject]) {
         const old = this.daily(r.at, key);
-        this.totals.set(key, {
+        totals?.set(key, {
           requests: old.requests + 1,
           tokens: old.tokens + r.inputTokens + r.outputTokens,
         });
@@ -129,6 +131,10 @@ export function createAgentEntitlement(ledger: UsageLedger = usageLedger) {
           personalPending * AGENT_TOKEN_RESERVATION,
       ),
     };
+    remaining.requests = Math.min(
+      remaining.requests,
+      Math.floor(remaining.tokens / AGENT_TOKEN_RESERVATION),
+    );
     let reason = "";
     if (
       !bucket.take(subject, at) ||

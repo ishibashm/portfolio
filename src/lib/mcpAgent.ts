@@ -222,6 +222,8 @@ export async function runAgent(
       stopWhen: [stepCountIs(limits.steps), () => calls >= limits.calls],
       maxOutputTokens: limits.outputTokens,
       maxRetries: 0,
+      // SDKの既定onErrorは例外をconsole.errorへ出す。入力を含みうるため抑制する。
+      onError: () => {},
       abortSignal: abort,
       onStepFinish: () => {
         steps++;

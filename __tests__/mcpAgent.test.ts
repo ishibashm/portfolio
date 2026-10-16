@@ -73,6 +73,20 @@ describe("AIが公開MCPを選ぶループ", () => {
     ).toBe(true);
     expect(events.at(-1)).toEqual({ type: "done", calls: 4, reasons: [] });
   });
+  it("モデルの例外に含まれる質問・鍵をログにも回答にも出さない", async () => {
+    const log = vi.spyOn(console, "error").mockImplementation(() => {});
+    const model = new MockLanguageModelV3({
+      doStream: async () => {
+        throw new Error("1990-05-05 private-question api-key stack");
+      },
+    });
+    const { events } = await run(AGENT_LIMITS, undefined, model);
+    expect(log).not.toHaveBeenCalled();
+    expect(JSON.stringify(events)).not.toMatch(
+      /1990-05-05|private-question|api-key|stack/,
+    );
+    log.mockRestore();
+  });
   it("ステップ上限", async () => {
     const { events, model } = await run({ ...AGENT_LIMITS, steps: 2 });
     expect(model.doStreamCalls).toHaveLength(2);

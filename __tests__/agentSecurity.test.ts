@@ -170,3 +170,22 @@ describe("無料枠と台帳", () => {
     expect(use({ ip: "b", mode: "llm", at: start + 30000 }).allowed).toBe(true);
   });
 });
+
+it("日付を跨いで完了する実行が翌日の台帳を消さない", () => {
+  vi.spyOn(console, "info").mockImplementation(() => {});
+  const ledger = new MemoryUsageLedger();
+  const record = {
+    subject: "hashed",
+    mode: "llm" as const,
+    model: "mock",
+    inputTokens: 10,
+    outputTokens: 0,
+    toolCalls: 0,
+    voiceSeconds: 0,
+    at: Date.parse("2026-10-16T15:00:00Z"),
+  };
+  ledger.recordUsage(record);
+  ledger.recordUsage({ ...record, at: record.at - 1000 });
+  expect(ledger.daily(record.at).requests).toBe(1);
+  expect(ledger.daily(record.at - 1000).requests).toBe(1);
+});

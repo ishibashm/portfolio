@@ -42,14 +42,20 @@ export function McpExplorer({
   const [calculationOnly, setCalculationOnly] = useState(false);
   const useAgent = agentEnabled && !calculationOnly;
   const [consent, setConsent] = useState(false);
-  const [birthDate, setBirthDate] = useState("");
-  const [municipality, setMunicipality] = useState("");
+  const [birthDate, setBirthDate] = useState(
+    () => extractAgentInput(initialQuestion).birthDate,
+  );
+  const [municipality, setMunicipality] = useState(
+    () => extractAgentInput(initialQuestion).municipality,
+  );
   const listId = useId();
   const [suggestions, setSuggestions] = useState<string[]>([]);
   const savedVersion = useRef(0);
   const [privacyRevision, setPrivacyRevision] = useState(0);
   const [remaining, setRemaining] = useState<string>();
-  const [year, setYear] = useState("");
+  const [year, setYear] = useState(
+    () => extractAgentInput(initialQuestion).year,
+  );
   const [savedBirth, setSavedBirth] = useState("");
   const [savedOrigin, setSavedOrigin] = useState("");
   const enriched = withSavedAgentInput(
@@ -113,7 +119,7 @@ export function McpExplorer({
 
     return typeof name === "string" ? name : "";
   }
-  async function useSaved(checked: boolean) {
+  async function applySaved(checked: boolean) {
     const version = ++savedVersion.current;
     setConsent(checked);
     if (!checked) {
@@ -127,7 +133,9 @@ export function McpExplorer({
     const birth = settingString(settings, "birth_date")?.slice(0, 10) ?? "";
     setBirthDate(birth);
     setSavedBirth(birth);
-    let origin = settingString(settings, "base_label") ?? "";
+    let origin = extractAgentInput(
+      settingString(settings, "base_label") ?? "",
+    ).municipality;
     const lat = settingNumber(settings, "base_lat");
     const lon = settingNumber(settings, "base_lon");
     if (!origin && lat !== undefined && lon !== undefined)
@@ -315,7 +323,7 @@ export function McpExplorer({
           <input
             type="checkbox"
             checked={consent}
-            onChange={(e) => void useSaved(e.target.checked)}
+            onChange={(e) => void applySaved(e.target.checked)}
           />{" "}
           保存済みの生年月日・出発地を使う
         </label>
@@ -343,9 +351,11 @@ export function McpExplorer({
             自由文から入力
             <input
               aria-label="自由文から入力"
+              value={question}
               maxLength={500}
               className="block w-full border p-2"
               onChange={(e) => {
+                setQuestion(e.target.value);
                 const value = extractAgentInput(e.target.value);
                 setBirthDate(value.birthDate);
                 setYear(value.year);
@@ -364,10 +374,12 @@ export function McpExplorer({
           type="button"
           className="mb-4 text-sm underline"
           onClick={() => {
+            const version = savedVersion.current;
             navigator.geolocation?.getCurrentPosition(
               (pos) => {
                 void locate(pos.coords.latitude, pos.coords.longitude)
                   .then((name) => {
+                    if (version !== savedVersion.current) return;
                     setMunicipality(name);
                     if (useAgent)
                       setQuestion((q) =>
@@ -496,7 +508,7 @@ export function McpExplorer({
       </form>
       {remaining !== undefined && (
         <p className="text-xs text-slate-500">
-          この端末の本日のAI無料枠：残り{remaining}回（概算・インスタンス内）
+          この接続の本日のAI無料枠：残り{remaining}回（概算・インスタンス内）
         </p>
       )}
       {submitted && (

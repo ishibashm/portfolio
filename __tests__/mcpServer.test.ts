@@ -406,7 +406,7 @@ describe("/api/mcp の入口", () => {
       }),
     );
     expect(list.status).toBe(200);
-    expect((await list.json()).result.tools.length).toBe(8);
+    expect((await list.json()).result.tools.length).toBe(10);
   });
 });
 
