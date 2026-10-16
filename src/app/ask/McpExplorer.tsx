@@ -2,6 +2,9 @@
 
 import dynamic from "next/dynamic";
 import { useEffect, useId, useRef, useState } from "react";
+import { AnswerBlocks } from "@/components/home/AnswerBlocks";
+import { parseAnswerBlocks, type AnswerBlock } from "@/lib/answerBlocks";
+import { AgentAnswer } from "@/components/home/AgentAnswer";
 import { AgentBirthYear } from "@/components/home/AgentBirthYear";
 import {
   readSettingsSync,
@@ -37,6 +40,7 @@ export function McpExplorer({
     { role: string; text: string }[]
   >([]);
   const [question, setQuestion] = useState(initialQuestion);
+  const [blocks, setBlocks] = useState<AnswerBlock[]>([]);
   const [answer, setAnswer] = useState("");
   const [submitted, setSubmitted] = useState("");
   const [agentCalls, setAgentCalls] = useState<
@@ -63,6 +67,20 @@ export function McpExplorer({
   const savedVersion = useRef(0);
   const [privacyRevision, setPrivacyRevision] = useState(0);
   const [remaining, setRemaining] = useState<string>();
+  const remainingRevision = useRef(0);
+  useEffect(() => {
+    if (!agentEnabled) return;
+    const revision = remainingRevision.current;
+    const controller = new AbortController();
+    void fetch("/api/mcp-chain/status", { signal: controller.signal })
+      .then((r) => r.json())
+      .then((data) => {
+        if (data.remaining && revision === remainingRevision.current)
+          setRemaining(String(data.remaining.requests));
+      })
+      .catch(() => {});
+    return () => controller.abort();
+  }, [agentEnabled]);
   const [year, setYear] = useState(
     () => extractAgentInput(initialQuestion).year,
   );
@@ -88,6 +106,7 @@ export function McpExplorer({
       setQuestion("");
       setAnswer("");
       setVoiceMessages([]);
+      setBlocks([]);
       setSubmitted("");
       setCalls([]);
       setAgentCalls([]);
@@ -162,12 +181,14 @@ export function McpExplorer({
       setMessage("保存値を含めて500文字以内にしてください。");
       return;
     }
+    remainingRevision.current++;
     const form = new FormData(event.currentTarget);
     const abort = new AbortController();
     abortRef.current = abort;
     setCalls([]);
     setAgentCalls([]);
     setAnswer("");
+    setBlocks([]);
     setSubmitted(useAgent ? enriched : "");
     setMessage("計算しています…");
     setRunning(true);
@@ -191,6 +212,8 @@ export function McpExplorer({
       if (left !== null && useAgent) setRemaining(left);
       if (!response.ok) {
         const data = await response.json();
+        if (data.remaining && useAgent)
+          setRemaining(String(data.remaining.requests));
         throw new Error(data.error || "計算を始められませんでした。");
       }
       if (!response.body) throw new Error("結果を受け取れませんでした。");
@@ -208,7 +231,9 @@ export function McpExplorer({
           for (const line of lines) {
             if (!line.trim()) continue;
             const item = JSON.parse(line) as ChainEvent | AgentEvent;
-            if (item.type === "call") setCalls((prev) => [...prev, item]);
+            if (item.type === "blocks")
+              setBlocks((prev) => [...prev, ...parseAnswerBlocks(item.blocks)]);
+            else if (item.type === "call") setCalls((prev) => [...prev, item]);
             else if (item.type === "text-delta")
               setAnswer((prev) => prev + item.text);
             else if (item.type === "tool-call")
@@ -244,29 +269,6 @@ export function McpExplorer({
       setRunning(false);
       abortRef.current = null;
     }
-  }
-  const articleUrls = new Set<string>();
-  for (const call of agentCalls) {
-    if (call.tool !== "search_articles" && call.tool !== "get_article")
-      continue;
-    const serialized = JSON.stringify(call.result?.output ?? {});
-    for (const match of serialized.matchAll(
-      /https:\/\/cloud-palette\.com\/blog\/[a-z0-9-]+/g,
-    ))
-      articleUrls.add(match[0]);
-  }
-  function answerContent() {
-    return answer
-      .split(/(https:\/\/cloud-palette\.com\/blog\/[a-z0-9-]+)/g)
-      .map((part, i) =>
-        articleUrls.has(part) ? (
-          <a key={i} href={part} className="underline">
-            {part}
-          </a>
-        ) : (
-          part
-        ),
-      );
   }
   function tree(parentId: number | null): React.ReactNode {
     return (
@@ -560,15 +562,14 @@ export function McpExplorer({
           <h2 className="mb-3 text-sm font-semibold text-slate-500">
             AIの回答
           </h2>
-          <p className="whitespace-pre-wrap text-sm leading-8">
-            {answer ? answerContent() : "道具で確かめています…"}
-          </p>
+          <AgentAnswer text={answer || "道具で確かめています…"} />
         </div>
       )}
+      <AnswerBlocks blocks={blocks} />
       {agentCalls.length > 0 && (
         <details className="rounded-2xl border border-stone-200 bg-white/60 p-5">
           <summary className="cursor-pointer text-sm font-semibold">
-            道具呼び出しの経緯（{agentCalls.length}回）
+            使った道具（{agentCalls.length}回）
           </summary>
           <ol className="mt-4 space-y-4">
             {agentCalls.map((c) => (

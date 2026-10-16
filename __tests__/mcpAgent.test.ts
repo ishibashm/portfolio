@@ -28,7 +28,7 @@ async function run(
   change?.(connection);
   try {
     await runAgent(
-      "固定例",
+      "固定例 1990年5月5日生まれ",
       connection,
       model,
       (e) => events.push(e),
@@ -41,7 +41,7 @@ async function run(
   return { events, call, model };
 }
 describe("AIが公開MCPを選ぶループ", () => {
-  it("4段の道具選択・前の結果の引継ぎ・回答のストリーミング", async () => {
+  it("独立した道具の並列選択・前の結果の引継ぎ・回答のストリーミング", async () => {
     const { events, model, call } = await run();
     expect(call.mock.calls.map(([n]) => n)).toEqual([
       "search_municipality",
@@ -49,9 +49,9 @@ describe("AIが公開MCPを選ぶループ", () => {
       "judge_directions",
       "find_auspicious_days",
     ]);
-    expect(model.doStreamCalls).toHaveLength(5);
+    expect(model.doStreamCalls).toHaveLength(4);
     expect(model.doStreamCalls[0].tools?.map((t) => t.name).sort()).toEqual(
-      [...CHAIN_TOOLS].sort(),
+      [...CHAIN_TOOLS, "show_blocks"].sort(),
     );
     expect(model.doStreamCalls[0].maxOutputTokens).toBe(2048);
     const search = events.find(
@@ -91,7 +91,7 @@ describe("AIが公開MCPを選ぶループ", () => {
     const { events, model } = await run({ ...AGENT_LIMITS, steps: 2 });
     expect(model.doStreamCalls).toHaveLength(2);
     expect(events.at(-1)).toMatchObject({
-      calls: 2,
+      calls: 3,
       reasons: ["ステップの上限に達しました。"],
     });
   });
@@ -157,7 +157,7 @@ describe("AIが公開MCPを選ぶループ", () => {
                 type: "tool-call",
                 toolCallId: String(i),
                 toolName: "get_honmei_star",
-                input: '{"birthDate":"1990-05-05"}',
+                input: JSON.stringify({ birthYear: 1900 + i }),
               });
             c.close();
           },
@@ -175,13 +175,26 @@ describe("AIが公開MCPを選ぶループ", () => {
 });
 describe("モデル設定", () => {
   it("既定モデルと上書き、キーの別名", async () => {
-    expect(chainLlmState({}).model).toBe("gemini-4-argon");
+    expect(chainLlmState({}).model).toBe("gemini-3.5-flash");
+    expect(chainLlmState({}).fallbackModel).toBe("gemini-3.5-flash-lite");
+    expect(
+      chainLlmState({ MCP_AGENT_MODEL: "gemini-3.5-flash" }).fallbackModel,
+    ).toBe("gemini-3.5-flash-lite");
+    expect(
+      chainLlmState({
+        MCP_AGENT_MODEL: "x",
+        MCP_AGENT_FALLBACK_MODEL: "x",
+      }).fallbackModel,
+    ).toBe("");
+    expect(chainLlmState({ MCP_AGENT_FALLBACK_MODEL: "" }).fallbackModel).toBe(
+      "",
+    );
     expect(chainLlmState({ MCP_AGENT_MODEL: "custom" }).model).toBe("custom");
     vi.stubEnv("MCP_AGENT_ENABLED", "true");
     vi.stubEnv("GOOGLE_GENERATIVE_AI_API_KEY", "");
     vi.stubEnv("GEMINI_API_KEY", "test");
     expect(await createAgentModel()).toMatchObject({
-      modelId: "gemini-4-argon",
+      modelId: "gemini-3.5-flash",
     });
   });
   it("productionではモック旗だけでは有効化できない", () => {
@@ -281,10 +294,18 @@ describe("AI API", () => {
     vi.stubEnv("MCP_AGENT_ENABLED", "true");
     vi.stubEnv("MCP_AGENT_MOCK", "true");
     const post = await api();
-    const response = await post(request({ mode: "llm", question: "例" }));
+    const response = await post(
+      request({ mode: "llm", question: "例 1990年5月5日生まれ" }),
+    );
     expect(
-      (await post(request({ mode: "llm", question: "例" }, "192.0.2.2")))
-        .status,
+      (
+        await post(
+          request(
+            { mode: "llm", question: "例 1990年5月5日生まれ" },
+            "192.0.2.2",
+          ),
+        )
+      ).status,
     ).toBe(429);
     expect(response.status).toBe(200);
     const events = (await response.text())

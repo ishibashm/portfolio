@@ -92,6 +92,7 @@ export async function POST(request: Request): Promise<Response> {
   const input = parsed.data;
   const isAgent = input.mode === "llm" && "question" in input;
   let toolCalls = 0;
+  let usedModel = "none";
   const abort = new AbortController();
   const signal = AbortSignal.any([request.signal, abort.signal]);
   const totalTimer = isAgent
@@ -100,65 +101,80 @@ export async function POST(request: Request): Promise<Response> {
   const encoder = new TextEncoder();
   let cancelled = false;
   const stream = new ReadableStream<Uint8Array>({
-    async start(controller) {
-      let connection:
-        | Awaited<ReturnType<typeof connectChainClient>>
-        | undefined;
-      try {
-        const connecting = connectChainClient();
-        // 接続待ちが期限を越えても、遅れてできた接続を残さない。
-        void connecting.then(
-          (c) => {
-            if (signal.aborted) void c.close();
-          },
-          () => {},
-        );
-        connection = await withinSignal(connecting, signal);
-        const emit = (
-          event:
-            | import("@/lib/mcpAgent").AgentEvent
-            | import("@/lib/mcpChain").ChainEvent,
-        ) => {
-          if (event.type === "done") toolCalls = event.calls;
+    start(controller) {
+      void (async () => {
+        let connection:
+          | Awaited<ReturnType<typeof connectChainClient>>
+          | undefined;
+        try {
+          const connecting = connectChainClient();
+          // 接続待ちが期限を越えても、遅れてできた接続を残さない。
+          void connecting.then(
+            (c) => {
+              if (signal.aborted) void c.close().catch(() => {});
+            },
+            () => {},
+          );
+          connection = await withinSignal(connecting, signal);
+          const emit = (
+            event:
+              | import("@/lib/mcpAgent").AgentEvent
+              | import("@/lib/mcpChain").ChainEvent,
+          ) => {
+            if (event.type === "done") toolCalls = event.calls;
+            if (!cancelled)
+              controller.enqueue(encoder.encode(JSON.stringify(event) + "\n"));
+          };
+          if (input.mode === "llm" && "question" in input) {
+            await runAgent(
+              input.question,
+              connection,
+              await withinSignal(createAgentModel(), signal),
+              emit,
+              signal,
+              AGENT_LIMITS,
+              {
+                onModel: (model) => {
+                  usedModel = model;
+                },
+                ...(chainLlmState().fallbackModel && !chainLlmState().mock
+                  ? {
+                      fallback: () =>
+                        createAgentModel(chainLlmState().fallbackModel),
+                    }
+                  : {}),
+              },
+            );
+          } else {
+            await runChain(input, connection.call, emit, signal);
+          }
+        } catch {
           if (!cancelled)
-            controller.enqueue(encoder.encode(JSON.stringify(event) + "\n"));
-        };
-        if (input.mode === "llm" && "question" in input) {
-          await runAgent(
-            input.question,
-            connection,
-            await createAgentModel(),
-            emit,
-            signal,
-          );
-        } else {
-          await runChain(input, connection.call, emit, signal);
+            controller.enqueue(
+              encoder.encode(
+                JSON.stringify({
+                  type: "done",
+                  calls: 0,
+                  reasons: [
+                    toResponseMessage(
+                      null,
+                      "計算を続けられませんでした。再実行してください。",
+                    ),
+                  ],
+                }) + "\n",
+              ),
+            );
+        } finally {
+          clearTimeout(totalTimer);
+          entitlement.finish({
+            model: usedModel,
+            toolCalls,
+          });
+          // ロック解放は、ハング・失敗しうるtransportのcloseより先に行う。
+          void connection?.close().catch(() => {});
+          if (!cancelled) controller.close();
         }
-      } catch {
-        if (!cancelled)
-          controller.enqueue(
-            encoder.encode(
-              JSON.stringify({
-                type: "done",
-                calls: 0,
-                reasons: [
-                  toResponseMessage(
-                    null,
-                    "計算を続けられませんでした。再実行してください。",
-                  ),
-                ],
-              }) + "\n",
-            ),
-          );
-      } finally {
-        clearTimeout(totalTimer);
-        await connection?.close();
-        entitlement.finish({
-          model: isAgent ? chainLlmState().model : "none",
-          toolCalls,
-        });
-        if (!cancelled) controller.close();
-      }
+      })().catch(() => {});
     },
     cancel() {
       cancelled = true;

@@ -1,6 +1,6 @@
 "use client";
 import { useEffect, useState } from "react";
-import { McpExplorer } from "@/app/houi/mcp-explorer/McpExplorer";
+import { McpExplorer } from "@/app/ask/McpExplorer";
 export default function HomeAgentChat({
   initialQuestion,
 }: {

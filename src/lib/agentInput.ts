@@ -47,3 +47,33 @@ export function withSavedAgentInput(
       : "")
   );
 }
+
+/** 質問と、クライアントが質問へ明示的に添付した保存値だけを照合する。 */
+export function hasExplicitBirthDate(
+  question: string,
+  birthDate: unknown,
+): boolean {
+  if (typeof birthDate !== "string") return false;
+  const target = /^(\d{4})-(\d{2})-(\d{2})(?:$|T)/.exec(birthDate);
+  if (!target) return false;
+  const normalized = question
+    .normalize("NFKC")
+    .replace(
+      /(明治|大正|昭和|平成|令和)(元|\d+)年/g,
+      (_, era: string, year: string) =>
+        `${({ 明治: 1867, 大正: 1911, 昭和: 1925, 平成: 1988, 令和: 2018 }[era] ?? 0) + (year === "元" ? 1 : Number(year))}年`,
+    );
+  const dates = [
+    ...normalized.matchAll(
+      /(?<!\d)(?:(\d{4})[年/.-])?(\d{1,2})[月/.-](\d{1,2})(?:日)?(?!\d)/g,
+    ),
+  ];
+  return dates.some(
+    (d) =>
+      (!d[1] || Number(d[1]) === Number(target[1])) &&
+      Number(d[2]) === Number(target[2]) &&
+      Number(d[3]) === Number(target[3]),
+  );
+}
+export const UNKNOWN_BIRTH_DATE =
+  "月日が不明です。年だけの入力を使うか利用者に尋ねてください";

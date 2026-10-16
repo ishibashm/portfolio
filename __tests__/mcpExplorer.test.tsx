@@ -6,7 +6,7 @@ import {
   waitFor,
 } from "@testing-library/react";
 import { afterEach, expect, it, vi } from "vitest";
-import { McpExplorer } from "@/app/houi/mcp-explorer/McpExplorer";
+import { McpExplorer } from "@/app/ask/McpExplorer";
 
 afterEach(() => vi.unstubAllGlobals());
 it("分割されたNDJSONを受け取り、完了前に呼び出しを描く", async () => {
@@ -86,6 +86,7 @@ it("AIフォームは例文と送信先を示し、回答差分と道具の経�
   });
   const fetcher = vi
     .fn()
+    .mockResolvedValueOnce(Response.json({ remaining: { requests: 20 } }))
     .mockResolvedValue({ ok: true, body: stream, headers: new Headers() });
   vi.stubGlobal("fetch", fetcher);
   render(<McpExplorer agentEnabled />);
@@ -93,8 +94,8 @@ it("AIフォームは例文と送信先を示し、回答差分と道具の経�
   expect(screen.queryByLabelText("生年月日")).toBeNull();
   fireEvent.click(screen.getByRole("button", { name: /1990年5月5日生まれ/ }));
   fireEvent.click(screen.getByRole("button", { name: "AIに聞く" }));
-  await waitFor(() => expect(fetcher).toHaveBeenCalledTimes(1));
-  expect(JSON.parse(fetcher.mock.calls[0][1].body)).toMatchObject({
+  await waitFor(() => expect(fetcher).toHaveBeenCalledTimes(2));
+  expect(JSON.parse(fetcher.mock.calls[1][1].body)).toMatchObject({
     mode: "llm",
     question: expect.stringContaining("深谷市"),
   });
@@ -124,6 +125,24 @@ it("AIフォームは例文と送信先を示し、回答差分と道具の経�
   expect(screen.getByText("所要時間：12ms")).toBeTruthy();
   await send({ type: "text-delta", text: "参考情報です。" });
   expect(screen.getByText("道具で調べました。参考情報です。")).toBeTruthy();
+  await send({ type: "text-delta", text: "\n\n**太" });
+  expect(screen.getByText(/太/).textContent).toContain("太");
+  await send({
+    type: "text-delta",
+    text: "字**\n\n- 項目\n\n[外部](https://example.com)",
+  });
+  expect(screen.getByText("太字").tagName).toBe("STRONG");
+  expect(screen.getByText("項目").tagName).toBe("LI");
+  expect(screen.getByText("外部").closest("a")).toBeNull();
+  await send({
+    type: "blocks",
+    blocks: [
+      { type: "callout", text: "確認済みの補足" },
+      { type: "callout", text: "<script>bad</script>" },
+    ],
+  });
+  expect(screen.getByText("確認済みの補足")).toBeTruthy();
+  expect(screen.queryByText("<script>bad</script>")).toBeNull();
   await send({ type: "done", calls: 1, reasons: [] });
   await act(async () => controller.close());
   expect(screen.getByRole("status").textContent).toContain("1回");
