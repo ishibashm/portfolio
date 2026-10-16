@@ -128,3 +128,20 @@ npm run lint           # error 0 / warning あり が正常。総数を増やさ
 | [`CLAUDE.md`](CLAUDE.md)                                     | 作業の決め事。検証・PR の出し方・触るときの注意  |
 | [`docs/improvement-backlog.md`](docs/improvement-backlog.md) | 改善の積み残しと判断待ち                         |
 | [`docs/gcp-billing-costs.md`](docs/gcp-billing-costs.md)     | 管理画面の GCP 請求実額の設定                    |
+
+### 天中殺記事の画像を再生成する
+
+```sh
+python3 scripts/blog/show_v19.py
+# または、記事画像ビルドから同じジェネレーターを呼び出す
+ONLY=moving-during-tenchusatsu node scripts/build_blog_images.mjs
+```
+
+Python 3 + Pillow と `~/.local/share/fonts/ofl/` の
+`MPLUSRounded1c-{Black,ExtraBold,Medium}.ttf`、`DelaGothicOne-Regular.ttf`
+（SIL OFL 1.1）が必要です。フォントファイルはコミットしません。
+デザインは ishibashm/slides-site v19（`tools/v18.py`、`tools/v18_png.py`、
+`tools/v19.py`）に基づきます。ロボットはコードで描く独自の図形です。
+利用許諾のある写真がないため、写真や写真の章扉は使用しません。
+記事の表と36個の日数を照合して、表紙と本文5枚を同じファイル名で
+1800×945・各300KB以下のPNGとして出力します。記事のaltテキストは変更しません。
