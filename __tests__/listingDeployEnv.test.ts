@@ -13,6 +13,12 @@ const keys = [
   "LISTING_EMAIL_ENCRYPTION_KEY",
   "LISTING_EMAIL_ENCRYPTION_KEY_ID",
 ];
+// Secret Manager から参照するキー（scripts/secret_manager_map.json）は平文 env に入らない。
+const secretMap: Record<string, string> = JSON.parse(
+  readFileSync(resolve("scripts/secret_manager_map.json"), "utf8"),
+);
+const migrated = keys.filter((key) => key in secretMap);
+const plain = keys.filter((key) => !(key in secretMap));
 function deploy(contents: string, overrides: Record<string, string> = {}) {
   const cwd = mkdtempSync(join(tmpdir(), "listing-deploy-"));
   dirs.push(cwd);
@@ -57,7 +63,22 @@ function deploy(contents: string, overrides: Record<string, string> = {}) {
         return [pair.slice(0, index), pair.slice(index + 1)];
       }),
   );
-  return { values, runtime, log, appendLog };
+  // --update-secrets の値（名前の対応だけで値は含まない）。
+  const secretsFlag = execFileSync(
+    "python3",
+    [resolve("scripts/secret_manager_flag.py")],
+    { cwd, env, encoding: "utf8" },
+  ).trim();
+  const secrets = Object.fromEntries(
+    secretsFlag
+      .split(",")
+      .filter(Boolean)
+      .map((pair) => {
+        const index = pair.indexOf("=");
+        return [pair.slice(0, index), pair.slice(index + 1)];
+      }),
+  );
+  return { values, runtime, secrets, secretsFlag, log, appendLog };
 }
 afterEach(() =>
   dirs
@@ -77,7 +98,13 @@ it("preserves ENV_FILE values when individual secrets are empty", () => {
     Object.fromEntries(keys.map((key) => [key, ""])),
   );
   expect(result.log + result.appendLog).toBe("");
-  keys.forEach((key) => expect(result.runtime[key]).toBe("synthetic-value"));
+  plain.forEach((key) => expect(result.runtime[key]).toBe("synthetic-value"));
+  migrated.forEach((key) => {
+    expect(result.values).not.toHaveProperty(key);
+    expect(result.runtime).not.toHaveProperty(key);
+    expect(result.secrets[key]).toBe(`${secretMap[key]}:latest`);
+  });
+  expect(result.secretsFlag).not.toContain("synthetic-value");
 });
 it("passes individually set values through to the runtime and never prints values", () => {
   const overrides = Object.fromEntries(
@@ -89,10 +116,15 @@ it("passes individually set values through to the runtime and never prints value
     LISTING_CANDIDATE_GSI_ENABLED: "true",
   });
   expect(result.runtime).toEqual({
-    ...overrides,
+    ...Object.fromEntries(plain.map((key) => [key, overrides[key]])),
     LISTING_EMAIL_GMAIL_ENABLED: "true",
     LISTING_CANDIDATE_GSI_ENABLED: "true",
   });
+  migrated.forEach((key) => {
+    expect(result.values).not.toHaveProperty(key);
+    expect(result.secrets[key]).toBe(`${secretMap[key]}:latest`);
+  });
+  expect(result.secretsFlag).not.toContain("synthetic");
   expect(result.log + result.appendLog).toBe("");
 });
 it.each(keys)(
@@ -137,4 +169,6 @@ it("workflow forwards the repository flag through env.json into Cloud Run", () =
   expect(workflow).toContain("python scripts/convert_env.py");
   expect(workflow).toContain("scripts/env_to_gcloud_flag.py env.json");
   expect(workflow).toContain('--update-env-vars="$ENV_VARS_FLAG"');
+  expect(workflow).toContain("python3 scripts/secret_manager_flag.py");
+  expect(workflow).toContain('--update-secrets="$SECRETS_FLAG"');
 });

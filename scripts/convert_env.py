@@ -33,6 +33,14 @@ def main():
         if missing:
             print('::warning::Gmail は有効ですが必須設定が不足しています: ' + ', '.join(missing))
 
+    # Secret Manager から参照するキーは平文の env から外す（値は扱わない）。
+    # 対応表は scripts/secret_manager_map.json（環境変数名 → シークレット名）。
+    map_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'secret_manager_map.json')
+    with open(map_path, 'r', encoding='utf-8') as f:
+        secret_map = json.load(f)
+    for key in secret_map:
+        env_vars.pop(key, None)
+
     with open('env.json', 'w', encoding='utf-8') as f:
         json.dump(env_vars, f, indent=2, ensure_ascii=False)
 
