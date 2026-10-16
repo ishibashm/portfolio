@@ -15,17 +15,24 @@ export function extractAgentInput(text: string) {
     municipality: municipality ?? "",
   };
 }
+/** 個人条件が不要だと利用者の文面から明確に分かる質問。 */
+export function isAgentGeneralQuestion(question: string) {
+  return /記事|意味|とは|考え方|仕組み/.test(question);
+}
+
 /** 保存値は必要な問いのときだけ。曖昧なら自動送信せず追質問に任せる。 */
 export function needsAgentBirth(question: string) {
   return (
-    /本命星|私の|自分の|吉方位|吉日|引越.*(?:方位|日)|生まれ/.test(question) &&
-    !/記事|意味|とは|考え方|仕組み/.test(question)
+    /本命星|私の|自分の|吉方位|吉日|引越.*(?:方位|日)|生まれ|何をすれば|どうすれば|おすすめ|相談/.test(
+      question,
+    ) && !isAgentGeneralQuestion(question)
   );
 }
 export function needsAgentOrigin(question: string) {
   return (
-    /方位|街|出発|引越|市区町村/.test(question) &&
-    !/記事|意味|とは|考え方|仕組み/.test(question)
+    /方位|街|出発|引越|市区町村|何をすれば|どうすれば|おすすめ|相談/.test(
+      question,
+    ) && !isAgentGeneralQuestion(question)
   );
 }
 export function withSavedAgentInput(

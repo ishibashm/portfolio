@@ -6,7 +6,7 @@
  *
  *   クラウド … listing_candidates（候補履歴）と user_configs の行（生年月日・場所・保存済みプロフィール・
  *              設定バーの好み）。DELETE /api/user-config
- *   この端末 … localStorage。設定・保存済みプロフィール・目的地
+ *   この端末 … localStorage。設定・保存済みプロフィール・目的地・AI相談の会話
  *
  * クラウドだけ消して端末に残すと、次に保存したときに端末の値が
  * 上がっていって元に戻る（`userSettings.loadSettings` は端末の値を
@@ -26,6 +26,7 @@
  *   presets_initialized … クラウドが空だと分かっている印
  *   arb_* / wealth_* … 画面ごとの写し（下記）
  *   relocation_simulator_draft … シミュレータの下書き（出発地の名前が入る）
+ *   cloud_palette_ask_chat_v1 … AI相談の会話・下書き・相談プロフィール
  *
  * ## 画面ごとの写しが消えていなかった（2026-09-07）
  *
@@ -54,6 +55,8 @@
  * - 地図の見え方（下地・重ねる層・タブ）と検索の絞り込み。個人の値では
  *   なく画面の状態
  */
+export const ASK_CONVERSATION_STORAGE_KEY = "cloud_palette_ask_chat_v1";
+
 export const ACCOUNT_LOCAL_KEYS = [
   "tactical_config_v1",
   "profile_presets_v1",
@@ -72,6 +75,8 @@ export const ACCOUNT_LOCAL_KEYS = [
   "wealth_baseLon",
   /* シミュレータの下書き（出発地の名前が入る） */
   "relocation_simulator_draft",
+  /* AI相談の会話・下書き・相談プロフィール */
+  ASK_CONVERSATION_STORAGE_KEY,
   /*
     物件検索の設定。**同行者の生年月日と出発地が入る**（partyMembers）。
     「一覧の並べ方」として残す側に置いていたが、同行者を足すと本人の

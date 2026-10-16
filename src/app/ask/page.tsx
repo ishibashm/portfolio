@@ -34,7 +34,7 @@ export default function Page() {
         </Link>
         <h1 className="mt-5 text-3xl font-bold font-serif">AIに聞く</h1>
         <p className="mt-4 text-sm leading-relaxed">
-          質問から方位・日取り・街の候補を調べます。回答と、その根拠になった道具の入力・結果を確かめられます。
+          方位・日取り・街の候補を、会話しながら絞り込めます。回答ごとに、その根拠になった道具の入力・結果も確かめられます。
         </p>
         <p className="mt-3 text-sm leading-relaxed">
           {state.enabled
@@ -45,6 +45,7 @@ export default function Page() {
           voiceEnabled={voiceState().enabled}
           agentEnabled={state.enabled}
           mock={state.mock}
+          persistConversation
         />
         <p className="mt-8 text-sm text-slate-600">
           吉凶は九星気学の考え方による参考情報です。契約・費用・通勤など、現実の条件と合わせて検討してください。
