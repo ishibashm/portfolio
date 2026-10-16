@@ -218,6 +218,14 @@ export function createMcpInteractionHandler(deps: {
       ].join(" ");
       protocolGrant.addOIDCScope(scopes);
       protocolGrant.addResourceScope(MCP_PERSONAL_RESOURCE, scopes);
+      const rejected = (view.memoryScopes ?? []).filter(
+        (scope) =>
+          !submission.memoryScopes?.some((allowed) => allowed === scope),
+      );
+      if (rejected.length) {
+        protocolGrant.rejectOIDCScope(rejected);
+        protocolGrant.rejectResourceScope(MCP_PERSONAL_RESOURCE, rejected);
+      }
       const providerGrantId = await protocolGrant.save();
       // save() persists exp but does not populate it on the new instance.
       const savedGrant = await deps.provider.Grant.find(providerGrantId);
