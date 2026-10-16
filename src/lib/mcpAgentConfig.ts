@@ -1,7 +1,7 @@
 /** 既定モデルは利用者が確認した Google Models（2026-10-13更新）に基づく。
  * https://ai.google.dev/gemini-api/docs/models （この作業ではネットワーク再確認なし）
  */
-export const DEFAULT_AGENT_MODEL = "gemini-4-argon";
+export const DEFAULT_AGENT_MODEL = "gemini-3.5-flash";
 export const DEFAULT_FALLBACK_MODEL = "gemini-3.5-flash-lite";
 export function chainLlmState(
   env: Record<string, string | undefined> = process.env,

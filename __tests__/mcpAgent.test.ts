@@ -175,7 +175,7 @@ describe("AIが公開MCPを選ぶループ", () => {
 });
 describe("モデル設定", () => {
   it("既定モデルと上書き、キーの別名", async () => {
-    expect(chainLlmState({}).model).toBe("gemini-4-argon");
+    expect(chainLlmState({}).model).toBe("gemini-3.5-flash");
     expect(chainLlmState({}).fallbackModel).toBe("gemini-3.5-flash-lite");
     expect(
       chainLlmState({ MCP_AGENT_MODEL: "gemini-3.5-flash" }).fallbackModel,
@@ -194,7 +194,7 @@ describe("モデル設定", () => {
     vi.stubEnv("GOOGLE_GENERATIVE_AI_API_KEY", "");
     vi.stubEnv("GEMINI_API_KEY", "test");
     expect(await createAgentModel()).toMatchObject({
-      modelId: "gemini-4-argon",
+      modelId: "gemini-3.5-flash",
     });
   });
   it("productionではモック旗だけでは有効化できない", () => {
