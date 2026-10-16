@@ -3,6 +3,11 @@ import type { Configuration } from "oidc-provider";
 export const MCP_PERSONAL_RESOURCE =
   "https://cloud-palette.com/api/mcp/personal";
 export const MCP_PROFILE_SCOPE = "read:profiles";
+export function mcpScopes() {
+  return process.env.MCP_MEMORY_ENABLED === "true"
+    ? [MCP_PROFILE_SCOPE, "read:memory", "write:memory"]
+    : [MCP_PROFILE_SCOPE];
+}
 const CONNECTION_SECONDS = 30 * 24 * 60 * 60;
 
 /**
@@ -18,7 +23,7 @@ export async function createMcpAuthorizationPolicy(): Promise<Configuration> {
   return {
     clients: [],
     responseTypes: ["code"],
-    scopes: [MCP_PROFILE_SCOPE],
+    scopes: mcpScopes(),
     pkce: { required: () => true },
     features: {
       devInteractions: { enabled: false },
@@ -38,7 +43,7 @@ export async function createMcpAuthorizationPolicy(): Promise<Configuration> {
           if (resource !== MCP_PERSONAL_RESOURCE)
             throw new errors.InvalidTarget();
           return {
-            scope: MCP_PROFILE_SCOPE,
+            scope: mcpScopes().join(" "),
             audience: MCP_PERSONAL_RESOURCE,
             accessTokenTTL: 600,
             accessTokenFormat: "opaque",
