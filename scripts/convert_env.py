@@ -41,6 +41,13 @@ def main():
     for key in secret_map:
         env_vars.pop(key, None)
 
+    # アプリが使わなくなったキー（scripts/retired_env_keys.json）は平文 env にも出さない。
+    # Cloud Run 側の Secret 参照は deploy.yml が --remove-secrets で外す。
+    retired_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'retired_env_keys.json')
+    with open(retired_path, 'r', encoding='utf-8') as f:
+        for key in json.load(f):
+            env_vars.pop(key, None)
+
     with open('env.json', 'w', encoding='utf-8') as f:
         json.dump(env_vars, f, indent=2, ensure_ascii=False)
 
