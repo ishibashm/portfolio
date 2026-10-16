@@ -33,6 +33,7 @@ public/debug.txt
 
 # env files (can opt-in for committing if needed)
 .env*
+!.env.example
 # 雛形は秘密を含まないので追跡する（開発用 DB への向け先が書いてある）
 !.env.local.example
 
