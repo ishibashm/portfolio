@@ -10,6 +10,7 @@ import {
 import { z } from "zod";
 import { assertChainTool, CHAIN_TOOLS, connectChainClient } from "./mcpChain";
 import { hasExplicitBirthDate, UNKNOWN_BIRTH_DATE } from "./agentInput";
+import { toolCallKey } from "./mcpToolCallKey";
 import { chainLlmState } from "./mcpAgentConfig";
 
 export const AGENT_LIMITS = {
@@ -133,6 +134,7 @@ export async function runAgent(
   const timer = setTimeout(() => controller.abort(), limits.totalMs);
   const deadline = Date.now() + limits.totalMs;
   const pending = new Set<Promise<unknown>>();
+  const executions = new Map<string, Promise<unknown>>();
   let calls = 0;
   let steps = 0;
   const reasons = new Set<string>();
@@ -157,6 +159,10 @@ export async function runAgent(
             "\nEND_UNTRUSTED_TOOL_DATA",
         }),
         execute: (input, { toolCallId }) => {
+          const key = toolCallKey(entry.name, input);
+          // Cache promises too: simultaneous identical requests share one MCP call.
+          const previous = executions.get(key);
+          if (previous) return previous;
           const execution = (async () => {
             assertChainTool(entry.name);
             abort.throwIfAborted();
@@ -226,6 +232,7 @@ export async function runAgent(
               clearTimeout(callTimer);
             }
           })();
+          executions.set(key, execution);
           pending.add(execution);
           void execution.then(
             () => pending.delete(execution),
@@ -247,10 +254,7 @@ export async function runAgent(
           system: AGENT_SYSTEM,
           prompt: question,
           tools,
-          stopWhen: [
-            stepCountIs(Math.max(1, limits.steps - steps)),
-            () => calls >= limits.calls,
-          ],
+          stopWhen: stepCountIs(Math.max(1, limits.steps - steps)),
           maxOutputTokens: limits.outputTokens,
           maxRetries: 0,
           // SDKの既定onErrorは例外をconsole.errorへ出す。入力を含みうるため抑制する。

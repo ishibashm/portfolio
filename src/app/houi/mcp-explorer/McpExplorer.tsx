@@ -2,6 +2,7 @@
 
 import dynamic from "next/dynamic";
 import { useEffect, useId, useRef, useState } from "react";
+import { AgentAnswer } from "@/components/home/AgentAnswer";
 import { AgentBirthYear } from "@/components/home/AgentBirthYear";
 import {
   readSettingsSync,
@@ -261,29 +262,6 @@ export function McpExplorer({
       setRunning(false);
       abortRef.current = null;
     }
-  }
-  const articleUrls = new Set<string>();
-  for (const call of agentCalls) {
-    if (call.tool !== "search_articles" && call.tool !== "get_article")
-      continue;
-    const serialized = JSON.stringify(call.result?.output ?? {});
-    for (const match of serialized.matchAll(
-      /https:\/\/cloud-palette\.com\/blog\/[a-z0-9-]+/g,
-    ))
-      articleUrls.add(match[0]);
-  }
-  function answerContent() {
-    return answer
-      .split(/(https:\/\/cloud-palette\.com\/blog\/[a-z0-9-]+)/g)
-      .map((part, i) =>
-        articleUrls.has(part) ? (
-          <a key={i} href={part} className="underline">
-            {part}
-          </a>
-        ) : (
-          part
-        ),
-      );
   }
   function tree(parentId: number | null): React.ReactNode {
     return (
@@ -577,9 +555,7 @@ export function McpExplorer({
           <h2 className="mb-3 text-sm font-semibold text-slate-500">
             AIの回答
           </h2>
-          <p className="whitespace-pre-wrap text-sm leading-8">
-            {answer ? answerContent() : "道具で確かめています…"}
-          </p>
+          <AgentAnswer text={answer || "道具で確かめています…"} />
         </div>
       )}
       {agentCalls.length > 0 && (

@@ -125,6 +125,15 @@ it("AIフォームは例文と送信先を示し、回答差分と道具の経�
   expect(screen.getByText("所要時間：12ms")).toBeTruthy();
   await send({ type: "text-delta", text: "参考情報です。" });
   expect(screen.getByText("道具で調べました。参考情報です。")).toBeTruthy();
+  await send({ type: "text-delta", text: "\n\n**太" });
+  expect(screen.getByText(/太/).textContent).toContain("太");
+  await send({
+    type: "text-delta",
+    text: "字**\n\n- 項目\n\n[外部](https://example.com)",
+  });
+  expect(screen.getByText("太字").tagName).toBe("STRONG");
+  expect(screen.getByText("項目").tagName).toBe("LI");
+  expect(screen.getByText("外部").closest("a")).toBeNull();
   await send({ type: "done", calls: 1, reasons: [] });
   await act(async () => controller.close());
   expect(screen.getByRole("status").textContent).toContain("1回");

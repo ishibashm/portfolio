@@ -157,7 +157,7 @@ describe("AIが公開MCPを選ぶループ", () => {
                 type: "tool-call",
                 toolCallId: String(i),
                 toolName: "get_honmei_star",
-                input: '{"birthDate":"1990-05-05"}',
+                input: JSON.stringify({ birthYear: 1900 + i }),
               });
             c.close();
           },

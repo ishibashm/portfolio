@@ -91,7 +91,7 @@ it.each([503, 429])("%iの再試行とフォールバック", async (statusCode)
         events.filter(
           (e) => e.type === "tool-call" && e.tool === "search_municipality",
         ),
-      ).toHaveLength(2);
+      ).toHaveLength(1);
   } finally {
     await c.close();
   }
