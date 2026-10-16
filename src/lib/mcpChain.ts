@@ -29,7 +29,7 @@ export function assertChainTool(name: string): void {
   if (!(CHAIN_TOOLS as readonly string[]).includes(name))
     throw new Error("許可されていない道具です。");
 }
-const dateSchema = z
+export const chainDateSchema = z
   .string()
   .regex(/^\d{4}-\d{2}-\d{2}$/)
   .refine((s) => {
@@ -43,9 +43,9 @@ const dateSchema = z
   }, "1900年から2100年12月1日までの実在する日を指定してください。");
 export const chainInputSchema = z
   .object({
-    birthDate: dateSchema,
+    birthDate: chainDateSchema,
     municipality: z.string().trim().min(2).max(80),
-    date: dateSchema.optional(),
+    date: chainDateSchema.optional(),
     depth: z.number().int().min(0).max(CHAIN_LIMITS.depth).default(3),
     mode: z.enum(["deterministic", "llm"]).default("deterministic"),
   })
@@ -109,7 +109,7 @@ const municipalitySchema = z.object({
   lon: z.number().min(122).max(154),
 });
 const directionsSchema = z.object({
-  date: dateSchema,
+  date: chainDateSchema,
   directions: z.array(
     z.object({ direction: z.string(), label: z.string(), status: z.string() }),
   ),
@@ -276,7 +276,7 @@ export async function runChain(
       );
       if (honmei) {
         const birth = z
-          .object({ birthDate: dateSchema })
+          .object({ birthDate: chainDateSchema })
           .parse(honmei.output).birthDate;
         const judged = await invoke(
           "judge_directions",

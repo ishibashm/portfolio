@@ -270,7 +270,7 @@ describe("AI API", () => {
     expect(
       (
         await post(
-          request({ mode: "llm", question: "あ".repeat(2000) }, "192.0.2.2"),
+          request({ mode: "llm", question: "あ".repeat(50000) }, "192.0.2.2"),
         )
       ).status,
     ).toBe(413);
