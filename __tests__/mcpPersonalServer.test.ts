@@ -45,7 +45,7 @@ afterEach(async () => {
   await Promise.all(closers.splice(0).map((close) => close()));
 });
 describe("request-local personal MCP server", () => {
-  it("registers exactly eleven unique audited tools while public discovery stays at eight", async () => {
+  it("registers exactly eleven unique audited tools while public discovery stays at ten", async () => {
     const personal = await connect(createMcpPersonalServer(auth));
     const publicClient = await connect(createMcpServer());
     const tools = (await personal.listTools()).tools;
@@ -64,7 +64,7 @@ describe("request-local personal MCP server", () => {
     ]);
     for (const tool of tools)
       expect(mcpAuditEvent.safeParse(tool.name).success).toBe(true);
-    expect((await publicClient.listTools()).tools).toHaveLength(8);
+    expect((await publicClient.listTools()).tools).toHaveLength(10);
     expect(JSON.stringify(tools)).not.toContain(preset.name);
     expect(findFirst).not.toHaveBeenCalled();
   });

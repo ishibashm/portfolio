@@ -81,6 +81,12 @@ export default function Page() {
           で決まります。まず生まれ年から本命星を確認し、その年の方位一覧に進んでください。
         </p>
 
+        <p className="mt-5 text-sm">
+          <Link href="/houi/mcp-explorer" className="underline text-slate-600">
+            MCPで方位と街をたどる
+          </Link>
+        </p>
+
         <section className="mt-10">
           <h2 className="text-xl font-bold font-serif border-b border-slate-300 pb-2">
             生まれ年から本命星を調べる

@@ -159,6 +159,8 @@ Streamable HTTP・stateless・POST のみ。いずれも匿名で、画面から
 - judge_directions: 出発地と生年月日から、指定日の八方位の段階（S 三盤吉〜X 五大凶殺）
 - judge_time_slots: 明示した生年月日・緯度・経度から、画面と同じ1日12刻の可否（天中殺／動いてよい／ふつう）と刻の九星を返す。includeBoard=true なら九星配置も返す
 - find_auspicious_days: 期間内で、八方位それぞれに動ける日（三盤吉・吉日）を集計する。bestDays[].kanshi に各候補日の年月日干支（JST正午）、solarTerms に走査期間の二十四節気を追加
+- search_articles: キーワード・話題で公開記事のtitle・slug・description・URL・publishedAt・tagsを最大5件返す。
+- get_article: slugで公開記事の見出し別の節を最大4000文字まで返す。DBのBlogPostを読み取り、空・接続失敗時はMarkdownへ落ちる。draftは返さず、書き込み・個人データへのアクセスはしない。
 - search_municipality: 名前の一部から市区町村を探し、コードと代表点を返す
 - area_directions: 市区町村から見た八方位それぞれの市区町村と、候補の無い方位の理由
 - prefecture_summary: 都道府県の市区町村と、県の面積重心から見た八方位ごとの市区町村
