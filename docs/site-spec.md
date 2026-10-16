@@ -737,3 +737,13 @@ AIチャットの補足（2026-10-17）:
 - **ボタンは同じ大きさ・同じ見た目。**「結果を保存する」「今はしない」。Phase 1 はお知らせ（メール）を約束しない。保存される内容（会話・相談メモ・人物プロフィール・メール）と件数をボタンの上に出す。
 - **押したときは何もアップロードしない。**トップのチャットの会話は端末の相談（`cloud_palette_ask_data_v2`）へ移し、`/login?next=/ask?resume=<会話id>` へ進む。戻った `/ask` はクラウドの方が新しくてもその会話を足して開き、既存の `/api/ask-data` 同期が成功してから「おかえりなさい。この相談をアカウントに保存しました」と出す。
 - **計測は段階と画面だけ。**`{"event":"save_offer_funnel","stage":"shown|accepted|declined|resumed","surface":"home|ask"}` を1行ログに出す。会話の鍵・IP・UA・id・メールは記録しない。
+
+### 個人MCP実行・監査閲覧・記憶（2026-10-17、既定無効）
+
+[仕様・運用条件](mcp-console-memory.md) を参照。
+`/profile/mcp` は画面から公開/個人ツールを実行し結果JSONをその場で表示する。
+本人のAI呼出履歴は30日以内の監査情報だけで、本文を保存・再表示しない。
+`/profile/memory` は本人だけの暗号化メモを明示保存・更新・削除・エクスポートする。
+サイトAPI `/api/mcp/workspace` は実ログイン・same-origin・CSRF保護・共有制限を必須とする。
+`MCP_PERSONAL_ENABLED` に加え `MCP_CONSOLE_ENABLED` / `MCP_MEMORY_ENABLED` で別々に有効化する。
+記憶は既存のプロフィールJSONや /ask の会話履歴に混ぜず、AIへの読み/書きは新しい接続同意で別々に許可する。
