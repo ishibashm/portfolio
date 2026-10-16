@@ -85,9 +85,17 @@ describe("loadBlogPosts", () => {
 
   it("DB が空なら Markdown を出す", async () => {
     findMany.mockResolvedValue([]);
+    findFirst.mockResolvedValue(null);
     const posts = await loadBlogPosts();
 
     expect(posts.map((p) => p.slug)).toEqual(["from-markdown"]);
+  });
+
+  it("全記事を非公開にしたDBからMarkdownを復活させない", async () => {
+    findMany.mockResolvedValue([]);
+    findFirst.mockResolvedValue({ slug: "hidden" });
+    expect(await loadBlogPosts()).toEqual([]);
+    findFirst.mockReset();
   });
 
   it("DB が読めなくても Markdown を出す", async () => {

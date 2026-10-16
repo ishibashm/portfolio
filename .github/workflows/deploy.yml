@@ -69,6 +69,10 @@ jobs:
           # 履歴グラフの日次記録エンドポイント（/api/cron/telemetry）の合言葉。
           # Record Daily Telemetry ワークフローが同じ値で呼ぶ。
           CRON_SECRET: ${{ secrets.CRON_SECRET }}
+          # 未設定なら ENV_FILE の値を残す。AI の旗は vars 優先。
+          MCP_AGENT_ENABLED: ${{ vars.MCP_AGENT_ENABLED || secrets.MCP_AGENT_ENABLED }}
+          MCP_AGENT_MODEL: ${{ vars.MCP_AGENT_MODEL }}
+          GOOGLE_GENERATIVE_AI_API_KEY: ${{ secrets.GOOGLE_GENERATIVE_AI_API_KEY }}
           # 物件メールの設定も ENV_FILE を再入力せず個別に渡せるようにする。
           # 未設定なら ENV_FILE の値を残す。公開フラグは vars 優先、secrets も許容。
           # Gmail 用 OAuth はログイン用 GOOGLE_CLIENT_ID と分離する。
@@ -138,6 +142,15 @@ jobs:
           # 値はログへ出さず、設定されたキーだけ追記する（後勝ち）。
           # 最終 .env の不足確認は env.json 変換時に行い、ENV_FILE 内の値も考慮する。
           bash scripts/apply-listing-env.sh
+          if [ -n "$MCP_AGENT_ENABLED" ]; then
+            echo "MCP_AGENT_ENABLED=$MCP_AGENT_ENABLED" >> .env
+          fi
+          if [ -n "$MCP_AGENT_MODEL" ]; then
+            echo "MCP_AGENT_MODEL=$MCP_AGENT_MODEL" >> .env
+          fi
+          if [ -n "$GOOGLE_GENERATIVE_AI_API_KEY" ]; then
+            echo "GOOGLE_GENERATIVE_AI_API_KEY=$GOOGLE_GENERATIVE_AI_API_KEY" >> .env
+          fi
           echo "" >> .env
           echo "NEXT_SERVER_ACTIONS_ENCRYPTION_KEY=$SERVER_ACTIONS_KEY" >> .env
           if [ -n "$ADSENSE_ID" ]; then

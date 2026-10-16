@@ -118,6 +118,8 @@ export function clearLocalAccountData(storage: AccountStorage): void {
       /* プライベートモードなどで消せないことがある。残りを続ける */
     }
   }
+  if (typeof window !== "undefined")
+    window.dispatchEvent(new Event("account-data-cleared"));
 }
 
 export interface DeleteResult {

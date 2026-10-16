@@ -82,8 +82,10 @@ const ROW_FIELDS = {
 } as const;
 
 /** 公開中の記事を新しい順で。DB が空か読めなければ Markdown。 */
-export async function loadBlogPosts(): Promise<BlogPostSummary[]> {
-  const posts = await loadAll();
+export async function loadBlogPosts(
+  options: { quiet?: boolean } = {},
+): Promise<BlogPostSummary[]> {
+  const posts = await loadAll(options);
   // 一覧に本文は載せない。分割代入で捨てると未使用の変数が残るので、
   // 出す項目を並べる。
   return posts.map((post) => ({
@@ -102,6 +104,7 @@ export async function loadBlogPosts(): Promise<BlogPostSummary[]> {
 /** 1 本ぶん。本文つき。 */
 export async function loadBlogPost(
   slug: string,
+  options: { quiet?: boolean } = {},
 ): Promise<BlogPost | undefined> {
   try {
     const row = await prisma.blogPost.findFirst({
@@ -123,12 +126,13 @@ export async function loadBlogPost(
     const seeded = await prisma.blogPost.findFirst({ select: { slug: true } });
     if (seeded) return undefined;
   } catch (e) {
-    console.warn("記事の取得に失敗。Markdown に落ちる:", toLogMessage(e));
+    if (!options.quiet)
+      console.warn("記事の取得に失敗。Markdown に落ちる:", toLogMessage(e));
   }
   return getMarkdownBlogPost(slug);
 }
 
-async function loadAll(): Promise<BlogPost[]> {
+async function loadAll(options: { quiet?: boolean }): Promise<BlogPost[]> {
   try {
     const rows = await prisma.blogPost.findMany({
       where: { published: true },
@@ -139,8 +143,10 @@ async function loadAll(): Promise<BlogPost[]> {
       orderBy: [{ publishedAt: "desc" }, { slug: "asc" }],
     });
     if (rows.length > 0) return rows.map(toBlogPost);
+    if (await prisma.blogPost.findFirst({ select: { slug: true } })) return [];
   } catch (e) {
-    console.warn("記事一覧の取得に失敗。Markdown に落ちる:", toLogMessage(e));
+    if (!options.quiet)
+      console.warn("記事一覧の取得に失敗。Markdown に落ちる:", toLogMessage(e));
   }
 
   // DB が空＝まだ取り込んでいない。Markdown をそのまま出す。

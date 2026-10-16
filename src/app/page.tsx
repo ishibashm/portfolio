@@ -1,5 +1,6 @@
 "use client";
 
+import { AgentEntry } from "@/components/home/AgentEntry";
 import { useEffect } from "react";
 import Link from "next/link";
 import { Compass, ArrowRight } from "lucide-react";
@@ -73,6 +74,7 @@ export default function Home() {
           決まる**ので、頁の一番上に置く。以前は下のダッシュボードの
           「1. プロフィール」タブの中にあり、開いた人はまず未入力のままの
           結果を見ていた（利用者の指摘）。 */}
+      <AgentEntry />
       <QuickProfileBar />
 
       {/* 中核ページへの導線。siteStructure の定義がそのまま並ぶので、
