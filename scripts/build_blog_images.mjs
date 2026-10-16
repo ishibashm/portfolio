@@ -1327,10 +1327,10 @@ const FIGURES = [
     </div>`,
   },
   {
-    // Cover + five body slides, adapted from ishibashm/slides-site v19 show design.
-    // Regenerate: python3 scripts/blog/show_v19.py (Pillow + M PLUS Rounded 1c/Dela Gothic One fonts).
+    // Cover + five body slides, v20 editorial diagrams; design history and type scale in docs/blog-slide-design.md.
+    // Regenerate: python3 scripts/blog/slides_v20.py (Pillow + Noto Sans/Serif CJK fonts).
     slug: "moving-during-tenchusatsu",
-    pythonSource: "scripts/blog/show_v19.py",
+    pythonSource: "scripts/blog/slides_v20.py",
   },
   {
     /*

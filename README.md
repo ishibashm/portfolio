@@ -132,16 +132,16 @@ npm run lint           # error 0 / warning あり が正常。総数を増やさ
 ### 天中殺記事の画像を再生成する
 
 ```sh
-python3 scripts/blog/show_v19.py
+python3 scripts/blog/slides_v20.py
 # または、記事画像ビルドから同じジェネレーターを呼び出す
 ONLY=moving-during-tenchusatsu node scripts/build_blog_images.mjs
 ```
 
-Python 3 + Pillow と `~/.local/share/fonts/ofl/` の
-`MPLUSRounded1c-{Black,ExtraBold,Medium}.ttf`、`DelaGothicOne-Regular.ttf`
-（SIL OFL 1.1）が必要です。フォントファイルはコミットしません。
-デザインは ishibashm/slides-site v19（`tools/v18.py`、`tools/v18_png.py`、
-`tools/v19.py`）に基づきます。ロボットはコードで描く独自の図形です。
-利用許諾のある写真がないため、写真や写真の章扉は使用しません。
-記事の表と36個の日数を照合して、表紙と本文5枚を同じファイル名で
-1800×945・各300KB以下のPNGとして出力します。記事のaltテキストは変更しません。
+Python 3 + Pillow と `/usr/share/fonts/opentype/noto/` の
+`NotoSansCJK-{Regular,Bold}.ttc`、`NotoSerifCJK-Regular.ttc` が必要です。
+いずれも SIL OFL 1.1（商用利用可）。フォントファイルはコミットしません。
+v20 は生成りの背景、明朝の見出し、角ゴシックの本文、細い罫線とコードで描く図解を使用します。
+設計根拠・タイプスケール・色・履歴の参照先は
+[ブログ画像のデザイン仕様](docs/blog-slide-design.md) を参照してください。
+記事の表と36個の日数・12個の期間端点を照合して、表紙と本文5枚を同じファイル名で
+1800×945・各300KB以下のPNGとして出力します。記事本文・altテキストは変更しません。
