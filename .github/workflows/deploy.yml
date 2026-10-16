@@ -284,6 +284,14 @@ jobs:
       - name: Keep personal MCP disabled until rollout
         run: echo 'MCP_PERSONAL_ENABLED=false' >> .env
 
+      # Supabase の公開鍵は旧 anon JWT ではなく新しい publishable key を使う。
+      # NEXT_PUBLIC_* はビルド時に埋め込まれるので、ビルド用 .env と env.json の両方に
+      # 効くよう、ここで後勝ちの上書きを足す（公開してよい鍵。旧 JWT 鍵を無効化するため）。
+      - name: Use Supabase publishable key
+        run: |
+          echo 'NEXT_PUBLIC_SUPABASE_ANON_KEY=sb_publishable_8rJpPIW3R0oyKbhchU7qhA_f8S5wb22' >> .env
+          echo 'NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=sb_publishable_8rJpPIW3R0oyKbhchU7qhA_f8S5wb22' >> .env
+
       - name: Convert .env to env.json for Cloud Run
         run: python scripts/convert_env.py
 
