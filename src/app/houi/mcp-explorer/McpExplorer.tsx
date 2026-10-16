@@ -63,6 +63,20 @@ export function McpExplorer({
   const savedVersion = useRef(0);
   const [privacyRevision, setPrivacyRevision] = useState(0);
   const [remaining, setRemaining] = useState<string>();
+  const remainingRevision = useRef(0);
+  useEffect(() => {
+    if (!agentEnabled) return;
+    const revision = remainingRevision.current;
+    const controller = new AbortController();
+    void fetch("/api/mcp-chain/status", { signal: controller.signal })
+      .then((r) => r.json())
+      .then((data) => {
+        if (data.remaining && revision === remainingRevision.current)
+          setRemaining(String(data.remaining.requests));
+      })
+      .catch(() => {});
+    return () => controller.abort();
+  }, [agentEnabled]);
   const [year, setYear] = useState(
     () => extractAgentInput(initialQuestion).year,
   );
@@ -162,6 +176,7 @@ export function McpExplorer({
       setMessage("保存値を含めて500文字以内にしてください。");
       return;
     }
+    remainingRevision.current++;
     const form = new FormData(event.currentTarget);
     const abort = new AbortController();
     abortRef.current = abort;
@@ -191,6 +206,8 @@ export function McpExplorer({
       if (left !== null && useAgent) setRemaining(left);
       if (!response.ok) {
         const data = await response.json();
+        if (data.remaining && useAgent)
+          setRemaining(String(data.remaining.requests));
         throw new Error(data.error || "計算を始められませんでした。");
       }
       if (!response.body) throw new Error("結果を受け取れませんでした。");

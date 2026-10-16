@@ -473,12 +473,12 @@ LLM実行の前に1回・524288トークンを概算予約し、失敗・切断�
 トークン数は実測より大きく出ることがある。超過時は429で明示的に断り、
 画面の「AIを使わず計算のみ」へ切り替えられる。
 
-| 環境変数                      |  既定値 |
-| ----------------------------- | ------: |
-| MCP_AGENT_FREE_DAILY_REQUESTS |       3 |
-| MCP_AGENT_FREE_DAILY_TOKENS   | 1572864 |
-| MCP_AGENT_DAILY_REQUESTS      |      20 |
-| MCP_AGENT_DAILY_TOKENS        | 5242880 |
+| 環境変数                      |            既定値 |
+| ----------------------------- | ----------------: |
+| MCP_AGENT_FREE_DAILY_REQUESTS |                 3 |
+| MCP_AGENT_FREE_DAILY_TOKENS   | 個人回数 × 524288 |
+| MCP_AGENT_DAILY_REQUESTS      |                20 |
+| MCP_AGENT_DAILY_TOKENS        | 全体回数 × 524288 |
 
 0でLLM枠を閉じられる。不正な値は既定値に戻す。残回数を応答ヘッダと画面に示す。
 UsageLedgerは差し替え可能で、既定は日次のメモリ集計と構造化ログ1行。
@@ -692,3 +692,13 @@ xAIのmcp型は実行がサーバー外となり上限・台帳を通せない�
 料金は利用者確認の2026-10仕様でSpeech to Speech $0.08/分、STT $0.10/時、TTS $15/100万文字。
 プロトコル参照：[xAI Speech to Speech](https://docs.x.ai/developers/model-capabilities/audio/speech-to-speech)、
 [イベント仕様](https://docs.x.ai/developers/rest-api-reference/inference/voice)。
+AIチャットの補足（2026-10-16）:
+
+- 月日を推測してbirthDateに入れない。エージェントの道具実行時に、質問文（同意して添付した保存値を含む）の西暦・和暦・月日だけの表記を正規化して照合する。不一致は「月日が不明です。年だけの入力を使うか利用者に尋ねてください」をモデルへ返す。外部MCPのbirthDate入力は従来どおり。
+- get_honmei_starはbirthYear（1900〜2100）と任意のbornBeforeSetsubunを受ける。省略時は前年・当年の両候補。1/1〜2/4は立春前後の確認が必要で、境界日には実際の節入り時刻で分かれる。年だけの結果から日柱・空亡は出さない。
+- 残回数は個人回数・全体回数・個人トークン・全体トークンの残枠のmin。予約は実行中に1回、完了時は予約を台帳に移して二重計上しない。GET /api/mcp-chain/statusも同じIP識別・計算を使い、照会では予約もレートも消費しない。POSTヘッダは当該実行を予約した後の残数。
+- 以前の「20回設定なのに残り2回」は固定の個人トークン既定値1572864が3回相当に制限したため。未指定のトークン枠は回数に連動するよう変更した。明示したトークン枠は引き続き優先される（例:1572864なら3回）。個人20回でも全体を他の利用者が消費すれば残数は減る。
+- 429/503/overloadedは500ms、1000msの指数バックオフで2回再試行。その後MCP_AGENT_FALLBACK_MODEL（既定gemini-3.5-flash-lite、空文字で無効、主モデルと同じなら無効）へ切り替える。切替先も2回まで再試行。読み取り専用の道具を最初から実行し直し、道具回数20・ステップ8・全体60秒の上限は共有する。重複した文章を表示しないよう、回答文は試行成功時に送信する。台帳modelは最後に実際に呼んだモデル。
+- 成功・例外・中断・切断・時間上限のfinallyで予約と同時実行数を解放し、transportのclose完了を待たない。短時間のレート制限は「実行中」と区別する。
+- deploy.ymlでは回数・トークン・フォールバックをGitHub Variablesから渡す。GitHubで空と未設定を区別できないため、フォールバック無効化にはMCP_AGENT_FALLBACK_DISABLED=trueを設定する。ローカル設定例は.env.local.example（このリポジトリの.env.example相当）。
+- 2026-10-16 時点の運用: 主モデルは無料枠の `gemini-3.5-flash`（repo 変数 `MCP_AGENT_MODEL`）。この鍵では `gemini-4-argon`・Pro 系は無料枠 0 で 429、3.7/3.8-flash は高負荷で 503 が出た。無料枠には分あたり・日あたりの回数上限があり、混雑時は 429/503 になる。

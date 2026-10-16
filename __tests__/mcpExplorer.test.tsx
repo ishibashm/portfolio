@@ -86,6 +86,7 @@ it("AIフォームは例文と送信先を示し、回答差分と道具の経�
   });
   const fetcher = vi
     .fn()
+    .mockResolvedValueOnce(Response.json({ remaining: { requests: 20 } }))
     .mockResolvedValue({ ok: true, body: stream, headers: new Headers() });
   vi.stubGlobal("fetch", fetcher);
   render(<McpExplorer agentEnabled />);
@@ -93,8 +94,8 @@ it("AIフォームは例文と送信先を示し、回答差分と道具の経�
   expect(screen.queryByLabelText("生年月日")).toBeNull();
   fireEvent.click(screen.getByRole("button", { name: /1990年5月5日生まれ/ }));
   fireEvent.click(screen.getByRole("button", { name: "AIに聞く" }));
-  await waitFor(() => expect(fetcher).toHaveBeenCalledTimes(1));
-  expect(JSON.parse(fetcher.mock.calls[0][1].body)).toMatchObject({
+  await waitFor(() => expect(fetcher).toHaveBeenCalledTimes(2));
+  expect(JSON.parse(fetcher.mock.calls[1][1].body)).toMatchObject({
     mode: "llm",
     question: expect.stringContaining("深谷市"),
   });

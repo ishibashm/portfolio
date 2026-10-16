@@ -28,7 +28,7 @@ async function run(
   change?.(connection);
   try {
     await runAgent(
-      "固定例",
+      "固定例 1990年5月5日生まれ",
       connection,
       model,
       (e) => events.push(e),
@@ -176,6 +176,19 @@ describe("AIが公開MCPを選ぶループ", () => {
 describe("モデル設定", () => {
   it("既定モデルと上書き、キーの別名", async () => {
     expect(chainLlmState({}).model).toBe("gemini-4-argon");
+    expect(chainLlmState({}).fallbackModel).toBe("gemini-3.5-flash-lite");
+    expect(
+      chainLlmState({ MCP_AGENT_MODEL: "gemini-3.5-flash" }).fallbackModel,
+    ).toBe("gemini-3.5-flash-lite");
+    expect(
+      chainLlmState({
+        MCP_AGENT_MODEL: "x",
+        MCP_AGENT_FALLBACK_MODEL: "x",
+      }).fallbackModel,
+    ).toBe("");
+    expect(chainLlmState({ MCP_AGENT_FALLBACK_MODEL: "" }).fallbackModel).toBe(
+      "",
+    );
     expect(chainLlmState({ MCP_AGENT_MODEL: "custom" }).model).toBe("custom");
     vi.stubEnv("MCP_AGENT_ENABLED", "true");
     vi.stubEnv("GOOGLE_GENERATIVE_AI_API_KEY", "");
@@ -281,10 +294,18 @@ describe("AI API", () => {
     vi.stubEnv("MCP_AGENT_ENABLED", "true");
     vi.stubEnv("MCP_AGENT_MOCK", "true");
     const post = await api();
-    const response = await post(request({ mode: "llm", question: "例" }));
+    const response = await post(
+      request({ mode: "llm", question: "例 1990年5月5日生まれ" }),
+    );
     expect(
-      (await post(request({ mode: "llm", question: "例" }, "192.0.2.2")))
-        .status,
+      (
+        await post(
+          request(
+            { mode: "llm", question: "例 1990年5月5日生まれ" },
+            "192.0.2.2",
+          ),
+        )
+      ).status,
     ).toBe(429);
     expect(response.status).toBe(200);
     const events = (await response.text())

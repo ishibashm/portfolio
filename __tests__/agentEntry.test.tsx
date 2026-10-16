@@ -44,6 +44,8 @@ it("同意前は保存値を読まず、記事の質問では生年月日を送�
     .fn()
     .mockImplementation(async (url: string, init?: RequestInit) => {
       void init;
+      if (url.includes("status"))
+        return Response.json({ remaining: { requests: 20 } });
       if (url.includes("municipalities")) return Response.json({ names: [] });
       return new Response('{"type":"done","calls":0,"reasons":[]}\n', {
         headers: { "X-Agent-Remaining-Requests": "2" },

@@ -181,12 +181,38 @@ export function createMcpBaseServer(): McpServer {
       },
       title: "本命星を調べる",
       description:
-        "生年月日から本命星（九星）と天中殺の干支を返します。年の切り替わりは立春の節入り時刻（日本時間）です。",
+        "生年月日から本命星（九星）と天中殺の干支を返します。月日が不明ならbirthYearで本命星だけを計算し、bornBeforeSetsubun省略時は両候補を返します。年の切り替わりは立春の節入り時刻（日本時間）です。",
       inputSchema: {
-        birthDate: z.string().describe("生年月日。YYYY-MM-DD"),
+        birthDate: z
+          .string()
+          .optional()
+          .describe(
+            "生年月日。YYYY-MM-DD。月日が不明なら指定せずbirthYearを使う",
+          ),
+        birthYear: z.number().int().min(1900).max(2100).optional(),
+        bornBeforeSetsubun: z
+          .boolean()
+          .optional()
+          .describe("立春より前の生まれならtrue。不明なら省略し両候補を返す"),
       },
     },
-    async ({ birthDate }) => {
+    async ({ birthDate, birthYear, bornBeforeSetsubun }) => {
+      if (birthDate === undefined) {
+        if (birthYear === undefined)
+          return fail("birthDate または birthYear を指定してください。");
+        const star = (year: number) => (11 - (((year - 1) % 9) + 1)) % 9 || 9;
+        const before = star(birthYear - 1),
+          after = star(birthYear);
+        return text({
+          birthYear,
+          ...(bornBeforeSetsubun === undefined
+            ? { candidates: { beforeSetsubun: before, afterSetsubun: after } }
+            : { honmeiStar: bornBeforeSetsubun ? before : after }),
+          note: `1/1〜2/4生まれなら立春前の候補は${before}、それ以外は${after}。立春当日付近は年ごとの節入り時刻によって変わるため月日・時刻の確認が必要です。年だけでは日柱・空亡は計算しません。`,
+        });
+      }
+      if (birthYear !== undefined || bornBeforeSetsubun !== undefined)
+        return fail("birthDate と年だけの入力は併用できません。");
       const birth = parseJstDate(birthDate);
       if (!birth) return fail("birthDate は YYYY-MM-DD で指定してください。");
       const honmei = getHonmeiStar(birth);

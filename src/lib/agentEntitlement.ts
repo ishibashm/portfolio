@@ -133,13 +133,24 @@ export function createAgentEntitlement(ledger: UsageLedger = usageLedger) {
     ip: string;
     mode: AgentMode;
     at?: number;
+    inspect?: boolean;
   }) {
     const at = input.at ?? Date.now();
     const subject = agentSubject(input);
     const plan = resolveAgentPlan();
     const allowance = {
       requests: limit("MCP_AGENT_FREE_DAILY_REQUESTS", 3),
-      tokens: limit("MCP_AGENT_FREE_DAILY_TOKENS", 1572864),
+      tokens: limit(
+        "MCP_AGENT_FREE_DAILY_TOKENS",
+        limit("MCP_AGENT_FREE_DAILY_REQUESTS", 3) * AGENT_TOKEN_RESERVATION,
+      ),
+    };
+    const globalAllowance = {
+      requests: limit("MCP_AGENT_DAILY_REQUESTS", 20),
+      tokens: limit(
+        "MCP_AGENT_DAILY_TOKENS",
+        limit("MCP_AGENT_DAILY_REQUESTS", 20) * AGENT_TOKEN_RESERVATION,
+      ),
     };
     const daily = ledger.daily(at, subject);
     const global = ledger.daily(at);
@@ -161,33 +172,47 @@ export function createAgentEntitlement(ledger: UsageLedger = usageLedger) {
           personalPending * AGENT_TOKEN_RESERVATION,
       ),
     };
+    remaining.tokens = Math.min(
+      remaining.tokens,
+      Math.max(
+        0,
+        globalAllowance.tokens -
+          global.tokens -
+          reservations.length * AGENT_TOKEN_RESERVATION,
+      ),
+    );
     remaining.requests = Math.min(
+      Math.max(
+        0,
+        globalAllowance.requests - global.requests - reservations.length,
+      ),
       remaining.requests,
       Math.floor(remaining.tokens / AGENT_TOKEN_RESERVATION),
     );
     let reason = "";
     if (
-      !bucket.take(subject, at) ||
-      !globalBucket.take("all", at) ||
-      (input.mode === "llm" &&
-        (!agentBucket.take(subject, at) || !agentGlobalBucket.take("all", at)))
+      !input.inspect &&
+      (!bucket.take(subject, at) ||
+        !globalBucket.take("all", at) ||
+        (input.mode === "llm" &&
+          (!agentBucket.take(subject, at) ||
+            !agentGlobalBucket.take("all", at))))
     )
-      reason = "実行が続いています。しばらく待ってからお試しください。";
+      reason = "短時間の実行回数上限です。しばらく待ってからお試しください。";
     else if (active >= 2 || (input.mode === "llm" && agentActive >= 1))
       reason = "計算が混み合っています。しばらく待ってください。";
     else if (
       input.mode === "llm" &&
       (remaining.requests < 1 ||
         remaining.tokens < AGENT_TOKEN_RESERVATION ||
-        global.requests + reservations.length >=
-          limit("MCP_AGENT_DAILY_REQUESTS", 20) ||
+        global.requests + reservations.length >= globalAllowance.requests ||
         global.tokens + (reservations.length + 1) * AGENT_TOKEN_RESERVATION >
-          limit("MCP_AGENT_DAILY_TOKENS", 5242880))
+          globalAllowance.tokens)
     )
       reason = "本日のAI無料枠に達しました。計算のみの方式をご利用ください。";
     const token = Symbol();
     let released = false;
-    if (!reason) {
+    if (!reason && !input.inspect) {
       active++;
       if (input.mode === "llm") {
         agentActive++;
@@ -208,7 +233,7 @@ export function createAgentEntitlement(ledger: UsageLedger = usageLedger) {
         toolCalls: number;
         voiceSeconds?: number;
       }) {
-        if (released || reason) return;
+        if (released || reason || input.inspect) return;
         released = true;
         active--;
         if (input.mode === "llm") agentActive--;

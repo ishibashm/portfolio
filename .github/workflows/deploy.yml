@@ -79,6 +79,12 @@ jobs:
           MCP_VOICE_FREE_DAILY_SECONDS: ${{ vars.MCP_VOICE_FREE_DAILY_SECONDS }}
           MCP_VOICE_MAX_SESSION_SECONDS: ${{ vars.MCP_VOICE_MAX_SESSION_SECONDS }}
           MCP_VOICE_MAX_TOOL_CALLS: ${{ vars.MCP_VOICE_MAX_TOOL_CALLS }}
+          MCP_AGENT_FALLBACK_MODEL: ${{ vars.MCP_AGENT_FALLBACK_MODEL }}
+          MCP_AGENT_FALLBACK_DISABLED: ${{ vars.MCP_AGENT_FALLBACK_DISABLED }}
+          MCP_AGENT_FREE_DAILY_REQUESTS: ${{ vars.MCP_AGENT_FREE_DAILY_REQUESTS }}
+          MCP_AGENT_FREE_DAILY_TOKENS: ${{ vars.MCP_AGENT_FREE_DAILY_TOKENS }}
+          MCP_AGENT_DAILY_REQUESTS: ${{ vars.MCP_AGENT_DAILY_REQUESTS }}
+          MCP_AGENT_DAILY_TOKENS: ${{ vars.MCP_AGENT_DAILY_TOKENS }}
           GOOGLE_GENERATIVE_AI_API_KEY: ${{ secrets.GOOGLE_GENERATIVE_AI_API_KEY }}
           # 物件メールの設定も ENV_FILE を再入力せず個別に渡せるようにする。
           # 未設定なら ENV_FILE の値を残す。公開フラグは vars 優先、secrets も許容。
@@ -156,6 +162,14 @@ jobs:
           done
           if [ -n "$MCP_AGENT_ENABLED" ]; then
             echo "MCP_AGENT_ENABLED=$MCP_AGENT_ENABLED" >> .env
+          fi
+          for name in MCP_AGENT_FREE_DAILY_REQUESTS MCP_AGENT_FREE_DAILY_TOKENS MCP_AGENT_DAILY_REQUESTS MCP_AGENT_DAILY_TOKENS MCP_AGENT_FALLBACK_MODEL; do
+            if [ -n "${!name}" ]; then
+              echo "$name=${!name}" >> .env
+            fi
+          done
+          if [ "$MCP_AGENT_FALLBACK_DISABLED" = "true" ]; then
+            echo "MCP_AGENT_FALLBACK_MODEL=" >> .env
           fi
           if [ -n "$MCP_AGENT_MODEL" ]; then
             echo "MCP_AGENT_MODEL=$MCP_AGENT_MODEL" >> .env
