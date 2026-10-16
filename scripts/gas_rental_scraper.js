@@ -17,8 +17,14 @@ const GMAIL_LABEL = "不動産";
 const WEBHOOK_URL = "https://cloud-palette.com/api/rentals/webhook";
 
 // 不正アクセスを防ぐためのシークレットキー (必須)
-// Next.jsの環境変数(API_SECRET_KEY)と同じ文字列を設定してください
-const API_SECRET_KEY = "PLEASE_SET_YOUR_SECRET_KEY_HERE";
+// コードには書かず、Apps Script の「プロジェクトの設定」→「スクリプト プロパティ」に
+// API_SECRET_KEY として登録する（Cloud Run の API_SECRET_KEY と同じ値）。
+// 鍵を変えるときはプロパティを書き換えるだけでよく、コードの再デプロイは要らない。
+const API_SECRET_KEY =
+  PropertiesService.getScriptProperties().getProperty("API_SECRET_KEY");
+if (!API_SECRET_KEY) {
+  throw new Error("スクリプト プロパティ API_SECRET_KEY が未設定です");
+}
 
 /**
  * フィルターに合致する新着（未読）メールを取得してWebhookに送信するメイン関数
