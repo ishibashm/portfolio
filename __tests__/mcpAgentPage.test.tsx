@@ -24,3 +24,10 @@ it("サーバー判定は旗と鍵でAIフォームにし、秘密を描画し�
   expect(screen.getByLabelText("質問")).toBeTruthy();
   expect(screen.queryByLabelText("生年月日")).toBeNull();
 });
+
+it("音声の旗・鍵がないとマイクを表示しない", () => {
+  vi.stubEnv("MCP_VOICE_ENABLED", "false");
+  vi.stubEnv("XAI_API_KEY", "");
+  render(Page());
+  expect(screen.queryByRole("button", { name: "押して話す" })).toBeNull();
+});

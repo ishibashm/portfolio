@@ -648,3 +648,47 @@ JSX はテキストノードの改行を半角スペース 1 つに変換する�
   兄弟に `shrink-0` があると 1 文字ずつ折り返す
 - **`next/font` は CJK の全サブセットを preload する。**`preload: false` にする
 - **推測で断定しない。**実測してから報告する
+
+### Grok 音声モード（2026-10）
+
+`/houi/mcp-explorer` とホームから開く既存チャットに、押して話すマイクを追加。
+音声クライアントは遅延読み込みし、ホームの入口の初期JSには含めない。
+マイクボタンを押す／フォーカスしてスペースキーを押し続け、離して送信する。
+初回はマイク許可・接続準備が必要。拒否・非対応はテキスト入力を案内する。
+利用者とGrokの確定文字起こしを画面に表示し、道具の経緯は既存の折りたたみに表示。
+保存済みプロフィールは音声へ自動追加しない。終了・画面離脱・設定削除時にマイクと接続を解放する。
+
+`XAI_API_KEY` と `MCP_VOICE_ENABLED=true` の両方で有効。
+開発時のみ `MCP_VOICE_MOCK=true` で鍵・マイク・xAI接続なしの固定例を使用できる。
+モックも `/api/voice/tool` と本物のin-process MCPを通し、応答をブラウザの音声合成で再生する。
+本番モデルは `grok-voice-3.0` に固定し `XAI_VOICE_MODEL` で変更する。
+
+- `POST /api/voice/session` は既存Origin検査・`canUseAgent` の無料枠、IP/全体バケットを通す。
+  JST日次音声上限（全体 `MCP_VOICE_DAILY_SECONDS=1800`、利用者 `MCP_VOICE_FREE_DAILY_SECONDS=180`）と
+  `MCP_VOICE_MAX_SESSION_SECONDS=180` の最小秒数を、外部I/Oの前に台帳で予約する。
+  xAI `POST /v1/realtime/client_secrets` に `expires_after.seconds` を渡す。
+  応答は短命token・expires_at・署名付きsessionId・model・9道具のfunction定義・instructions。
+  API鍵はサーバーだけで保持。署名鍵は API_SECRET_KEY → NEXTAUTH_SECRET → XAI_API_KEY の順で選び、用途をHMAC入力で分離する。
+- ブラウザは `wss://api.x.ai/v1/realtime?model=...` に `xai-client-secret.<token>` のsubprotocolで接続。
+  `session.update` は eve、手動turn_detection=null、PCM16/24kHz、language_hint=ja。
+  押下中だけ送信し、離すとcommitとresponse.createを送る。
+- `POST /api/voice/tool` は署名・保存済みセッション・期限・allowlistを確認。
+  セッション当たり最大20回（`MCP_VOICE_MAX_TOOL_CALLS` で縮小可能）、1回8秒、出力6000文字。
+  call_id再送は拒否し、並列呼び出しもawait前に回数を消費する。
+  出力はUNTRUSTED_TOOL_DATAで囲み、テキスト版と同じ注入対策を共有する。
+  response.doneで並列呼び出しの組を確定し、全結果を返してからresponse.createを送る。
+- `POST /api/voice/end` は申告秒数を予約秒数までに丸め、二重精算せずUsageLedgerのvoiceSecondsへ記録。
+  終了通知が無いセッションは次のAPI要求時に期限を確認して全量消費として確定する。
+  発行失敗が外部サービスで成功した可能性もあるため、失敗時も予約は保守的に消費する。
+  音声・文字起こし・道具入力・生年月日・トークンはサーバーログへ記録せず、エラーは定型文のみ。
+
+台帳とセッションは既存AI同様インスタンス内メモリ。再起動で消え、複数インスタンスでは日次枠は共有されない。
+別インスタンスに届いたtool/endは安全側に拒否するため、複数台運用には共有ストア／ルーティング対応が必要。
+短命tokenの期限は認証の期限であり、接続中の課金時間の強制遮断を保証しない。
+クライアントのタイマーと申告精算は改変可能であり、厳密な費用制御にはサーバー中継と共有台帳が必要。
+
+Realtimeがfunction呼び出しに対応するため、STT→テキスト→TTSの代替経路は作らない。
+xAIのmcp型は実行がサーバー外となり上限・台帳を通せないため使わない。
+料金は利用者確認の2026-10仕様でSpeech to Speech $0.08/分、STT $0.10/時、TTS $15/100万文字。
+プロトコル参照：[xAI Speech to Speech](https://docs.x.ai/developers/model-capabilities/audio/speech-to-speech)、
+[イベント仕様](https://docs.x.ai/developers/rest-api-reference/inference/voice)。

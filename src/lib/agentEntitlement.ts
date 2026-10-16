@@ -32,6 +32,27 @@ export class MemoryUsageLedger implements UsageLedger {
   daily(at: number, subject = "*") {
     return this.roll(at)?.get(subject) ?? { requests: 0, tokens: 0 };
   }
+  private voiceDays = new Map<string, Map<string, number>>();
+  voiceDaily(at: number, subject = "*") {
+    return this.voiceDays.get(jstDayKey(at))?.get(subject) ?? 0;
+  }
+  /** Reservation and settlement run synchronously, before any external await. */
+  reserveVoice(subject: string, seconds: number, at: number) {
+    const day = jstDayKey(at);
+    if (!this.voiceDays.has(day)) this.voiceDays.set(day, new Map());
+    if (this.voiceDays.size > 2)
+      this.voiceDays.delete([...this.voiceDays.keys()].sort()[0]);
+    const totals = this.voiceDays.get(day)!;
+    for (const key of ["*", subject])
+      totals.set(key, (totals.get(key) ?? 0) + seconds);
+    let settled = false;
+    return (actual: number) => {
+      if (settled) return;
+      settled = true;
+      for (const key of ["*", subject])
+        totals.set(key, (totals.get(key) ?? 0) - seconds + actual);
+    };
+  }
   recordUsage(r: UsageRecord) {
     const totals = this.roll(r.at);
     if (r.mode === "llm") {
@@ -58,13 +79,22 @@ export class MemoryUsageLedger implements UsageLedger {
     );
   }
 }
-export const usageLedger: UsageLedger = new MemoryUsageLedger();
+// Route bundles in one Node process must share both accounting and rate limits.
+const agentGlobal = globalThis as typeof globalThis & {
+  mcpAgentLedger?: MemoryUsageLedger;
+  mcpAgentGate?: ReturnType<typeof createAgentEntitlement>;
+  mcpAgentSalt?: Buffer;
+};
+export const usageLedger =
+  process.env.NODE_ENV === "test"
+    ? new MemoryUsageLedger()
+    : (agentGlobal.mcpAgentLedger ??= new MemoryUsageLedger());
 export function recordUsage(record: UsageRecord) {
   usageLedger.recordUsage(record);
 }
 export const resolveAgentPlan = () => "free" as const;
 // 再起動時に変わる鍵。IPを辞書攻撃できる単純ハッシュにはしない。
-const salt = randomBytes(32);
+const salt = (agentGlobal.mcpAgentSalt ??= randomBytes(32));
 export function agentSubject(input: {
   userId?: string;
   sessionId?: string;
@@ -173,7 +203,11 @@ export function createAgentEntitlement(ledger: UsageLedger = usageLedger) {
       reason,
       plan,
       subject,
-      finish(usage?: { model: string; toolCalls: number }) {
+      finish(usage?: {
+        model: string;
+        toolCalls: number;
+        voiceSeconds?: number;
+      }) {
         if (released || reason) return;
         released = true;
         active--;
@@ -187,11 +221,14 @@ export function createAgentEntitlement(ledger: UsageLedger = usageLedger) {
           inputTokens: input.mode === "llm" ? AGENT_TOKEN_RESERVATION : 0,
           outputTokens: 0,
           toolCalls: usage.toolCalls,
-          voiceSeconds: 0,
+          voiceSeconds: usage.voiceSeconds ?? 0,
           at,
         });
       },
     };
   };
 }
-export const canUseAgent = createAgentEntitlement();
+export const canUseAgent =
+  process.env.NODE_ENV === "test"
+    ? createAgentEntitlement()
+    : (agentGlobal.mcpAgentGate ??= createAgentEntitlement());

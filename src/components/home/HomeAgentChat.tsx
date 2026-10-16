@@ -6,7 +6,11 @@ export default function HomeAgentChat({
 }: {
   initialQuestion: string;
 }) {
-  const [state, setState] = useState<{ enabled: boolean; mock: boolean }>();
+  const [state, setState] = useState<{
+    enabled: boolean;
+    mock: boolean;
+    voiceEnabled?: boolean;
+  }>();
   useEffect(() => {
     const abort = new AbortController();
     void fetch("/api/mcp-chain/status", { signal: abort.signal })
@@ -19,6 +23,7 @@ export default function HomeAgentChat({
   }, []);
   return state ? (
     <McpExplorer
+      voiceEnabled={state.voiceEnabled}
       agentEnabled={state.enabled}
       mock={state.mock}
       initialQuestion={initialQuestion}

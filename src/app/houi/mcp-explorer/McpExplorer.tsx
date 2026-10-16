@@ -1,5 +1,6 @@
 "use client";
 
+import dynamic from "next/dynamic";
 import { useEffect, useId, useRef, useState } from "react";
 import { AgentBirthYear } from "@/components/home/AgentBirthYear";
 import {
@@ -11,6 +12,10 @@ import { extractAgentInput, withSavedAgentInput } from "@/lib/agentInput";
 import type { AgentEvent } from "@/lib/mcpAgent";
 import type { ChainEvent } from "@/lib/mcpChain";
 
+const GrokVoice = dynamic(() => import("@/components/home/GrokVoice"), {
+  ssr: false,
+});
+
 type CallEvent = Extract<ChainEvent, { type: "call" }>;
 const examples = [
   "1990年5月5日生まれ、深谷市在住。2026年11月に引越すならどの方位とどの日がよい？",
@@ -19,13 +24,18 @@ const examples = [
 ];
 export function McpExplorer({
   agentEnabled = false,
+  voiceEnabled = false,
   mock = false,
   initialQuestion = "",
 }: {
   agentEnabled?: boolean;
+  voiceEnabled?: boolean;
   mock?: boolean;
   initialQuestion?: string;
 }) {
+  const [voiceMessages, setVoiceMessages] = useState<
+    { role: string; text: string }[]
+  >([]);
   const [question, setQuestion] = useState(initialQuestion);
   const [answer, setAnswer] = useState("");
   const [submitted, setSubmitted] = useState("");
@@ -77,6 +87,7 @@ export function McpExplorer({
       setYear("");
       setQuestion("");
       setAnswer("");
+      setVoiceMessages([]);
       setSubmitted("");
       setCalls([]);
       setAgentCalls([]);
@@ -315,6 +326,34 @@ export function McpExplorer({
         </p>
       )}
       <AgentBirthYear key={privacyRevision} />
+      {voiceEnabled && (
+        <GrokVoice
+          key={`voice-${privacyRevision}`}
+          disabled={running}
+          onTranscript={(role, text) =>
+            setVoiceMessages((prev) => [...prev, { role, text }])
+          }
+          onEvent={(event) => {
+            if (event.type === "tool-call")
+              setAgentCalls((prev) => [...prev, event]);
+            if (event.type === "tool-result")
+              setAgentCalls((prev) =>
+                prev.map((c) =>
+                  c.id === event.id ? { ...c, result: event } : c,
+                ),
+              );
+          }}
+        />
+      )}
+      {voiceMessages.map((item, i) => (
+        <div
+          key={i}
+          className="rounded-2xl border bg-white p-4 text-sm whitespace-pre-wrap"
+        >
+          <strong>{item.role === "user" ? "あなた" : "Grok"}：</strong>
+          {item.text}
+        </div>
+      ))}
       <form
         onSubmit={submit}
         className="rounded-2xl border border-slate-200 bg-white/80 p-5"

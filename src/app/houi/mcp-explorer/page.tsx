@@ -3,6 +3,7 @@ import Link from "next/link";
 import { pageOpenGraph } from "@/lib/siteUrl";
 import { McpExplorer } from "./McpExplorer";
 
+import { voiceState } from "@/lib/mcpVoiceConfig";
 import { chainLlmState } from "@/lib/mcpAgentConfig";
 
 export const dynamic = "force-dynamic";
@@ -37,7 +38,11 @@ export default function Page() {
             ? "AIが必要な道具を選び、結果を使って次の計算へ進みます。最大8ステップ・20回、1回8秒・全体60秒で打ち切ります。"
             : "計算の連鎖は深さ3・最大4、20回までです。1回8秒・全体30秒で打ち切ります。街から先の展開は地理の参考です。"}
         </p>
-        <McpExplorer agentEnabled={state.enabled} mock={state.mock} />
+        <McpExplorer
+          voiceEnabled={voiceState().enabled}
+          agentEnabled={state.enabled}
+          mock={state.mock}
+        />
         <p className="mt-8 text-sm text-slate-600">
           吉凶は九星気学の考え方による参考情報です。契約・費用・通勤など、現実の条件と合わせて検討してください。
         </p>
