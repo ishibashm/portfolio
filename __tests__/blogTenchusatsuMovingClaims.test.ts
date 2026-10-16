@@ -28,6 +28,19 @@ const md = readFileSync(
   "utf-8",
 );
 
+describe("改稿後の検索結果と本文", () => {
+  it("承認されたタイトル・説明文・更新日を使う", () => {
+    expect(md).toContain(
+      "title: 天中殺に引っ越しても大丈夫？どうなるかと、避ける日数・対処\n",
+    );
+    expect(md).toContain(
+      "description: 天中殺の引っ越しで不運になると確かめた資料はありません。避けるなら年108〜114日、午未の人は2026年2月4日から2年間です。引っ越した後の扱い、転勤の場合、自分の動ける日を出す方法を表でまとめます。\n",
+    );
+    expect(md).toContain("updatedAt: 2026-10-17\n");
+    expect(md).toContain("publishedAt: 2026-09-24\n");
+  });
+});
+
 const LON = 139.6917;
 const PAIRS = ["子丑", "寅卯", "辰巳", "午未", "申酉", "戌亥"] as const;
 const MODES: TenchusatsuMode[] = ["strict", "month_day", "day_only"];
@@ -102,7 +115,7 @@ describe("本文の数字", () => {
     ];
     expect(Math.min(...outside)).toBe(108);
     expect(Math.max(...outside)).toBe(114);
-    expect(md.match(/108〜114日/g)?.length).toBe(2);
+    expect(md.match(/108〜114日/g)?.length).toBe(3);
   });
 
   it("午未は 2027 年の 365 日すべてが厳格で不可、年を除くと 251 日戻る", () => {

@@ -30,7 +30,7 @@ function published(): Map<string, string> {
 function inbound(posts: Map<string, string>): Map<string, number> {
   const count = new Map<string, number>();
   for (const [slug, md] of posts) {
-    for (const m of md.matchAll(/\]\(\/blog\/([^)\s#?]+)/g)) {
+    for (const m of md.matchAll(/(?<!!)\[[^\]\n]*\]\(\/blog\/([^)\s#?]+)/g)) {
       const target = m[1].replace(/\/$/, "");
       if (target === slug) continue;
       count.set(target, (count.get(target) ?? 0) + 1);
@@ -40,6 +40,18 @@ function inbound(posts: Map<string, string>): Map<string, number> {
 }
 
 describe("記事どうしの内部リンク", () => {
+  it("本文画像は記事への内部リンクとして数えない", () => {
+    const links = inbound(
+      new Map([
+        [
+          "source",
+          "![図](/blog/slide.png) [記事](/blog/target) [不明](/blog/missing)",
+        ],
+      ]),
+    );
+    expect([...links.keys()]).toEqual(["target", "missing"]);
+  });
+
   const posts = published();
   const links = inbound(posts);
 
