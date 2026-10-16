@@ -84,7 +84,7 @@ export async function personalMcpMetadataEntry(request: Request) {
 export async function mcpNodeEntry(
   req: IncomingMessage,
   res: ServerResponse,
-  kind: "oauth" | "connections",
+  kind: "oauth" | "connections" | "workspace",
   oauthPath?: string[],
 ) {
   res.setHeader("Cache-Control", "private, no-store");
@@ -104,7 +104,9 @@ export async function mcpNodeEntry(
   const path =
     kind === "oauth"
       ? `/oauth/${(oauthPath ?? []).join("/")}`
-      : "/api/mcp/connections";
+      : kind === "workspace"
+        ? "/api/mcp/workspace"
+        : "/api/mcp/connections";
   if (
     kind === "oauth" &&
     !/^\/oauth\/(?:auth(?:\/[A-Za-z0-9_-]{16,128})?|interaction\/[A-Za-z0-9_-]{16,128}|token(?:\/revocation)?|jwks|\.well-known\/openid-configuration)$/.test(
@@ -157,6 +159,7 @@ export async function mcpNodeEntry(
       },
       async () => {
         req.on("data", count);
+        if (kind === "workspace") return app.workspace(req, res);
         if (kind === "connections") return app.connections(req, res);
         if (path.startsWith("/oauth/interaction/"))
           return app.interaction(req, res);

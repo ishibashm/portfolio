@@ -16,6 +16,14 @@ export async function revokeMcpOnRegistrationDeletion(
   userId: string,
 ) {
   if (
+    process.env.MCP_MEMORY_KEYS ||
+    process.env.MCP_MEMORY_ENABLED === "true"
+  ) {
+    if (!z.uuid().safeParse(userId).success)
+      throw new Error("MCP_INVALID_OWNER");
+    await tx.memoryEntry.deleteMany({ where: { userId } });
+  }
+  if (
     !process.env.MCP_RUNTIME_CONFIG &&
     process.env.MCP_PERSONAL_ENABLED !== "true"
   )
