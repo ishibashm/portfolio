@@ -56,3 +56,51 @@ it.each([[], ["read:memory"], ["write:memory"]].map((scopes) => ({ scopes })))(
     }
   },
 );
+it("lists summaries and returns a body only for an explicitly selected memory", async () => {
+  const server = new McpServer({ name: "test", version: "1" });
+  const id = "11111111-1111-4111-8111-111111111111";
+  const store = {
+    run: vi.fn().mockResolvedValue({
+      memories: [
+        {
+          id,
+          title: "予定",
+          text: "SECRET",
+          revision: 1,
+          category: "move",
+          updatedAt: "2026-10-17",
+        },
+      ],
+    }),
+  };
+  registerMemoryTools(
+    server,
+    {
+      userId: "owner",
+      grantId: "grant",
+      clientId: "client",
+      allowedProfileIds: [],
+    },
+    store,
+    ["read:memory"],
+  );
+  const client = new Client({ name: "test", version: "1" });
+  const [a, b] = InMemoryTransport.createLinkedPair();
+  try {
+    await server.connect(b);
+    await client.connect(a);
+    expect(
+      JSON.stringify(
+        await client.callTool({ name: "list_memories", arguments: {} }),
+      ),
+    ).not.toContain("SECRET");
+    expect(
+      JSON.stringify(
+        await client.callTool({ name: "get_memory", arguments: { id } }),
+      ),
+    ).toContain("SECRET");
+  } finally {
+    await client.close();
+    await server.close();
+  }
+});

@@ -143,11 +143,6 @@ export function createMcpWorkspaceHandler(deps: {
       const started = performance.now();
       if (input.action === "memory") {
         if (!deps.memory) throw new MemoryError("TEMPORARILY_UNAVAILABLE");
-        const value = await deps.memory.run(
-          userId,
-          input.operation,
-          input.value,
-        );
         const events = {
           list: "list_memories",
           create: "create_memory",
@@ -155,6 +150,23 @@ export function createMcpWorkspaceHandler(deps: {
           delete: "delete_memory",
           clear: "delete_memory",
         } as const;
+        let value;
+        try {
+          value = await deps.memory.run(userId, input.operation, input.value);
+        } catch (error) {
+          await deps.audit.record({
+            userId,
+            grantId: null,
+            event: events[input.operation],
+            result:
+              error instanceof MemoryError &&
+              error.code !== "TEMPORARILY_UNAVAILABLE"
+                ? "invalid"
+                : "unavailable",
+            durationMs: Math.floor(performance.now() - started),
+          });
+          throw error;
+        }
         await deps.audit.record({
           userId,
           grantId: null,

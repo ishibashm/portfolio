@@ -41,9 +41,23 @@ export function registerMemoryTools(
             if (!found) throw new MemoryError("NOT_FOUND_OR_CONFLICT");
             value = { memories: [found] };
           }
+          const payload =
+            name === "list_memories" && "memories" in value
+              ? {
+                  memories: value.memories?.map(
+                    ({ id, revision, title, category, updatedAt }) => ({
+                      id,
+                      revision,
+                      title,
+                      category,
+                      updatedAt,
+                    }),
+                  ),
+                }
+              : value;
           return {
-            content: [{ type: "text" as const, text: JSON.stringify(value) }],
-            structuredContent: value,
+            content: [{ type: "text" as const, text: JSON.stringify(payload) }],
+            structuredContent: payload,
           };
         } catch (error) {
           const code =
