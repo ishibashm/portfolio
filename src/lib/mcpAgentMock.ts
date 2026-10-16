@@ -58,14 +58,21 @@ export function createAgentMock() {
       const parts: LanguageModelV3StreamPart[] = [
         { type: "stream-start", warnings: [] },
       ];
-      if (results.length < 4)
+      if (results.length < 4) {
         parts.push({
           type: "tool-call",
           toolCallId: `mock-${results.length}`,
           toolName: name,
           input: JSON.stringify(input),
         });
-      else {
+        if (results.length === 0)
+          parts.push({
+            type: "tool-call",
+            toolCallId: "mock-birth",
+            toolName: "get_honmei_star",
+            input: JSON.stringify({ birthDate: "1990-05-05" }),
+          });
+      } else {
         const days = z
           .object({
             directions: z.array(

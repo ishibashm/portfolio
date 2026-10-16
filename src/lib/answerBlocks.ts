@@ -54,7 +54,14 @@ export const answerBlockSchema = z.discriminatedUnion("type", [
     })
     .strict(),
   z
-    .object({ type: z.literal("towns"), towns: z.array(town).max(100) })
+    .object({
+      type: z.literal("towns"),
+      towns: z.array(town).max(100),
+      direction: direction.optional(),
+      label: plain.optional(),
+      remaining: z.number().int().nonnegative().optional(),
+      moreUrl: sitePathSchema.optional(),
+    })
     .strict(),
   z
     .object({ type: z.literal("rentTable"), towns: z.array(town).max(100) })
@@ -125,3 +132,42 @@ export const showBlocksSchema = z
       .max(20),
   })
   .strict();
+
+/** Parsed schemas give stable property order, including across NDJSON events. */
+export function uniqueAnswerBlocks(
+  blocks: AnswerBlock[],
+  seen = new Set<string>(),
+): AnswerBlock[] {
+  return blocks.filter((block) => {
+    const key = JSON.stringify(block);
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+}
+
+/** Apply the card budget across the entire answer, including multiple tool results. */
+export function limitTownCards(blocks: AnswerBlock[]): AnswerBlock[] {
+  let remaining = 18;
+  const byDirection = new Map<string, number>();
+  return blocks.map((block) => {
+    if (block.type !== "towns") return block;
+    const allowance = block.direction
+      ? (byDirection.get(block.direction) ?? 6)
+      : 6;
+    const towns = block.towns.slice(0, Math.min(remaining, allowance));
+    remaining -= towns.length;
+    if (block.direction)
+      byDirection.set(block.direction, allowance - towns.length);
+    return {
+      ...block,
+      towns,
+      ...(block.moreUrl
+        ? {
+            remaining:
+              (block.remaining ?? 0) + block.towns.length - towns.length,
+          }
+        : {}),
+    };
+  });
+}

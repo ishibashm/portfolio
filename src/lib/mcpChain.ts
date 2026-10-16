@@ -1,4 +1,4 @@
-import { blocksFromTool } from "./answerBlockBuilder";
+import { blocksFromTool, type BlockSources } from "./answerBlockBuilder";
 import type { AnswerBlock } from "./answerBlocks";
 import { toolCallKey } from "./mcpToolCallKey";
 import { z } from "zod";
@@ -140,6 +140,7 @@ export async function runChain(
   const maxCalls = Math.min(limits.calls, CHAIN_LIMITS.calls);
   const deadline = Date.now() + Math.min(limits.totalMs, CHAIN_LIMITS.totalMs);
   const results = new Map<string, { id: number; output: unknown }>();
+  const blockSources: BlockSources = new Map();
   let calls = 0;
   const reasons = new Set<string>();
   const visited = new Set<string>();
@@ -207,7 +208,8 @@ export async function runChain(
         summary: summarize(output),
         durationMs: Date.now() - started,
       });
-      const blocks = blocksFromTool(tool, output);
+      blockSources.set(String(id), { tool, output });
+      const blocks = blocksFromTool(tool, output, blockSources);
       if (blocks.length) emit({ type: "blocks", blocks });
       const result = { id, output };
       results.set(key, result);

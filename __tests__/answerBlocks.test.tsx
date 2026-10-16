@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { render, screen } from "@testing-library/react";
 import {
   answerBlockSchema,
+  limitTownCards,
   parseAnswerBlocks,
   sitePathSchema,
 } from "@/lib/answerBlocks";
@@ -45,7 +46,7 @@ describe("safe answer blocks", () => {
       blocksFromTool("area_directions", {
         directions: [{ nearest: output.results }],
       }),
-    ).toHaveLength(2);
+    ).toHaveLength(0); // 未判定の方位を吉方位として表示しない
     expect(
       blocksFromTool("prefecture_summary", {
         pref: "東京都",
@@ -200,4 +201,79 @@ describe("safe answer blocks", () => {
     expect(metadata.robots).toEqual({ index: false, follow: true });
     expect(JSON.stringify(metadata)).not.toContain("MCP");
   });
+});
+
+it("groups only auspicious directions, caps 6/18, and links remaining counts", () => {
+  const directions = ["N", "NE", "E", "SE", "S", "SW", "W", "NW"].map(
+    (direction, i) => ({
+      direction,
+      label: direction,
+      count: 30,
+      nearest: Array.from({ length: 8 }, (_, j) => ({
+        code: String(23000 + i * 100 + j),
+        name: `愛知県名古屋市中区${j}`,
+        rentPerSqm: null,
+      })),
+      status:
+        i < 4
+          ? ["OPTIMAL", "OPTIMAL_REGULAR", "OPTIMAL_BOOST", "吉"][i]
+          : "SAFE",
+    }),
+  );
+  const sources = new Map([
+    ["judge", { tool: "judge_directions", output: { directions } }],
+  ]);
+  const blocks = blocksFromTool(
+    "area_directions",
+    { origin: { code: "23106" }, directions },
+    sources,
+  );
+  expect(blocks).toHaveLength(4);
+  expect(
+    blocks.flatMap((b) => (b.type === "towns" ? b.towns : [])),
+  ).toHaveLength(18);
+  expect(blocks.map((b) => (b.type === "towns" ? b.towns.length : -1))).toEqual(
+    [6, 6, 6, 0],
+  );
+  expect(blocks.map((b) => (b.type === "towns" ? b.remaining : -1))).toEqual([
+    24, 24, 24, 30,
+  ]);
+  const { container } = render(
+    <AnswerBlocks blocks={[...blocks, ...blocks]} />,
+  );
+  expect(container.querySelectorAll("article")).toHaveLength(18);
+  expect(container.textContent).not.toContain("家賃");
+  expect(container.querySelector("article a")?.textContent).toBe(
+    "名古屋市中区0",
+  );
+  expect(
+    container.querySelector("article")?.textContent?.match(/愛知県/g),
+  ).toHaveLength(1);
+  expect(container.querySelectorAll('a[href="/houi/area/23106"]')).toHaveLength(
+    4,
+  );
+  expect(
+    blocksFromTool("search_municipality", { results: directions[0].nearest }),
+  ).toHaveLength(1);
+});
+
+it("shares card limits across multiple tool results and keeps hidden counts", () => {
+  const town = { code: "23106", name: "名古屋市中区", url: "/houi/area/23106" };
+  const blocks = limitTownCards(
+    parseAnswerBlocks(
+      ["N", "N", "E", "W", "S"].map((direction) => ({
+        type: "towns",
+        direction,
+        towns: Array.from({ length: 6 }, () => town),
+        remaining: 24,
+        moreUrl: "/houi/area/23106",
+      })),
+    ),
+  );
+  expect(blocks.map((b) => (b.type === "towns" ? b.towns.length : -1))).toEqual(
+    [6, 0, 6, 6, 0],
+  );
+  expect(blocks.map((b) => (b.type === "towns" ? b.remaining : -1))).toEqual([
+    24, 30, 24, 24, 30,
+  ]);
 });

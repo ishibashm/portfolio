@@ -41,7 +41,7 @@ async function run(
   return { events, call, model };
 }
 describe("AIが公開MCPを選ぶループ", () => {
-  it("4段の道具選択・前の結果の引継ぎ・回答のストリーミング", async () => {
+  it("独立した道具の並列選択・前の結果の引継ぎ・回答のストリーミング", async () => {
     const { events, model, call } = await run();
     expect(call.mock.calls.map(([n]) => n)).toEqual([
       "search_municipality",
@@ -49,7 +49,7 @@ describe("AIが公開MCPを選ぶループ", () => {
       "judge_directions",
       "find_auspicious_days",
     ]);
-    expect(model.doStreamCalls).toHaveLength(5);
+    expect(model.doStreamCalls).toHaveLength(4);
     expect(model.doStreamCalls[0].tools?.map((t) => t.name).sort()).toEqual(
       [...CHAIN_TOOLS, "show_blocks"].sort(),
     );
@@ -91,7 +91,7 @@ describe("AIが公開MCPを選ぶループ", () => {
     const { events, model } = await run({ ...AGENT_LIMITS, steps: 2 });
     expect(model.doStreamCalls).toHaveLength(2);
     expect(events.at(-1)).toMatchObject({
-      calls: 2,
+      calls: 3,
       reasons: ["ステップの上限に達しました。"],
     });
   });
