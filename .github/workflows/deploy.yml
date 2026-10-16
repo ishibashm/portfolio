@@ -378,6 +378,22 @@ jobs:
       - name: Deploy to Cloud Run (Free Tier Optimized)
         run: |-
           ENV_VARS_FLAG="$(python3 scripts/env_to_gcloud_flag.py env.json)"
+          # 秘密の値は Secret Manager から参照する（scripts/secret_manager_map.json）。
+          # env.json からは convert_env.py で除外済み。ビルド用の .env はそのまま。
+          SECRETS_FLAG="$(python3 scripts/secret_manager_flag.py)"
+          # 既存リビジョンに同名の「平文」変数が残っていると型の衝突で失敗するため、
+          # 平文で残っているものだけを同じデプロイで外す（名前のみ扱い、値は読まない）。
+          # 一度移行が済めば該当が無くなり、このフラグは付かない。
+          PLAIN_NAMES="$(gcloud run services describe "${{ env.SERVICE_NAME }}" \
+                           --project="${{ env.PROJECT_ID }}" \
+                           --region="${{ env.REGION }}" --format=json 2>/dev/null \
+                         | python3 -c 'import json,sys; d=json.load(sys.stdin); c=d["spec"]["template"]["spec"]["containers"][0]; print("\n".join(e["name"] for e in c.get("env",[]) if "value" in e))' || true)"
+          REMOVE_KEYS="$(python3 -c 'import json,sys; m=json.load(open("scripts/secret_manager_map.json")); p=set(sys.argv[1].split()); print(",".join(k for k in m if k in p))' "$PLAIN_NAMES")"
+          REMOVE_FLAG=()
+          if [ -n "$REMOVE_KEYS" ]; then
+            echo "平文から Secret Manager 参照へ切り替えるキー: $REMOVE_KEYS"
+            REMOVE_FLAG=(--remove-env-vars="$REMOVE_KEYS")
+          fi
           # ## --memory=1Gi の理由
           #
           # 512Mi では 1 日 3 回ほど上限を超えていた（2026-09-08 に本番の
@@ -403,6 +419,8 @@ jobs:
             --region="${{ env.REGION }}" \
             --image="${{ env.GAR_LOCATION }}/${{ env.PROJECT_ID }}/${{ env.REPOSITORY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}" \
             --update-env-vars="$ENV_VARS_FLAG" \
+            --update-secrets="$SECRETS_FLAG" \
+            "${REMOVE_FLAG[@]}" \
             --update-labels=managed-by=github-actions,commit-sha=${{ github.sha }} \
             --cpu=1 \
             --memory=1Gi \
