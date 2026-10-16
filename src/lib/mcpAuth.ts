@@ -61,6 +61,7 @@ export type McpAuthContext = Readonly<{
   grantId: string;
   clientId: string;
   allowedProfileIds: readonly string[];
+  memoryScopes?: readonly string[];
 }>;
 
 export type McpAuthBudget = Readonly<{
@@ -192,6 +193,15 @@ export function createMcpAuthenticator(dependencies: {
         grantId: grant.id,
         clientId: grant.clientId,
         allowedProfileIds: Object.freeze([...grant.allowedProfileIds]),
+        ...(process.env.MCP_MEMORY_ENABLED === "true"
+          ? {
+              memoryScopes: Object.freeze(
+                scopes.filter((scope) =>
+                  ["read:memory", "write:memory"].includes(scope),
+                ),
+              ),
+            }
+          : {}),
       });
     } catch (error) {
       if (error instanceof McpAuthError) throw error;

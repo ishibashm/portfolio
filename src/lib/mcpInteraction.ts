@@ -68,7 +68,7 @@ async function readForm(req: IncomingMessage) {
   const form = new URLSearchParams(Buffer.concat(chunks).toString("utf8"));
   if (
     [...form.keys()].some(
-      (k) => !["ticket", "decision", "profileIds"].includes(k),
+      (k) => !["ticket", "decision", "profileIds", "memoryScopes"].includes(k),
     ) ||
     form.getAll("ticket").length !== 1 ||
     form.getAll("decision").length !== 1
@@ -78,6 +78,7 @@ async function readForm(req: IncomingMessage) {
     ticket: form.get("ticket"),
     decision: form.get("decision"),
     profileIds: form.getAll("profileIds"),
+    memoryScopes: form.getAll("memoryScopes"),
   };
 }
 
@@ -211,8 +212,12 @@ export function createMcpInteractionHandler(deps: {
       });
       // The scope is advertised by both AS and resource; satisfy both checks
       // without granting openid, email, profile or any extra permission.
-      protocolGrant.addOIDCScope(MCP_PROFILE_SCOPE);
-      protocolGrant.addResourceScope(MCP_PERSONAL_RESOURCE, MCP_PROFILE_SCOPE);
+      const scopes = [
+        MCP_PROFILE_SCOPE,
+        ...(submission.memoryScopes ?? []),
+      ].join(" ");
+      protocolGrant.addOIDCScope(scopes);
+      protocolGrant.addResourceScope(MCP_PERSONAL_RESOURCE, scopes);
       const providerGrantId = await protocolGrant.save();
       // save() persists exp but does not populate it on the new instance.
       const savedGrant = await deps.provider.Grant.find(providerGrantId);
