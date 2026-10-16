@@ -169,7 +169,7 @@ it("AI回答を逐次描き、道具の状態を利用者向けに折り畳む",
 
 it("追質問では履歴を送り、Enter送信・Shift+Enter改行・IME変換を区別する", async () => {
   const replies = ["最初の回答", "追質問への回答"];
-  const fetcher = vi.fn(async (url: string, _init?: RequestInit) => {
+  const fetcher = vi.fn(async (...[url]: [url: string, init?: RequestInit]) => {
     if (url.includes("status"))
       return Response.json({ remaining: { requests: 20 } });
     const reply = replies.shift() ?? "回答";
