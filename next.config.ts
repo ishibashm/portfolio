@@ -37,6 +37,7 @@ const nextConfig: NextConfig = {
   // redirect is issued here rather than at the edge.
   async redirects() {
     return [
+      { source: "/houi/mcp-explorer", destination: "/ask", permanent: true },
       {
         source: "/:path*",
         has: [{ type: "host", value: "www.cloud-palette.com" }],

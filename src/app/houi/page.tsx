@@ -82,8 +82,8 @@ export default function Page() {
         </p>
 
         <p className="mt-5 text-sm">
-          <Link href="/houi/mcp-explorer" className="underline text-slate-600">
-            MCPで方位と街をたどる
+          <Link href="/ask" className="underline text-slate-600">
+            AIに聞く
           </Link>
         </p>
 

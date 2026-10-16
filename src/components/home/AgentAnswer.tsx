@@ -1,22 +1,9 @@
+import { sitePathSchema } from "@/lib/answerBlocks";
 import Markdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 
 function siteLink(href: string): string | undefined {
-  // Reject protocol-relative URLs, backslashes and browser-stripped controls.
-  if (!href || /[\\\s\u0000-\u001f\u007f]/.test(href) || href.startsWith("//"))
-    return undefined;
-  try {
-    const url = new URL(href, "https://cloud-palette.com");
-    if (
-      url.origin !== "https://cloud-palette.com" ||
-      url.username ||
-      url.password
-    )
-      return undefined;
-    return href;
-  } catch {
-    return undefined;
-  }
+  return sitePathSchema.safeParse(href).success ? href : undefined;
 }
 
 export function AgentAnswer({ text }: { text: string }) {

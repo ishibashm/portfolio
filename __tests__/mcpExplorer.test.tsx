@@ -6,7 +6,7 @@ import {
   waitFor,
 } from "@testing-library/react";
 import { afterEach, expect, it, vi } from "vitest";
-import { McpExplorer } from "@/app/houi/mcp-explorer/McpExplorer";
+import { McpExplorer } from "@/app/ask/McpExplorer";
 
 afterEach(() => vi.unstubAllGlobals());
 it("分割されたNDJSONを受け取り、完了前に呼び出しを描く", async () => {
@@ -134,6 +134,15 @@ it("AIフォームは例文と送信先を示し、回答差分と道具の経�
   expect(screen.getByText("太字").tagName).toBe("STRONG");
   expect(screen.getByText("項目").tagName).toBe("LI");
   expect(screen.getByText("外部").closest("a")).toBeNull();
+  await send({
+    type: "blocks",
+    blocks: [
+      { type: "callout", text: "確認済みの補足" },
+      { type: "callout", text: "<script>bad</script>" },
+    ],
+  });
+  expect(screen.getByText("確認済みの補足")).toBeTruthy();
+  expect(screen.queryByText("<script>bad</script>")).toBeNull();
   await send({ type: "done", calls: 1, reasons: [] });
   await act(async () => controller.close());
   expect(screen.getByRole("status").textContent).toContain("1回");

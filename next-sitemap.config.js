@@ -495,6 +495,7 @@ module.exports = {
      知らない鍵を無視する */
   blogLastmod: BLOG_LASTMOD,
   exclude: [
+    "/ask",
     "/houi/mcp-explorer",
     "/relocation/candidates",
     "/admin/*",

@@ -60,6 +60,7 @@ import {
 // 「引越しを決める」の並びには入れず、ホームと同じ上段に置く。
 const PUBLIC_ITEMS = [
   { href: "/", icon: Clock, label: "ホーム" },
+  { href: "/ask", icon: BookOpen, label: "AIに聞く" },
   /*
     生年月日と場所の登録。**道具より先に来る。**どの道具も出発地と
     生年月日が入っていないと何も出ないのに、入れる場所がホームの

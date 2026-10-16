@@ -1,6 +1,6 @@
 import { afterEach, expect, it, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
-import Page from "@/app/houi/mcp-explorer/page";
+import Page from "@/app/ask/page";
 afterEach(() => vi.unstubAllEnvs());
 it("サーバー判定は鍵なしで決定的フォームにし、鍵をpropsへ渡さない", () => {
   vi.stubEnv("MCP_AGENT_ENABLED", "true");

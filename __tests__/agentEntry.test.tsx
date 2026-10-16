@@ -9,7 +9,7 @@ import {
 } from "@testing-library/react";
 import { readFileSync } from "node:fs";
 import { AgentEntry } from "@/components/home/AgentEntry";
-import { McpExplorer } from "@/app/houi/mcp-explorer/McpExplorer";
+import { McpExplorer } from "@/app/ask/McpExplorer";
 import { SETTINGS_KEY } from "@/lib/userSettings";
 import { clearLocalAccountData } from "@/lib/accountData";
 vi.mock("next/dynamic", () => ({
@@ -31,7 +31,7 @@ it("初期HTMLには軽いフォームだけ。操作で初めてdynamicを描�
   expect(screen.queryByText("遅延チャット")).toBeNull();
   expect(
     screen.getByRole("link", { name: "詳しく見る" }).getAttribute("href"),
-  ).toBe("/houi/mcp-explorer");
+  ).toBe("/ask");
   fireEvent.click(screen.getByRole("button", { name: "質問の画面を開く" }));
   expect(screen.getByText("遅延チャット")).toBeTruthy();
 });

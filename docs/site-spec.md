@@ -94,7 +94,7 @@ RSS から見出しと要約の冒頭を取って並べる頁で、各社の RSS
 `/contact` と `/login` は noindex・サイトマップ非掲載。robots.txt では
 塞がず、クローラーが noindex を取得できるようにする。
 
-`/houi/mcp-explorer` は公開MCPの連鎖を確かめる補助頁。`/houi` から控えめにリンクし、
+`/ask` は公開MCPの連鎖を確かめる補助頁。`/houi` から控えめにリンクし、
 CORE_ROUTES・主ナビには追加しない。入力後に結果が成立するため noindex, follow とし、
 サイトマップから除外する。robots.txt では塞がない。
 
@@ -499,7 +499,7 @@ search_articlesは最大5件・説明400文字、get_articleは本文4000文字�
 
 ホーム上部に軽い質問フォームと例文3つを置く。next/dynamicのチャットは操作時だけ
 描画し、その時にJSを読む。h1・SEO本文・構造化データは維持する。
-全画面版は/houi/mcp-explorerのまま、noindex・サイトマップ除外も維持する。
+全画面版は/askへ移動し、noindex・サイトマップ除外も維持する。
 2026-10-16のローカル計測では、Next.jsのwebpack compileでホームの初期チャンク
 （共通runtimeを含む）を比較し、gzip 153963→154549バイト（+586）、
 非圧縮489090→490826バイト（+1736）。フォント応答をモックにし、ネットワークを
@@ -702,3 +702,10 @@ AIチャットの補足（2026-10-16）:
 - 成功・例外・中断・切断・時間上限のfinallyで予約と同時実行数を解放し、transportのclose完了を待たない。短時間のレート制限は「実行中」と区別する。
 - deploy.ymlでは回数・トークン・フォールバックをGitHub Variablesから渡す。GitHubで空と未設定を区別できないため、フォールバック無効化にはMCP_AGENT_FALLBACK_DISABLED=trueを設定する。ローカル設定例は.env.local.example（このリポジトリの.env.example相当）。
 - 2026-10-16 時点の運用: 主モデルは無料枠の `gemini-3.5-flash`（repo 変数 `MCP_AGENT_MODEL`）。この鍵では `gemini-4-argon`・Pro 系は無料枠 0 で 429、3.7/3.8-flash は高負荷で 503 が出た。無料枠には分あたり・日あたりの回数上限があり、混雑時は 429/503 になる。
+
+
+### AIに聞く・回答ブロック
+
+利用者向けの名前は「AIに聞く」。`/ask` は noindex としサイトマップから除外。旧 `/houi/mcp-explorer` は `/ask` へ恒久リダイレクトする。API は `/api/mcp-chain` を維持。
+
+回答は短い安全な Markdown と、共通 zod スキーマで検証する `compass` / `towns` / `days` / `rentTable` / `articles` / `callout` / `text` ブロック。HTMLは実行しない。数値はサーバーの道具出力からそのまま転記し、欠損値を補完しない。エージェント専用 `show_blocks` はブロック種別・実行済み呼び出しID・短い注意文だけを受け取る。未知IDは拒否し、公開MCPには登録しない。選択が無い場合は道具結果から既定ブロックを表示する。`blocks` NDJSONイベントはクライアントでもブロックごとに再検証し、不正な項目を捨てる。決定的モードとホームの遅延読み込みチャットも共通表示を使う。

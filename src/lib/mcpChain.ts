@@ -1,3 +1,5 @@
+import { blocksFromTool } from "./answerBlockBuilder";
+import type { AnswerBlock } from "./answerBlocks";
 import { toolCallKey } from "./mcpToolCallKey";
 import { z } from "zod";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
@@ -50,6 +52,7 @@ export const chainInputSchema = z
   .strict();
 export type ChainInput = z.infer<typeof chainInputSchema>;
 export type ChainEvent =
+  | { type: "blocks"; blocks: AnswerBlock[] }
   | {
       type: "call";
       id: number;
@@ -204,6 +207,8 @@ export async function runChain(
         summary: summarize(output),
         durationMs: Date.now() - started,
       });
+      const blocks = blocksFromTool(tool, output);
+      if (blocks.length) emit({ type: "blocks", blocks });
       const result = { id, output };
       results.set(key, result);
       return result;

@@ -51,7 +51,7 @@ describe("AIが公開MCPを選ぶループ", () => {
     ]);
     expect(model.doStreamCalls).toHaveLength(5);
     expect(model.doStreamCalls[0].tools?.map((t) => t.name).sort()).toEqual(
-      [...CHAIN_TOOLS].sort(),
+      [...CHAIN_TOOLS, "show_blocks"].sort(),
     );
     expect(model.doStreamCalls[0].maxOutputTokens).toBe(2048);
     const search = events.find(

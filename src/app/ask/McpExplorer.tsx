@@ -2,6 +2,8 @@
 
 import dynamic from "next/dynamic";
 import { useEffect, useId, useRef, useState } from "react";
+import { AnswerBlocks } from "@/components/home/AnswerBlocks";
+import { parseAnswerBlocks, type AnswerBlock } from "@/lib/answerBlocks";
 import { AgentAnswer } from "@/components/home/AgentAnswer";
 import { AgentBirthYear } from "@/components/home/AgentBirthYear";
 import {
@@ -38,6 +40,7 @@ export function McpExplorer({
     { role: string; text: string }[]
   >([]);
   const [question, setQuestion] = useState(initialQuestion);
+  const [blocks, setBlocks] = useState<AnswerBlock[]>([]);
   const [answer, setAnswer] = useState("");
   const [submitted, setSubmitted] = useState("");
   const [agentCalls, setAgentCalls] = useState<
@@ -103,6 +106,7 @@ export function McpExplorer({
       setQuestion("");
       setAnswer("");
       setVoiceMessages([]);
+      setBlocks([]);
       setSubmitted("");
       setCalls([]);
       setAgentCalls([]);
@@ -184,6 +188,7 @@ export function McpExplorer({
     setCalls([]);
     setAgentCalls([]);
     setAnswer("");
+    setBlocks([]);
     setSubmitted(useAgent ? enriched : "");
     setMessage("計算しています…");
     setRunning(true);
@@ -226,7 +231,9 @@ export function McpExplorer({
           for (const line of lines) {
             if (!line.trim()) continue;
             const item = JSON.parse(line) as ChainEvent | AgentEvent;
-            if (item.type === "call") setCalls((prev) => [...prev, item]);
+            if (item.type === "blocks")
+              setBlocks((prev) => [...prev, ...parseAnswerBlocks(item.blocks)]);
+            else if (item.type === "call") setCalls((prev) => [...prev, item]);
             else if (item.type === "text-delta")
               setAnswer((prev) => prev + item.text);
             else if (item.type === "tool-call")
@@ -558,10 +565,11 @@ export function McpExplorer({
           <AgentAnswer text={answer || "道具で確かめています…"} />
         </div>
       )}
+      <AnswerBlocks blocks={blocks} />
       {agentCalls.length > 0 && (
         <details className="rounded-2xl border border-stone-200 bg-white/60 p-5">
           <summary className="cursor-pointer text-sm font-semibold">
-            道具呼び出しの経緯（{agentCalls.length}回）
+            使った道具（{agentCalls.length}回）
           </summary>
           <ol className="mt-4 space-y-4">
             {agentCalls.map((c) => (
