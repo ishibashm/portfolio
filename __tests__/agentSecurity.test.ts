@@ -189,3 +189,34 @@ it("日付を跨いで完了する実行が翌日の台帳を消さない", () =
   expect(ledger.daily(record.at).requests).toBe(1);
   expect(ledger.daily(record.at - 1000).requests).toBe(1);
 });
+
+it("defaults to 30 personal runs and 100 global runs with derived tokens", () => {
+  for (const name of [
+    "MCP_AGENT_FREE_DAILY_REQUESTS",
+    "MCP_AGENT_FREE_DAILY_TOKENS",
+    "MCP_AGENT_DAILY_REQUESTS",
+    "MCP_AGENT_DAILY_TOKENS",
+  ])
+    vi.stubEnv(name, undefined);
+  const ledger = {
+    daily: vi.fn((_at: number, subject?: string) => ({
+      requests: subject ? 0 : 99,
+      tokens: subject ? 0 : 99 * AGENT_TOKEN_RESERVATION,
+    })),
+    recordUsage: vi.fn(),
+  };
+  const use = createAgentEntitlement(ledger);
+  const input = { ip: "a", mode: "llm" as const, inspect: true };
+  expect(use(input)).toMatchObject({
+    allowance: { requests: 30, tokens: 30 * AGENT_TOKEN_RESERVATION },
+    remaining: { requests: 1, tokens: AGENT_TOKEN_RESERVATION },
+  });
+  ledger.daily.mockReturnValue({ requests: 0, tokens: 0 });
+  expect(use(input).remaining.requests).toBe(30);
+  vi.stubEnv("MCP_AGENT_FREE_DAILY_REQUESTS", "40");
+  vi.stubEnv("MCP_AGENT_DAILY_REQUESTS", "35");
+  expect(use(input)).toMatchObject({
+    allowance: { requests: 40, tokens: 40 * AGENT_TOKEN_RESERVATION },
+    remaining: { requests: 35, tokens: 35 * AGENT_TOKEN_RESERVATION },
+  });
+});

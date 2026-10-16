@@ -159,6 +159,15 @@ it("AIへ渡す道具結果は6000文字まで。記事内の命令もデータ�
                 toolName: "get_article",
                 input: '{"slug":"moving"}',
               });
+            else {
+              c.enqueue({ type: "text-start", id: "answer" });
+              c.enqueue({
+                type: "text-delta",
+                id: "answer",
+                delta: "記事を確認しました。",
+              });
+              c.enqueue({ type: "text-end", id: "answer" });
+            }
             c.enqueue({
               type: "finish",
               finishReason: {

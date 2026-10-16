@@ -82,7 +82,7 @@ it("並列・次ステップの重複を上限到達後も再利用し、別の�
       undefined,
       { ...AGENT_LIMITS, calls: 1 },
     );
-    expect(step).toBe(3);
+    expect(step).toBe(4);
     expect(events.filter((e) => e.type === "tool-call")).toHaveLength(1);
     expect(events.at(-1)).toMatchObject({ type: "done", calls: 1 });
     expect(call).toHaveBeenCalledTimes(run + 1);

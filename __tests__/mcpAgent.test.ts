@@ -89,7 +89,7 @@ describe("AIが公開MCPを選ぶループ", () => {
   });
   it("ステップ上限", async () => {
     const { events, model } = await run({ ...AGENT_LIMITS, steps: 2 });
-    expect(model.doStreamCalls).toHaveLength(2);
+    expect(model.doStreamCalls).toHaveLength(3);
     expect(events.at(-1)).toMatchObject({
       calls: 3,
       reasons: ["ステップの上限に達しました。"],

@@ -139,17 +139,17 @@ export function createAgentEntitlement(ledger: UsageLedger = usageLedger) {
     const subject = agentSubject(input);
     const plan = resolveAgentPlan();
     const allowance = {
-      requests: limit("MCP_AGENT_FREE_DAILY_REQUESTS", 3),
+      requests: limit("MCP_AGENT_FREE_DAILY_REQUESTS", 30),
       tokens: limit(
         "MCP_AGENT_FREE_DAILY_TOKENS",
-        limit("MCP_AGENT_FREE_DAILY_REQUESTS", 3) * AGENT_TOKEN_RESERVATION,
+        limit("MCP_AGENT_FREE_DAILY_REQUESTS", 30) * AGENT_TOKEN_RESERVATION,
       ),
     };
     const globalAllowance = {
-      requests: limit("MCP_AGENT_DAILY_REQUESTS", 20),
+      requests: limit("MCP_AGENT_DAILY_REQUESTS", 100),
       tokens: limit(
         "MCP_AGENT_DAILY_TOKENS",
-        limit("MCP_AGENT_DAILY_REQUESTS", 20) * AGENT_TOKEN_RESERVATION,
+        limit("MCP_AGENT_DAILY_REQUESTS", 100) * AGENT_TOKEN_RESERVATION,
       ),
     };
     const daily = ledger.daily(at, subject);

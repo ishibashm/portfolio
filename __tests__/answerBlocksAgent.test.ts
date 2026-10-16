@@ -72,7 +72,14 @@ it.each(["source", "unknown"])(
     const done = events.at(-1);
     expect(done).toMatchObject({ type: "done", calls: 2 });
     if (done?.type === "done")
-      expect(done.reasons.length).toBe(id === "source" ? 0 : 1);
+      expect(done.reasons).toEqual(
+        id === "source"
+          ? []
+          : [
+              "AIまたは道具の処理に失敗しました。",
+              "全体の時間上限または接続の中断で終了しました。",
+            ],
+      );
     expect(() => assertChainTool("show_blocks")).toThrow();
   },
 );

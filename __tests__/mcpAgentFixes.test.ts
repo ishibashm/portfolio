@@ -82,7 +82,7 @@ it.each([503, 429])("%iの再試行とフォールバック", async (statusCode)
       { fallback, onModel },
     );
     expect(events.at(-1)).toMatchObject({ type: "done", reasons: [] });
-    expect(fallback).toHaveBeenCalledTimes(statusCode === 429 ? 1 : 0);
+    expect(fallback).toHaveBeenCalledTimes(1);
     if (statusCode === 429) {
       expect(attempts).toBe(3);
       expect(onModel.mock.calls.at(-1)?.[0]).not.toBe("primary");
@@ -116,4 +116,44 @@ it("20回設定・全体min・予約・解放と照会は共通の残数", () =>
   expect(second.allowed).toBe(true);
   second.finish();
   expect(use({ ...input, inspect: true }).remaining.requests).toBe(19);
+});
+
+it("defaults to 30 personal runs and 100 global runs with derived tokens", () => {
+  vi.spyOn(console, "info").mockImplementation(() => {});
+  for (const key of [
+    "MCP_AGENT_FREE_DAILY_REQUESTS",
+    "MCP_AGENT_FREE_DAILY_TOKENS",
+    "MCP_AGENT_DAILY_REQUESTS",
+    "MCP_AGENT_DAILY_TOKENS",
+  ])
+    vi.stubEnv(key, undefined);
+  const ledger = new MemoryUsageLedger();
+  const use = createAgentEntitlement(ledger);
+  const at = Date.now();
+  const input = { ip: "fresh", mode: "llm" as const, at, inspect: true };
+  expect(use(input).allowance).toEqual({ requests: 30, tokens: 30 * 524288 });
+  expect(use(input).remaining.requests).toBe(30);
+  for (let i = 0; i < 99; i++)
+    ledger.recordUsage({
+      subject: `other-${i}`,
+      mode: "llm",
+      model: "mock",
+      inputTokens: 0,
+      outputTokens: 0,
+      toolCalls: 0,
+      voiceSeconds: 0,
+      at,
+    });
+  expect(use(input).remaining.requests).toBe(1);
+  ledger.recordUsage({
+    subject: "last",
+    mode: "llm",
+    model: "mock",
+    inputTokens: 0,
+    outputTokens: 0,
+    toolCalls: 0,
+    voiceSeconds: 0,
+    at,
+  });
+  expect(use(input).remaining.requests).toBe(0);
 });
