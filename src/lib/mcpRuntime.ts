@@ -132,7 +132,19 @@ export async function createMcpRuntime(config: McpRuntimeConfig) {
       saveConsentGrant: createMcpConsentGrantWriter(db),
       audit,
     });
-    const connections = createMcpConnectionService({ db, store, audit });
+    const connections = createMcpConnectionService({
+      db,
+      store,
+      audit,
+      ...(memoryEnabled()
+        ? {
+            scopesForGrant: async (id: string) =>
+              (await provider.Grant.find(id))
+                ?.getResourceScope("https://cloud-palette.com/api/mcp/personal")
+                .split(" ") ?? [],
+          }
+        : {}),
+    });
     const management = createMcpConnectionManagementService({
       connections,
       db,
