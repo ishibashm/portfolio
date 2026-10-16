@@ -117,6 +117,11 @@ describe("MCP storage contract (no database access or DDL execution)", () => {
       "get_profile",
       "judge_profile_directions",
       "judge_time_slots",
+      "list_memories",
+      "get_memory",
+      "create_memory",
+      "update_memory",
+      "delete_memory",
     ]);
     for (const untrusted of [
       "private-profile",

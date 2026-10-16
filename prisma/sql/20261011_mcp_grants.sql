@@ -45,7 +45,7 @@ CREATE TABLE IF NOT EXISTS "McpAccessAudit" (
   "grantId" UUID,
   "occurredAt" TIMESTAMPTZ(3) NOT NULL,
   "expiresAt" TIMESTAMPTZ(3) NOT NULL,
-  "event" TEXT NOT NULL CHECK ("event" IN ('authorize', 'refresh', 'revoke', 'initialize', 'tools/list', 'ping', 'notification', 'unknown_method', 'unknown_tool', 'invalid_request', 'get_honmei_star', 'get_kanshi', 'judge_directions', 'find_auspicious_days', 'search_municipality', 'area_directions', 'prefecture_summary', 'list_profiles', 'get_profile', 'judge_profile_directions', 'judge_time_slots')),
+  "event" TEXT NOT NULL CHECK ("event" IN ('authorize', 'refresh', 'revoke', 'initialize', 'tools/list', 'ping', 'notification', 'unknown_method', 'unknown_tool', 'invalid_request', 'get_honmei_star', 'get_kanshi', 'judge_directions', 'find_auspicious_days', 'search_municipality', 'area_directions', 'prefecture_summary', 'list_profiles', 'get_profile', 'judge_profile_directions', 'judge_time_slots', 'list_memories', 'get_memory', 'create_memory', 'update_memory', 'delete_memory')),
   "result" TEXT NOT NULL CHECK ("result" IN ('success', 'denied', 'revoked', 'invalid', 'limited', 'unavailable')),
   "durationMs" INTEGER NOT NULL CHECK ("durationMs" >= 0),
   CHECK ("expiresAt" > "occurredAt" AND "expiresAt" <= "occurredAt" + INTERVAL '30 days')
