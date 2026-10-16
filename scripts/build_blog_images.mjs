@@ -124,6 +124,57 @@ function board(hit, caption) {
  */
 const FIGURES = [
   {
+    // Chromium を起動できない環境での初回 PNG は、同じ配色・フォントの
+    // scripts/blog/mukyoku-taikyoku-inyo-hakke.svg を sharp で描画した。
+    // 再生成: node -e 'require("sharp")("scripts/blog/mukyoku-taikyoku-inyo-hakke.svg").png().toFile("public/blog/mukyoku-taikyoku-inyo-hakke.png")'
+    slug: "mukyoku-taikyoku-inyo-hakke",
+    kicker: "易経・陰陽・九星の定位",
+    title: "陰陽の組合せから、方位の配置へ",
+    sub: "左は概念と記号の展開。右は後天八卦に洛書の数を重ねた九星の定位。",
+    body: `<div style="display:flex;gap:36px;width:100%;align-items:center">
+      <div style="flex:1;text-align:center">
+        <div style="font-size:27px;font-weight:700">無極 → 太極</div>
+        <div style="font-size:16px;color:#64748b;margin-top:4px">この矢印は説明順。無極と太極の関係には解釈の幅がある</div>
+        <div style="font-size:22px;color:#e11d48">↓</div>
+        <div style="font-size:24px;font-weight:700">両儀（陰・陽）<span style="color:#e11d48"> 2</span></div>
+        <div style="font-size:22px;color:#e11d48">↓</div>
+        <div style="font-size:23px;font-weight:700">四象<span style="color:#e11d48"> 4</span></div>
+        <div style="font-size:21px">太陽・少陰・少陽・太陰</div>
+        <div style="font-size:22px;color:#e11d48">↓</div>
+        <div style="font-size:23px;font-weight:700">八卦<span style="color:#e11d48"> 8</span></div>
+        <div style="font-size:21px">乾・兌・離・震・巽・坎・艮・坤</div>
+      </div>
+      <div style="width:430px;text-align:center">
+        <div style="font-size:21px;font-weight:700;margin-bottom:10px">後天八卦 × 洛書 → 九星の定位</div>
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px">
+          ${[
+            ["北西", "乾", "六白"],
+            ["北", "坎", "一白"],
+            ["北東", "艮", "八白"],
+            ["西", "兌", "七赤"],
+            ["中央", "卦なし", "五黄"],
+            ["東", "震", "三碧"],
+            ["南西", "坤", "二黒"],
+            ["南", "離", "九紫"],
+            ["南東", "巽", "四緑"],
+          ]
+            .map(
+              ([
+                dir,
+                trigram,
+                star,
+              ]) => `<div style="background:${dir === "中央" ? "#efe7e0" : "#fff"};border:1px solid #e2d9d1;border-radius:7px;padding:9px 4px">
+            <div style="font-size:18px;color:#475569">${dir}・${trigram}</div>
+            <div style="font-size:25px;font-weight:700;color:#e11d48">${star}</div>
+          </div>`,
+            )
+            .join("")}
+        </div>
+        <div style="font-size:17px;color:#64748b;margin-top:9px">北が上・東が右 ／ 年盤・月盤では星が移る</div>
+      </div>
+    </div>`,
+  },
+  {
     /* 「北の磁極は、どれくらい動いたのか」の IGRF-14 の表と、
        「方位盤は作り直さないといけないのか」の配置／向きの区別から。 */
     slug: "geomagnetism-and-honmei-star",
