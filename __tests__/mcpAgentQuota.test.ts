@@ -5,6 +5,8 @@ import type { LanguageModelV3StreamPart } from "@ai-sdk/provider";
 import {
   AGENT_LIMITS,
   AGENT_SYSTEM,
+  AGENT_PAUSED_REASON,
+  AGENT_PAUSED_TEXT,
   classifyModelError,
   runAgent,
   type AgentEvent,
@@ -41,6 +43,15 @@ it.each([
   ],
   [{ statusCode: 503, message: "overloaded" }, "transient"],
   [{ statusCode: 400, message: "invalid input" }, "permanent"],
+  [
+    {
+      statusCode: 402,
+      responseBody:
+        '{"error":{"status":"RESOURCE_EXHAUSTED","message":"Your prepayment credits are depleted."}}',
+    },
+    "billing",
+  ],
+  [{ cause: { message: "Your prepayment credits are depleted." } }, "billing"],
 ])("classifies %j as %s", (error, reason) =>
   expect(classifyModelError(error)).toBe(reason),
 );
@@ -415,5 +426,48 @@ it("summary quota failure switches models without exposing tools again", async (
   expect(events).toContainEqual({
     type: "text-delta",
     text: "記事の要約です。",
+  });
+});
+
+it("前払い残高切れ（402）は再試行も切替も要約もせず、計算のみの案内を返す", async () => {
+  const depleted = () =>
+    Object.assign(new Error("Payment Required"), {
+      statusCode: 402,
+      responseBody:
+        '{"error":{"status":"RESOURCE_EXHAUSTED","message":"Your prepayment credits are depleted."}}',
+    });
+  const primary = new MockLanguageModelV3({
+    doStream: async () => {
+      throw depleted();
+    },
+  });
+  const fallbackModel = new MockLanguageModelV3({
+    doStream: async () => {
+      throw depleted();
+    },
+  });
+  const fallback = vi.fn(async () => fallbackModel);
+  const events: AgentEvent[] = [];
+  vi.spyOn(console, "warn").mockImplementation(() => {});
+  await runAgent(
+    "こんにちは",
+    connection(),
+    primary,
+    (e) => events.push(e),
+    undefined,
+    AGENT_LIMITS,
+    { fallback },
+  );
+  expect(primary.doStreamCalls).toHaveLength(1);
+  expect(fallback).not.toHaveBeenCalled();
+  const text = events
+    .filter((e) => e.type === "text-delta")
+    .map((e) => e.text)
+    .join("");
+  expect(text).toBe(AGENT_PAUSED_TEXT);
+  expect(text).not.toMatch(/MCP/i);
+  expect(events.at(-1)).toMatchObject({
+    type: "done",
+    reasons: [AGENT_PAUSED_REASON],
   });
 });
