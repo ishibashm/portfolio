@@ -1,4 +1,5 @@
 import fs from "node:fs";
+import { blogCardVideoId } from "./blogVideo";
 import path from "node:path";
 
 const BLOG_DIRECTORY = path.join(process.cwd(), "content", "blog");
@@ -164,6 +165,7 @@ function readBlogPosts(): BlogPost[] {
 
 export function getBlogPosts(): BlogPostSummary[] {
   return readBlogPosts().map((post) => ({
+    youtubeId: blogCardVideoId(post),
     slug: post.slug,
     title: post.title,
     description: post.description,

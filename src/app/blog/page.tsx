@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { BlogCardVideo } from "@/components/blog/BlogCardVideo";
 import type { Metadata } from "next";
 import { BookOpenText, Clock3, Rss } from "lucide-react";
 import { formatBlogDate } from "@/lib/blog";
@@ -65,6 +66,7 @@ function parseSort(value: unknown): SortMode {
 function PostCard({ post }: { post: BlogPostSummary }) {
   return (
     <article className="flex flex-col rounded-3xl border border-slate-300 bg-white/90 p-6 shadow-sm">
+      <BlogCardVideo post={post} />
       {/* カテゴリの札はここには出さない。節の見出しが同じことを
           言っているので、同じ語が節の中で 10 回並ぶだけになる。 */}
       <div className="flex flex-wrap items-center gap-3 text-[11px] text-slate-500">

@@ -1,4 +1,5 @@
 import prisma from "@/lib/prisma";
+import { blogCardVideoId } from "./blogVideo";
 import { toLogMessage } from "@/lib/errorMessage";
 import { toJapanDateString } from "@/utils/japanDate";
 import {
@@ -73,8 +74,10 @@ function toBlogPost(row: {
  * 動画の項目は DB に列が無い。取り込みで落ちるので、同じ slug の
  * Markdown frontmatter から補う（無ければそのまま）。
  */
-function withMarkdownVideo(post: BlogPost): BlogPost {
-  const md = getMarkdownBlogPost(post.slug);
+function withMarkdownVideo(
+  post: BlogPost,
+  md: BlogPostSummary | undefined = getMarkdownBlogPost(post.slug),
+): BlogPost {
   if (!md?.youtubeId) return post;
   return {
     ...post,
@@ -106,6 +109,7 @@ export async function loadBlogPosts(
   // 一覧に本文は載せない。分割代入で捨てると未使用の変数が残るので、
   // 出す項目を並べる。
   return posts.map((post) => ({
+    youtubeId: blogCardVideoId(post),
     slug: post.slug,
     title: post.title,
     description: post.description,
@@ -162,7 +166,16 @@ export async function loadSearchableBlogPosts(options: {
       // （Markdown 側と同じ規則）。
       orderBy: [{ publishedAt: "desc" }, { slug: "asc" }],
     });
-    if (rows.length > 0) return rows.map(toBlogPost);
+    if (rows.length > 0) {
+      const videos = new Map(
+        getMarkdownBlogPosts().map((post) => [post.slug, post]),
+      );
+      return rows.map((row) => {
+        const post = toBlogPost(row);
+        const md = videos.get(row.slug);
+        return md ? withMarkdownVideo(post, md) : post;
+      });
+    }
     if (await prisma.blogPost.findFirst({ select: { slug: true } })) return [];
   } catch (e) {
     if (!options.quiet)
