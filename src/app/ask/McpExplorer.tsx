@@ -1,6 +1,7 @@
 "use client";
 import { AGENT_PAUSED_REASON, AGENT_PAUSED_TEXT } from "@/lib/agentPausedText";
 import FaqPanel from "@/components/FaqPanel";
+import { ANSWER_SOURCE_LABELS, type AnswerSource } from "@/lib/answerSource";
 
 import dynamic from "next/dynamic";
 import {
@@ -101,6 +102,7 @@ type ChatMessage = {
   tools?: AgentToolCall[];
   reasons?: string[];
   suggestions?: string[];
+  answerSource?: AnswerSource;
   /** サーバーが書いた保存の提案。端末にもアカウントにも保存しない。 */
   saveOffer?: { card: SaveOfferCardData; status: SaveOfferStatus };
   /** サーバーが署名したお知らせの提案（ログイン中だけ届く）。保存しない。 */
@@ -483,6 +485,11 @@ function ConversationMessage({
             message.state === "error" ? "border-red-200" : "border-stone-200"
           }`}
         >
+          {message.answerSource && (
+            <p className="mb-2 text-xs font-semibold">
+              {ANSWER_SOURCE_LABELS[message.answerSource]}
+            </p>
+          )}
           {message.content ? (
             <AgentAnswer text={message.content} />
           ) : (
@@ -1362,6 +1369,7 @@ export function McpExplorer({
             ...current,
             state: "done",
             reasons: item.reasons,
+            answerSource: "source" in item ? item.source : undefined,
             ...(suggestions.length ? { suggestions } : {}),
           }));
           const now = new Date().toISOString();

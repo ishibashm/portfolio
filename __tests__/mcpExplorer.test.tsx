@@ -193,12 +193,14 @@ it("AI回答を逐次描き、道具の状態を利用者向けに折り畳む",
   await send({
     type: "done",
     calls: 1,
+    source: "calc",
     reasons: [],
     suggestions: ["配偶者の候補日も比べる？", "相談メモの東側候補を見直す？"],
   });
   await act(async () => controller.close());
   expect(screen.getByRole("status").textContent).toBe("回答ができました。");
   expect(screen.getByRole("status").textContent).not.toContain("1回");
+  expect(screen.getByText("🧮 計算結果")).toBeTruthy();
   expect(screen.getByLabelText("次の質問の候補")).toBeTruthy();
   fireEvent.click(
     screen.getByRole("button", { name: "配偶者の候補日も比べる？" }),

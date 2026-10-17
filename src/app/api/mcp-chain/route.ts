@@ -1,3 +1,4 @@
+import { routePublicAnswer } from "@/lib/answerRouter";
 import { canUseAgent } from "@/lib/agentEntitlement";
 import { chainRequestError } from "@/lib/mcpChainRequest";
 import { toResponseMessage } from "@/lib/errorMessage";
@@ -72,6 +73,32 @@ export async function POST(request: Request): Promise<Response> {
   };
   try {
     const body = JSON.parse(raw);
+    if (body?.mode === "llm") {
+      const candidate = agentInputSchema.safeParse(body);
+      if (candidate.success) {
+        const state = chainLlmState();
+        const provider =
+          "provider" in state ? String(state.provider) : "google";
+        const answer = await withinSignal(
+          routePublicAnswer(
+            candidate.data.question,
+            candidate.data,
+            `${provider}:${state.model}`,
+          ),
+          AbortSignal.any([request.signal, AbortSignal.timeout(2000)]),
+        ).catch(() => undefined);
+        if (answer)
+          return new Response(
+            answer.map((event) => JSON.stringify(event)).join("\n") + "\n",
+            {
+              headers: {
+                "Content-Type": "application/x-ndjson; charset=utf-8",
+                "Cache-Control": "no-store",
+              },
+            },
+          );
+      }
+    }
     if (body?.mode === "llm" && !chainLlmState().enabled)
       return Response.json({ error: "AI回答は無効です。" }, { status: 404 });
     if (body?.mode === "llm") session = await agentSessionUser(request);
