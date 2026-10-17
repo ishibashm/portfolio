@@ -63,10 +63,12 @@ it.each(["success", "error", "abort", "cancel", "timeout"])(
     expect(JSON.parse(log.mock.calls[0][0]).model).toBe("actual-fallback");
     expect(
       (
-        await GET(
-          new Request("https://cloud-palette.com/api/mcp-chain/status", {
-            headers,
-          }),
+        await (
+          await GET(
+            new Request("https://cloud-palette.com/api/mcp-chain/status", {
+              headers,
+            }),
+          )
         ).json()
       ).remaining.requests,
     ).toBe(19);

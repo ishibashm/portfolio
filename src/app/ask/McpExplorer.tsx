@@ -67,6 +67,18 @@ import {
   ShirubeGuide,
   type PersonEdits,
 } from "./AskWorkspacePanels";
+import { SaveOfferCard, type SaveOfferStatus } from "./SaveOfferCard";
+import {
+  saveOfferLoginPath,
+  type SaveOfferCard as SaveOfferCardData,
+  type SaveOfferFieldKey,
+  type SaveOfferStage,
+} from "@/lib/saveOffer";
+import {
+  readResumeParam,
+  stashConversationForResume,
+  withResumedConversation,
+} from "@/lib/saveOfferResume";
 
 const GrokVoice = dynamic(() => import("@/components/home/GrokVoice"), {
   ssr: false,
@@ -85,6 +97,8 @@ type ChatMessage = {
   tools?: AgentToolCall[];
   reasons?: string[];
   suggestions?: string[];
+  /** サーバーが書いた保存の提案。端末にもアカウントにも保存しない。 */
+  saveOffer?: { card: SaveOfferCardData; status: SaveOfferStatus };
 };
 type ChatConversation = Omit<AskConversation, "messages"> & {
   messages: ChatMessage[];
@@ -428,9 +442,13 @@ function ToolStatus({ message }: { message: ChatMessage }) {
 function ConversationMessage({
   message,
   showName = true,
+  saveOfferCounts,
+  onSaveOffer,
 }: {
   message: ChatMessage;
   showName?: boolean;
+  saveOfferCounts?: Partial<Record<SaveOfferFieldKey, number>>;
+  onSaveOffer?: (messageId: string, action: "accept" | "decline") => void;
 }) {
   if (message.role === "user")
     return (
@@ -472,10 +490,37 @@ function ConversationMessage({
             <AnswerBlocks blocks={message.blocks} />
           )}
           <ToolStatus message={message} />
+          {message.saveOffer && onSaveOffer && (
+            <SaveOfferCard
+              card={message.saveOffer.card}
+              status={message.saveOffer.status}
+              counts={saveOfferCounts}
+              onAccept={() => onSaveOffer(message.id, "accept")}
+              onDecline={() => onSaveOffer(message.id, "decline")}
+            />
+          )}
         </article>
       </div>
     </div>
   );
+}
+
+function postSaveOffer(
+  stage: SaveOfferStage,
+  surface: "home" | "ask",
+  conversationKey?: string,
+) {
+  void fetch("/api/save-offer", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    // 押してすぐログイン画面へ移るので、移動後も送り切る。
+    keepalive: true,
+    body: JSON.stringify({
+      stage,
+      surface,
+      ...(conversationKey ? { conversationKey } : {}),
+    }),
+  }).catch(() => {});
 }
 
 export function McpExplorer({
@@ -540,6 +585,14 @@ export function McpExplorer({
     "local" | "saving" | "saved" | "error"
   >("local");
   const [cloudEnabled, setCloudEnabled] = useState(false);
+  // トップのチャットは会話 id が固定なので、提案を会話ごとに数える鍵を別に持つ。
+  const [homeConversationKey] = useState(() => nextEntityId("home"));
+  const [resumedConversationId, setResumedConversationId] = useState<
+    string | null
+  >(null);
+  // 戻ったあと、アカウントへの送信が実際に成功してから「保存しました」と言う。
+  const resumePending = useRef(false);
+  const [resumeSaved, setResumeSaved] = useState(false);
   const abortRef = useRef<AbortController | null>(null);
   const remainingRevision = useRef(0);
   const conversationRevision = useRef(0);
@@ -619,7 +672,21 @@ export function McpExplorer({
       memories: [],
       updatedAt: now,
     };
-    const applyWorkspace = (workspace: AskWorkspace) => {
+    const resumeId = readResumeParam(window.location.search);
+    const applyWorkspace = (loaded: AskWorkspace) => {
+      // 「結果を保存する」からログインして戻ったら、押したときの会話を開く。
+      const workspace = withResumedConversation(loaded, local, resumeId);
+      if (resumeId && workspace.activeConversationId === resumeId) {
+        setResumedConversationId(resumeId);
+        resumePending.current = true;
+        try {
+          const url = new URL(window.location.href);
+          url.searchParams.delete("resume");
+          window.history.replaceState(null, "", url.pathname + url.search);
+        } catch {
+          // URL を書き換えられなくても会話は開ける。
+        }
+      }
       setConversations(workspace.conversations.map(toChatConversation));
       setActiveConversationId(workspace.activeConversationId);
       setPeople(workspace.people);
@@ -738,6 +805,11 @@ export function McpExplorer({
         .then((response) => {
           if (response.ok) cloudWorkspacePresent.current = true;
           setCloudStorage(response.ok ? "saved" : "error");
+          if (response.ok && resumePending.current) {
+            resumePending.current = false;
+            setResumeSaved(true);
+            postSaveOffer("resumed", "ask");
+          }
         })
         .catch(() => {
           if (!controller.signal.aborted) setCloudStorage("error");
@@ -1071,6 +1143,64 @@ export function McpExplorer({
     );
   }
 
+  const surface = persistConversation ? "ask" : "home";
+  const saveOfferKey = persistConversation
+    ? activeConversationId
+    : homeConversationKey;
+  const saveOfferCounts: Partial<Record<SaveOfferFieldKey, number>> =
+    persistConversation
+      ? {
+          conversations: conversations.filter(
+            (conversation) => conversation.messages.length > 0,
+          ).length,
+          memories: memories.length,
+          people: people.length,
+        }
+      : { conversations: 1, memories: 0, people: 0 };
+
+  function handleSaveOffer(messageId: string, action: "accept" | "decline") {
+    const target = messages.find((item) => item.id === messageId);
+    if (!target?.saveOffer || target.saveOffer.status !== "open") return;
+    const key = target.saveOffer.card.conversationKey;
+    if (action === "decline") {
+      postSaveOffer("declined", surface, key);
+      updateAssistant(messageId, (current) =>
+        current.saveOffer
+          ? {
+              ...current,
+              saveOffer: { ...current.saveOffer, status: "declined" },
+            }
+          : current,
+      );
+      return;
+    }
+    postSaveOffer("accepted", surface, key);
+    updateAssistant(messageId, (current) =>
+      current.saveOffer
+        ? {
+            ...current,
+            saveOffer: { ...current.saveOffer, status: "accepting" },
+          }
+        : current,
+    );
+    // ここでは何もアップロードしない。会話を端末の相談に置いてから
+    // ログインへ進み、戻った先の /ask で既存の同期が保存する。
+    let resumeId: string | null = activeConversationId;
+    if (!persistConversation) {
+      try {
+        resumeId = stashConversationForResume(localStorage, {
+          id: nextEntityId("conversation"),
+          messages: storedMessages(messages),
+        });
+      } catch {
+        resumeId = null;
+      }
+    }
+    window.location.assign(
+      resumeId ? saveOfferLoginPath(resumeId) : "/login?next=%2Fask",
+    );
+  }
+
   async function submitAgent(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const text = question.trim();
@@ -1129,6 +1259,7 @@ export function McpExplorer({
           ...(history.length ? { history } : {}),
           ...(profiles ? { people: profiles } : {}),
           ...(remembered.length ? { memories: remembered } : {}),
+          conversationKey: saveOfferKey,
         }),
       });
       const left = response.headers.get("X-Agent-Remaining-Requests");
@@ -1144,6 +1275,7 @@ export function McpExplorer({
       let pending = "";
       let completed = false;
       let completedContent = "";
+      let offerReceived = messages.some((message) => message.saveOffer);
       const receive = (item: AgentEvent | ChainEvent) => {
         if (item.type === "blocks")
           updateAssistant(assistantId, (current) => ({
@@ -1159,6 +1291,15 @@ export function McpExplorer({
             ...current,
             content: current.content + item.text,
           }));
+        } else if (item.type === "save-offer") {
+          // サーバー側でも 1 会話 1 回に絞っているが、画面でも重ねて出さない。
+          if (offerReceived) return;
+          offerReceived = true;
+          updateAssistant(assistantId, (current) => ({
+            ...current,
+            saveOffer: { card: item.offer, status: "open" },
+          }));
+          postSaveOffer("shown", surface, item.offer.conversationKey);
         } else if (item.type === "tool-call")
           updateAssistant(assistantId, (current) => ({
             ...current,
@@ -1761,6 +1902,8 @@ export function McpExplorer({
                     item.role === "assistant" &&
                     messages[index - 1]?.role !== "assistant"
                   }
+                  saveOfferCounts={saveOfferCounts}
+                  onSaveOffer={handleSaveOffer}
                 />
               ))}
               {voiceMessages.map((item, index) => {
@@ -1795,6 +1938,18 @@ export function McpExplorer({
                   }}
                 />
               )}
+              {resumeSaved &&
+                resumedConversationId === activeConversationId && (
+                  <ConversationMessage
+                    message={{
+                      id: "save-offer-resumed",
+                      role: "assistant",
+                      content:
+                        "おかえりなさい。この相談をアカウントに保存しました。別の端末からもログインすれば見返せます。",
+                      state: "done",
+                    }}
+                  />
+                )}
               <div ref={threadEndRef} />
             </div>
 

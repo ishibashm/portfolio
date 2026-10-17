@@ -12,6 +12,12 @@ import {
   AGENT_LIMITS,
 } from "@/lib/mcpAgent";
 import { chainLlmState } from "@/lib/mcpAgentConfig";
+import { agentSessionUser } from "@/lib/agentSession";
+import {
+  createSaveOfferGate,
+  parseSaveOfferState,
+  readSaveOfferCookie,
+} from "@/lib/saveOffer";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -60,11 +66,18 @@ export async function POST(request: Request): Promise<Response> {
   }
   let parsed;
   let entitlement: ReturnType<typeof canUseAgent>;
+  let session: Awaited<ReturnType<typeof agentSessionUser>> = {
+    signedIn: false,
+  };
   try {
     const body = JSON.parse(raw);
     if (body?.mode === "llm" && !chainLlmState().enabled)
       return Response.json({ error: "AI回答は無効です。" }, { status: 404 });
+    if (body?.mode === "llm") session = await agentSessionUser(request);
     entitlement = canUseAgent({
+      // ログイン中は本人の id（HMAC 済み）で数える。IP を共有する家庭・職場で
+      // 他人の分まで枠を減らさない。未ログインは従来どおり IP。
+      ...(session.userId ? { userId: session.userId } : {}),
       ip: key,
       mode: body?.mode === "llm" ? "llm" : "deterministic",
     });
@@ -153,6 +166,16 @@ export async function POST(request: Request): Promise<Response> {
                 profile: input.profile,
                 people: input.people,
                 memories: input.memories,
+                session: {
+                  signedIn: session.signedIn,
+                  saveOffer: createSaveOfferGate({
+                    signedIn: session.signedIn,
+                    conversationKey: input.conversationKey,
+                    state: parseSaveOfferState(
+                      readSaveOfferCookie(request.headers.get("cookie")),
+                    ),
+                  }),
+                },
               },
             );
           } else {

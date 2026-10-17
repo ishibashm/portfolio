@@ -73,6 +73,8 @@ it("登録内容を人物候補へ統合し、必要な質問だけ送る。す�
   expect(JSON.parse(posted![1]!.body as string)).toEqual({
     mode: "llm",
     question: "引越しの記事を教えて",
+    // 保存の提案を会話ごとに 1 回へ絞るための鍵だけを足す（人を指さない）。
+    conversationKey: expect.stringMatching(/^[A-Za-z0-9_-]{8,100}$/),
   });
   await waitFor(() => expect(screen.getByText(/残り2回/)).toBeTruthy());
   fireEvent.change(screen.getByLabelText("メッセージ"), {
