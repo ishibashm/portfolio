@@ -97,7 +97,7 @@ export function CompassDial({
           <circle
             className="motion-ring"
             cx="50"
-            cy="10"
+            cy="18"
             r="3"
             fill="#c9a54a"
           />
