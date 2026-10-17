@@ -35,7 +35,7 @@ it("初期HTMLには軽いフォームだけ。操作で初めてdynamicを描�
   fireEvent.click(screen.getByRole("button", { name: "質問の画面を開く" }));
   expect(screen.getByText("遅延チャット")).toBeTruthy();
 });
-it("同意前は保存値を読まず、記事の質問では生年月日を送らない。すべて消すも反映", async () => {
+it("明示操作で登録内容を人物に追加し、必要な質問だけ送る。すべて消すも反映", async () => {
   localStorage.setItem(
     SETTINGS_KEY,
     JSON.stringify({ birth_date: "1990-05-05", base_label: "名古屋市中区" }),
@@ -55,7 +55,12 @@ it("同意前は保存値を読まず、記事の質問では生年月日を送�
   vi.stubGlobal("fetch", fetcher);
   render(<McpExplorer agentEnabled />);
   expect(screen.queryByText(/1990-05-05/)).toBeNull();
-  fireEvent.click(screen.getByLabelText("保存済みプロフィールを読み込む"));
+  fireEvent.click(
+    screen.getByRole("button", {
+      name: "サイトの登録内容から本人を追加",
+    }),
+  );
+  expect(await screen.findByLabelText("本人を相談対象にする")).toBeTruthy();
   fireEvent.change(screen.getByLabelText("メッセージ"), {
     target: { value: "引越しの記事を教えて" },
   });
@@ -71,8 +76,8 @@ it("同意前は保存値を読まず、記事の質問では生年月日を送�
     target: { value: "本命星を教えて" },
   });
   expect(
-    screen.getByText(/この質問と一緒に送るプロフィール/).textContent,
-  ).toContain("1990-05-05");
+    screen.getByText(/この質問と一緒に送る相談対象/).textContent,
+  ).toContain("本人");
   fireEvent.click(screen.getByRole("button", { name: "送信" }));
   await waitFor(() =>
     expect(
@@ -80,9 +85,12 @@ it("同意前は保存値を読まず、記事の質問では生年月日を送�
     ).toHaveLength(2),
   );
   const last = fetcher.mock.calls.filter((c) => c[0] === "/api/mcp-chain")[1];
-  expect(JSON.parse(last[1]!.body as string).profile).toEqual({
-    birthDate: "1990-05-05",
-  });
+  expect(JSON.parse(last[1]!.body as string).people).toEqual([
+    expect.objectContaining({
+      name: "本人",
+      birthDate: "1990-05-05",
+    }),
+  ]);
   await waitFor(() =>
     expect(
       (screen.getByLabelText("メッセージ") as HTMLTextAreaElement).disabled,
@@ -92,12 +100,12 @@ it("同意前は保存値を読まず、記事の質問では生年月日を送�
     target: { value: "九星気学の仕組みを教えて" },
   });
   expect(
-    screen.getByText("この質問ではプロフィールを送信しません。"),
+    screen.getByText("この質問では人物プロフィールを送信しません。"),
   ).toBeTruthy();
   // 実際の「すべて消す」の入口を使う。
   act(() => clearLocalAccountData(localStorage));
   await waitFor(() =>
-    expect(screen.queryByText(/この質問と一緒に送るプロフィール/)).toBeNull(),
+    expect(screen.queryByText(/この質問と一緒に送る相談対象/)).toBeNull(),
   );
   expect(
     (screen.getByLabelText("メッセージ") as HTMLTextAreaElement).value,

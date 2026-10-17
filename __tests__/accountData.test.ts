@@ -50,6 +50,7 @@ describe("消す鍵", () => {
       "wealth_baseLat",
       "wealth_baseLon",
       "relocation_simulator_draft",
+      "cloud_palette_ask_data_v2",
       "cloud_palette_ask_chat_v1",
       "arb_axis_prefs_v1",
       "timing_party_v1",

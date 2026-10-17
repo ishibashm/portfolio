@@ -148,7 +148,12 @@ export async function POST(request: Request): Promise<Response> {
                     }
                   : {}),
               },
-              { history: input.history, profile: input.profile },
+              {
+                history: input.history,
+                profile: input.profile,
+                people: input.people,
+                memories: input.memories,
+              },
             );
           } else {
             await runChain(input, connection.call, emit, signal);
