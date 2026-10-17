@@ -50,12 +50,14 @@ jobs:
       - name: Create .env from Secret
         env:
           ENV_FILE_CONTENT: ${{ secrets.ENV_FILE }}
+          ESTAT_APP_ID_OVERRIDE: ${{ secrets.ESTAT_APP_ID }}
         run: |
           if [ -z "$ENV_FILE_CONTENT" ]; then
             echo "::error::secrets.ENV_FILE is empty. ESTAT_APP_ID is required."
             exit 1
           fi
           echo "$ENV_FILE_CONTENT" > .env
+          bash scripts/apply-estat-override.sh
 
       - name: Fetch
         env:

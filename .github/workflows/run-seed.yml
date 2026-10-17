@@ -18,8 +18,11 @@ jobs:
         run: npm ci
 
       - name: Create .env from Secret
+        env:
+          ESTAT_APP_ID_OVERRIDE: ${{ secrets.ESTAT_APP_ID }}
         run: |
           echo "${{ secrets.ENV_FILE }}" > .env
+          bash scripts/apply-estat-override.sh
 
       - name: Push Prisma Schema to Database
         run: |
