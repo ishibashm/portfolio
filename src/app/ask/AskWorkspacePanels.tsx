@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useState, type FormEvent, type ReactNode } from "react";
 import type { AskConversation, AskMemoryItem, AskPerson } from "@/lib/askData";
 import { initialConsultationSuggestions } from "@/lib/followUpSuggestions";
-import { ShirubeAvatar } from "./ShirubeAvatar";
+import { GuideChatAvatar } from "@/components/guide/GuideCharacter";
 
 type ConversationSummary = Pick<
   AskConversation,
@@ -251,7 +251,7 @@ function ShirubeBubble({ children }: { children: ReactNode }) {
       className="flex w-full max-w-2xl items-start gap-2 sm:gap-3"
       data-chat-role="assistant"
     >
-      <ShirubeAvatar />
+      <GuideChatAvatar />
       <div className="min-w-0 flex-1 sm:max-w-[88%] sm:flex-none">
         <p className="mb-1 ml-1 text-xs font-semibold text-indigo-700">
           しるべ

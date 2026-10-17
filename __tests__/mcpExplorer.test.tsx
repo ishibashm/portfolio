@@ -271,12 +271,12 @@ it("しるべを左、利用者を右に並べ、連続するしるべ発言で�
   expect(sources?.[0]).toHaveAttribute("type", "image/avif");
   expect(sources?.[0]).toHaveAttribute(
     "srcset",
-    "/guide/shirube-pointing-96.avif 96w, /guide/shirube-pointing-240.avif 240w",
+    "/guide/shirube-chibi-chat-96.avif 96w, /guide/shirube-chibi-chat-240.avif 240w",
   );
   expect(sources?.[1]).toHaveAttribute("type", "image/webp");
   expect(avatar).toHaveAttribute("width", "96");
-  expect(avatar).toHaveAttribute("height", "118");
-  expect(avatar).toHaveClass("object-none", "object-[64%_4%]");
+  expect(avatar).toHaveAttribute("height", "96");
+  expect(avatar).toHaveClass("object-cover");
 });
 
 it("保存済みプロフィールと同行者を重複なく候補にし、実データから初回質問を作る", async () => {
