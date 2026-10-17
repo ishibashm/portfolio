@@ -418,6 +418,25 @@ jobs:
             echo "平文から Secret Manager 参照へ切り替えるキー: $REMOVE_KEYS"
             REMOVE_FLAG=(--remove-env-vars="$REMOVE_KEYS")
           fi
+          # 使わなくなったキー（scripts/retired_env_keys.json）は、Secret 参照として
+          # 残っていれば外す。平文で残っていれば上と同じく --remove-env-vars で外す。
+          SECRET_NAMES="$(gcloud run services describe "${{ env.SERVICE_NAME }}" \
+                           --project="${{ env.PROJECT_ID }}" \
+                           --region="${{ env.REGION }}" --format=json 2>/dev/null \
+                         | python3 -c 'import json,sys; d=json.load(sys.stdin); c=d["spec"]["template"]["spec"]["containers"][0]; print("\n".join(e["name"] for e in c.get("env",[]) if "valueFrom" in e))' || true)"
+          RETIRED_SECRETS="$(python3 -c 'import json,sys; r=json.load(open("scripts/retired_env_keys.json")); p=set(sys.argv[1].split()); print(",".join(k for k in r if k in p))' "$SECRET_NAMES")"
+          RETIRED_PLAIN="$(python3 -c 'import json,sys; r=json.load(open("scripts/retired_env_keys.json")); p=set(sys.argv[1].split()); print(",".join(k for k in r if k in p))' "$PLAIN_NAMES")"
+          if [ -n "$RETIRED_SECRETS" ]; then
+            echo "使わなくなった Secret 参照を外すキー: $RETIRED_SECRETS"
+            REMOVE_FLAG+=(--remove-secrets="$RETIRED_SECRETS")
+          fi
+          if [ -n "$RETIRED_PLAIN" ]; then
+            if [ -n "$REMOVE_KEYS" ]; then
+              REMOVE_FLAG=(--remove-env-vars="$REMOVE_KEYS,$RETIRED_PLAIN" "${REMOVE_FLAG[@]:1}")
+            else
+              REMOVE_FLAG+=(--remove-env-vars="$RETIRED_PLAIN")
+            fi
+          fi
           # ## --memory=1Gi の理由
           #
           # 512Mi では 1 日 3 回ほど上限を超えていた（2026-09-08 に本番の

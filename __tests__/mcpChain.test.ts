@@ -253,7 +253,8 @@ describe("連鎖API", () => {
       (await POST(request({ ...input, depth: 99 }, "invalid"))).status,
     ).toBe(400);
     expect(
-      (await POST(request({ municipality: "a".repeat(3000) }, "large"))).status,
+      (await POST(request({ municipality: "a".repeat(50000) }, "large")))
+        .status,
     ).toBe(413);
   });
   it("LLM入口は404", async () => {

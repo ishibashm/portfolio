@@ -15,6 +15,7 @@ import { chainLlmState } from "@/lib/mcpAgentConfig";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
+const MAX_BODY_BYTES = 48 * 1024;
 export async function POST(request: Request): Promise<Response> {
   const rejected = chainRequestError(request);
   if (rejected)
@@ -38,9 +39,12 @@ export async function POST(request: Request): Promise<Response> {
       const { done, value } = await reader.read();
       if (done) break;
       bytes += value.byteLength;
-      if (bytes > 2048) {
+      if (bytes > MAX_BODY_BYTES) {
         await reader.cancel();
-        return Response.json({ error: "入力が長すぎます。" }, { status: 413 });
+        return Response.json(
+          { error: "会話が長すぎます。新しいチャットを始めてください。" },
+          { status: 413 },
+        );
       }
       raw += decoder.decode(value, { stream: true });
     }
@@ -84,7 +88,7 @@ export async function POST(request: Request): Promise<Response> {
     return Response.json(
       {
         error:
-          "質問は500文字以内にしてください。計算フォームは市区町村名・日付・深さを確認してください。",
+          "質問は500文字以内にしてください。会話が長い場合は新しいチャットを始めてください。計算フォームは市区町村名・日付・深さを確認してください。",
       },
       { status: 400 },
     );
@@ -144,6 +148,7 @@ export async function POST(request: Request): Promise<Response> {
                     }
                   : {}),
               },
+              { history: input.history, profile: input.profile },
             );
           } else {
             await runChain(input, connection.call, emit, signal);

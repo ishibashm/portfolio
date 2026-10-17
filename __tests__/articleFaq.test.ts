@@ -480,8 +480,9 @@ describe("本物の記事に題を渡す", () => {
       を足して +1 / +1。問いの見出しが 2 つあり、直下の段落が答えから
       始まるので、題の有無にかかわらず数に入る
     */
-    expect(count(false)).toBe(25);
-    expect(count(true)).toBe(30);
+    // 無極・太極・八卦の記事は問いの見出しがあり、題の有無にかかわらず +1。
+    expect(count(false)).toBe(26);
+    expect(count(true)).toBe(31);
   });
 
   it("題から作った問いは、記事の題そのもの（言い換えない）", () => {
@@ -534,7 +535,9 @@ describe("天中殺の引越し記事の検索意図", () => {
       ).toBeGreaterThanOrEqual(MIN_ANSWER);
     }
     expect(
-      faq.find((item) => item.question === "天中殺に引っ越ししても大丈夫ですか？")?.answer,
+      faq.find(
+        (item) => item.question === "天中殺に引っ越ししても大丈夫ですか？",
+      )?.answer,
     ).toContain("確かめた資料はありません");
   });
 });

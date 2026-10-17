@@ -55,6 +55,36 @@ it("年だけの入力から日付を作らずMCPは両候補を返す", async (
     await c.close();
   }
 });
+it("追質問へ過去の会話と相談プロフィールを渡す", async () => {
+  const c = await connectChainClient();
+  const model = createAgentMock();
+  try {
+    await runAgent(
+      "その候補ならいつがよい？",
+      c,
+      model,
+      () => {},
+      undefined,
+      AGENT_LIMITS,
+      {},
+      {
+        history: [
+          { role: "user", content: "深谷市からよい方位を調べて" },
+          { role: "assistant", content: "東の候補を確認しました。" },
+        ],
+        profile: { birthDate: "1990-05-05", residence: "深谷市" },
+      },
+    );
+    const prompt = JSON.stringify(model.doStreamCalls[0].prompt);
+    expect(prompt).toContain("深谷市からよい方位を調べて");
+    expect(prompt).toContain("東の候補を確認しました");
+    expect(prompt).toContain("その候補ならいつがよい");
+    expect(prompt).toContain("生年月日（相談プロフィール）: 1990-05-05");
+    expect(prompt).toContain("現在お住まいの市区町村");
+  } finally {
+    await c.close();
+  }
+});
 it.each([503, 429])("%iの再試行とフォールバック", async (statusCode) => {
   const good = createAgentMock();
   let attempts = 0;

@@ -47,18 +47,19 @@ it("同意前は保存値を読まず、記事の質問では生年月日を送�
       if (url.includes("status"))
         return Response.json({ remaining: { requests: 20 } });
       if (url.includes("municipalities")) return Response.json({ names: [] });
-      return new Response('{"type":"done","calls":0,"reasons":[]}\n', {
-        headers: { "X-Agent-Remaining-Requests": "2" },
-      });
+      return new Response(
+        '{"type":"text-delta","text":"回答"}\n{"type":"done","calls":0,"reasons":[]}\n',
+        { headers: { "X-Agent-Remaining-Requests": "2" } },
+      );
     });
   vi.stubGlobal("fetch", fetcher);
   render(<McpExplorer agentEnabled />);
   expect(screen.queryByText(/1990-05-05/)).toBeNull();
-  fireEvent.click(screen.getByLabelText("保存済みの生年月日・出発地を使う"));
-  fireEvent.change(screen.getByLabelText("質問"), {
+  fireEvent.click(screen.getByLabelText("保存済みプロフィールを読み込む"));
+  fireEvent.change(screen.getByLabelText("メッセージ"), {
     target: { value: "引越しの記事を教えて" },
   });
-  fireEvent.click(screen.getByRole("button", { name: "AIに聞く" }));
+  fireEvent.click(screen.getByRole("button", { name: "送信" }));
   await waitFor(() => expect(fetcher).toHaveBeenCalled());
   const posted = fetcher.mock.calls.find((c) => c[0] === "/api/mcp-chain");
   expect(JSON.parse(posted![1]!.body as string)).toEqual({
@@ -66,24 +67,41 @@ it("同意前は保存値を読まず、記事の質問では生年月日を送�
     question: "引越しの記事を教えて",
   });
   await waitFor(() => expect(screen.getByText(/残り2回/)).toBeTruthy());
-  fireEvent.change(screen.getByLabelText("質問"), {
+  fireEvent.change(screen.getByLabelText("メッセージ"), {
     target: { value: "本命星を教えて" },
   });
-  expect(screen.getByText(/今回送る保存値/).textContent).toContain(
-    "1990-05-05",
-  );
-  fireEvent.click(screen.getByRole("button", { name: "AIに聞く" }));
+  expect(
+    screen.getByText(/この質問と一緒に送るプロフィール/).textContent,
+  ).toContain("1990-05-05");
+  fireEvent.click(screen.getByRole("button", { name: "送信" }));
   await waitFor(() =>
     expect(
       fetcher.mock.calls.filter((c) => c[0] === "/api/mcp-chain"),
     ).toHaveLength(2),
   );
   const last = fetcher.mock.calls.filter((c) => c[0] === "/api/mcp-chain")[1];
-  expect(JSON.parse(last[1]!.body as string).question).toContain("1990-05-05");
+  expect(JSON.parse(last[1]!.body as string).profile).toEqual({
+    birthDate: "1990-05-05",
+  });
+  await waitFor(() =>
+    expect(
+      (screen.getByLabelText("メッセージ") as HTMLTextAreaElement).disabled,
+    ).toBe(false),
+  );
+  fireEvent.change(screen.getByLabelText("メッセージ"), {
+    target: { value: "九星気学の仕組みを教えて" },
+  });
+  expect(
+    screen.getByText("この質問ではプロフィールを送信しません。"),
+  ).toBeTruthy();
   // 実際の「すべて消す」の入口を使う。
   act(() => clearLocalAccountData(localStorage));
-  await waitFor(() => expect(screen.queryByText(/今回送る保存値/)).toBeNull());
-  expect((screen.getByLabelText("質問") as HTMLTextAreaElement).value).toBe("");
+  await waitFor(() =>
+    expect(screen.queryByText(/この質問と一緒に送るプロフィール/)).toBeNull(),
+  );
+  expect(
+    (screen.getByLabelText("メッセージ") as HTMLTextAreaElement).value,
+  ).toBe("");
   expect(localStorage.getItem(SETTINGS_KEY)).toBeNull();
 });
 it("市区町村補完は同梱データのAPI、現在地は明示操作後だけ丸めて送る", async () => {

@@ -21,8 +21,8 @@ it("サーバー判定は旗と鍵でAIフォームにし、秘密を描画し�
     ),
   ).not.toContain("secret-only-on-server");
   render(element);
-  expect(screen.getByLabelText("質問")).toBeTruthy();
-  expect(screen.queryByLabelText("生年月日")).toBeNull();
+  expect(screen.getByLabelText("メッセージ")).toBeTruthy();
+  expect(screen.getByLabelText("生年月日")).toBeTruthy();
 });
 
 it("音声の旗・鍵がないとマイクを表示しない", () => {
