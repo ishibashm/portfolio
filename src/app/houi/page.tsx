@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { ContentDisclaimer } from "@/components/houi/ContentDisclaimer";
 import { HonmeiLookup } from "@/components/houi/HonmeiLookup";
+import { CompassDial } from "@/components/motion/CompassDial";
 import { MagneticCompass } from "@/components/houi/MagneticCompass";
 import type { Metadata } from "next";
 import {
@@ -72,7 +73,12 @@ export default function Page() {
           9 つの星の札と年ごとの一覧なので、記事の読み幅で止める理由が無い。
           /guide の索引と同じ 1700px。記事側（/houi/[year]/[star]）は本文が
           長いので 820px のまま。行長は段落の max-w-[70ch] で守る。 */}
-      <article className="max-w-[1700px] mx-auto px-5 py-12">
+      <article className="relative max-w-[1700px] mx-auto px-5 py-12">
+        {/* 金の羅盤の線画（飾り）。広い画面だけ、見出しと重ならない右上に。 */}
+        <CompassDial
+          labels
+          className="pointer-events-none absolute right-5 top-6 hidden h-40 w-40 opacity-70 lg:block"
+        />
         <h1 className="text-3xl md:text-4xl font-bold font-serif tracking-tight leading-snug">
           九星気学の本命星と吉方位の早見表
         </h1>

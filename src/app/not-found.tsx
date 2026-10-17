@@ -15,7 +15,7 @@ export default function NotFound() {
           URLが変更されたか、ページが削除された可能性があります。
         </p>
         {/* 行き止まりに案内役を置き、次の行き先を示す（docs/guide-character.md）。 */}
-        <GuideCharacter pose="magnifier" size="md" className="mt-6">
+        <GuideCharacter pose="magnifier" size="md" float className="mt-6">
           おや、この方角には道がないようです。ホームか使い方ガイドへご案内します。
         </GuideCharacter>
         <div className="mt-8 flex flex-col justify-center gap-3 sm:flex-row">
