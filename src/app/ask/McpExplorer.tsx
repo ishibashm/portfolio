@@ -36,6 +36,7 @@ import {
   needsAgentBirth,
   needsAgentOrigin,
 } from "@/lib/agentInput";
+import { sanitizeFollowUpSuggestions } from "@/lib/followUpSuggestions";
 import type {
   AgentConversationMessage,
   AgentEvent,
@@ -70,6 +71,7 @@ type ChatMessage = {
   blocks?: AnswerBlock[];
   tools?: AgentToolCall[];
   reasons?: string[];
+  suggestions?: string[];
 };
 type ChatConversation = Omit<AskConversation, "messages"> & {
   messages: ChatMessage[];
@@ -388,6 +390,10 @@ export function McpExplorer({
   const [calculationBlocks, setCalculationBlocks] = useState<AnswerBlock[]>([]);
   const [calls, setCalls] = useState<CallEvent[]>([]);
   const [calculationReasons, setCalculationReasons] = useState<string[]>([]);
+  const [calculationFollowUps, setCalculationFollowUps] = useState<string[]>(
+    [],
+  );
+  const [calculationComplete, setCalculationComplete] = useState(false);
   const [message, setMessage] = useState("");
   const [running, setRunning] = useState(false);
   const [calculationOnly, setCalculationOnly] = useState(false);
@@ -412,6 +418,7 @@ export function McpExplorer({
   const composing = useRef(false);
   const followLatest = useRef(true);
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
+  const calculationQuestionRef = useRef<HTMLInputElement | null>(null);
   const threadRef = useRef<HTMLDivElement | null>(null);
   const threadEndRef = useRef<HTMLDivElement | null>(null);
   const listId = useId();
@@ -666,6 +673,8 @@ export function McpExplorer({
       setCalculationBlocks([]);
       setCalls([]);
       setCalculationReasons([]);
+      setCalculationFollowUps([]);
+      setCalculationComplete(false);
       setMessage("");
       setRunning(false);
       cloudWorkspacePresent.current = false;
@@ -1001,10 +1010,12 @@ export function McpExplorer({
           }));
         else if (item.type === "done") {
           completed = true;
+          const suggestions = sanitizeFollowUpSuggestions(item.suggestions);
           updateAssistant(assistantId, (current) => ({
             ...current,
             state: "done",
             reasons: item.reasons,
+            ...(suggestions.length ? { suggestions } : {}),
           }));
           const now = new Date().toISOString();
           const memory = memoryFromConversation(
@@ -1086,6 +1097,8 @@ export function McpExplorer({
     setCalls([]);
     setCalculationBlocks([]);
     setCalculationReasons([]);
+    setCalculationFollowUps([]);
+    setCalculationComplete(false);
     setMessage("計算しています…");
     setRunning(true);
     try {
@@ -1130,6 +1143,10 @@ export function McpExplorer({
             else if (item.type === "done") {
               completed = true;
               setCalculationReasons(item.reasons);
+              setCalculationFollowUps(
+                sanitizeFollowUpSuggestions(item.suggestions),
+              );
+              setCalculationComplete(true);
               setMessage(
                 item.reasons.length
                   ? "計算が完了しました。確認状況にお知らせがあります。"
@@ -1306,7 +1323,29 @@ export function McpExplorer({
   }
 
   const profilePreview = peopleForQuestion(question);
-  const suggestedQuestions = followUps(messages);
+  const lastAssistant = [...messages]
+    .reverse()
+    .find((item) => item.role === "assistant");
+  const contextualQuestions = sanitizeFollowUpSuggestions(
+    lastAssistant?.suggestions,
+  );
+  const suggestedQuestions = contextualQuestions.length
+    ? contextualQuestions
+    : followUps(messages);
+  const calculationContext = `${question} ${municipality}`.trim();
+  const calculationFallbackMessages: ChatMessage[] = calculationContext
+    ? [
+        {
+          id: "calculation-follow-up-context",
+          role: "user",
+          content: calculationContext,
+          state: "done",
+        },
+      ]
+    : [];
+  const calculationSuggestedQuestions = calculationFollowUps.length
+    ? calculationFollowUps
+    : followUps(calculationFallbackMessages);
   const showFollowUps =
     messages.length > 0 &&
     messages.at(-1)?.role === "assistant" &&
@@ -1669,6 +1708,7 @@ export function McpExplorer({
           <label className="mb-4 block text-sm">
             自由文から入力
             <input
+              ref={calculationQuestionRef}
               aria-label="自由文から入力"
               value={question}
               maxLength={500}
@@ -1735,6 +1775,33 @@ export function McpExplorer({
       </p>
 
       {!useAgent && <AnswerBlocks blocks={calculationBlocks} />}
+      {!useAgent && calculationComplete && (
+        <section className="rounded-2xl border border-stone-200 bg-white/70 p-4">
+          <p className="text-sm font-medium text-slate-800">次に確認するなら</p>
+          <div
+            className="mt-3 flex gap-2 overflow-x-auto pb-1 sm:flex-wrap"
+            aria-label="次の質問の候補"
+          >
+            {calculationSuggestedQuestions.map((suggestion) => (
+              <button
+                key={suggestion}
+                type="button"
+                disabled={running}
+                onClick={() => {
+                  setQuestion(suggestion);
+                  calculationQuestionRef.current?.focus();
+                }}
+                className="shrink-0 rounded-full border border-stone-300 bg-white px-3 py-2 text-left text-xs leading-relaxed hover:bg-stone-50 disabled:opacity-50"
+              >
+                {suggestion}
+              </button>
+            ))}
+          </div>
+          <p className="mt-2 text-xs text-slate-500">
+            選ぶと入力欄に入ります。内容を確認してから編集・送信できます。
+          </p>
+        </section>
+      )}
       {!useAgent && calls.length > 0 && (
         <details className="rounded-2xl border border-stone-200 bg-white/70 p-5">
           <summary className="cursor-pointer font-semibold">

@@ -12,7 +12,8 @@ name: Probe estat housing
 # 手元から e-Stat に出られないので、当てずっぽうで ID を書かずにまず探す。
 # #493（利回りが成り立つかを数える）と同じ進め方。
 #
-# ESTAT_APP_ID は ENV_FILE の中にある（fetch_estat_sample.ts と同じ）。
+# ESTAT_APP_ID は Secret ESTAT_APP_ID を優先し、未設定なら ENV_FILE の値を使う
+# （scripts/apply-estat-override.sh）。
 
 on:
   # 探すだけなので手動だけ。定期実行する意味が無い。
@@ -37,12 +38,14 @@ jobs:
       - name: Create .env from Secret
         env:
           ENV_FILE_CONTENT: ${{ secrets.ENV_FILE }}
+          ESTAT_APP_ID_OVERRIDE: ${{ secrets.ESTAT_APP_ID }}
         run: |
           if [ -z "$ENV_FILE_CONTENT" ]; then
             echo "::error::secrets.ENV_FILE is empty."
             exit 1
           fi
           echo "$ENV_FILE_CONTENT" > .env
+          bash scripts/apply-estat-override.sh
 
       - name: Probe
         run: npx tsx scripts/probe_estat_housing.ts | tee -a "$GITHUB_STEP_SUMMARY"

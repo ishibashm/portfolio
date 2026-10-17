@@ -11,6 +11,13 @@ import {
 import { chainLlmState } from "@/lib/mcpAgentConfig";
 import { createAgentMock } from "@/lib/mcpAgentMock";
 import { CHAIN_TOOLS, connectChainClient } from "@/lib/mcpChain";
+import {
+  extractFollowUpEnvelope,
+  FOLLOW_UP_ENVELOPE_END,
+  FOLLOW_UP_ENVELOPE_START,
+  formatFollowUpEnvelope,
+  sanitizeFollowUpSuggestions,
+} from "@/lib/followUpSuggestions";
 vi.mock("@/lib/prisma", () => {
   throw new Error("DB must not be loaded");
 });
@@ -75,11 +82,25 @@ describe("AIが公開MCPを選ぶループ", () => {
         (e) => e.type === "text-delta" && e.text.includes("参考情報"),
       ),
     ).toBe(true);
-    expect(events.at(-1)).toEqual({ type: "done", calls: 4, reasons: [] });
+    expect(events.at(-1)).toMatchObject({
+      type: "done",
+      calls: 4,
+      reasons: [],
+      suggestions: [
+        "候補日の通勤条件も比べる？",
+        "家族の本命星でも日取りを確認する？",
+        "吉方位にある街をさらに絞る？",
+      ],
+    });
+    expect(JSON.stringify(events)).not.toContain(FOLLOW_UP_ENVELOPE_START);
   });
   it("過去の相談メモと複数人を命令ではない文脈としてモデルへ渡す", async () => {
     const model = createAgentMock();
     await run(AGENT_LIMITS, undefined, model, {
+      history: [
+        { role: "user", content: "家族で北東への引越しを検討している" },
+        { role: "assistant", content: "候補日の条件を先に比べましょう。" },
+      ],
       memories: ["2027年3月10日に北東へ動く候補を選んだ。"],
       people: [
         {
@@ -100,8 +121,11 @@ describe("AIが公開MCPを選ぶループ", () => {
     const prompt = JSON.stringify(model.doStreamCalls[0].prompt);
     expect(prompt).toContain("BEGIN_PEOPLE_PROFILE_DATA");
     expect(prompt).toContain("配偶者");
+    expect(prompt).toContain("候補日の条件を先に比べましょう");
     expect(prompt).toContain("BEGIN_REMEMBERED_CONSULTATIONS");
     expect(prompt).toContain("2027年3月10日");
+    expect(prompt).toContain("最新の回答");
+    expect(prompt).toContain("選ばれた人物");
   });
   it("モデルの例外に含まれる質問・鍵をログにも回答にも出さない", async () => {
     const log = vi.spyOn(console, "error").mockImplementation(() => {});
@@ -201,6 +225,49 @@ describe("AIが公開MCPを選ぶループ", () => {
     );
     expect(call.mock.calls.length).toBeLessThanOrEqual(20);
     expect(JSON.stringify(events.at(-1))).toContain("回数上限");
+  });
+});
+describe("追質問候補", () => {
+  it("平文だけを短く整え、重複・markup・URL・長文を捨てる", () => {
+    expect(
+      sanitizeFollowUpSuggestions([
+        " 1. 家族の候補日も比べる ",
+        "家族の候補日も比べる？",
+        "<b>危険な候補</b>",
+        "参考URL https://example.com",
+        "あ".repeat(61),
+        "別の街も確認する？",
+      ]),
+    ).toEqual(["家族の候補日も比べる？", "別の街も確認する？"]);
+    expect(
+      sanitizeFollowUpSuggestions([
+        "一つ目は？",
+        "二つ目は？",
+        "三つ目は？",
+        "四つ目は？",
+        "五つ目は？",
+      ]),
+    ).toHaveLength(4);
+  });
+
+  it("同じ回答の非表示JSONを本文から分離し、不正なら候補だけ捨てる", () => {
+    expect(
+      extractFollowUpEnvelope(
+        "回答本文" +
+          formatFollowUpEnvelope([
+            "配偶者の候補も比べる？",
+            "相談メモの日付を見直す？",
+          ]),
+      ),
+    ).toEqual({
+      text: "回答本文",
+      suggestions: ["配偶者の候補も比べる？", "相談メモの日付を見直す？"],
+    });
+    expect(
+      extractFollowUpEnvelope(
+        `回答本文\n${FOLLOW_UP_ENVELOPE_START}\n["一件だけ？"]\n${FOLLOW_UP_ENVELOPE_END}`,
+      ),
+    ).toEqual({ text: "回答本文", suggestions: [] });
   });
 });
 describe("モデル設定", () => {
