@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from "react";
 import type { User } from "@supabase/supabase-js";
 import { createClient } from "@/utils/supabase/client";
 import Link from "next/link";
+import { EmailLogin } from "./EmailLogin";
 import {
   createLoginNonce,
   googleClientId,
@@ -286,6 +287,9 @@ export default function LoginPage() {
           </button>
         )}
 
+        {/* メールでのログイン。EMAIL_LOGIN_ENABLED が無ければ出ない。 */}
+        {!currentUser && <EmailLogin next={nextUrl} />}
+
         {/* よくある新規登録と同じく、押す前に規約の在り処を示す。
             チェックボックスは置かない（Google のボタンは押した時点で
             認証が始まるので、押させない状態を作るとボタンが死ぬ）。 */}
@@ -311,6 +315,8 @@ export default function LoginPage() {
           に同意したものとみなします。
           <br />
           保存するのは、方位の判定に使う値（生年月日・場所）、相談の内容（会話・相談メモ・人物プロフィール）とメールアドレスです。
+          <br />
+          吉日のお知らせメールは、別に同意したときだけお送りします。
         </p>
 
         {authError && (

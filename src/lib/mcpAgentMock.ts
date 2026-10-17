@@ -11,7 +11,9 @@ export function createAgentMock() {
         .flatMap((m) => (m.role === "tool" ? m.content : []))
         .filter((p) => p.type === "tool-result");
       // 保存の提案は計算ではないので、手順の数には入れない。
-      const results = allResults.filter((r) => r.toolName !== "propose_save");
+      const results = allResults.filter(
+        (r) => r.toolName !== "propose_save" && r.toolName !== "stage_reminder",
+      );
       const offerSave =
         results.length >= 4 &&
         Boolean(tools?.some((t) => t.name === "propose_save")) &&
@@ -31,6 +33,23 @@ export function createAgentMock() {
         }
         return result?.type === "json" ? result.value : undefined;
       };
+      // ログイン中でお知らせが使えるときは、最初の吉日をお知らせ候補にする。
+      const reminderDay =
+        results.length >= 4 &&
+        tools?.some((t) => t.name === "stage_reminder") &&
+        !allResults.some((r) => r.toolName === "stage_reminder")
+          ? z
+              .object({
+                directions: z.array(
+                  z.object({
+                    direction: z.string(),
+                    bestDays: z.array(z.object({ date: z.string() })),
+                  }),
+                ),
+              })
+              .safeParse(read("find_auspicious_days"))
+              .data?.directions.find((d) => d.bestDays.length > 0)
+          : undefined;
       let name = "search_municipality";
       let input: Record<string, unknown> = { query: "深谷市", limit: 3 };
       if (results.length === 1) {
@@ -65,7 +84,20 @@ export function createAgentMock() {
       const parts: LanguageModelV3StreamPart[] = [
         { type: "stream-start", warnings: [] },
       ];
-      if (offerSave) {
+      if (reminderDay) {
+        parts.push({
+          type: "tool-call",
+          toolCallId: "mock-reminder",
+          toolName: "stage_reminder",
+          input: JSON.stringify({
+            resultCallId: results.find(
+              (r) => r.toolName === "find_auspicious_days",
+            )?.toolCallId,
+            date: reminderDay.bestDays[0].date,
+            direction: reminderDay.direction,
+          }),
+        });
+      } else if (offerSave) {
         parts.push({
           type: "tool-call",
           toolCallId: "mock-save",
@@ -127,7 +159,10 @@ export function createAgentMock() {
       parts.push({
         type: "finish",
         finishReason: {
-          unified: results.length < 4 || offerSave ? "tool-calls" : "stop",
+          unified:
+            results.length < 4 || offerSave || reminderDay
+              ? "tool-calls"
+              : "stop",
           raw: undefined,
         },
         usage: {

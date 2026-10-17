@@ -294,6 +294,19 @@ export async function DELETE(request: NextRequest) {
       await tx.savedAnalysis.deleteMany({ where: { user_id: userId } });
       /* 日取りのお気に入り（favorite_days）も同じ。生年月日から出た判定が入る */
       await tx.favoriteDay.deleteMany({ where: { user_id: userId } });
+      /* 吉日のお知らせ（reminders）と、メールで受け取る同意の記録
+         （notification_consents）も本人の登録内容 */
+      // 表を当てる前のデプロイでも一括削除が止まらないよう、表があるときだけ。
+      const [tables] = await tx.$queryRaw<
+        { reminders: boolean; consents: boolean }[]
+      >`SELECT to_regclass('public.reminders') IS NOT NULL AS reminders,
+               to_regclass('public.notification_consents') IS NOT NULL AS consents`;
+      if (tables?.reminders)
+        await tx.reminder.deleteMany({ where: { user_id: userId } });
+      if (tables?.consents)
+        await tx.notificationConsent.deleteMany({
+          where: { user_id: userId },
+        });
       await tx.listingCandidateRate.deleteMany({
         where: {
           key: {
