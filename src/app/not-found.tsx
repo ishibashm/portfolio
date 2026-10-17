@@ -1,4 +1,5 @@
 import Link from "next/link";
+import GuideCharacter from "@/components/guide/GuideCharacter";
 
 export default function NotFound() {
   return (
@@ -13,6 +14,10 @@ export default function NotFound() {
         <p className="mt-3 text-sm leading-7 text-stone-600">
           URLが変更されたか、ページが削除された可能性があります。
         </p>
+        {/* 行き止まりに案内役を置き、次の行き先を示す（docs/guide-character.md）。 */}
+        <GuideCharacter pose="magnifier" size="md" className="mt-6">
+          おや、この方角には道がないようです。ホームか使い方ガイドへご案内します。
+        </GuideCharacter>
         <div className="mt-8 flex flex-col justify-center gap-3 sm:flex-row">
           <Link
             href="/"
