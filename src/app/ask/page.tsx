@@ -8,14 +8,14 @@ import { chainLlmState } from "@/lib/mcpAgentConfig";
 
 export const dynamic = "force-dynamic";
 export const metadata: Metadata = {
-  title: "AIに聞く｜方位と引越しの相談",
+  title: "エージェントに案内してもらう｜方位と引越しの相談",
   description:
     "初代案内役しるべと会話しながら、方位・日取り・街の候補と計算の過程を確かめる補助ツールです。",
   alternates: { canonical: "/ask" },
   robots: { index: false, follow: true },
   openGraph: pageOpenGraph(
     "/ask",
-    "AIに聞く",
+    "エージェントに案内してもらう",
     "初代案内役しるべと、方位・日取り・街の候補と計算の過程を確かめます。",
   ),
 };
@@ -27,12 +27,14 @@ export default function Page() {
         <nav aria-label="パンくず" className="mb-4 text-sm text-slate-600">
           <Link href="/">ホーム</Link>
           <span aria-hidden="true"> / </span>
-          <span aria-current="page">AIに聞く</span>
+          <span aria-current="page">エージェントに案内してもらう</span>
         </nav>
         <Link href="/houi" className="text-sm underline text-slate-600">
           本命星と吉方位の早見表へ
         </Link>
-        <h1 className="mt-5 text-3xl font-bold font-serif">AIに聞く</h1>
+        <h1 className="mt-5 text-2xl font-bold font-serif sm:text-3xl">
+          エージェントに案内してもらう
+        </h1>
         <p className="mt-4 text-sm leading-relaxed">
           初代案内役「しるべ」が、相談する人の登録から方位・日取り・街の候補まで会話でご案内します。回答ごとに、根拠になった道具の入力・結果も確かめられます。
         </p>

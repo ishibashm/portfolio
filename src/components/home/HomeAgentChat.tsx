@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import { McpExplorer } from "@/app/ask/McpExplorer";
+import { GuideAvatar } from "@/components/guide/GuideCharacter";
 export default function HomeAgentChat({
   initialQuestion,
 }: {
@@ -29,6 +30,9 @@ export default function HomeAgentChat({
       initialQuestion={initialQuestion}
     />
   ) : (
-    <p role="status">利用できる方式を確認しています…</p>
+    <div className="mt-4 flex items-center gap-3">
+      <GuideAvatar pose="compass" size="sm" decorative />
+      <p role="status">利用できる方式を確認しています…</p>
+    </div>
   );
 }

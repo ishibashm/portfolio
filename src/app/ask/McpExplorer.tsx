@@ -42,6 +42,7 @@ import {
   initialConsultationSuggestions,
   sanitizeFollowUpSuggestions,
 } from "@/lib/followUpSuggestions";
+import { GuideAvatar } from "@/components/guide/GuideCharacter";
 import type {
   AgentConversationMessage,
   AgentEvent,
@@ -1953,6 +1954,18 @@ export function McpExplorer({
         </form>
       )}
 
+      {/* 計算中は案内役が羅盤を見ている。読み上げは直下の status が担うので
+          ここは装飾（aria-hidden）。状態の文そのものは変えない。 */}
+      {running && (
+        <div
+          aria-hidden="true"
+          data-testid="guide-waiting"
+          className="flex items-center gap-3 text-sm text-slate-600"
+        >
+          <GuideAvatar pose="compass" size="sm" decorative />
+          <span>しるべが羅盤で確かめています…</span>
+        </div>
+      )}
       <p role="status" aria-live="polite" className="text-sm leading-relaxed">
         {message}
       </p>
