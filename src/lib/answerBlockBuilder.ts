@@ -141,7 +141,10 @@ export function blocksFromTool(
           /^[a-z0-9][a-z0-9-]{0,119}$/.test(a.slug),
       )
       .map((a) => ({
-        title: a.title,
+        title:
+          typeof a.section === "string" && a.section
+            ? `${a.title}「${a.section}」`.slice(0, 400)
+            : a.title,
         description: a.description,
         url:
           a.kind === "glossary"
