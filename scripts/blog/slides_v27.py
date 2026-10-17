@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
-"""v26 broadcast-telop slides: v25 cloud-palette layout fused with a lecture-board look.
+"""v27 = v26 broadcast-telop slides + one AI-generated original illustration per slide
+(scripts/blog/assets/<article>/, provenance in docs/blog-slide-design.md).
 
 See docs/blog-slide-design.md (v26) for the type system. Everything is drawn in code:
 nebula (multi-octave noise, indigo/violet/teal clouds, sparkles, lens flare) + gold compass
@@ -7,7 +8,7 @@ line-art, bevelled framed panels, brushed-metal caption band, angled series badg
 telop() — multi-layer outlined, gradient-filled, skewed Japanese captions with
 per-character size jumps and halved 約物.
 Fonts (OFL, not bundled): ~/.local/share/fonts/ofl/NotoSansCJKjp-Black.otf, DelaGothicOne-Regular.ttf.
-Usage: python3 scripts/blog/slides_v26.py [slug]
+Usage: python3 scripts/blog/slides_v27.py [slug]
 """
 from functools import lru_cache
 from math import cos, sin, pi, tan, radians
@@ -195,6 +196,51 @@ def nebula(seed, cx, cy):
     return im
 
 
+ASSETS = Path(__file__).resolve().parent/'assets'
+
+
+def load_art(article, name):
+    return Image.open(ASSETS/article/f'{name}.jpg').convert('RGB')
+
+
+def cover_crop(im, w, h, fx=.5, fy=.5):
+    """Scale to cover w×h (px at 2x) and crop around focus (fx, fy)."""
+    k = max(w/im.width, h/im.height); im = im.resize((int(im.width*k)+1, int(im.height*k)+1), Image.LANCZOS)
+    x = int((im.width-w)*fx); y = int((im.height-h)*fy)
+    return im.crop((x, y, x+w, y+h))
+
+
+# ---- guide character cut-out (flat indigo background → alpha) ----
+def _f(mask, flt):
+    return np.asarray(Image.fromarray((mask*255).astype('uint8')).filter(flt)) > 0
+def cutout(im):
+    a = np.asarray(im, float)
+    border = np.concatenate([a[0], a[:, 0], a[:, -1]])
+    bg = np.median(border, 0)
+    d = np.sqrt(((a-bg)**2).sum(-1))
+    lum = a.mean(-1) - bg.mean()
+    h, w = d.shape
+    core = Image.fromarray(np.where(d < 30, 255, 0).astype('uint8')).copy()
+    seeds = [(x, 0) for x in range(0, w, 12)] + [(0, y) for y in range(0, int(h*.85), 12)] + [(w-1, y) for y in range(0, int(h*.85), 12)]
+    for p in seeds:
+        if core.getpixel(p) == 255: ImageDraw.floodfill(core, p, 128)
+    c = np.asarray(core) == 128
+    alpha = np.ones_like(d)
+    near_dark = _f(c, ImageFilter.MaxFilter(9))
+    alpha[near_dark] = np.clip((d[near_dark]-10)/24, 0, 1)
+    alpha[c] = np.clip((d[c]-12)/50, 0, 1)**1.5   # halo inside flood: soft, unmixed
+    alpha[c & (d < 12)] = 0
+    alpha = np.asarray(Image.fromarray((alpha*255).astype('uint8')).filter(ImageFilter.GaussianBlur(1.0)), float)/255
+    al = np.maximum(alpha, 1e-3)[..., None]
+    rgb = np.clip((a - bg*(1-al))/al, 0, 255)
+    o = Image.fromarray(np.dstack([rgb, alpha*255]).astype('uint8'), 'RGBA')
+    return o.crop(o.getbbox())
+
+@lru_cache(None)
+def character(article, name):
+    return cutout(load_art(article, name))
+
+
 class Slide:
     def __init__(self, slug, headline, number, total=6, rose=(1500, 300), topic='全体像'):
         self.slug = slug
@@ -209,13 +255,7 @@ class Slide:
         self.d.line(((x0+30)*S, (y0+5)*S, (x1-6)*S, (y0+5)*S), fill=(120, 140, 220, 160), width=S)
         self.telop('占いの土台', x0+52, 57, 34, 'caption', anchor='lm', auto_small=False)
         self.telop(topic, x0+262, 57, 34, 'label', anchor='lm', auto_small=False)
-        # wordmark + page number + disclaimer
-        x = W-60-font(22).getlength('cloud palette')/S - 52
-        self.d.ellipse((x*S, 912*S, (x+22)*S, 932*S), fill=IVORY); self.d.ellipse(((x+12)*S, 906*S, (x+38)*S, 932*S), fill=IVORY)
-        self.d.ellipse(((x+32)*S, 918*S, (x+40)*S, 926*S), fill=VERM)
-        self.t('cloud palette', x+48, 920, 22, IVORY, anchor='lm')
-        self.t(f'{number+1:02d}/{total:02d}', x-24, 920, 22, (200, 200, 230, 255), anchor='rm')
-        self.t('伝統的な占術の考え方・効果が科学的に確認されたものではありません', 60, 920, 20, (180, 184, 214, 255), anchor='lm')
+        self.number, self.total = number, total
 
     def telop(self, text, x, y, size, style='caption', anchor='lm', marker=None, auto_small=True, maxw=None, color=None):
         layer, base = render_telop(text, size, style, marker, auto_small, color)
@@ -256,6 +296,49 @@ class Slide:
             self.im.paste(hg, (int(X), int(Y)), hm); self.d = ImageDraw.Draw(self.im)
             self.d.line((X+r*S, Y+2*S, X2-r*S, Y+2*S), fill=(255, 255, 255, 120), width=2*S)
             self.telop(header, x+w/2, y+40, 38, 'caption', anchor='mm', maxw=w-40, auto_small=False)
+
+    def inset(self, art, x, y, w, h, fx=.5, fy=.5, r=18, fade=None):
+        """Framed illustration: gold bevel frame, drop shadow, inner vignette; optional bottom fade."""
+        X, Y, Wp, Hp = x*S, y*S, w*S, h*S
+        sh = Image.new('RGBA', self.im.size); ImageDraw.Draw(sh).rounded_rectangle((X+8*S, Y+14*S, X+Wp+8*S, Y+Hp+14*S), r*S, fill=(0, 0, 0, 160))
+        self.im.alpha_composite(sh.filter(ImageFilter.GaussianBlur(12*S)))
+        fr = vgrad(Wp+12*S, Hp+12*S, [(0, '#F3DDA0'), (.5, '#B8903F'), (1, '#7A5A22')]).convert('RGBA')
+        m = Image.new('L', fr.size); ImageDraw.Draw(m).rounded_rectangle((0, 0, fr.width-1, fr.height-1), (r+6)*S, fill=255)
+        self.im.paste(fr, (X-6*S, Y-6*S), m)
+        pic = cover_crop(art, Wp, Hp, fx, fy).convert('RGBA')
+        vig = Image.new('L', pic.size, 0); ImageDraw.Draw(vig).rounded_rectangle((0, 0, Wp, Hp), r*S, outline=255, width=26*S)
+        dark = Image.new('RGBA', pic.size, (6, 8, 26, 255)); dark.putalpha(vig.filter(ImageFilter.GaussianBlur(22*S)).point(lambda v: v*150//255))
+        pic.alpha_composite(dark)
+        if fade:  # darken lower part so overlaid telops read
+            g = vgrad(Wp, Hp, [(0, (0, 0, 0)), (1-fade, (0, 0, 0)), (1, (255, 255, 255))]).convert('L')
+            d2 = Image.new('RGBA', pic.size, (8, 10, 30, 255)); d2.putalpha(g.point(lambda v: v*210//255)); pic.alpha_composite(d2)
+        mm = Image.new('L', pic.size); ImageDraw.Draw(mm).rounded_rectangle((0, 0, Wp-1, Hp-1), r*S, fill=255)
+        self.im.paste(pic, (X, Y), mm); self.d = ImageDraw.Draw(self.im)
+        self.d.rounded_rectangle((X, Y, X+Wp, Y+Hp), r*S, outline=(255, 240, 200, 120), width=2*S)
+
+    def glow_art(self, art, cx, cy, size, opacity=.75, sharp=.42):
+        """Borderless: art fades radially into the nebula; outer ring blurred (decorative parts hidden)."""
+        Wp = size*S
+        pic = cover_crop(art, Wp, Wp)
+        blur = pic.filter(ImageFilter.GaussianBlur(10*S))
+        yy, xx = np.mgrid[0:Wp, 0:Wp]; rr = np.hypot(xx-Wp/2, yy-Wp/2)/(Wp/2)
+        sharp_m = Image.fromarray((np.clip((sharp+.08-rr)/.16, 0, 1)*255).astype('uint8'))
+        pic = Image.composite(pic, blur, sharp_m).convert('RGBA')
+        alpha = np.clip((1-rr)/.45, 0, 1)**1.4*255*opacity
+        pic.putalpha(Image.fromarray(alpha.astype('uint8')))
+        scr = Image.new('RGBA', self.im.size); scr.paste(pic, (int(cx*S-Wp/2), int(cy*S-Wp/2)))
+        self.im.alpha_composite(scr); self.d = ImageDraw.Draw(self.im)
+
+    def presenter(self, cut, x, top, height, rim=True):
+        """Place the cut-out guide at a slide edge; drawn before band() so the band overlaps it."""
+        k = height*S/cut.height
+        c = cut.resize((int(cut.width*k), int(cut.height*k)), Image.LANCZOS)
+        X, Y = int(x*S), int(top*S)
+        if rim:  # soft indigo rim light so the figure separates from the nebula
+            a = c.getchannel('A').filter(ImageFilter.GaussianBlur(14*S))
+            g = Image.new('RGBA', c.size, (120, 140, 255, 0)); g.putalpha(a.point(lambda v: v*90//255))
+            self.im.alpha_composite(g, (X, Y))
+        self.im.alpha_composite(c, (X, Y)); self.d = ImageDraw.Draw(self.im)
 
     def band(self, items):
         """Brushed-metal panel tinted indigo, bevel highlight, gold rule, red label + white caption."""
@@ -317,10 +400,24 @@ class Slide:
                     d.rectangle(((x)*S, (cy-rr)*S, (x+rr)*S, (cy+rr)*S), fill=IVORY)
                     d.ellipse(((x-rr)*S, (cy-rr)*S, (x+rr)*S, (cy+rr)*S), outline=GOLD, width=2*S)
 
+    def footer(self):
+        number, total = self.number, self.total
+        x = W-60-font(22).getlength('cloud palette')/S - 52
+        self.d.ellipse((x*S, 912*S, (x+22)*S, 932*S), fill=IVORY); self.d.ellipse(((x+12)*S, 906*S, (x+38)*S, 932*S), fill=IVORY)
+        self.d.ellipse(((x+32)*S, 918*S, (x+40)*S, 926*S), fill=VERM)
+        self.t('cloud palette', x+48, 920, 22, IVORY, anchor='lm')
+        self.t(f'{number+1:02d}/{total:02d}', x-24, 920, 22, (200, 200, 230, 255), anchor='rm')
+        self.t('伝統的な占術の考え方・効果が科学的に確認されたものではありません', 60, 920, 20, (180, 184, 214, 255), anchor='lm')
+
+
     def save(self, suffix=''):
+        self.footer()
         out = ROOT/'public/blog'/f'{self.slug}{suffix}.png'
         im = self.im.convert('RGB').resize((W, H), Image.Resampling.LANCZOS)
-        im.quantize(colors=128, method=Image.Quantize.MEDIANCUT, dither=Image.Dither.NONE).save(out, optimize=True)
+        for n in (96, 84, 72):  # fewest steps down until under the size budget
+            im.quantize(colors=n, method=Image.Quantize.MEDIANCUT, dither=Image.Dither.NONE).save(out, optimize=True)
+            if out.stat().st_size <= 300_000:
+                break
         if out.stat().st_size > 300_000:
             raise ValueError(f'PNG exceeds 300KB: {out}')
         print(f'{out.name}: {W}×{H} / {out.stat().st_size/1000:.1f} KB')
@@ -336,20 +433,29 @@ def four_foundations():
         assert claim in art, f'Review claim: {claim}'
     F = ['陰陽', '五行', '干支', '暦']
 
-    # cover: 4 foundations quadrant
-    s = Slide(slug, '占いの{土台}は{4}つ', 0, rose=(900, 420), topic='全体像')
+    A = lambda n: load_art('four-foundations', n)
+
+    C = lambda n: character('four-foundations', n)
+
+    # cover: guide (first generation) on the right, 2×2 foundations on the left
+    s = Slide(slug, '占いの{土台}は{4}つ', 0, rose=(1450, 430), topic='全体像')
+    s.presenter(C('cover'), 1130, 112, 840)
+    gl = Image.new('RGBA', s.im.size); ImageDraw.Draw(gl).ellipse((1150*S, 140*S, 1430*S, 420*S), fill=(255, 196, 120, 70))
+    s.im.alpha_composite(gl.filter(ImageFilter.GaussianBlur(40*S))); s.d = ImageDraw.Draw(s.im)
     for i, (name, sub) in enumerate(zip(F, ['2つで分ける', '5つで分ける', '60で数える', '時を区切る'])):
-        x, y = (300, 930)[i % 2], (170, 435)[i//2]
-        s.panel(x, y, 570, 235)
-        s.icon(name, x+100, y+117, 48)
-        s.telop(name, x+190, y+80, 96, 'card', anchor='lm', auto_small=False)
-        s.telop(sub, x+194, y+178, 42, 'cardred', anchor='lm')
+        x, y = (60, 625)[i % 2], (170, 435)[i//2]
+        s.panel(x, y, 535, 235)
+        s.icon(name, x+92, y+117, 48)
+        s.telop(name, x+175, y+80, 96, 'card', anchor='lm', auto_small=False)
+        s.telop(sub, x+179, y+178, 42, 'cardred', anchor='lm')
+    s.telop('初代 案内役', 1480, 650, 58, 'label', anchor='mm', auto_small=False)
     s.band([('ポイント', '占いはどれも、この4つを組み合わせてできている')])
     s.save()
 
-    # slide-1: which divination uses which foundation
+    # slide-1: guide on the left, table on the right
     s = Slide(slug, '占術は{どの土台}を使う？', 1, rose=(200, 650), topic='対応表')
-    x, y, c0, cw, rh = 170, 165, 520, 230, 104
+    s.presenter(C('slide-1'), -150, 130, 800)
+    x, y, c0, cw, rh = 520, 165, 400, 205, 104
     s.panel(x, y, c0+cw*4, 92+rh*3, r=22)
     s.d.rounded_rectangle((x*S, y*S, (x+c0+cw*4)*S, (y+92)*S), 22*S, fill=INDIGO)
     s.d.rectangle((x*S, (y+60)*S, (x+c0+cw*4)*S, (y+92)*S), fill=INDIGO)
@@ -365,9 +471,9 @@ def four_foundations():
             s.d.rectangle(((x+6)*S, yy*S, (x+c0+cw*4-6)*S, (yy+rh)*S), fill='#F0E6CC')
         if i:
             s.d.line(((x+24)*S, yy*S, (x+c0+cw*4-24)*S, yy*S), fill='#E3DCCB', width=2*S)
-        s.telop(name, x+36, yy+rh/2, 48, 'body', anchor='lm', auto_small=False)
+        s.telop(name, x+30, yy+(rh/2 if not extra else rh/2-14), 46, 'body', anchor='lm', auto_small=False)
         if extra:
-            s.t(extra, x+c0-28, yy+rh/2, 30, TEAL, anchor='rm')
+            s.t(extra, x+32, yy+rh/2+30, 26, TEAL, anchor='lm')
         for j, m in enumerate(marks):
             cx = x+c0+cw*j+cw/2
             if m:
@@ -378,62 +484,65 @@ def four_foundations():
     s.band([('ポイント', '同じ土台でも、組み合わせ方で占いが変わる')])
     s.save('-slide-1')
 
-    # slide-2: 2026 = 丙午
+    # slide-2: guide + fire horse on the left, 4 rows on the right
     s = Slide(slug, '例：{2026}年は「{丙午}」', 2, rose=(1550, 420), topic='具体例')
-    s.panel(120, 175, 470, 470)
-    s.telop('丙午', 355, 360, 170, 'card', anchor='mm', auto_small=False)
-    s.telop('ひのえうま', 355, 530, 48, 'cardred', anchor='mm', auto_small=False)
+    s.presenter(C('slide-2'), -60, 150, 700)
+    s.telop('丙午', 470, 205, 100, 'label', anchor='mm', auto_small=False)
+    s.telop('ひのえうま', 640, 222, 36, 'caption', anchor='mm', auto_small=False)
     for i, (f, body) in enumerate([('干支', '丙（十干）＋ 午（十二支）'), ('五行', '丙も午も「火」'),
                                     ('陰陽', '丙は「陽」の火'), ('暦', '立春（2月4日）から丙午')]):
         y = 175 + i*122
-        s.panel(650, y, 1030, 104, r=20)
-        s.icon(f, 712, y+52, 30)
-        s.telop(f, 770, y+52, 42, 'card', anchor='lm', auto_small=False)
-        s.telop(body, 930, y+52, 48, 'body', anchor='lm', maxw=730)
+        s.panel(760, y, 990, 104, r=20)
+        s.icon(f, 822, y+52, 30)
+        s.telop(f, 880, y+52, 42, 'card', anchor='lm', auto_small=False)
+        s.telop(body, 1030, y+52, 48, 'body', anchor='lm', maxw=700)
     s.band([('ポイント', '年の名前ひとつに、4つの土台がそろっている')])
     s.save('-slide-2')
 
-    # slide-3: flow chart
+    # slide-3: flow chart on the left, thinking guide on the right
     s = Slide(slug, '{天中殺}はどの土台？', 3, rose=(900, 420), topic='見分け方')
+    s.presenter(C('slide-3'), 1350, 120, 820)
     for i, (head, ex) in enumerate([('出てくる言葉', '「空亡」'), ('どの土台か', '干支'), ('答えを動かす入力', '生まれた日')]):
-        x = 110 + i*560
-        s.panel(x, 230, 460, 250, header=head, hfill=(INDIGO, TEAL, VERM)[i])
+        x = 50 + i*440
+        s.panel(x, 235, 365, 260, header=head, hfill=(INDIGO, TEAL, VERM)[i])
         if i == 1:
-            s.icon('干支', x+120, 395, 40)
-            s.telop(ex, x+180, 395, 84, 'card', anchor='lm', auto_small=False)
+            s.icon('干支', x+95, 410, 36)
+            s.telop(ex, x+150, 410, 80, 'card', anchor='lm', auto_small=False)
         else:
-            s.telop(ex, x+230, 395, 68, 'card', anchor='mm', maxw=420, auto_small=False)
+            s.telop(ex, x+182, 410, 64, 'card', anchor='mm', maxw=330, auto_small=False)
         if i < 2:
-            s.arrow(x+478, 355, x+545)
+            s.arrow(x+372, 365, x+432)
     s.band([('ポイント', '言葉を見れば、どの土台の話かが分かる')])
     s.save('-slide-3')
 
-    # slide-4: 2-column compare
+    # slide-4: two columns on the left, guide with compass + calendar on the right
     s = Slide(slug, '方位と天中殺は{土台}が違う', 4, rose=(900, 420), topic='このサイト')
+    s.presenter(C('slide-4'), 1230, 120, 820)
     for i, (head, q, fs, base, col) in enumerate([('方位の吉凶', 'どちらへ', ['五行', '暦'], '九星気学＋暦', INDIGO),
                                                   ('天中殺', 'いつ', ['干支'], '干支（生まれた日）', TEAL)]):
-        x = 170 + i*760
-        s.panel(x, 180, 700, 420, header=head, hfill=col)
-        s.telop(f'「{q}」', x+350, 340, 100, ('card', 'cardred')[i], anchor='mm', auto_small=False, color=None)
-        w = font(50).getlength(base)/S + 90*len(fs)
-        xx = x+350-w/2
+        x = 60 + i*620
+        s.panel(x, 180, 580, 420, header=head, hfill=col)
+        s.telop(f'「{q}」', x+290, 340, 96, ('card', 'cardred')[i], anchor='mm', auto_small=False)
+        w = font(48).getlength(base)/S + 84*len(fs)
+        xx = x+290-w/2
         for f in fs:
-            s.icon(f, xx+36, 500, 30); xx += 90
-        s.telop(base, xx, 500, 52, 'body', anchor='lm', auto_small=False)
+            s.icon(f, xx+34, 500, 28); xx += 84
+        s.telop(base, xx, 500, 48, 'body', anchor='lm', auto_small=False, maxw=520-84*len(fs))
     s.band([('ポイント', '方位は「どちらへ」、天中殺は「いつ」を見る')])
     s.save('-slide-4')
 
-    # slide-5: summary + CTA
+    # slide-5: stacked CTA cards on the left, guide with smartphone on the right
     s = Slide(slug, '自分の場合を{調べる}', 5, rose=(900, 420), topic='まとめ')
+    s.presenter(C('slide-5'), 1240, 120, 820)
     for i, (title, url, fs, col) in enumerate([('方位を調べる', 'cloud-palette.com/houi', ['五行', '暦'], INDIGO),
                                                ('天中殺つきで日取りを選ぶ', 'cloud-palette.com/calendar', ['干支', '暦'], TEAL)]):
-        x = 170 + i*760
-        s.panel(x, 200, 700, 380)
+        y = 165 + i*255
+        s.panel(60, y, 1160, 225)
         for k, f in enumerate(fs):
-            s.icon(f, x+80+k*90, 270, 34)
-        s.telop(title, x+50, 390, 56, ('card', 'cardred')[i], anchor='lm', maxw=600)
-        s.d.rounded_rectangle(((x+50)*S, 470*S, (x+650)*S, 540*S), 35*S, fill=VERM)
-        s.telop(url + ' →', x+350, 505, 38, 'caption', anchor='mm', maxw=560, auto_small=False)
+            s.icon(f, 110+k*80, y+60, 30)
+        s.telop(title, 290, y+62, 56, ('card', 'cardred')[i], anchor='lm', maxw=900)
+        s.d.rounded_rectangle((100*S, (y+125)*S, 1180*S, (y+195)*S), 35*S, fill=VERM)
+        s.telop(url + ' →', 640, y+160, 40, 'caption', anchor='mm', maxw=1000, auto_small=False)
     s.band([('ポイント', '土台が分かったら、自分の生年月日で確かめる')])
     s.save('-slide-5')
 
