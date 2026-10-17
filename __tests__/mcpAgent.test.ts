@@ -457,7 +457,7 @@ describe("describeAgentFailure", () => {
     const error = Object.assign(new Error("Bad Request"), {
       name: "AI_APICallError",
       statusCode: 429,
-      requestBodyValues: { contents: "1988-11-25 秘密の質問" },
+      requestBodyValues: { contents: "秘密の質問" },
       responseBody: JSON.stringify({
         error: {
           status: "RESOURCE_EXHAUSTED",
