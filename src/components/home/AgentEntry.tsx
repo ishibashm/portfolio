@@ -2,21 +2,42 @@
 import dynamic from "next/dynamic";
 import Link from "next/link";
 import { useState } from "react";
+import GuideCharacter, { GuideAvatar } from "@/components/guide/GuideCharacter";
 
 // 操作するまではモジュールを描画せず、チャットのJSも取得しない。
 const Chat = dynamic(() => import("./HomeAgentChat"), {
   ssr: false,
-  loading: () => <p role="status">質問の画面を準備しています…</p>,
+  loading: () => (
+    <div className="mt-4 flex items-center gap-3">
+      <GuideAvatar pose="compass" size="sm" decorative />
+      <p role="status">質問の画面を準備しています…</p>
+    </div>
+  ),
 });
 export function AgentEntry() {
   const [opened, setOpened] = useState(false);
   const [question, setQuestion] = useState("");
   return (
     <section className="w-full max-w-[1700px] rounded-3xl border border-rose-200 bg-white p-6">
-      <h2 className="text-xl font-serif font-bold">AIに聞く</h2>
+      <h2 className="text-xl font-serif font-bold">
+        エージェントに案内してもらう
+      </h2>
       <p className="mt-2 text-sm">
         公開記事と計算の道具から、疑問を一つずつ確かめます。
       </p>
+      {/* 初代 案内役しるべ。トップの最初の画面に入るので、ここだけ
+          eager + fetchPriority low（頁の主役の文字より先に取らせない）。 */}
+      <GuideCharacter
+        pose="pointing"
+        size="md"
+        priority="low"
+        className="mt-4 max-w-2xl"
+      >
+        方位・日取り・街のこと、何でも聞いてください。根拠の計算もお見せします。
+        <span className="mt-1 block text-xs text-slate-500">
+          しるべの案内は、サイト内の計算と公開記事にもとづく参考情報です。
+        </span>
+      </GuideCharacter>
       {opened ? (
         <Chat initialQuestion={question} />
       ) : (
