@@ -35,10 +35,10 @@ it("初期HTMLには軽いフォームだけ。操作で初めてdynamicを描�
   fireEvent.click(screen.getByRole("button", { name: "質問の画面を開く" }));
   expect(screen.getByText("遅延チャット")).toBeTruthy();
 });
-it("明示操作で登録内容を人物に追加し、必要な質問だけ送る。すべて消すも反映", async () => {
+it("登録内容を人物候補へ統合し、必要な質問だけ送る。すべて消すも反映", async () => {
   localStorage.setItem(
     SETTINGS_KEY,
-    JSON.stringify({ birth_date: "1990-05-05", base_label: "名古屋市中区" }),
+    JSON.stringify({ birth_date: "1990-05-05", base_label: "浜松市中央区" }),
   );
   const fetcher = vi
     .fn()
@@ -46,6 +46,8 @@ it("明示操作で登録内容を人物に追加し、必要な質問だけ送�
       void init;
       if (url.includes("status"))
         return Response.json({ remaining: { requests: 20 } });
+      if (url === "/api/user-config" || url === "/api/profile-presets")
+        return Response.json({}, { status: 401 });
       if (url.includes("municipalities")) return Response.json({ names: [] });
       return new Response(
         '{"type":"text-delta","text":"回答"}\n{"type":"done","calls":0,"reasons":[]}\n',
@@ -53,14 +55,15 @@ it("明示操作で登録内容を人物に追加し、必要な質問だけ送�
       );
     });
   vi.stubGlobal("fetch", fetcher);
-  render(<McpExplorer agentEnabled />);
-  expect(screen.queryByText(/1990-05-05/)).toBeNull();
-  fireEvent.click(
-    screen.getByRole("button", {
-      name: "サイトの登録内容から本人を追加",
-    }),
-  );
-  expect(await screen.findByLabelText("本人を相談対象にする")).toBeTruthy();
+  render(<McpExplorer agentEnabled persistConversation />);
+  const registeredPerson = await screen.findByRole("button", {
+    name: "本人を相談対象に選ぶ",
+  });
+  expect(registeredPerson.textContent).toContain("1990-05-05・浜松市中央区");
+  fireEvent.click(registeredPerson);
+  expect(
+    screen.getByRole("button", { name: "本人を相談対象から外す" }),
+  ).toBeTruthy();
   fireEvent.change(screen.getByLabelText("メッセージ"), {
     target: { value: "引越しの記事を教えて" },
   });

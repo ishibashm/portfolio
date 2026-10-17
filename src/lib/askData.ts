@@ -25,8 +25,25 @@ export interface AskPerson {
   birthDate: string;
   birthPlace?: string;
   residence?: string;
+  /**
+   * サイトの使用中プロフィール・保存済みプロフィール・同行者との
+   * 紐付け。同じ人を /ask でも手入力した場合に二重表示しないために使う。
+   * モデルへは送らない。
+   */
+  sourceIds?: string[];
+  /** サイト全体で使用中のプロフィールなら true。 */
+  active?: boolean;
   createdAt: string;
   updatedAt: string;
+}
+
+export interface RegisteredAskPerson {
+  sourceId: string;
+  name: string;
+  birthDate: string;
+  birthPlace?: string;
+  residence?: string;
+  active?: boolean;
 }
 
 export interface AskConversation {
@@ -123,9 +140,146 @@ function parsePerson(value: unknown, fallbackNow: string): AskPerson | null {
     ...(optionalText(item.residence, 80)
       ? { residence: optionalText(item.residence, 80) }
       : {}),
+    ...(Array.isArray(item.sourceIds)
+      ? {
+          sourceIds: [
+            ...new Set(
+              item.sourceIds.flatMap((value) => {
+                const source = optionalText(value, 100);
+                return source ? [source] : [];
+              }),
+            ),
+          ].slice(0, 20),
+        }
+      : {}),
+    ...(item.active === true ? { active: true } : {}),
     createdAt,
     updatedAt: timestamp(item.updatedAt, createdAt),
   };
+}
+
+function normalizedIdentity(value: string): string {
+  const normalized = value
+    .normalize("NFKC")
+    .toLocaleLowerCase("ja")
+    .replace(/[\s　・、。]/gu, "");
+  return /^(?:本人|自分|私|わたし)$/u.test(normalized)
+    ? "__self__"
+    : normalized;
+}
+
+function samePlace(left: string | undefined, right: string | undefined) {
+  if (!left || !right) return false;
+  const a = normalizedIdentity(left);
+  const b = normalizedIdentity(right);
+  return (
+    a === b ||
+    (Math.min(a.length, b.length) >= 4 && (a.endsWith(b) || b.endsWith(a)))
+  );
+}
+
+function sameRegisteredPerson(
+  person: AskPerson,
+  candidate: RegisteredAskPerson,
+): boolean {
+  if (person.sourceIds?.includes(candidate.sourceId)) return true;
+  if (!person.birthDate || person.birthDate !== candidate.birthDate)
+    return false;
+  return (
+    normalizedIdentity(person.name) === normalizedIdentity(candidate.name) ||
+    samePlace(person.residence, candidate.residence)
+  );
+}
+
+function registeredPersonId(sourceId: string): string {
+  // FNV-1a: sourceId が URL や日本語を含んでも、保存用 ID は安全な字に限る。
+  let hash = 0x811c9dc5;
+  for (let index = 0; index < sourceId.length; index++) {
+    hash ^= sourceId.charCodeAt(index);
+    hash = Math.imul(hash, 0x01000193);
+  }
+  return `registered_${(hash >>> 0).toString(36)}`;
+}
+
+function registeredSourcePriority(sourceId: string): number {
+  if (sourceId.startsWith("settings:")) return 3;
+  if (sourceId.startsWith("profile:")) return 2;
+  if (sourceId.startsWith("party:")) return 1;
+  return 0;
+}
+
+/**
+ * /ask 独自の人物と、他の画面で登録済みの人物を 1 つの選択肢にする。
+ *
+ * 先に /ask の id を残すのは、既存会話の personIds を書き換えずに済ませるため。
+ * sourceIds を一度紐付ければ、登録元で名前や場所が変わっても同じ人として更新できる。
+ */
+export function mergeRegisteredAskPeople(
+  current: AskPerson[],
+  registered: RegisteredAskPerson[],
+  now: string,
+): AskPerson[] {
+  const people = current.map((person) => {
+    const copy = {
+      ...person,
+      ...(person.sourceIds ? { sourceIds: [...person.sourceIds] } : {}),
+    };
+    if (copy.sourceIds?.length && copy.active) delete copy.active;
+    return copy;
+  });
+
+  for (const candidate of registered) {
+    const name = text(candidate.name, 40);
+    const parsedBirthDate = birthDate(candidate.birthDate);
+    const sourceId = text(candidate.sourceId, 100);
+    if (!name || !parsedBirthDate || !sourceId) continue;
+    const match = people.find((person) =>
+      sameRegisteredPerson(person, {
+        ...candidate,
+        name,
+        birthDate: parsedBirthDate,
+        sourceId,
+      }),
+    );
+    const birthPlace = optionalText(candidate.birthPlace, 80);
+    const residence = optionalText(candidate.residence, 80);
+    if (match) {
+      const linkedPriority = Math.max(
+        -1,
+        ...(match.sourceIds ?? []).map(registeredSourcePriority),
+      );
+      if (
+        !match.sourceIds?.length ||
+        registeredSourcePriority(sourceId) >= linkedPriority
+      ) {
+        match.name = name;
+        match.birthDate = parsedBirthDate;
+        if (birthPlace) match.birthPlace = birthPlace;
+        if (residence) match.residence = residence;
+      }
+      match.sourceIds = [
+        ...new Set([...(match.sourceIds ?? []), sourceId]),
+      ].slice(0, 20);
+      match.active =
+        match.active === true || candidate.active === true ? true : undefined;
+      match.updatedAt = now;
+      continue;
+    }
+    if (people.length >= ASK_DATA_LIMITS.people) break;
+    people.push({
+      id: registeredPersonId(sourceId),
+      name,
+      birthDate: parsedBirthDate,
+      ...(birthPlace ? { birthPlace } : {}),
+      ...(residence ? { residence } : {}),
+      sourceIds: [sourceId],
+      ...(candidate.active === true ? { active: true } : {}),
+      createdAt: now,
+      updatedAt: now,
+    });
+  }
+
+  return uniqueById(people).slice(0, ASK_DATA_LIMITS.people);
 }
 
 function parseConversation(

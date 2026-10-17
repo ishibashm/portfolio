@@ -7,6 +7,12 @@ export const FOLLOW_UP_LIMITS = {
 export const FOLLOW_UP_ENVELOPE_START = "<<<CP_FOLLOW_UPS>>>";
 export const FOLLOW_UP_ENVELOPE_END = "<<<CP_END_FOLLOW_UPS>>>";
 
+export interface SuggestionPerson {
+  name: string;
+  birthDate?: string;
+  residence?: string;
+}
+
 const JAPANESE_CHARACTER =
   /[\p{Script=Han}\p{Script=Hiragana}\p{Script=Katakana}]/u;
 const MARKUP_OR_URL =
@@ -39,6 +45,56 @@ export function sanitizeFollowUpSuggestions(value: unknown): string[] {
     if (suggestions.length === FOLLOW_UP_LIMITS.max) break;
   }
   return suggestions.length >= FOLLOW_UP_LIMITS.min ? suggestions : [];
+}
+
+function japaneseBirthDate(value: string | undefined): string | undefined {
+  const match = value?.match(/^(\d{4})-(\d{2})-(\d{2})$/u);
+  if (!match) return;
+  return `${Number(match[1])}年${Number(match[2])}月${Number(match[3])}日`;
+}
+
+/**
+ * 空の会話に出す候補。選んだ人の値以外の日付・地名は入れない。
+ * 値が無い場合は、引越しの目的だけを尋ねる汎用候補にする。
+ */
+export function initialConsultationSuggestions(
+  people: SuggestionPerson[],
+): string[] {
+  const selected = people.slice(0, 8);
+  if (!selected.length)
+    return [
+      "引越しに良い方位を相談したい？",
+      "引越しの日取りを相談したい？",
+      "条件に合う街を探したい？",
+    ];
+
+  const names = selected
+    .map((person) => person.name.trim())
+    .filter(Boolean)
+    .slice(0, 2)
+    .join("と");
+  const sharedResidence = selected[0]?.residence?.trim();
+  const sameResidence =
+    sharedResidence &&
+    selected.every((person) => person.residence?.trim() === sharedResidence)
+      ? sharedResidence
+      : undefined;
+  const firstBirthDate = japaneseBirthDate(selected[0]?.birthDate);
+  const candidates = [
+    sameResidence
+      ? `${sameResidence}からの引越し方位を相談したい？`
+      : `${names || "選んだ人"}に合う引越し方位を相談したい？`,
+    selected.length === 1 && firstBirthDate
+      ? `${firstBirthDate}生まれの${names}に合う日取りを相談したい？`
+      : `${names || "選んだ人"}に合う日取りを相談したい？`,
+    sameResidence
+      ? `${sameResidence}から見た街の候補を探したい？`
+      : "条件に合う街を探したい？",
+  ];
+  const sanitized = sanitizeFollowUpSuggestions(candidates);
+  return sanitized.length
+    ? sanitized
+    : ["引越しの方位を相談したい？", "引越しの日取りを相談したい？"];
 }
 
 export function formatFollowUpEnvelope(value: unknown): string {

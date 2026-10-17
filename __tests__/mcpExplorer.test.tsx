@@ -13,6 +13,8 @@ import {
   ASK_CONVERSATION_STORAGE_KEY,
   McpExplorer,
 } from "@/app/ask/McpExplorer";
+import { PARTY_PREFS_KEY } from "@/lib/partyMemberInput";
+import { SETTINGS_KEY } from "@/lib/userSettings";
 
 afterEach(() => {
   cleanup();
@@ -125,13 +127,24 @@ it("AI回答を逐次描き、道具の状態を利用者向けに折り畳む",
   vi.stubGlobal("fetch", fetcher);
   render(<McpExplorer agentEnabled />);
   expect(screen.getByText(/Googleの生成AIに送ります/)).toBeTruthy();
-  expect(screen.getByLabelText("生年月日")).toBeTruthy();
-  fireEvent.click(screen.getByRole("button", { name: /1990年5月5日生まれ/ }));
+  expect(screen.getByText("しるべ")).toBeTruthy();
+  expect(screen.getByRole("img", { name: "しるべ" })).toBeTruthy();
+  fireEvent.click(screen.getByRole("button", { name: "人物情報なしで相談" }));
+  const topic = screen.getByRole("button", {
+    name: "引越しに良い方位を相談したい？",
+  });
+  fireEvent.click(topic);
+  expect(screen.getByLabelText("メッセージ")).toHaveValue(
+    "引越しに良い方位を相談したい？",
+  );
+  expect(
+    fetcher.mock.calls.filter(([url]) => url === "/api/mcp-chain"),
+  ).toHaveLength(0);
   fireEvent.click(screen.getByRole("button", { name: "送信" }));
   await waitFor(() => expect(fetcher).toHaveBeenCalledTimes(2));
   expect(JSON.parse(fetcher.mock.calls[1][1].body)).toMatchObject({
     mode: "llm",
-    question: expect.stringContaining("深谷市"),
+    question: "引越しに良い方位を相談したい？",
   });
   const encoder = new TextEncoder();
   const send = async (event: unknown) => {
@@ -196,6 +209,159 @@ it("AI回答を逐次描き、道具の状態を利用者向けに折り畳む",
   expect(fetcher).toHaveBeenCalledTimes(2);
 });
 
+it("しるべを左、利用者を右に並べ、連続するしるべ発言では名前を一度だけ出す", async () => {
+  const now = "2026-10-17T00:00:00.000Z";
+  localStorage.setItem(
+    ASK_DATA_STORAGE_KEY,
+    JSON.stringify({
+      version: 2,
+      activeConversationId: "conversation_avatar",
+      updatedAt: now,
+      conversations: [
+        {
+          id: "conversation_avatar",
+          title: "表示確認",
+          titleEdited: true,
+          createdAt: now,
+          updatedAt: now,
+          messages: [
+            { role: "assistant", content: "続けて案内します。" },
+            { role: "assistant", content: "もう一つ確認します。" },
+            { role: "user", content: "ここから質問します。" },
+            { role: "assistant", content: "質問に答えます。" },
+          ],
+          draft: "",
+          personIds: [],
+        },
+      ],
+      people: [],
+      memories: [],
+    }),
+  );
+  const fetcher = vi.fn(async (url: string) => {
+    if (url === "/api/user-config" || url === "/api/profile-presets")
+      return Response.json({}, { status: 401 });
+    return Response.json({ remaining: { requests: 20 } });
+  });
+  vi.stubGlobal("fetch", fetcher);
+
+  render(<McpExplorer agentEnabled persistConversation />);
+  const log = await screen.findByRole("log", { name: "会話履歴" });
+  expect(await within(log).findByText("質問に答えます。")).toBeTruthy();
+
+  const shirubeRows = log.querySelectorAll('[data-chat-role="assistant"]');
+  const userRows = log.querySelectorAll('[data-chat-role="user"]');
+  expect(shirubeRows).toHaveLength(3);
+  expect(userRows).toHaveLength(1);
+  expect(within(log).getAllByText("しるべ")).toHaveLength(2);
+  for (const row of shirubeRows)
+    expect(
+      within(row as HTMLElement).getByRole("img", { name: "しるべ" }),
+    ).toBeTruthy();
+  expect(within(userRows[0] as HTMLElement).queryByRole("img")).toBeNull();
+  expect(userRows[0]).toHaveClass("ml-auto");
+
+  const picture = shirubeRows[0].querySelector("picture");
+  const avatar = within(shirubeRows[0] as HTMLElement).getByRole("img", {
+    name: "しるべ",
+  });
+  const sources = picture?.querySelectorAll("source");
+  expect(picture).toHaveClass("h-8", "w-8", "sm:h-10", "sm:w-10");
+  expect(sources).toHaveLength(2);
+  expect(sources?.[0]).toHaveAttribute("type", "image/avif");
+  expect(sources?.[0]).toHaveAttribute(
+    "srcset",
+    "/guide/shirube-pointing-96.avif 96w, /guide/shirube-pointing-240.avif 240w",
+  );
+  expect(sources?.[1]).toHaveAttribute("type", "image/webp");
+  expect(avatar).toHaveAttribute("width", "96");
+  expect(avatar).toHaveAttribute("height", "118");
+  expect(avatar).toHaveClass("object-none", "object-[64%_4%]");
+});
+
+it("保存済みプロフィールと同行者を重複なく候補にし、実データから初回質問を作る", async () => {
+  localStorage.setItem(
+    SETTINGS_KEY,
+    JSON.stringify({
+      birth_date: "1991-04-12",
+      base_label: "静岡県浜松市中央区",
+    }),
+  );
+  localStorage.setItem(
+    "profile_presets_v1",
+    JSON.stringify([
+      {
+        id: "profile-me",
+        name: "本人",
+        birthDate: "1991-04-12",
+        baseLat: 35.17,
+        baseLon: 136.9,
+        baseLabel: "浜松市中央区",
+        active: true,
+        createdAt: "2026-01-01T00:00:00.000Z",
+      },
+      {
+        id: "profile-mother",
+        name: "母",
+        birthDate: "1960-03-04",
+        baseLat: 35.17,
+        baseLon: 136.9,
+        baseLabel: "浜松市中央区",
+        createdAt: "2026-01-01T00:00:00.000Z",
+      },
+    ]),
+  );
+  localStorage.setItem(
+    PARTY_PREFS_KEY,
+    JSON.stringify({
+      partyMembers: [
+        { id: "mother", name: "母", birthDate: "1960-03-04" },
+        { id: "child", name: "子ども", birthDate: "2018-07-08" },
+      ],
+    }),
+  );
+  const fetcher = vi.fn(async (url: string) => {
+    if (url.includes("status"))
+      return Response.json({ remaining: { requests: 20 } });
+    if (url === "/api/user-config" || url === "/api/profile-presets")
+      return Response.json({}, { status: 401 });
+    return new Response(
+      '{"type":"text-delta","text":"回答"}\n{"type":"done","calls":0,"reasons":[]}\n',
+    );
+  });
+  vi.stubGlobal("fetch", fetcher);
+
+  render(<McpExplorer agentEnabled persistConversation />);
+  const self = await screen.findByRole("button", {
+    name: "本人を相談対象に選ぶ",
+  });
+  expect(self.textContent).toContain("1991-04-12・静岡県浜松市中央区");
+  expect(
+    screen.getByRole("button", { name: "母を相談対象に選ぶ" }),
+  ).toBeTruthy();
+  expect(
+    screen.getByRole("button", { name: "子どもを相談対象に選ぶ" }),
+  ).toBeTruthy();
+
+  fireEvent.click(screen.getByRole("button", { name: "選択・確認" }));
+  expect(screen.getAllByLabelText("母を相談対象にする")).toHaveLength(1);
+  fireEvent.click(
+    screen.getByRole("button", { name: "相談する人の画面を閉じる" }),
+  );
+  fireEvent.click(self);
+  const suggestion = screen.getByRole("button", {
+    name: "1991年4月12日生まれの本人に合う日取りを相談したい？",
+  });
+  expect(screen.queryByText(/1990年5月5日|深谷市|長崎市/)).toBeNull();
+  fireEvent.click(suggestion);
+  expect(screen.getByLabelText("メッセージ")).toHaveValue(
+    "1991年4月12日生まれの本人に合う日取りを相談したい？",
+  );
+  expect(
+    fetcher.mock.calls.filter(([url]) => url === "/api/mcp-chain"),
+  ).toHaveLength(0);
+});
+
 it("追質問では履歴を送り、Enter送信・Shift+Enter改行・IME変換を区別する", async () => {
   const replies = ["最初の回答", "追質問への回答"];
   const fetcher = vi.fn(async (...[url]: [url: string, init?: RequestInit]) => {
@@ -257,6 +423,8 @@ it("複数会話・人物・相談メモを端末に復元し、新しい会話�
     void init;
     if (url.includes("status"))
       return Response.json({ remaining: { requests: 20 } });
+    if (url === "/api/user-config" || url === "/api/profile-presets")
+      return Response.json({}, { status: 401 });
     if (url.includes("municipalities")) return Response.json({ names: [] });
     return new Response(
       '{"type":"text-delta","text":"保存される回答"}\n{"type":"done","calls":0,"reasons":[]}\n',
@@ -264,6 +432,8 @@ it("複数会話・人物・相談メモを端末に復元し、新しい会話�
   });
   vi.stubGlobal("fetch", fetcher);
   const first = render(<McpExplorer agentEnabled persistConversation />);
+  fireEvent.click(await screen.findByRole("button", { name: "選択・確認" }));
+  fireEvent.click(screen.getByRole("button", { name: "＋ /ask に人物を追加" }));
   fireEvent.change(screen.getByLabelText("人物の呼び名"), {
     target: { value: "本人" },
   });
@@ -274,6 +444,9 @@ it("複数会話・人物・相談メモを端末に復元し、新しい会話�
     target: { value: "長崎市" },
   });
   fireEvent.click(screen.getByRole("button", { name: "人物を登録" }));
+  fireEvent.click(
+    screen.getByRole("button", { name: "相談する人の画面を閉じる" }),
+  );
   fireEvent.change(screen.getByLabelText("メッセージ"), {
     target: { value: "私の吉方位は？" },
   });
@@ -288,7 +461,9 @@ it("複数会話・人物・相談メモを端末に復元し、新しい会話�
   first.unmount();
   render(<McpExplorer agentEnabled persistConversation />);
   expect(await screen.findByText("保存される回答")).toBeTruthy();
-  expect(screen.getByLabelText("本人を相談対象にする")).toBeTruthy();
+  expect(
+    screen.getByRole("button", { name: "本人を相談対象から外す" }),
+  ).toBeTruthy();
   expect(screen.getByText(/相談内容：私の吉方位は？/)).toBeTruthy();
   fireEvent.click(screen.getAllByRole("button", { name: /新しいチャット/ })[0]);
   expect(screen.queryByText("保存される回答")).toBeNull();
@@ -323,12 +498,17 @@ it("複数人を同じ質問へ添え、相談メモを画面から削除でき�
     void init;
     if (url.includes("status"))
       return Response.json({ remaining: { requests: 20 } });
+    if (url === "/api/user-config" || url === "/api/profile-presets")
+      return Response.json({}, { status: 401 });
     return new Response(
       '{"type":"text-delta","text":"家族向けの回答"}\n{"type":"done","calls":0,"reasons":[]}\n',
     );
   });
   vi.stubGlobal("fetch", fetcher);
   render(<McpExplorer agentEnabled persistConversation />);
+
+  fireEvent.click(await screen.findByRole("button", { name: "選択・確認" }));
+  fireEvent.click(screen.getByRole("button", { name: "＋ /ask に人物を追加" }));
 
   const addPerson = (name: string, birthDate: string, residence: string) => {
     fireEvent.change(screen.getByLabelText("人物の呼び名"), {
@@ -343,16 +523,11 @@ it("複数人を同じ質問へ添え、相談メモを画面から削除でき�
     fireEvent.click(screen.getByRole("button", { name: "人物を登録" }));
   };
   addPerson("本人", "1990-05-05", "長崎市");
-  fireEvent.click(screen.getByText("人物を追加"));
-  const personEditor = screen.getByText("人物を追加").closest("details")!;
-  fireEvent.change(screen.getByLabelText("人物の呼び名"), {
-    target: { value: "配偶者" },
-  });
-  expect(personEditor.open).toBe(true);
-  fireEvent.change(screen.getByLabelText("人物の呼び名"), {
-    target: { value: "" },
-  });
+  fireEvent.click(screen.getByRole("button", { name: "＋ /ask に人物を追加" }));
   addPerson("配偶者", "1992-08-10", "長崎市");
+  fireEvent.click(
+    screen.getByRole("button", { name: "相談する人の画面を閉じる" }),
+  );
   fireEvent.change(screen.getByLabelText("メッセージ"), {
     target: { value: "家族で引越すおすすめの方位を相談したい" },
   });
@@ -492,12 +667,14 @@ it("回答中に別チャットへ移ると元の回答を中止状態にする"
   const fetcher = vi.fn(async (url: string) =>
     url.includes("status")
       ? Response.json({ remaining: { requests: 20 } })
-      : new Response(stream),
+      : url === "/api/user-config" || url === "/api/profile-presets"
+        ? Response.json({}, { status: 401 })
+        : new Response(stream),
   );
   vi.stubGlobal("fetch", fetcher);
   render(<McpExplorer agentEnabled persistConversation />);
 
-  fireEvent.change(screen.getByLabelText("メッセージ"), {
+  fireEvent.change(await screen.findByLabelText("メッセージ"), {
     target: { value: "引越し時期を相談したい" },
   });
   fireEvent.click(screen.getByRole("button", { name: "送信" }));
