@@ -145,7 +145,9 @@ export class TtlCache<T> {
 }
 
 /**
- * 呼び出し元の識別子。Cloud Run は x-forwarded-for の先頭に接続元を入れる。
+ * 呼び出し元の識別子。Cloud Run の Google Front End は接続元を XFF の末尾へ
+ * 追加するため、利用者が先頭へ足した値を信用しない。独自 LB を GFE の手前へ
+ * 追加した場合だけ TRUSTED_PROXY_HOPS で末尾から読み飛ばす個数を指定する。
  *
  * ヘッダは詐称できる。だからこれは「善意の利用者どうしを分ける」ための鍵で
  * あって、悪意への防壁ではない。悪意に対して効くのは DailyCounter のほう。
@@ -153,8 +155,15 @@ export class TtlCache<T> {
 export function clientKey(headers: Headers): string {
   const xff = headers.get("x-forwarded-for");
   if (xff) {
-    const first = xff.split(",")[0]?.trim();
-    if (first) return first.slice(0, 64);
+    const entries = xff
+      .split(",")
+      .map((entry) => entry.trim())
+      .filter(Boolean);
+    const configured = Number(process.env.TRUSTED_PROXY_HOPS ?? "0");
+    const trustedHops =
+      Number.isSafeInteger(configured) && configured >= 0 ? configured : 0;
+    const client = entries.at(-(trustedHops + 1));
+    if (client) return client.slice(0, 64);
   }
   return headers.get("x-real-ip")?.slice(0, 64) ?? "unknown";
 }

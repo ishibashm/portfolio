@@ -50,6 +50,47 @@ it("explains unsupported browsers", async () => {
     await screen.findByText(/このブラウザは音声入力に対応していません/),
   ).toBeTruthy();
 });
+it("shows a login link instead of starting for signed-out users", () => {
+  const fetcher = vi.fn();
+  vi.stubGlobal("fetch", fetcher);
+  render(
+    <GrokVoice signedIn={false} onTranscript={vi.fn()} onEvent={vi.fn()} />,
+  );
+  expect(screen.getByText(/音声で話すにはログインが必要です/)).toBeTruthy();
+  expect(screen.getByRole("link", { name: "ログインする" })).toHaveAttribute(
+    "href",
+    "/login?next=%2Fask",
+  );
+  expect(fetcher).not.toHaveBeenCalled();
+});
+it("turns a session 401 into the same login prompt", async () => {
+  vi.stubGlobal(
+    "fetch",
+    vi.fn(async (url: string) =>
+      url.endsWith("status")
+        ? {
+            ok: true,
+            json: async () => ({
+              voiceMock: true,
+              voiceRequiresLogin: true,
+              voiceSignedIn: true,
+            }),
+          }
+        : {
+            ok: false,
+            json: async () => ({
+              error: "音声で話すにはログインが必要です。",
+              code: "login_required",
+            }),
+          },
+    ),
+  );
+  render(<GrokVoice onTranscript={vi.fn()} onEvent={vi.fn()} />);
+  fireEvent.pointerDown(screen.getByRole("button", { name: "押して話す" }));
+  expect(
+    await screen.findByRole("link", { name: "ログインする" }),
+  ).toBeTruthy();
+});
 it("mock uses real tool route on space release and settles on unmount", async () => {
   const transcript = vi.fn(),
     event = vi.fn();

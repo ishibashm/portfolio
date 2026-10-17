@@ -5,6 +5,7 @@ export interface VoiceCallbacks {
   status: (text: string) => void;
   remaining: (seconds: number) => void;
   ended: () => void;
+  loginRequired?: () => void;
 }
 interface Session {
   sessionId: string;
@@ -16,7 +17,14 @@ interface Session {
   instructions: string;
   tools: unknown[];
 }
-class VoiceClientError extends Error {}
+class VoiceClientError extends Error {
+  constructor(
+    message: string,
+    readonly code?: string,
+  ) {
+    super(message);
+  }
+}
 
 export async function voicePost(path: string, body: unknown) {
   const response = await fetch(`/api/voice/${path}`, {
@@ -25,10 +33,18 @@ export async function voicePost(path: string, body: unknown) {
     body: JSON.stringify(body),
     keepalive: path === "end",
   });
-  if (!response.ok)
+  if (!response.ok) {
+    const error = (await response.json().catch(() => null)) as {
+      error?: unknown;
+      code?: unknown;
+    } | null;
     throw new VoiceClientError(
-      "音声を利用できませんでした。時間をおいてお試しください。",
+      error?.code === "login_required" && typeof error.error === "string"
+        ? error.error
+        : "音声を利用できませんでした。時間をおいてお試しください。",
+      typeof error?.code === "string" ? error.code : undefined,
     );
+  }
   return response.json();
 }
 export class VoiceClient {
@@ -58,6 +74,15 @@ export class VoiceClient {
     try {
       // Request permission before reserving a paid session. Mock deliberately works without a microphone.
       const status = await fetch("/api/mcp-chain/status").then((r) => r.json());
+      if (status.voiceRequiresLogin === true && status.voiceSignedIn !== true)
+        throw new VoiceClientError(
+          "音声で話すにはログインが必要です。",
+          "login_required",
+        );
+      if (status.voiceAvailable === false)
+        throw new VoiceClientError(
+          "音声を利用できませんでした。時間をおいてお試しください。",
+        );
       const mock = status.voiceMock === true;
       if (!mock) {
         if (
@@ -179,6 +204,8 @@ export class VoiceClient {
       this.socket.onerror = () => this.fail();
       this.socket.onclose = () => this.stop();
     } catch (e) {
+      if (e instanceof VoiceClientError && e.code === "login_required")
+        this.cb.loginRequired?.();
       if (!this.closed)
         this.cb.status(
           e instanceof VoiceClientError

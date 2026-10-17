@@ -1113,3 +1113,41 @@ model MemoryEntry {
 
   @@index([userId, id])
 }
+
+// Grok voice reservations shared by every Cloud Run instance. Subject hashes
+// are keyed HMACs; raw Supabase user ids are never stored in these tables.
+model VoiceUsageLedger {
+  day          String   @db.VarChar(10)
+  subject_hash String   @db.Char(64)
+  seconds      Float
+  updated_at   DateTime @db.Timestamptz(3)
+
+  @@id([day, subject_hash])
+  @@map("voice_usage_ledgers")
+}
+
+model VoiceSession {
+  session_hash      String    @id @db.Char(64)
+  user_subject      String    @db.Char(64)
+  day               String    @db.VarChar(10)
+  created_at        DateTime  @db.Timestamptz(3)
+  expires_at        DateTime  @db.Timestamptz(3)
+  reserved_seconds  Float
+  actual_seconds    Float?
+  tool_call_count   Int
+  ended             Boolean
+  model             String
+
+  @@index([ended, expires_at])
+  @@index([user_subject, created_at])
+  @@map("voice_sessions")
+}
+
+model VoiceToolCall {
+  session_hash String   @db.Char(64)
+  call_id      String   @db.VarChar(128)
+  created_at   DateTime @db.Timestamptz(3)
+
+  @@id([session_hash, call_id])
+  @@map("voice_tool_calls")
+}
