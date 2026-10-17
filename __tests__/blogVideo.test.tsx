@@ -107,16 +107,13 @@ describe("blog YouTube video", () => {
     });
   });
 
-  it("parses empty frontmatter and places the directive after the conclusion", () => {
+  it("parses published frontmatter and places the directive after the conclusion", () => {
     const post = getBlogPost("moving-during-tenchusatsu")!;
-    expect(post.youtubeId).toBe("");
-    expect(post.videoUploadDate).toBe("");
-    expect(post.videoDuration).toBe("");
+    expect(post.youtubeId).toBe("_M5DtcoTHcg");
+    expect(post.videoUploadDate).toBe("2026-10-17");
+    expect(post.videoDuration).toBe("PT1M35S");
     const { container, rerender } = render(
-      <BlogArticleBody
-        body={post.body}
-        video={{ ...video, youtubeId: post.youtubeId }}
-      />,
+      <BlogArticleBody body={post.body} video={{ ...video, youtubeId: "" }} />,
     );
     expect(
       container.querySelector("figure, iframe, script, button"),
@@ -140,13 +137,13 @@ describe("blog YouTube video", () => {
           typeof source === "string"
         ) {
           return source
-            .replace('youtubeId: ""', `youtubeId: "${video.youtubeId}"`)
+            .replace(/^youtubeId: .*$/m, `youtubeId: "${video.youtubeId}"`)
             .replace(
-              'videoUploadDate: ""',
+              /^videoUploadDate: .*$/m,
               `videoUploadDate: "${video.uploadDate}"`,
             )
             .replace(
-              'videoDuration: ""',
+              /^videoDuration: .*$/m,
               `videoDuration: "${video.duration}"\nvideoTitle: "動画のタイトル"\nvideoDescription: "動画の説明"`,
             );
         }
