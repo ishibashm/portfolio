@@ -69,6 +69,23 @@ function toBlogPost(row: {
   };
 }
 
+/**
+ * 動画の項目は DB に列が無い。取り込みで落ちるので、同じ slug の
+ * Markdown frontmatter から補う（無ければそのまま）。
+ */
+function withMarkdownVideo(post: BlogPost): BlogPost {
+  const md = getMarkdownBlogPost(post.slug);
+  if (!md?.youtubeId) return post;
+  return {
+    ...post,
+    youtubeId: md.youtubeId,
+    videoUploadDate: md.videoUploadDate,
+    videoDuration: md.videoDuration,
+    videoTitle: md.videoTitle,
+    videoDescription: md.videoDescription,
+  };
+}
+
 const ROW_FIELDS = {
   slug: true,
   title: true,
@@ -122,7 +139,8 @@ export async function loadBlogPost(
       DB を正として 404（消した記事を Markdown で復活させない）。
       DB が空か読めないときだけ Markdown（取り込み前・DB の不調）。
     */
-    if (row) return row.published ? toBlogPost(row) : undefined;
+    if (row)
+      return row.published ? withMarkdownVideo(toBlogPost(row)) : undefined;
     const seeded = await prisma.blogPost.findFirst({ select: { slug: true } });
     if (seeded) return undefined;
   } catch (e) {
