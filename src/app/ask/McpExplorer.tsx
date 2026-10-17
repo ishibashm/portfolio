@@ -10,6 +10,7 @@ import {
   type GuidanceCard,
   type GuidanceValues,
 } from "@/lib/askGuidance";
+import { shirubeInvitation } from "@/lib/shirubeInvitations";
 import {
   useEffect,
   useId,
@@ -578,6 +579,9 @@ export function McpExplorer({
   persistConversation?: boolean;
 }) {
   const guidancePrompted = useRef(new Set<string>());
+  const invitationHandled = useRef(false);
+  const invitationPending = useRef<string | null>(null);
+  const invitationForm = useRef<HTMLFormElement>(null);
   const initialInput = extractAgentInput(initialQuestion);
   const [conversations, setConversations] = useState<ChatConversation[]>([
     {
@@ -697,6 +701,74 @@ export function McpExplorer({
   }
 
   useEffect(() => () => abortRef.current?.abort(), []);
+
+  useEffect(() => {
+    if (
+      !persistConversation ||
+      !storageReady ||
+      !registeredPeopleReady ||
+      invitationHandled.current
+    )
+      return;
+    const invitation = shirubeInvitation(
+      new URLSearchParams(window.location.search).get("start"),
+    );
+    if (!invitation) return;
+    const abort = new AbortController();
+    void fetch("/api/mcp-chain/status", {
+      signal: abort.signal,
+      cache: "no-store",
+    })
+      .then(async (response) => {
+        if (!response.ok) throw new Error("status");
+        return response.json();
+      })
+      .then((status) => {
+        if (abort.signal.aborted || invitationHandled.current) return;
+        invitationHandled.current = true;
+        if (
+          !agentEnabled ||
+          status.enabled !== true ||
+          status.paused ||
+          status.remaining?.requests === 0
+        ) {
+          window.location.assign(invitation.calculationHref);
+          return;
+        }
+        const now = new Date().toISOString();
+        const conversation = newConversation(now, invitation.question);
+        invitationPending.current = conversation.id;
+        setConversations((current) =>
+          [conversation, ...current].slice(0, ASK_DATA_LIMITS.conversations),
+        );
+        setActiveConversationId(conversation.id);
+        setWorkspaceUpdatedAt(now);
+        const url = new URL(window.location.href);
+        url.searchParams.delete("start");
+        window.history.replaceState(
+          null,
+          "",
+          url.pathname + url.search + url.hash,
+        );
+      })
+      .catch(() => {
+        if (!abort.signal.aborted)
+          window.location.assign(invitation.calculationHref);
+      });
+    return () => abort.abort();
+  }, [persistConversation, storageReady, registeredPeopleReady, agentEnabled]);
+
+  useEffect(() => {
+    if (
+      invitationPending.current !== activeConversationId ||
+      !question ||
+      running ||
+      !invitationForm.current
+    )
+      return;
+    invitationPending.current = null;
+    invitationForm.current.requestSubmit();
+  }, [activeConversationId, question, running]);
 
   useEffect(() => {
     if (!persistConversation) return;
@@ -2106,6 +2178,7 @@ export function McpExplorer({
             </div>
 
             <form
+              ref={invitationForm}
               onSubmit={submitAgent}
               className="sticky bottom-0 z-10 shrink-0 rounded-b-3xl border-t border-stone-200 bg-[#faf7f5]/95 p-3 shadow-[0_-8px_24px_rgba(15,23,42,0.06)] backdrop-blur sm:p-4"
             >
