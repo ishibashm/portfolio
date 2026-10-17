@@ -8,7 +8,7 @@ import type { ReactNode } from "react";
  * 待ち時間に一言添える役なので、次を守る。
  *
  * - **頁の主役の画像より先に読ませない。**既定は loading="lazy"。
- *   最初の画面に出る所（トップの「AIに聞く」）だけ priority="low" で
+ *   最初の画面に出る所（トップの「エージェントに案内してもらう」）だけ priority="low" で
  *   eager にし、fetchPriority="low" で他を待たせない。
  * - **場所を先に取る。**width/height を必ず付け、読み込みで本文が動かない。
  * - **軽く。**AVIF と WebP を 96/240/480 の 3 幅で持ち、sizes で

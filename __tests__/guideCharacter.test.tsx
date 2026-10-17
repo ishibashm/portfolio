@@ -92,7 +92,7 @@ describe("置き場所", () => {
     ).toBe("lazy");
   });
 
-  it("トップの AIに聞く は最初の画面なので fetchPriority low、参考情報の文言つき", () => {
+  it("トップの「エージェントに案内してもらう」は最初の画面なので fetchPriority low、参考情報の文言つき", () => {
     render(<AgentEntry />);
     const img = screen.getByRole("img", { name: /しるべ/ });
     expect(img.getAttribute("fetchpriority")).toBe("low");

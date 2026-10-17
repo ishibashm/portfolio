@@ -83,7 +83,7 @@ export default function Page() {
 
         <p className="mt-5 text-sm">
           <Link href="/ask" className="underline text-slate-600">
-            AIに聞く
+            エージェントに案内してもらう
           </Link>
         </p>
 

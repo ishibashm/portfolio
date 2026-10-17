@@ -19,7 +19,9 @@ export function AgentEntry() {
   const [question, setQuestion] = useState("");
   return (
     <section className="w-full max-w-[1700px] rounded-3xl border border-rose-200 bg-white p-6">
-      <h2 className="text-xl font-serif font-bold">AIに聞く</h2>
+      <h2 className="text-xl font-serif font-bold">
+        エージェントに案内してもらう
+      </h2>
       <p className="mt-2 text-sm">
         公開記事と計算の道具から、疑問を一つずつ確かめます。
       </p>

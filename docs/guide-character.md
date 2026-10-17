@@ -14,7 +14,7 @@
 
 | ポーズ                   | ファイル              | 使っている所                                                                           |
 | ------------------------ | --------------------- | -------------------------------------------------------------------------------------- |
-| pointing（指さし）       | `shirube-pointing-*`  | トップ「AIに聞く」（`components/home/AgentEntry.tsx`）                                 |
+| pointing（指さし）       | `shirube-pointing-*`  | トップ「エージェントに案内してもらう」（`components/home/AgentEntry.tsx`）             |
 | magnifier（虫めがね）    | `shirube-magnifier-*` | 404（`app/not-found.tsx`）・エラー（`app/error.tsx`）                                  |
 | compass（羅盤と暦）      | `shirube-compass-*`   | 質問画面の準備中・計算中（`AgentEntry` / `HomeAgentChat` / `app/ask/McpExplorer.tsx`） |
 | thumbsup（スマホと親指） | `shirube-thumbsup-*`  | 記事末尾の道具への導線（`components/blog/ArticleToolCta.tsx`）                         |
@@ -23,7 +23,7 @@
 
 - 表示は必ず `components/guide/GuideCharacter.tsx`（`GuideCharacter` / `GuideAvatar`）を通す。
   width/height・srcset・sizes・lazy をここで揃えている。
-- **既定は loading="lazy"。**最初の画面に入るトップの「AIに聞く」だけ `priority="low"`
+- **既定は loading="lazy"。**最初の画面に入るトップの「エージェントに案内してもらう」だけ `priority="low"`
   （eager + fetchPriority="low"）。記事のヒーロー画像など頁の主役より上には置かない。
 - 台詞は案内に留め、吉凶を断定しない。結果の近くでは「参考情報です」の文言を残す。
 - 記事の著者・構造化データ（JSON-LD の author / publisher）は組織のまま。キャラクターを著者にしない。

@@ -715,9 +715,9 @@ AIチャットの補足（2026-10-17）:
 - deploy.ymlでは回数・トークン・フォールバックをGitHub Variablesから渡す。GitHubで空と未設定を区別できないため、フォールバック無効化にはMCP_AGENT_FALLBACK_DISABLED=trueを設定する。ローカル設定例は.env.local.example（このリポジトリの.env.example相当）。
 - 2026-10-16 時点の運用: 主モデルは無料枠の `gemini-3.5-flash`（repo 変数 `MCP_AGENT_MODEL`）。この鍵では `gemini-4-argon`・Pro 系は無料枠 0 で 429、3.7/3.8-flash は高負荷で 503 が出た。無料枠には分あたり・日あたりの回数上限があり、混雑時は 429/503 になる。
 
-### AIに聞く・回答ブロック
+### エージェントに案内してもらう（旧「AIに聞く」）・回答ブロック
 
-利用者向けの名前は「AIに聞く」。`/ask` は noindex としサイトマップから除外。旧 `/houi/mcp-explorer` は `/ask` へ恒久リダイレクトする。API は `/api/mcp-chain` を維持。
+利用者向けの名前は「エージェントに案内してもらう」（2026-10-17 に「AIに聞く」から改名）。`/ask` は noindex としサイトマップから除外。旧 `/houi/mcp-explorer` は `/ask` へ恒久リダイレクトする。API は `/api/mcp-chain` を維持。
 
 回答は短い安全な Markdown と、共通 zod スキーマで検証する `compass` / `towns` / `days` / `rentTable` / `articles` / `callout` / `text` ブロック。HTMLは実行しない。数値はサーバーの道具出力からそのまま転記し、欠損値を補完しない。エージェント専用 `show_blocks` はブロック種別・実行済み呼び出しID・短い注意文だけを受け取る。未知IDは拒否し、公開MCPには登録しない。選択に加えて道具結果から既定ブロックを表示し、同じ種類・同じ内容のブロックは回答全体で一度だけ表示する。`blocks` NDJSONイベントはクライアントでもブロックごとに再検証し、不正な項目を捨てる。決定的モードとホームの遅延読み込みチャットも共通表示を使う。
 
