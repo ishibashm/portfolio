@@ -1,49 +1,34 @@
-# 天中殺記事スライド v20
+# 天中殺記事スライド v21（v20 の生成器を改訂）
 
 対象は `content/blog/moving-during-tenchusatsu.md` の表紙と本文5枚。
-本文・alt・画像名・各画像の主題は維持する。生成元は
-`scripts/blog/slides_v20.py`。1800×945px、各300,000 bytes以下のPNG。
+画像名は維持する。生成元は `scripts/blog/slides_v20.py`（ファイル名は据え置き）。
+1800×945px、各300,000 bytes以下のPNG。
 
-## 設計の根拠
+## 設計の根拠（v21）
 
-v12の「明朝見出し＋ゴシック本文」の役割分担と、v16の生成り・墨・細い金罫を採用した。
-v17の細い明朝を全体に使う案は、数表の読み取りに必要な強弱が弱くなるため、見出しに限定する。
-v19からはコーナータグ、章バッジ、番号付きカード、POINT帯、フッターという情報の順序を引き継ぐ。
-ロボット、吹き出し、袋文字、影、丸ゴシック、マーカー装飾は除去した。
-コードで描くカレンダー・家・方位・チェック・矢印、表、年表が内容の関係を示す。
+- 見出しは、以前の v19 風生成器 `scripts/blog/show_v19.py`（commit b9f40b5f）の
+  `heading()` をそのまま移植：M PLUS Rounded 1c Black、紺 `#252A60` の文字、
+  墨の細い縁＋白の太い縁（字の大きさの 16% / 12.5%）、ぼかした薄い影、
+  【】で囲んだキーワードだけ藍 `#3A3F94` ＋淡い金 `#F4ECD6` のマーカー。
+- 左上は v19 と同じく藍の「▶ 天中殺と引越し」タグ（Dela Gothic One）と金の章バッジ。
+- 本文も show_v19.py と同じ M PLUS Rounded 1c（本文 Medium、強調 ExtraBold）。
+  数字・番号は show_v19.py のバッジ・数字と同じ Dela Gothic One。
+- 情報量は1枚1メッセージに減らした：要点は最大3つ、または簡単な比較1つ。
+  詳しい表（36通りの日数、年天中殺の年表）は本文の表に任せる。
+- ロボットは使わない。細線アイコン（カレンダー・家・方位・チェック・矢印）を残す。
+- 数字は記事の表から読み、`article_data()` で照合する。
 
-v5〜v10の情報追加とテロップ化の履歴では、小さなラベルや出典、文字の折り返しが問題として残っていた。
-v13の判定でも小さいスクリーンショット、v17では細字の可読性、v19のチェックでも極小の出典表が課題になっている。
-v20は余白を削って文字を詰めるのではなく、読み順の揃った表と比較欄に実情報を追加した。
-本文は原則28px以上、補助ラベルは26px以上、出典・フッターだけ22〜26pxとする。
+## 書体
 
-## タイプスケール
+| 役割                 | 書体                                  | サイズ(px)               | 色                  |
+| -------------------- | ------------------------------------- | ------------------------ | ------------------- |
+| 主見出し             | M PLUS Rounded 1c Black（袋文字＋影） | 64（収まらなければ縮小） | 紺 / 藍＋金マーカー |
+| 小見出し・強調       | M PLUS Rounded 1c ExtraBold           | 32–60                    | ink / indigo / gold |
+| 本文                 | M PLUS Rounded 1c Medium              | 27–36                    | ink / mute          |
+| キー数値・番号・タグ | Dela Gothic One                       | 30–190                   | indigo / gold       |
 
-サイズ・行送り・字間は最終PNG上のpx。単行は下記の行送り相当の領域を確保する。
-日本語の字間は0（フォント標準）。英字は大文字の小ラベルとして使用し、疑似スモールキャップ字体は使わない。
-
-| 役割                     | 書体              | ウェイト       | サイズ   | 行送り         | 字間    | 色            |
-| ------------------------ | ----------------- | -------------- | -------- | -------------- | ------- | ------------- |
-| 主見出し                 | Noto Serif CJK JP | Regular 400    | 62       | 82             | 0       | ink           |
-| 比較欄の題名             | Noto Serif CJK JP | Regular 400    | 46       | 62             | 0       | indigo / ink  |
-| 小見出し                 | Noto Sans CJK JP  | Bold 700       | 32–36    | 46–54          | 0       | ink           |
-| 本文                     | Noto Sans CJK JP  | Regular 400    | 28–32    | 39–46          | 0       | ink           |
-| 強調・POINT本文          | Noto Sans CJK JP  | Bold 700       | 28–32    | 40–46          | 0       | ink / indigo  |
-| 表の数値                 | Noto Sans CJK JP  | Bold 700       | 30       | 47             | 0       | ink / indigo  |
-| 年表の日付               | Noto Sans CJK JP  | Regular 400    | 28       | 60（棒を含む） | 0       | ink           |
-| キー数値                 | Noto Sans CJK JP  | Bold 700       | 80 / 110 | 104 / 140      | 0       | indigo / gold |
-| 手順番号・年ラベル       | Noto Sans CJK JP  | Bold 700       | 30–43    | 44–56          | 0       | gold / indigo |
-| 章バッジ・表見出し・補足 | Noto Sans CJK JP  | Regular 400    | 26–28    | 34–40          | 0       | mute / indigo |
-| セクションタグ           | Noto Sans CJK JP  | Bold 700       | 27       | 43             | 0       | card          |
-| 英字ラベル               | Noto Sans CJK JP  | Regular / Bold | 22       | 32             | 1.6 / 2 | mute / indigo |
-| 出典・模式図の注記       | Noto Sans CJK JP  | Regular 400    | 24–26    | 34             | 0       | mute          |
-| フッター・ページ番号     | Noto Sans CJK JP  | Regular 400    | 22 / 24  | 32             | 0       | mute          |
-
-使用するファイルは `/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc`、
-`NotoSansCJK-Bold.ttc`、`NotoSerifCJK-Regular.ttc`。TTCのindex=0は日本語。
-`fc-list` で実在を確認し、`/usr/share/doc/fonts-noto-cjk/copyright` のフォント対象
-`License: SIL-1.1` とライセンス本文を確認した。商用利用可能。フォントはコミットしない。
-追加ダウンロードはない。Pillowで2倍解像度で組み、縮小後128色に量子化する。
+フォントは `~/.local/share/fonts/ofl/`（MPLUSRounded1c-\*.ttf、DelaGothicOne-Regular.ttf、
+いずれも SIL OFL 1.1）。リポジトリには入れない。Pillowで2倍解像度で組み、縮小後128色に量子化する。
 
 ## 色とレイアウト
 
