@@ -1,3 +1,5 @@
+import { AGENT_PAUSED_REASON, AGENT_PAUSED_TEXT } from "./agentPausedText";
+
 export const ASK_DATA_STORAGE_KEY = "cloud_palette_ask_data_v2";
 export const LEGACY_ASK_STORAGE_KEY = "cloud_palette_ask_chat_v1";
 
@@ -325,7 +327,12 @@ export function isUnavailableConclusion(value: string): boolean {
   const conclusion = value.includes("主な回答・結論：")
     ? value.split("主な回答・結論：").slice(1).join("主な回答・結論：")
     : value;
-  return /一時的にお休み|AI回答の利用枠が一時的に止ま|本日のAI回答の枠が終わ|回答に必要な結果を取得できません|回答を始められません|回答を受け取れません|回答を中止しました|本日のAI無料枠に達|AIまたは道具の処理に失敗|道具の失敗・時間上限・中断|エラーが発生|日次.*(?:上限|枠)|本日.*(?:上限|使い切)/u.test(
+  if (
+    conclusion.includes(AGENT_PAUSED_REASON) ||
+    conclusion.includes(AGENT_PAUSED_TEXT)
+  )
+    return true;
+  return /一時的にお休み|AI回答の利用枠が一時的に止ま|本日のAI回答の枠が終わ|回答に必要な結果を取得できません|回答を始められません|回答を受け取れません|回答を中止しました|本日のAI無料枠に達|AIまたは道具の処理に失敗|道具の失敗・時間上限・中断|エラーが発生|回答に失敗しました|回答の受信が途中で終了|日次.*(?:上限|枠)|本日.*(?:上限|使い切)/u.test(
     conclusion,
   );
 }

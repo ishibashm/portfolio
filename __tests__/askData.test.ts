@@ -1,3 +1,4 @@
+import { AGENT_PAUSED_REASON, AGENT_PAUSED_TEXT } from "@/lib/agentPausedText";
 import { describe, expect, it } from "vitest";
 import {
   ASK_DATA_STORAGE_KEY,
@@ -186,6 +187,8 @@ describe("AI相談データ", () => {
 
 describe("停止・失敗した相談を記憶しない", () => {
   it.each([
+    AGENT_PAUSED_REASON,
+    AGENT_PAUSED_TEXT,
     "しるべのAI回答は、いま一時的にお休みしています。",
     "AI回答の利用枠が一時的に止まっています。",
     "本日のAI回答の枠が終わりました。",
