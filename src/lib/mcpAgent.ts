@@ -392,6 +392,8 @@ export async function runAgent(
     if (extracted.suggestions.length) suggestions = extracted.suggestions;
     sendText(extracted.text);
   };
+  const currentModelId = () =>
+    typeof model === "string" ? model : model.modelId;
   const switchModel = async (signal: AbortSignal) => {
     if (switched || !recovery.fallback) return;
     switched = true;
@@ -578,6 +580,7 @@ export async function runAgent(
         break;
       } catch (error) {
         const reason = classifyModelError(error);
+        logAgentFailure("model", error, currentModelId());
         if (reason === "daily-quota") dailyQuotaExceeded = true;
         // Once results exist, recovery is a no-tools continuation, never a replay.
         if (sources.size) {
@@ -606,7 +609,8 @@ export async function runAgent(
     if (!finished && steps >= limits.steps)
       reasons.add("ステップの上限に達しました。");
     if (calls >= limits.calls) reasons.add("道具の回数上限に達しました。");
-  } catch {
+  } catch (error) {
+    logAgentFailure("agent", error, currentModelId());
     if (dailyQuotaExceeded && !signal.aborted) {
       reasons.clear();
       reasons.add(
@@ -671,6 +675,7 @@ export async function runAgent(
         try {
           await summarize();
         } catch (error) {
+          logAgentFailure("summary", error, currentModelId());
           if (
             classifyModelError(error) === "permanent" ||
             switched ||
@@ -681,8 +686,9 @@ export async function runAgent(
           await summarize();
         }
       }
-    } catch {
+    } catch (error) {
       // Never expose provider errors or user input, including through SDK logging.
+      logAgentFailure("summary-final", error, currentModelId());
     } finally {
       clearTimeout(timer);
       totalController.abort();
@@ -757,6 +763,74 @@ export function classifyModelError(error: unknown): ModelErrorReason {
   )
     return "transient";
   return "permanent";
+}
+/**
+ * 失敗の種類だけをサーバーログへ出す。利用者の入力・会話・プロンプトは出さない。
+ * 出すのは段階・モデルID・HTTP状態・提供元のエラー状態/理由・quotaId・
+ * 提供元メッセージの先頭（提供元のメッセージは入力を含まない）。
+ */
+export function describeAgentFailure(error: unknown) {
+  const seen = new Set<unknown>();
+  const out: {
+    name?: string;
+    statusCode?: number;
+    status?: string;
+    reasons: string[];
+    quotaIds: string[];
+    message?: string;
+  } = { reasons: [], quotaIds: [] };
+  function visit(value: unknown) {
+    if (!value || typeof value !== "object" || seen.has(value)) return;
+    seen.add(value);
+    const e = value as Record<string, unknown>;
+    if (!out.name && typeof e.name === "string") out.name = e.name;
+    if (out.statusCode === undefined && typeof e.statusCode === "number")
+      out.statusCode = e.statusCode;
+    if (typeof e.responseBody === "string") {
+      try {
+        const body = JSON.parse(e.responseBody) as {
+          error?: {
+            status?: unknown;
+            message?: unknown;
+            details?: Array<Record<string, unknown>>;
+          };
+        };
+        if (typeof body.error?.status === "string")
+          out.status = body.error.status;
+        if (typeof body.error?.message === "string")
+          out.message = body.error.message.slice(0, 200);
+        for (const detail of body.error?.details ?? []) {
+          if (typeof detail.reason === "string")
+            out.reasons.push(detail.reason);
+          for (const v of (detail.violations as Array<
+            Record<string, unknown>
+          >) ?? [])
+            if (typeof v.quotaId === "string") out.quotaIds.push(v.quotaId);
+        }
+      } catch {}
+    }
+    visit(e.cause);
+    if (Array.isArray(e.errors)) e.errors.forEach(visit);
+    if (Array.isArray(e.lastError)) e.lastError.forEach(visit);
+  }
+  visit(error);
+  // SDK自身の例外は種類の把握に要るが、道具引数を含みうるので数字を伏せて短く切る。
+  if (!out.message && error instanceof Error && error.name.startsWith("AI_"))
+    out.message = error.message.replace(/\d/g, "#").slice(0, 160);
+  return out;
+}
+function logAgentFailure(stage: string, error: unknown, model: string) {
+  try {
+    console.warn(
+      "[agent-failure] " +
+        JSON.stringify({
+          stage,
+          model,
+          kind: classifyModelError(error),
+          ...describeAgentFailure(error),
+        }),
+    );
+  } catch {}
 }
 export function isTransientModelError(error: unknown): boolean {
   return classifyModelError(error) === "transient";
