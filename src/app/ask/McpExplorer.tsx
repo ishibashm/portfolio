@@ -18,6 +18,7 @@ import {
   ASK_DATA_STORAGE_KEY,
   LEGACY_ASK_STORAGE_KEY,
   isAskWorkspaceEmpty,
+  mergeRegisteredAskPeople,
   memoryFromConversation,
   parseAskWorkspace,
   parseAskWorkspaceJson,
@@ -26,6 +27,7 @@ import {
   type AskConversation,
   type AskMemoryItem,
   type AskPerson,
+  type RegisteredAskPerson,
   type AskStoredMessage,
   type AskWorkspace,
 } from "@/lib/askData";
@@ -36,24 +38,32 @@ import {
   needsAgentBirth,
   needsAgentOrigin,
 } from "@/lib/agentInput";
-import { sanitizeFollowUpSuggestions } from "@/lib/followUpSuggestions";
+import {
+  initialConsultationSuggestions,
+  sanitizeFollowUpSuggestions,
+} from "@/lib/followUpSuggestions";
 import type {
   AgentConversationMessage,
   AgentEvent,
   AgentPerson,
 } from "@/lib/mcpAgent";
 import type { ChainEvent } from "@/lib/mcpChain";
+import { loadSettings, settingString } from "@/lib/userSettings";
+import { findActiveProfile } from "@/lib/activeProfile";
+import { loadProfilePresets } from "@/lib/profilePresetSync";
 import {
-  readSettingsSync,
-  settingNumber,
-  settingString,
-} from "@/lib/userSettings";
+  readSharedParty,
+  readTimingParty,
+  type PartyMemberInput,
+} from "@/lib/partyMemberInput";
 import {
   AskMemoryPanel,
   AskPeoplePanel,
   ConversationNavigation,
+  ShirubeGuide,
   type PersonEdits,
 } from "./AskWorkspacePanels";
+import { ShirubeAvatar } from "./ShirubeAvatar";
 
 const GrokVoice = dynamic(() => import("@/components/home/GrokVoice"), {
   ssr: false,
@@ -87,12 +97,6 @@ const MAX_API_MEMORY_CHARACTERS = 3000;
 const EMPTY_CHAT_MESSAGES: ChatMessage[] = [];
 let messageSequence = 0;
 
-const examples = [
-  "1990年5月5日生まれ、深谷市在住。2026年11月に引越すならどの方位とどの日がよい？",
-  "長崎市から東にある街を調べて、その街からさらに東の街を教えて。",
-  "2026年11月1日の干支と九星気学での日取りの見方を教えて。",
-];
-
 const toolLabels: Record<string, string> = {
   get_kanshi: "暦と干支を確認",
   get_honmei_star: "本命星を確認",
@@ -114,6 +118,31 @@ function nextEntityId(prefix: string) {
   if (typeof crypto !== "undefined" && "randomUUID" in crypto)
     return `${prefix}_${crypto.randomUUID()}`;
   return `${prefix}_${nextMessageId()}`.replace(/[^A-Za-z0-9_-]/g, "_");
+}
+
+function samePersonLabel(left: string, right: string) {
+  const normalize = (value: string) => {
+    const normalized = value
+      .normalize("NFKC")
+      .toLocaleLowerCase("ja")
+      .replace(/[\s　]/gu, "");
+    return /^(?:本人|自分|私|わたし)$/u.test(normalized)
+      ? "__self__"
+      : normalized;
+  };
+  return normalize(left) === normalize(right);
+}
+
+function samePersonResidence(left: string | undefined, right: string) {
+  if (!left || !right.trim()) return false;
+  const normalize = (value: string) =>
+    value.normalize("NFKC").replace(/[\s　・、。]/gu, "");
+  const a = normalize(left);
+  const b = normalize(right);
+  return (
+    a === b ||
+    (Math.min(a.length, b.length) >= 4 && (a.endsWith(b) || b.endsWith(a)))
+  );
 }
 
 function newConversation(
@@ -180,6 +209,79 @@ function likelySignedIn() {
   );
 }
 
+function partyCandidate(
+  member: PartyMemberInput,
+  source: "shared" | "timing",
+): RegisteredAskPerson | null {
+  const name = member.name.trim();
+  const birthDate =
+    typeof member.birthDate === "string" ? member.birthDate.slice(0, 10) : "";
+  if (!name || !birthDate) return null;
+  return {
+    sourceId: `party:${source}:${member.id}`,
+    name,
+    birthDate,
+  };
+}
+
+async function loadRegisteredAskPeople(): Promise<RegisteredAskPerson[]> {
+  const [{ settings }, { presets }] = await Promise.all([
+    loadSettings(),
+    loadProfilePresets(fetch, window.localStorage),
+  ]);
+  const active = findActiveProfile(presets, settings);
+  const activeBirthDate = settingString(settings, "birth_date")?.slice(0, 10);
+  const activeResidence = settingString(settings, "base_label")?.trim();
+  const activeBirthPlace = settingString(settings, "birth_label")?.trim();
+  const registered: RegisteredAskPerson[] = presets.map((preset) => {
+    const isActive = preset.id === active?.id;
+    return {
+      sourceId: `profile:${preset.id}`,
+      name: preset.name,
+      birthDate:
+        isActive && activeBirthDate
+          ? activeBirthDate
+          : preset.birthDate.slice(0, 10),
+      ...(isActive && activeBirthPlace
+        ? { birthPlace: activeBirthPlace }
+        : preset.birthLabel
+          ? { birthPlace: preset.birthLabel }
+          : {}),
+      ...(isActive && activeResidence
+        ? { residence: activeResidence }
+        : preset.baseLabel
+          ? { residence: preset.baseLabel }
+          : {}),
+      ...(isActive ? { active: true } : {}),
+    };
+  });
+  if (!active && activeBirthDate)
+    registered.unshift({
+      sourceId: "settings:active",
+      name: "本人",
+      birthDate: activeBirthDate,
+      ...(activeBirthPlace ? { birthPlace: activeBirthPlace } : {}),
+      ...(activeResidence ? { residence: activeResidence } : {}),
+      active: true,
+    });
+
+  const party = [
+    ...readSharedParty(window.localStorage).members.map((member) => ({
+      member,
+      source: "shared" as const,
+    })),
+    ...readTimingParty(window.localStorage).members.map((member) => ({
+      member,
+      source: "timing" as const,
+    })),
+  ];
+  for (const { member, source } of party) {
+    const candidate = partyCandidate(member, source);
+    if (candidate) registered.push(candidate);
+  }
+  return registered;
+}
+
 function memoriesForApi(
   memories: AskMemoryItem[],
   activeConversationId: string,
@@ -222,7 +324,7 @@ function followUps(messages: ChatMessage[]) {
   const lastQuestion = [...messages]
     .reverse()
     .find((message) => message.role === "user")?.content;
-  if (!lastQuestion) return examples;
+  if (!lastQuestion) return initialConsultationSuggestions([]);
   if (/街|市|区|町|村|方位/.test(lastQuestion))
     return [
       "候補の街を3つに絞って",
@@ -320,35 +422,56 @@ function ToolStatus({ message }: { message: ChatMessage }) {
   );
 }
 
-function ConversationMessage({ message }: { message: ChatMessage }) {
+function ConversationMessage({
+  message,
+  showName = true,
+}: {
+  message: ChatMessage;
+  showName?: boolean;
+}) {
   if (message.role === "user")
     return (
-      <article className="ml-auto max-w-[92%] rounded-2xl rounded-br-md bg-slate-800 px-4 py-3 text-sm leading-relaxed whitespace-pre-wrap text-white sm:max-w-[75%]">
+      <article
+        className="ml-auto w-fit max-w-[86%] rounded-2xl rounded-br-md bg-slate-800 px-4 py-3 text-sm leading-relaxed whitespace-pre-wrap text-white sm:max-w-[72%]"
+        data-chat-role="user"
+      >
         <h2 className="sr-only">あなた</h2>
         {message.content}
       </article>
     );
   return (
-    <article
-      className={`max-w-[96%] rounded-2xl rounded-bl-md border bg-white/95 p-4 shadow-sm sm:max-w-[85%] sm:p-5 ${
-        message.state === "error" ? "border-red-200" : "border-stone-200"
-      }`}
+    <div
+      className="flex w-full items-start gap-2 sm:gap-3"
+      data-chat-role="assistant"
     >
-      <h2 className="mb-2 text-xs font-semibold text-slate-500">AI</h2>
-      {message.content ? (
-        <AgentAnswer text={message.content} />
-      ) : (
-        <p className="text-sm text-slate-600">
-          {message.state === "streaming"
-            ? "回答を考えています…"
-            : "回答本文を表示できませんでした。もう一度お試しください。"}
-        </p>
-      )}
-      {message.blocks && message.blocks.length > 0 && (
-        <AnswerBlocks blocks={message.blocks} />
-      )}
-      <ToolStatus message={message} />
-    </article>
+      <ShirubeAvatar />
+      <div className="min-w-0 flex-1 sm:max-w-[88%] sm:flex-none">
+        {showName && (
+          <p className="mb-1 ml-1 text-xs font-semibold text-indigo-700">
+            しるべ
+          </p>
+        )}
+        <article
+          className={`rounded-2xl rounded-tl-md border bg-white/95 p-4 shadow-sm sm:p-5 ${
+            message.state === "error" ? "border-red-200" : "border-stone-200"
+          }`}
+        >
+          {message.content ? (
+            <AgentAnswer text={message.content} />
+          ) : (
+            <p className="text-sm text-slate-600">
+              {message.state === "streaming"
+                ? "回答を考えています…"
+                : "回答本文を表示できませんでした。もう一度お試しください。"}
+            </p>
+          )}
+          {message.blocks && message.blocks.length > 0 && (
+            <AnswerBlocks blocks={message.blocks} />
+          )}
+          <ToolStatus message={message} />
+        </article>
+      </div>
+    </div>
   );
 }
 
@@ -404,6 +527,9 @@ export function McpExplorer({
   const [privacyRevision, setPrivacyRevision] = useState(0);
   const [remaining, setRemaining] = useState<string>();
   const [storageReady, setStorageReady] = useState(!persistConversation);
+  const [registeredPeopleReady, setRegisteredPeopleReady] = useState(
+    !agentEnabled || !persistConversation,
+  );
   const [workspaceUpdatedAt, setWorkspaceUpdatedAt] = useState(
     "1970-01-01T00:00:00.000Z",
   );
@@ -414,6 +540,7 @@ export function McpExplorer({
   const abortRef = useRef<AbortController | null>(null);
   const remainingRevision = useRef(0);
   const conversationRevision = useRef(0);
+  const registeredPeopleRevision = useRef(0);
   const cloudWorkspacePresent = useRef(false);
   const composing = useRef(false);
   const followLatest = useRef(true);
@@ -533,6 +660,31 @@ export function McpExplorer({
   }, [initialQuestion, persistConversation]);
 
   useEffect(() => {
+    if (!agentEnabled || !persistConversation || !storageReady) return;
+    let alive = true;
+    const revision = registeredPeopleRevision.current;
+    void loadRegisteredAskPeople()
+      .then((registered) => {
+        if (!alive || revision !== registeredPeopleRevision.current) return;
+        if (registered.length) {
+          const now = new Date().toISOString();
+          setPeople((current) =>
+            mergeRegisteredAskPeople(current, registered, now),
+          );
+          setWorkspaceUpdatedAt(now);
+        }
+      })
+      .catch(() => {})
+      .finally(() => {
+        if (alive && revision === registeredPeopleRevision.current)
+          setRegisteredPeopleReady(true);
+      });
+    return () => {
+      alive = false;
+    };
+  }, [agentEnabled, persistConversation, storageReady]);
+
+  useEffect(() => {
     if (!persistConversation || !storageReady) return;
     const serializedConversations: AskConversation[] = conversations.map(
       (conversation) => ({
@@ -649,6 +801,7 @@ export function McpExplorer({
   useEffect(() => {
     const clear = () => {
       conversationRevision.current += 1;
+      registeredPeopleRevision.current += 1;
       abortRef.current?.abort();
       abortRef.current = null;
       try {
@@ -680,6 +833,7 @@ export function McpExplorer({
       cloudWorkspacePresent.current = false;
       setCloudEnabled(false);
       setCloudStorage("local");
+      setRegisteredPeopleReady(true);
     };
     const onStorage = (event: StorageEvent) => {
       if (event.key === ASK_DATA_STORAGE_KEY && event.newValue) {
@@ -746,6 +900,32 @@ export function McpExplorer({
 
   function savePerson(edits: PersonEdits) {
     const now = new Date().toISOString();
+    const duplicate = !edits.id
+      ? people.find(
+          (person) =>
+            person.birthDate === edits.birthDate &&
+            (samePersonLabel(person.name, edits.name) ||
+              samePersonResidence(person.residence, edits.residence)),
+        )
+      : undefined;
+    if (duplicate) {
+      setConversations((current) =>
+        current.map((conversation) =>
+          conversation.id === activeConversationId
+            ? {
+                ...conversation,
+                personIds: [
+                  ...new Set([...conversation.personIds, duplicate.id]),
+                ].slice(0, ASK_DATA_LIMITS.selectedPeople),
+                updatedAt: now,
+              }
+            : conversation,
+        ),
+      );
+      setWorkspaceUpdatedAt(now);
+      setMessage(`${duplicate.name}は登録済みのため、相談対象に選びました。`);
+      return;
+    }
     if (!edits.id && people.length >= ASK_DATA_LIMITS.people) {
       setMessage(
         "保存できる人物は20人までです。不要な人物を削除してから追加してください。",
@@ -835,40 +1015,20 @@ export function McpExplorer({
     );
   }
 
-  async function importSavedPerson() {
-    const settings = readSettingsSync();
-    const birth = settingString(settings, "birth_date")?.slice(0, 10) ?? "";
-    if (!birth) {
-      setMessage(
-        "サイトの登録内容に生年月日がありません。下の人物追加から入力してください。",
-      );
-      return;
-    }
-    let origin = extractAgentInput(
-      settingString(settings, "base_label") ?? "",
-    ).municipality;
-    const lat = settingNumber(settings, "base_lat");
-    const lon = settingNumber(settings, "base_lon");
-    let residenceUnavailable = false;
-    if (!origin && lat !== undefined && lon !== undefined) {
-      try {
-        origin = await locate(lat, lon);
-      } catch {
-        residenceUnavailable = true;
-      }
-    }
-    const existing = people.find((person) => person.name === "本人");
-    savePerson({
-      ...(existing ? { id: existing.id } : {}),
-      name: "本人",
-      birthDate: birth,
-      birthPlace: existing?.birthPlace ?? "",
-      residence: origin || existing?.residence || "",
-    });
-    if (residenceUnavailable)
-      setMessage(
-        "本人を追加しました。現住所は取得できなかったため、必要なら編集してください。",
-      );
+  function chooseGuidePerson(personId?: string) {
+    const now = new Date().toISOString();
+    setWorkspaceUpdatedAt(now);
+    setConversations((current) =>
+      current.map((conversation) =>
+        conversation.id === activeConversationId
+          ? {
+              ...conversation,
+              personIds: personId ? [personId] : [],
+              updatedAt: now,
+            }
+          : conversation,
+      ),
+    );
   }
 
   function peopleForQuestion(text: string): AgentPerson[] | undefined {
@@ -1193,7 +1353,7 @@ export function McpExplorer({
     abortRef.current?.abort();
     abortRef.current = null;
     const now = new Date().toISOString();
-    const conversation = newConversation(now, "", activeConversation.personIds);
+    const conversation = newConversation(now);
     setConversations((current) => [
       conversation,
       ...current.map((item) =>
@@ -1351,10 +1511,10 @@ export function McpExplorer({
     messages.at(-1)?.role === "assistant" &&
     messages.at(-1)?.state !== "streaming";
 
-  if (!storageReady)
+  if (!storageReady || !registeredPeopleReady)
     return (
       <section className="mt-8 rounded-2xl border border-stone-200 bg-white/70 p-5 text-sm text-slate-600">
-        保存した相談を読み込んでいます…
+        保存した相談と登録済みの人物を読み込んでいます…
       </section>
     );
 
@@ -1410,16 +1570,6 @@ export function McpExplorer({
 
       {useAgent ? (
         <>
-          <AskPeoplePanel
-            people={people}
-            selectedIds={activeConversation?.personIds ?? []}
-            disabled={running}
-            onToggle={togglePerson}
-            onSave={savePerson}
-            onDelete={deletePerson}
-            onImportSaved={() => void importSavedPerson()}
-            onLocate={locateCurrentMunicipality}
-          />
           {question.trim() && (
             <p className="text-xs text-slate-600">
               {profilePreview
@@ -1479,7 +1629,7 @@ export function McpExplorer({
                 onChange={(event) => setMunicipality(event.target.value)}
                 minLength={2}
                 maxLength={80}
-                placeholder="例：長崎県長崎市"
+                placeholder="都道府県・市区町村"
                 className="mt-1 block w-full rounded-lg border border-amber-200 bg-white p-2 font-normal"
               />
             </label>
@@ -1560,6 +1710,15 @@ export function McpExplorer({
             />
           )}
           <div className="flex h-[72dvh] min-h-96 min-w-0 flex-col overflow-hidden rounded-3xl border border-stone-200 bg-white/45 shadow-sm sm:h-[min(76dvh,46rem)] sm:min-h-[32rem]">
+            <AskPeoplePanel
+              people={people}
+              selectedIds={activeConversation?.personIds ?? []}
+              disabled={running}
+              onToggle={togglePerson}
+              onSave={savePerson}
+              onDelete={deletePerson}
+              onLocate={locateCurrentMunicipality}
+            />
             <div
               ref={threadRef}
               role="log"
@@ -1577,29 +1736,51 @@ export function McpExplorer({
               className="min-h-0 flex-1 space-y-4 overflow-y-auto overscroll-contain px-3 py-5 sm:px-6"
             >
               {messages.length === 0 && voiceMessages.length === 0 && (
-                <div className="mx-auto max-w-xl py-8 text-center">
-                  <p className="font-serif text-xl font-semibold">
-                    方位や引越しについて相談できます
-                  </p>
-                  <p className="mt-2 text-sm leading-relaxed text-slate-600">
-                    プロフィールを先に入れておくと、会話の途中で何度も聞き返されません。
-                  </p>
-                </div>
+                <ShirubeGuide
+                  key={activeConversationId}
+                  people={people}
+                  selectedPeople={selectedPeople}
+                  disabled={running}
+                  onChoosePerson={chooseGuidePerson}
+                  onSave={savePerson}
+                  onSuggestion={(suggestion) => {
+                    setQuestion(suggestion);
+                    textareaRef.current?.focus();
+                  }}
+                  onLocate={locateCurrentMunicipality}
+                />
               )}
-              {messages.map((item) => (
-                <ConversationMessage key={item.id} message={item} />
+              {messages.map((item, index) => (
+                <ConversationMessage
+                  key={item.id}
+                  message={item}
+                  showName={
+                    item.role === "assistant" &&
+                    messages[index - 1]?.role !== "assistant"
+                  }
+                />
               ))}
-              {voiceMessages.map((item, index) => (
-                <article
-                  key={`${item.role}-${index}`}
-                  className="rounded-2xl border bg-white p-4 text-sm whitespace-pre-wrap"
-                >
-                  <strong>
-                    {item.role === "user" ? "あなた" : "音声AI"}：
-                  </strong>
-                  {item.text}
-                </article>
-              ))}
+              {voiceMessages.map((item, index) => {
+                const role = item.role === "user" ? "user" : "assistant";
+                const previousRole =
+                  index === 0
+                    ? messages.at(-1)?.role
+                    : voiceMessages[index - 1]?.role;
+                return (
+                  <ConversationMessage
+                    key={`${item.role}-${index}`}
+                    message={{
+                      id: `voice-${index}`,
+                      role,
+                      content: item.text,
+                      state: "done",
+                    }}
+                    showName={
+                      role === "assistant" && previousRole !== "assistant"
+                    }
+                  />
+                );
+              })}
               {voiceTools.length > 0 && (
                 <ToolStatus
                   message={{
@@ -1618,27 +1799,29 @@ export function McpExplorer({
               onSubmit={submitAgent}
               className="sticky bottom-0 z-10 shrink-0 rounded-b-3xl border-t border-stone-200 bg-[#faf7f5]/95 p-3 shadow-[0_-8px_24px_rgba(15,23,42,0.06)] backdrop-blur sm:p-4"
             >
-              <div
-                className={`mb-3 flex gap-2 overflow-x-auto pb-1 ${
-                  showFollowUps ? "" : "sm:flex-wrap"
-                }`}
-                aria-label={showFollowUps ? "次の質問の候補" : "質問例"}
-              >
-                {suggestedQuestions.map((suggestion) => (
-                  <button
-                    key={suggestion}
-                    type="button"
-                    disabled={running}
-                    onClick={() => {
-                      setQuestion(suggestion);
-                      textareaRef.current?.focus();
-                    }}
-                    className="shrink-0 rounded-full border border-stone-300 bg-white px-3 py-2 text-left text-xs leading-relaxed hover:bg-stone-50 disabled:opacity-50"
-                  >
-                    {suggestion}
-                  </button>
-                ))}
-              </div>
+              {messages.length > 0 && (
+                <div
+                  className={`mb-3 flex gap-2 overflow-x-auto pb-1 ${
+                    showFollowUps ? "" : "sm:flex-wrap"
+                  }`}
+                  aria-label={showFollowUps ? "次の質問の候補" : "質問例"}
+                >
+                  {suggestedQuestions.map((suggestion) => (
+                    <button
+                      key={suggestion}
+                      type="button"
+                      disabled={running}
+                      onClick={() => {
+                        setQuestion(suggestion);
+                        textareaRef.current?.focus();
+                      }}
+                      className="shrink-0 rounded-full border border-stone-300 bg-white px-3 py-2 text-left text-xs leading-relaxed hover:bg-stone-50 disabled:opacity-50"
+                    >
+                      {suggestion}
+                    </button>
+                  ))}
+                </div>
+              )}
               <label className="sr-only" htmlFor="ask-message">
                 メッセージ
               </label>
@@ -1672,7 +1855,7 @@ export function McpExplorer({
                       event.currentTarget.form?.requestSubmit();
                   }}
                   rows={2}
-                  placeholder="続けて質問できます"
+                  placeholder="しるべに相談したいことを書く"
                   className="max-h-40 min-h-14 flex-1 resize-y rounded-2xl border border-stone-300 bg-white px-4 py-3 text-base leading-relaxed outline-none focus:border-slate-500 disabled:opacity-60"
                 />
                 <button
@@ -1720,7 +1903,7 @@ export function McpExplorer({
                 setYear(value.year);
                 setMunicipality(value.municipality);
               }}
-              placeholder="1990年5月5日生まれ、名古屋市中区"
+              placeholder="生年月日と現在お住まいの市区町村"
             />
           </label>
           {year && !birthDate && (

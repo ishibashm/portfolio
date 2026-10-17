@@ -3,6 +3,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { MockLanguageModelV3 } from "ai/test";
 import {
   AGENT_LIMITS,
+  AGENT_SYSTEM,
   runAgent,
   createAgentModel,
   type AgentEvent,
@@ -16,6 +17,7 @@ import {
   FOLLOW_UP_ENVELOPE_END,
   FOLLOW_UP_ENVELOPE_START,
   formatFollowUpEnvelope,
+  initialConsultationSuggestions,
   sanitizeFollowUpSuggestions,
 } from "@/lib/followUpSuggestions";
 vi.mock("@/lib/prisma", () => {
@@ -228,6 +230,37 @@ describe("AIが公開MCPを選ぶループ", () => {
   });
 });
 describe("追質問候補", () => {
+  it("初回候補は選んだ人の実データだけを使い、未選択なら汎用文にする", () => {
+    const personalized = initialConsultationSuggestions([
+      {
+        name: "本人",
+        birthDate: "1991-04-12",
+        residence: "静岡県浜松市中央区",
+      },
+    ]);
+    expect(personalized).toEqual([
+      "静岡県浜松市中央区からの引越し方位を相談したい？",
+      "1991年4月12日生まれの本人に合う日取りを相談したい？",
+      "静岡県浜松市中央区から見た街の候補を探したい？",
+    ]);
+    expect(personalized.join(" ")).not.toMatch(/1990|深谷|長崎/);
+
+    const generic = initialConsultationSuggestions([]);
+    expect(generic).toEqual([
+      "引越しに良い方位を相談したい？",
+      "引越しの日取りを相談したい？",
+      "条件に合う街を探したい？",
+    ]);
+    expect(generic.join(" ")).not.toMatch(/\d{4}年|市|区|町|村/);
+  });
+
+  it("AI回答へしるべの話し方を指定する", () => {
+    expect(AGENT_SYSTEM).toContain("初代案内役「しるべ」");
+    expect(AGENT_SYSTEM).toContain("若い男性");
+    expect(AGENT_SYSTEM).toContain("語尾は「です」「ます」");
+    expect(AGENT_SYSTEM).toContain("不安をあおったりしません");
+  });
+
   it("平文だけを短く整え、重複・markup・URL・長文を捨てる", () => {
     expect(
       sanitizeFollowUpSuggestions([

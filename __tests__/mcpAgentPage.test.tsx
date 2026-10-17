@@ -11,7 +11,7 @@ it("サーバー判定は鍵なしで決定的フォームにし、鍵をprops�
   expect(screen.getByLabelText("生年月日")).toBeTruthy();
   expect(screen.queryByLabelText("質問")).toBeNull();
 });
-it("サーバー判定は旗と鍵でAIフォームにし、秘密を描画しない", () => {
+it("サーバー判定は旗と鍵でしるべのAIフォームにし、秘密を描画しない", async () => {
   vi.stubEnv("MCP_AGENT_ENABLED", "true");
   vi.stubEnv("GOOGLE_GENERATIVE_AI_API_KEY", "secret-only-on-server");
   const element = Page();
@@ -21,8 +21,10 @@ it("サーバー判定は旗と鍵でAIフォームにし、秘密を描画し�
     ),
   ).not.toContain("secret-only-on-server");
   render(element);
-  expect(screen.getByLabelText("メッセージ")).toBeTruthy();
-  expect(screen.getByLabelText("生年月日")).toBeTruthy();
+  expect(await screen.findByLabelText("メッセージ")).toBeTruthy();
+  expect(screen.getByText("しるべ")).toBeTruthy();
+  expect(screen.getByRole("img", { name: "しるべ" })).toBeTruthy();
+  expect(screen.queryByLabelText("生年月日")).toBeNull();
 });
 
 it("音声の旗・鍵がないとマイクを表示しない", () => {

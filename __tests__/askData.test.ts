@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   ASK_DATA_STORAGE_KEY,
   LEGACY_ASK_STORAGE_KEY,
+  mergeRegisteredAskPeople,
   parseAskWorkspace,
   readLocalAskWorkspace,
   summarizeConsultation,
@@ -125,5 +126,60 @@ describe("AI相談データ", () => {
     );
     expect(parsed?.people.map((person) => person.id)).toEqual(["valid_person"]);
     expect(parsed?.conversations[0].personIds).toEqual(["valid_person"]);
+  });
+
+  it("/ask の人物と登録プロフィール・同行者を重複なく統合する", () => {
+    const now = "2026-10-17T00:00:00.000Z";
+    const current = [
+      {
+        id: "person_existing",
+        name: "本人",
+        birthDate: "1991-04-12",
+        residence: "浜松市中央区",
+        createdAt: "2026-01-01T00:00:00.000Z",
+        updatedAt: "2026-01-01T00:00:00.000Z",
+      },
+    ];
+    const merged = mergeRegisteredAskPeople(
+      current,
+      [
+        {
+          sourceId: "profile:active",
+          name: "自分",
+          birthDate: "1991-04-12",
+          residence: "静岡県浜松市中央区",
+          active: true,
+        },
+        {
+          sourceId: "party:me",
+          name: "本人",
+          birthDate: "1991-04-12",
+        },
+        {
+          sourceId: "profile:partner",
+          name: "配偶者",
+          birthDate: "1991-04-02",
+          residence: "静岡県浜松市中央区",
+        },
+      ],
+      now,
+    );
+
+    expect(merged).toHaveLength(2);
+    expect(merged[0]).toMatchObject({
+      id: "person_existing",
+      name: "自分",
+      birthDate: "1991-04-12",
+      residence: "静岡県浜松市中央区",
+      sourceIds: ["profile:active", "party:me"],
+      active: true,
+      updatedAt: now,
+    });
+    expect(merged[1]).toMatchObject({
+      name: "配偶者",
+      sourceIds: ["profile:partner"],
+    });
+    expect(current[0]).not.toHaveProperty("sourceIds");
+    expect(current[0].name).toBe("本人");
   });
 });

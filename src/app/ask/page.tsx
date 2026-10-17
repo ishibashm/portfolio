@@ -10,20 +10,20 @@ export const dynamic = "force-dynamic";
 export const metadata: Metadata = {
   title: "AIに聞く｜方位と引越しの相談",
   description:
-    "AIに質問して、方位・日取り・街の候補と計算の過程を確かめる補助ツールです。",
+    "初代案内役しるべと会話しながら、方位・日取り・街の候補と計算の過程を確かめる補助ツールです。",
   alternates: { canonical: "/ask" },
   robots: { index: false, follow: true },
   openGraph: pageOpenGraph(
     "/ask",
     "AIに聞く",
-    "AIに質問して方位・日取り・街の候補と計算の過程を確かめます。",
+    "初代案内役しるべと、方位・日取り・街の候補と計算の過程を確かめます。",
   ),
 };
 export default function Page() {
   const state = chainLlmState();
   return (
     <main className="min-h-screen bg-gradient-to-br from-[#faf7f5] via-[#f5efe9] to-[#f0e9e1] text-slate-900">
-      <article className="mx-auto max-w-5xl px-5 py-12">
+      <article className="mx-auto max-w-[1700px] px-5 py-12">
         <nav aria-label="パンくず" className="mb-4 text-sm text-slate-600">
           <Link href="/">ホーム</Link>
           <span aria-hidden="true"> / </span>
@@ -34,7 +34,7 @@ export default function Page() {
         </Link>
         <h1 className="mt-5 text-3xl font-bold font-serif">AIに聞く</h1>
         <p className="mt-4 text-sm leading-relaxed">
-          方位・日取り・街の候補を、会話しながら絞り込めます。回答ごとに、その根拠になった道具の入力・結果も確かめられます。
+          初代案内役「しるべ」が、相談する人の登録から方位・日取り・街の候補まで会話でご案内します。回答ごとに、根拠になった道具の入力・結果も確かめられます。
         </p>
         <p className="mt-3 text-sm leading-relaxed">
           {state.enabled
