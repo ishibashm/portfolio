@@ -200,12 +200,12 @@ describe.skipIf(Number(process.versions.node.split(".")[0]) < 22)(
         req.end(options.body);
       });
     }
-    async function start(jar: Jar = new Map()) {
+    async function start(jar: Jar = new Map(), scope = "read:profiles") {
       const query = new URLSearchParams({
         client_id: "test-client",
         redirect_uri: "https://client.invalid/callback",
         response_type: "code",
-        scope: "read:profiles",
+        scope,
         resource: MCP_PERSONAL_RESOURCE,
         code_challenge: createHash("sha256")
           .update("v".repeat(43))
@@ -227,6 +227,7 @@ describe.skipIf(Number(process.versions.node.split(".")[0]) < 22)(
       return body.toString();
     }
     beforeAll(async () => {
+      vi.stubEnv("MCP_MEMORY_ENABLED", "true");
       const { Provider } = await import("oidc-provider");
       const { privateKey } = generateKeyPairSync("rsa", {
         modulusLength: 2048,
@@ -292,6 +293,7 @@ describe.skipIf(Number(process.versions.node.split(".")[0]) < 22)(
       port = (server.address() as AddressInfo).port;
     });
     afterAll(async () => {
+      vi.unstubAllEnvs();
       if (server)
         await new Promise<void>((resolve) => server.close(() => resolve()));
     });
@@ -380,6 +382,54 @@ describe.skipIf(Number(process.versions.node.split(".")[0]) < 22)(
         redirect_uri: "https://client.invalid/callback",
       };
     }
+    it.each(
+      [
+        [],
+        ["read:memory"],
+        ["write:memory"],
+        ["read:memory", "write:memory"],
+      ].map((scopes) => ({ scopes })),
+    )(
+      "grants only individually selected memory permissions $scopes",
+      async ({ scopes }) => {
+        const { jar, path, ticket } = await start(
+          new Map(),
+          "read:profiles read:memory write:memory",
+        );
+        const body = new URLSearchParams(form(ticket));
+        for (const scope of scopes) body.append("memoryScopes", scope);
+        const accepted = await http(path, jar, {
+          method: "POST",
+          body: body.toString(),
+        });
+        expect(accepted.status).toBe(303);
+        const resumed = await http(accepted.headers.location!, jar);
+        const code = new URL(resumed.headers.location!).searchParams.get(
+          "code",
+        )!;
+        expect(code).toBeTruthy();
+        const response = await exchange(jar, codeParams(code));
+        expect(response.status).toBe(200);
+        const tokens = JSON.parse(response.body);
+        const context = await authenticate(
+          new Headers({ authorization: `Bearer ${tokens.access_token}` }),
+        );
+        expect(context.memoryScopes ?? []).toEqual(scopes);
+        const refreshed = await exchange(jar, {
+          grant_type: "refresh_token",
+          refresh_token: tokens.refresh_token,
+        });
+        expect(refreshed.status).toBe(200);
+        const next = JSON.parse(refreshed.body);
+        expect(
+          (
+            await authenticate(
+              new Headers({ authorization: `Bearer ${next.access_token}` }),
+            )
+          ).memoryScopes ?? [],
+        ).toEqual(scopes);
+      },
+    );
     it("connects selection, encrypted persistence, code exchange, RS authentication, refresh and replay revocation", async () => {
       const { jar, code, grant } = await authorize();
       const response = await exchange(jar, codeParams(code));

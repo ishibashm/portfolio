@@ -47,6 +47,13 @@ export function renderMcpConsentPage(view: McpConsentView, ticket: string) {
 <fieldset><legend>読み取りを許可するプロフィール（選択必須）</legend>
 ${profiles ? `<ul>${profiles}</ul>` : "<p>クラウドに保存されたプロフィールがありません。元の端末でログインとクラウド保存を確認してから、接続をやり直してください。</p>"}
 </fieldset>
+${
+  view.memoryScopes?.length
+    ? `<fieldset><legend>記憶への追加権限（任意・接続ごと）</legend>
+<p>今後保存する記憶も対象です。読み取りで本文がAIへ渡り、会話に残り得ます。書き込みで作成・更新・削除が可能になります。書き込みは読み取りを含みません。</p>
+${view.memoryScopes.map((scope) => `<label><input type="checkbox" name="memoryScopes" value="${escapeHtml(scope)}">${scope === "read:memory" ? "記憶を読む" : "記憶を作成・変更・削除する"}</label>`).join("\n")}</fieldset>`
+    : ""
+}
 <button type="submit" name="decision" value="allow"${profiles ? "" : " disabled"}>選択したプロフィールを許可する</button>
 <button type="submit" name="decision" value="deny">許可しない</button>
 </form></main></body></html>`;

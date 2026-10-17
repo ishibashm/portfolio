@@ -23,6 +23,10 @@ const pageSchema: z.ZodType<McpConnectionsView> = z.object({
           )
           .max(100),
         scope: z.literal("read:profiles"),
+        memoryScopes: z
+          .array(z.enum(["read:memory", "write:memory"]))
+          .max(2)
+          .optional(),
         createdAt: date,
         expiresAt: date,
         lastUsedAt: date.nullable(),
@@ -61,6 +65,14 @@ function Connection({
       className="space-y-3 rounded border border-stone-300 p-4"
     >
       <h2 className="font-bold">{connection.clientName}</h2>
+      <p className="break-all">接続ID: {connection.id}</p>
+      <p>
+        記憶の権限:{" "}
+        {connection.memoryScopes?.length
+          ? connection.memoryScopes.join(" / ")
+          : "なし"}
+        （変更する場合は接続を解除して再同意してください）
+      </p>
       <p className="break-all">クライアントID: {connection.clientId}</p>
       <p>
         状態:{" "}

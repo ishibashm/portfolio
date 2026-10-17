@@ -1,3 +1,4 @@
+import type { MemoryStore } from "@/lib/personalMemory";
 import type { McpProfileReader } from "@/lib/mcpProfiles";
 import type { McpAuditStore } from "@/lib/mcpAuditStore";
 import { createMcpHttpRejectionAudit } from "@/lib/mcpHttpRejectionAudit";
@@ -32,6 +33,7 @@ function failure(status: number, code: string, headers?: HeadersInit) {
  * Deployment still needs pre-auth ingress limits and bounded, non-logging DB I/O.
  */
 export function createMcpPersonalHttp(deps: {
+  memory?: MemoryStore;
   authenticate: (
     headers: Headers,
     budget: McpAuthBudget,
@@ -164,6 +166,7 @@ export function createMcpPersonalHttp(deps: {
               check();
               return row;
             },
+            deps.memory,
           );
         },
         { startedAt, signal: controller.signal },

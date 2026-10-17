@@ -79,6 +79,8 @@ const NOT_A_PAGE = [
   "/login",
   "/profile",
   "/profile/connections",
+  "/profile/mcp",
+  "/profile/memory",
   "/account",
   "/contact", // 連絡用フォーム。公開は続けるが検索の入口にはしない
 ];

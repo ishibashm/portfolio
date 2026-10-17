@@ -1100,3 +1100,16 @@ model McpCalculationLease {
   @@id([userId, slot])
   @@index([expiresAt])
 }
+
+// Server-only encrypted private notes. SQL also binds userId to auth.users.
+model MemoryEntry {
+  id         String   @id @db.Uuid
+  userId     String   @db.Uuid
+  payload    Bytes
+  keyVersion String
+  revision   Int
+  createdAt  DateTime @db.Timestamptz(3)
+  updatedAt  DateTime @db.Timestamptz(3)
+
+  @@index([userId, id])
+}
