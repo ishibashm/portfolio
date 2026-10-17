@@ -111,7 +111,11 @@ export default function Page() {
             {FLOW.map((f, i) => {
               const page = byslug.get(f.slug);
               return (
-                <li key={f.slug} className="relative pl-14 pb-7 last:pb-0">
+                <li
+                  key={f.slug}
+                  className="motion-reveal relative pl-14 pb-7 last:pb-0"
+                  style={{ ["--i" as string]: i % 2 }}
+                >
                   <span className="absolute left-0 top-0 w-8 h-8 rounded-full bg-slate-900 text-white text-xs font-bold font-mono flex items-center justify-center ring-4 ring-[#f7f2ec]">
                     {i + 1}
                   </span>

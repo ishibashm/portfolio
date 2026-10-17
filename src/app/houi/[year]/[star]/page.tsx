@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { CompassDial } from "@/components/motion/CompassDial";
 import { ContentDisclaimer } from "@/components/houi/ContentDisclaimer";
 import { PractitionerStrip } from "@/components/practitioners/PractitionerStrip";
 import { DirectionEffects } from "@/components/houi/DirectionEffects";
@@ -152,6 +153,21 @@ export default async function Page({
           避けるべき方位は<b>{bad.map((v) => `${v.jp}（${v.label}）`).join("、")}</b>
           です。
         </p>
+        {good.length > 0 && (
+          /* 金の針が 1 つめの吉方位を指す（飾り。意味は右の文と上の段落が持つ）。 */
+          <div className="mt-5 flex items-center gap-4">
+            <CompassDial
+              needle={good[0].direction}
+              marks={good.map((v) => v.direction)}
+              labels
+              className="h-28 w-28 shrink-0"
+            />
+            <p className="text-xs leading-relaxed text-slate-600">
+              金の針は{good[0].jp}を指しています。金の点が{year}
+              年の吉方位（{good.map((v) => v.jp).join("・")}）です。
+            </p>
+          </div>
+        )}
         <DirectionEffects
           verdicts={verdicts}
           periodLabel={`${year}年`}
@@ -174,10 +190,11 @@ export default async function Page({
             に書いています。
           </p>
           <div className="mt-5 grid gap-3 sm:grid-cols-2">
-            {verdicts.map((v) => (
+            {verdicts.map((v, i) => (
               <div
                 key={v.direction}
-                className={`rounded-2xl border p-4 ${tone[v.kind]}`}
+                className={`motion-reveal rounded-2xl border p-4 ${tone[v.kind]}`}
+                style={{ ["--i" as string]: i % 2 }}
               >
                 <div className="flex items-baseline justify-between gap-2">
                   <span className="text-lg font-bold font-serif">{v.jp}</span>

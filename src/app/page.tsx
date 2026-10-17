@@ -6,6 +6,7 @@ import Link from "next/link";
 import { Compass, ArrowRight } from "lucide-react";
 import { AdBanner } from "@/components/ads/AdBanner";
 import { QuickProfileBar } from "@/components/home/QuickProfileBar";
+import { CompassDial } from "@/components/motion/CompassDial";
 import {
   CORE_ROUTES,
   ROUTE_GROUPS,
@@ -38,7 +39,9 @@ export default function Home() {
           （幅 1800px 前後）では左右に 400px ずつ余っていた。中身の主役は
           下のダッシュボードなので、そこが収まる幅まで広げる。
           本文の行長は段落側の max-w-[70ch] が守る。 */}
-      <header className="w-full max-w-[1700px] bg-white/95 backdrop-blur-xl border border-slate-300 p-8 md:p-10 rounded-3xl shadow-lg shadow-slate-200/50">
+      <header className="relative overflow-hidden w-full max-w-[1700px] bg-white/95 backdrop-blur-xl border border-slate-300 p-8 md:p-10 rounded-3xl shadow-lg shadow-slate-200/50">
+        {/* 金の羅盤の線画（飾り）。h1 とは重ねず右上の余白に置く。 */}
+        <CompassDial className="pointer-events-none absolute -right-6 -top-6 hidden h-44 w-44 opacity-60 sm:block md:h-56 md:w-56" />
         <div className="flex items-center gap-3 mb-4">
           <div className="p-2.5 rounded-2xl bg-rose-600 text-white shadow-md shadow-rose-200">
             <Compass className="w-5 h-5" />

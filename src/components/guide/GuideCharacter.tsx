@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { InViewOnce } from "@/components/motion/InViewOnce";
 
 /**
  * 初代 案内役「しるべ」。
@@ -50,6 +51,7 @@ export function GuideAvatar({
   size = "md",
   priority = "lazy",
   decorative = false,
+  float = false,
   className = "",
 }: {
   pose: GuidePose;
@@ -58,12 +60,16 @@ export function GuideAvatar({
   priority?: "lazy" | "low";
   /** 台詞や状態の文を別に読み上げるときは装飾扱いにする。 */
   decorative?: boolean;
+  /** 静かに上下に浮かせる（motion-float。動きを減らす設定では止まる）。 */
+  float?: boolean;
   className?: string;
 }) {
   const p = POSES[pose];
   const s = SIZES[size];
   return (
-    <picture className={`block shrink-0 ${s.cls} ${className}`}>
+    <picture
+      className={`block shrink-0 ${s.cls} ${float ? "motion-float" : ""} ${className}`}
+    >
       <source
         type="image/avif"
         srcSet={guideSrcSet(pose, "avif")}
@@ -100,6 +106,7 @@ export default function GuideCharacter({
   priority = "lazy",
   side = "left",
   showName = true,
+  float = false,
   children,
   className = "",
 }: {
@@ -108,6 +115,7 @@ export default function GuideCharacter({
   priority?: "lazy" | "low";
   side?: "left" | "right";
   showName?: boolean;
+  float?: boolean;
   /** 台詞。 */
   children: ReactNode;
   className?: string;
@@ -119,7 +127,7 @@ export default function GuideCharacter({
       } ${className}`}
       data-guide-pose={pose}
     >
-      <GuideAvatar pose={pose} size={size} priority={priority} />
+      <GuideAvatar pose={pose} size={size} priority={priority} float={float} />
       <figcaption
         className={`relative mb-3 min-w-0 flex-1 rounded-2xl border border-[#c9a54a]/60 bg-white px-4 py-3 text-left text-sm leading-relaxed text-slate-800 shadow-sm`}
       >
@@ -134,9 +142,10 @@ export default function GuideCharacter({
         />
         {showName && (
           <span className="mb-1 flex items-center gap-2 text-[11px] font-bold tracking-wider text-[#1e2a5a]">
-            <span className="rounded-sm bg-[#1e2a5a] px-1.5 py-0.5 text-[10px] text-[#f3d98b]">
+            {/* 名札に一度だけ金の光が走る（motion-sweep） */}
+            <InViewOnce className="motion-sweep rounded-sm bg-[#1e2a5a] px-1.5 py-0.5 text-[10px] text-[#f3d98b]">
               {GUIDE_TITLE}
-            </span>
+            </InViewOnce>
             {GUIDE_NAME}
           </span>
         )}
