@@ -377,6 +377,9 @@ export async function runAgent(
     if (fresh.length) emit({ type: "blocks", blocks: fresh });
   };
   let dailyQuotaExceeded = false;
+  // 提供元の前払い残高切れ（402）。同じ鍵の切替先モデルも同じ理由で失敗するので、
+  // 再試行も切替も要約呼び出しもしない。
+  let billingStopped = false;
   let hasText = false;
   let suggestions: string[] = [];
   let switched = false;
@@ -582,9 +585,10 @@ export async function runAgent(
         const reason = classifyModelError(error);
         logAgentFailure("model", error, currentModelId());
         if (reason === "daily-quota") dailyQuotaExceeded = true;
+        if (reason === "billing") billingStopped = true;
         // Once results exist, recovery is a no-tools continuation, never a replay.
         if (sources.size) {
-          summaryFallback = reason !== "permanent";
+          summaryFallback = reason !== "permanent" && reason !== "billing";
           if (abort.aborted)
             reasons.add("全体の時間上限または接続の中断で終了しました。");
           break;
@@ -592,6 +596,7 @@ export async function runAgent(
         if (
           abort.aborted ||
           reason === "permanent" ||
+          reason === "billing" ||
           calls >= limits.calls ||
           steps >= limits.steps
         )
@@ -633,7 +638,7 @@ export async function runAgent(
       ),
     );
     try {
-      if (!hasText && !totalAbort.aborted) {
+      if (!hasText && !totalAbort.aborted && !billingStopped) {
         if (summaryFallback) await switchModel(totalAbort);
         const summarize = async () => {
           recovery.onModel?.(typeof model === "string" ? model : model.modelId);
@@ -676,8 +681,11 @@ export async function runAgent(
           await summarize();
         } catch (error) {
           logAgentFailure("summary", error, currentModelId());
+          const summaryReason = classifyModelError(error);
+          if (summaryReason === "billing") billingStopped = true;
           if (
-            classifyModelError(error) === "permanent" ||
+            summaryReason === "permanent" ||
+            summaryReason === "billing" ||
             switched ||
             !recovery.fallback
           )
@@ -700,7 +708,15 @@ export async function runAgent(
           "本日のAI回答の枠が終わりました。道具で計算した結果だけを表示しています。",
         );
       }
-      sendText(serverSummary(sources));
+      if (billingStopped) {
+        reasons.clear();
+        reasons.add(AGENT_PAUSED_REASON);
+      }
+      sendText(
+        billingStopped && !sources.size
+          ? AGENT_PAUSED_TEXT
+          : serverSummary(sources),
+      );
     }
     emit({
       type: "done",
@@ -711,7 +727,15 @@ export async function runAgent(
   }
 }
 
-export type ModelErrorReason = "daily-quota" | "transient" | "permanent";
+export type ModelErrorReason =
+  | "billing"
+  | "daily-quota"
+  | "transient"
+  | "permanent";
+export const AGENT_PAUSED_REASON =
+  "AI回答の利用枠が一時的に止まっています。計算のみのモードは使えます。";
+export const AGENT_PAUSED_TEXT =
+  "しるべのAI回答は、いま一時的にお休みしています。上の「AIを使わず計算のみ」にチェックを入れると、生年月日と日付から計算した結果を確認できます。再開までお待たせしてすみません。九星気学は参考情報です。";
 /** Do not expose provider messages (which may contain request data) to users. */
 export function classifyModelError(error: unknown): ModelErrorReason {
   const seen = new Set<unknown>();
@@ -736,6 +760,12 @@ export function classifyModelError(error: unknown): ModelErrorReason {
   }
   visit(error);
   const message = messages.join(" ");
+  // 402 は前払い残高切れ。RESOURCE_EXHAUSTED を伴うが待っても戻らない。
+  if (
+    statuses.includes(402) ||
+    /prepayment|credits? (?:are |is )?depleted|billing/i.test(message)
+  )
+    return "billing";
   const quota =
     statuses.includes(429) || /429|quota|resource_exhausted/i.test(message);
   const delays = [
