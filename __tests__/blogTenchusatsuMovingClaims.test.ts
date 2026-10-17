@@ -115,7 +115,7 @@ describe("本文の数字", () => {
     ];
     expect(Math.min(...outside)).toBe(108);
     expect(Math.max(...outside)).toBe(114);
-    expect(md.match(/108〜114日/g)?.length).toBe(3);
+    expect(md.match(/108〜114日/g)?.length).toBe(4);
   });
 
   it("午未は 2027 年の 365 日すべてが厳格で不可、年を除くと 251 日戻る", () => {
