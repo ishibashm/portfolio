@@ -366,6 +366,11 @@ export async function runAgent(
   recovery: {
     fallback?: () => Promise<LanguageModel>;
     onModel?: (model: string) => void;
+    onUsage?: (
+      model: string,
+      input: number | undefined,
+      output: number | undefined,
+    ) => void;
   } = {},
   context: AgentConversationContext = {},
 ) {
@@ -690,6 +695,20 @@ export async function runAgent(
           maxOutputTokens: limits.outputTokens,
           maxRetries: 0,
           // SDKの既定onErrorは例外をconsole.errorへ出す。入力を含みうるため抑制する。
+          onFinish: ({ totalUsage, finishReason, steps: completedSteps }) =>
+            recovery.onUsage?.(
+              typeof model === "string" ? model : model.modelId,
+              finishReason === "error" ||
+                finishReason === "other" ||
+                completedSteps.some(
+                  (step) =>
+                    step.usage.inputTokens === undefined ||
+                    step.usage.outputTokens === undefined,
+                )
+                ? undefined
+                : totalUsage.inputTokens,
+              totalUsage.outputTokens,
+            ),
           onError: () => {},
           abortSignal: abort,
           onStepFinish: ({ response }) => {
@@ -814,6 +833,20 @@ export async function runAgent(
             toolChoice: "none",
             maxOutputTokens: limits.outputTokens,
             maxRetries: 0,
+            onFinish: ({ totalUsage, finishReason, steps: completedSteps }) =>
+              recovery.onUsage?.(
+                typeof model === "string" ? model : model.modelId,
+                finishReason === "error" ||
+                  finishReason === "other" ||
+                  completedSteps.some(
+                    (step) =>
+                      step.usage.inputTokens === undefined ||
+                      step.usage.outputTokens === undefined,
+                  )
+                  ? undefined
+                  : totalUsage.inputTokens,
+                totalUsage.outputTokens,
+              ),
             onError: () => {},
             abortSignal: totalAbort,
           });

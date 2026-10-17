@@ -2,6 +2,7 @@ import { agentBillingState } from "@/lib/agentBillingState";
 import { chainLlmState } from "@/lib/mcpAgentConfig";
 import { voiceState } from "@/lib/mcpVoiceConfig";
 import { canUseAgent } from "@/lib/agentEntitlement";
+import { agentReservation } from "@/lib/agentPricing";
 import { clientKey } from "@/lib/apiGuard";
 import { agentSessionUser } from "@/lib/agentSession";
 import { voiceStore } from "@/lib/mcpVoiceStore";
@@ -27,6 +28,8 @@ export async function GET(request: Request) {
       paused: agentBillingState().paused,
       enabled,
       provider,
+      // AI回答の単価がそろっているか（false ならAI回答は呼び出し前に止まる）。
+      aiPriced: enabled ? agentReservation(1) !== null : null,
       mock,
       voiceEnabled: voice.enabled,
       voiceMock: voice.mock,

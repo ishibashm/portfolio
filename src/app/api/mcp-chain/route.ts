@@ -13,6 +13,7 @@ import {
   AGENT_LIMITS,
 } from "@/lib/mcpAgent";
 import { chainLlmState } from "@/lib/mcpAgentConfig";
+import { pricedFallbackModel } from "@/lib/agentPricing";
 import { agentSessionUser } from "@/lib/agentSession";
 import { reminderOfferCard, remindersConfig } from "@/lib/reminders";
 import {
@@ -112,7 +113,13 @@ export async function POST(request: Request): Promise<Response> {
     if (!entitlement.allowed)
       return Response.json(
         { error: entitlement.reason, remaining: entitlement.remaining },
-        { status: 429, headers: { "Retry-After": "20" } },
+        {
+          status: 429,
+          headers: {
+            "Retry-After": "20",
+            "X-Agent-Remaining-USD": String(entitlement.remaining.usd),
+          },
+        },
       );
     parsed =
       body?.mode === "llm"
@@ -138,6 +145,13 @@ export async function POST(request: Request): Promise<Response> {
   const isAgent = input.mode === "llm" && "question" in input;
   let toolCalls = 0;
   let usedModel = "none";
+  let modelStarts = 0;
+  let invalidUsage = false;
+  const measured: {
+    model: string;
+    inputTokens: number;
+    outputTokens: number;
+  }[] = [];
   const abort = new AbortController();
   const signal = AbortSignal.any([request.signal, abort.signal]);
   const totalTimer = isAgent
@@ -180,12 +194,24 @@ export async function POST(request: Request): Promise<Response> {
               AGENT_LIMITS,
               {
                 onModel: (model) => {
+                  modelStarts++;
                   usedModel = `${chainLlmState().provider}:${model}`;
                 },
-                ...(chainLlmState().fallbackModel && !chainLlmState().mock
+                onUsage: (model, inputTokens, outputTokens) => {
+                  if (inputTokens === undefined || outputTokens === undefined) {
+                    invalidUsage = true;
+                    return;
+                  }
+                  measured.push({
+                    model: `${chainLlmState().provider}:${model}`,
+                    inputTokens,
+                    outputTokens,
+                  });
+                },
+                // 単価が分からない切替先は呼ばない（主モデルは止めない）。
+                ...(pricedFallbackModel() && !chainLlmState().mock
                   ? {
-                      fallback: () =>
-                        createAgentModel(chainLlmState().fallbackModel),
+                      fallback: () => createAgentModel(pricedFallbackModel()),
                     }
                   : {}),
               },
@@ -243,6 +269,11 @@ export async function POST(request: Request): Promise<Response> {
           clearTimeout(totalTimer);
           entitlement.finish({
             model: usedModel,
+            measured,
+            complete:
+              !invalidUsage &&
+              !signal.aborted &&
+              measured.length === modelStarts,
             toolCalls,
           });
           // ロック解放は、ハング・失敗しうるtransportのcloseより先に行う。
@@ -262,6 +293,7 @@ export async function POST(request: Request): Promise<Response> {
       "Cache-Control": "no-store",
       "X-Accel-Buffering": "no",
       "X-Agent-Remaining-Requests": String(entitlement.remaining.requests),
+      "X-Agent-Remaining-USD": String(entitlement.remaining.usd),
       "X-Agent-Remaining-Tokens": String(entitlement.remaining.tokens),
     },
   });

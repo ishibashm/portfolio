@@ -1,3 +1,4 @@
+import { agentCost, agentDailyBudget, agentReservation } from "./agentPricing";
 import { createHmac, randomBytes } from "node:crypto";
 import { TokenBucket, jstDayKey } from "./apiGuard";
 
@@ -11,16 +12,20 @@ export interface UsageRecord {
   toolCalls: number;
   voiceSeconds: number;
   at: number;
+  costUsd?: number;
 }
 export interface UsageLedger {
   recordUsage(record: UsageRecord): void;
-  daily(at: number, subject?: string): { requests: number; tokens: number };
+  daily(
+    at: number,
+    subject?: string,
+  ): { requests: number; tokens: number; costUsd?: number };
 }
 /** インスタンス内だけの台帳。識別子もログには出さない。 */
 export class MemoryUsageLedger implements UsageLedger {
   private days = new Map<
     string,
-    Map<string, { requests: number; tokens: number }>
+    Map<string, { requests: number; tokens: number; costUsd?: number }>
   >();
   private roll(at: number) {
     const key = jstDayKey(at);
@@ -39,6 +44,7 @@ export class MemoryUsageLedger implements UsageLedger {
         const old = this.daily(r.at, key);
         totals?.set(key, {
           requests: old.requests + 1,
+          costUsd: (old.costUsd ?? 0) + (r.costUsd ?? 0),
           tokens: old.tokens + r.inputTokens + r.outputTokens,
         });
       }
@@ -46,6 +52,7 @@ export class MemoryUsageLedger implements UsageLedger {
     console.info(
       JSON.stringify({
         event: "agent_usage",
+        costUsd: r.costUsd ?? null,
         estimated: true,
         mode: r.mode,
         model: r.model,
@@ -105,7 +112,10 @@ export function createAgentEntitlement(ledger: UsageLedger = usageLedger) {
   const agentGlobalBucket = new TokenBucket(6, 1 / 10000);
   let active = 0;
   let agentActive = 0;
-  const pending = new Map<symbol, { subject: string; at: number }>();
+  const pending = new Map<
+    symbol,
+    { subject: string; at: number; costUsd: number }
+  >();
   return function canUseAgent(input: {
     userId?: string;
     sessionId?: string;
@@ -139,7 +149,16 @@ export function createAgentEntitlement(ledger: UsageLedger = usageLedger) {
     const personalPending = reservations.filter(
       (r) => r.subject === subject,
     ).length;
+    const reservedUsd =
+      input.mode === "llm" ? agentReservation(AGENT_TOKEN_RESERVATION) : 0;
+    const remainingUsd = Math.max(
+      0,
+      agentDailyBudget() -
+        (global.costUsd ?? 0) -
+        reservations.reduce((sum, r) => sum + r.costUsd, 0),
+    );
     const remaining = {
+      usd: remainingUsd,
       requests: Math.max(
         0,
         allowance.requests - daily.requests - personalPending,
@@ -189,13 +208,25 @@ export function createAgentEntitlement(ledger: UsageLedger = usageLedger) {
           globalAllowance.tokens)
     )
       reason = "本日のAI無料枠に達しました。計算のみの方式をご利用ください。";
+    if (
+      !reason &&
+      input.mode === "llm" &&
+      (reservedUsd === null ||
+        reservedUsd > remainingUsd ||
+        agentDailyBudget() === 0)
+    )
+      reason =
+        reservedUsd === null
+          ? "AI回答の単価が未設定です。計算のみの方式をご利用ください。"
+          : "本日のAI回答の枠が終わりました。計算のみの方式・FAQをご利用ください。";
     const token = Symbol();
     let released = false;
     if (!reason && !input.inspect) {
       active++;
       if (input.mode === "llm") {
         agentActive++;
-        pending.set(token, { subject, at });
+        pending.set(token, { subject, at, costUsd: reservedUsd ?? 0 });
+        remaining.usd = Math.max(0, remainingUsd - (reservedUsd ?? 0));
         remaining.requests--;
         remaining.tokens -= AGENT_TOKEN_RESERVATION;
       }
@@ -211,6 +242,12 @@ export function createAgentEntitlement(ledger: UsageLedger = usageLedger) {
         model: string;
         toolCalls: number;
         voiceSeconds?: number;
+        measured?: {
+          model: string;
+          inputTokens: number;
+          outputTokens: number;
+        }[];
+        complete?: boolean;
       }) {
         if (released || reason || input.inspect) return;
         released = true;
@@ -218,7 +255,17 @@ export function createAgentEntitlement(ledger: UsageLedger = usageLedger) {
         if (input.mode === "llm") agentActive--;
         pending.delete(token);
         if (!usage) return; // 入力不正は実行前なので費用を記録しない。
+        const costs = usage.measured?.map((entry) =>
+          agentCost(entry.model, entry.inputTokens, entry.outputTokens),
+        );
+        const settledUsd =
+          usage.complete &&
+          costs?.length &&
+          costs.every((cost) => cost !== null)
+            ? costs.reduce<number>((sum, cost) => sum + cost!, 0)
+            : (reservedUsd ?? 0);
         ledger.recordUsage({
+          costUsd: input.mode === "llm" ? settledUsd : 0,
           subject,
           mode: input.mode,
           model: usage.model,
