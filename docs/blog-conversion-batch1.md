@@ -29,4 +29,4 @@
 - VOICEVOX:玄野武宏（ノーマル・話速1.0）、1行ずつ合成。BGM はコードで合成したオリジナル曲
 - 読みは動画ごとの置換（字幕は原文のまま）。ユーザー辞書は変えない。
   エンジンが2つに割るアクセント句（本命的殺・年盤・四隅）は、合成前に1句へまとめ直す
-- `youtubeId` / `videoUploadDate` / `videoDuration` と `::youtube` は、公開後に動画IDが決まってから記事に足す
+- 公開した動画（uPOX7HUVb-U・H8lJJu4FPT4・EWTdGewuva0）を `youtubeId` / `videoUploadDate` / `videoDuration` と `::youtube` で「先に結論」の直後に埋め込む
