@@ -575,6 +575,7 @@ export function McpExplorer({
   const [suggestions, setSuggestions] = useState<string[]>([]);
   const [privacyRevision, setPrivacyRevision] = useState(0);
   const [remaining, setRemaining] = useState<string>();
+  const [voiceSignedIn, setVoiceSignedIn] = useState<boolean | null>(null);
   const [storageReady, setStorageReady] = useState(!persistConversation);
   const [registeredPeopleReady, setRegisteredPeopleReady] = useState(
     !agentEnabled || !persistConversation,
@@ -842,8 +843,17 @@ export function McpExplorer({
         setBillingPaused(data.paused === "billing");
         if (data.remaining && revision === remainingRevision.current)
           setRemaining(String(data.remaining.requests));
+        if (
+          typeof data.voiceSignedIn === "boolean" &&
+          revision === remainingRevision.current
+        )
+          setVoiceSignedIn(data.voiceSignedIn);
       })
-      .catch(() => {});
+      // 状態が取れなくても「確認中」で止めない。最終判定はサーバーの 401。
+      .catch(() => {
+        if (!controller.signal.aborted)
+          setVoiceSignedIn((current) => current ?? true);
+      });
     return () => controller.abort();
   }, [agentEnabled]);
 
@@ -1830,23 +1840,32 @@ export function McpExplorer({
       </div>
 
       {voiceEnabled && useAgent && (
-        <GrokVoice
-          key={`voice-${privacyRevision}`}
-          disabled={running}
-          onTranscript={(role, text) =>
-            setVoiceMessages((current) => [...current, { role, text }])
-          }
-          onEvent={(event) => {
-            if (event.type === "tool-call")
-              setVoiceTools((current) => [...current, event]);
-            if (event.type === "tool-result")
-              setVoiceTools((current) =>
-                current.map((call) =>
-                  call.id === event.id ? { ...call, result: event } : call,
-                ),
-              );
-          }}
-        />
+        <>
+          {voiceSignedIn === null ? (
+            <p className="rounded-2xl border border-slate-200 p-4 text-sm">
+              音声のログイン状態を確認しています…
+            </p>
+          ) : (
+            <GrokVoice
+              key={`voice-${privacyRevision}`}
+              disabled={running}
+              signedIn={voiceSignedIn}
+              onTranscript={(role, text) =>
+                setVoiceMessages((current) => [...current, { role, text }])
+              }
+              onEvent={(event) => {
+                if (event.type === "tool-call")
+                  setVoiceTools((current) => [...current, event]);
+                if (event.type === "tool-result")
+                  setVoiceTools((current) =>
+                    current.map((call) =>
+                      call.id === event.id ? { ...call, result: event } : call,
+                    ),
+                  );
+              }}
+            />
+          )}
+        </>
       )}
 
       {useAgent ? (

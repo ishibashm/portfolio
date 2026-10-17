@@ -1,4 +1,5 @@
 "use client";
+import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import type { AgentEvent } from "@/lib/mcpAgent";
 import { VoiceClient } from "@/lib/voiceClient";
@@ -6,10 +7,12 @@ export default function GrokVoice({
   onTranscript,
   onEvent,
   disabled = false,
+  signedIn = true,
 }: {
   onTranscript: (role: "user" | "assistant", text: string) => void;
   onEvent: (event: AgentEvent) => void;
   disabled?: boolean;
+  signedIn?: boolean;
 }) {
   const client = useRef<VoiceClient | null>(null);
   const callbacks = useRef({ onTranscript, onEvent });
@@ -20,6 +23,7 @@ export default function GrokVoice({
   const [holding, setHolding] = useState(false);
   const [status, setStatus] = useState("");
   const [remaining, setRemaining] = useState(0);
+  const [loginRequired, setLoginRequired] = useState(!signedIn);
   useEffect(() => {
     const stop = () => {
       client.current?.stop();
@@ -45,6 +49,7 @@ export default function GrokVoice({
         event: (event) => callbacks.current.onEvent(event),
         status: setStatus,
         remaining: setRemaining,
+        loginRequired: () => setLoginRequired(true),
         ended: () => {
           client.current = null;
           setActive(false);
@@ -63,6 +68,18 @@ export default function GrokVoice({
     setHolding(false);
     client.current?.release();
   }
+  if (loginRequired)
+    return (
+      <div className="rounded-2xl border border-slate-200 p-4 text-sm">
+        音声で話すにはログインが必要です。{" "}
+        <Link
+          className="underline underline-offset-2"
+          href="/login?next=%2Fask"
+        >
+          ログインする
+        </Link>
+      </div>
+    );
   return (
     <div className="space-y-3 rounded-2xl border border-slate-200 p-4">
       <p className="text-sm">

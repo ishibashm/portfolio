@@ -4,19 +4,33 @@ import { voiceState } from "@/lib/mcpVoiceConfig";
 import { canUseAgent } from "@/lib/agentEntitlement";
 import { clientKey } from "@/lib/apiGuard";
 import { agentSessionUser } from "@/lib/agentSession";
+import { voiceStore } from "@/lib/mcpVoiceStore";
 export const dynamic = "force-dynamic";
 export async function GET(request: Request) {
   const { enabled, mock } = chainLlmState();
-  const session = enabled
-    ? await agentSessionUser(request)
-    : { signedIn: false };
+  const voice = voiceState();
+  const session =
+    enabled || voice.enabled
+      ? await agentSessionUser(request)
+      : { signedIn: false };
+  let voiceAvailable = voice.enabled;
+  if (voice.enabled) {
+    try {
+      await voiceStore.sweepExpired();
+    } catch {
+      voiceAvailable = false;
+    }
+  }
   return Response.json(
     {
       paused: agentBillingState().paused,
       enabled,
       mock,
-      voiceEnabled: voiceState().enabled,
-      voiceMock: voiceState().mock,
+      voiceEnabled: voice.enabled,
+      voiceMock: voice.mock,
+      voiceAvailable,
+      voiceRequiresLogin: true,
+      voiceSignedIn: session.signedIn,
       remaining: canUseAgent({
         ...("userId" in session && session.userId
           ? { userId: session.userId }

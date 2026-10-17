@@ -32,27 +32,6 @@ export class MemoryUsageLedger implements UsageLedger {
   daily(at: number, subject = "*") {
     return this.roll(at)?.get(subject) ?? { requests: 0, tokens: 0 };
   }
-  private voiceDays = new Map<string, Map<string, number>>();
-  voiceDaily(at: number, subject = "*") {
-    return this.voiceDays.get(jstDayKey(at))?.get(subject) ?? 0;
-  }
-  /** Reservation and settlement run synchronously, before any external await. */
-  reserveVoice(subject: string, seconds: number, at: number) {
-    const day = jstDayKey(at);
-    if (!this.voiceDays.has(day)) this.voiceDays.set(day, new Map());
-    if (this.voiceDays.size > 2)
-      this.voiceDays.delete([...this.voiceDays.keys()].sort()[0]);
-    const totals = this.voiceDays.get(day)!;
-    for (const key of ["*", subject])
-      totals.set(key, (totals.get(key) ?? 0) + seconds);
-    let settled = false;
-    return (actual: number) => {
-      if (settled) return;
-      settled = true;
-      for (const key of ["*", subject])
-        totals.set(key, (totals.get(key) ?? 0) - seconds + actual);
-    };
-  }
   recordUsage(r: UsageRecord) {
     const totals = this.roll(r.at);
     if (r.mode === "llm") {
