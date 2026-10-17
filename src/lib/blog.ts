@@ -10,6 +10,13 @@ export interface BlogPost {
   description: string;
   publishedAt: string;
   updatedAt?: string;
+  youtubeId?: string;
+  /** ISO 8601 upload date/time. */
+  videoUploadDate?: string;
+  /** ISO 8601 duration, e.g. PT1M40S. */
+  videoDuration?: string;
+  videoTitle?: string;
+  videoDescription?: string;
   category: string;
   tags: string[];
   draft: boolean;
@@ -103,7 +110,16 @@ function parseFrontmatter(source: string, slug: string): BlogPost {
     );
   }
 
+  // Optional video values may be quoted, including explicitly empty strings.
+  const videoValue = (key: string) =>
+    metadata.get(key)?.replace(/^(["'])(.*)\1$/, "$2");
+
   return {
+    youtubeId: videoValue("youtubeId"),
+    videoUploadDate: videoValue("videoUploadDate"),
+    videoDuration: videoValue("videoDuration"),
+    videoTitle: videoValue("videoTitle"),
+    videoDescription: videoValue("videoDescription"),
     slug,
     title: metadata.get("title")!,
     description: metadata.get("description")!,

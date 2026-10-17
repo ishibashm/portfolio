@@ -1,3 +1,5 @@
+import { isValidYouTubeId } from "@/lib/blogVideo";
+import type { BlogVideoProps } from "@/components/blog/BlogVideo";
 import { SITE_NAME } from "@/lib/siteStructure";
 import { SITE_URL } from "@/lib/siteUrl";
 
@@ -216,6 +218,32 @@ export function DefinedTermSetJsonLd({
           // 読みは別名として渡す。物件の節には読みの列が無い。
           ...(t.reading ? { alternateName: t.reading } : {}),
         })),
+      }}
+    />
+  );
+}
+
+export function VideoJsonLd({
+  youtubeId,
+  title,
+  description,
+  cover,
+  uploadDate,
+  duration,
+}: BlogVideoProps) {
+  if (!isValidYouTubeId(youtubeId)) return null;
+  return (
+    <Script
+      data={{
+        "@context": "https://schema.org",
+        "@type": "VideoObject",
+        name: title,
+        description,
+        thumbnailUrl: new URL(cover, SITE_URL).href,
+        uploadDate,
+        embedUrl: `https://www.youtube.com/embed/${youtubeId}`,
+        duration,
+        inLanguage: "ja",
       }}
     />
   );
