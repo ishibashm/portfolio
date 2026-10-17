@@ -8,7 +8,7 @@ import { voiceStore } from "@/lib/mcpVoiceStore";
 import { remindersConfig } from "@/lib/reminders";
 export const dynamic = "force-dynamic";
 export async function GET(request: Request) {
-  const { enabled, mock } = chainLlmState();
+  const { enabled, mock, provider } = chainLlmState();
   const voice = voiceState();
   const session =
     enabled || voice.enabled
@@ -26,6 +26,7 @@ export async function GET(request: Request) {
     {
       paused: agentBillingState().paused,
       enabled,
+      provider,
       mock,
       voiceEnabled: voice.enabled,
       voiceMock: voice.mock,

@@ -71,6 +71,8 @@ jobs:
           CRON_SECRET: ${{ secrets.CRON_SECRET }}
           # 未設定なら ENV_FILE の値を残す。AI の旗は vars 優先。
           MCP_AGENT_ENABLED: ${{ vars.MCP_AGENT_ENABLED || secrets.MCP_AGENT_ENABLED }}
+          MCP_AGENT_PROVIDER: ${{ vars.MCP_AGENT_PROVIDER }}
+          XAI_AGENT_MODEL: ${{ vars.XAI_AGENT_MODEL }}
           MCP_AGENT_MODEL: ${{ vars.MCP_AGENT_MODEL }}
           XAI_API_KEY: ${{ secrets.XAI_API_KEY }}
           MCP_VOICE_ENABLED: ${{ vars.MCP_VOICE_ENABLED }}
@@ -179,6 +181,12 @@ jobs:
           done
           if [ "$MCP_AGENT_FALLBACK_DISABLED" = "true" ]; then
             echo "MCP_AGENT_FALLBACK_MODEL=" >> .env
+          fi
+          if [ -n "$MCP_AGENT_PROVIDER" ]; then
+            echo "MCP_AGENT_PROVIDER=$MCP_AGENT_PROVIDER" >> .env
+          fi
+          if [ -n "$XAI_AGENT_MODEL" ]; then
+            echo "XAI_AGENT_MODEL=$XAI_AGENT_MODEL" >> .env
           fi
           if [ -n "$MCP_AGENT_MODEL" ]; then
             echo "MCP_AGENT_MODEL=$MCP_AGENT_MODEL" >> .env

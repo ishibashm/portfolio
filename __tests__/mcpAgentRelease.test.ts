@@ -60,7 +60,9 @@ it.each(["success", "error", "abort", "cancel", "timeout"])(
     if (kind === "abort") controller.abort();
     if (kind !== "cancel") await response.text();
     await vi.waitFor(() => expect(log).toHaveBeenCalledTimes(1));
-    expect(JSON.parse(log.mock.calls[0][0]).model).toBe("actual-fallback");
+    expect(JSON.parse(log.mock.calls[0][0]).model).toBe(
+      "google:actual-fallback",
+    );
     expect(
       (
         await (
