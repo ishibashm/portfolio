@@ -180,7 +180,7 @@ export async function POST(request: Request): Promise<Response> {
               AGENT_LIMITS,
               {
                 onModel: (model) => {
-                  usedModel = model;
+                  usedModel = `${chainLlmState().provider}:${model}`;
                 },
                 ...(chainLlmState().fallbackModel && !chainLlmState().mock
                   ? {

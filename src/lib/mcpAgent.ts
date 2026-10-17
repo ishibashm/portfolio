@@ -16,6 +16,7 @@ import {
   selectBlocks,
   type BlockSources,
 } from "./answerBlockBuilder";
+import { createXai } from "@ai-sdk/xai";
 import { createGoogleGenerativeAI } from "@ai-sdk/google";
 import {
   jsonSchema,
@@ -346,6 +347,10 @@ export async function createAgentModel(
   const state = chainLlmState();
   if (!state.enabled) throw new Error("AI回答は無効です。");
   if (state.mock) return (await import("./mcpAgentMock")).createAgentMock();
+  if (state.provider === "xai")
+    return createXai({ apiKey: process.env.XAI_API_KEY?.trim() })(
+      modelId ?? state.model,
+    );
   const apiKey =
     process.env.GOOGLE_GENERATIVE_AI_API_KEY?.trim() ||
     process.env.GEMINI_API_KEY?.trim();
