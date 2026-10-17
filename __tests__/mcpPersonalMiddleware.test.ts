@@ -23,6 +23,7 @@ describe("personal MCP middleware boundary", () => {
         "/api/mcp/personal/",
         "/oauth/interaction",
         "/api/mcp/connections",
+        "/api/mcp/workspace",
         "/api/mcp-authorization/token",
         "/.well-known/oauth-authorization-server/oauth",
       ]) {

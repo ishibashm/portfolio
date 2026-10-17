@@ -1,3 +1,4 @@
+import { mcpScopes } from "@/lib/mcpAuthorizationConfig";
 import { z } from "zod";
 import {
   MCP_PERSONAL_RESOURCE,
@@ -47,7 +48,7 @@ export function createMcpDiscoveryContract(
   const resourceMetadata = {
     resource: MCP_PERSONAL_RESOURCE,
     authorization_servers: [MCP_AUTHORIZATION_ISSUER],
-    scopes_supported: [MCP_PROFILE_SCOPE],
+    scopes_supported: mcpScopes(),
     bearer_methods_supported: ["header"],
   };
   return {

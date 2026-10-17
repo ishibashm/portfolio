@@ -1,3 +1,4 @@
+import type { MemoryStore } from "@/lib/personalMemory";
 import type { McpProfileReader } from "@/lib/mcpProfiles";
 import { WebStandardStreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/webStandardStreamableHttp.js";
 import { z } from "zod";
@@ -10,6 +11,8 @@ const denial = z.object({
   error: z.object({
     code: z.enum([
       "INVALID_INPUT",
+      "NOT_FOUND_OR_CONFLICT",
+      "LIMIT_REACHED",
       "PROFILE_NOT_FOUND",
       "AMBIGUOUS_PROFILE",
       "PROFILE_INCOMPLETE",
@@ -39,9 +42,10 @@ export async function executeMcpPersonalRequest(
   headers: Headers,
   signal: AbortSignal,
   read?: McpProfileReader,
+  memory?: MemoryStore,
 ) {
   if (signal.aborted) throw new McpGuardError("TEMPORARILY_UNAVAILABLE");
-  const server = createMcpPersonalServer(context, new Date(), read);
+  const server = createMcpPersonalServer(context, new Date(), read, memory);
   const transport = new WebStandardStreamableHTTPServerTransport({
     sessionIdGenerator: undefined,
     enableJsonResponse: true,

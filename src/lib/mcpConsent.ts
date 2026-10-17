@@ -4,6 +4,7 @@ import { z } from "zod";
 import {
   MCP_PERSONAL_RESOURCE,
   MCP_PROFILE_SCOPE,
+  mcpScopes,
 } from "@/lib/mcpAuthorizationConfig";
 
 export class McpConsentError extends Error {
@@ -28,7 +29,14 @@ const interactionSchema = z.object({
     client_id: id,
     redirect_uri: z.url(),
     response_type: z.literal("code"),
-    scope: z.literal(MCP_PROFILE_SCOPE),
+    scope: z.string().refine((value) => {
+      const scopes = value.split(" ");
+      return (
+        scopes.includes(MCP_PROFILE_SCOPE) &&
+        new Set(scopes).size === scopes.length &&
+        scopes.every((scope) => mcpScopes().includes(scope))
+      );
+    }),
     resource: z.literal(MCP_PERSONAL_RESOURCE),
     code_challenge: z.string().regex(/^[A-Za-z0-9_-]{43}$/),
     code_challenge_method: z.literal("S256"),
@@ -46,6 +54,7 @@ export type McpConsentView = {
   interactionExpiresAt: number;
   binding: string;
   profiles: { id: string; name: string }[];
+  memoryScopes?: string[];
 };
 
 /** Internal browser-consent boundary; never accepts a user ID from a form. */
@@ -70,6 +79,7 @@ export function createMcpConsentService(deps: {
       view.interactionExpiresAt,
       view.binding,
       view.profiles,
+      view.memoryScopes ?? [],
     ]);
   return {
     async load(
@@ -127,6 +137,9 @@ export function createMcpConsentService(deps: {
         interactionExpiresAt: i.exp * 1000,
         binding: mac(JSON.stringify(rawParams)),
         profiles: profiles.data,
+        memoryScopes: i.params.scope
+          .split(" ")
+          .filter((scope) => scope !== MCP_PROFILE_SCOPE),
       };
     },
     issueTicket(view: McpConsentView) {
@@ -140,10 +153,20 @@ export function createMcpConsentService(deps: {
           ticket: z.string().max(200),
           decision: z.enum(["allow", "deny"]),
           profileIds: z.array(id).max(100),
+          memoryScopes: z
+            .array(z.enum(["read:memory", "write:memory"]))
+            .max(2)
+            .optional(),
         })
         .safeParse(input);
       if (!parsed.success) throw new McpConsentError("INVALID_REQUEST");
       const { ticket, decision, profileIds } = parsed.data;
+      const memoryScopes = parsed.data.memoryScopes ?? [];
+      if (
+        new Set(memoryScopes).size !== memoryScopes.length ||
+        memoryScopes.some((scope) => !view.memoryScopes?.includes(scope))
+      )
+        throw new McpConsentError("INVALID_REQUEST");
       const parts = ticket.match(
         /^(\d{13})\.([A-Za-z0-9_-]{43})\.([A-Za-z0-9_-]{43})$/,
       );
@@ -168,7 +191,11 @@ export function createMcpConsentService(deps: {
       )
         throw new McpConsentError("INVALID_REQUEST");
       // A shared atomic interaction claim must precede grant creation (PR 12c/13).
-      return { decision, profileIds: [...profileIds] };
+      return {
+        decision,
+        profileIds: [...profileIds],
+        ...(memoryScopes.length ? { memoryScopes } : {}),
+      };
     },
   };
 }

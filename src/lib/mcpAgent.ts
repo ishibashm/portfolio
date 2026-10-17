@@ -1,3 +1,10 @@
+import { AGENT_PAUSED_REASON, AGENT_PAUSED_TEXT } from "./agentPausedText";
+export { AGENT_PAUSED_REASON, AGENT_PAUSED_TEXT } from "./agentPausedText";
+import {
+  agentBillingState,
+  recordAgentBillingFailure,
+  recordAgentModelSuccess,
+} from "./agentBillingState";
 import {
   showBlocksSchema,
   uniqueAnswerBlocks,
@@ -354,6 +361,7 @@ export async function runAgent(
   } = {},
   context: AgentConversationContext = {},
 ) {
+  const billingRevision = agentBillingState().revision;
   const { session, ...conversationContext } = context;
   const input = agentInputSchema.parse({
     mode: "llm",
@@ -712,6 +720,7 @@ export async function runAgent(
           if (part.type === "finish" && part.finishReason === "length")
             reasons.add("回答のトークン上限に達しました。");
         }
+        recordAgentModelSuccess(billingRevision);
         sendModelText(textParts.join(""));
         break;
       } catch (error) {
@@ -808,6 +817,7 @@ export async function runAgent(
             if (next.value.type === "error") throw next.value.error;
             if (next.value.type === "text-delta") parts.push(next.value.text);
           }
+          recordAgentModelSuccess(billingRevision);
           sendModelText(parts.join(""));
         };
         try {
@@ -829,6 +839,7 @@ export async function runAgent(
       }
     } catch (error) {
       // Never expose provider errors or user input, including through SDK logging.
+      if (classifyModelError(error) === "billing") billingStopped = true;
       logAgentFailure("summary-final", error, currentModelId());
     } finally {
       clearTimeout(timer);
@@ -865,10 +876,6 @@ export type ModelErrorReason =
   | "daily-quota"
   | "transient"
   | "permanent";
-export const AGENT_PAUSED_REASON =
-  "AI回答の利用枠が一時的に止まっています。計算のみのモードは使えます。";
-export const AGENT_PAUSED_TEXT =
-  "しるべのAI回答は、いま一時的にお休みしています。上の「AIを使わず計算のみ」にチェックを入れると、生年月日と日付から計算した結果を確認できます。再開までお待たせしてすみません。九星気学は参考情報です。";
 /** Do not expose provider messages (which may contain request data) to users. */
 export function classifyModelError(error: unknown): ModelErrorReason {
   const seen = new Set<unknown>();
@@ -983,14 +990,23 @@ export function describeAgentFailure(error: unknown) {
   return out;
 }
 function logAgentFailure(stage: string, error: unknown, model: string) {
+  const kind = classifyModelError(error);
+  if (kind === "billing") recordAgentBillingFailure();
   try {
+    if (kind === "billing")
+      console.warn(
+        "[agent-operator] " +
+          JSON.stringify({ kind: "billing", action: "AI Studioで残高補充" }),
+      );
     console.warn(
       "[agent-failure] " +
         JSON.stringify({
           stage,
           model,
-          kind: classifyModelError(error),
-          ...describeAgentFailure(error),
+          kind,
+          ...(kind === "billing"
+            ? { statusCode: 402 }
+            : describeAgentFailure(error)),
         }),
     );
   } catch {}

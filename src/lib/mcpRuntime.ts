@@ -1,3 +1,9 @@
+import {
+  createMemoryStore,
+  memoryCryptoFromEnvironment,
+  memoryEnabled,
+} from "@/lib/personalMemory";
+import { createMcpWorkspaceHandler } from "@/lib/mcpWorkspace";
 import { createMcpConsentGrantWriter } from "@/lib/mcpDeletion";
 import type { Configuration } from "oidc-provider";
 import { createMcpAuthorizationPolicy } from "@/lib/mcpAuthorizationConfig";
@@ -126,7 +132,19 @@ export async function createMcpRuntime(config: McpRuntimeConfig) {
       saveConsentGrant: createMcpConsentGrantWriter(db),
       audit,
     });
-    const connections = createMcpConnectionService({ db, store, audit });
+    const connections = createMcpConnectionService({
+      db,
+      store,
+      audit,
+      ...(memoryEnabled()
+        ? {
+            scopesForGrant: async (id: string) =>
+              (await provider.Grant.find(id))
+                ?.getResourceScope("https://cloud-palette.com/api/mcp/personal")
+                .split(" ") ?? [],
+          }
+        : {}),
+    });
     const management = createMcpConnectionManagementService({
       connections,
       db,
@@ -141,7 +159,18 @@ export async function createMcpRuntime(config: McpRuntimeConfig) {
       service: management,
       login: config.login,
     });
+    const memory = memoryEnabled()
+      ? createMemoryStore(db, memoryCryptoFromEnvironment())
+      : undefined;
+    const workspace = createMcpWorkspaceHandler({
+      db,
+      login: config.login,
+      memory,
+      audit,
+      rate,
+    });
     const personal = createMcpPersonalHttp({
+      memory,
       authenticate: createMcpAuthenticator({
         issuer: provider.issuer,
         provider,
@@ -154,6 +183,7 @@ export async function createMcpRuntime(config: McpRuntimeConfig) {
     });
     return {
       provider,
+      workspace,
       interaction,
       connections: connectionsHandler,
       discovery,

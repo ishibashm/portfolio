@@ -1,4 +1,5 @@
 "use client";
+import AgentStatus from "./AgentStatus";
 
 import { useEffect, useState, useSyncExternalStore } from "react";
 import {
@@ -929,6 +930,7 @@ export default function AdminMetricsPage() {
             )}
           </div>
         </header>
+        <AgentStatus />
 
         <OptOutToggle />
 

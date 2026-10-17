@@ -1,4 +1,5 @@
 "use client";
+import { AGENT_PAUSED_REASON, AGENT_PAUSED_TEXT } from "@/lib/agentPausedText";
 
 import dynamic from "next/dynamic";
 import {
@@ -584,6 +585,7 @@ export function McpExplorer({
   const [suggestions, setSuggestions] = useState<string[]>([]);
   const [privacyRevision, setPrivacyRevision] = useState(0);
   const [remaining, setRemaining] = useState<string>();
+  const [voiceSignedIn, setVoiceSignedIn] = useState<boolean | null>(null);
   const [storageReady, setStorageReady] = useState(!persistConversation);
   const [registeredPeopleReady, setRegisteredPeopleReady] = useState(
     !agentEnabled || !persistConversation,
@@ -615,6 +617,7 @@ export function McpExplorer({
   const threadRef = useRef<HTMLDivElement | null>(null);
   const threadEndRef = useRef<HTMLDivElement | null>(null);
   const listId = useId();
+  const [billingPaused, setBillingPaused] = useState(false);
   const useAgent = agentEnabled && !calculationOnly;
   const activeConversation =
     conversations.find(
@@ -847,10 +850,20 @@ export function McpExplorer({
     void fetch("/api/mcp-chain/status", { signal: controller.signal })
       .then((response) => response.json())
       .then((data) => {
+        setBillingPaused(data.paused === "billing");
         if (data.remaining && revision === remainingRevision.current)
           setRemaining(String(data.remaining.requests));
+        if (
+          typeof data.voiceSignedIn === "boolean" &&
+          revision === remainingRevision.current
+        )
+          setVoiceSignedIn(data.voiceSignedIn);
       })
-      .catch(() => {});
+      // 状態が取れなくても「確認中」で止めない。最終判定はサーバーの 401。
+      .catch(() => {
+        if (!controller.signal.aborted)
+          setVoiceSignedIn((current) => current ?? true);
+      });
     return () => controller.abort();
   }, [agentEnabled]);
 
@@ -1340,6 +1353,9 @@ export function McpExplorer({
           }));
         else if (item.type === "done") {
           completed = true;
+          if (item.reasons.includes(AGENT_PAUSED_REASON))
+            setBillingPaused(true);
+          else if (!item.reasons.length) setBillingPaused(false);
           const suggestions = sanitizeFollowUpSuggestions(item.suggestions);
           updateAssistant(assistantId, (current) => ({
             ...current,
@@ -1472,6 +1488,9 @@ export function McpExplorer({
               setCalls((current) => [...current, item]);
             else if (item.type === "done") {
               completed = true;
+              if (item.reasons.includes(AGENT_PAUSED_REASON))
+                setBillingPaused(true);
+              else if (!item.reasons.length) setBillingPaused(false);
               setCalculationReasons(item.reasons);
               setCalculationFollowUps(
                 sanitizeFollowUpSuggestions(item.suggestions),
@@ -1818,6 +1837,11 @@ export function McpExplorer({
         </section>
       )}
 
+      {agentEnabled && billingPaused && (
+        <p role="status" className="rounded-xl bg-amber-50 p-3 text-sm">
+          {AGENT_PAUSED_TEXT}
+        </p>
+      )}
       <div className="flex flex-wrap items-center gap-4">
         {agentEnabled && (
           <label className="text-sm">
@@ -1842,23 +1866,32 @@ export function McpExplorer({
       </div>
 
       {voiceEnabled && useAgent && (
-        <GrokVoice
-          key={`voice-${privacyRevision}`}
-          disabled={running}
-          onTranscript={(role, text) =>
-            setVoiceMessages((current) => [...current, { role, text }])
-          }
-          onEvent={(event) => {
-            if (event.type === "tool-call")
-              setVoiceTools((current) => [...current, event]);
-            if (event.type === "tool-result")
-              setVoiceTools((current) =>
-                current.map((call) =>
-                  call.id === event.id ? { ...call, result: event } : call,
-                ),
-              );
-          }}
-        />
+        <>
+          {voiceSignedIn === null ? (
+            <p className="rounded-2xl border border-slate-200 p-4 text-sm">
+              音声のログイン状態を確認しています…
+            </p>
+          ) : (
+            <GrokVoice
+              key={`voice-${privacyRevision}`}
+              disabled={running}
+              signedIn={voiceSignedIn}
+              onTranscript={(role, text) =>
+                setVoiceMessages((current) => [...current, { role, text }])
+              }
+              onEvent={(event) => {
+                if (event.type === "tool-call")
+                  setVoiceTools((current) => [...current, event]);
+                if (event.type === "tool-result")
+                  setVoiceTools((current) =>
+                    current.map((call) =>
+                      call.id === event.id ? { ...call, result: event } : call,
+                    ),
+                  );
+              }}
+            />
+          )}
+        </>
       )}
 
       {useAgent ? (

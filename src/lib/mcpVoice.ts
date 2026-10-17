@@ -1,18 +1,31 @@
-import { createHmac, randomBytes, timingSafeEqual } from "node:crypto";
+import {
+  createHash,
+  createHmac,
+  randomBytes,
+  timingSafeEqual,
+} from "node:crypto";
 import { z } from "zod";
-import { canUseAgent, usageLedger } from "./agentEntitlement";
-import { clientKey } from "./apiGuard";
+import { canUseAgent } from "./agentEntitlement";
+import { agentSessionUser } from "./agentSession";
 import { chainRequestError } from "./mcpChainRequest";
 import { assertChainTool, CHAIN_TOOLS, connectChainClient } from "./mcpChain";
 import { AGENT_LIMITS, AGENT_SYSTEM, withinSignal } from "./mcpAgent";
 import { voiceLimit, voiceState } from "./mcpVoiceConfig";
+import { voiceStore, VoiceStoreError, type VoiceStore } from "./mcpVoiceStore";
 
 const ERROR = "音声の処理を続けられませんでした。時間をおいてお試しください。";
+const LOGIN_ERROR = "音声で話すにはログインが必要です。";
+
 class VoiceError extends Error {
-  constructor(readonly status: number) {
-    super(ERROR);
+  constructor(
+    readonly status: number,
+    message = ERROR,
+    readonly code?: string,
+  ) {
+    super(message);
   }
 }
+
 const sessionSchema = z.object({ sessionId: z.string().max(512) });
 const toolSchema = sessionSchema
   .extend({
@@ -25,69 +38,72 @@ const endSchema = sessionSchema
   .extend({ seconds: z.number().finite().nonnegative() })
   .strict();
 const mockKey = randomBytes(32).toString("hex");
-function signature(payload: string) {
+
+function signingSecret() {
   const secret =
     process.env.API_SECRET_KEY ||
     process.env.NEXTAUTH_SECRET ||
     process.env.XAI_API_KEY ||
     (voiceState().mock ? mockKey : "");
   if (!secret) throw new VoiceError(404);
-  return createHmac("sha256", secret)
+  return secret;
+}
+
+function signature(payload: string) {
+  return createHmac("sha256", signingSecret())
     .update("mcp-voice-session-v1:" + payload)
     .digest("base64url");
 }
 
-/** Same instance-local scope as the existing UsageLedger. Unknown sessions fail closed. */
+/** DB には Supabase user id を置かず、個体を跨いで安定する HMAC だけを置く。 */
+export function voiceUserSubject(userId: string) {
+  return createHmac("sha256", signingSecret())
+    .update("mcp-voice-user-v1:" + userId)
+    .digest("hex");
+}
+
+function createSessionId() {
+  const payload = randomBytes(24).toString("base64url");
+  return `${payload}.${signature(payload)}`;
+}
+
+function sessionHash(id: string) {
+  const [payload, mac, extra] = id.split(".");
+  const expected = Buffer.from(signature(payload || ""));
+  const actual = Buffer.from(mac || "");
+  if (
+    extra ||
+    actual.length !== expected.length ||
+    !timingSafeEqual(actual, expected)
+  )
+    throw new VoiceError(403);
+  return createHash("sha256").update(id).digest("hex");
+}
+
+function storeError(error: VoiceStoreError) {
+  if (error.kind === "unavailable") return new VoiceError(503);
+  if (error.kind === "duplicate") return new VoiceError(409);
+  if (error.kind === "tool_limit") return new VoiceError(429);
+  return new VoiceError(403);
+}
+
 export function createVoiceService(
-  deps = {
+  deps: {
+    entitlement: typeof canUseAgent;
+    store: VoiceStore;
+    authenticate: typeof agentSessionUser;
+    connect: typeof connectChainClient;
+    fetch: typeof fetch;
+    now: () => number;
+  } = {
     entitlement: canUseAgent,
-    ledger: usageLedger,
+    store: voiceStore,
+    authenticate: agentSessionUser,
     connect: connectChainClient,
-    fetch: (...args: Parameters<typeof fetch>) => fetch(...args),
+    fetch: (...args) => fetch(...args),
     now: () => Date.now(),
   },
 ) {
-  type Session = {
-    expires: number;
-    seconds: number;
-    calls: number;
-    ended: boolean;
-    ids: Set<string>;
-    settle: (seconds: number) => void;
-    finish: ReturnType<typeof canUseAgent>["finish"];
-    model: string;
-    abort: AbortController;
-  };
-  const sessions = new Map<string, Session>();
-  function finish(s: Session, seconds: number) {
-    if (s.ended) return;
-    s.ended = true;
-    s.abort.abort();
-    const actual = Math.min(s.seconds, Math.ceil(seconds));
-    s.settle(actual);
-    s.finish({ model: s.model, toolCalls: s.calls, voiceSeconds: actual });
-  }
-  function sweep() {
-    for (const [id, s] of sessions) {
-      if (s.expires <= deps.now()) finish(s, s.seconds);
-      if (s.expires + 60000 < deps.now()) sessions.delete(id);
-    }
-  }
-  function get(id: string, allowEnded = false) {
-    const [payload, mac, extra] = id.split(".");
-    const expected = Buffer.from(signature(payload || ""));
-    const actual = Buffer.from(mac || "");
-    if (
-      extra ||
-      actual.length !== expected.length ||
-      !timingSafeEqual(actual, expected)
-    )
-      throw new VoiceError(403);
-    const s = sessions.get(id);
-    if (!s || (!allowEnded && (s.ended || s.expires <= deps.now())))
-      throw new VoiceError(403);
-    return s;
-  }
   async function connection<T>(
     signal: AbortSignal,
     run: (c: Awaited<ReturnType<typeof connectChainClient>>) => Promise<T>,
@@ -106,6 +122,7 @@ export function createVoiceService(
       await c.close();
     }
   }
+
   return async function handle(
     kind: "session" | "tool" | "end",
     request: Request,
@@ -113,10 +130,15 @@ export function createVoiceService(
     const reply = (data: unknown, status = 200) =>
       Response.json(data, { status, headers: { "Cache-Control": "no-store" } });
     try {
+      // Origin と Content-Type は、認証の有無を返す前に検査する。
       const rejected = chainRequestError(request);
       if (rejected) throw new VoiceError(rejected);
+      // 無効時は機能ごと隠す（Supabase への本人確認も走らせない）。
       if (!voiceState().enabled) throw new VoiceError(404);
-      sweep();
+      const auth = await deps.authenticate(request);
+      if (!auth.signedIn || !auth.userId)
+        throw new VoiceError(401, LOGIN_ERROR, "login_required");
+
       const reader = request.body?.getReader();
       if (!reader) throw new VoiceError(400);
       let raw = "";
@@ -140,39 +162,54 @@ export function createVoiceService(
         reader.releaseLock();
       }
       const body: unknown = JSON.parse(raw);
+      const userSubject = voiceUserSubject(auth.userId);
+
       if (kind === "session") {
         z.object({}).strict().parse(body);
+        try {
+          await deps.store.sweepExpired();
+        } catch (error) {
+          if (error instanceof VoiceStoreError) throw storeError(error);
+          throw new VoiceError(503);
+        }
         const entitlement = deps.entitlement({
-          ip: clientKey(request.headers),
+          userId: auth.userId,
+          ip: "authenticated-voice",
           mode: "llm",
           at: deps.now(),
         });
         if (!entitlement.allowed) throw new VoiceError(429);
-        const at = deps.now();
-        const seconds = Math.min(
-          3600,
-          voiceLimit("MCP_VOICE_MAX_SESSION_SECONDS", 180),
-          voiceLimit("MCP_VOICE_DAILY_SECONDS", 1800) -
-            deps.ledger.voiceDaily(at),
-          voiceLimit("MCP_VOICE_FREE_DAILY_SECONDS", 180) -
-            deps.ledger.voiceDaily(at, entitlement.subject),
-        );
-        if (seconds < 1) {
+        const state = voiceState();
+        const id = createSessionId();
+        const hash = sessionHash(id);
+        let reserved;
+        try {
+          reserved = await deps.store.reserveSession({
+            sessionHash: hash,
+            userSubject,
+            model: state.model,
+            maxSessionSeconds: Math.min(
+              3600,
+              voiceLimit("MCP_VOICE_MAX_SESSION_SECONDS", 180),
+            ),
+            globalDailySeconds: voiceLimit("MCP_VOICE_DAILY_SECONDS", 1800),
+            userDailySeconds: voiceLimit("MCP_VOICE_FREE_DAILY_SECONDS", 180),
+          });
+        } catch (error) {
+          entitlement.finish();
+          if (error instanceof VoiceStoreError) throw storeError(error);
+          throw new VoiceError(503);
+        }
+        if (!reserved) {
           entitlement.finish();
           throw new VoiceError(429);
         }
-        const settle = deps.ledger.reserveVoice(
-          entitlement.subject,
-          seconds,
-          at,
-        );
-        const state = voiceState();
         try {
-          const signal = AbortSignal.any([
+          const issuanceSignal = AbortSignal.any([
             request.signal,
             AbortSignal.timeout(AGENT_LIMITS.callMs),
           ]);
-          const tools = await connection(signal, async (c) =>
+          const tools = await connection(issuanceSignal, async (c) =>
             (await c.listTools()).tools
               .filter((t) =>
                 (CHAIN_TOOLS as readonly string[]).includes(t.name),
@@ -185,7 +222,7 @@ export function createVoiceService(
               })),
           );
           let token = "mock-client-secret";
-          let expires = Math.floor(at / 1000) + seconds;
+          let expires = Math.floor(reserved.expiresAt / 1000);
           if (!state.mock) {
             const response = await deps.fetch(
               "https://api.x.ai/v1/realtime/client_secrets",
@@ -195,8 +232,10 @@ export function createVoiceService(
                   Authorization: `Bearer ${process.env.XAI_API_KEY}`,
                   "Content-Type": "application/json",
                 },
-                body: JSON.stringify({ expires_after: { seconds } }),
-                signal,
+                body: JSON.stringify({
+                  expires_after: { seconds: reserved.reservedSeconds },
+                }),
+                signal: issuanceSignal,
               },
             );
             if (!response.ok) throw new VoiceError(502);
@@ -212,25 +251,19 @@ export function createVoiceService(
             expires = Math.min(expires, secret.expires_at);
             if (expires * 1000 <= deps.now()) throw new VoiceError(502);
           }
-          const payload = `${randomBytes(24).toString("base64url")}:${expires}`;
-          const sessionId = `${payload}.${signature(payload)}`;
-          sessions.set(sessionId, {
-            expires: expires * 1000,
-            seconds,
-            calls: 0,
-            ended: false,
-            ids: new Set(),
-            settle,
-            finish: entitlement.finish,
+          // WebSocket は xAI へ直結するため、サーバー側の期限は tool/end を
+          // 拒否する best-effort の境界であり、接続そのものは強制切断できない。
+          entitlement.finish({
             model: state.model,
-            abort: new AbortController(),
+            toolCalls: 0,
+            voiceSeconds: 0,
           });
           return reply({
             token,
             expires_at: expires,
             model: state.model,
-            sessionId,
-            seconds,
+            sessionId: id,
+            seconds: reserved.reservedSeconds,
             mock: state.mock,
             tools,
             instructions:
@@ -238,52 +271,73 @@ export function createVoiceService(
               " 音声では要点を短く、1回に2〜3文で話してください。",
           });
         } catch {
-          // Issuance may have succeeded upstream: retain the reservation on ambiguous failure.
-          settle(seconds);
+          // 発行が提供元で成功している可能性があるため、予約は返さない。
+          // セッションは未終了のまま残り、期限後の sweep が予約秒数で精算する
+          // （利用者へは sessionId を渡していないので tool/end には使われない）。
           entitlement.finish({
             model: state.model,
             toolCalls: 0,
-            voiceSeconds: seconds,
+            voiceSeconds: reserved.reservedSeconds,
           });
           throw new VoiceError(502);
         }
       }
+
       if (kind === "end") {
         const input = endSchema.parse(body);
-        const s = get(input.sessionId, true);
-        finish(s, input.seconds);
+        try {
+          await deps.store.settleSession({
+            sessionHash: sessionHash(input.sessionId),
+            userSubject,
+            reportedSeconds: input.seconds,
+          });
+        } catch (error) {
+          if (error instanceof VoiceStoreError) throw storeError(error);
+          throw new VoiceError(503);
+        }
         return reply({ ended: true });
       }
+
       const input = toolSchema.parse(body);
-      const s = get(input.sessionId);
       try {
         assertChainTool(input.name);
       } catch {
         throw new VoiceError(403);
       }
-      if (
-        s.calls >=
-        Math.min(AGENT_LIMITS.calls, voiceLimit("MCP_VOICE_MAX_TOOL_CALLS", 20))
-      )
-        throw new VoiceError(429);
-      if (s.ids.has(input.call_id)) throw new VoiceError(409);
-      s.ids.add(input.call_id);
-      s.calls++;
+      const hash = sessionHash(input.sessionId);
+      let storedSession;
+      try {
+        storedSession = await deps.store.claimTool({
+          sessionHash: hash,
+          userSubject,
+          callId: input.call_id,
+          maxToolCalls: Math.min(
+            AGENT_LIMITS.calls,
+            voiceLimit("MCP_VOICE_MAX_TOOL_CALLS", 20),
+          ),
+        });
+      } catch (error) {
+        if (error instanceof VoiceStoreError) throw storeError(error);
+        throw new VoiceError(503);
+      }
       const started = deps.now();
       const timeout = Math.max(
         1,
-        Math.min(AGENT_LIMITS.callMs, s.expires - started),
+        Math.min(AGENT_LIMITS.callMs, storedSession.expiresAt - started),
       );
       const callSignal = AbortSignal.any([
         request.signal,
-        s.abort.signal,
         AbortSignal.timeout(timeout),
       ]);
       const output = await connection(callSignal, (c) =>
         c.call(input.name, input.arguments, callSignal, timeout),
       );
-      if (deps.now() >= s.expires || deps.now() - started >= timeout || s.ended)
-        throw new VoiceError(403);
+      try {
+        await deps.store.assertActive({ sessionHash: hash, userSubject });
+      } catch (error) {
+        if (error instanceof VoiceStoreError) throw storeError(error);
+        throw new VoiceError(503);
+      }
       const bounded = JSON.stringify(output).slice(0, 6000);
       return reply({
         output:
@@ -291,21 +345,27 @@ export function createVoiceService(
         summary: "道具の結果を取得しました。",
         durationMs: deps.now() - started,
       });
-    } catch (e) {
+    } catch (error) {
+      const voiceError = error instanceof VoiceError ? error : undefined;
       return reply(
-        { error: ERROR },
-        e instanceof VoiceError
-          ? e.status
-          : e instanceof z.ZodError || e instanceof SyntaxError
+        {
+          error: voiceError?.message ?? ERROR,
+          ...(voiceError?.code ? { code: voiceError.code } : {}),
+        },
+        voiceError
+          ? voiceError.status
+          : error instanceof z.ZodError || error instanceof SyntaxError
             ? 400
             : 502,
       );
     }
   };
 }
+
 const voiceGlobal = globalThis as typeof globalThis & {
   mcpVoiceService?: ReturnType<typeof createVoiceService>;
 };
-// session/tool/end can be emitted as separate Next route bundles.
+
+// session/tool/end can be emitted as separate Next route bundles; DB state is shared.
 export const handleVoice = (voiceGlobal.mcpVoiceService ??=
   createVoiceService());

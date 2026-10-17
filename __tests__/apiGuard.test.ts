@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
 import {
   DailyCounter,
@@ -10,6 +10,8 @@ import {
 } from "@/lib/apiGuard";
 
 const T0 = Date.parse("2026-08-09T03:00:00Z");
+
+afterEach(() => vi.unstubAllEnvs());
 
 describe("TokenBucket", () => {
   it("容量までは通し、その先を止める", () => {
@@ -136,8 +138,18 @@ describe("TtlCache", () => {
 });
 
 describe("clientKey", () => {
-  it("x-forwarded-for の先頭を使う", () => {
-    const h = new Headers({ "x-forwarded-for": "203.0.113.5, 10.0.0.1" });
+  it("GFE が追加した x-forwarded-for の末尾を使い、先頭の詐称値を無視する", () => {
+    const h = new Headers({
+      "x-forwarded-for": "198.51.100.66, 203.0.113.5",
+    });
+    expect(clientKey(h)).toBe("203.0.113.5");
+  });
+
+  it("追加の信頼済み proxy は末尾から指定数だけ読み飛ばす", () => {
+    vi.stubEnv("TRUSTED_PROXY_HOPS", "1");
+    const h = new Headers({
+      "x-forwarded-for": "198.51.100.66, 203.0.113.5, 10.0.0.1",
+    });
     expect(clientKey(h)).toBe("203.0.113.5");
   });
 

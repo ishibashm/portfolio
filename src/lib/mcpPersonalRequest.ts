@@ -24,6 +24,11 @@ const toolName = z.enum([
   "get_profile",
   "judge_profile_directions",
   "judge_time_slots",
+  "list_memories",
+  "get_memory",
+  "create_memory",
+  "update_memory",
+  "delete_memory",
 ]);
 type AuditEvent = z.infer<typeof mcpAuditEvent>;
 export type McpPersonalRequest =

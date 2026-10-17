@@ -1,23 +1,33 @@
 // @vitest-environment node
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { createVoiceService } from "@/lib/mcpVoice";
+import { createVoiceService, voiceUserSubject } from "@/lib/mcpVoice";
 import { voiceState } from "@/lib/mcpVoiceConfig";
+import { MemoryVoiceStore, VoiceStoreError } from "@/lib/mcpVoiceStore";
 import {
   createAgentEntitlement,
   MemoryUsageLedger,
 } from "@/lib/agentEntitlement";
 import { CHAIN_TOOLS, connectChainClient } from "@/lib/mcpChain";
 const at = Date.parse("2026-10-16T14:59:00Z");
-function request(body: unknown = {}, origin = "https://cloud-palette.com") {
+function request(
+  body: unknown = {},
+  origin = "https://cloud-palette.com",
+  user = "user-a",
+) {
   return new Request("https://cloud-palette.com/api/voice/session", {
     method: "POST",
-    headers: { origin, "Content-Type": "application/json" },
+    headers: {
+      origin,
+      "Content-Type": "application/json",
+      ...(user ? { "x-test-user": user } : {}),
+    },
     body: JSON.stringify(body),
   });
 }
 function setup(real = false) {
   let now = at;
   const ledger = new MemoryUsageLedger();
+  const store = new MemoryVoiceStore(() => now);
   const fetcher = vi.fn(async () =>
     Response.json({
       value: "short-lived-token",
@@ -39,8 +49,12 @@ function setup(real = false) {
         }),
       }));
   const handle = createVoiceService({
-    ledger,
+    store,
     entitlement: createAgentEntitlement(ledger),
+    authenticate: async (request) => {
+      const userId = request.headers.get("x-test-user");
+      return userId ? { signedIn: true, userId } : { signedIn: false };
+    },
     fetch: fetcher,
     connect,
     now: () => now,
@@ -48,6 +62,7 @@ function setup(real = false) {
   return {
     handle,
     ledger,
+    store,
     fetcher,
     call,
     close,
@@ -104,6 +119,30 @@ describe("Grok voice API", () => {
     ).toBe(413);
     expect(s.fetcher).not.toHaveBeenCalled();
   });
+  it("requires login after request-header checks", async () => {
+    const s = setup();
+    const response = await s.handle(
+      "session",
+      request({}, "https://cloud-palette.com", ""),
+    );
+    expect(response.status).toBe(401);
+    expect(await response.json()).toMatchObject({ code: "login_required" });
+    expect(
+      (await s.handle("session", request({}, "https://evil.test", ""))).status,
+    ).toBe(403);
+    expect(
+      (
+        await s.handle(
+          "session",
+          new Request("https://cloud-palette.com/api/voice/session", {
+            method: "POST",
+            headers: { origin: "https://cloud-palette.com" },
+            body: "{}",
+          }),
+        )
+      ).status,
+    ).toBe(415);
+  });
   it("reserves remaining seconds before issuing a secret and never exposes the key", async () => {
     vi.stubEnv("MCP_VOICE_DAILY_SECONDS", "40");
     const s = setup(true);
@@ -118,7 +157,7 @@ describe("Grok voice API", () => {
       body.tools.every((t: { type: string }) => t.type === "function"),
     ).toBe(true);
     expect(JSON.stringify(body)).not.toContain("private-api-key");
-    expect(s.ledger.voiceDaily(at)).toBe(40);
+    expect(s.store.voiceDaily(at)).toBe(40);
     expect(s.fetcher.mock.calls[0]).toBeDefined();
     expect(body.instructions).toContain("UNTRUSTED_TOOL_DATA");
     expect(body.model).toBe("grok-voice-3.0");
@@ -133,7 +172,7 @@ describe("Grok voice API", () => {
     expect((await s.handle("session", request())).status).toBe(429);
     expect(s.fetcher).not.toHaveBeenCalled();
   });
-  it("rejects bad signatures, outside tools, duplicate calls, and concurrent calls over the cap", async () => {
+  it("rejects bad signatures, other users, outside tools, duplicate calls, and concurrent calls over the cap", async () => {
     vi.stubEnv("MCP_VOICE_MAX_TOOL_CALLS", "2");
     const s = setup();
     const { sessionId } = await (await s.handle("session", request())).json();
@@ -146,6 +185,9 @@ describe("Grok voice API", () => {
     expect(
       (await s.handle("tool", request({ ...body, sessionId: sessionId + "x" })))
         .status,
+    ).toBe(403);
+    expect(
+      (await s.handle("tool", request(body, undefined, "user-b"))).status,
     ).toBe(403);
     expect(
       (await s.handle("tool", request({ ...body, name: "get_profile" })))
@@ -164,19 +206,18 @@ describe("Grok voice API", () => {
     expect(s.call).toHaveBeenCalledTimes(2);
   });
   it.each([
-    [9.2, 10],
+    [9.2, 9.2],
     [1000, 180],
   ])("settles %s to %s seconds once", async (seconds, expected) => {
     const s = setup();
     const { sessionId } = await (await s.handle("session", request())).json();
+    s.advance(expected * 1000);
     expect(
       (await s.handle("end", request({ sessionId, seconds }))).status,
     ).toBe(200);
-    expect(s.ledger.voiceDaily(at)).toBe(expected);
+    expect(s.store.voiceDaily(at)).toBe(expected);
     await s.handle("end", request({ sessionId, seconds: 0 }));
-    expect(s.ledger.voiceDaily(at)).toBe(expected);
-    const logs = vi.mocked(console.info).mock.calls.flat().join();
-    expect(logs).toContain(`"voiceSeconds":${expected}`);
+    expect(s.store.voiceDaily(at)).toBe(expected);
     expect(
       (
         await s.handle(
@@ -208,8 +249,38 @@ describe("Grok voice API", () => {
         )
       ).status,
     ).toBe(403);
-    expect(s.ledger.voiceDaily(at)).toBe(180);
-    expect(s.ledger.voiceDaily(at + 180000)).toBe(0);
+    expect(s.store.voiceDaily(at)).toBe(180);
+    expect(s.store.voiceDaily(at + 180000)).toBe(0);
+  });
+  it("bills the full reservation when end arrives after server expiry", async () => {
+    const s = setup();
+    const { sessionId } = await (await s.handle("session", request())).json();
+    s.advance(180000);
+    expect(
+      (await s.handle("end", request({ sessionId, seconds: 0 }))).status,
+    ).toBe(200);
+    expect(s.store.voiceDaily(at)).toBe(180);
+  });
+  it("fails closed when the shared store is unavailable", async () => {
+    const s = setup();
+    vi.spyOn(s.store, "sweepExpired").mockRejectedValue(
+      new VoiceStoreError("unavailable"),
+    );
+    expect((await s.handle("session", request())).status).toBe(503);
+    expect(s.fetcher).not.toHaveBeenCalled();
+  });
+  it("uses the signed-in user for per-user daily reservations", async () => {
+    vi.stubEnv("MCP_VOICE_FREE_DAILY_SECONDS", "30");
+    vi.stubEnv("MCP_VOICE_DAILY_SECONDS", "60");
+    const s = setup();
+    expect((await s.handle("session", request())).status).toBe(200);
+    expect(
+      (await s.handle("session", request({}, undefined, "user-b"))).status,
+    ).toBe(200);
+    expect(s.store.voiceDaily(at)).toBe(60);
+    expect(s.store.voiceDaily(at, voiceUserSubject("user-a"))).toBe(30);
+    expect(s.store.voiceDaily(at, voiceUserSubject("user-b"))).toBe(30);
+    expect((await s.handle("session", request())).status).toBe(429);
   });
   it("does not log provider secrets, transcripts, dates or raw failures", async () => {
     const error = vi.spyOn(console, "error").mockImplementation(() => {});

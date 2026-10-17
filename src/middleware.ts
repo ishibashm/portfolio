@@ -49,6 +49,7 @@ export async function middleware(request: NextRequest) {
     url.pathname === "/api/mcp/personal" ||
     url.pathname === "/api/mcp/personal/" ||
     url.pathname === "/api/mcp/connections" ||
+    url.pathname === "/api/mcp/workspace" ||
     url.pathname.startsWith("/oauth/") ||
     url.pathname.startsWith("/api/mcp-authorization/") ||
     url.pathname.startsWith("/.well-known/oauth-") ||

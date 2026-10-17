@@ -1,3 +1,5 @@
+import { registerMemoryTools } from "@/lib/mcpMemoryTools";
+import type { MemoryStore } from "@/lib/personalMemory";
 import type { McpProfileReader } from "@/lib/mcpProfiles";
 import type { McpAuthContext } from "@/lib/mcpAuth";
 import { createMcpBaseServer } from "@/lib/mcpServer";
@@ -13,9 +15,12 @@ export function createMcpPersonalServer(
   auth: McpAuthContext,
   requestedAt = new Date(),
   read?: McpProfileReader,
+  memory?: MemoryStore,
 ) {
   const server = createMcpBaseServer();
   registerPersonalProfileTools(server, auth, read);
   registerPersonalCalculationTools(server, auth, requestedAt, read);
+  if (memory && process.env.MCP_MEMORY_ENABLED === "true")
+    registerMemoryTools(server, auth, memory, auth.memoryScopes ?? []);
   return server;
 }

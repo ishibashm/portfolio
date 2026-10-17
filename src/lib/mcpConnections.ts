@@ -21,6 +21,7 @@ export class McpConnectionError extends Error {
 export function createMcpConnectionService(deps: {
   db: Pick<PrismaClient, "mcpGrant">;
   store: Pick<McpProviderStore, "revokeByGrantId">;
+  scopesForGrant?: (providerGrantId: string) => Promise<string[]>;
   now?: () => Date;
   audit?: Pick<McpAuditStore, "record">;
 }) {
@@ -57,6 +58,7 @@ export function createMcpConnectionService(deps: {
           select: {
             id: true,
             clientId: true,
+            ...(deps.scopesForGrant ? { providerGrantId: true } : {}),
             allowedProfileIds: true,
             createdAt: true,
             expiresAt: true,
@@ -67,21 +69,32 @@ export function createMcpConnectionService(deps: {
         const page = rows.slice(0, 100);
         const at = now();
         return {
-          connections: page.map((row) => ({
-            id: row.id,
-            clientId: row.clientId,
-            allowedProfileIds: [...row.allowedProfileIds],
-            scope: "read:profiles" as const,
-            createdAt: row.createdAt.toISOString(),
-            expiresAt: row.expiresAt.toISOString(),
-            revokedAt: row.revokedAt?.toISOString() ?? null,
-            lastUsedAt: row.lastUsedAt?.toISOString() ?? null,
-            status: row.revokedAt
-              ? ("revoked" as const)
-              : row.expiresAt <= at
-                ? ("expired" as const)
-                : ("active" as const),
-          })),
+          connections: await Promise.all(
+            page.map(async (row) => ({
+              id: row.id,
+              clientId: row.clientId,
+              allowedProfileIds: [...row.allowedProfileIds],
+              scope: "read:profiles" as const,
+              ...(deps.scopesForGrant
+                ? {
+                    memoryScopes: (
+                      await deps.scopesForGrant(row.providerGrantId)
+                    ).filter((scope) =>
+                      ["read:memory", "write:memory"].includes(scope),
+                    ),
+                  }
+                : {}),
+              createdAt: row.createdAt.toISOString(),
+              expiresAt: row.expiresAt.toISOString(),
+              revokedAt: row.revokedAt?.toISOString() ?? null,
+              lastUsedAt: row.lastUsedAt?.toISOString() ?? null,
+              status: row.revokedAt
+                ? ("revoked" as const)
+                : row.expiresAt <= at
+                  ? ("expired" as const)
+                  : ("active" as const),
+            })),
+          ),
           nextCursor: rows.length > 100 ? page[99].id : null,
         };
       });

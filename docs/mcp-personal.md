@@ -109,3 +109,11 @@ Node22、追加DDL、Secret Managerのruntime設定、固定canonical hostとpro
 既存接続がある環境では、登録削除時の失効連携を維持するため `MCP_RUNTIME_CONFIG` と
 MCPテーブルを残す。flag停止だけでは保存済みgrantを失効したことにならない。
 再開前に接続失効の要否と実接続試験を確認する。公開 `/api/mcp` は維持する。
+
+## 2026-10-17: 記憶とサイト実行画面（追加flag、既定無効）
+
+[追加仕様・配置手順](mcp-console-memory.md) を参照。
+`MCP_MEMORY_ENABLED=true` のときだけ `read:memory` / `write:memory` を
+任意の追加scopeとして同意画面に提示する。既存接続は拡張しない。
+記憶ツールは権限に応じて個人用サーバーへ追加し、公開MCPには追加しない。
+本文は専用暗号化テーブルに保存し、監査は固定イベント・成否だけを記録する。
