@@ -467,6 +467,7 @@ export async function runAgent(
   // 提供元の前払い残高切れ（402）。同じ鍵の切替先モデルも同じ理由で失敗するので、
   // 再試行も切替も要約呼び出しもしない。
   let billingStopped = false;
+  let toolFailed = false;
   let hasText = false;
   let suggestions: string[] = [];
   let switched = false;
@@ -546,6 +547,7 @@ export async function runAgent(
               "birthDate" in input &&
               !hasExplicitBirthDate(explicitUserInput, input.birthDate)
             ) {
+              toolFailed = true;
               emit({
                 type: "tool-result",
                 id: toolCallId,
@@ -578,6 +580,7 @@ export async function runAgent(
               });
               return output;
             } catch {
+              toolFailed = true;
               const summary = "道具の失敗・時間上限・中断により終了しました。";
               emit({
                 type: "tool-result",
@@ -910,7 +913,13 @@ export async function runAgent(
       calls,
       memoryEligible:
         hasText &&
-        sources.size > 0 &&
+        [...sources.values()].some(
+          (source) =>
+            !["search_municipality", "search_articles", "get_article"].includes(
+              source.tool,
+            ),
+        ) &&
+        !toolFailed &&
         !billingStopped &&
         !dailyQuotaExceeded &&
         !signal.aborted &&

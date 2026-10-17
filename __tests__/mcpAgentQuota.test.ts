@@ -536,3 +536,118 @@ it("要約の切替先で402が発生しても利用残高切れを案内する"
     "private question must not appear",
   );
 });
+
+it.each([false, true])(
+  "市区町村の候補検索だけで終わったターンは記憶しない（候補あり=%s）",
+  async (hasCandidate) => {
+    let step = 0;
+    const model = new MockLanguageModelV3({
+      doStream: async () =>
+        step++ === 0
+          ? stream([
+              {
+                id: "city",
+                tool: "search_municipality",
+                input: { query: "名古屋" },
+              },
+            ])
+          : stream(
+              [],
+              "出発地の候補を確認しました。生年月日を教えてください。",
+            ),
+    });
+    const events: AgentEvent[] = [];
+    await runAgent(
+      "名古屋から引越しを相談したい",
+      {
+        call: async () => ({
+          results: hasCandidate
+            ? [
+                {
+                  code: "23106",
+                  name: "愛知県名古屋市中区",
+                  pref: "愛知県",
+                  lat: 35.16,
+                  lon: 136.91,
+                },
+              ]
+            : [],
+        }),
+        close: async () => {},
+        listTools: async () => ({
+          tools: [
+            {
+              name: "search_municipality",
+              inputSchema: { type: "object", additionalProperties: true },
+            },
+          ],
+        }),
+      },
+      model,
+      (event) => events.push(event),
+    );
+    expect(
+      events.some((event) => event.type === "tool-result" && !event.error),
+    ).toBe(true);
+    expect(events.at(-1)).toMatchObject({
+      type: "done",
+      memoryEligible: false,
+    });
+  },
+);
+
+it.each([false, true])(
+  "計算結果があっても入力不備の道具エラーを含むターンは記憶しない（エラー=%s）",
+  async (withError) => {
+    let step = 0;
+    const model = new MockLanguageModelV3({
+      doStream: async () =>
+        step++ === 0
+          ? stream([
+              {
+                id: "good",
+                tool: "get_honmei_star",
+                input: { birthDate: "1990-05-05" },
+              },
+              ...(withError
+                ? [
+                    {
+                      id: "bad",
+                      tool: "get_honmei_star",
+                      input: { birthDate: "2000-01-01" },
+                    },
+                  ]
+                : []),
+            ])
+          : stream([], "本命星を確認しました。"),
+    });
+    const events: AgentEvent[] = [];
+    await runAgent(
+      "1990-05-05生まれです。本命星を教えて",
+      {
+        call: async () => ({ honmeiStar: 1 }),
+        close: async () => {},
+        listTools: async () => ({
+          tools: [
+            {
+              name: "get_honmei_star",
+              inputSchema: { type: "object", additionalProperties: true },
+            },
+          ],
+        }),
+      },
+      model,
+      (event) => events.push(event),
+    );
+    expect(
+      events.some((event) => event.type === "tool-result" && !event.error),
+    ).toBe(true);
+    expect(
+      events.some((event) => event.type === "tool-result" && event.error),
+    ).toBe(withError);
+    expect(events.at(-1)).toMatchObject({
+      type: "done",
+      memoryEligible: !withError,
+    });
+  },
+);
