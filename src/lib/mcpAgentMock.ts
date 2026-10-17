@@ -1,6 +1,7 @@
 import { MockLanguageModelV3 } from "ai/test";
 import type { LanguageModelV3StreamPart } from "@ai-sdk/provider";
 import { z } from "zod";
+import { formatFollowUpEnvelope } from "./followUpSuggestions";
 
 /** ローカル確認専用。質問の解析はせず、画面に明示した固定例を計算する。 */
 export function createAgentMock() {
@@ -94,7 +95,13 @@ export function createAgentMock() {
           {
             type: "text-delta",
             id: "answer",
-            delta: `開発用の固定例（1990年5月5日生まれ・深谷市・2026年11月）を計算しました。\n${summary}\n九星気学は参考情報です。契約や通勤などの条件と合わせて検討してください。`,
+            delta:
+              `開発用の固定例（1990年5月5日生まれ・深谷市・2026年11月）を計算しました。\n${summary}\n九星気学は参考情報です。契約や通勤などの条件と合わせて検討してください。` +
+              formatFollowUpEnvelope([
+                "候補日の通勤条件も比べる？",
+                "家族の本命星でも日取りを確認する？",
+                "吉方位にある街をさらに絞る？",
+              ]),
           },
           { type: "text-end", id: "answer" },
         );

@@ -76,6 +76,10 @@ it("計算のみは分割NDJSONを受け取り、完了前から経過を描く"
           type: "done",
           calls: 1,
           reasons: ["深さの上限で打ち切りました。"],
+          suggestions: [
+            "長崎県諫早市を出発地にして方位を計算する？",
+            "2026年11月の候補日も比べる？",
+          ],
         }) + "\n",
       ),
     );
@@ -86,6 +90,16 @@ it("計算のみは分割NDJSONを受け取り、完了前から経過を描く"
   );
   expect(screen.getByText("深さの上限で打ち切りました。")).toBeTruthy();
   expect(screen.queryByRole("button", { name: "計算を中止" })).toBeNull();
+  const followUp = screen.getByRole("button", {
+    name: "長崎県諫早市を出発地にして方位を計算する？",
+  });
+  fireEvent.click(followUp);
+  expect(screen.getByLabelText("自由文から入力")).toHaveValue(
+    "長崎県諫早市を出発地にして方位を計算する？",
+  );
+  expect(
+    fetcher.mock.calls.filter(([url]) => url === "/api/mcp-chain"),
+  ).toHaveLength(1);
 });
 
 it("AIが無効なら計算フォームと短い注記を出す", () => {
@@ -163,11 +177,23 @@ it("AI回答を逐次描き、道具の状態を利用者向けに折り畳む",
   });
   expect(screen.getByText("確認済みの補足")).toBeTruthy();
   expect(screen.queryByText("<script>bad</script>")).toBeNull();
-  await send({ type: "done", calls: 1, reasons: [] });
+  await send({
+    type: "done",
+    calls: 1,
+    reasons: [],
+    suggestions: ["配偶者の候補日も比べる？", "相談メモの東側候補を見直す？"],
+  });
   await act(async () => controller.close());
   expect(screen.getByRole("status").textContent).toBe("回答ができました。");
   expect(screen.getByRole("status").textContent).not.toContain("1回");
   expect(screen.getByLabelText("次の質問の候補")).toBeTruthy();
+  fireEvent.click(
+    screen.getByRole("button", { name: "配偶者の候補日も比べる？" }),
+  );
+  expect(screen.getByLabelText("メッセージ")).toHaveValue(
+    "配偶者の候補日も比べる？",
+  );
+  expect(fetcher).toHaveBeenCalledTimes(2);
 });
 
 it("追質問では履歴を送り、Enter送信・Shift+Enter改行・IME変換を区別する", async () => {
@@ -179,7 +205,12 @@ it("追質問では履歴を送り、Enter送信・Shift+Enter改行・IME変換
     return new Response(
       [
         JSON.stringify({ type: "text-delta", text: reply }),
-        JSON.stringify({ type: "done", calls: 0, reasons: [] }),
+        JSON.stringify({
+          type: "done",
+          calls: 0,
+          reasons: [],
+          suggestions: ["一件だけ？", "<b>表示しない</b>"],
+        }),
         "",
       ].join("\n"),
       { headers: { "X-Agent-Remaining-Requests": "19" } },
@@ -201,6 +232,10 @@ it("追質問では履歴を送り、Enter送信・Shift+Enter改行・IME変換
   fireEvent.compositionEnd(input);
   fireEvent.keyDown(input, { key: "Enter" });
   await screen.findByText("最初の回答");
+  expect(
+    screen.getByRole("button", { name: "もう少し具体的に教えて" }),
+  ).toBeTruthy();
+  expect(screen.queryByText("<b>表示しない</b>")).toBeNull();
   fireEvent.change(screen.getByLabelText("メッセージ"), {
     target: { value: "その中で家賃が安い街は？" },
   });

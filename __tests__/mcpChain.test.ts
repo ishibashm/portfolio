@@ -90,6 +90,14 @@ describe("公開MCP連鎖", () => {
         e.input.code === "42202",
     );
     expect(child).toMatchObject({ depth: 4, parentId: 5 });
+    expect(events.at(-1)).toMatchObject({
+      type: "done",
+      suggestions: expect.arrayContaining([
+        expect.stringContaining("候補"),
+        expect.stringContaining("2026-10-20"),
+        expect.stringContaining("東"),
+      ]),
+    });
   });
   it("深さ0と既定3を越えて呼ばない", async () => {
     const zero = await collect(0);
@@ -281,6 +289,10 @@ describe("連鎖API", () => {
       type: "call",
       tool: "search_municipality",
     });
-    expect(lines.at(-1)).toMatchObject({ type: "done", calls: 1 });
+    expect(lines.at(-1)).toMatchObject({
+      type: "done",
+      calls: 1,
+      suggestions: expect.arrayContaining([expect.stringContaining("対象日")]),
+    });
   });
 });

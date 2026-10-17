@@ -7,6 +7,7 @@ import { InMemoryTransport } from "@modelcontextprotocol/sdk/inMemory.js";
 import { createMcpServer } from "@/lib/mcpServer";
 import { isAuspiciousStatus } from "@/utils/noiseSeverity";
 import { toJapanDateString } from "@/utils/japanDate";
+import { sanitizeFollowUpSuggestions } from "./followUpSuggestions";
 
 export const CHAIN_LIMITS = {
   depth: 4,
@@ -65,7 +66,12 @@ export type ChainEvent =
       durationMs: number;
       error?: boolean;
     }
-  | { type: "done"; calls: number; reasons: string[] };
+  | {
+      type: "done";
+      calls: number;
+      reasons: string[];
+      suggestions?: string[];
+    };
 export { chainLlmState } from "./mcpAgentConfig";
 export type ChainCaller = (
   name: string,
@@ -125,6 +131,70 @@ const areaSchema = z.object({
     }),
   ),
 });
+const auspiciousDaysSchema = z.object({
+  directions: z.array(
+    z.object({
+      label: z.string(),
+      bestDays: z.array(z.object({ date: z.string() })),
+    }),
+  ),
+});
+
+function calculationFollowUps(
+  input: ChainInput,
+  sources: BlockSources,
+): string[] {
+  const towns: string[] = [];
+  const days: string[] = [];
+  const auspiciousDirections: string[] = [];
+  const searchResults: string[] = [];
+  for (const source of sources.values()) {
+    if (source.tool === "area_directions") {
+      for (const block of blocksFromTool(source.tool, source.output, sources))
+        if (block.type === "towns")
+          towns.push(...block.towns.map((town) => town.name));
+    }
+    if (source.tool === "find_auspicious_days") {
+      const result = auspiciousDaysSchema.safeParse(source.output);
+      if (result.success)
+        days.push(
+          ...result.data.directions.flatMap((direction) =>
+            direction.bestDays.map((day) => day.date),
+          ),
+        );
+    }
+    if (source.tool === "judge_directions") {
+      const result = directionsSchema.safeParse(source.output);
+      if (result.success)
+        auspiciousDirections.push(
+          ...result.data.directions
+            .filter((direction) => isAuspiciousStatus(direction.status))
+            .map((direction) => direction.label),
+        );
+    }
+    if (source.tool === "search_municipality") {
+      const result = z
+        .object({ results: z.array(municipalitySchema) })
+        .safeParse(source.output);
+      if (result.success)
+        searchResults.push(...result.data.results.map((place) => place.name));
+    }
+  }
+  return sanitizeFollowUpSuggestions([
+    ...(towns[0] ? [`${towns[0]}を出発地にして方位を計算する？`] : []),
+    ...(days[0] ? [`${days[0]}を対象日にして候補を比べる？`] : []),
+    ...(auspiciousDirections[0]
+      ? [`${auspiciousDirections[0]}の街をさらに先まで見る？`]
+      : []),
+    ...(towns[1] ? [`${towns[1]}も出発地にして結果を比べる？`] : []),
+    ...(searchResults.length > 1
+      ? [`${searchResults[0]}を出発地に指定して計算する？`]
+      : []),
+    `${input.municipality}で対象日を変えて比べる？`,
+    "県名を含む市区町村名で計算し直す？",
+    "生年月日と出発地を確認して再計算する？",
+  ]);
+}
 
 /** 深さは検索を0とする依存の辺の数。地理の再展開は移転の推奨ではない。 */
 export async function runChain(
@@ -312,16 +382,7 @@ export async function runChain(
             3,
             judged.id,
             (out) => {
-              const days = z
-                .object({
-                  directions: z.array(
-                    z.object({
-                      label: z.string(),
-                      bestDays: z.array(z.object({ date: z.string() })),
-                    }),
-                  ),
-                })
-                .parse(out);
+              const days = auspiciousDaysSchema.parse(out);
               return days.directions
                 .map(
                   (d) =>
@@ -369,5 +430,11 @@ export async function runChain(
       }
     }
   }
-  emit({ type: "done", calls, reasons: [...reasons] });
+  const suggestions = calculationFollowUps(input, blockSources);
+  emit({
+    type: "done",
+    calls,
+    reasons: [...reasons],
+    ...(suggestions.length ? { suggestions } : {}),
+  });
 }
