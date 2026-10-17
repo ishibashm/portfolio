@@ -188,7 +188,17 @@ export default async function BlogPostPage({
             )}
 
             <div className="mt-8">
-              <BlogArticleBody body={post.body} />
+              <BlogArticleBody
+                body={post.body}
+                video={{
+                  youtubeId: post.youtubeId,
+                  title: post.videoTitle || post.title,
+                  description: post.videoDescription || post.description,
+                  uploadDate: post.videoUploadDate,
+                  duration: post.videoDuration,
+                  cover: socialImage,
+                }}
+              />
             </div>
 
             {/*

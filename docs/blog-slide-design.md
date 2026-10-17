@@ -1,0 +1,112 @@
+# 天中殺記事スライド v21（v20 の生成器を改訂）
+
+対象は `content/blog/moving-during-tenchusatsu.md` の表紙と本文5枚。
+画像名は維持する。生成元は `scripts/blog/slides_v20.py`（ファイル名は据え置き）。
+1800×945px、各300,000 bytes以下のPNG。
+
+## 設計の根拠（v21）
+
+- 見出しは、以前の v19 風生成器 `scripts/blog/show_v19.py`（commit b9f40b5f）の
+  `heading()` をそのまま移植：M PLUS Rounded 1c Black、紺 `#252A60` の文字、
+  墨の細い縁＋白の太い縁（字の大きさの 16% / 12.5%）、ぼかした薄い影、
+  【】で囲んだキーワードだけ藍 `#3A3F94` ＋淡い金 `#F4ECD6` のマーカー。
+- 左上は v19 と同じく藍の「▶ 天中殺と引越し」タグ（Dela Gothic One）と金の章バッジ。
+- 本文も show_v19.py と同じ M PLUS Rounded 1c（本文 Medium、強調 ExtraBold）。
+  数字・番号は show_v19.py のバッジ・数字と同じ Dela Gothic One。
+- 情報量は1枚1メッセージに減らした：要点は最大3つ、または簡単な比較1つ。
+  詳しい表（36通りの日数、年天中殺の年表）は本文の表に任せる。
+- ロボットは使わない。細線アイコン（カレンダー・家・方位・チェック・矢印）を残す。
+- 数字は記事の表から読み、`article_data()` で照合する。
+
+## 書体
+
+| 役割                 | 書体                                  | サイズ(px)               | 色                  |
+| -------------------- | ------------------------------------- | ------------------------ | ------------------- |
+| 主見出し             | M PLUS Rounded 1c Black（袋文字＋影） | 64（収まらなければ縮小） | 紺 / 藍＋金マーカー |
+| 小見出し・強調       | M PLUS Rounded 1c ExtraBold           | 32–60                    | ink / indigo / gold |
+| 本文                 | M PLUS Rounded 1c Medium              | 27–36                    | ink / mute          |
+| キー数値・番号・タグ | Dela Gothic One                       | 30–190                   | indigo / gold       |
+
+フォントは `~/.local/share/fonts/ofl/`（MPLUSRounded1c-\*.ttf、DelaGothicOne-Regular.ttf、
+いずれも SIL OFL 1.1）。リポジトリには入れない。Pillowで2倍解像度で組み、縮小後128色に量子化する。
+
+## 色とレイアウト
+
+| トークン    | 色        | 用途                                   |
+| ----------- | --------- | -------------------------------------- |
+| background  | `#F7F3EA` | 生成りの地                             |
+| indigo / 藍 | `#3A3F94` | キー数値、午未の行、タグ、細線アイコン |
+| gold        | `#9C7B3A` | 補助棒、番号、POINT左罫                |
+| ink         | `#1E1B18` | 主文                                   |
+| mute        | `#5E564C` | 補足、出典、ラベル                     |
+| card        | `#FCFAF5` | 比較欄、カード、タグ内文字             |
+| line        | `#D9CDB0` | 1pxの区切り、棒の全長                  |
+| band        | `#EFE8DA` | POINT帯、交互行、午未の背景            |
+
+左右マージン64px。本文領域はy=282〜795、POINTはy=809〜867、フッター罫はy=887。
+アイコンは44px角・2px線、主な区切りは1px、アクセント罫は3px。
+塗りとラベルを併用し、色だけに意味を持たせない。
+
+## 内容と数値の照合
+
+| 画像    | 主題を維持した追加内容                                                      | 記事内の根拠                                   |
+| ------- | --------------------------------------------------------------------------- | ---------------------------------------------- |
+| cover   | 年108〜114日、月と日の周期、2024〜2036の12年間の年天中殺年表、全6期間の端点 | 「どれくらいの期間」「年天中殺はいつ来るのか」 |
+| slide-1 | 結論3項目に、安全・費用・通勤、午未の実日付、転勤時の判定を併記             | 「先に結論」、引越し後・転勤・大丈夫かの節     |
+| slide-2 | 36個の日数に共通尺度の棒、午未・辰巳の説明、計測条件                        | 空亡別の日数表と直後の読み方、注記             |
+| slide-3 | 状況／何を見るか／次に何をするかの全4行、時期と方位の区別                   | 状況別の表、引越し後の節                       |
+| slide-4 | 手順3項目、転勤の登録方法、月ごと／2年ぶんの画面比較                        | 「自分の動ける日を出す3ステップ」              |
+| slide-5 | 体系と計算のもと、12年中2年／3年の模式図、サイトの対応範囲                  | 「大殺界と天中殺の違い」、注記                 |
+
+ジェネレーターは記事のMarkdown表から36個の日数と12個の期間端点を読み、期待値と全件照合する。
+棒も表示値と同じデータから描き、全36本とも0〜365日の尺度で比較する。
+0は尺度の原点であり追加の観測値ではない。年表は表の開始日から最終終了日の翌日までを共通軸とし、
+両端を含む期間を日単位で描く。年目盛りは2年ごとのガイドで、正確な境界は各行の日付を参照する。
+比較スライドの12マスは期間の長さだけを示す模式図で、実際の開始年を表さないと明記した。
+ページ番号・章番号・手順番号は編集上のラベル。ほかの数字は記事の記載と照合した。
+
+36値の照合順は「2026厳格／年天中殺は除く／日のみ → 2027の同3設定」。
+
+| 空亡 | 2026年         | 2027年         |
+| ---- | -------------- | -------------- |
+| 子丑 | 111 / 111 / 62 | 108 / 108 / 60 |
+| 寅卯 | 112 / 112 / 62 | 110 / 110 / 60 |
+| 辰巳 | 140 / 112 / 60 | 114 / 114 / 62 |
+| 午未 | 337 / 113 / 60 | 365 / 114 / 62 |
+| 申酉 | 112 / 112 / 60 | 112 / 112 / 61 |
+| 戌亥 | 110 / 110 / 61 | 110 / 110 / 60 |
+
+出典キャプションは記事の条件を維持：サイトの判定、日本時間正午、東京の経度、2026年9月時点の判定エンジン。
+因果関係や不幸の確率は図示しない。記事は効果が科学的に確認されたものではないと述べている。
+
+## 読んだ履歴と採用箇所
+
+以下はすべて `/workspace/slides-site/archive/` 内、読み取りのみ。
+v12〜v19は独立したNOTESではなく、v11フォルダのNOTESに追記されている。
+
+- `README.md`、`checkpoints.md`：版の流れ、生成り、落ち着き、可読性と情報量の優先順位。
+- `versions/recent-v5-8gy9qM/NOTES.md`：表・工程図・大きな数値という役割分け。
+- `versions/recent-v6-telopfont-MyeDZA/NOTES.md`、`versions/recent-v7-telopbody-VJFefP/NOTES.md`：袋文字の履歴、本文と表の読みやすさの問題。
+- `versions/recent-v8-enrich-oDs3Oa/NOTES.md`、`versions/recent-v9-asset-PPIz4K/NOTES.md`：情報追加、出典とレイアウト上の未解決点。
+- `versions/recent-v10-news-IRItBl/NOTES.md`：ニュース字幕の装飾案を比較し、今回には採用しない判断。
+- `versions/recent-v11-ytshow-HWStwA/NOTES.md`：v12〜v19全体。特にv12の書体役割、v16の配色、v19の情報構造。
+- 同フォルダ `tools/calm.py`、`tools/v18_png.py`：細罫・ヘッダー／フッター、藍と金の色指定、テロップの実装を確認。
+- 同フォルダ `illust_prompts.md`：和紙・水彩・ロボットの変遷。今回はキャラクター素材を使わずコードの説明図にする。
+- 同フォルダ `tools/judgeA15.txt`〜`judgeA19.txt`、`tools/judgeB.txt`、`tools/judgeB15.txt`：余白、文字サイズ、重なり、技術的正確さの評価基準。
+- 同フォルダ `judge/check19b.json`：小さい出典表への指摘を反映。
+- 実際に開いた一覧：同フォルダ `renders/v16/grid_final.jpg`、`renders/v17/grid_final.jpg`、`renders/v19/grid_final.jpg`。v16の静かな階層とv19のカード構造を比較。
+
+## 検証
+
+生成時に文字の安全領域、指定幅、文字同士の重なり、出力容量を検査する。
+6枚すべてを実画像で確認し、表紙の章バッジ幅と手順カードの下部余白を修正した。
+本文・altはGit差分がないことを確認する。実行するチェック：
+
+```sh
+ONLY=moving-during-tenchusatsu node scripts/build_blog_images.mjs
+npx tsc --noEmit
+npx vitest run __tests__/blog* __tests__/articleFaq.test.ts __tests__/newArticlesLinked.test.ts
+npx prettier --check --ignore-unknown README.md docs/blog-slide-design.md scripts/build_blog_images.mjs scripts/blog/slides_v20.py public/blog/moving-during-tenchusatsu*.png
+```
+
+PrettierはMarkdownとJavaScriptを検査し、対応パーサーのないPythonとPNGは`--ignore-unknown`で除外する。

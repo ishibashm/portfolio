@@ -128,3 +128,20 @@ npm run lint           # error 0 / warning あり が正常。総数を増やさ
 | [`CLAUDE.md`](CLAUDE.md)                                     | 作業の決め事。検証・PR の出し方・触るときの注意  |
 | [`docs/improvement-backlog.md`](docs/improvement-backlog.md) | 改善の積み残しと判断待ち                         |
 | [`docs/gcp-billing-costs.md`](docs/gcp-billing-costs.md)     | 管理画面の GCP 請求実額の設定                    |
+
+### 天中殺記事の画像を再生成する
+
+```sh
+python3 scripts/blog/slides_v20.py
+# または、記事画像ビルドから同じジェネレーターを呼び出す
+ONLY=moving-during-tenchusatsu node scripts/build_blog_images.mjs
+```
+
+Python 3 + Pillow と `/usr/share/fonts/opentype/noto/` の
+`NotoSansCJK-{Regular,Bold}.ttc`、`NotoSerifCJK-Regular.ttc` が必要です。
+いずれも SIL OFL 1.1（商用利用可）。フォントファイルはコミットしません。
+v20 は生成りの背景、明朝の見出し、角ゴシックの本文、細い罫線とコードで描く図解を使用します。
+設計根拠・タイプスケール・色・履歴の参照先は
+[ブログ画像のデザイン仕様](docs/blog-slide-design.md) を参照してください。
+記事の表と36個の日数・12個の期間端点を照合して、表紙と本文5枚を同じファイル名で
+1800×945・各300KB以下のPNGとして出力します。記事本文・altテキストは変更しません。

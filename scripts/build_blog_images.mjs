@@ -1327,40 +1327,10 @@ const FIGURES = [
     </div>`,
   },
   {
-    /*
-      天中殺と引越し。影響は確かめられないので図にしない。図にするのは
-      判定で数えた「動けない日数」（blogTenchusatsuMovingClaims が照合）。
-      年天中殺でない人の厳格は 108〜114 日、日のみは 60〜62 日、
-      午未の人の 2027 年は 365 日。棒の長さは 365 日を全幅にする。
-    */
+    // Cover + five body slides, v20 editorial diagrams; design history and type scale in docs/blog-slide-design.md.
+    // Regenerate: python3 scripts/blog/slides_v20.py (Pillow + Noto Sans/Serif CJK fonts).
     slug: "moving-during-tenchusatsu",
-    kicker: "引越しの考え方",
-    title: "効いてくるのは、<br>影響より期間の長さ",
-    sub: "年・月・日を全部避けると、年天中殺でない人でも1年の3割が動けない日になります。",
-    body: `<div style="display:flex;flex-direction:column;gap:14px;width:900px">
-        ${[
-          ["厳格（年・月・日）", "108〜114日", 111, false],
-          ["年天中殺は除く", "108〜114日", 111, false],
-          ["日のみ", "60〜62日", 61, false],
-          ["午未の人・2027年（厳格）", "365日", 365, true],
-        ]
-          .map(
-            ([
-              label,
-              days,
-              n,
-              hot,
-            ]) => `<div style="display:flex;align-items:center;gap:16px">
-            <div style="width:250px;font-size:19px;font-weight:700;color:${hot ? "#e11d48" : "#0f172a"};text-align:right">${label}</div>
-            <div style="width:500px;height:30px;background:#f1ece7;border-radius:8px;overflow:hidden">
-              <div style="width:${Math.round((500 * n) / 365)}px;height:100%;background:${hot ? "#e11d48" : "#475569"}"></div>
-            </div>
-            <div style="width:130px;font-size:22px;font-weight:800;color:${hot ? "#e11d48" : "#0f172a"}">${days}</div>
-          </div>`,
-          )
-          .join("")}
-        <div style="margin-top:4px;font-size:15px;color:#64748b;text-align:right">1年あたり。2026年・2027年をサイトの判定で数えた</div>
-      </div>`,
+    pythonSource: "scripts/blog/slides_v20.py",
   },
   {
     /*
@@ -1561,6 +1531,12 @@ function selected() {
 }
 
 async function main() {
+  const figures = selected();
+  for (const fig of figures.filter((f) => f.pythonSource)) {
+    execFileSync("python3", [fig.pythonSource], { stdio: "inherit" });
+  }
+  const browserFigures = figures.filter((f) => !f.pythonSource);
+  if (browserFigures.length === 0) return;
   checkFonts();
   await mkdir(OUT_DIR, { recursive: true });
   const browser = await chromium.launch(
@@ -1568,12 +1544,13 @@ async function main() {
       ? { executablePath: process.env.CHROMIUM_PATH }
       : {},
   );
-  for (const fig of selected()) {
+  for (const fig of browserFigures) {
     const page = await browser.newPage({
       viewport: { width: WIDTH, height: HEIGHT },
       deviceScaleFactor: SCALE,
     });
-    await page.setContent(html(fig), { waitUntil: "load" });
+    const markup = html(fig);
+    await page.setContent(markup, { waitUntil: "load" });
     const out = path.join(OUT_DIR, `${fig.slug}.png`);
     await writeFile(out, await page.screenshot());
     await page.close();

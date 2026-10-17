@@ -1,3 +1,4 @@
+import { BlogVideo, type BlogVideoProps } from "./BlogVideo";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import type { Components } from "react-markdown";
@@ -53,14 +54,6 @@ const components: Components = {
     >
       {children}
     </h3>
-  ),
-  p: ({ children, ...props }) => (
-    <p
-      className={`mt-4 ${MEASURE} text-[15px] leading-8 text-slate-700`}
-      {...props}
-    >
-      {children}
-    </p>
   ),
   ul: ({ children, ...props }) => (
     <ul
@@ -151,10 +144,41 @@ const components: Components = {
   ),
 };
 
-export function BlogArticleBody({ body }: { body: string }) {
+export function BlogArticleBody({
+  body,
+  video,
+}: {
+  body: string;
+  video?: BlogVideoProps;
+}) {
+  const articleComponents: Components = {
+    ...components,
+    p: ({ node, children, ...props }) => {
+      // Only a literal standalone paragraph is a directive; code/HTML are never executed.
+      if (
+        node?.children.length === 1 &&
+        node.children[0].type === "text" &&
+        node.children[0].value === "::youtube"
+      ) {
+        return video ? <BlogVideo {...video} /> : null;
+      }
+      return (
+        <p
+          className={`mt-4 ${MEASURE} text-[15px] leading-8 text-slate-700`}
+          {...props}
+        >
+          {children}
+        </p>
+      );
+    },
+  };
   return (
     <div>
-      <ReactMarkdown remarkPlugins={[remarkGfm]} components={components}>
+      <ReactMarkdown
+        remarkPlugins={[remarkGfm]}
+        skipHtml
+        components={articleComponents}
+      >
         {body}
       </ReactMarkdown>
     </div>
