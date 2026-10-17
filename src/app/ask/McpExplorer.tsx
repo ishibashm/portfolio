@@ -42,7 +42,10 @@ import {
   initialConsultationSuggestions,
   sanitizeFollowUpSuggestions,
 } from "@/lib/followUpSuggestions";
-import { GuideAvatar } from "@/components/guide/GuideCharacter";
+import {
+  GuideAvatar,
+  GuideChatAvatar,
+} from "@/components/guide/GuideCharacter";
 import type {
   AgentConversationMessage,
   AgentEvent,
@@ -64,7 +67,6 @@ import {
   ShirubeGuide,
   type PersonEdits,
 } from "./AskWorkspacePanels";
-import { ShirubeAvatar } from "./ShirubeAvatar";
 
 const GrokVoice = dynamic(() => import("@/components/home/GrokVoice"), {
   ssr: false,
@@ -445,7 +447,7 @@ function ConversationMessage({
       className="flex w-full items-start gap-2 sm:gap-3"
       data-chat-role="assistant"
     >
-      <ShirubeAvatar />
+      <GuideChatAvatar />
       <div className="min-w-0 flex-1 sm:max-w-[88%] sm:flex-none">
         {showName && (
           <p className="mb-1 ml-1 text-xs font-semibold text-indigo-700">

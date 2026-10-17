@@ -106,3 +106,42 @@ describe("置き場所", () => {
     expect(src).toContain('author: { "@id": `${BASE}/#organization` }');
   });
 });
+
+describe("チャット用デフォルメアイコン（例外）", () => {
+  it("派生画像は軽く、/ask 以外からは参照しない", async () => {
+    const fs = await import("node:fs");
+    const path = await import("node:path");
+    for (const f of [
+      "shirube-chibi-chat-96.avif",
+      "shirube-chibi-chat-96.webp",
+      "shirube-chibi-chat-240.avif",
+      "shirube-chibi-chat-240.webp",
+    ]) {
+      expect(fs.statSync(path.join("public/guide", f)).size).toBeLessThan(
+        15_000,
+      );
+    }
+    const walk = (d: string): string[] =>
+      fs
+        .readdirSync(d, { withFileTypes: true })
+        .flatMap((e) =>
+          e.isDirectory() ? walk(path.join(d, e.name)) : [path.join(d, e.name)],
+        );
+    const users = walk("src").filter(
+      (f) =>
+        /\.(tsx?|jsx?)$/.test(f) &&
+        fs.readFileSync(f, "utf8").includes("GuideChatAvatar"),
+    );
+    expect(users.sort()).toEqual(
+      [
+        "src/app/ask/AskWorkspacePanels.tsx",
+        "src/app/ask/McpExplorer.tsx",
+        "src/components/guide/GuideCharacter.tsx",
+      ].map((p) => path.normalize(p)),
+    );
+    const reserveRefs = walk("src").filter((f) =>
+      fs.readFileSync(f, "utf8").includes("shirube-chibi-pointing-reserve"),
+    );
+    expect(reserveRefs).toEqual([]);
+  });
+});

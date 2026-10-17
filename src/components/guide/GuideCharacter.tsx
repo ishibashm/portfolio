@@ -154,3 +154,41 @@ export default function GuideCharacter({
     </figure>
   );
 }
+
+/**
+ * 「AIに聞く」（/ask）のチャットの発言者アイコン専用。
+ *
+ * ここだけ、承認済みの例外として**デフォルメ（ちび）版**のしるべを使う
+ * （docs/guide-character.md「チャット用アイコンの例外」）。小さな丸枠では
+ * 通常等身の全身画では顔が読めないため。ほかの所では使わない。
+ * 原本は public/guide/shirube-chibi-chat-master.png（顔中心の正方形）。
+ */
+export function GuideChatAvatar({ className = "" }: { className?: string }) {
+  return (
+    <picture
+      className={`relative block h-8 w-8 shrink-0 overflow-hidden rounded-full border-2 border-white bg-[#fbf6ee] shadow-sm ring-1 ring-indigo-200 sm:h-10 sm:w-10 ${className}`}
+      data-shirube-avatar=""
+    >
+      <source
+        type="image/avif"
+        srcSet="/guide/shirube-chibi-chat-96.avif 96w, /guide/shirube-chibi-chat-240.avif 240w"
+        sizes="(min-width: 640px) 40px, 32px"
+      />
+      <source
+        type="image/webp"
+        srcSet="/guide/shirube-chibi-chat-96.webp 96w, /guide/shirube-chibi-chat-240.webp 240w"
+        sizes="(min-width: 640px) 40px, 32px"
+      />
+      <img
+        src="/guide/shirube-chibi-chat-96.webp"
+        alt={GUIDE_NAME}
+        width={96}
+        height={96}
+        loading="lazy"
+        decoding="async"
+        draggable={false}
+        className="h-full w-full select-none object-cover"
+      />
+    </picture>
+  );
+}
