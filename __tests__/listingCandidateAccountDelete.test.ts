@@ -14,6 +14,7 @@ const mock = vi.hoisted(() => ({
   favoriteDays: vi.fn(),
   reminders: vi.fn(),
   consents: vi.fn(),
+  tables: vi.fn(),
   revoke: vi.fn(),
   audit: vi.fn(),
 }));
@@ -31,9 +32,11 @@ beforeEach(() => {
   vi.stubEnv("MCP_PERSONAL_ENABLED", "false");
   mock.user.mockResolvedValue({ id });
   mock.config.mockResolvedValue(null);
+  mock.tables.mockResolvedValue([{ reminders: true, consents: true }]);
   mock.tx.mockImplementation(async (fn) =>
     fn({
       $executeRaw: mock.lock,
+      $queryRaw: mock.tables,
       listingCandidate: { deleteMany: mock.candidates },
       listingCandidateRate: { deleteMany: mock.rates },
       user_configs: { delete: mock.deleteConfig },
@@ -82,6 +85,18 @@ it("also clears the owner's reminders and email consent records", async () => {
   expect(res.status).toBe(200);
   expect(mock.reminders).toHaveBeenCalledWith({ where: { user_id: id } });
   expect(mock.consents).toHaveBeenCalledWith({ where: { user_id: id } });
+});
+it("still deletes when the reminder tables are not created yet", async () => {
+  mock.tables.mockResolvedValue([{ reminders: false, consents: false }]);
+  const res = await DELETE(
+    new NextRequest("https://example.com/api/user-config", {
+      method: "DELETE",
+      headers: { origin: "https://example.com" },
+    }),
+  );
+  expect(res.status).toBe(200);
+  expect(mock.reminders).not.toHaveBeenCalled();
+  expect(mock.favoriteDays).toHaveBeenCalled();
 });
 it("does not clear registered data from another origin", async () => {
   const res = await DELETE(
