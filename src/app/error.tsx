@@ -2,6 +2,7 @@
 
 import { useEffect } from "react";
 import Link from "next/link";
+import GuideCharacter from "@/components/guide/GuideCharacter";
 import {
   clearChunkReloadFlag,
   isChunkLoadError,
@@ -68,6 +69,11 @@ export default function Error({
             ? "サイトが更新された直後に開くと、古い版の部品を読みに行って表示できないことがあります。読み込み直すと直ります。入力した内容は保存されていれば残ります。"
             : "一時的な不具合の可能性があります。読み込み直しても直らないときは、しばらく経ってからお試しください。"}
         </p>
+        <GuideCharacter pose="magnifier" size="md" className="mt-6">
+          {stale
+            ? "サイトが新しくなったようです。読み込み直すと元どおりに開けます。"
+            : "羅盤が少し乱れました。もう一度お試しください。"}
+        </GuideCharacter>
 
         <div className="mt-8 flex flex-col justify-center gap-3 sm:flex-row">
           <button
