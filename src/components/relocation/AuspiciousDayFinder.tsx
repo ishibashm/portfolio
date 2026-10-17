@@ -40,6 +40,8 @@ import {
 import { getAuspiciousDayErrorMessage } from "@/lib/auspiciousDayErrors";
 import { directionLabelName } from "@/lib/directionLabels";
 import { TIER_LABELS, type DayTier } from "@/utils/dayTier";
+import { CountUp } from "@/components/motion/CountUp";
+import { Burst } from "@/components/motion/Burst";
 import {
   DEFAULT_DAY_FILTER,
   filterDays,
@@ -220,6 +222,8 @@ export function AuspiciousDayFinder() {
     favoriteDaysSnapshot,
     () => "",
   );
+  // 三盤吉（段階 S）の日を ☆ に残した瞬間だけ、金の線を弾けさせる。
+  const [burst, setBurst] = useState<{ key: string; n: number } | null>(null);
   const favoriteKeys = new Set(
     parseFavoriteDays(favoriteRaw).map((f) =>
       favoriteDayKey(f.date, f.direction),
@@ -648,7 +652,10 @@ export function AuspiciousDayFinder() {
                     </span>
                     <span className="text-sm text-slate-600">
                       三盤吉{" "}
-                      <b className="text-rose-600">{s.tripleAuspiciousDays}</b> 日
+                      <b className="text-rose-600">
+                        <CountUp value={s.tripleAuspiciousDays} />
+                      </b>{" "}
+                      日
                       {isFiltering(filter) && (
                         <>
                           {" "}
@@ -667,7 +674,10 @@ export function AuspiciousDayFinder() {
                             {s.blockedByTenchusatsuDays}
                           </b>{" "}
                           日 ／ 実質{" "}
-                          <b className="text-emerald-700">{s.availableDays}</b> 日
+                          <b className="text-emerald-700">
+                            <CountUp value={s.availableDays} />
+                          </b>{" "}
+                          日
                         </>
                       )}
                       {/* 天中殺の数と実質は三盤吉のうちの数。凶なしはその後に置く
@@ -730,7 +740,12 @@ export function AuspiciousDayFinder() {
                                       ? "お気に入りから外す"
                                       : "お気に入りに追加"
                                   }
-                                  onClick={() =>
+                                  onClick={() => {
+                                    if (!on && (d.tier ?? "S") === "S")
+                                      setBurst((b) => ({
+                                        key: favoriteDayKey(d.date, s.direction),
+                                        n: (b?.n ?? 0) + 1,
+                                      }));
                                     toggleFavoriteDay({
                                       date: d.date,
                                       direction: s.direction,
@@ -741,10 +756,14 @@ export function AuspiciousDayFinder() {
                                       tags: d.tags,
                                       blockedByTenchusatsu:
                                         d.blockedByTenchusatsu,
-                                    })
-                                  }
-                                  className="mr-1.5 -my-1 rounded p-1 align-middle text-slate-300 hover:text-amber-500"
+                                    });
+                                  }}
+                                  className="relative mr-1.5 -my-1 rounded p-1 align-middle text-slate-300 hover:text-amber-500"
                                 >
+                                  {burst?.key ===
+                                    favoriteDayKey(d.date, s.direction) && (
+                                    <Burst key={burst.n} />
+                                  )}
                                   <Star
                                     className={`h-4 w-4 ${on ? "fill-amber-400 text-amber-500" : ""}`}
                                   />

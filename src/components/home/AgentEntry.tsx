@@ -30,6 +30,7 @@ export function AgentEntry() {
       <GuideCharacter
         pose="pointing"
         size="md"
+        float
         priority="low"
         className="mt-4 max-w-2xl"
       >

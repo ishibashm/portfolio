@@ -8,6 +8,7 @@ import { AuspiciousDayFinder } from "@/components/relocation/AuspiciousDayFinder
 import { FavoriteDaysPanel } from "@/components/relocation/FavoriteDaysPanel";
 import { calendarMonths, calendarMonthSlug } from "@/lib/calendarMonths";
 import { coreRouteLabel } from "@/lib/siteStructure";
+import { TwinkleStars } from "@/components/motion/TwinkleStars";
 
 export default function CalendarPage() {
   return (
@@ -30,6 +31,8 @@ export default function CalendarPage() {
             }}
           />
           <div className="absolute bottom-0 left-0 w-full h-[1px] bg-gradient-to-r from-transparent via-slate-200 to-transparent" />
+          {/* 夜空の小さな星（飾り）。見出しの右側の余白にだけ置く。 */}
+          <TwinkleStars className="right-0 top-0 h-full w-1/2 sm:w-2/5" />
           <div
             className="absolute top-0 left-8 w-[1px] h-4"
             style={{

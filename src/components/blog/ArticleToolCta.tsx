@@ -63,8 +63,12 @@ export function ArticleToolCta({ tags }: { tags: readonly string[] }) {
         読み終えたら、あなたの生年月日で確かめてみましょう。
       </GuideCharacter>
       <ul className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-        {tools.map((t) => (
-          <li key={t.href}>
+        {tools.map((t, i) => (
+          <li
+            key={t.href}
+            className="motion-reveal"
+            style={{ ["--i" as string]: i }}
+          >
             <Link
               href={t.href}
               className="group block h-full rounded-xl border border-slate-300 bg-white p-4 transition-colors hover:border-rose-400"
