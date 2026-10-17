@@ -76,6 +76,7 @@ it("計算のみは分割NDJSONを受け取り、完了前から経過を描く"
       encoder.encode(
         JSON.stringify({
           type: "done",
+          memoryEligible: true,
           calls: 1,
           reasons: ["深さの上限で打ち切りました。"],
           suggestions: [
@@ -192,6 +193,7 @@ it("AI回答を逐次描き、道具の状態を利用者向けに折り畳む",
   expect(screen.queryByText("<script>bad</script>")).toBeNull();
   await send({
     type: "done",
+    memoryEligible: true,
     calls: 1,
     source: "calc",
     reasons: [],
@@ -328,7 +330,7 @@ it("保存済みプロフィールと同行者を重複なく候補にし、実�
     if (url === "/api/user-config" || url === "/api/profile-presets")
       return Response.json({}, { status: 401 });
     return new Response(
-      '{"type":"text-delta","text":"回答"}\n{"type":"done","calls":0,"reasons":[]}\n',
+      '{"type":"text-delta","text":"回答"}\n{"type":"done","calls":1,"reasons":[],"memoryEligible":true}\n',
     );
   });
   vi.stubGlobal("fetch", fetcher);
@@ -375,6 +377,7 @@ it("追質問では履歴を送り、Enter送信・Shift+Enter改行・IME変換
         JSON.stringify({ type: "text-delta", text: reply }),
         JSON.stringify({
           type: "done",
+          memoryEligible: true,
           calls: 0,
           reasons: [],
           suggestions: ["一件だけ？", "<b>表示しない</b>"],
@@ -429,7 +432,7 @@ it("複数会話・人物・相談メモを端末に復元し、新しい会話�
       return Response.json({}, { status: 401 });
     if (url.includes("municipalities")) return Response.json({ names: [] });
     return new Response(
-      '{"type":"text-delta","text":"保存される回答"}\n{"type":"done","calls":0,"reasons":[]}\n',
+      '{"type":"text-delta","text":"保存される回答"}\n{"type":"done","calls":1,"reasons":[],"memoryEligible":true}\n',
     );
   });
   vi.stubGlobal("fetch", fetcher);
@@ -503,7 +506,7 @@ it("複数人を同じ質問へ添え、相談メモを画面から削除でき�
     if (url === "/api/user-config" || url === "/api/profile-presets")
       return Response.json({}, { status: 401 });
     return new Response(
-      '{"type":"text-delta","text":"家族向けの回答"}\n{"type":"done","calls":0,"reasons":[]}\n',
+      '{"type":"text-delta","text":"家族向けの回答"}\n{"type":"done","calls":1,"reasons":[],"memoryEligible":true}\n',
     );
   });
   vi.stubGlobal("fetch", fetcher);
@@ -692,3 +695,38 @@ it("回答中に別チャットへ移ると元の回答を中止状態にする"
   expect(screen.getByText("回答を中止しました。")).toBeTruthy();
   await act(async () => controller.close());
 });
+
+it.each([false, undefined])(
+  "サーバーが保存を許可しない回答は相談メモにしない: %s",
+  async (memoryEligible) => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (url: string) => {
+        if (url.includes("status"))
+          return Response.json({ remaining: { requests: 20 } });
+        if (url !== "/api/mcp-chain") return Response.json({}, { status: 401 });
+        return new Response(
+          [
+            { type: "text-delta", text: "一部の結果だけ表示しています。" },
+            { type: "done", calls: 1, reasons: [], memoryEligible },
+          ]
+            .map((event) => JSON.stringify(event))
+            .join("\n") + "\n",
+        );
+      }),
+    );
+    render(<McpExplorer agentEnabled persistConversation />);
+    fireEvent.change(await screen.findByLabelText("メッセージ"), {
+      target: { value: "引越しを相談したい" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "送信" }));
+    await screen.findByText("一部の結果だけ表示しています。");
+    await waitFor(() => {
+      const workspace = JSON.parse(
+        localStorage.getItem(ASK_DATA_STORAGE_KEY) ?? "{}",
+      );
+      expect(workspace.conversations?.[0].messages).toHaveLength(2);
+      expect(workspace.memories).toEqual([]);
+    });
+  },
+);

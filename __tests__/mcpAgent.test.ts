@@ -88,6 +88,7 @@ describe("AIが公開MCPを選ぶループ", () => {
       type: "done",
       calls: 4,
       reasons: [],
+      memoryEligible: true,
       suggestions: [
         "候補日の通勤条件も比べる？",
         "家族の本命星でも日取りを確認する？",
@@ -446,6 +447,7 @@ describe("AI API", () => {
       type: "done",
       calls: 4,
       reasons: [],
+      memoryEligible: true,
     });
     expect(events.some((e) => e.type === "text-delta")).toBe(true);
   });

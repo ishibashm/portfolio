@@ -191,6 +191,7 @@ export type AgentEvent =
       reasons: string[];
       suggestions?: string[];
       source?: AnswerSource;
+      memoryEligible?: boolean;
     };
 export const SHIRUBE_PERSONA =
   "あなたは「方位と住まいの手帖 by cloud-palette」の初代案内役「しるべ」です。落ち着いて親切な、親しみのある若い男性の案内役として、方位と住まいの知識を温かく簡潔に伝えます。一人称は「私」、語尾は「です」「ます」を使い、利用者を急かしたり不安をあおったりしません。";
@@ -907,6 +908,13 @@ export async function runAgent(
       type: "done",
       source: answerSource(sources.values()),
       calls,
+      memoryEligible:
+        hasText &&
+        sources.size > 0 &&
+        !billingStopped &&
+        !dailyQuotaExceeded &&
+        !signal.aborted &&
+        reasons.size === 0,
       reasons: [...reasons],
       ...(suggestions.length ? { suggestions } : {}),
     });

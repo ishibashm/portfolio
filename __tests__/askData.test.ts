@@ -183,3 +183,36 @@ describe("AI相談データ", () => {
     expect(current[0].name).toBe("本人");
   });
 });
+
+describe("停止・失敗した相談を記憶しない", () => {
+  it.each([
+    "しるべのAI回答は、いま一時的にお休みしています。",
+    "AI回答の利用枠が一時的に止まっています。",
+    "本日のAI回答の枠が終わりました。",
+    "回答に必要な結果を取得できませんでした。",
+    "エラーが発生しました。",
+    "本日のAI無料枠に達しました。計算のみの方式をご利用ください。",
+  ])("旧データの結論も除外する: %s", (answer) => {
+    expect(summarizeConsultation(["引越したい"], answer)).toBe("");
+    const workspace = parseAskWorkspace({
+      version: 2,
+      conversations: [{ id: "c", messages: [] }],
+      memories: [
+        {
+          id: "m",
+          sourceConversationId: "c",
+          text: `相談内容：引越したい\n主な回答・結論：${answer}`,
+        },
+      ],
+    });
+    expect(workspace?.memories).toEqual([]);
+  });
+  it("停止についての質問を正常な結論と混同しない", () => {
+    expect(
+      summarizeConsultation(
+        ["AI回答の利用枠が一時的に止まっていますか？"],
+        "本命星は三碧木星です。",
+      ),
+    ).not.toBe("");
+  });
+});

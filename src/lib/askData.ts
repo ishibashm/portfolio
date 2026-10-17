@@ -320,6 +320,16 @@ function parseConversation(
   };
 }
 
+/** Older workspaces did not record completion status. Drop known failure conclusions. */
+export function isUnavailableConclusion(value: string): boolean {
+  const conclusion = value.includes("主な回答・結論：")
+    ? value.split("主な回答・結論：").slice(1).join("主な回答・結論：")
+    : value;
+  return /一時的にお休み|AI回答の利用枠が一時的に止ま|本日のAI回答の枠が終わ|回答に必要な結果を取得できません|回答を始められません|回答を受け取れません|回答を中止しました|本日のAI無料枠に達|AIまたは道具の処理に失敗|道具の失敗・時間上限・中断|エラーが発生|日次.*(?:上限|枠)|本日.*(?:上限|使い切)/u.test(
+    conclusion,
+  );
+}
+
 function parseMemory(
   value: unknown,
   fallbackNow: string,
@@ -328,7 +338,14 @@ function parseMemory(
   const memoryId = id(item?.id);
   const sourceConversationId = id(item?.sourceConversationId);
   const memoryText = text(item?.text, ASK_DATA_LIMITS.memoryCharacters);
-  if (!item || !memoryId || !sourceConversationId || !memoryText) return null;
+  if (
+    !item ||
+    !memoryId ||
+    !sourceConversationId ||
+    !memoryText ||
+    isUnavailableConclusion(memoryText)
+  )
+    return null;
   const createdAt = timestamp(item.createdAt, fallbackNow);
   return {
     id: memoryId,
@@ -436,6 +453,7 @@ export function summarizeConsultation(
   userMessages: string[],
   assistantMessage: string,
 ): string {
+  if (isUnavailableConclusion(assistantMessage)) return "";
   const questions = userMessages
     .slice(-3)
     .map((message) => plainSummary(message, 100))

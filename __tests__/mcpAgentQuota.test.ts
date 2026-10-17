@@ -482,6 +482,7 @@ it("前払い残高切れ（402）は再試行も切替も要約もせず、計�
   expect(events.at(-1)).toMatchObject({
     type: "done",
     reasons: [AGENT_PAUSED_REASON],
+    memoryEligible: false,
   });
 });
 
