@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
-"""v24 cloud-palette "night compass" slides (v23 look, headline layout). See docs/blog-slide-design.md (v24).
+"""v25 cloud-palette "night compass" slides (v24 layout, square heavy gothic + outlined captions). See docs/blog-slide-design.md (v25).
 
 All drawing is original code: indigo night sky, faint star grid and a line-art
 compass rose / 八卦 ring, ivory panels with indigo headers and a vermilion accent,
 a translucent indigo glass caption band with a gold rule and vermilion pills,
 a rounded tab badge with a compass icon, and the cloud-palette wordmark.
-Fonts: Noto Sans CJK JP Bold (system), M PLUS Rounded 1c Black / Dela Gothic One (OFL). Not bundled.
-Usage: python3 scripts/blog/slides_v24.py [slug]
+Fonts: Noto Sans CJK JP Black (OFL, ~/.local/share/fonts/ofl/NotoSansCJKjp-Black.otf), Dela Gothic One (OFL). Not bundled.
+Usage: python3 scripts/blog/slides_v25.py [slug]
 """
 from functools import lru_cache
 from math import cos, sin, pi
@@ -25,11 +25,9 @@ TEAL = '#2E8C88'
 @lru_cache(None)
 def font(size, role='gothic'):
     ofl = Path.home()/'.local/share/fonts/ofl'
-    if role == 'round':
-        return ImageFont.truetype(str(ofl/'MPLUSRounded1c-Black.ttf'), size*S)
     if role == 'num':
         return ImageFont.truetype(str(ofl/'DelaGothicOne-Regular.ttf'), size*S)
-    return ImageFont.truetype('/usr/share/fonts/opentype/noto/NotoSansCJK-Bold.ttc', size*S, index=0)
+    return ImageFont.truetype(str(ofl/'NotoSansCJKjp-Black.otf'), size*S)  # square heavy gothic
 
 
 def background(seed, cx, cy):
@@ -75,21 +73,32 @@ class Slide:
         self.slug = slug
         self.im = background(number+11, *rose).convert('RGBA')
         self.d = ImageDraw.Draw(self.im)
-        self.t(headline, 64, 40, 72, IVORY, 'round', maxw=1300)
+        self.t(headline, 64, 36, 72, 'white', maxw=1300, outline='black')
         self.d.line((66*S, 136*S, 186*S, 136*S), fill=VERM, width=6*S)
         # wordmark top-right: cloud mark + name
         x = W-64-font(28, 'round').getlength('cloud palette')/S - 70
         self.d.ellipse((x*S, 46*S, (x+30)*S, 72*S), fill=IVORY); self.d.ellipse(((x+18)*S, 38*S, (x+52)*S, 72*S), fill=IVORY)
         self.d.rectangle(((x+4)*S, 58*S, (x+50)*S, 72*S), fill=IVORY)
         self.d.ellipse(((x+42)*S, 54*S, (x+52)*S, 64*S), fill=VERM)
-        self.t('cloud palette', x+66, 56, 28, IVORY, 'round', anchor='lm')
+        self.t('cloud palette', x+66, 56, 28, IVORY, anchor='lm')
         self.t(f'{number+1:02d} / {total:02d}', W-60, 920, 22, (200, 200, 230, 255), anchor='rm')
         self.t('伝統的な占術の考え方・効果が科学的に確認されたものではありません', 60, 920, 20, (180, 184, 214, 255), anchor='lm')
 
-    def t(self, value, x, y, size, fill=INK, role='gothic', anchor='lt', maxw=None):
+    def t(self, value, x, y, size, fill=INK, role='gothic', anchor='lt', maxw=None, outline=None):
         while maxw and font(size, role).getlength(value)/S > maxw:
             size -= 1
-        self.d.text((x*S, y*S), value, font=font(size, role), fill=fill, anchor=anchor)
+        f = font(size, role)
+        if outline:  # caption treatment: thick stroke (8% of size) + soft dark drop shadow
+            sw = max(2, round(size*.08*S))
+            off = max(2, round(size*.06*S))
+            sh = Image.new('RGBA', self.im.size); sd = ImageDraw.Draw(sh)
+            sd.text((x*S+off, y*S+off), value, font=f, anchor=anchor, fill=(0, 0, 0, 200),
+                    stroke_width=sw, stroke_fill=(0, 0, 0, 200))
+            self.im.alpha_composite(sh.filter(ImageFilter.GaussianBlur(off*.6)))
+            self.d = ImageDraw.Draw(self.im)
+            self.d.text((x*S, y*S), value, font=f, fill=fill, anchor=anchor, stroke_width=sw, stroke_fill=outline)
+        else:
+            self.d.text((x*S, y*S), value, font=f, fill=fill, anchor=anchor)
 
     def panel(self, x, y, w, h, fill=IVORY, r=26, header=None, hfill=INDIGO):
         sh = Image.new('RGBA', self.im.size); sd = ImageDraw.Draw(sh)
@@ -114,12 +123,11 @@ class Slide:
         self.im.alpha_composite(glass); self.d = ImageDraw.Draw(self.im)
         self.d.line((70*S, (y0+2)*S, (W-70)*S, (y0+2)*S), fill=GOLD, width=3*S)
         step = (y1-y0)/len(items)
-        pw = max(font(36).getlength(k)/S for k, _ in items) + 48
+        kw_w = max(font(56).getlength(f'【{k}】') for k, _ in items)/S
         for i, (kw, body) in enumerate(items):
             cy = y0 + 6 + step*(i+.5)
-            w = font(36).getlength(kw)/S + 48
-            self.pill(kw, 70+(pw-w)/2, cy, 36)
-            self.t(body, 70+pw+32, cy, 50, IVORY, anchor='lm', maxw=W-200-pw)
+            self.t(f'【{kw}】', 70, cy, 56, VERM, anchor='lm', outline='white')
+            self.t(body, 70+kw_w+28, cy, 54, 'white', anchor='lm', maxw=W-170-kw_w, outline='black')
 
     def arrow(self, x0, y, x1, color=GOLD):
         self.d.line((x0*S, y*S, (x1-18)*S, y*S), fill=color, width=6*S)
@@ -183,7 +191,7 @@ def four_foundations():
         x, y = (300, 930)[i % 2], (170, 435)[i//2]
         s.panel(x, y, 570, 235)
         s.icon(name, x+100, y+117, 48)
-        s.t(name, x+190, y+70, 92, INDIGO, 'round', anchor='lm')
+        s.t(name, x+190, y+70, 92, INDIGO, anchor='lm')
         s.t(sub, x+194, y+170, 38, VERM, anchor='lm')
     s.band([('ポイント', '占いはどれも、この4つを組み合わせてできている')])
     s.save()
@@ -198,7 +206,7 @@ def four_foundations():
         cx = x+c0+cw*j+cw/2
         s.d.ellipse(((cx-74)*S, (y+10)*S, (cx-2)*S, (y+82)*S), fill=IVORY)
         s.icon(f, cx-38, y+46, 26)
-        s.t(f, cx+8, y+46, 40, IVORY, 'round', anchor='lm')
+        s.t(f, cx+8, y+46, 40, IVORY, anchor='lm')
     rows = [('四柱推命', [1, 1, 1, 1], ''), ('九星気学・方位', [0, 1, 0, 1], '＋九星'), ('風水', [1, 1, 0, 0], '＋八卦')]
     for i, (name, marks, extra) in enumerate(rows):
         yy = y+92+rh*i
@@ -220,14 +228,14 @@ def four_foundations():
     # slide-2: 2026 = 丙午
     s = Slide(slug, '例：2026年は「丙午」', 2, rose=(1550, 420))
     s.panel(120, 175, 470, 470)
-    s.t('丙午', 355, 360, 150, INDIGO, 'round', anchor='mm')
+    s.t('丙午', 355, 360, 150, INDIGO, anchor='mm')
     s.t('ひのえうま', 355, 520, 44, VERM, anchor='mm')
     for i, (f, body) in enumerate([('干支', '丙（十干）＋ 午（十二支）'), ('五行', '丙も午も「火」'),
                                     ('陰陽', '丙は「陽」の火'), ('暦', '立春（2月4日）から丙午')]):
         y = 175 + i*122
         s.panel(650, y, 1030, 104, r=20)
         s.icon(f, 712, y+52, 30)
-        s.t(f, 770, y+52, 40, INDIGO, 'round', anchor='lm')
+        s.t(f, 770, y+52, 40, INDIGO, anchor='lm')
         s.t(body, 930, y+52, 44, INK, anchor='lm', maxw=730)
     s.band([('ポイント', '年の名前ひとつに、4つの土台がそろっている')])
     s.save('-slide-2')
@@ -239,9 +247,9 @@ def four_foundations():
         s.panel(x, 230, 460, 250, header=head, hfill=(INDIGO, TEAL, VERM)[i])
         if i == 1:
             s.icon('干支', x+120, 395, 40)
-            s.t(ex, x+180, 395, 76, INK, 'round', anchor='lm')
+            s.t(ex, x+180, 395, 76, INK, anchor='lm')
         else:
-            s.t(ex, x+230, 395, 64, INK, 'round', anchor='mm', maxw=420)
+            s.t(ex, x+230, 395, 64, INK, anchor='mm', maxw=420)
         if i < 2:
             s.arrow(x+478, 355, x+545)
     s.band([('ポイント', '言葉を見れば、どの土台の話かが分かる')])
@@ -253,7 +261,7 @@ def four_foundations():
                                                   ('天中殺', 'いつ', ['干支'], '干支（生まれた日）', TEAL)]):
         x = 170 + i*760
         s.panel(x, 180, 700, 420, header=head, hfill=col)
-        s.t(f'「{q}」', x+350, 340, 92, col, 'round', anchor='mm')
+        s.t(f'「{q}」', x+350, 340, 92, col, anchor='mm')
         w = font(50).getlength(base)/S + 90*len(fs)
         xx = x+350-w/2
         for f in fs:
@@ -270,7 +278,7 @@ def four_foundations():
         s.panel(x, 200, 700, 380)
         for k, f in enumerate(fs):
             s.icon(f, x+80+k*90, 270, 34)
-        s.t(title, x+50, 360, 54, col, 'round', maxw=600)
+        s.t(title, x+50, 360, 54, col, maxw=600)
         s.d.rounded_rectangle(((x+50)*S, 470*S, (x+650)*S, 540*S), 35*S, fill=VERM)
         s.t(url + '  →', x+350, 505, 36, 'white', anchor='mm', maxw=560)
     s.band([('ポイント', '土台が分かったら、自分の生年月日で確かめる')])

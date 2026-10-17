@@ -111,7 +111,7 @@ npx prettier --check --ignore-unknown README.md docs/blog-slide-design.md script
 
 PrettierはMarkdownとJavaScriptを検査し、対応パーサーのないPythonとPNGは`--ignore-unknown`で除外する。
 
-# v24「夜の方位盤」スタイル（`scripts/blog/slides_v24.py`、v23 の見た目を継承）
+# v25「夜の方位盤」スタイル（`scripts/blog/slides_v25.py`、v24 の構成・色・印を継承）
 
 v21（`slides_v20.py`）はそのまま残す。暗い背景・大きな中央の図・下部の字幕帯・右上の小さな札という
 構成だけを講座動画の画面から借り、色・形・図版はすべて cloud-palette 独自に描く
@@ -128,6 +128,14 @@ v21（`slides_v20.py`）はそのまま残す。暗い背景・大きな中央�
 | 注記         | 左下に「伝統的な占術の考え方・効果が科学的に確認されたものではありません」、右下にページ番号                                                                                                         |
 | 書体         | 本文 Noto Sans CJK JP Bold、強調 M PLUS Rounded 1c Black、数字 Dela Gothic One                                                                                                                       |
 | 出力         | 1800×945、2倍で組んで縮小、160色に量子化、300,000 bytes以下                                                                                                                                          |
+
+## v25 での変更（書体と縁取り）
+
+- 丸ゴシックをやめ、見出し・カード・帯の文字をすべて角ゴシックの極太 Noto Sans CJK JP Black（OFL、
+  `~/.local/share/fonts/ofl/NotoSansCJKjp-Black.otf`、リポジトリには入れない）に統一。数字の一部は Dela Gothic One
+- 暗い背景の上の文字（大見出し・帯の本文）は白字＋黒の太い縁（字の大きさの8%、Pillow の stroke_fill）＋ぼかした濃い影
+- 帯のキーワードはピルをやめ、朱の `【ポイント】` に白の太い縁＋影
+- カードの中（アイボリー地）の文字は縁取りなし
 
 ## v24 での変更（構成）
 
