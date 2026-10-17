@@ -489,7 +489,7 @@ export function AccountPanel() {
         </h2>
         <p className="mt-2 max-w-[70ch] text-xs leading-relaxed text-stone-600">
           {
-            "生年月日・出生地・いま住んでいる場所・目的地・プロフィールの一覧・設定バーの好み・保存した候補・登録した地点・残した分析を、アカウントからもこの端末からも消します。元に戻せません。"
+            "生年月日・出生地・いま住んでいる場所・目的地・プロフィールの一覧・設定バーの好み・保存した候補・登録した地点・残した分析・AI相談の会話・相談メモ・人物プロフィールを、アカウントからもこの端末からも消します。元に戻せません。"
           }
         </p>
         <p className="mt-2 max-w-[70ch] text-xs leading-relaxed text-stone-600">

@@ -6,6 +6,7 @@ import {
   runAgent,
   createAgentModel,
   type AgentEvent,
+  type AgentConversationContext,
 } from "@/lib/mcpAgent";
 import { chainLlmState } from "@/lib/mcpAgentConfig";
 import { createAgentMock } from "@/lib/mcpAgentMock";
@@ -21,6 +22,7 @@ async function run(
   limits = AGENT_LIMITS,
   change?: (c: Awaited<ReturnType<typeof connectChainClient>>) => void,
   model = createAgentMock(),
+  context: AgentConversationContext = {},
 ) {
   const connection = await connectChainClient();
   const events: AgentEvent[] = [];
@@ -34,6 +36,8 @@ async function run(
       (e) => events.push(e),
       undefined,
       limits,
+      {},
+      context,
     );
   } finally {
     await connection.close();
@@ -72,6 +76,32 @@ describe("AIが公開MCPを選ぶループ", () => {
       ),
     ).toBe(true);
     expect(events.at(-1)).toEqual({ type: "done", calls: 4, reasons: [] });
+  });
+  it("過去の相談メモと複数人を命令ではない文脈としてモデルへ渡す", async () => {
+    const model = createAgentMock();
+    await run(AGENT_LIMITS, undefined, model, {
+      memories: ["2027年3月10日に北東へ動く候補を選んだ。"],
+      people: [
+        {
+          id: "person_1",
+          name: "本人",
+          birthDate: "1990-05-05",
+          residence: "長崎市",
+        },
+        {
+          id: "person_2",
+          name: "配偶者",
+          birthDate: "1992-08-10",
+          birthPlace: "福岡市",
+          residence: "長崎市",
+        },
+      ],
+    });
+    const prompt = JSON.stringify(model.doStreamCalls[0].prompt);
+    expect(prompt).toContain("BEGIN_PEOPLE_PROFILE_DATA");
+    expect(prompt).toContain("配偶者");
+    expect(prompt).toContain("BEGIN_REMEMBERED_CONSULTATIONS");
+    expect(prompt).toContain("2027年3月10日");
   });
   it("モデルの例外に含まれる質問・鍵をログにも回答にも出さない", async () => {
     const log = vi.spyOn(console, "error").mockImplementation(() => {});

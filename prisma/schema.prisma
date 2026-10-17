@@ -77,6 +77,9 @@ model user_configs {
   baseline_gsr_std     Float?
   encrypted_gemini_key String?
   presets              Json?
+  /// 「AIに聞く」の会話・相談メモ・相談対象。匿名時と同じ version 付きJSONを
+  /// ログイン時だけ同期する。集計・ログには使わず、アカウント削除では行ごと消す。
+  ask_data             Json?
   /// 設定バーの表示・判定の好み（盤の種類・月盤の方式・方位の絞り込み・
   /// 行動意図・時支の時刻基準）をまとめて入れる。
   ///
