@@ -2,9 +2,13 @@ import { chainLlmState } from "@/lib/mcpAgentConfig";
 import { voiceState } from "@/lib/mcpVoiceConfig";
 import { canUseAgent } from "@/lib/agentEntitlement";
 import { clientKey } from "@/lib/apiGuard";
+import { agentSessionUser } from "@/lib/agentSession";
 export const dynamic = "force-dynamic";
-export function GET(request: Request) {
+export async function GET(request: Request) {
   const { enabled, mock } = chainLlmState();
+  const session = enabled
+    ? await agentSessionUser(request)
+    : { signedIn: false };
   return Response.json(
     {
       enabled,
@@ -12,6 +16,9 @@ export function GET(request: Request) {
       voiceEnabled: voiceState().enabled,
       voiceMock: voiceState().mock,
       remaining: canUseAgent({
+        ...("userId" in session && session.userId
+          ? { userId: session.userId }
+          : {}),
         ip: clientKey(request.headers),
         mode: "llm",
         inspect: true,

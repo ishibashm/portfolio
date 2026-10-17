@@ -6,10 +6,16 @@ import { formatFollowUpEnvelope } from "./followUpSuggestions";
 /** ローカル確認専用。質問の解析はせず、画面に明示した固定例を計算する。 */
 export function createAgentMock() {
   return new MockLanguageModelV3({
-    doStream: async ({ prompt }) => {
-      const results = prompt
+    doStream: async ({ prompt, tools }) => {
+      const allResults = prompt
         .flatMap((m) => (m.role === "tool" ? m.content : []))
         .filter((p) => p.type === "tool-result");
+      // 保存の提案は計算ではないので、手順の数には入れない。
+      const results = allResults.filter((r) => r.toolName !== "propose_save");
+      const offerSave =
+        results.length >= 4 &&
+        Boolean(tools?.some((t) => t.name === "propose_save")) &&
+        !allResults.some((r) => r.toolName === "propose_save");
       const read = (name: string) => {
         const result = results.find((r) => r.toolName === name)?.output;
         if (result?.type === "text") {
@@ -59,7 +65,19 @@ export function createAgentMock() {
       const parts: LanguageModelV3StreamPart[] = [
         { type: "stream-start", warnings: [] },
       ];
-      if (results.length < 4) {
+      if (offerSave) {
+        parts.push({
+          type: "tool-call",
+          toolCallId: "mock-save",
+          toolName: "propose_save",
+          input: JSON.stringify({
+            reason: "save_result",
+            resultCallIds: results
+              .filter((r) => r.toolName === "find_auspicious_days")
+              .map((r) => r.toolCallId),
+          }),
+        });
+      } else if (results.length < 4) {
         parts.push({
           type: "tool-call",
           toolCallId: `mock-${results.length}`,
@@ -109,7 +127,7 @@ export function createAgentMock() {
       parts.push({
         type: "finish",
         finishReason: {
-          unified: results.length < 4 ? "tool-calls" : "stop",
+          unified: results.length < 4 || offerSave ? "tool-calls" : "stop",
           raw: undefined,
         },
         usage: {
