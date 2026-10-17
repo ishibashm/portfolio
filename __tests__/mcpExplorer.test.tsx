@@ -692,3 +692,60 @@ it("回答中に別チャットへ移ると元の回答を中止状態にする"
   expect(screen.getByText("回答を中止しました。")).toBeTruthy();
   await act(async () => controller.close());
 });
+
+it("不足項目カードを優先し、閉じた会話では再読込しても繰り返さない", async () => {
+  const guidance = {
+    intent: "move",
+    values: {},
+    fields: ["birthDate", "municipality"],
+    links: [],
+  };
+  const fetcher = vi.fn(async (url: string) => {
+    if (url.includes("status"))
+      return Response.json({ remaining: { requests: 20 } });
+    if (url !== "/api/mcp-chain") return Response.json({}, { status: 401 });
+    return new Response(
+      [
+        { type: "text-delta", text: "条件を確認しましょう。" },
+        {
+          type: "done",
+          calls: 0,
+          reasons: [],
+          guidance,
+          suggestions: ["別の候補も比べる？"],
+        },
+      ]
+        .map((event) => JSON.stringify(event))
+        .join("\n") + "\n",
+    );
+  });
+  vi.stubGlobal("fetch", fetcher);
+  const first = render(<McpExplorer agentEnabled persistConversation />);
+  fireEvent.change(await screen.findByLabelText("メッセージ"), {
+    target: { value: "引越しを考えています" },
+  });
+  fireEvent.click(screen.getByRole("button", { name: "送信" }));
+  await screen.findByLabelText("計算ページへの案内");
+  expect(
+    screen.queryByRole("button", { name: "別の候補も比べる？" }),
+  ).toBeNull();
+  fireEvent.change(screen.getByLabelText("生年月日"), {
+    target: { value: "1990-05-05" },
+  });
+  fireEvent.click(screen.getByRole("button", { name: "今はしない" }));
+  await waitFor(() => {
+    const stored = localStorage.getItem(ASK_DATA_STORAGE_KEY) ?? "";
+    expect(stored).toContain('"guidancePrompted":true');
+    expect(stored).not.toContain("1990-05-05");
+  });
+  first.unmount();
+  render(<McpExplorer agentEnabled persistConversation />);
+  fireEvent.change(await screen.findByLabelText("メッセージ"), {
+    target: { value: "続きを相談したい" },
+  });
+  fireEvent.click(screen.getByRole("button", { name: "送信" }));
+  await waitFor(() =>
+    expect(screen.getAllByText("条件を確認しましょう。")).toHaveLength(2),
+  );
+  expect(screen.queryByLabelText("計算ページへの案内")).toBeNull();
+});

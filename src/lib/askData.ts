@@ -50,6 +50,8 @@ export interface AskConversation {
   id: string;
   title: string;
   titleEdited: boolean;
+  /** Input values are never stored here; only suppress repeated guidance. */
+  guidancePrompted?: boolean;
   createdAt: string;
   updatedAt: string;
   messages: AskStoredMessage[];
@@ -309,6 +311,7 @@ function parseConversation(
     id: conversationId,
     title: text(item.title, 80) || titleFromMessages(messages),
     titleEdited: item.titleEdited === true,
+    ...(item.guidancePrompted === true ? { guidancePrompted: true } : {}),
     createdAt,
     updatedAt: timestamp(item.updatedAt, createdAt),
     messages,

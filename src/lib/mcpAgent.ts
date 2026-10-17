@@ -1,3 +1,5 @@
+import { guidanceFromResults } from "./askGuidanceServer";
+import type { GuidanceCard, GuidanceSource } from "./askGuidance";
 import { AGENT_PAUSED_REASON, AGENT_PAUSED_TEXT } from "./agentPausedText";
 export { AGENT_PAUSED_REASON, AGENT_PAUSED_TEXT } from "./agentPausedText";
 import {
@@ -191,6 +193,7 @@ export type AgentEvent =
       reasons: string[];
       suggestions?: string[];
       source?: AnswerSource;
+      guidance?: GuidanceCard;
     };
 export const SHIRUBE_PERSONA =
   "あなたは「方位と住まいの手帖 by cloud-palette」の初代案内役「しるべ」です。落ち着いて親切な、親しみのある若い男性の案内役として、方位と住まいの知識を温かく簡潔に伝えます。一人称は「私」、語尾は「です」「ます」を使い、利用者を急かしたり不安をあおったりしません。";
@@ -457,6 +460,7 @@ export async function runAgent(
   const pending = new Set<Promise<unknown>>();
   const executions = new Map<string, Promise<unknown>>();
   const sources: BlockSources = new Map();
+  const guidanceSources: GuidanceSource[] = [];
   const emittedBlocks = new Set<string>();
   const emitBlocks = (blocks: AnswerBlock[]) => {
     const fresh = uniqueAnswerBlocks(blocks, emittedBlocks);
@@ -520,6 +524,7 @@ export async function runAgent(
             return previous.then((output) => {
               if ([...sources.values()].some((s) => s.output === output))
                 sources.set(toolCallId, { tool: entry.name, output });
+              guidanceSources.push({ tool: entry.name, input, output });
               return output;
             });
           const execution = (async () => {
@@ -566,6 +571,7 @@ export async function runAgent(
               );
               if (Date.now() - started >= timeout) throw new Error("時間上限");
               sources.set(toolCallId, { tool: entry.name, output });
+              guidanceSources.push({ tool: entry.name, input, output });
               const summary = summarizeTool(entry.name, output);
               emit({
                 type: "tool-result",
@@ -903,9 +909,23 @@ export async function runAgent(
           : serverSummary(sources),
       );
     }
+    const guidance = signal.aborted
+      ? undefined
+      : guidanceFromResults(
+          question,
+          [
+            ...(input.history ?? [])
+              .filter((message) => message.role === "user")
+              .map((message) => message.content),
+            question,
+          ].join("\n"),
+          guidanceSources,
+          input.people?.length === 1 ? input.people[0] : input.profile,
+        );
     emit({
       type: "done",
       source: answerSource(sources.values()),
+      ...(guidance ? { guidance } : {}),
       calls,
       reasons: [...reasons],
       ...(suggestions.length ? { suggestions } : {}),
