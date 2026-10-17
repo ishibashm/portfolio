@@ -783,3 +783,10 @@ AIチャットの補足（2026-10-17）:
 MCP_AGENT_PROVIDERは未設定ならgoogle。既存のGoogleモデルと無料枠運用を維持する。xaiを明示した場合だけAI SDKのxAIプロバイダーを使い、XAI_API_KEYとXAI_AGENT_MODELの両方が必要。モデル名は推測せず、未設定なら無効にする。未知のproviderも無効。OpenAIやWeb検索のモードは追加しない。
 Googleのfallbackは従来のMCP_AGENT_FALLBACK_MODEL、xAIはXAI_AGENT_FALLBACK_MODEL（既定は切替なし）。常に同一プロバイダー内で、別プロバイダーへの自動切替はしない。402/残高切れは従来どおり再試行・切替・追加要約を停止する。台帳のモデル名はprovider:model。statusにもproviderを返す。
 deploy.ymlはrepo変数MCP_AGENT_PROVIDER・XAI_AGENT_MODELを渡せるようにするだけで、この変更で本番の変数や既定値は変更しない。本番でxAIを選ぶ前にSecret Manager化（#1683）、残高・自動チャージ設定、選択モデルの料金・USD上限を確認する。実キーによる動作確認・課金は今回実施しない。
+
+### テキストAIのUSD日次上限（2026-10-17）
+
+canUseAgentを唯一のLLM入口として、MCP_AGENT_DAILY_BUDGET_USD（既定0.20、0は停止、不正値も停止）をJSTの日付ごと・プロセス内で管理する。実行前に既存の524288トークン予約と主モデル・fallbackの最大単価からUSDを予約する。完了時は各モデルのSDK usage×入力/出力単価で精算し、usage不明・失敗・中断時は予約を保持する。二重finishは無効。日跨ぎでも開始日に精算する。
+単価表の未知値はnull。MCP_AGENT_PRICING_JSONにprovider:modelをキー、input/output（USD/100万トークン）を値として確認済みの単価を設定できる。xAIや未知モデルは単価が無ければ呼ばない。主モデルの単価が無いときだけAI回答を止め、単価の無いfallbackは予約に含めず切替もしない（主モデルは止めない）。/api/mcp-chain/status の aiPriced で単価がそろっているか（値は返さない）を確認できる。既定Googleのgemini-3.5-flashとgemini-3.5-flash-liteのみ、従来の無料枠運用を明示して0ドルとする。Googleの有料枠ではMCP_AGENT_GOOGLE_FREE_TIER=falseと確認済み単価が必要。不正な無料枠フラグでは無料扱いしない。
+超過は429と「本日のAI回答の枠が終わりました」、X-Agent-Remaining-USDを返す。計算のみと無料FAQ・資料抜粋は利用できる。既存の回数・トークン上限と402停止は維持する。agent_usageログには推定costUsdだけを追加し、DB記録・個人情報の保存は追加しない。
+これはテキストAIの概算上限で、音声費用は対象外。共有ストアではなく、再起動でリセットされる。max-instances=2では0.20ドル設定は最大0.40ドル相当／日（再起動が無い場合）。保守的な予約額が上限に収まらないモデルは実行前に止まる。厳密な総額保証には共有台帳が必要で、今回DB・本番設定は変更しない。
