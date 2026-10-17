@@ -56,6 +56,7 @@ jobs:
         env:
           ENV_FILE_CONTENT: ${{ secrets.ENV_FILE }}
           DATABASE_URL_OVERRIDE: ${{ secrets.DATABASE_URL_OVERRIDE }}
+          ESTAT_APP_ID_OVERRIDE: ${{ secrets.ESTAT_APP_ID }}
         run: |
           if [ -z "$ENV_FILE_CONTENT" ]; then
             echo "::error::secrets.ENV_FILE is empty. DATABASE_URL / ESTAT_APP_ID are required."
@@ -63,6 +64,7 @@ jobs:
           fi
           echo "$ENV_FILE_CONTENT" > .env
           bash scripts/apply-db-override.sh
+          bash scripts/apply-estat-override.sh
 
       - name: Import
         env:
