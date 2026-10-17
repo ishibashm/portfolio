@@ -761,3 +761,8 @@ AIチャットの補足（2026-10-17）:
 - **止める：**メールの「お知らせを止める」は確認ページ（GET は何も変えない）→ POST で撤回。`List-Unsubscribe` / `List-Unsubscribe-Post`（RFC 8058 の1クリック）にも対応。アカウントのページからも1件ずつ取り消し・すべて停止ができる。登録内容の一括削除は `reminders` と `notification_consents` も消す。
 - **メールでのログイン：**`EMAIL_LOGIN_ENABLED=true` のときだけ `/login` に出す（`GET /api/auth/methods`）。Supabase のマジックリンク（`signInWithOtp`）で、戻り先は Google と同じ `/auth/callback?next=`。
 - **表：**`prisma/sql/20261017_add_reminders.sql`（追加のみ。RLS 有効・anon/authenticated の権限なし・auth.users を消すと連鎖削除）。
+
+### Q&A 資料検索（2026-10-17）
+
+公開 MCP の道具数は増やさない。search_articles は公開記事の本文節、用語辞典の行、llms.txt と共有する判定方針を文字 bi-gram BM25 と同義語で検索し、既存項目に kind・score・snippet・section を追加する。記事は1記事1件まで返す。get_article は任意の section（見出し完全一致）から4000字を取得できる。
+索引は既存のDB→Markdown読み取りを共有し、公開資料の内容ハッシュで更新するプロセス内キャッシュ。質問・個人情報は保存しない。内部仕様書・下書きは索引に含めない。記事の記述は個人の暦・方位判定の代用にはしない。

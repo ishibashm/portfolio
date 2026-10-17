@@ -1,12 +1,13 @@
+import { blocksFromTool } from "@/lib/answerBlockBuilder";
 // @vitest-environment node
 import { afterEach, expect, it, vi } from "vitest";
 import { searchArticles, getArticle } from "@/lib/mcpArticles";
-import { loadBlogPosts, loadBlogPost } from "@/lib/blogStore";
+import { loadSearchableBlogPosts, loadBlogPost } from "@/lib/blogStore";
 import { connectChainClient } from "@/lib/mcpChain";
 import { runAgent, type AgentEvent } from "@/lib/mcpAgent";
 import { MockLanguageModelV3 } from "ai/test";
 vi.mock("@/lib/blogStore", () => ({
-  loadBlogPosts: vi.fn(),
+  loadSearchableBlogPosts: vi.fn(),
   loadBlogPost: vi.fn(),
 }));
 afterEach(() => vi.restoreAllMocks());
@@ -19,9 +20,10 @@ const article = {
   draft: false,
   category: "方位",
   readingMinutes: 1,
+  body: "## 概要\n引越しの日取りと方位",
 };
 it("公開記事だけ・検索上限・返却フィールド", async () => {
-  vi.mocked(loadBlogPosts).mockResolvedValue([
+  vi.mocked(loadSearchableBlogPosts).mockResolvedValue([
     { ...article, draft: true },
     ...Array.from({ length: 9 }, (_, i) => ({
       ...article,
@@ -30,7 +32,7 @@ it("公開記事だけ・検索上限・返却フィールド", async () => {
   ]);
   const result = await searchArticles({ query: "方位", limit: 5 });
   expect(result.articles).toHaveLength(5);
-  expect(result.articles[0]).toEqual({
+  expect(result.articles.find((a) => a.slug === "moving-0")).toMatchObject({
     title: article.title,
     slug: "moving-0",
     description: article.description,
@@ -63,7 +65,7 @@ it("draft・存在しないslugを返さない。本文は見出しごとに上�
   await expect(getArticle({ slug: "../secret" })).rejects.toThrow();
 });
 it("モックモデルが記事を探し、区切った結果からURLを引用する", async () => {
-  vi.mocked(loadBlogPosts).mockResolvedValue([article]);
+  vi.mocked(loadSearchableBlogPosts).mockResolvedValue([article]);
   const model = new MockLanguageModelV3({
     doStream: async ({ prompt }) => {
       const result = prompt
@@ -200,4 +202,75 @@ it("AIへ渡す道具結果は6000文字まで。記事内の命令もデータ�
     await connection.close();
   }
   expect(model.doStreamCalls).toHaveLength(2);
+});
+
+it("本文・同義語を順位付けし、更新・非公開化を索引に反映する", async () => {
+  vi.mocked(loadSearchableBlogPosts).mockResolvedValue([
+    { ...article, body: "## 日取りの決め方\n引っ越しの日取りを考えます。" },
+    {
+      ...article,
+      slug: "second",
+      title: "契約",
+      body: "## 生活\n引越しの日取りと契約",
+    },
+  ]);
+  const first = await searchArticles({ query: "引越し 何日", limit: 5 });
+  expect(first.articles.filter((a) => a.kind === "article")).toHaveLength(2);
+  expect(first.articles[0]).toMatchObject({
+    score: expect.any(Number),
+    section: expect.any(String),
+    snippet: expect.any(String),
+  });
+  vi.mocked(loadSearchableBlogPosts).mockResolvedValue([]);
+  const next = await searchArticles({ query: "引越し 何日", limit: 5 });
+  expect(next.version).not.toBe(first.version);
+  expect(next.articles.every((a) => a.kind !== "article")).toBe(true);
+});
+
+it("4000字以降の指定見出しを取得し、存在しない見出しは返さない", async () => {
+  vi.mocked(loadBlogPost).mockResolvedValue({
+    ...article,
+    body: "## 前半\n" + "あ".repeat(4500) + "\n## 後半\n知りたい本文",
+  });
+  expect(await getArticle({ slug: "moving", section: "後半" })).toMatchObject({
+    found: true,
+    sections: [{ heading: "後半", text: "知りたい本文" }],
+  });
+  expect(await getArticle({ slug: "moving", section: "なし" })).toEqual({
+    found: false,
+  });
+});
+
+it("用語辞典と公開判定方針を検索する", async () => {
+  vi.mocked(loadSearchableBlogPosts).mockResolvedValue([]);
+  expect(
+    (await searchArticles({ query: "真北", limit: 5 })).articles.some(
+      (a) => a.kind === "spec",
+    ),
+  ).toBe(true);
+  expect(
+    (await searchArticles({ query: "本命星", limit: 5 })).articles.some(
+      (a) => a.kind === "glossary",
+    ),
+  ).toBe(true);
+});
+
+it("資料カードは用語・判定方針をブログURLに変換しない", () => {
+  const blocks = blocksFromTool("search_articles", {
+    articles: [
+      {
+        slug: "glossary",
+        kind: "glossary",
+        title: "用語",
+        description: "説明",
+      },
+      { slug: "llms-txt", kind: "spec", title: "方針", description: "説明" },
+    ],
+  });
+  expect(blocks).toMatchObject([
+    {
+      type: "articles",
+      articles: [{ url: "/guide/glossary" }, { url: "/llms.txt" }],
+    },
+  ]);
 });

@@ -102,7 +102,7 @@ const ROW_FIELDS = {
 export async function loadBlogPosts(
   options: { quiet?: boolean } = {},
 ): Promise<BlogPostSummary[]> {
-  const posts = await loadAll(options);
+  const posts = await loadSearchableBlogPosts(options);
   // 一覧に本文は載せない。分割代入で捨てると未使用の変数が残るので、
   // 出す項目を並べる。
   return posts.map((post) => ({
@@ -150,7 +150,9 @@ export async function loadBlogPost(
   return getMarkdownBlogPost(slug);
 }
 
-async function loadAll(options: { quiet?: boolean }): Promise<BlogPost[]> {
+export async function loadSearchableBlogPosts(options: {
+  quiet?: boolean;
+}): Promise<BlogPost[]> {
   try {
     const rows = await prisma.blogPost.findMany({
       where: { published: true },

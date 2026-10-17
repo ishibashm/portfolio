@@ -1,3 +1,4 @@
+import { articleSections, searchIndex } from "./articleIndex";
 import { z } from "zod";
 import type { BlogPostSummary } from "./blog";
 
@@ -7,6 +8,7 @@ export const articleSearchSchema = {
 };
 export const articleGetSchema = {
   slug: z.string().regex(/^[a-z0-9][a-z0-9-]{0,119}$/),
+  section: z.string().trim().min(1).max(200).optional(),
 };
 function summary(p: BlogPostSummary) {
   return {
@@ -20,43 +22,33 @@ function summary(p: BlogPostSummary) {
 }
 export async function searchArticles(input: { query: string; limit?: number }) {
   const { query, limit } = z.object(articleSearchSchema).parse(input);
-  const { loadBlogPosts } = await import("./blogStore");
-  const words = query.toLocaleLowerCase("ja").split(/\s+/);
-  const posts = await loadBlogPosts({ quiet: true });
-  return {
-    articles: posts
-      .filter(
-        (p) =>
-          !p.draft &&
-          words.every((w) =>
-            [p.title, p.description, ...p.tags]
-              .join(" ")
-              .toLocaleLowerCase("ja")
-              .includes(w),
-          ),
-      )
-      .slice(0, limit)
-      .map(summary),
-  };
+  const { loadSearchableBlogPosts } = await import("./blogStore");
+  return searchIndex(
+    await loadSearchableBlogPosts({ quiet: true }),
+    query,
+    limit,
+  );
 }
-export async function getArticle(input: { slug: string }) {
-  const { slug } = z.object(articleGetSchema).parse(input);
+export async function getArticle(input: { slug: string; section?: string }) {
+  const { slug, section } = z.object(articleGetSchema).parse(input);
   const { loadBlogPost } = await import("./blogStore");
   const post = await loadBlogPost(slug, { quiet: true });
   if (!post || post.draft) return { found: false };
-  const excerpt = post.body.slice(0, 4000);
-  const sections: { heading: string; text: string }[] = [];
-  for (const part of excerpt.split(/(?=^#{1,6} )/m)) {
-    const lines = part.split("\n");
-    const heading = /^#{1,6} /.test(lines[0])
-      ? lines.shift()!.replace(/^#+ /, "")
-      : "";
-    sections.push({ heading, text: lines.join("\n") });
-  }
+  const all = articleSections(post.body);
+  const at = section ? all.findIndex((part) => part.heading === section) : 0;
+  if (at < 0) return { found: false };
+  const body = section
+    ? all
+        .slice(at)
+        .map((part) => `## ${part.heading}\n${part.text}`)
+        .join("\n")
+    : post.body;
+  const excerpt = body.slice(0, 4000);
+  const sections = articleSections(excerpt);
   return {
     found: true,
     ...summary(post),
     sections,
-    truncated: post.body.length > excerpt.length,
+    truncated: body.length > excerpt.length,
   };
 }

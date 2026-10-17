@@ -143,7 +143,12 @@ export function blocksFromTool(
       .map((a) => ({
         title: a.title,
         description: a.description,
-        url: `/blog/${a.slug}`,
+        url:
+          a.kind === "glossary"
+            ? "/guide/glossary"
+            : a.kind === "spec"
+              ? "/llms.txt"
+              : `/blog/${a.slug}`,
       }));
     return articles.length
       ? parseAnswerBlocks([{ type: "articles", articles }])
