@@ -214,8 +214,8 @@ jobs:
             sleep 0.3
           done
 
-          # 個人用接続画面は明示flagが無い間404。ログイン遷移も許容する。
-          for path in /profile/connections; do
+          # 個人用接続・ツール実行・記憶の画面は明示flagが無い間404。ログイン遷移も許容する。
+          for path in /profile/connections /profile/mcp /profile/memory; do
             code=$(curl -s -o /dev/null -w "%{http_code}" -A "cloud-palette-site-audit" "$BASE$path")
             if [ "$code" = "200" ]; then
               BODY=$(curl -s --compressed -A "cloud-palette-site-audit" "$BASE$path")
