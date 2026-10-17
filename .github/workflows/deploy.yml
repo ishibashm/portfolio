@@ -110,6 +110,15 @@ jobs:
           # （Cloud Run）へ渡す口が無かった。CRON_SECRET と同じ形。未設定なら
           # /indexnow-key.txt は 404 のまま（src/app/indexnow-key.txt/route.ts）。
           INDEXNOW_KEY: ${{ secrets.INDEXNOW_KEY }}
+          # 吉日のお知らせメール（Resend）とメールでのログイン。3 つの鍵
+          # （RESEND_API_KEY / REMINDER_FROM_EMAIL / REMINDER_SECRET）が
+          # そろうまで、お知らせは画面にも出ず送りもしない（src/lib/reminders.ts
+          # の remindersConfig）。EMAIL_LOGIN_ENABLED=true は Supabase 側で
+          # メールの送信元を設定してから入れる（src/lib/authMethods.ts）。
+          RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+          REMINDER_SECRET: ${{ secrets.REMINDER_SECRET }}
+          REMINDER_FROM_EMAIL: ${{ vars.REMINDER_FROM_EMAIL }}
+          EMAIL_LOGIN_ENABLED: ${{ vars.EMAIL_LOGIN_ENABLED }}
           # Billing Export の参照先は秘密情報ではないため repository variables
           # から渡す。Cloud Run 実行 SA の ADC を使い、JSON 鍵は作らない。
           GCP_BILLING_EXPORT_TABLE: ${{ vars.GCP_BILLING_EXPORT_TABLE }}
@@ -197,6 +206,11 @@ jobs:
           if [ -n "$INDEXNOW_KEY" ]; then
             echo "INDEXNOW_KEY=$INDEXNOW_KEY" >> .env
           fi
+          for name in RESEND_API_KEY REMINDER_SECRET REMINDER_FROM_EMAIL EMAIL_LOGIN_ENABLED; do
+            if [ -n "${!name}" ]; then
+              printf '%s=%s\n' "$name" "${!name}" >> .env
+            fi
+          done
           if [ -n "$GCP_BILLING_EXPORT_TABLE" ]; then
             echo "GCP_BILLING_EXPORT_TABLE=$GCP_BILLING_EXPORT_TABLE" >> .env
             echo "GCP_BILLING_TARGET_PROJECT_ID=$GCP_BILLING_TARGET_PROJECT_ID" >> .env

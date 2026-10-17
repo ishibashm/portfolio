@@ -79,6 +79,8 @@ import {
   stashConversationForResume,
   withResumedConversation,
 } from "@/lib/saveOfferResume";
+import type { ReminderOfferCard as ReminderOfferCardData } from "@/lib/reminderText";
+import { ReminderOfferCard } from "./ReminderOfferCard";
 
 const GrokVoice = dynamic(() => import("@/components/home/GrokVoice"), {
   ssr: false,
@@ -99,6 +101,8 @@ type ChatMessage = {
   suggestions?: string[];
   /** サーバーが書いた保存の提案。端末にもアカウントにも保存しない。 */
   saveOffer?: { card: SaveOfferCardData; status: SaveOfferStatus };
+  /** サーバーが署名したお知らせの提案（ログイン中だけ届く）。保存しない。 */
+  reminderOffers?: ReminderOfferCardData[];
 };
 type ChatConversation = Omit<AskConversation, "messages"> & {
   messages: ChatMessage[];
@@ -499,6 +503,12 @@ function ConversationMessage({
               onDecline={() => onSaveOffer(message.id, "decline")}
             />
           )}
+          {message.reminderOffers?.map((card) => (
+            <ReminderOfferCard
+              key={`${card.date}:${card.direction}`}
+              card={card}
+            />
+          ))}
         </article>
       </div>
     </div>
@@ -1300,6 +1310,22 @@ export function McpExplorer({
             saveOffer: { card: item.offer, status: "open" },
           }));
           postSaveOffer("shown", surface, item.offer.conversationKey);
+        } else if (item.type === "reminder-offer") {
+          updateAssistant(assistantId, (current) =>
+            (current.reminderOffers ?? []).some(
+              (card) =>
+                card.date === item.offer.date &&
+                card.direction === item.offer.direction,
+            ) || (current.reminderOffers?.length ?? 0) >= 3
+              ? current
+              : {
+                  ...current,
+                  reminderOffers: [
+                    ...(current.reminderOffers ?? []),
+                    item.offer,
+                  ],
+                },
+          );
         } else if (item.type === "tool-call")
           updateAssistant(assistantId, (current) => ({
             ...current,

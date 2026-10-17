@@ -294,6 +294,10 @@ export async function DELETE(request: NextRequest) {
       await tx.savedAnalysis.deleteMany({ where: { user_id: userId } });
       /* 日取りのお気に入り（favorite_days）も同じ。生年月日から出た判定が入る */
       await tx.favoriteDay.deleteMany({ where: { user_id: userId } });
+      /* 吉日のお知らせ（reminders）と、メールで受け取る同意の記録
+         （notification_consents）も本人の登録内容 */
+      await tx.reminder.deleteMany({ where: { user_id: userId } });
+      await tx.notificationConsent.deleteMany({ where: { user_id: userId } });
       await tx.listingCandidateRate.deleteMany({
         where: {
           key: {

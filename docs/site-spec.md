@@ -737,3 +737,13 @@ AIチャットの補足（2026-10-17）:
 - **ボタンは同じ大きさ・同じ見た目。**「結果を保存する」「今はしない」。Phase 1 はお知らせ（メール）を約束しない。保存される内容（会話・相談メモ・人物プロフィール・メール）と件数をボタンの上に出す。
 - **押したときは何もアップロードしない。**トップのチャットの会話は端末の相談（`cloud_palette_ask_data_v2`）へ移し、`/login?next=/ask?resume=<会話id>` へ進む。戻った `/ask` はクラウドの方が新しくてもその会話を足して開き、既存の `/api/ask-data` 同期が成功してから「おかえりなさい。この相談をアカウントに保存しました」と出す。
 - **計測は段階と画面だけ。**`{"event":"save_offer_funnel","stage":"shown|accepted|declined|resumed","surface":"home|ask"}` を1行ログに出す。会話の鍵・IP・UA・id・メールは記録しない。
+
+#### 吉日のお知らせ（メール）とメールでのログイン（Phase 2。2026-10-17）
+
+- **鍵がそろうまで完全に止まる。**`RESEND_API_KEY`・`REMINDER_FROM_EMAIL`・`REMINDER_SECRET`（32文字以上）の3つがそろったときだけ有効（`lib/reminders.ts` の `remindersConfig`）。無効のときは `GET /api/reminders` が DB を読まずに `{enabled:false}`、`POST`/`DELETE` は 404、`/api/cron/reminders` は 200 `{skipped:"disabled"}`、しるべに `stage_reminder` を見せず、アカウントの欄も出さない。
+- **しるべは日付を作れない。**`stage_reminder` はログイン中かつ有効なときだけ登録し、同じ回答の `find_auspicious_days` の結果にある日・方位だけをカードにする（1回の回答で3件まで、重複なし）。カードの文はサーバーが書き、日付・方位に24時間有効の署名を付ける。
+- **同意は別のチェックボックス（最初は外れている）。**入れるまで「お知らせを設定する」は押せない。「今はしない」と同じ見た目。`POST /api/reminders` は `consent: true` と署名・同一originを確かめ、同意（`notification_consents`：日時・ポリシーの版）とお知らせ（`reminders`：日付・方位・何日前・送る日）を1つのトランザクションで記録する。有効なお知らせは20件まで。
+- **送る：**`.github/workflows/reminders.yml` が毎日 07:05 JST に `POST /api/cron/reminders`（`CRON_SECRET`）。`scheduled → sending` を条件つきで取ってから送るので二重送信しない。同意が撤回されていれば送らない。宛先は送る時点の `user_configs.user_email`（お知らせの行にメールは持たない）。生年月日はメールに書かない。吉日を過ぎた未送信は取り消し、吉日から30日を過ぎた行は削除する。
+- **止める：**メールの「お知らせを止める」は確認ページ（GET は何も変えない）→ POST で撤回。`List-Unsubscribe` / `List-Unsubscribe-Post`（RFC 8058 の1クリック）にも対応。アカウントのページからも1件ずつ取り消し・すべて停止ができる。登録内容の一括削除は `reminders` と `notification_consents` も消す。
+- **メールでのログイン：**`EMAIL_LOGIN_ENABLED=true` のときだけ `/login` に出す（`GET /api/auth/methods`）。Supabase のマジックリンク（`signInWithOtp`）で、戻り先は Google と同じ `/auth/callback?next=`。
+- **表：**`prisma/sql/20261017_add_reminders.sql`（追加のみ。RLS 有効・anon/authenticated の権限なし・auth.users を消すと連鎖削除）。

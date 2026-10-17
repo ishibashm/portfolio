@@ -3,6 +3,7 @@ import { voiceState } from "@/lib/mcpVoiceConfig";
 import { canUseAgent } from "@/lib/agentEntitlement";
 import { clientKey } from "@/lib/apiGuard";
 import { agentSessionUser } from "@/lib/agentSession";
+import { remindersConfig } from "@/lib/reminders";
 export const dynamic = "force-dynamic";
 export async function GET(request: Request) {
   const { enabled, mock } = chainLlmState();
@@ -15,6 +16,8 @@ export async function GET(request: Request) {
       mock,
       voiceEnabled: voiceState().enabled,
       voiceMock: voiceState().mock,
+      // お知らせメールの鍵がそろっているか（中身は返さない）。
+      remindersEnabled: remindersConfig().enabled,
       remaining: canUseAgent({
         ...("userId" in session && session.userId
           ? { userId: session.userId }

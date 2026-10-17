@@ -1,0 +1,38 @@
+name: Send Reminder Emails
+
+# 吉日のお知らせメールを 1 日 1 回送る（src/app/api/cron/reminders/route.ts）。
+# Resend の鍵がそろっていなければ、エンドポイントは何もせず
+# {"skipped":"disabled"} を 200 で返すので、このジョブも緑のまま。
+
+on:
+  schedule:
+    # 毎日 22:05 UTC = 翌 07:05 JST
+    - cron: "5 22 * * *"
+  workflow_dispatch:
+
+concurrency:
+  group: reminders
+  cancel-in-progress: false
+
+jobs:
+  send:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Call reminders cron endpoint
+        env:
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+        run: |
+          if [ -z "$CRON_SECRET" ]; then
+            echo "::error::CRON_SECRET secret is not set."
+            exit 1
+          fi
+          code=$(curl -sS -X POST -o response.json -w "%{http_code}" \
+            -H "Authorization: Bearer $CRON_SECRET" \
+            https://cloud-palette.com/api/cron/reminders)
+          echo "HTTP $code"
+          cat response.json
+          echo
+          if [ "$code" != "200" ]; then
+            echo "::error::Reminder batch failed with HTTP $code"
+            exit 1
+          fi

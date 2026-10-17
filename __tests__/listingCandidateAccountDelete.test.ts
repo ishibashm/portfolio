@@ -12,6 +12,8 @@ const mock = vi.hoisted(() => ({
   spots: vi.fn(),
   analyses: vi.fn(),
   favoriteDays: vi.fn(),
+  reminders: vi.fn(),
+  consents: vi.fn(),
   revoke: vi.fn(),
   audit: vi.fn(),
 }));
@@ -38,6 +40,8 @@ beforeEach(() => {
       userSpot: { deleteMany: mock.spots },
       savedAnalysis: { deleteMany: mock.analyses },
       favoriteDay: { deleteMany: mock.favoriteDays },
+      reminder: { deleteMany: mock.reminders },
+      notificationConsent: { deleteMany: mock.consents },
       mcpGrant: { updateMany: mock.revoke },
       mcpAccessAudit: { create: mock.audit },
     }),
@@ -67,6 +71,17 @@ it("also clears the owner's saved spots, saved analyses and favorite days", asyn
   expect(mock.spots).toHaveBeenCalledWith({ where: { user_id: id } });
   expect(mock.analyses).toHaveBeenCalledWith({ where: { user_id: id } });
   expect(mock.favoriteDays).toHaveBeenCalledWith({ where: { user_id: id } });
+});
+it("also clears the owner's reminders and email consent records", async () => {
+  const res = await DELETE(
+    new NextRequest("https://example.com/api/user-config", {
+      method: "DELETE",
+      headers: { origin: "https://example.com" },
+    }),
+  );
+  expect(res.status).toBe(200);
+  expect(mock.reminders).toHaveBeenCalledWith({ where: { user_id: id } });
+  expect(mock.consents).toHaveBeenCalledWith({ where: { user_id: id } });
 });
 it("does not clear registered data from another origin", async () => {
   const res = await DELETE(

@@ -2,6 +2,7 @@ import Link from "next/link";
 import type { Metadata } from "next";
 import { UserRound } from "lucide-react";
 import { AccountPanel } from "@/components/account/AccountPanel";
+import { RemindersPanel } from "@/components/account/RemindersPanel";
 import { SITE_NAME } from "@/lib/siteStructure";
 import { SITE_URL } from "@/lib/siteUrl";
 
@@ -64,6 +65,8 @@ export default function Page() {
         </header>
 
         <AccountPanel />
+
+        <RemindersPanel />
 
         <footer className="border-t border-stone-200 pt-5 text-[11px] leading-relaxed text-stone-500">
           <p>

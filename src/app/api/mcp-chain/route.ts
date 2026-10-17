@@ -13,6 +13,7 @@ import {
 } from "@/lib/mcpAgent";
 import { chainLlmState } from "@/lib/mcpAgentConfig";
 import { agentSessionUser } from "@/lib/agentSession";
+import { reminderOfferCard, remindersConfig } from "@/lib/reminders";
 import {
   createSaveOfferGate,
   parseSaveOfferState,
@@ -168,6 +169,20 @@ export async function POST(request: Request): Promise<Response> {
                 memories: input.memories,
                 session: {
                   signedIn: session.signedIn,
+                  ...(() => {
+                    const config = remindersConfig();
+                    // お知らせは本人の id が取れるログイン中だけ（保存先が要る）。
+                    return config.enabled && session.userId
+                      ? {
+                          reminders: {
+                            offer: (offer: {
+                              date: string;
+                              direction: string;
+                            }) => reminderOfferCard(config.secret, offer),
+                          },
+                        }
+                      : {};
+                  })(),
                   saveOffer: createSaveOfferGate({
                     signedIn: session.signedIn,
                     conversationKey: input.conversationKey,
