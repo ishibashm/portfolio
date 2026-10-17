@@ -450,3 +450,34 @@ describe("AI API", () => {
     expect(events.some((e) => e.type === "text-delta")).toBe(true);
   });
 });
+
+describe("describeAgentFailure", () => {
+  it("提供元の状態とquotaIdだけを取り出し、入力は含めない", async () => {
+    const { describeAgentFailure } = await import("@/lib/mcpAgent");
+    const error = Object.assign(new Error("Bad Request"), {
+      name: "AI_APICallError",
+      statusCode: 429,
+      requestBodyValues: { contents: "1988-11-25 秘密の質問" },
+      responseBody: JSON.stringify({
+        error: {
+          status: "RESOURCE_EXHAUSTED",
+          message: "Quota exceeded",
+          details: [
+            {
+              violations: [
+                { quotaId: "GenerateRequestsPerMinutePerProjectPerModel" },
+              ],
+            },
+          ],
+        },
+      }),
+    });
+    const described = describeAgentFailure(error);
+    expect(described).toMatchObject({
+      statusCode: 429,
+      status: "RESOURCE_EXHAUSTED",
+      quotaIds: ["GenerateRequestsPerMinutePerProjectPerModel"],
+    });
+    expect(JSON.stringify(described)).not.toContain("秘密");
+  });
+});
