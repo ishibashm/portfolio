@@ -63,6 +63,11 @@ env:
   REPOSITORY: ${{ vars.GCP_REPOSITORY || 'portfolio-repo' }}
   SERVICE_NAME: ${{ vars.GCP_SERVICE_NAME || 'portfolio-app' }}
 
+# WIF の OIDC トークン発行に id-token: write が要る。
+permissions:
+  contents: read
+  id-token: write
+
 jobs:
   teardown:
     runs-on: ubuntu-latest
@@ -84,7 +89,9 @@ jobs:
       - name: Auth with GCP
         uses: google-github-actions/auth@v2
         with:
-          credentials_json: ${{ secrets.GCP_SA_KEY }}
+          # JSON 鍵（GCP_SA_KEY）をやめ、Workload Identity Federation で短命トークンを得る。
+          workload_identity_provider: ${{ vars.GCP_WIF_PROVIDER }}
+          service_account: ${{ vars.GCP_DEPLOY_SA }}
 
       - uses: google-github-actions/setup-gcloud@v2
         with:
