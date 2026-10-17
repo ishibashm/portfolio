@@ -1,4 +1,5 @@
 "use client";
+import { AGENT_PAUSED_REASON, AGENT_PAUSED_TEXT } from "@/lib/agentPausedText";
 
 import dynamic from "next/dynamic";
 import {
@@ -605,6 +606,7 @@ export function McpExplorer({
   const threadRef = useRef<HTMLDivElement | null>(null);
   const threadEndRef = useRef<HTMLDivElement | null>(null);
   const listId = useId();
+  const [billingPaused, setBillingPaused] = useState(false);
   const useAgent = agentEnabled && !calculationOnly;
   const activeConversation =
     conversations.find(
@@ -837,6 +839,7 @@ export function McpExplorer({
     void fetch("/api/mcp-chain/status", { signal: controller.signal })
       .then((response) => response.json())
       .then((data) => {
+        setBillingPaused(data.paused === "billing");
         if (data.remaining && revision === remainingRevision.current)
           setRemaining(String(data.remaining.requests));
       })
@@ -1314,6 +1317,9 @@ export function McpExplorer({
           }));
         else if (item.type === "done") {
           completed = true;
+          if (item.reasons.includes(AGENT_PAUSED_REASON))
+            setBillingPaused(true);
+          else if (!item.reasons.length) setBillingPaused(false);
           const suggestions = sanitizeFollowUpSuggestions(item.suggestions);
           updateAssistant(assistantId, (current) => ({
             ...current,
@@ -1446,6 +1452,9 @@ export function McpExplorer({
               setCalls((current) => [...current, item]);
             else if (item.type === "done") {
               completed = true;
+              if (item.reasons.includes(AGENT_PAUSED_REASON))
+                setBillingPaused(true);
+              else if (!item.reasons.length) setBillingPaused(false);
               setCalculationReasons(item.reasons);
               setCalculationFollowUps(
                 sanitizeFollowUpSuggestions(item.suggestions),
@@ -1792,6 +1801,11 @@ export function McpExplorer({
         </section>
       )}
 
+      {agentEnabled && billingPaused && (
+        <p role="status" className="rounded-xl bg-amber-50 p-3 text-sm">
+          {AGENT_PAUSED_TEXT}
+        </p>
+      )}
       <div className="flex flex-wrap items-center gap-4">
         {agentEnabled && (
           <label className="text-sm">
