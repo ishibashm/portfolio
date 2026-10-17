@@ -1,4 +1,5 @@
 "use client";
+import FaqPanel from "@/components/FaqPanel";
 import dynamic from "next/dynamic";
 import Link from "next/link";
 import { useState } from "react";
@@ -81,6 +82,7 @@ export function AgentEntry() {
           </button>
         </form>
       )}
+      {!opened && <FaqPanel onQuestion={setQuestion} />}
       <Link
         href="/ask"
         prefetch={false}

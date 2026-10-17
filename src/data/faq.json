@@ -1,0 +1,351 @@
+{
+  "version": 1,
+  "site": "Cloud Palette（https://cloud-palette.com）",
+  "basedOn": "ishibashm/portfolio origin/master 4f7983f（2026-10-17 JST 時点）の content/blog/*.md・src/lib/guideContent.ts（用語辞典）・src/app/llms.txt/route.ts",
+  "status": "草案（未レビュー・未実装）。表示前に人が記事本文と照合すること",
+  "rules": [
+    "答えは sources の記事・用語辞典にある記述だけで作る。数字・年は出典の本文と一致させる（実装時はテストで機械照合する）",
+    "個人の判定（本命星・方位・吉日）は答えに書かない。relatedTools の道具で計算する導線を出す",
+    "年に依存する記述は asOf を持たせ、その年を過ぎたら表示しないか更新する",
+    "九星気学は参考情報であると添える（既存 AGENT_SYSTEM と同じ扱い）",
+    "このファイルの文言を FAQPage 構造化データには使わない（lib/articleFaq.ts の『頁に出ている文言だけ』方針を守る）"
+  ],
+  "items": [
+    {
+      "id": "faq-goou-anken",
+      "question": "五黄殺と暗剣殺はどの方位ですか？",
+      "answer": "五黄殺は年盤で五黄土星が入った方位、暗剣殺はその正反対の方位です。2026年は年盤の中宮が一白水星で、五黄殺が南、暗剣殺が北です。この2つは本命星に関係なく誰にとっても同じ方位で、立春から翌年の立春まで1年間動きません。方位を変えれば避けられますが、待っても年内は変わりません。",
+      "asOf": "2026",
+      "sources": [
+        {
+          "type": "article",
+          "slug": "five-yellow-and-anken-satsu",
+          "section": "先に結論",
+          "url": "https://cloud-palette.com/blog/five-yellow-and-anken-satsu"
+        }
+      ],
+      "relatedTools": ["judge_directions"],
+      "chapter": "方位"
+    },
+    {
+      "id": "faq-honmei-teki",
+      "question": "本命殺と本命的殺の違いは？",
+      "answer": "盤の上で自分の本命星が回座している方位が本命殺、その真向かいが本命的殺です。2つは必ず対で生じ、自分の星の位置で決まるので人によって違う方位になります（五黄殺・暗剣殺が誰にとっても同じなのとは違います）。Cloud Palette では五大凶殺として扱い、段階は常に X で、候補に出しません。",
+      "sources": [
+        {
+          "type": "article",
+          "slug": "what-is-honmei-teki-satsu",
+          "section": "先に結論／どの方位か",
+          "url": "https://cloud-palette.com/blog/what-is-honmei-teki-satsu"
+        },
+        {
+          "type": "guide",
+          "slug": "glossary",
+          "section": "自分にまつわる言葉",
+          "url": "https://cloud-palette.com/guide/glossary"
+        }
+      ],
+      "relatedTools": ["get_honmei_star", "judge_directions"],
+      "chapter": "方位"
+    },
+    {
+      "id": "faq-tenchu-vs-kippo",
+      "question": "天中殺と吉方位は何が違うのですか？",
+      "answer": "吉方位は「どちらへ移るか」、天中殺は「いつ動くか」を見るもので、反対語ではありません。吉方位は主に九星気学の方位盤、天中殺は算命学の言葉（四柱推命では近い概念を空亡と呼ぶ）で、もともと別系統です。Cloud Palette は両方を一つの画面で確認できるよう重ねていますが、これはサイト独自の組み合わせで、すべての流派に共通する作法ではありません。",
+      "sources": [
+        {
+          "type": "article",
+          "slug": "tenchusatsu-and-lucky-directions",
+          "section": "先に結論／そもそも別の系統の考え方",
+          "url": "https://cloud-palette.com/blog/tenchusatsu-and-lucky-directions"
+        }
+      ],
+      "relatedTools": ["get_kanshi", "judge_directions"],
+      "chapter": "暦"
+    },
+    {
+      "id": "faq-move-in-tenchu",
+      "question": "天中殺に引っ越しても大丈夫ですか？",
+      "answer": "天中殺の引越しが不運を招くと確かめた資料はなく、天中殺だけを理由に取り消す必要はない、というのが記事の結論です。避ける場合、年天中殺に当たらない人なら厳格に避ける日は年108〜114日、当たる人（2026年時点では午未）なら2年まるごとです。もう引っ越していても取り消す計算はなく、次の移動は新居から判定します。",
+      "asOf": "2026",
+      "sources": [
+        {
+          "type": "article",
+          "slug": "moving-during-tenchusatsu",
+          "section": "先に結論",
+          "url": "https://cloud-palette.com/blog/moving-during-tenchusatsu"
+        }
+      ],
+      "relatedTools": ["get_kanshi"],
+      "chapter": "暦"
+    },
+    {
+      "id": "faq-doyou",
+      "question": "土用と土用殺は何が違いますか？",
+      "answer": "土用は「いつ動くか」に関わる期間、土用殺は「その期間にどの方位が塞がるか」という方位の話です。土用は立春・立夏・立秋・立冬のそれぞれ直前およそ18日間ずつ年に4回、合計およそ72日あります。Cloud Palette は土用の期間を太陽黄経で求めているため、市販の暦と日付が1日前後することがあります。",
+      "sources": [
+        {
+          "type": "article",
+          "slug": "doyou-and-doyousatsu",
+          "section": "先に結論／土用とは何か",
+          "url": "https://cloud-palette.com/blog/doyou-and-doyousatsu"
+        }
+      ],
+      "relatedTools": ["find_auspicious_days"],
+      "chapter": "暦"
+    },
+    {
+      "id": "faq-tensha-ichiryu",
+      "question": "天赦日や一粒万倍日に引っ越せば方位の凶は消えますか？",
+      "answer": "消えません。天赦日は年に5〜6回、一粒万倍日は年に60日前後あり、どちらも暦で機械的に決まる誰にとっても同じ「日そのものの吉」で、方位とは独立しています。五黄殺や本命殺の方位へ動く日が天赦日でも、方位の凶は消えないとされます。",
+      "sources": [
+        {
+          "type": "article",
+          "slug": "tensha-and-ichiryumanbai-for-moving-day",
+          "section": "先に結論",
+          "url": "https://cloud-palette.com/blog/tensha-and-ichiryumanbai-for-moving-day"
+        },
+        {
+          "type": "article",
+          "slug": "can-good-outweigh-a-bad-move",
+          "section": "（参照リンク）",
+          "url": "https://cloud-palette.com/blog/can-good-outweigh-a-bad-move"
+        }
+      ],
+      "relatedTools": ["find_auspicious_days"],
+      "chapter": "日取り"
+    },
+    {
+      "id": "faq-hidori-order",
+      "question": "引越しの日取りは何から決めればいいですか？",
+      "answer": "日取りでは、暦注（六曜・天赦日・一粒万倍日・土用。誰にとっても同じ）、方位（九星気学の年盤・月盤・日盤と天中殺。人によって違う）、生活の都合（退去日・入居日・仕事・業者の空き）の3つを見ます。このサイトの考え方では、決める順序は「方位 → 方位の段階が高い日 → 同じ段階の中で暦注」です。日の吉は方位の凶を消さないとされるためです。",
+      "sources": [
+        {
+          "type": "article",
+          "slug": "what-is-hidori-for-moving",
+          "section": "先に結論",
+          "url": "https://cloud-palette.com/blog/what-is-hidori-for-moving"
+        }
+      ],
+      "relatedTools": ["find_auspicious_days", "judge_directions"],
+      "chapter": "日取り"
+    },
+    {
+      "id": "faq-which-day",
+      "question": "方位を見るのは契約日・鍵の受け取り・搬入・初めて泊まる日・住民票のどれですか？",
+      "answer": "本人が新しい住まいで寝泊まりを始めた日とする説明が多く、契約日・鍵の受け取り・住民票の異動は数えないとされるのが一般的です。ただしこれは流派の解釈で、計算が決めることではありません。Cloud Palette の判定は移動する日を1つ受け取ってその日の盤で見るだけで、どの日を入れるかは使う人が決めます。盤は日盤が毎日、月盤が節入り、年盤が立春で切り替わるので、数日の差でも切り替わりをまたぐと答えが変わります。",
+      "sources": [
+        {
+          "type": "article",
+          "slug": "which-day-counts-as-moving-day",
+          "section": "先に結論",
+          "url": "https://cloud-palette.com/blog/which-day-counts-as-moving-day"
+        }
+      ],
+      "relatedTools": ["judge_directions"],
+      "chapter": "日取り"
+    },
+    {
+      "id": "faq-75days",
+      "question": "75日後に吉方位へ移れば、最初の凶方位は相殺されますか？",
+      "answer": "Cloud Palette は、75日後の吉方位への移動が最初の凶方位への移動を遡って相殺するとは判定しません。75日という条件が変えるのは「次の移動をどこから測るか」（起点）で、最初の移動の判定を消したり足し引きしたりはしません。相殺されるかどうかは流派で見解が分かれる解釈の領域なので、各移動の起点・方位・時期を分けて表示しています。",
+      "sources": [
+        {
+          "type": "article",
+          "slug": "does-a-lucky-move-cancel-an-unlucky-move",
+          "section": "先に結論",
+          "url": "https://cloud-palette.com/blog/does-a-lucky-move-cancel-an-unlucky-move"
+        }
+      ],
+      "relatedTools": ["judge_directions"],
+      "chapter": "方位"
+    },
+    {
+      "id": "faq-distance",
+      "question": "引越しの距離が近いと方位の影響は弱いのですか？",
+      "answer": "距離そのものは吉凶の強さを変えない、というのがこのサイトの扱いです（距離で重みを付ける処理は入れていません）。近いほど変わるのは判定の確かさで、既定の伝統区分では東西南北が30度・四隅が60度と幅が違い、住所の座標にも数百mの誤差があるため、5km未満の移動には「方位が定まらない」という注記を出します。判定そのものは隠しません。",
+      "sources": [
+        {
+          "type": "article",
+          "slug": "how-much-does-distance-matter",
+          "section": "先に結論／なぜ距離が効くのか",
+          "url": "https://cloud-palette.com/blog/how-much-does-distance-matter"
+        }
+      ],
+      "relatedTools": ["judge_directions", "area_directions"],
+      "chapter": "方位"
+    },
+    {
+      "id": "faq-fengshui-vs-kigaku",
+      "question": "風水と九星気学は何が違いますか？",
+      "answer": "別の体系です。このサイトは判定に九星気学を使い、風水（八宅）は混ぜずに並べて出していて、既定では評価に入れていません。八宅の吉方位は本命卦が決まった時点で4方位に固定され、年ごとに動かないのが九星気学と最も違うところです。同じ方位で答えが割れることは普通に起きますが、どちらかが間違いなのではなく見ている規則が違います。",
+      "sources": [
+        {
+          "type": "article",
+          "slug": "feng-shui-and-kigaku-side-by-side",
+          "section": "先に結論",
+          "url": "https://cloud-palette.com/blog/feng-shui-and-kigaku-side-by-side"
+        }
+      ],
+      "relatedTools": [],
+      "chapter": "流派"
+    },
+    {
+      "id": "faq-true-north",
+      "question": "方位は真北と磁北のどちらで判定していますか？",
+      "answer": "真北だけで判定しています。磁北は「方位磁針で測るとずれる」という注意としてのみ表示します。記事では、方位磁針の数字をそのまま真方位として読むと、東京では方位角の17.6%が別の八方位に落ちると計算しています。",
+      "sources": [
+        {
+          "type": "article",
+          "slug": "where-feng-shui-came-from",
+          "section": "先に結論",
+          "url": "https://cloud-palette.com/blog/where-feng-shui-came-from"
+        },
+        {
+          "type": "llms",
+          "slug": "llms.txt",
+          "section": "判定の考え方",
+          "url": "https://cloud-palette.com/llms.txt"
+        }
+      ],
+      "relatedTools": [],
+      "chapter": "計算仕様"
+    },
+    {
+      "id": "faq-board-switch",
+      "question": "年盤・月盤・日盤はいつ切り替わりますか？",
+      "answer": "年盤は立春、月盤は節入り（暦の1日ではありません）、日盤は毎日切り替わります。暦は日本時間で判定します。公開MCPの get_kanshi も、年は立春、月は節入り、日はJST0時で切り替えます。節気の時刻は計算値で、公式暦と数分の差があり得ます。",
+      "sources": [
+        {
+          "type": "article",
+          "slug": "which-day-counts-as-moving-day",
+          "section": "先に結論",
+          "url": "https://cloud-palette.com/blog/which-day-counts-as-moving-day"
+        },
+        {
+          "type": "guide",
+          "slug": "glossary",
+          "section": "暦にまつわる言葉",
+          "url": "https://cloud-palette.com/guide/glossary"
+        },
+        {
+          "type": "llms",
+          "slug": "llms.txt",
+          "section": "AI アシスタント向けの引用の指針",
+          "url": "https://cloud-palette.com/llms.txt"
+        }
+      ],
+      "relatedTools": ["get_kanshi", "get_honmei_star"],
+      "chapter": "計算仕様"
+    },
+    {
+      "id": "faq-grade-s-to-c",
+      "question": "三盤吉（S）でない日は引越しに使えませんか？",
+      "answer": "Cloud Palette の段階は3枚の盤の凶と吉の枚数で決まり、S（三盤吉）は3枚とも吉、A は2枚、B は1枚が吉、C は3枚とも平で、どれも凶は0枚です。凶の無い日を使うかどうかは「凶を避けること」と「吉を取ること」のどちらを目的にするかで考え方が分かれ、計算では決まりません。日取りの表では S〜C の日を段階の札つきで出し、「三盤吉（S）だけ」にも絞り込めます。",
+      "sources": [
+        {
+          "type": "article",
+          "slug": "days-without-bad-boards",
+          "section": "先に結論",
+          "url": "https://cloud-palette.com/blog/days-without-bad-boards"
+        }
+      ],
+      "relatedTools": ["find_auspicious_days"],
+      "chapter": "日取り"
+    },
+    {
+      "id": "faq-statistics",
+      "question": "方位や九星に統計的な裏づけはありますか？",
+      "answer": "記事の結論では、「占いは統計学だ」という説明は統計学の意味では成り立たず、筆者が確認できた範囲で九星気学の方位判断そのものを対象にした査読付きの検証研究は見当たりません。これは「効果が無いと証明された」ではなく「確かめられていない」という意味です。サイトでも、九星気学や六曜は科学的に効果が確認されたものではなく、判断材料のひとつとして扱っています。",
+      "sources": [
+        {
+          "type": "article",
+          "slug": "is-there-statistical-evidence-for-houi",
+          "section": "先に結論",
+          "url": "https://cloud-palette.com/blog/is-there-statistical-evidence-for-houi"
+        },
+        {
+          "type": "guide",
+          "slug": "glossary",
+          "section": "判定の位置づけについて",
+          "url": "https://cloud-palette.com/guide/glossary"
+        }
+      ],
+      "relatedTools": [],
+      "chapter": "考え方"
+    },
+    {
+      "id": "faq-nine-stars",
+      "question": "なぜ星は9つなのですか？",
+      "answer": "九星気学の数字は、もとは三行三列の魔方陣（4 9 2 / 3 5 7 / 8 1 6）で、縦・横・斜めのどの列を足しても15になります。この並びを洛書と呼び、方位を割り当てたものを九宮と呼びました。「一白は北」「五黄は中央」といった対応は、先に数の配置があってそこに意味が乗った、という順序です。",
+      "sources": [
+        {
+          "type": "article",
+          "slug": "why-nine-stars-and-that-order",
+          "section": "先に結論",
+          "url": "https://cloud-palette.com/blog/why-nine-stars-and-that-order"
+        }
+      ],
+      "relatedTools": [],
+      "chapter": "由来"
+    },
+    {
+      "id": "faq-kuubou-rule",
+      "question": "空亡（天中殺）の二支はどうやって決まるのですか？",
+      "answer": "六十干支を甲から癸までの10日ずつに区切ると、各組には十二支のうち二支が入りません。たとえば甲子から癸酉までの組には戌と亥が含まれないので、この組に属する日柱では戌亥を空亡として返します。これは干支の組み合わせから二支を求める規則で、その人が不幸になるという観測結果ではありません。空亡をどう評価するかは流派によって扱いが異なります。",
+      "sources": [
+        {
+          "type": "article",
+          "slug": "kuubou-schools-and-directions",
+          "section": "十干に対して残る二つの支",
+          "url": "https://cloud-palette.com/blog/kuubou-schools-and-directions"
+        }
+      ],
+      "relatedTools": ["get_kanshi"],
+      "chapter": "暦"
+    }
+  ],
+  "trivia": [
+    {
+      "id": "tv-rakusho-15",
+      "text": "九星の並びの元になった洛書は、縦・横・斜めのどの列を足しても15になる三行三列の魔方陣です。",
+      "source": "why-nine-stars-and-that-order"
+    },
+    {
+      "id": "tv-doyou-72",
+      "text": "土用は年に4回、合計するとおよそ72日あり、1年の約2割が土用です。",
+      "source": "doyou-and-doyousatsu"
+    },
+    {
+      "id": "tv-tensha-count",
+      "text": "天赦日は年に5〜6回、一粒万倍日は年に60日前後あります。どちらも誰にとっても同じ日です。",
+      "source": "tensha-and-ichiryumanbai-for-moving-day"
+    },
+    {
+      "id": "tv-sector-width",
+      "text": "Cloud Palette の既定の八方位は均等な45度ではなく、東西南北が30度・四隅が60度です。",
+      "source": "how-much-does-distance-matter"
+    },
+    {
+      "id": "tv-magnetic-tokyo",
+      "text": "東京で方位磁針の数字をそのまま真方位として読むと、方位角の17.6%が別の八方位に落ちます。",
+      "source": "where-feng-shui-came-from"
+    },
+    {
+      "id": "tv-hattaku-fixed",
+      "text": "風水（八宅）の吉方位は本命卦で4方位に固定され、九星気学のように年ごとには動きません。",
+      "source": "feng-shui-and-kigaku-side-by-side"
+    }
+  ],
+  "suggestedQuestions": {
+    "note": "空の会話・FAQ表示時に出す固定候補。押しても送信せず入力欄へ入れる（#1692 の候補チップと同じ挙動）。日付・地名・生年月日を含めない（site-spec『架空の生年月日や市区町村を例として補わない』）",
+    "items": [
+      "自分の本命星を調べたい",
+      "今年避ける方位を知りたい",
+      "引越しの日取りの決め方を知りたい",
+      "天中殺の期間に引っ越してもいい？",
+      "近い距離の引越しでも方位は気にする？",
+      "風水と九星気学の違いは？"
+    ]
+  }
+}
