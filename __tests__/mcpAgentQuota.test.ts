@@ -465,9 +465,73 @@ it("前払い残高切れ（402）は再試行も切替も要約もせず、計�
     .map((e) => e.text)
     .join("");
   expect(text).toBe(AGENT_PAUSED_TEXT);
-  expect(text).not.toMatch(/MCP/i);
+  expect(text).not.toMatch(/MCP|Buy credits|aistudio|API_KEY|\$5/i);
+  expect(text).toContain("利用残高が切れたため");
+  const { agentBillingState } = await import("@/lib/agentBillingState");
+  expect(agentBillingState().paused).toBe("billing");
+  expect(agentBillingState().lastBillingAt).not.toBeNull();
+  const logs = vi
+    .mocked(console.warn)
+    .mock.calls.map((args) => args.join(" "))
+    .join("\n");
+  expect(logs).toContain(
+    '[agent-operator] {"kind":"billing","action":"AI Studioで残高補充"}',
+  );
+  expect(logs).not.toContain("こんにちは");
+  expect(logs).not.toContain("Your prepayment credits");
   expect(events.at(-1)).toMatchObject({
     type: "done",
     reasons: [AGENT_PAUSED_REASON],
   });
+});
+
+it("残高補充後のAI成功で停止表示を解除し、最後のbilling時刻は保持する", async () => {
+  const { agentBillingState, recordAgentBillingFailure } =
+    await import("@/lib/agentBillingState");
+  recordAgentBillingFailure();
+  const lastBillingAt = agentBillingState().lastBillingAt;
+  const model = new MockLanguageModelV3({
+    doStream: async () => stream([], "再開しました。"),
+  });
+  await runAgent("こんにちは", connection(), model, () => {});
+  expect(agentBillingState()).toMatchObject({ paused: null, lastBillingAt });
+});
+
+it("要約の切替先で402が発生しても利用残高切れを案内する", async () => {
+  let calls = 0;
+  const primary = new MockLanguageModelV3({
+    doStream: async () => {
+      if (calls++ === 0) return stream();
+      throw Object.assign(new Error("overloaded"), { statusCode: 503 });
+    },
+  });
+  const fallback = new MockLanguageModelV3({
+    doStream: async () => {
+      throw Object.assign(new Error("private question must not appear"), {
+        statusCode: 402,
+      });
+    },
+  });
+  const events: AgentEvent[] = [];
+  const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+  await runAgent(
+    "こんにちは",
+    connection(),
+    primary,
+    (e) => events.push(e),
+    undefined,
+    AGENT_LIMITS,
+    { fallback: async () => fallback },
+  );
+  expect(events.at(-1)).toMatchObject({
+    type: "done",
+    reasons: [AGENT_PAUSED_REASON],
+  });
+  expect(events).toContainEqual({
+    type: "text-delta",
+    text: AGENT_PAUSED_TEXT,
+  });
+  expect(JSON.stringify(warn.mock.calls)).not.toContain(
+    "private question must not appear",
+  );
 });

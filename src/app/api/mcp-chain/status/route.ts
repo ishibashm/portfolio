@@ -1,3 +1,4 @@
+import { agentBillingState } from "@/lib/agentBillingState";
 import { chainLlmState } from "@/lib/mcpAgentConfig";
 import { voiceState } from "@/lib/mcpVoiceConfig";
 import { canUseAgent } from "@/lib/agentEntitlement";
@@ -11,6 +12,7 @@ export async function GET(request: Request) {
     : { signedIn: false };
   return Response.json(
     {
+      paused: agentBillingState().paused,
       enabled,
       mock,
       voiceEnabled: voiceState().enabled,
