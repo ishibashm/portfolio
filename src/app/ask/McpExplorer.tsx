@@ -1,5 +1,6 @@
 "use client";
 import { AGENT_PAUSED_REASON, AGENT_PAUSED_TEXT } from "@/lib/agentPausedText";
+import FaqPanel from "@/components/FaqPanel";
 
 import dynamic from "next/dynamic";
 import {
@@ -1951,6 +1952,14 @@ export function McpExplorer({
                     textareaRef.current?.focus();
                   }}
                   onLocate={locateCurrentMunicipality}
+                />
+              )}
+              {messages.length === 0 && voiceMessages.length === 0 && (
+                <FaqPanel
+                  onQuestion={(value) => {
+                    setQuestion(value);
+                    textareaRef.current?.focus();
+                  }}
                 />
               )}
               {messages.map((item, index) => (
