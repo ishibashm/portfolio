@@ -95,3 +95,9 @@ it("別の会話の同じ記憶もNFKCと空白でまとめ、読み込み時に
     })?.memories,
   ).toHaveLength(2);
 });
+
+it("人物も生年月日の記載もなければ年代のボタンを先頭に出す", () => {
+  expect(
+    askAnswerFields("引越しを考えています。日付と方位を相談したいです。", []),
+  ).toEqual(["birthYear", "origin", "period"]);
+});

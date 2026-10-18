@@ -59,6 +59,7 @@ import {
 import {
   initialConsultationSuggestions,
   sanitizeFollowUpSuggestions,
+  dropUngroundedPlaceSuggestions,
 } from "@/lib/followUpSuggestions";
 import {
   GuideAvatar,
@@ -953,6 +954,37 @@ export function McpExplorer({
   }, [agentEnabled, persistConversation, storageReady]);
 
   useEffect(() => {
+    if (!storageReady || !registeredPeopleReady || !agentEnabled) return;
+    const person =
+      people.find((candidate) => candidate.active) ??
+      (people.length === 1 ? people[0] : undefined);
+    if (!person) return;
+    setConversations((current) => {
+      const conversation = current.find(
+        (item) => item.id === activeConversationId,
+      );
+      if (
+        !conversation ||
+        conversation.messages.length ||
+        conversation.personIds.length ||
+        conversation.personSelectionChanged
+      )
+        return current;
+      return current.map((item) =>
+        item.id === activeConversationId
+          ? { ...item, personIds: [person.id] }
+          : item,
+      );
+    });
+  }, [
+    storageReady,
+    registeredPeopleReady,
+    agentEnabled,
+    people,
+    activeConversationId,
+  ]);
+
+  useEffect(() => {
     if (!persistConversation || !storageReady) return;
     const serializedConversations: AskConversation[] = conversations.map(
       (conversation) => ({
@@ -1197,6 +1229,7 @@ export function McpExplorer({
           conversation.id === activeConversationId
             ? {
                 ...conversation,
+                personSelectionChanged: true,
                 personIds: [
                   ...new Set([...conversation.personIds, duplicate.id]),
                 ].slice(0, ASK_DATA_LIMITS.selectedPeople),
@@ -1245,6 +1278,7 @@ export function McpExplorer({
           conversation.id === activeConversationId
             ? {
                 ...conversation,
+                personSelectionChanged: true,
                 personIds: [...conversation.personIds, personId].slice(
                   0,
                   ASK_DATA_LIMITS.selectedPeople,
@@ -1264,6 +1298,9 @@ export function McpExplorer({
     setConversations((current) =>
       current.map((conversation) => ({
         ...conversation,
+        personSelectionChanged:
+          conversation.personSelectionChanged ||
+          conversation.personIds.includes(personId),
         personIds: conversation.personIds.filter((id) => id !== personId),
         updatedAt: conversation.personIds.includes(personId)
           ? now
@@ -1289,6 +1326,7 @@ export function McpExplorer({
         if (conversation.id !== activeConversationId) return conversation;
         return {
           ...conversation,
+          personSelectionChanged: true,
           personIds: selected
             ? conversation.personIds.filter((id) => id !== personId)
             : [...conversation.personIds, personId],
@@ -1306,6 +1344,7 @@ export function McpExplorer({
         conversation.id === activeConversationId
           ? {
               ...conversation,
+              personSelectionChanged: true,
               personIds: personId ? [personId] : [],
               updatedAt: now,
             }
@@ -1524,8 +1563,11 @@ export function McpExplorer({
       let pending = "";
       let completed = false;
       let completedContent = "";
+      const suggestionOutputs: unknown[] = [];
       let offerReceived = messages.some((message) => message.saveOffer);
       const receive = (item: AgentEvent | ChainEvent) => {
+        if (item.type === "tool-result" || item.type === "call")
+          suggestionOutputs.push(item.output);
         if (item.type === "blocks")
           updateAssistant(assistantId, (current) => ({
             ...current,
@@ -1614,7 +1656,19 @@ export function McpExplorer({
               );
             }
           }
-          const suggestions = sanitizeFollowUpSuggestions(item.suggestions);
+          const suggestions = sanitizeFollowUpSuggestions(
+            dropUngroundedPlaceSuggestions(
+              sanitizeFollowUpSuggestions(item.suggestions),
+              [
+                text,
+                JSON.stringify(history),
+                JSON.stringify(profiles),
+                JSON.stringify(standaloneOrigin),
+                JSON.stringify(suggestionOutputs),
+                completedContent,
+              ].join("\n"),
+            ),
+          );
           updateAssistant(assistantId, (current) => ({
             ...current,
             state: "done",
@@ -1733,6 +1787,8 @@ export function McpExplorer({
       const decoder = new TextDecoder();
       let pending = "";
       let completed = false;
+      const suggestionOutputs: unknown[] = [];
+      let answerText = "";
       try {
         while (true) {
           const { done, value } = await reader.read();
@@ -1744,6 +1800,9 @@ export function McpExplorer({
           for (const line of lines) {
             if (!line.trim()) continue;
             const item = JSON.parse(line) as ChainEvent | AgentEvent;
+            if (item.type === "call" || item.type === "tool-result")
+              suggestionOutputs.push(item.output);
+            if (item.type === "text-delta") answerText += item.text;
             if (item.type === "blocks")
               setCalculationBlocks((current) => [
                 ...current,
@@ -1758,7 +1817,17 @@ export function McpExplorer({
               else if (!item.reasons.length) setBillingPaused(false);
               setCalculationReasons(item.reasons);
               setCalculationFollowUps(
-                sanitizeFollowUpSuggestions(item.suggestions),
+                sanitizeFollowUpSuggestions(
+                  dropUngroundedPlaceSuggestions(
+                    sanitizeFollowUpSuggestions(item.suggestions),
+                    [
+                      question,
+                      municipality,
+                      JSON.stringify(suggestionOutputs),
+                      answerText,
+                    ].join("\n"),
+                  ),
+                ),
               );
               setCalculationComplete(true);
               setMessage(
@@ -1792,7 +1861,8 @@ export function McpExplorer({
     if (!activeConversation) return;
     if (
       activeConversation.messages.length === 0 &&
-      !activeConversation.draft.trim()
+      !activeConversation.draft.trim() &&
+      !activeConversation.personSelectionChanged
     ) {
       textareaRef.current?.focus();
       return;
@@ -2226,7 +2296,7 @@ export function McpExplorer({
             >
               {messages.length === 0 && voiceMessages.length === 0 && (
                 <ShirubeGuide
-                  key={activeConversationId}
+                  key={`${activeConversationId}:${activeConversation?.personIds.join(",")}`}
                   people={people}
                   selectedPeople={selectedPeople}
                   disabled={running}
@@ -2324,7 +2394,10 @@ export function McpExplorer({
                 fields={lastAssistant?.answerFields ?? []}
                 disabled={running}
                 savedOrigin={guidanceSaved?.origin ?? savedOrigin}
-                birthDateKnown={Boolean(guidanceSaved?.birthDate)}
+                birthDateKnown={
+                  selectedPeople.length > 0 &&
+                  selectedPeople.every((person) => Boolean(person.birthDate))
+                }
                 onSend={(text) => void submitAgent(text)}
                 onOrigin={(origin) => {
                   void (async () => {
