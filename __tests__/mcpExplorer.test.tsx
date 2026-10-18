@@ -19,6 +19,7 @@ import { SETTINGS_KEY } from "@/lib/userSettings";
 afterEach(() => {
   cleanup();
   localStorage.clear();
+  window.history.replaceState(null, "", "/ask");
   document.cookie = "sb-test-auth-token=; Max-Age=0; path=/";
   vi.unstubAllGlobals();
 });
@@ -786,4 +787,82 @@ it("不足項目カードを優先し、閉じた会話では再読込しても�
     expect(screen.getAllByText("条件を確認しましょう。")).toHaveLength(2),
   );
   expect(screen.queryByLabelText("計算ページへの案内")).toBeNull();
+});
+
+it("ホームの固定IDから新しい会話を一度だけ開始し、既存の相談を保持する", async () => {
+  localStorage.setItem(
+    ASK_DATA_STORAGE_KEY,
+    JSON.stringify({
+      version: 2,
+      activeConversationId: "prior",
+      conversations: [
+        {
+          id: "prior",
+          title: "以前の相談",
+          messages: [{ role: "user", content: "以前の質問" }],
+          draft: "保留中の入力",
+        },
+      ],
+      people: [],
+      memories: [],
+    }),
+  );
+  window.history.replaceState(null, "", "/ask?start=star");
+  const fetcher = vi.fn(async (url: string) => {
+    if (url.includes("status"))
+      return Response.json({
+        enabled: true,
+        paused: null,
+        remaining: { requests: 20 },
+      });
+    if (url !== "/api/mcp-chain") return Response.json({}, { status: 401 });
+    return new Response(
+      '{"type":"text-delta","text":"生年月日を教えてください。"}\n{"type":"done","calls":0,"reasons":[]}\n',
+    );
+  });
+  vi.stubGlobal("fetch", fetcher);
+  render(<McpExplorer agentEnabled persistConversation />);
+  await screen.findByText("生年月日を教えてください。");
+  const posts = fetcher.mock.calls.filter(([url]) => url === "/api/mcp-chain");
+  expect(posts).toHaveLength(1);
+  expect(window.location.search).toBe("");
+  expect(
+    screen.getAllByText("私の本命星を知りたいです。").length,
+  ).toBeGreaterThan(0);
+  await waitFor(() => {
+    const stored = JSON.parse(
+      localStorage.getItem(ASK_DATA_STORAGE_KEY) ?? "{}",
+    );
+    expect(
+      stored.conversations.find((c: { id: string }) => c.id === "prior").draft,
+    ).toBe("保留中の入力");
+  });
+  expect(screen.getByLabelText("メッセージ")).toBeInTheDocument();
+});
+
+it("URLの自由文や未知の選択肢では会話を自動送信しない", async () => {
+  window.history.replaceState(
+    null,
+    "",
+    "/ask?start=unknown&question=1990-01-01",
+  );
+  const fetcher = vi.fn(async (url: string) =>
+    Response.json({
+      enabled: url.includes("status"),
+      remaining: { requests: 20 },
+    }),
+  );
+  vi.stubGlobal("fetch", fetcher);
+  render(<McpExplorer agentEnabled persistConversation />);
+  await screen.findByLabelText("メッセージ");
+  await waitFor(() =>
+    expect(screen.getByRole("button", { name: "送信" })).toBeDisabled(),
+  );
+  expect(
+    fetcher.mock.calls.some(
+      (args) =>
+        String(args[0]).includes("/api/mcp-chain") &&
+        !String(args[0]).includes("status"),
+    ),
+  ).toBe(false);
 });

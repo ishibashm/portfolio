@@ -96,7 +96,7 @@ describe("置き場所", () => {
     render(<AgentEntry />);
     const img = screen.getByRole("img", { name: /しるべ/ });
     expect(img.getAttribute("fetchpriority")).toBe("low");
-    expect(screen.getByText(/根拠の計算もお見せします/)).toBeTruthy();
+    expect(screen.getByText(/引越しの予定はありますか/)).toBeTruthy();
     expect(screen.getByText(/参考情報です/)).toBeTruthy();
   });
 
