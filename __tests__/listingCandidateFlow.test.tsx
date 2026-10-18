@@ -107,7 +107,8 @@ describe("listing candidate flow", () => {
       screen.getByRole("button", { name: "地図で所在地を確認する" }),
     );
     expect(onFocus).toHaveBeenCalledWith(35.4, 135.5);
-    fireEvent.click(screen.getByRole("checkbox"));
+    expect(screen.getByRole("checkbox")).toBeChecked();
+    expect(screen.getByRole("button", { name: "候補に保存" })).toBeEnabled();
     fireEvent.change(
       screen.getByRole("textbox", { name: "候補タイトル（任意）" }),
       { target: { value: "候補A" } },

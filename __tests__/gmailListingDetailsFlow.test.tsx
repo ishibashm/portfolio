@@ -126,9 +126,9 @@ it.each([true, false])(
       fireEvent.click(
         screen.getByRole("button", { name: "地図で所在地を確認する" }),
       );
-      fireEvent.click(
+      expect(
         screen.getByRole("checkbox", { name: /地図の所在地を確認しました/ }),
-      );
+      ).toBeChecked();
       fireEvent.click(save);
       await waitFor(() =>
         expect(
@@ -142,6 +142,7 @@ it.each([true, false])(
       )!;
       expect(JSON.parse(String(saved[1]?.body))).toMatchObject({
         url: listing.url,
+        title: listing.propertyName,
         details: {
           propertyName: listing.propertyName,
           address: listing.address,
