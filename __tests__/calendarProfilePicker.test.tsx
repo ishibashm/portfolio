@@ -16,7 +16,7 @@ import { join } from "node:path";
  */
 
 /* 公開の代表点・例示用の日付（利用者の値ではない） */
-const KYOTO = { lat: 35.0116, lon: 135.7681 };
+const NAGOYA = { lat: 35.1709, lon: 136.8815 };
 
 const { loadSettings, loadProfilePresets, applyProfile } = vi.hoisted(() => ({
   loadSettings: vi.fn(),
@@ -40,10 +40,10 @@ import { AuspiciousDayFinder } from "@/components/relocation/AuspiciousDayFinder
 
 const preset = {
   id: "p1",
-  name: "Kyoto",
+  name: "名古屋駅",
   birthDate: "1966-09-22",
-  baseLat: KYOTO.lat,
-  baseLon: KYOTO.lon,
+  baseLat: NAGOYA.lat,
+  baseLon: NAGOYA.lon,
 };
 
 beforeEach(() => {
@@ -60,6 +60,9 @@ beforeEach(() => {
         base_lon: p.baseLon,
       }),
     );
+    loadSettings.mockResolvedValue({
+      settings: JSON.parse(localStorage.getItem("tactical_config_v1")!),
+    });
     return { presets: [preset], save: {}, cloudSynced: false };
   });
   vi.stubGlobal(
@@ -77,39 +80,35 @@ describe("/calendar: 保存したプロフィールを呼び出す", () => {
     render(<AuspiciousDayFinder />);
     const picker = await screen.findByLabelText("使用中のプロフィール");
     await waitFor(() =>
-      expect(screen.getByRole("option", { name: "Kyoto" })).toBeTruthy(),
+      expect(screen.getByRole("option", { name: "名古屋駅" })).toBeTruthy(),
     );
     fireEvent.change(picker, { target: { value: "p1" } });
     await waitFor(() => expect(applyProfile).toHaveBeenCalledTimes(1));
     await waitFor(() =>
-      expect(
-        (document.getElementById("ad-birth") as HTMLInputElement).value,
-      ).toContain("1966-09-22"),
+      expect(screen.getByText(/生年月日:/).textContent).toContain("1966-09-22"),
     );
   });
 });
 
 describe("/calendar: アカウントに登録した値を開いたときに読む", () => {
   it("端末に写しが無くても、アカウントの生年月日と出発地が欄に入る", async () => {
-    /* 2026-09-26 の指摘。ProfilePicker は「Kyoto を使用中」と出すのに、
+    /* 2026-09-26 の指摘。ProfilePicker は「名古屋駅 を使用中」と出すのに、
        欄は既定の 2000-01-01・東京のままだった（端末の localStorage しか
        読んでいなかった） */
     loadSettings.mockResolvedValue({
       settings: {
         birth_date: "1985-04-10",
-        base_lat: KYOTO.lat,
-        base_lon: KYOTO.lon,
+        base_lat: NAGOYA.lat,
+        base_lon: NAGOYA.lon,
       },
       synced: true,
     });
     render(<AuspiciousDayFinder />);
     await waitFor(() =>
-      expect(
-        (document.getElementById("ad-birth") as HTMLInputElement).value,
-      ).toContain("1985-04-10"),
+      expect(screen.getByText(/生年月日:/).textContent).toContain("1985-04-10"),
     );
-    expect(screen.getByDisplayValue(String(KYOTO.lon))).toBeTruthy();
-    expect(screen.getByDisplayValue(String(KYOTO.lat))).toBeTruthy();
+    expect(screen.getByDisplayValue(String(NAGOYA.lon))).toBeTruthy();
+    expect(screen.getByDisplayValue(String(NAGOYA.lat))).toBeTruthy();
     expect(applyProfile).not.toHaveBeenCalled();
   });
 });

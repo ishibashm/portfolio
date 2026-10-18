@@ -54,7 +54,7 @@ describe("未登録の断りは 1 つの部品に寄っている", () => {
 
   it("見張りが空回りしていない（既定値を持つファイルを見つけている）", () => {
     expect(files.length).toBeGreaterThan(0);
-    expect(files.some((f) => f.endsWith("AuspiciousDayFinder.tsx"))).toBe(true);
+    expect(files.some((f) => f.endsWith("SolarTimeClock.tsx"))).toBe(true);
   });
 
   it("画面ごとの独自の見出しを持っていない", () => {
@@ -65,16 +65,15 @@ describe("未登録の断りは 1 つの部品に寄っている", () => {
     }
   });
 
-  it("/calendar の吉日は共通の部品を通している", () => {
+  it("/calendar は見本値を使わず、必要な情報を質問する", () => {
     const src = readFileSync(
       join(process.cwd(), "src/components/relocation/AuspiciousDayFinder.tsx"),
       "utf8",
     );
-    expect(src).toContain("<SampleProfileNotice");
-    /* 結果が出る前から断る。以前は `summaries &&` で、既定値のまま
-       押す瞬間には何も書いていなかった */
-    expect(src).not.toContain("summaries && usingDefaults");
-    expect(src).toContain("{usingDefaults && (");
+    expect(src).not.toContain("DEFAULT_BIRTH_DATE");
+    expect(src).not.toContain("<SampleProfileNotice");
+    expect(src).toContain("<BirthYearPicker");
+    expect(src).toContain("<OriginChooser");
   });
 });
 
