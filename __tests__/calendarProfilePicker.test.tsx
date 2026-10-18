@@ -107,6 +107,11 @@ describe("/calendar: アカウントに登録した値を開いたときに読�
     await waitFor(() =>
       expect(screen.getByText(/生年月日:/).textContent).toContain("1985-04-10"),
     );
+    expect(screen.getByText(/出発地: 登録済み/)).toBeTruthy();
+    // 座標の欄は「座標を直接入れる」を開いたときだけ描く。
+    const details = screen.getByText("座標を直接入れる").closest("details")!;
+    details.open = true;
+    fireEvent(details, new Event("toggle"));
     expect(screen.getByDisplayValue(String(NAGOYA.lon))).toBeTruthy();
     expect(screen.getByDisplayValue(String(NAGOYA.lat))).toBeTruthy();
     expect(applyProfile).not.toHaveBeenCalled();

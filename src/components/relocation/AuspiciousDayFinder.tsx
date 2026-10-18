@@ -186,6 +186,7 @@ export function AuspiciousDayFinder() {
   const [editingBirth, setEditingBirth] = useState(false);
   const [baseLabel, setBaseLabel] = useState("");
   const [editingOrigin, setEditingOrigin] = useState(false);
+  const [showCoords, setShowCoords] = useState(false);
   const [resolvingOrigin, setResolvingOrigin] = useState(false);
   const profileRevision = useRef(0);
   const originRequest = useRef(0);
@@ -499,40 +500,45 @@ export function AuspiciousDayFinder() {
             <OriginChooser onPick={pickOrigin} />
           )}
           {resolvingOrigin && <p role="status">出発地を確認中…</p>}
-          <details>
+          {/* 数字の欄は開いたときだけ描く。初めて来た人に座標を求めない。 */}
+          <details onToggle={(e) => setShowCoords(e.currentTarget.open)}>
             <summary>座標を直接入れる</summary>
-            <label htmlFor="ad-lon">現住地の経度</label>
-            <input
-              id="ad-lon"
-              type="number"
-              step="any"
-              min={-180}
-              max={180}
-              value={lon}
-              onChange={(e) => {
-                profileRevision.current++;
-                originRequest.current++;
-                setResolvingOrigin(false);
-                setLon(e.target.value);
-                setBaseLabel("");
-              }}
-            />
-            <label htmlFor="ad-lat">現住地の緯度</label>
-            <input
-              id="ad-lat"
-              type="number"
-              step="any"
-              min={-90}
-              max={90}
-              value={lat}
-              onChange={(e) => {
-                profileRevision.current++;
-                originRequest.current++;
-                setResolvingOrigin(false);
-                setLat(e.target.value);
-                setBaseLabel("");
-              }}
-            />
+            {showCoords && (
+              <>
+                <label htmlFor="ad-lon">現住地の経度</label>
+                <input
+                  id="ad-lon"
+                  type="number"
+                  step="any"
+                  min={-180}
+                  max={180}
+                  value={lon}
+                  onChange={(e) => {
+                    profileRevision.current++;
+                    originRequest.current++;
+                    setResolvingOrigin(false);
+                    setLon(e.target.value);
+                    setBaseLabel("");
+                  }}
+                />
+                <label htmlFor="ad-lat">現住地の緯度</label>
+                <input
+                  id="ad-lat"
+                  type="number"
+                  step="any"
+                  min={-90}
+                  max={90}
+                  value={lat}
+                  onChange={(e) => {
+                    profileRevision.current++;
+                    originRequest.current++;
+                    setResolvingOrigin(false);
+                    setLat(e.target.value);
+                    setBaseLabel("");
+                  }}
+                />
+              </>
+            )}
           </details>
         </div>
         <fieldset className="min-w-0 space-y-1">
@@ -630,7 +636,8 @@ export function AuspiciousDayFinder() {
 
       {meta.honmeiStar !== undefined && (
         <p className="mt-4 text-xs text-slate-500">
-          本命星: <b className="text-slate-700">{meta.honmeiStar}</b> ／ 天中殺の支:{" "}
+          本命星: <b className="text-slate-700">{meta.honmeiStar}</b> ／
+          天中殺の支:{" "}
           <b className="text-slate-700">{meta.voidZodiacs?.join("・")}</b>
         </p>
       )}
@@ -811,7 +818,11 @@ export function AuspiciousDayFinder() {
                         {s.window.yearBoardValidUntil}
                       </b>
                       {s.window.afterYearBoardStatus && (
-                        <> まで（翌日から「{label(s.window.afterYearBoardStatus)}」に変わる）</>
+                        <>
+                          {" "}
+                          まで（翌日から「{label(s.window.afterYearBoardStatus)}
+                          」に変わる）
+                        </>
                       )}
                     </span>
                   )}
@@ -821,13 +832,27 @@ export function AuspiciousDayFinder() {
                   <table className="w-full text-sm">
                     <thead className="bg-white text-xs text-slate-500 border-b border-slate-200">
                       <tr>
-                        <th className="px-3 py-2 text-left font-semibold">日付</th>
-                        <th className="px-3 py-2 text-left font-semibold">年盤</th>
-                        <th className="px-3 py-2 text-left font-semibold">月盤</th>
-                        <th className="px-3 py-2 text-left font-semibold">日盤</th>
-                        <th className="px-3 py-2 text-left font-semibold">暦</th>
-                        <th className="px-3 py-2 text-left font-semibold">天中殺</th>
-                        <th className="px-3 py-2 text-left font-semibold">物件</th>
+                        <th className="px-3 py-2 text-left font-semibold">
+                          日付
+                        </th>
+                        <th className="px-3 py-2 text-left font-semibold">
+                          年盤
+                        </th>
+                        <th className="px-3 py-2 text-left font-semibold">
+                          月盤
+                        </th>
+                        <th className="px-3 py-2 text-left font-semibold">
+                          日盤
+                        </th>
+                        <th className="px-3 py-2 text-left font-semibold">
+                          暦
+                        </th>
+                        <th className="px-3 py-2 text-left font-semibold">
+                          天中殺
+                        </th>
+                        <th className="px-3 py-2 text-left font-semibold">
+                          物件
+                        </th>
                       </tr>
                     </thead>
                     <tbody>
@@ -856,7 +881,10 @@ export function AuspiciousDayFinder() {
                                   onClick={() => {
                                     if (!on && (d.tier ?? "S") === "S")
                                       setBurst((b) => ({
-                                        key: favoriteDayKey(d.date, s.direction),
+                                        key: favoriteDayKey(
+                                          d.date,
+                                          s.direction,
+                                        ),
                                         n: (b?.n ?? 0) + 1,
                                       }));
                                     toggleFavoriteDay({

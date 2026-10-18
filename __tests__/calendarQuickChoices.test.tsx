@@ -82,9 +82,8 @@ it("未登録ならサンプルを保存せず、年→月日と出発地を質�
   expect(screen.getByRole("button", { name: "吉日を出す" })).toBeDisabled();
   expect(localStorage.getItem("tactical_config_v1")).toBeNull();
   expect(fetch).not.toHaveBeenCalled();
-  expect(document.querySelector("#ad-lon")?.closest("details")?.open).toBe(
-    false,
-  );
+  // 数字の欄は「座標を直接入れる」を開くまで描かない。
+  expect(document.querySelector("#ad-lon")).toBeNull();
   fireEvent.click(screen.getByRole("button", { name: "1980年代" }));
   fireEvent.click(screen.getByRole("button", { name: "1985年" }));
   fireEvent.click(screen.getByRole("button", { name: "4月" }));
