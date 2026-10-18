@@ -790,3 +790,9 @@ canUseAgentを唯一のLLM入口として、MCP_AGENT_DAILY_BUDGET_USD（既定0
 単価表の未知値はnull。MCP_AGENT_PRICING_JSONにprovider:modelをキー、input/output（USD/100万トークン）を値として確認済みの単価を設定できる。xAIや未知モデルは単価が無ければ呼ばない。主モデルの単価が無いときだけAI回答を止め、単価の無いfallbackは予約に含めず切替もしない（主モデルは止めない）。/api/mcp-chain/status の aiPriced で単価がそろっているか（値は返さない）を確認できる。既定Googleのgemini-3.5-flashとgemini-3.5-flash-liteのみ、従来の無料枠運用を明示して0ドルとする。Googleの有料枠ではMCP_AGENT_GOOGLE_FREE_TIER=falseと確認済み単価が必要。不正な無料枠フラグでは無料扱いしない。
 超過は429と「本日のAI回答の枠が終わりました」、X-Agent-Remaining-USDを返す。計算のみと無料FAQ・資料抜粋は利用できる。既存の回数・トークン上限と402停止は維持する。agent_usageログには推定costUsdだけを追加し、DB記録・個人情報の保存は追加しない。
 これはテキストAIの概算上限で、音声費用は対象外。共有ストアではなく、再起動でリセットされる。max-instances=2では0.20ドル設定は最大0.40ドル相当／日（再起動が無い場合）。保守的な予約額が上限に収まらないモデルは実行前に止まる。厳密な総額保証には共有台帳が必要で、今回DB・本番設定は変更しない。
+
+### 読みもの一覧の動画サムネイル（PR8）
+
+- Markdown の youtubeId（::youtube）を優先し、本文の YouTube 埋め込みURLも判定する。普通の参考動画リンクは対象外。DB一覧も #1690 と同じ slug の Markdown 補完を使い、DB列は増やさない。
+- 動画ありのカード上部に16:9・角丸のサムネイルと再生印・「動画」を表示。画像は i.ytimg.com の固定ID URLをlazy読込し、一覧でiframeやプレーヤーを起動しない。クリック先は記事。
+- 動画なしのカードは従来どおり。外部画像は通常のimgで配信し、画像最適化の許可設定は不要。現行コードに画像配信を制限するCSPはない。
