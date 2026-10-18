@@ -927,3 +927,97 @@ it("設定の出発地と生年月日で相談し、最新回答の期間ボタ�
     await screen.findByRole("button", { name: "1〜3か月後" }),
   ).toBeTruthy();
 });
+
+it.each([
+  {
+    label: "非アクティブの控え",
+    active: false,
+    settings: {},
+    lat: 35.1709,
+    lon: 136.8815,
+    expected: { lat: 35.1709, lon: 136.8815 },
+  },
+  {
+    label: "使用中は設定を優先",
+    active: true,
+    settings: { base_lat: 35.1709, base_lon: 136.8815 },
+    lat: 35.6812,
+    lon: 139.7671,
+    expected: { lat: 35.1709, lon: 136.8815 },
+  },
+  {
+    label: "使用中で設定がなければ控え",
+    active: true,
+    settings: {},
+    lat: 35.1709,
+    lon: 136.8815,
+    expected: { lat: 35.1709, lon: 136.8815 },
+  },
+  {
+    label: "緯度範囲外",
+    active: false,
+    settings: {},
+    lat: 19,
+    lon: 136.8815,
+    expected: undefined,
+  },
+  {
+    label: "経度範囲外",
+    active: false,
+    settings: {},
+    lat: 35.1709,
+    lon: 155,
+    expected: undefined,
+  },
+  {
+    label: "出発地なしの一人には端末設定",
+    active: false,
+    settings: { base_lat: 35.1709, base_lon: 136.8815 },
+    lat: 19,
+    lon: 136.8815,
+    expected: { lat: 35.1709, lon: 136.8815 },
+  },
+])(
+  "相談対象の出発地: $label",
+  async ({ active, settings, lat, lon, expected }) => {
+    localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
+    localStorage.setItem(
+      "profile_presets_v1",
+      JSON.stringify([
+        {
+          id: "test-preset",
+          name: "テスト",
+          birthDate: "1988-11-25",
+          baseLat: lat,
+          baseLon: lon,
+          active,
+          createdAt: "2026-01-01T00:00:00.000Z",
+        },
+      ]),
+    );
+    const requests: { people: { origin?: unknown }[] }[] = [];
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (url: string, init?: RequestInit) => {
+        if (url.includes("status"))
+          return Response.json({ remaining: { requests: 20 } });
+        if (url === "/api/mcp-chain") {
+          requests.push(JSON.parse(String(init?.body)));
+          return new Response('{"type":"done","calls":0,"reasons":[]}\n');
+        }
+        return Response.json({}, { status: 401 });
+      }),
+    );
+    render(<McpExplorer agentEnabled persistConversation />);
+    fireEvent.click(
+      await screen.findByRole("button", { name: "テストを相談対象に選ぶ" }),
+    );
+    fireEvent.change(screen.getByLabelText("メッセージ"), {
+      target: { value: "引越しの日付と方位を相談したい" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "送信" }));
+    await waitFor(() => expect(requests).toHaveLength(1));
+    if (expected) expect(requests[0].people[0].origin).toMatchObject(expected);
+    else expect(requests[0].people[0].origin).toBeUndefined();
+  },
+);

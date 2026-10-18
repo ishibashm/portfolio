@@ -21,6 +21,8 @@ async function run(
   question: string,
   profile: AgentPerson = person,
   fail = false,
+  failedTool?: string,
+  matches = [origin],
 ) {
   const output: Record<string, unknown> = {
     get_honmei_star: { birthDate: person.birthDate, honmeiStar: 3 },
@@ -33,7 +35,7 @@ async function run(
         { direction: "E", label: "東", bestDays: [{ date: "2026-12-01" }] },
       ],
     },
-    search_municipality: { results: [origin] },
+    search_municipality: { results: matches },
     area_directions: {
       origin,
       directions: [
@@ -45,7 +47,10 @@ async function run(
       ],
     },
   };
-  const call = vi.fn(async (name: string) => output[name]);
+  const call = vi.fn(async (name: string) => {
+    if (name === failedTool) throw new Error("mock failure");
+    return output[name];
+  });
   const connection = {
     call,
     close: async () => {},
@@ -185,4 +190,105 @@ it("出発地の範囲・市区町村コード・未知キーをstrictに検証�
         people: [{ ...person, origin: bad }],
       }).success,
     ).toBe(false);
+});
+
+it.each(["引越しの日付と方位", "引越しの候補の街を3つ"])(
+  "住所名から検索して即時計算する: %s",
+  async (question) => {
+    const { call } = await run(question, {
+      ...person,
+      origin: undefined,
+      residence: origin.name,
+    });
+    expect(call).toHaveBeenCalledWith(
+      "search_municipality",
+      { query: origin.name, limit: 10 },
+      expect.anything(),
+      expect.any(Number),
+    );
+    expect(
+      call.mock.calls.filter(([name]) => name === "search_municipality"),
+    ).toHaveLength(1);
+    for (const tool of ["judge_directions", "find_auspicious_days"])
+      expect(call).toHaveBeenCalledWith(
+        tool,
+        expect.objectContaining({ lon: origin.lon }),
+        expect.anything(),
+        expect.any(Number),
+      );
+    if (question.includes("街"))
+      expect(call).toHaveBeenCalledWith(
+        "area_directions",
+        { code: origin.code, perDirection: 3 },
+        expect.anything(),
+        expect.any(Number),
+      );
+  },
+);
+it("複数候補では完全一致だけを採用し、曖昧な住所では計算しない", async () => {
+  const matches = [{ ...origin, name: "別の候補" }, origin];
+  const exact = await run(
+    "引越しの相談",
+    { ...person, origin: undefined, residence: origin.name },
+    false,
+    undefined,
+    matches,
+  );
+  expect(exact.call.mock.calls.map(([name]) => name)).toContain(
+    "judge_directions",
+  );
+  const ambiguous = await run(
+    "引越しの相談",
+    { ...person, origin: undefined, residence: "名古屋" },
+    false,
+    undefined,
+    matches,
+  );
+  expect(ambiguous.call.mock.calls.map(([name]) => name)).toEqual([
+    "get_honmei_star",
+    "search_municipality",
+  ]);
+});
+it.each(["get_honmei_star", "search_municipality", "judge_directions"])(
+  "先行取得 %s の失敗でもモデルが回答し、記憶対象にはしない",
+  async (failedTool) => {
+    const { events, model } = await run(
+      "引越しの候補の街",
+      { ...person, origin: { ...origin, code: undefined } },
+      false,
+      failedTool,
+    );
+    expect(events).toContainEqual(
+      expect.objectContaining({
+        type: "tool-result",
+        tool: failedTool,
+        error: true,
+      }),
+    );
+    expect(model.doStreamCalls).toHaveLength(1);
+    expect(events).toContainEqual(
+      expect.objectContaining({
+        type: "text-delta",
+        text: "計算結果をご覧ください。",
+      }),
+    );
+    expect(events.at(-1)).toMatchObject({
+      type: "done",
+      memoryEligible: false,
+    });
+  },
+);
+
+it("住所の表記が違っても単一候補なら座標を使う", async () => {
+  const { call } = await run("引越しの日付と方位", {
+    ...person,
+    origin: undefined,
+    residence: "名古屋市中村区",
+  });
+  expect(call).toHaveBeenCalledWith(
+    "judge_directions",
+    expect.objectContaining({ lon: origin.lon }),
+    expect.anything(),
+    expect.any(Number),
+  );
 });

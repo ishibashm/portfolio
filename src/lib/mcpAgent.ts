@@ -629,7 +629,7 @@ export async function runAgent(
                 durationMs: Date.now() - started,
                 error: true,
               });
-              stop(summary);
+              if (!toolCallId.startsWith("prefetch-")) stop(summary);
               throw new Error(summary);
             } finally {
               clearTimeout(callTimer);
@@ -679,53 +679,74 @@ export async function runAgent(
       const date =
         explicitConsultationDate(userText) ?? toJapanDateString(new Date());
       const tasks: Promise<unknown>[] = [];
-      if (person.birthDate) {
+      if (person.birthDate)
         tasks.push(
           prefetch("get_honmei_star", { birthDate: person.birthDate }),
         );
-        if (person.origin?.lon !== undefined) {
-          tasks.push(
-            prefetch("judge_directions", {
-              birthDate: person.birthDate,
-              lon: person.origin.lon,
-              date,
-            }),
-          );
-          tasks.push(
-            prefetch("find_auspicious_days", {
-              birthDate: person.birthDate,
-              lon: person.origin.lon,
-              from: date,
-              days: 90,
-              maxDaysPerDirection: 3,
-            }),
-          );
-        }
-      }
-      if (
-        guidanceIntent(userText) === "towns" ||
-        /街|候補|絞|エリア|市区町村/.test(userText)
-      ) {
-        tasks.push(
-          (async () => {
-            let code = person.origin?.code;
-            const name = person.origin?.name ?? person.residence;
-            if (!code && name) {
-              const output = await prefetch("search_municipality", {
-                query: name,
-                limit: 10,
-              });
-              const matches = records(record(output).results);
-              const match =
-                matches.find((m) => m.name === name) ??
-                (matches.length === 1 ? matches[0] : undefined);
-              if (typeof match?.code === "string") code = match.code;
-            }
-            if (code)
-              await prefetch("area_directions", { code, perDirection: 3 });
-          })(),
-        );
-      }
+      tasks.push(
+        (async () => {
+          const wantsTowns =
+            /街|候補|絞|エリア|市区町村/.test(userText) ||
+            guidanceIntent(userText) === "towns";
+          let origin = person.origin;
+          const name = origin?.name ?? person.residence;
+          if (
+            name &&
+            (origin?.lon === undefined || (wantsTowns && !origin.code))
+          ) {
+            const output = await prefetch("search_municipality", {
+              query: name,
+              limit: 10,
+            }).catch(() => undefined);
+            const matches = records(record(output).results);
+            const match =
+              matches.find((m) => m.name === name) ??
+              (matches.length === 1 ? matches[0] : undefined);
+            const resolved = agentOriginSchema.safeParse(
+              match && {
+                lat: match.lat,
+                lon: match.lon,
+                code: match.code,
+                name: match.name,
+              },
+            );
+            if (resolved.success)
+              origin = {
+                ...resolved.data,
+                ...origin,
+                code: origin?.code ?? resolved.data.code,
+              };
+          }
+
+          const calculations: Promise<unknown>[] = [];
+          if (person.birthDate && origin?.lon !== undefined) {
+            calculations.push(
+              prefetch("judge_directions", {
+                birthDate: person.birthDate,
+                lon: origin.lon,
+                date,
+              }),
+            );
+            calculations.push(
+              prefetch("find_auspicious_days", {
+                birthDate: person.birthDate,
+                lon: origin.lon,
+                from: date,
+                days: 90,
+                maxDaysPerDirection: 3,
+              }),
+            );
+          }
+          if (wantsTowns && origin?.code)
+            calculations.push(
+              prefetch("area_directions", {
+                code: origin.code,
+                perDirection: 3,
+              }),
+            );
+          await Promise.allSettled(calculations);
+        })(),
+      );
       await Promise.allSettled(tasks);
       if (sources.size) {
         const computed =

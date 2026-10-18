@@ -272,7 +272,19 @@ function partyCandidate(
 }
 
 const originCache = new Map<string, Promise<AskOrigin>>();
-async function resolveOrigin(lat: number, lon: number): Promise<AskOrigin> {
+async function resolveOrigin(
+  lat: number,
+  lon: number,
+): Promise<AskOrigin | undefined> {
+  if (
+    !Number.isFinite(lat) ||
+    !Number.isFinite(lon) ||
+    lat < 20 ||
+    lat > 46 ||
+    lon < 122 ||
+    lon > 154
+  )
+    return;
   const key = `${lat},${lon}`;
   let result = originCache.get(key);
   if (!result) {
@@ -315,28 +327,33 @@ async function loadRegisteredAskPeople(): Promise<RegisteredAskPerson[]> {
   const activeBirthDate = settingString(settings, "birth_date")?.slice(0, 10);
   const activeResidence = settingString(settings, "base_label")?.trim();
   const activeBirthPlace = settingString(settings, "birth_label")?.trim();
-  const registered: RegisteredAskPerson[] = presets.map((preset) => {
-    const isActive = preset.id === active?.id;
-    return {
-      sourceId: `profile:${preset.id}`,
-      name: preset.name,
-      birthDate:
-        isActive && activeBirthDate
-          ? activeBirthDate
-          : preset.birthDate.slice(0, 10),
-      ...(isActive && activeBirthPlace
-        ? { birthPlace: activeBirthPlace }
-        : preset.birthLabel
-          ? { birthPlace: preset.birthLabel }
-          : {}),
-      ...(isActive && activeResidence
-        ? { residence: activeResidence }
-        : preset.baseLabel
-          ? { residence: preset.baseLabel }
-          : {}),
-      ...(isActive ? { active: true, origin } : {}),
-    };
-  });
+  const registered: RegisteredAskPerson[] = await Promise.all(
+    presets.map(async (preset) => {
+      const isActive = preset.id === active?.id;
+      return {
+        sourceId: `profile:${preset.id}`,
+        name: preset.name,
+        birthDate:
+          isActive && activeBirthDate
+            ? activeBirthDate
+            : preset.birthDate.slice(0, 10),
+        ...(isActive && activeBirthPlace
+          ? { birthPlace: activeBirthPlace }
+          : preset.birthLabel
+            ? { birthPlace: preset.birthLabel }
+            : {}),
+        ...(isActive && activeResidence
+          ? { residence: activeResidence }
+          : preset.baseLabel
+            ? { residence: preset.baseLabel }
+            : {}),
+        origin:
+          (isActive ? origin : undefined) ??
+          (await resolveOrigin(preset.baseLat, preset.baseLon)),
+        ...(isActive ? { active: true } : {}),
+      };
+    }),
+  );
   if (!active && activeBirthDate)
     registered.unshift({
       sourceId: "settings:active",
@@ -1430,14 +1447,17 @@ export function McpExplorer({
     const profiles = peopleForQuestion(text);
     if (profiles) {
       for (const person of profiles) {
-        const selected = selectedPeople.find((p) => p.id === person.id);
         if (pickedOrigin && profiles.length === 1) {
           person.origin = pickedOrigin;
           chosenOrigins.current.set(
             `${activeConversationId}:${person.id}`,
             pickedOrigin,
           );
-        } else if (selected?.active && !person.origin) {
+        } else if (
+          profiles.length === 1 &&
+          !person.origin &&
+          !person.residence
+        ) {
           person.origin = savedOrigin;
         }
       }
