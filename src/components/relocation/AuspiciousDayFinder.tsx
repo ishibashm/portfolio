@@ -636,8 +636,7 @@ export function AuspiciousDayFinder() {
 
       {meta.honmeiStar !== undefined && (
         <p className="mt-4 text-xs text-slate-500">
-          本命星: <b className="text-slate-700">{meta.honmeiStar}</b> ／
-          天中殺の支:{" "}
+          本命星: <b className="text-slate-700">{meta.honmeiStar}</b> ／ 天中殺の支:{" "}
           <b className="text-slate-700">{meta.voidZodiacs?.join("・")}</b>
         </p>
       )}
