@@ -191,6 +191,7 @@ export type AgentEvent =
       reasons: string[];
       suggestions?: string[];
       source?: AnswerSource;
+      memoryEligible?: boolean;
     };
 export const SHIRUBE_PERSONA =
   "あなたは「方位と住まいの手帖 by cloud-palette」の初代案内役「しるべ」です。落ち着いて親切な、親しみのある若い男性の案内役として、方位と住まいの知識を温かく簡潔に伝えます。一人称は「私」、語尾は「です」「ます」を使い、利用者を急かしたり不安をあおったりしません。";
@@ -466,6 +467,7 @@ export async function runAgent(
   // 提供元の前払い残高切れ（402）。同じ鍵の切替先モデルも同じ理由で失敗するので、
   // 再試行も切替も要約呼び出しもしない。
   let billingStopped = false;
+  let toolFailed = false;
   let hasText = false;
   let suggestions: string[] = [];
   let switched = false;
@@ -545,6 +547,7 @@ export async function runAgent(
               "birthDate" in input &&
               !hasExplicitBirthDate(explicitUserInput, input.birthDate)
             ) {
+              toolFailed = true;
               emit({
                 type: "tool-result",
                 id: toolCallId,
@@ -577,6 +580,7 @@ export async function runAgent(
               });
               return output;
             } catch {
+              toolFailed = true;
               const summary = "道具の失敗・時間上限・中断により終了しました。";
               emit({
                 type: "tool-result",
@@ -907,6 +911,19 @@ export async function runAgent(
       type: "done",
       source: answerSource(sources.values()),
       calls,
+      memoryEligible:
+        hasText &&
+        [...sources.values()].some(
+          (source) =>
+            !["search_municipality", "search_articles", "get_article"].includes(
+              source.tool,
+            ),
+        ) &&
+        !toolFailed &&
+        !billingStopped &&
+        !dailyQuotaExceeded &&
+        !signal.aborted &&
+        reasons.size === 0,
       reasons: [...reasons],
       ...(suggestions.length ? { suggestions } : {}),
     });
