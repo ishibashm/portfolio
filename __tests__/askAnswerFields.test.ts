@@ -8,7 +8,7 @@ import { sanitizeFollowUpSuggestions } from "@/lib/followUpSuggestions";
 
 describe("回答ボタンは利用者の値だけで決める", () => {
   const person = {
-    birthDate: "1988-11-25",
+    birthDate: "1990-04-15",
     origin: { lat: 35.1709, lon: 136.8815 },
   };
   it("プロフィールで計算済みでも未指定の期間だけを示す", () => {
@@ -37,7 +37,7 @@ describe("回答ボタンは利用者の値だけで決める", () => {
   it("本文や道具結果の既知の値を聞き返さない", () => {
     expect(
       askAnswerFields(
-        "生年月日は1988-11-25です。出発地は名古屋市です。引越しは2026-12-01ごろです。",
+        "生年月日は1990-04-15です。出発地は名古屋市です。引越しは2026-12-01ごろです。",
       ),
     ).toEqual([]);
     expect(
@@ -56,7 +56,7 @@ describe("回答ボタンは利用者の値だけで決める", () => {
   });
   it("生年月日を計算日と取り違えず、最新の明示日を使う", () => {
     expect(
-      explicitConsultationDate("1988年11月25日生まれです。引越し相談です。"),
+      explicitConsultationDate("1990年4月15日生まれです。引越し相談です。"),
     ).toBeUndefined();
     expect(
       explicitConsultationDate(

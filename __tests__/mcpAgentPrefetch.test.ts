@@ -16,7 +16,7 @@ const origin = {
   code: "23105",
   name: "愛知県名古屋市中村区",
 };
-const person = { id: "test", name: "テスト", birthDate: "1988-11-25", origin };
+const person = { id: "test", name: "テスト", birthDate: "1990-04-15", origin };
 async function run(
   question: string,
   profile: AgentPerson = person,

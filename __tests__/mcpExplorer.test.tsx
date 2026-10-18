@@ -875,7 +875,7 @@ it("設定の出発地と生年月日で相談し、最新回答の期間ボタ�
   localStorage.setItem(
     SETTINGS_KEY,
     JSON.stringify({
-      birth_date: "1988-11-25",
+      birth_date: "1990-04-15",
       base_lat: 35.1709,
       base_lon: 136.8815,
     }),
@@ -887,7 +887,7 @@ it("設定の出発地と生年月日で相談し、最新回答の期間ボタ�
     if (url === "/api/mcp-chain") {
       requests.push(JSON.parse(String(init?.body)));
       return new Response(
-        '{"type":"text-delta","text":"計算結果です。"}\n{"type":"done","calls":3,"reasons":[],"answerFields":["period"],"guidance":{"intent":"move","values":{"birthDate":"1988-11-25"},"fields":["municipality","date"],"links":[]}}\n',
+        '{"type":"text-delta","text":"計算結果です。"}\n{"type":"done","calls":3,"reasons":[],"answerFields":["period"],"guidance":{"intent":"move","values":{"birthDate":"1990-04-15"},"fields":["municipality","date"],"links":[]}}\n',
       );
     }
     return Response.json({}, { status: 401 });
@@ -907,7 +907,7 @@ it("設定の出発地と生年月日で相談し、最新回答の期間ボタ�
   expect(requests[0]).toMatchObject({
     people: [
       {
-        birthDate: "1988-11-25",
+        birthDate: "1990-04-15",
         origin: {
           lat: 35.1709,
           lon: 136.8815,
@@ -921,7 +921,7 @@ it("設定の出発地と生年月日で相談し、最新回答の期間ボタ�
   await waitFor(() => expect(requests).toHaveLength(2));
   expect(requests[1].question).toBe("時期は1〜3か月後を考えています。");
   expect(requests[1]).toMatchObject({
-    people: [{ birthDate: "1988-11-25", origin: { lon: 136.8815 } }],
+    people: [{ birthDate: "1990-04-15", origin: { lon: 136.8815 } }],
   });
   expect(
     await screen.findByRole("button", { name: "1〜3か月後" }),
@@ -987,7 +987,7 @@ it.each([
         {
           id: "test-preset",
           name: "テスト",
-          birthDate: "1988-11-25",
+          birthDate: "1990-04-15",
           baseLat: lat,
           baseLon: lon,
           active,
