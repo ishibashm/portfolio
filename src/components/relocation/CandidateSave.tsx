@@ -52,6 +52,18 @@ export function CandidateSave({
   const [duplicates, setDuplicates] = useState<number | null>(null);
   const [login, setLogin] = useState(false);
   const attempt = useRef<{ body: string; key: string } | null>(null);
+  const titleInitialized = useRef(false);
+  useEffect(() => {
+    if (titleInitialized.current) return;
+    if (title) {
+      titleInitialized.current = true;
+      return;
+    }
+    const suggestedTitle = details.propertyName?.trim() || target.name.trim();
+    if (!suggestedTitle) return;
+    titleInitialized.current = true;
+    onTitleChange(suggestedTitle.slice(0, 120));
+  }, [details.propertyName, target.name, title, onTitleChange]);
   const normalizedUrl = url.trim() ? normalizeCandidateUrl(url.trim()) : null;
   useEffect(() => {
     setDuplicates(null);
@@ -143,7 +155,7 @@ export function CandidateSave({
             ? "この内容で保存できます。"
             : pickedOnMap
               ? "下の印を付けると保存できます。"
-              : "地図で所在地を確かめて印を付けると保存できます。"}
+              : "地図で所在地を確認すると保存できます。"}
       </p>
       {target.source && (
         <p className="text-amber-700">
@@ -156,6 +168,7 @@ export function CandidateSave({
         onClick={() => {
           onFocus?.(target.lat, target.lon);
           setViewed(true);
+          setConfirmed(target.source !== "municipality");
         }}
       >
         地図で所在地を確認する
@@ -176,7 +189,10 @@ export function CandidateSave({
           className="block w-full rounded border p-2"
           maxLength={120}
           value={title}
-          onChange={(e) => onTitleChange(e.target.value)}
+          onChange={(e) => {
+            titleInitialized.current = true;
+            onTitleChange(e.target.value);
+          }}
         />
       </label>
       {/*
