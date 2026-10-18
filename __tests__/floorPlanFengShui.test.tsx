@@ -180,9 +180,8 @@ describe("早見の中に置く", () => {
   it("生まれ年と性別を入れると、例の間取りの下に出る", () => {
     render(<FengShuiLookup />);
     expect(screen.queryByLabelText("自分の間取りで見る八宅")).toBeNull();
-    fireEvent.change(screen.getByPlaceholderText("1990"), {
-      target: { value: "1990" },
-    });
+    fireEvent.click(screen.getByRole("button", { name: "1990年代" }));
+    fireEvent.click(screen.getByRole("button", { name: "1990年" }));
     fireEvent.click(screen.getByRole("button", { name: "女性" }));
     expect(screen.getByLabelText("自分の間取りで見る八宅")).toBeTruthy();
   });

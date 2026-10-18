@@ -16,6 +16,12 @@ import {
 import { PARTY_PREFS_KEY } from "@/lib/partyMemberInput";
 import { SETTINGS_KEY } from "@/lib/userSettings";
 
+// 本命星の設定読み込み・年ボタンは birthYearReuse.test.tsx で検証する。
+// ここでは相談のストリーム通信と質問カードを独立して検証する。
+vi.mock("@/components/home/AgentBirthYear", () => ({
+  AgentBirthYear: () => null,
+}));
+
 afterEach(() => {
   cleanup();
   localStorage.clear();

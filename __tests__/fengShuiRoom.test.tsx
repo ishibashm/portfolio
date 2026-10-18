@@ -74,9 +74,8 @@ describe("間取りの節", () => {
   it("早見で生まれ年と性別を入れると、表の下に間取りが出る", () => {
     render(<FengShuiLookup />);
     expect(screen.queryByLabelText("八宅の間取り")).toBeNull();
-    fireEvent.change(screen.getByPlaceholderText("1990"), {
-      target: { value: "1990" },
-    });
+    fireEvent.click(screen.getByRole("button", { name: "1990年代" }));
+    fireEvent.click(screen.getByRole("button", { name: "1990年" }));
     fireEvent.click(screen.getByRole("button", { name: "女性" }));
     expect(screen.getByLabelText("八宅の間取り")).toBeTruthy();
     expect(screen.getByText(/艮命の家に/)).toBeTruthy();
