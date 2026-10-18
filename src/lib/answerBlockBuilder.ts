@@ -39,7 +39,7 @@ export function blocksFromTool(
         .map((d) => d.direction),
     );
     let budget = 18;
-    return rows(data.directions)
+    const blocks = rows(data.directions)
       .filter((d) => favorable.has(d.direction))
       .flatMap((d) => {
         const candidates = rows(d.nearest);
@@ -64,7 +64,24 @@ export function blocksFromTool(
           },
         ]);
       });
+    return blocks.length
+      ? blocks
+      : parseAnswerBlocks([
+          {
+            type: "callout",
+            text: judgment
+              ? "街の候補を確認しましたが、今回の方位判定に合う候補はありませんでした。"
+              : "街の位置を確認しました。生年月日と出発地がそろうと、方位判定に合う街を表示できます。",
+          },
+        ]);
   }
+  if (tool === "get_honmei_star" && typeof data.honmeiStar === "number")
+    return parseAnswerBlocks([
+      {
+        type: "text",
+        text: `本命星は${data.honmeiStar}です。九星気学は参考情報です。`,
+      },
+    ]);
   if (tool === "judge_directions")
     return parseAnswerBlocks([
       {

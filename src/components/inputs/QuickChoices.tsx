@@ -206,10 +206,12 @@ export function OriginChooser({
   onPick,
   savedLabel,
   onUseSaved,
+  chooseLabel = "選ぶ",
 }: {
   onPick: (origin: PickedOrigin) => void;
   savedLabel?: string;
   onUseSaved?: () => void;
+  chooseLabel?: string;
 }) {
   const [points, setPoints] = useState<MunicipalityPoint[]>([]);
   const [pref, setPref] = useState("");
@@ -287,7 +289,7 @@ export function OriginChooser({
           {busy ? "現在地を確認中…" : "現在地"}
         </button>
         <button type="button" className={chip} onClick={() => void choose()}>
-          選ぶ
+          {chooseLabel}
         </button>
       </div>
       <p className="text-xs text-slate-600">

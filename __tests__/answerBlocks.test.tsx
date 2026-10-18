@@ -46,7 +46,12 @@ describe("safe answer blocks", () => {
       blocksFromTool("area_directions", {
         directions: [{ nearest: output.results }],
       }),
-    ).toHaveLength(0); // 未判定の方位を吉方位として表示しない
+    ).toEqual([
+      {
+        type: "callout",
+        text: "街の位置を確認しました。生年月日と出発地がそろうと、方位判定に合う街を表示できます。",
+      },
+    ]); // 未判定の方位を吉方位として表示しない
     expect(
       blocksFromTool("prefecture_summary", {
         pref: "東京都",

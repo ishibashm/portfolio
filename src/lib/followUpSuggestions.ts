@@ -22,10 +22,14 @@ const LIST_PREFIX = /^(?:(?:[-*•]|\d+[.)、])\s*)+/u;
 
 function sanitizeOne(value: unknown): string | undefined {
   if (typeof value !== "string" || CONTROL_CHARACTER.test(value)) return;
-  let text = value.trim().replace(LIST_PREFIX, "").replace(/\s+/gu, " ").trim();
+  const text = value
+    .trim()
+    .replace(LIST_PREFIX, "")
+    .replace(/\s+/gu, " ")
+    .trim();
   if (!text || MARKUP_OR_URL.test(text) || !JAPANESE_CHARACTER.test(text))
     return;
-  if (!/[?？]$/u.test(text)) text += "？";
+  if (/[?？]$|ですか|ますか|でしょうか|教えてください/u.test(text)) return;
   if (text.length > FOLLOW_UP_LIMITS.characters) return;
   return text;
 }
@@ -63,9 +67,9 @@ export function initialConsultationSuggestions(
   const selected = people.slice(0, 8);
   if (!selected.length)
     return [
-      "引越しに良い方位を相談したい？",
-      "引越しの日取りを相談したい？",
-      "条件に合う街を探したい？",
+      "引越しに良い方位を相談したい",
+      "引越しの日取りを相談したい",
+      "条件に合う街を探したい",
     ];
 
   const names = selected
@@ -82,19 +86,19 @@ export function initialConsultationSuggestions(
   const firstBirthDate = japaneseBirthDate(selected[0]?.birthDate);
   const candidates = [
     sameResidence
-      ? `${sameResidence}からの引越し方位を相談したい？`
-      : `${names || "選んだ人"}に合う引越し方位を相談したい？`,
+      ? `${sameResidence}からの引越し方位を相談したい`
+      : `${names || "選んだ人"}に合う引越し方位を相談したい`,
     selected.length === 1 && firstBirthDate
-      ? `${firstBirthDate}生まれの${names}に合う日取りを相談したい？`
-      : `${names || "選んだ人"}に合う日取りを相談したい？`,
+      ? `${firstBirthDate}生まれの${names}に合う日取りを相談したい`
+      : `${names || "選んだ人"}に合う日取りを相談したい`,
     sameResidence
-      ? `${sameResidence}から見た街の候補を探したい？`
-      : "条件に合う街を探したい？",
+      ? `${sameResidence}から見た街の候補を探したい`
+      : "条件に合う街を探したい",
   ];
   const sanitized = sanitizeFollowUpSuggestions(candidates);
   return sanitized.length
     ? sanitized
-    : ["引越しの方位を相談したい？", "引越しの日取りを相談したい？"];
+    : ["引越しの方位を相談したい", "引越しの日取りを相談したい"];
 }
 
 export function formatFollowUpEnvelope(value: unknown): string {

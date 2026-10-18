@@ -1,4 +1,11 @@
 "use client";
+import { AnswerChips } from "./AnswerChips";
+import {
+  isAskConsultation,
+  type AnswerFieldId,
+  type AskOrigin,
+} from "@/lib/askAnswerFields";
+import { nearestMunicipality } from "@/lib/nearestMunicipality";
 import { AGENT_PAUSED_REASON, AGENT_PAUSED_TEXT } from "@/lib/agentPausedText";
 import FaqPanel from "@/components/FaqPanel";
 import { ANSWER_SOURCE_LABELS, type AnswerSource } from "@/lib/answerSource";
@@ -28,6 +35,7 @@ import {
   ASK_DATA_STORAGE_KEY,
   LEGACY_ASK_STORAGE_KEY,
   isAskWorkspaceEmpty,
+  dedupeAskMemories,
   mergeRegisteredAskPeople,
   memoryFromConversation,
   parseAskWorkspace,
@@ -62,7 +70,12 @@ import type {
   AgentPerson,
 } from "@/lib/mcpAgent";
 import type { ChainEvent } from "@/lib/mcpChain";
-import { loadSettings, settingString } from "@/lib/userSettings";
+import {
+  loadSettings,
+  readSettingsSync,
+  settingNumber,
+  settingString,
+} from "@/lib/userSettings";
 import { findActiveProfile } from "@/lib/activeProfile";
 import { loadProfilePresets } from "@/lib/profilePresetSync";
 import {
@@ -109,6 +122,7 @@ type ChatMessage = {
   tools?: AgentToolCall[];
   reasons?: string[];
   suggestions?: string[];
+  answerFields?: AnswerFieldId[];
   answerSource?: AnswerSource;
   /** サーバーが書いた保存の提案。端末にもアカウントにも保存しない。 */
   guidance?: GuidanceCard;
@@ -257,40 +271,93 @@ function partyCandidate(
   };
 }
 
+const originCache = new Map<string, Promise<AskOrigin>>();
+async function resolveOrigin(
+  lat: number,
+  lon: number,
+): Promise<AskOrigin | undefined> {
+  if (
+    !Number.isFinite(lat) ||
+    !Number.isFinite(lon) ||
+    lat < 20 ||
+    lat > 46 ||
+    lon < 122 ||
+    lon > 154
+  )
+    return;
+  const key = `${lat},${lon}`;
+  let result = originCache.get(key);
+  if (!result) {
+    result = import("@/lib/municipalityCoords").then(
+      ({ MUNICIPALITY_POINTS }) => {
+        const nearest = nearestMunicipality(lat, lon, MUNICIPALITY_POINTS);
+        return {
+          lat,
+          lon,
+          ...(nearest ? { code: nearest.code, name: nearest.name } : {}),
+        };
+      },
+    );
+    originCache.set(key, result);
+  }
+  return result;
+}
+async function savedAskOrigin(settings = readSettingsSync()) {
+  const lat = settingNumber(settings, "base_lat");
+  const lon = settingNumber(settings, "base_lon");
+  if (
+    lat === undefined ||
+    lon === undefined ||
+    lat < 20 ||
+    lat > 46 ||
+    lon < 122 ||
+    lon > 154
+  )
+    return;
+  return resolveOrigin(lat, lon);
+}
+
 async function loadRegisteredAskPeople(): Promise<RegisteredAskPerson[]> {
   const [{ settings }, { presets }] = await Promise.all([
     loadSettings(),
     loadProfilePresets(fetch, window.localStorage),
   ]);
   const active = findActiveProfile(presets, settings);
+  const origin = await savedAskOrigin(settings);
   const activeBirthDate = settingString(settings, "birth_date")?.slice(0, 10);
   const activeResidence = settingString(settings, "base_label")?.trim();
   const activeBirthPlace = settingString(settings, "birth_label")?.trim();
-  const registered: RegisteredAskPerson[] = presets.map((preset) => {
-    const isActive = preset.id === active?.id;
-    return {
-      sourceId: `profile:${preset.id}`,
-      name: preset.name,
-      birthDate:
-        isActive && activeBirthDate
-          ? activeBirthDate
-          : preset.birthDate.slice(0, 10),
-      ...(isActive && activeBirthPlace
-        ? { birthPlace: activeBirthPlace }
-        : preset.birthLabel
-          ? { birthPlace: preset.birthLabel }
-          : {}),
-      ...(isActive && activeResidence
-        ? { residence: activeResidence }
-        : preset.baseLabel
-          ? { residence: preset.baseLabel }
-          : {}),
-      ...(isActive ? { active: true } : {}),
-    };
-  });
+  const registered: RegisteredAskPerson[] = await Promise.all(
+    presets.map(async (preset) => {
+      const isActive = preset.id === active?.id;
+      return {
+        sourceId: `profile:${preset.id}`,
+        name: preset.name,
+        birthDate:
+          isActive && activeBirthDate
+            ? activeBirthDate
+            : preset.birthDate.slice(0, 10),
+        ...(isActive && activeBirthPlace
+          ? { birthPlace: activeBirthPlace }
+          : preset.birthLabel
+            ? { birthPlace: preset.birthLabel }
+            : {}),
+        ...(isActive && activeResidence
+          ? { residence: activeResidence }
+          : preset.baseLabel
+            ? { residence: preset.baseLabel }
+            : {}),
+        origin:
+          (isActive ? origin : undefined) ??
+          (await resolveOrigin(preset.baseLat, preset.baseLon)),
+        ...(isActive ? { active: true } : {}),
+      };
+    }),
+  );
   if (!active && activeBirthDate)
     registered.unshift({
       sourceId: "settings:active",
+      origin,
       name: "本人",
       birthDate: activeBirthDate,
       ...(activeBirthPlace ? { birthPlace: activeBirthPlace } : {}),
@@ -372,8 +439,8 @@ function followUps(messages: ChatMessage[]) {
     ];
   return [
     "もう少し具体的に教えて",
-    "選ぶときの注意点は？",
-    "次に何を確認すればよい？",
+    "選ぶときの注意点を教えて",
+    "次に確認することを教えて",
   ];
 }
 
@@ -619,6 +686,20 @@ export function McpExplorer({
   const [year, setYear] = useState(initialInput.year);
   const [suggestions, setSuggestions] = useState<string[]>([]);
   const [privacyRevision, setPrivacyRevision] = useState(0);
+  const [savedOrigin, setSavedOrigin] = useState<AskOrigin>();
+  useEffect(() => {
+    let cancelled = false;
+    void savedAskOrigin()
+      .then((origin) => {
+        if (!cancelled) setSavedOrigin(origin);
+      })
+      .catch(() => {
+        if (!cancelled) setSavedOrigin(undefined);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [privacyRevision]);
   const [remaining, setRemaining] = useState<string>();
   const [voiceSignedIn, setVoiceSignedIn] = useState<boolean | null>(null);
   const [storageReady, setStorageReady] = useState(!persistConversation);
@@ -660,6 +741,7 @@ export function McpExplorer({
     ) ?? conversations[0];
   const messages = activeConversation?.messages ?? EMPTY_CHAT_MESSAGES;
   const question = activeConversation?.draft ?? "";
+  const chosenOrigins = useRef(new Map<string, AskOrigin>());
   const selectedPeople = people.filter((person) =>
     activeConversation?.personIds.includes(person.id),
   );
@@ -1241,12 +1323,24 @@ export function McpExplorer({
     ];
     const needsNoProfile = isAgentGeneralQuestion(text);
     if (needsNoProfile) return undefined;
-    const includeBirth = userQuestions.some(needsAgentBirth);
-    const includeResidence = userQuestions.some(needsAgentOrigin);
+    const consultation = userQuestions.some(isAskConsultation);
+    const includeBirth = consultation || userQuestions.some(needsAgentBirth);
+    const includeResidence =
+      consultation || userQuestions.some(needsAgentOrigin);
     if (!includeBirth && !includeResidence) return undefined;
     const profiles = selectedPeople.map((person) => ({
       id: person.id,
       name: person.name,
+      ...(includeResidence &&
+      (chosenOrigins.current.get(`${activeConversationId}:${person.id}`) ??
+        person.origin)
+        ? {
+            origin:
+              chosenOrigins.current.get(
+                `${activeConversationId}:${person.id}`,
+              ) ?? person.origin,
+          }
+        : {}),
       ...(includeBirth && person.birthDate
         ? { birthDate: person.birthDate }
         : {}),
@@ -1327,9 +1421,12 @@ export function McpExplorer({
     );
   }
 
-  async function submitAgent(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    const text = question.trim();
+  async function submitAgent(
+    event: FormEvent<HTMLFormElement> | string,
+    pickedOrigin?: AskOrigin,
+  ) {
+    if (typeof event !== "string") event.preventDefault();
+    const text = (typeof event === "string" ? event : question).trim();
     if (!text || running) return;
     const revision = conversationRevision.current;
     const userMessage: ChatMessage = {
@@ -1348,6 +1445,27 @@ export function McpExplorer({
       tools: [],
     };
     const profiles = peopleForQuestion(text);
+    if (profiles) {
+      for (const person of profiles) {
+        if (pickedOrigin && profiles.length === 1) {
+          person.origin = pickedOrigin;
+          chosenOrigins.current.set(
+            `${activeConversationId}:${person.id}`,
+            pickedOrigin,
+          );
+        } else if (
+          profiles.length === 1 &&
+          !person.origin &&
+          !person.residence
+        ) {
+          person.origin = savedOrigin;
+        }
+      }
+    }
+    const standaloneOrigin =
+      pickedOrigin ?? chosenOrigins.current.get(activeConversationId);
+    if (pickedOrigin && !profiles?.length)
+      chosenOrigins.current.set(activeConversationId, pickedOrigin);
     const remembered = memoriesForApi(memories, activeConversationId);
     const contextCharacters =
       text.length +
@@ -1359,7 +1477,8 @@ export function McpExplorer({
           person.name.length +
           (person.birthDate?.length ?? 0) +
           (person.birthPlace?.length ?? 0) +
-          (person.residence?.length ?? 0),
+          (person.residence?.length ?? 0) +
+          (person.origin ? JSON.stringify(person.origin).length : 0),
         0,
       );
     const history = historyForApi(
@@ -1383,7 +1502,11 @@ export function McpExplorer({
           mode: "llm",
           question: text,
           ...(history.length ? { history } : {}),
-          ...(profiles ? { people: profiles } : {}),
+          ...(profiles
+            ? { people: profiles }
+            : standaloneOrigin
+              ? { profile: { origin: standaloneOrigin } }
+              : {}),
           ...(remembered.length ? { memories: remembered } : {}),
           conversationKey: saveOfferKey,
         }),
@@ -1460,6 +1583,14 @@ export function McpExplorer({
             setBillingPaused(true);
           else if (!item.reasons.length) setBillingPaused(false);
           let guidance = "guidance" in item ? item.guidance : undefined;
+          // 新しい回答ボタンがある場合、旧フォームで同じ不足項目を重ねて聞かない。
+          if (
+            "answerFields" in item &&
+            item.answerFields &&
+            guidance?.intent !== "star" &&
+            guidance?.fields.length
+          )
+            guidance = undefined;
           if (guidance && (guidance.fields.length || !guidance.links.length)) {
             if (
               activeConversation?.guidancePrompted ||
@@ -1489,6 +1620,8 @@ export function McpExplorer({
             state: "done",
             reasons: item.reasons,
             answerSource: "source" in item ? item.source : undefined,
+            answerFields:
+              "answerFields" in item ? item.answerFields : undefined,
             ...(guidance ? { guidance } : {}),
             ...(suggestions.length ? { suggestions } : {}),
           }));
@@ -1517,7 +1650,7 @@ export function McpExplorer({
                       : item,
                   )
                 : [...current, memory];
-              return next.slice(-ASK_DATA_LIMITS.memories);
+              return dedupeAskMemories(next).slice(-ASK_DATA_LIMITS.memories);
             });
           if (memory) setWorkspaceUpdatedAt(now);
           setMessage(
@@ -1919,7 +2052,7 @@ export function McpExplorer({
           )}
           {persistConversation && (
             <AskMemoryPanel
-              memories={memories}
+              memories={dedupeAskMemories(memories)}
               onDelete={(id) => {
                 setWorkspaceUpdatedAt(new Date().toISOString());
                 setMemories((current) =>
@@ -2011,7 +2144,11 @@ export function McpExplorer({
             AIを使わず計算のみ
           </label>
         )}
-        <AgentBirthYear key={privacyRevision} />
+        {!(selectedPeople.length
+          ? selectedPeople.every((p) => p.birthDate)
+          : people.some((p) => p.active && p.birthDate)) && (
+          <AgentBirthYear key={privacyRevision} />
+        )}
       </div>
 
       {voiceEnabled && useAgent && (
@@ -2179,9 +2316,26 @@ export function McpExplorer({
 
             <form
               ref={invitationForm}
-              onSubmit={submitAgent}
+              onSubmit={(event) => void submitAgent(event)}
               className="sticky bottom-0 z-10 shrink-0 rounded-b-3xl border-t border-stone-200 bg-[#faf7f5]/95 p-3 shadow-[0_-8px_24px_rgba(15,23,42,0.06)] backdrop-blur sm:p-4"
             >
+              <AnswerChips
+                key={`${activeConversationId}:${lastAssistant?.id ?? "empty"}`}
+                fields={lastAssistant?.answerFields ?? []}
+                disabled={running}
+                savedOrigin={guidanceSaved?.origin ?? savedOrigin}
+                birthDateKnown={Boolean(guidanceSaved?.birthDate)}
+                onSend={(text) => void submitAgent(text)}
+                onOrigin={(origin) => {
+                  void (async () => {
+                    const resolved =
+                      origin.lat !== undefined && origin.lon !== undefined
+                        ? await resolveOrigin(origin.lat, origin.lon)
+                        : undefined;
+                    await submitAgent(`出発地は${origin.name}です。`, resolved);
+                  })();
+                }}
+              />
               {messages.length > 0 && (
                 <div
                   className={`mb-3 flex gap-2 overflow-x-auto pb-1 ${
@@ -2237,9 +2391,9 @@ export function McpExplorer({
                     if (question.trim() && !running)
                       event.currentTarget.form?.requestSubmit();
                   }}
-                  rows={2}
-                  placeholder="しるべに相談したいことを書く"
-                  className="max-h-40 min-h-14 flex-1 resize-y rounded-2xl border border-stone-300 bg-white px-4 py-3 text-base leading-relaxed outline-none focus:border-slate-500 disabled:opacity-60"
+                  rows={1}
+                  placeholder="ボタンに無いことはここに書けます"
+                  className="max-h-40 min-h-10 flex-1 resize-y rounded-2xl border border-stone-300 bg-white px-3 py-2 text-sm leading-relaxed outline-none focus:border-slate-500 disabled:opacity-60"
                 />
                 <button
                   type="submit"

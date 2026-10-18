@@ -87,8 +87,8 @@ it("計算のみは分割NDJSONを受け取り、完了前から経過を描く"
           calls: 1,
           reasons: ["深さの上限で打ち切りました。"],
           suggestions: [
-            "長崎県諫早市を出発地にして方位を計算する？",
-            "2026年11月の候補日も比べる？",
+            "長崎県諫早市を出発地にして方位を計算する",
+            "2026年11月の候補日も比べる",
           ],
         }) + "\n",
       ),
@@ -101,11 +101,11 @@ it("計算のみは分割NDJSONを受け取り、完了前から経過を描く"
   expect(screen.getByText("深さの上限で打ち切りました。")).toBeTruthy();
   expect(screen.queryByRole("button", { name: "計算を中止" })).toBeNull();
   const followUp = screen.getByRole("button", {
-    name: "長崎県諫早市を出発地にして方位を計算する？",
+    name: "長崎県諫早市を出発地にして方位を計算する",
   });
   fireEvent.click(followUp);
   expect(screen.getByLabelText("自由文から入力")).toHaveValue(
-    "長崎県諫早市を出発地にして方位を計算する？",
+    "長崎県諫早市を出発地にして方位を計算する",
   );
   expect(
     fetcher.mock.calls.filter(([url]) => url === "/api/mcp-chain"),
@@ -139,11 +139,11 @@ it("AI回答を逐次描き、道具の状態を利用者向けに折り畳む",
   expect(screen.getByRole("img", { name: "しるべ" })).toBeTruthy();
   fireEvent.click(screen.getByRole("button", { name: "人物情報なしで相談" }));
   const topic = screen.getByRole("button", {
-    name: "引越しに良い方位を相談したい？",
+    name: "引越しに良い方位を相談したい",
   });
   fireEvent.click(topic);
   expect(screen.getByLabelText("メッセージ")).toHaveValue(
-    "引越しに良い方位を相談したい？",
+    "引越しに良い方位を相談したい",
   );
   expect(
     fetcher.mock.calls.filter(([url]) => url === "/api/mcp-chain"),
@@ -152,7 +152,7 @@ it("AI回答を逐次描き、道具の状態を利用者向けに折り畳む",
   await waitFor(() => expect(fetcher).toHaveBeenCalledTimes(2));
   expect(JSON.parse(fetcher.mock.calls[1][1].body)).toMatchObject({
     mode: "llm",
-    question: "引越しに良い方位を相談したい？",
+    question: "引越しに良い方位を相談したい",
   });
   const encoder = new TextEncoder();
   const send = async (event: unknown) => {
@@ -204,7 +204,7 @@ it("AI回答を逐次描き、道具の状態を利用者向けに折り畳む",
     calls: 1,
     source: "calc",
     reasons: [],
-    suggestions: ["配偶者の候補日も比べる？", "相談メモの東側候補を見直す？"],
+    suggestions: ["配偶者の候補日も比べる", "相談メモの東側候補を見直す"],
   });
   await act(async () => controller.close());
   expect(screen.getByRole("status").textContent).toBe("回答ができました。");
@@ -212,10 +212,10 @@ it("AI回答を逐次描き、道具の状態を利用者向けに折り畳む",
   expect(screen.getByText("🧮 計算結果")).toBeTruthy();
   expect(screen.getByLabelText("次の質問の候補")).toBeTruthy();
   fireEvent.click(
-    screen.getByRole("button", { name: "配偶者の候補日も比べる？" }),
+    screen.getByRole("button", { name: "配偶者の候補日も比べる" }),
   );
   expect(screen.getByLabelText("メッセージ")).toHaveValue(
-    "配偶者の候補日も比べる？",
+    "配偶者の候補日も比べる",
   );
   expect(fetcher).toHaveBeenCalledTimes(2);
 });
@@ -361,12 +361,12 @@ it("保存済みプロフィールと同行者を重複なく候補にし、実�
   );
   fireEvent.click(self);
   const suggestion = screen.getByRole("button", {
-    name: "1991年4月12日生まれの本人に合う日取りを相談したい？",
+    name: "1991年4月12日生まれの本人に合う日取りを相談したい",
   });
   expect(screen.queryByText(/1990年5月5日|深谷市|長崎市/)).toBeNull();
   fireEvent.click(suggestion);
   expect(screen.getByLabelText("メッセージ")).toHaveValue(
-    "1991年4月12日生まれの本人に合う日取りを相談したい？",
+    "1991年4月12日生まれの本人に合う日取りを相談したい",
   );
   expect(
     fetcher.mock.calls.filter(([url]) => url === "/api/mcp-chain"),
@@ -757,7 +757,7 @@ it("不足項目カードを優先し、閉じた会話では再読込しても�
           calls: 0,
           reasons: [],
           guidance,
-          suggestions: ["別の候補も比べる？"],
+          suggestions: ["別の候補も比べる"],
         },
       ]
         .map((event) => JSON.stringify(event))
@@ -771,9 +771,7 @@ it("不足項目カードを優先し、閉じた会話では再読込しても�
   });
   fireEvent.click(screen.getByRole("button", { name: "送信" }));
   await screen.findByLabelText("計算ページへの案内");
-  expect(
-    screen.queryByRole("button", { name: "別の候補も比べる？" }),
-  ).toBeNull();
+  expect(screen.queryByRole("button", { name: "別の候補も比べる" })).toBeNull();
   for (const name of ["1990年代", "1990年", "5月", "5日"]) {
     fireEvent.click(screen.getByRole("button", { name }));
   }
@@ -872,3 +870,154 @@ it("URLの自由文や未知の選択肢では会話を自動送信しない", a
     ),
   ).toBe(false);
 });
+
+it("設定の出発地と生年月日で相談し、最新回答の期間ボタンから即送信する", async () => {
+  localStorage.setItem(
+    SETTINGS_KEY,
+    JSON.stringify({
+      birth_date: "1990-04-15",
+      base_lat: 35.1709,
+      base_lon: 136.8815,
+    }),
+  );
+  const requests: Record<string, unknown>[] = [];
+  const fetcher = vi.fn(async (url: string, init?: RequestInit) => {
+    if (url.includes("status"))
+      return Response.json({ remaining: { requests: 20 } });
+    if (url === "/api/mcp-chain") {
+      requests.push(JSON.parse(String(init?.body)));
+      return new Response(
+        '{"type":"text-delta","text":"計算結果です。"}\n{"type":"done","calls":3,"reasons":[],"answerFields":["period"],"guidance":{"intent":"move","values":{"birthDate":"1990-04-15"},"fields":["municipality","date"],"links":[]}}\n',
+      );
+    }
+    return Response.json({}, { status: 401 });
+  });
+  vi.stubGlobal("fetch", fetcher);
+  render(<McpExplorer agentEnabled persistConversation />);
+  fireEvent.click(
+    await screen.findByRole("button", { name: "本人を相談対象に選ぶ" }),
+  );
+  expect(screen.queryByText("本命星だけなら、生年から調べる")).toBeNull();
+  expect(screen.queryByLabelText("生年")).toBeNull();
+  fireEvent.change(screen.getByLabelText("メッセージ"), {
+    target: { value: "引越しを考えています。日付と方位を相談したいです。" },
+  });
+  fireEvent.click(screen.getByRole("button", { name: "送信" }));
+  const period = await screen.findByRole("button", { name: "1〜3か月後" });
+  expect(requests[0]).toMatchObject({
+    people: [
+      {
+        birthDate: "1990-04-15",
+        origin: {
+          lat: 35.1709,
+          lon: 136.8815,
+          code: expect.stringMatching(/^\d{5}$/),
+          name: expect.stringContaining("名古屋市"),
+        },
+      },
+    ],
+  });
+  fireEvent.click(period);
+  await waitFor(() => expect(requests).toHaveLength(2));
+  expect(requests[1].question).toBe("時期は1〜3か月後を考えています。");
+  expect(requests[1]).toMatchObject({
+    people: [{ birthDate: "1990-04-15", origin: { lon: 136.8815 } }],
+  });
+  expect(
+    await screen.findByRole("button", { name: "1〜3か月後" }),
+  ).toBeTruthy();
+});
+
+it.each([
+  {
+    label: "非アクティブの控え",
+    active: false,
+    settings: {},
+    lat: 35.1709,
+    lon: 136.8815,
+    expected: { lat: 35.1709, lon: 136.8815 },
+  },
+  {
+    label: "使用中は設定を優先",
+    active: true,
+    settings: { base_lat: 35.1709, base_lon: 136.8815 },
+    lat: 35.6812,
+    lon: 139.7671,
+    expected: { lat: 35.1709, lon: 136.8815 },
+  },
+  {
+    label: "使用中で設定がなければ控え",
+    active: true,
+    settings: {},
+    lat: 35.1709,
+    lon: 136.8815,
+    expected: { lat: 35.1709, lon: 136.8815 },
+  },
+  {
+    label: "緯度範囲外",
+    active: false,
+    settings: {},
+    lat: 19,
+    lon: 136.8815,
+    expected: undefined,
+  },
+  {
+    label: "経度範囲外",
+    active: false,
+    settings: {},
+    lat: 35.1709,
+    lon: 155,
+    expected: undefined,
+  },
+  {
+    label: "出発地なしの一人には端末設定",
+    active: false,
+    settings: { base_lat: 35.1709, base_lon: 136.8815 },
+    lat: 19,
+    lon: 136.8815,
+    expected: { lat: 35.1709, lon: 136.8815 },
+  },
+])(
+  "相談対象の出発地: $label",
+  async ({ active, settings, lat, lon, expected }) => {
+    localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
+    localStorage.setItem(
+      "profile_presets_v1",
+      JSON.stringify([
+        {
+          id: "test-preset",
+          name: "テスト",
+          birthDate: "1990-04-15",
+          baseLat: lat,
+          baseLon: lon,
+          active,
+          createdAt: "2026-01-01T00:00:00.000Z",
+        },
+      ]),
+    );
+    const requests: { people: { origin?: unknown }[] }[] = [];
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (url: string, init?: RequestInit) => {
+        if (url.includes("status"))
+          return Response.json({ remaining: { requests: 20 } });
+        if (url === "/api/mcp-chain") {
+          requests.push(JSON.parse(String(init?.body)));
+          return new Response('{"type":"done","calls":0,"reasons":[]}\n');
+        }
+        return Response.json({}, { status: 401 });
+      }),
+    );
+    render(<McpExplorer agentEnabled persistConversation />);
+    fireEvent.click(
+      await screen.findByRole("button", { name: "テストを相談対象に選ぶ" }),
+    );
+    fireEvent.change(screen.getByLabelText("メッセージ"), {
+      target: { value: "引越しの日付と方位を相談したい" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "送信" }));
+    await waitFor(() => expect(requests).toHaveLength(1));
+    if (expected) expect(requests[0].people[0].origin).toMatchObject(expected);
+    else expect(requests[0].people[0].origin).toBeUndefined();
+  },
+);

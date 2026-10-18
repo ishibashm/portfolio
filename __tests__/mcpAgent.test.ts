@@ -90,9 +90,9 @@ describe("AIが公開MCPを選ぶループ", () => {
       reasons: [],
       memoryEligible: true,
       suggestions: [
-        "候補日の通勤条件も比べる？",
-        "家族の本命星でも日取りを確認する？",
-        "吉方位にある街をさらに絞る？",
+        "候補日の通勤条件も比べる",
+        "家族の本命星でも日取りを確認する",
+        "吉方位にある街をさらに絞る",
       ],
     });
     expect(JSON.stringify(events)).not.toContain(FOLLOW_UP_ENVELOPE_START);
@@ -240,17 +240,17 @@ describe("追質問候補", () => {
       },
     ]);
     expect(personalized).toEqual([
-      "静岡県浜松市中央区からの引越し方位を相談したい？",
-      "1991年4月12日生まれの本人に合う日取りを相談したい？",
-      "静岡県浜松市中央区から見た街の候補を探したい？",
+      "静岡県浜松市中央区からの引越し方位を相談したい",
+      "1991年4月12日生まれの本人に合う日取りを相談したい",
+      "静岡県浜松市中央区から見た街の候補を探したい",
     ]);
     expect(personalized.join(" ")).not.toMatch(/1990|深谷|長崎/);
 
     const generic = initialConsultationSuggestions([]);
     expect(generic).toEqual([
-      "引越しに良い方位を相談したい？",
-      "引越しの日取りを相談したい？",
-      "条件に合う街を探したい？",
+      "引越しに良い方位を相談したい",
+      "引越しの日取りを相談したい",
+      "条件に合う街を探したい",
     ]);
     expect(generic.join(" ")).not.toMatch(/\d{4}年|市|区|町|村/);
   });
@@ -266,20 +266,20 @@ describe("追質問候補", () => {
     expect(
       sanitizeFollowUpSuggestions([
         " 1. 家族の候補日も比べる ",
-        "家族の候補日も比べる？",
+        "家族の候補日も比べる",
         "<b>危険な候補</b>",
         "参考URL https://example.com",
         "あ".repeat(61),
-        "別の街も確認する？",
+        "別の街も確認する",
       ]),
-    ).toEqual(["家族の候補日も比べる？", "別の街も確認する？"]);
+    ).toEqual(["家族の候補日も比べる", "別の街も確認する"]);
     expect(
       sanitizeFollowUpSuggestions([
-        "一つ目は？",
-        "二つ目は？",
-        "三つ目は？",
-        "四つ目は？",
-        "五つ目は？",
+        "一つ目を見たい",
+        "二つ目を見たい",
+        "三つ目を見たい",
+        "四つ目を見たい",
+        "五つ目を見たい",
       ]),
     ).toHaveLength(4);
   });
@@ -289,13 +289,13 @@ describe("追質問候補", () => {
       extractFollowUpEnvelope(
         "回答本文" +
           formatFollowUpEnvelope([
-            "配偶者の候補も比べる？",
-            "相談メモの日付を見直す？",
+            "配偶者の候補も比べる",
+            "相談メモの日付を見直す",
           ]),
       ),
     ).toEqual({
       text: "回答本文",
-      suggestions: ["配偶者の候補も比べる？", "相談メモの日付を見直す？"],
+      suggestions: ["配偶者の候補も比べる", "相談メモの日付を見直す"],
     });
     expect(
       extractFollowUpEnvelope(
