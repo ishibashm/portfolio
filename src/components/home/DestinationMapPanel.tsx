@@ -416,62 +416,71 @@ export default function DestinationMapPanel({
                   help="市区町村名・住所・郵便番号で探せます。座標のままでも入れられます。"
                 />
               </div>
-              {/* 座標や Google マップの URL を貼る口は残す。地図で拾った
-                  値を貼り付けて使う人がいる（PlaceInput の註と同じ理由）。 */}
-              <div className="w-full relative z-10 flex gap-1 mb-1">
-                <input
-                  type="text"
-                  aria-label="座標または Google マップの URL"
-                  placeholder="座標またはGoogleマップのURLを貼り付け... (例: 35.68, 139.76)"
-                  className="flex-1 bg-white border border-stone-300 focus:border-emerald-200 text-stone-600 text-xs px-2 py-1.5 rounded-xl outline-none transition-colors"
-                  onChange={(e) => {
-                    const val = e.target.value;
-                    // Google Mapsの "@lat,lon" と、コピーした単なる "lat,lon" の両方に対応
-                    const match = val.match(
-                      /(?:@|^|\s)(-?\d+(?:\.\d+)?)\s*,\s*(-?\d+(?:\.\d+)?)/,
-                    );
-                    if (match) {
-                      setTargetLat(Number(parseFloat(match[1]).toFixed(5)));
-                      setTargetLon(Number(parseFloat(match[2]).toFixed(5)));
-                      e.target.value = ""; // clear upon success
+              <details className="w-full relative z-10">
+                <summary className="cursor-pointer text-xs text-stone-600 py-2">
+                  座標を直接入れる
+                </summary>
+                {/* 座標や Google マップの URL を貼る口は残す。地図で拾った
+                    値を貼り付けて使う人がいる（PlaceInput の註と同じ理由）。 */}
+                <div className="w-full relative z-10 flex gap-1 mb-1">
+                  <input
+                    type="text"
+                    aria-label="座標または Google マップの URL"
+                    placeholder="座標またはGoogleマップのURLを貼り付け... (例: 35.68, 139.76)"
+                    className="flex-1 bg-white border border-stone-300 focus:border-emerald-200 text-stone-600 text-xs px-2 py-1.5 rounded-xl outline-none transition-colors"
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      // Google Mapsの "@lat,lon" と、コピーした単なる "lat,lon" の両方に対応
+                      const match = val.match(
+                        /(?:@|^|\s)(-?\d+(?:\.\d+)?)\s*,\s*(-?\d+(?:\.\d+)?)/,
+                      );
+                      if (match) {
+                        setTargetLat(Number(parseFloat(match[1]).toFixed(5)));
+                        setTargetLon(Number(parseFloat(match[2]).toFixed(5)));
+                        e.target.value = ""; // clear upon success
+                      }
+                    }}
+                  />
+                </div>
+                <div className="flex gap-2 relative z-10 mt-1">
+                  <input
+                    type="number"
+                    aria-label="緯度"
+                    placeholder="緯度"
+                    value={targetLat ?? ""}
+                    onChange={(e) =>
+                      setTargetLat(
+                        e.target.value ? Number(e.target.value) : null,
+                      )
                     }
-                  }}
-                />
-              </div>
-              <div className="flex gap-2 relative z-10 mt-1">
-                <input
-                  type="number"
-                  aria-label="緯度"
-                  placeholder="緯度"
-                  value={targetLat ?? ""}
-                  onChange={(e) =>
-                    setTargetLat(e.target.value ? Number(e.target.value) : null)
-                  }
-                  className="bg-white border border-stone-300 focus:border-emerald-200 text-stone-600 text-sm px-2 py-1 rounded-xl outline-none w-1/3 transition-colors font-mono"
-                />
-                <input
-                  type="number"
-                  aria-label="経度"
-                  placeholder="経度"
-                  value={targetLon ?? ""}
-                  onChange={(e) =>
-                    setTargetLon(e.target.value ? Number(e.target.value) : null)
-                  }
-                  className="bg-white border border-stone-300 focus:border-emerald-200 text-stone-600 text-sm px-2 py-1 rounded-xl outline-none w-1/3 transition-colors font-mono"
-                />
-                <input
-                  type="number"
-                  aria-label="標高（m）"
-                  placeholder="標高(m)"
-                  value={targetElevation ?? ""}
-                  onChange={(e) =>
-                    setTargetElevation(
-                      e.target.value ? Number(e.target.value) : null,
-                    )
-                  }
-                  className="bg-white border border-stone-300 focus:border-emerald-200 text-stone-600 text-sm px-2 py-1 rounded-xl outline-none w-1/3 transition-colors font-mono"
-                />
-              </div>
+                    className="bg-white border border-stone-300 focus:border-emerald-200 text-stone-600 text-sm px-2 py-1 rounded-xl outline-none w-1/3 transition-colors font-mono"
+                  />
+                  <input
+                    type="number"
+                    aria-label="経度"
+                    placeholder="経度"
+                    value={targetLon ?? ""}
+                    onChange={(e) =>
+                      setTargetLon(
+                        e.target.value ? Number(e.target.value) : null,
+                      )
+                    }
+                    className="bg-white border border-stone-300 focus:border-emerald-200 text-stone-600 text-sm px-2 py-1 rounded-xl outline-none w-1/3 transition-colors font-mono"
+                  />
+                  <input
+                    type="number"
+                    aria-label="標高（m）"
+                    placeholder="標高(m)"
+                    value={targetElevation ?? ""}
+                    onChange={(e) =>
+                      setTargetElevation(
+                        e.target.value ? Number(e.target.value) : null,
+                      )
+                    }
+                    className="bg-white border border-stone-300 focus:border-emerald-200 text-stone-600 text-sm px-2 py-1 rounded-xl outline-none w-1/3 transition-colors font-mono"
+                  />
+                </div>
+              </details>
               {/* **そこがどこなのかを出す。**
                   利用者の報告：「その地点がそもそもどこに当たるのかが
                   分からない」。座標だけが出ていて、自分がどこを見て
