@@ -1,3 +1,4 @@
+import type { AskOrigin } from "./askAnswerFields";
 import { AGENT_PAUSED_REASON, AGENT_PAUSED_TEXT } from "./agentPausedText";
 
 export const ASK_DATA_STORAGE_KEY = "cloud_palette_ask_data_v2";
@@ -27,6 +28,7 @@ export interface AskPerson {
   birthDate: string;
   birthPlace?: string;
   residence?: string;
+  origin?: AskOrigin;
   /**
    * サイトの使用中プロフィール・保存済みプロフィール・同行者との
    * 紐付け。同じ人を /ask でも手入力した場合に二重表示しないために使う。
@@ -45,6 +47,7 @@ export interface RegisteredAskPerson {
   birthDate: string;
   birthPlace?: string;
   residence?: string;
+  origin?: AskOrigin;
   active?: boolean;
 }
 
@@ -260,6 +263,7 @@ export function mergeRegisteredAskPeople(
         match.birthDate = parsedBirthDate;
         if (birthPlace) match.birthPlace = birthPlace;
         if (residence) match.residence = residence;
+        match.origin = candidate.origin;
       }
       match.sourceIds = [
         ...new Set([...(match.sourceIds ?? []), sourceId]),
@@ -277,6 +281,7 @@ export function mergeRegisteredAskPeople(
       ...(birthPlace ? { birthPlace } : {}),
       ...(residence ? { residence } : {}),
       sourceIds: [sourceId],
+      ...(candidate.origin ? { origin: candidate.origin } : {}),
       ...(candidate.active === true ? { active: true } : {}),
       createdAt: now,
       updatedAt: now,
@@ -405,7 +410,7 @@ export function parseAskWorkspace(
       personIds.has(personId),
     );
   }
-  const memories = uniqueById(
+  const memories = dedupeAskMemories(
     (Array.isArray(workspace.memories) ? workspace.memories : [])
       .slice(-ASK_DATA_LIMITS.memories)
       .flatMap((item) => {
@@ -595,4 +600,15 @@ export function isAskWorkspaceEmpty(workspace: AskWorkspace): boolean {
         conversation.messages.length === 0 && !conversation.draft.trim(),
     )
   );
+}
+
+/** Keep one memory across conversations, including legacy saved duplicates. */
+export function dedupeAskMemories(items: AskMemoryItem[]): AskMemoryItem[] {
+  const seen = new Set<string>();
+  return uniqueById(items).filter((item) => {
+    const key = item.text.normalize("NFKC").replace(/\s+/gu, " ").trim();
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
 }

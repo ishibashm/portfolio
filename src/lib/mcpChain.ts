@@ -181,18 +181,18 @@ function calculationFollowUps(
     }
   }
   return sanitizeFollowUpSuggestions([
-    ...(towns[0] ? [`${towns[0]}を出発地にして方位を計算する？`] : []),
-    ...(days[0] ? [`${days[0]}を対象日にして候補を比べる？`] : []),
+    ...(towns[0] ? [`${towns[0]}を出発地にして方位を計算する`] : []),
+    ...(days[0] ? [`${days[0]}を対象日にして候補を比べる`] : []),
     ...(auspiciousDirections[0]
-      ? [`${auspiciousDirections[0]}の街をさらに先まで見る？`]
+      ? [`${auspiciousDirections[0]}の街をさらに先まで見る`]
       : []),
-    ...(towns[1] ? [`${towns[1]}も出発地にして結果を比べる？`] : []),
+    ...(towns[1] ? [`${towns[1]}も出発地にして結果を比べる`] : []),
     ...(searchResults.length > 1
-      ? [`${searchResults[0]}を出発地に指定して計算する？`]
+      ? [`${searchResults[0]}を出発地に指定して計算する`]
       : []),
-    `${input.municipality}で対象日を変えて比べる？`,
-    "県名を含む市区町村名で計算し直す？",
-    "生年月日と出発地を確認して再計算する？",
+    `${input.municipality}で対象日を変えて比べる`,
+    "県名を含む市区町村名で計算し直す",
+    "生年月日と出発地を確認して再計算する",
   ]);
 }
 
