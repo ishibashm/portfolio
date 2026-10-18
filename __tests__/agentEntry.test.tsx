@@ -23,18 +23,43 @@ afterEach(() => {
   localStorage.clear();
   vi.unstubAllGlobals();
 });
-it("初期HTMLには軽いフォームだけ。操作で初めてdynamicを描く", () => {
+it("ホームは入力欄やチャットJSを持たず、固定選択肢で会話を始める", async () => {
+  vi.stubGlobal(
+    "fetch",
+    vi.fn(async () => Response.json({ enabled: true, paused: null })),
+  );
   const source = readFileSync("src/components/home/AgentEntry.tsx", "utf8");
-  expect(source).toContain('dynamic(() => import("./HomeAgentChat")');
-  expect(source).toContain("ssr: false");
+  expect(source).not.toContain("HomeAgentChat");
   render(<AgentEntry />);
-  expect(screen.queryByText("遅延チャット")).toBeNull();
-  expect(
-    screen.getByRole("link", { name: "詳しく見る" }).getAttribute("href"),
-  ).toBe("/ask");
-  fireEvent.click(screen.getByRole("button", { name: "質問の画面を開く" }));
-  expect(screen.getByText("遅延チャット")).toBeTruthy();
+  expect(screen.queryByRole("textbox")).toBeNull();
+  await waitFor(() =>
+    expect(
+      screen.getByRole("link", { name: "引越しを考えている" }),
+    ).toHaveAttribute("href", "/ask?start=move"),
+  );
+  fireEvent.click(
+    screen.getByRole("button", { name: "よくある質問（AI不要）" }),
+  );
+  expect(screen.getByText("AIを使わずに調べられますか？")).toBeTruthy();
 });
+it.each(["billing", true])(
+  "停止時はAI導線を計算ページへ切り替える: %s",
+  async (paused) => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => Response.json({ enabled: true, paused })),
+    );
+    render(<AgentEntry />);
+    await waitFor(() =>
+      expect(
+        screen.getByRole("link", { name: /引越しを考えている/ }),
+      ).toHaveAttribute("href", "/relocation/arbitrage"),
+    );
+    expect(
+      screen.queryByRole("link", { name: "引越しを考えている" }),
+    ).toBeNull();
+  },
+);
 it("登録内容を人物候補へ統合し、必要な質問だけ送る。すべて消すも反映", async () => {
   localStorage.setItem(
     SETTINGS_KEY,
