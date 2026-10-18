@@ -498,6 +498,7 @@ module.exports = {
   blogLastmod: BLOG_LASTMOD,
   exclude: [
     "/ask",
+    "/houi/3d",
     "/houi/mcp-explorer",
     "/relocation/candidates",
     "/admin/*",

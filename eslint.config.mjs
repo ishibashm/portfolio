@@ -29,6 +29,8 @@ const eslintConfig = defineConfig([
     "build/**",
     "next-env.d.ts",
     "tools/**",
+    // three.js同梱のDraco配布物は改変せず、そのまま配信する。
+    "public/draco/gltf/**",
     "packages/**",
     "x_downloads/**",
     "katmer-defuddle/**",

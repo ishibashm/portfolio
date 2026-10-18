@@ -93,6 +93,12 @@ export default function Page() {
           </Link>
         </p>
 
+        <p className="mt-3 text-sm">
+          <Link href="/houi/3d" className="underline text-slate-600">
+            住所から街の立体と方位を見る
+          </Link>
+        </p>
+
         <section className="mt-10">
           <h2 className="text-xl font-bold font-serif border-b border-slate-300 pb-2">
             生まれ年から本命星を調べる
