@@ -15,7 +15,18 @@
  */
 import dynamic from "next/dynamic";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { readSettingsSync, settingString } from "@/lib/userSettings";
+import {
+  loadSettings,
+  readSettingsSync,
+  settingNumber,
+  settingString,
+  type Settings,
+} from "@/lib/userSettings";
+import {
+  BirthYearPicker,
+  MonthDayPicker,
+  DateChips,
+} from "@/components/inputs/QuickChoices";
 import { toJapanDateString } from "@/utils/japanDate";
 import { supportsWebGL } from "@/lib/webglSupport";
 import { buildCompassModel, declinationText } from "@/lib/compassModel";
@@ -51,14 +62,43 @@ export default function CityPanel() {
     [plateau, setPlateau] = useState("");
   const [plateauEntry, setPlateauEntry] = useState<PlateauEntry | null>(null),
     [usePlateau, setUsePlateau] = useState(false);
+  const [savedOrigin, setSavedOrigin] = useState<Geocode | null>(null);
+  const [birthYear, setBirthYear] = useState("");
+  const birthEdited = useRef(false);
   const geocodeAbort = useRef<AbortController | null>(null);
   const radius = mobile ? 250 : 400;
   useEffect(() => {
-    setBirth(
-      settingString(readSettingsSync(), "birth_date")?.match(
+    let active = true;
+    const apply = (settings: Settings) => {
+      if (!active) return;
+      const savedBirth = settingString(settings, "birth_date")?.match(
         /^\d{4}-\d{2}-\d{2}/,
-      )?.[0] ?? "",
-    );
+      )?.[0];
+      if (savedBirth && !birthEdited.current) {
+        setBirth(savedBirth);
+        setBirthYear(savedBirth.slice(0, 4));
+      }
+      const lat = settingNumber(settings, "base_lat");
+      const lon = settingNumber(settings, "base_lon");
+      if (
+        lat !== undefined &&
+        lon !== undefined &&
+        Math.abs(lat) <= 85 &&
+        Math.abs(lon) <= 180
+      ) {
+        setSavedOrigin({
+          lat,
+          lon,
+          name:
+            settingString(settings, "base_label")?.trim() || "登録した出発地",
+          source: "settings",
+        });
+      }
+    };
+    apply(readSettingsSync());
+    void loadSettings()
+      .then(({ settings }) => apply(settings))
+      .catch(() => {});
     setDate(toJapanDateString(new Date()));
     setAddress(new URLSearchParams(window.location.search).get("q") ?? "");
     setMobile(
@@ -67,9 +107,12 @@ export default function CityPanel() {
         navigator.hardwareConcurrency <= 4,
     );
     setWebgl(supportsWebGL());
-    return () => geocodeAbort.current?.abort();
+    return () => {
+      active = false;
+      geocodeAbort.current?.abort();
+    };
   }, []);
-  async function search() {
+  function beginStart() {
     geocodeAbort.current?.abort();
     const abort = new AbortController();
     geocodeAbort.current = abort;
@@ -81,6 +124,44 @@ export default function CityPanel() {
     setPlateau("");
     setPlateauEntry(null);
     setUsePlateau(false);
+    return abort;
+  }
+  function useSavedOrigin() {
+    if (!savedOrigin) return;
+    beginStart();
+    setOrigin(savedOrigin);
+    setBusy(false);
+  }
+  function locate() {
+    const abort = beginStart();
+    if (!navigator.geolocation) {
+      setError("この端末では位置情報を利用できません。");
+      setBusy(false);
+      return;
+    }
+    navigator.geolocation.getCurrentPosition(
+      ({ coords }) => {
+        if (abort.signal.aborted) return;
+        setOrigin({
+          lat: coords.latitude,
+          lon: coords.longitude,
+          name: "現在地",
+          source: "geolocation",
+        });
+        setBusy(false);
+      },
+      () => {
+        if (abort.signal.aborted) return;
+        setError(
+          "位置情報を取得できませんでした。端末の許可設定を確認するか、住所・地名で探してください。",
+        );
+        setBusy(false);
+      },
+      { timeout: 10000 },
+    );
+  }
+  async function search() {
+    const abort = beginStart();
     try {
       const r = await fetch(
         `/api/geocode?q=${encodeURIComponent(address.trim())}`,
@@ -210,8 +291,27 @@ export default function CityPanel() {
     <div className="mt-6 space-y-5">
       <p className="rounded-xl border border-stone-300 bg-white/70 p-4 text-sm leading-relaxed">
         入力した住所は位置を求めるため国土地理院の住所検索（見つからないときはOpenStreetMap
-        Nominatim）へ送られます。表示のため、地点周辺の地図タイル・建物データを国土地理院とPLATEAUの配信サーバーから直接読み込みます。生年月日は判定のためこのサイトの計算（/api/mcp）にだけ送り、保存しません。
+        Nominatim）へ送られます。表示のため、地点周辺の地図タイル・建物データを国土地理院とPLATEAUの配信サーバーから直接読み込みます。生年月日は判定のためこのサイトの計算（/api/mcp）にだけ送り、保存しません。現在地は「現在地で見る」を押したときだけ使い、保存しません。
       </p>
+      <div className="flex flex-wrap gap-2" aria-label="どこから？">
+        {savedOrigin && (
+          <button
+            type="button"
+            onClick={useSavedOrigin}
+            className="rounded border px-4 py-2"
+          >
+            登録した出発地で見る（{savedOrigin.name}）
+          </button>
+        )}
+        <button
+          type="button"
+          onClick={locate}
+          disabled={busy}
+          className="rounded border px-4 py-2 disabled:opacity-50"
+        >
+          現在地で見る
+        </button>
+      </div>
       <form
         onSubmit={(e) => {
           e.preventDefault();
@@ -220,7 +320,7 @@ export default function CityPanel() {
         className="grid gap-4 rounded-xl border border-stone-300 bg-white p-5 sm:grid-cols-2 lg:grid-cols-4"
       >
         <label className="sm:col-span-2">
-          住所・地名
+          住所・地名で探す
           <input
             className="mt-2 w-full rounded border border-stone-400 p-2"
             value={address}
@@ -230,25 +330,55 @@ export default function CityPanel() {
             maxLength={300}
           />
         </label>
-        <label>
-          生年月日
-          <input
-            type="date"
-            className="mt-2 w-full rounded border border-stone-400 p-2"
-            value={birth}
-            onChange={(e) => setBirth(e.target.value)}
-          />
-        </label>
-        <label>
-          判定日
-          <input
-            type="date"
-            className="mt-2 w-full rounded border border-stone-400 p-2"
-            value={date}
-            onChange={(e) => setDate(e.target.value)}
-            required
-          />
-        </label>
+        <fieldset>
+          <legend>生年月日（任意）</legend>
+          {birth ? (
+            <p>
+              {birth}{" "}
+              <button
+                type="button"
+                onClick={() => {
+                  birthEdited.current = true;
+                  setBirth("");
+                  setBirthYear("");
+                }}
+              >
+                変える
+              </button>
+            </p>
+          ) : (
+            <>
+              <BirthYearPicker
+                value={birthYear}
+                onChange={(year) => {
+                  birthEdited.current = true;
+                  setBirthYear(year);
+                  setBirth("");
+                }}
+              />
+              {birthYear && (
+                <>
+                  <p className="text-sm">
+                    日盤・天中殺を含む判定には月日も必要です。
+                  </p>
+                  <MonthDayPicker
+                    key={birthYear}
+                    year={birthYear}
+                    value={birth}
+                    onChange={(value) => {
+                      birthEdited.current = true;
+                      setBirth(value);
+                    }}
+                  />
+                </>
+              )}
+            </>
+          )}
+        </fieldset>
+        <fieldset>
+          <legend>判定日</legend>
+          <DateChips value={date} onChange={setDate} />
+        </fieldset>
         <button
           disabled={busy || !address.trim()}
           className="rounded bg-slate-800 px-5 py-3 text-white disabled:opacity-50"
