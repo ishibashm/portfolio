@@ -1373,17 +1373,20 @@ export function McpExplorer({
             ...(suggestions.length ? { suggestions } : {}),
           }));
           const now = new Date().toISOString();
-          const memory = memoryFromConversation(
-            {
-              id: activeConversationId,
-              messages: [
-                ...storedMessages(messages),
-                { role: "user", content: text },
-                { role: "assistant", content: completedContent },
-              ],
-            },
-            now,
-          );
+          const memory =
+            "memoryEligible" in item && item.memoryEligible === true
+              ? memoryFromConversation(
+                  {
+                    id: activeConversationId,
+                    messages: [
+                      ...storedMessages(messages),
+                      { role: "user", content: text },
+                      { role: "assistant", content: completedContent },
+                    ],
+                  },
+                  now,
+                )
+              : null;
           if (memory)
             setMemories((current) => {
               const existing = current.find((item) => item.id === memory.id);
