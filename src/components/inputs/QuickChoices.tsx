@@ -241,8 +241,18 @@ export function OriginChooser({
           const data = await response.json();
           if (typeof data.data?.name !== "string" || !data.data.name)
             throw new Error("municipality-not-found");
-          // 精密な現在地は保存せず、計算結果リンクの市区町村代表点を使う。
-          onPick({ name: data.data.name });
+          // 精密な現在地は使わず、市区町村の代表点に置き換える。
+          // 座標が要る道具（吉日・街探し）でも、打ち直しや再検索が要らない。
+          const { MUNICIPALITY_POINTS } =
+            await import("@/lib/municipalityCoords");
+          const point = MUNICIPALITY_POINTS.find(
+            (p) => p.code === data.data.code,
+          );
+          onPick(
+            point
+              ? { name: data.data.name, lat: point.lat, lon: point.lon }
+              : { name: data.data.name },
+          );
         } catch {
           setError("市区町村を取得できませんでした。");
         } finally {
