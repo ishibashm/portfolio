@@ -12,7 +12,14 @@
  */
 
 import dynamic from "next/dynamic";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useOriginPrefecture } from "@/lib/useOriginPrefecture";
+import {
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  useSyncExternalStore,
+} from "react";
 import { Globe2 } from "lucide-react";
 import {
   azimuthalEquidistant,
@@ -55,6 +62,9 @@ export const DIRECTION_COLOR: Record<CompassDirection, string> = {
 export const GLOBE_RANGE_KM = 2000;
 
 const PREFS = Object.keys(PREFECTURE_CENTERS);
+const subscribeHydration = () => () => {};
+const clientSnapshot = () => true;
+const serverSnapshot = () => false;
 
 const LEAD =
   "方位は、出発地から見た地球の上の最短の道（大圏）の向きで決まります。平らな地図に定規で直線を引いた向きとは、遠くなるほどずれます。白い線が判定の境目、橙の線が地図に直線を引いたときの境目です。";
@@ -163,10 +173,22 @@ export function FlatGlobe({ data }: { data: GlobeSceneData }) {
 }
 
 export function GreatCircleGlobe({ areas }: { areas: QuickFindArea[] }) {
-  const [pref, setPref] = useState("東京都");
+  const {
+    pref: pref,
+    setPref: setPref,
+    locate,
+    locating,
+    error,
+  } = useOriginPrefecture();
   const [mapping, setMapping] = useState<NodeMapping>("traditional");
-  const [webgl] = useState(supportsWebGL);
-  const [view, setView] = useState<"3d" | "flat">(webgl ? "3d" : "flat");
+  const hydrated = useSyncExternalStore(
+    subscribeHydration,
+    clientSnapshot,
+    serverSnapshot,
+  );
+  const webgl = useMemo(() => hydrated && supportsWebGL(), [hydrated]);
+  const [selectedView, setView] = useState<"3d" | "flat" | null>(null);
+  const view = selectedView ?? (webgl ? "3d" : "flat");
   const [reducedMotion] = useState(
     () =>
       typeof window !== "undefined" &&
@@ -188,10 +210,10 @@ export function GreatCircleGlobe({ areas }: { areas: QuickFindArea[] }) {
   }, [inView]);
 
   const data = useMemo(
-    () => buildData(pref, areas, mapping),
+    () => (pref ? buildData(pref, areas, mapping) : null),
     [pref, areas, mapping],
   );
-  const differs = data.cities
+  const differs = (data?.cities ?? [])
     .filter((c) => c.differs)
     .sort((a, b) => b.distanceKm - a.distanceKm);
 
@@ -212,14 +234,32 @@ export function GreatCircleGlobe({ areas }: { areas: QuickFindArea[] }) {
         <p className="max-w-[70ch] text-xs leading-relaxed text-stone-600">
           {LEAD}
         </p>
+        {!pref && (
+          <p className="text-sm font-bold text-stone-700">どこから？</p>
+        )}
+        {error && (
+          <p role="alert" className="text-sm text-rose-700">
+            {error}
+          </p>
+        )}
         <div className="flex flex-wrap items-end gap-3 text-xs">
+          <button
+            type="button"
+            onClick={locate}
+            disabled={locating}
+            className="min-h-11 rounded-lg border border-stone-300 bg-white px-3 py-2"
+          >
+            {locating ? "取得中…" : "現在地"}
+          </button>
           <label className="block">
             <span className="block font-bold text-stone-700">出発地</span>
             <select
               value={pref}
+              disabled={locating}
               onChange={(e) => setPref(e.target.value)}
               className="mt-1 rounded-lg border border-stone-300 bg-white px-2 py-1.5"
             >
+              <option value="">選ぶ</option>
               {PREFS.map((p) => (
                 <option key={p} value={p}>
                   {p}
@@ -292,7 +332,11 @@ export function GreatCircleGlobe({ areas }: { areas: QuickFindArea[] }) {
         </ul>
       </header>
 
-      {view === "3d" && inView ? (
+      {!data ? (
+        <p className="p-6 text-sm text-stone-500">
+          出発地の県を選ぶと地球儀を表示します。
+        </p>
+      ) : view === "3d" && inView ? (
         <GlobeScene data={data} reducedMotion={reducedMotion} />
       ) : (
         <div className="bg-slate-900 p-4">
@@ -301,9 +345,11 @@ export function GreatCircleGlobe({ areas }: { areas: QuickFindArea[] }) {
       )}
 
       <div className="space-y-2 border-t border-stone-200/70 px-5 py-4 text-sm text-stone-700">
-        <p data-testid="globe-summary">
-          {`${pref}から見ると、一覧の ${data.cities.length} エリアのうち ${differs.length} エリアが、地図に直線を引くと隣の方位に見えます。`}
-        </p>
+        {data && (
+          <p data-testid="globe-summary">
+            {`${pref}から見ると、一覧の ${data.cities.length} エリアのうち ${differs.length} エリアが、地図に直線を引くと隣の方位に見えます。`}
+          </p>
+        )}
         {differs.length > 0 && (
           <ul className="grid gap-1 text-xs sm:grid-cols-2 xl:grid-cols-3">
             {differs.slice(0, 12).map((c) => (

@@ -14,6 +14,7 @@
  */
 
 import dynamic from "next/dynamic";
+import { useOriginPrefecture } from "@/lib/useOriginPrefecture";
 import {
   useEffect,
   useMemo,
@@ -152,7 +153,13 @@ export function FlatCompass({ model }: { model: CompassModel }) {
 }
 
 export function MagneticCompass() {
-  const [from, setFrom] = useState("東京都");
+  const {
+    pref: from,
+    setPref: setFrom,
+    locate,
+    locating,
+    error,
+  } = useOriginPrefecture();
   const [to, setTo] = useState("");
   const [mapping, setMapping] = useState<NodeMapping>("traditional");
   // サーバーと初回描画は平面に揃え、接続後に端末の立体表示対応を調べる。
@@ -187,6 +194,7 @@ export function MagneticCompass() {
 
   const model = useMemo(() => {
     const o = PREFECTURE_CENTERS[from];
+    if (!o) return null;
     const t = to ? PREFECTURE_CENTERS[to] : null;
     const decl = geomagneticAt(o.lat, o.lon)?.declination ?? null;
     return buildCompassModel(
@@ -197,7 +205,7 @@ export function MagneticCompass() {
     );
   }, [from, to, mapping]);
 
-  const t = model.target;
+  const t = model?.target;
 
   return (
     <section
@@ -213,14 +221,32 @@ export function MagneticCompass() {
         <p className="max-w-[70ch] text-xs leading-relaxed text-stone-600">
           {LEAD}
         </p>
+        {!from && (
+          <p className="text-sm font-bold text-stone-700">どこから？</p>
+        )}
+        {error && (
+          <p role="alert" className="text-sm text-rose-700">
+            {error}
+          </p>
+        )}
         <div className="flex flex-wrap items-end gap-3 text-xs">
+          <button
+            type="button"
+            onClick={locate}
+            disabled={locating}
+            className="min-h-11 rounded-lg border border-stone-300 bg-white px-3 py-2"
+          >
+            {locating ? "取得中…" : "現在地"}
+          </button>
           <label className="block">
             <span className="block font-bold text-stone-700">出発地</span>
             <select
               value={from}
+              disabled={locating}
               onChange={(e) => setFrom(e.target.value)}
               className="mt-1 min-h-11 rounded-lg border border-stone-300 bg-white px-2 py-1.5 text-base sm:text-xs"
             >
+              <option value="">選ぶ</option>
               {PREFS.map((p) => (
                 <option key={p} value={p}>
                   {p}
@@ -298,7 +324,11 @@ export function MagneticCompass() {
         </div>
       </header>
 
-      {view === "3d" && inView ? (
+      {!model ? (
+        <p className="p-6 text-sm text-stone-500">
+          出発地の県を選ぶと羅盤を表示します。
+        </p>
+      ) : view === "3d" && inView ? (
         <CompassScene model={model} reducedMotion={reducedMotion} />
       ) : (
         <div className="p-4">
@@ -307,11 +337,13 @@ export function MagneticCompass() {
       )}
 
       <div className="space-y-2 border-t border-stone-200/70 px-5 py-4 text-sm text-stone-700">
-        <p data-testid="declination">
-          {model.declinationKnown
-            ? `${from}では、磁北は真北から${declinationText(model.declination)}ずれています。`
-            : `${from}の偏角を求められなかったので、ずれ 0 として描いています。`}
-        </p>
+        {model && (
+          <p data-testid="declination">
+            {model.declinationKnown
+              ? `${from}では、磁北は真北から${declinationText(model.declination)}ずれています。`
+              : `${from}の偏角を求められなかったので、ずれ 0 として描いています。`}
+          </p>
+        )}
         {t && (
           <div
             className={`rounded-2xl border p-3 ${

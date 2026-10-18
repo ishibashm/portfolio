@@ -80,6 +80,9 @@ describe("羅盤の節", () => {
 
   it("均等（45°）に切り替えると、区切りも判定と同じ規則になる", () => {
     const { container } = render(<MagneticCompass />);
+    fireEvent.change(screen.getAllByRole("combobox")[0], {
+      target: { value: "東京都" },
+    });
     fireEvent.click(screen.getByRole("button", { name: "均等（45°）" }));
     const n = container.querySelector('[data-edge="N"]')!;
     expect(close(lineBearing(n), 337.5)).toBe(true);
