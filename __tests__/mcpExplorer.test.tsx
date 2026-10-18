@@ -768,9 +768,9 @@ it("不足項目カードを優先し、閉じた会話では再読込しても�
   expect(
     screen.queryByRole("button", { name: "別の候補も比べる？" }),
   ).toBeNull();
-  fireEvent.change(screen.getByLabelText("生年月日"), {
-    target: { value: "1990-05-05" },
-  });
+  for (const name of ["1990年代", "1990年", "5月", "5日"]) {
+    fireEvent.click(screen.getByRole("button", { name }));
+  }
   fireEvent.click(screen.getByRole("button", { name: "今はしない" }));
   await waitFor(() => {
     const stored = localStorage.getItem(ASK_DATA_STORAGE_KEY) ?? "";

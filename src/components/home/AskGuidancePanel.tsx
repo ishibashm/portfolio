@@ -1,6 +1,19 @@
 "use client";
 import { useState, type FormEvent } from "react";
-import { readSettingsSync, settingString } from "@/lib/userSettings";
+import {
+  DateChips,
+  BirthYearPicker,
+  MonthDayPicker,
+  OriginChooser,
+  type PickedOrigin,
+} from "@/components/inputs/QuickChoices";
+import {
+  readSettingsSync,
+  settingString,
+  settingNumber,
+  writeLocalSettings,
+  type Settings,
+} from "@/lib/userSettings";
 import {
   GUIDANCE_FIELDS,
   GUIDANCE_DIRECTIONS,
@@ -36,9 +49,70 @@ export function AskGuidancePanel({
   const [values, setValues] = useState(initial.values);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
+  const [year, setYear] = useState("");
+  const [ownedBirth, setOwnedBirth] = useState<string>();
+  const [ownedOrigin, setOwnedOrigin] = useState<PickedOrigin>();
+  const [representative, setRepresentative] = useState(false);
+  const [saveChoice, setSaveChoice] = useState(() =>
+    settingString(readSettingsSync(), "consult_save_choice"),
+  );
+  const [savedNote, setSavedNote] = useState(false);
+  const hasOwned = !!(ownedBirth || ownedOrigin);
+
+  function saveOwned(
+    result: GuidanceCard,
+    remember = false,
+    origin = ownedOrigin,
+  ) {
+    const config = readSettingsSync();
+    const patch: Settings = remember ? { consult_save_choice: "save" } : {};
+    if (
+      ownedBirth &&
+      result.values.birthDate === ownedBirth &&
+      !settingString(config, "birth_date")
+    ) {
+      patch.birth_date = ownedBirth;
+    }
+    if (origin && result.values.municipality) {
+      const label = settingString(config, "base_label");
+      const lat = settingNumber(config, "base_lat");
+      const lon = settingNumber(config, "base_lon");
+      const query = new URL(result.links[0].href, "https://cloud-palette.com")
+        .searchParams;
+      const number = (key: string) => {
+        const value = query.get(key);
+        return value?.trim() && Number.isFinite(Number(value))
+          ? Number(value)
+          : undefined;
+      };
+      const nextLat = number("baseLat") ?? origin.lat;
+      const nextLon = number("baseLon") ?? origin.lon;
+      // 地名と座標は一組。別地点の既存値に欠けた片方だけを継ぎ足さない。
+      if (
+        (!label || label === result.values.municipality) &&
+        (lat === undefined || lat === nextLat) &&
+        (lon === undefined || lon === nextLon)
+      ) {
+        if (!label) patch.base_label = result.values.municipality;
+        if (lat === undefined && nextLat !== undefined)
+          patch.base_lat = nextLat;
+        if (lon === undefined && nextLon !== undefined)
+          patch.base_lon = nextLon;
+      }
+    }
+    if (Object.keys(patch).length) {
+      writeLocalSettings(patch);
+      setSavedNote(true);
+    }
+  }
+  function chooseSave() {
+    saveOwned(card, true);
+    setSaveChoice("save");
+  }
   async function request(
     next: GuidanceValues,
     action: "resolve" | "search" = "resolve",
+    origin = ownedOrigin,
   ) {
     if (busy) return;
     setBusy(true);
@@ -55,6 +129,12 @@ export function AskGuidancePanel({
       const result: GuidanceCard = await response.json();
       setCard(result);
       setValues(result.values);
+      if (
+        result.links.length &&
+        (ownedBirth || origin) &&
+        saveChoice === "save"
+      )
+        saveOwned(result, false, origin);
     } catch {
       setError(
         "条件を確認できませんでした。少し待つか、入力を見直してお試しください。",
@@ -67,10 +147,15 @@ export function AskGuidancePanel({
     const known = Object.fromEntries(
       Object.entries(values).filter(([, value]) => value),
     );
-    void request({ ...candidate, ...known });
+    void request({
+      ...candidate,
+      birthDate: candidate.birthDate?.slice(0, 10),
+      ...known,
+    });
   }
   function submit(event: FormEvent) {
     event.preventDefault();
+    if (card.fields.some((field) => !values[field])) return;
     void request(values);
   }
   return (
@@ -145,35 +230,94 @@ export function AskGuidancePanel({
                 </div>
               </fieldset>
             ) : (
-              <label key={field} className="block">
-                {GUIDANCE_FIELDS[field]}
-                <input
-                  aria-label={GUIDANCE_FIELDS[field]}
-                  type={field === "municipality" ? "text" : "date"}
-                  required
-                  disabled={busy}
-                  maxLength={80}
-                  autoComplete="off"
-                  value={values[field] ?? ""}
-                  onChange={(event) =>
-                    setValues({
-                      ...values,
-                      [field]: event.target.value || undefined,
-                    })
-                  }
-                  className="mt-1 block min-w-0 w-full rounded-lg border bg-white p-2"
-                />
-                {field === "municipality" && (
-                  <button
-                    type="button"
-                    disabled={busy || !values.municipality}
-                    className="mt-1 underline"
-                    onClick={() => void request(values, "search")}
-                  >
-                    市区町村の候補を探す
-                  </button>
+              <fieldset
+                key={field}
+                disabled={busy}
+                aria-label={GUIDANCE_FIELDS[field]}
+              >
+                <legend>{GUIDANCE_FIELDS[field]}</legend>
+                {field === "date" && (
+                  <DateChips
+                    value={values.date}
+                    onChange={(date) =>
+                      setValues({ ...values, date: date || undefined })
+                    }
+                  />
                 )}
-              </label>
+                {field === "birthDate" && (
+                  <>
+                    <BirthYearPicker
+                      value={year}
+                      onChange={(next) => {
+                        setYear(next);
+                        setOwnedBirth(undefined);
+                        setRepresentative(false);
+                        setValues({ ...values, birthDate: undefined });
+                      }}
+                    />
+                    {year && (
+                      <>
+                        <MonthDayPicker
+                          key={year}
+                          year={year}
+                          value={values.birthDate}
+                          onChange={(date) => {
+                            setOwnedBirth(date || undefined);
+                            setRepresentative(false);
+                            setValues({
+                              ...values,
+                              birthDate: date || undefined,
+                            });
+                          }}
+                        />
+                        {card.intent === "star" && (
+                          <button
+                            type="button"
+                            className="rounded-lg border bg-white px-3 py-2"
+                            onClick={() => {
+                              setOwnedBirth(undefined);
+                              setRepresentative(true);
+                              setValues({
+                                ...values,
+                                birthDate: `${year}-07-01`,
+                              });
+                            }}
+                          >
+                            月日がわからない
+                          </button>
+                        )}
+                      </>
+                    )}
+                  </>
+                )}
+                {field === "municipality" && (
+                  <>
+                    <OriginChooser
+                      savedLabel={profile?.residence}
+                      onUseSaved={() => {
+                        setOwnedOrigin(undefined);
+                        setValues({
+                          ...values,
+                          municipality: profile?.residence,
+                        });
+                      }}
+                      onPick={(origin) => {
+                        setOwnedOrigin(origin);
+                        setValues({ ...values, municipality: origin.name });
+                      }}
+                    />
+                    {values.municipality && <p>{values.municipality}</p>}
+                    <button
+                      type="button"
+                      disabled={busy || !values.municipality}
+                      className="mt-1 underline"
+                      onClick={() => void request(values, "search")}
+                    >
+                      市区町村の候補を探す
+                    </button>
+                  </>
+                )}
+              </fieldset>
             ),
           )}
           {card.candidates && (
@@ -185,20 +329,27 @@ export function AskGuidancePanel({
                     type="button"
                     disabled={busy}
                     className="rounded-lg border bg-white px-3 py-2"
-                    onClick={() =>
-                      void request({ ...values, municipality: candidate.name })
-                    }
+                    onClick={() => {
+                      setOwnedOrigin({ name: candidate.name });
+                      void request(
+                        { ...values, municipality: candidate.name },
+                        "resolve",
+                        { name: candidate.name },
+                      );
+                    }}
                   >
                     {candidate.name}
                   </button>
                 ))
               ) : (
-                <p>候補がありません。市区町村名で入力してください。</p>
+                <p>
+                  候補がありません。「選ぶ」から別の市区町村を選んでください。
+                </p>
               )}
             </div>
           )}
           <button
-            disabled={busy}
+            disabled={busy || card.fields.some((field) => !values[field])}
             className="rounded-lg bg-teal-800 px-4 py-2 text-white"
           >
             {busy ? "確認中…" : "条件を確認する（AI不要）"}
@@ -228,6 +379,51 @@ export function AskGuidancePanel({
               {link.label}
             </a>
           ))}
+        </div>
+      )}
+      {representative && (
+        <p className="mt-2 text-xs">
+          年の代表日（7月1日）で計算します。立春前の生まれでは本命星が異なる場合があります。この日付は保存しません。
+        </p>
+      )}
+      {!!card.links.length && hasOwned && (
+        <div className="mt-3 text-xs">
+          {saveChoice !== "save" && saveChoice !== "once" && (
+            <>
+              <p>この条件をこの端末に保存しますか？</p>
+              <button
+                type="button"
+                className="rounded-lg border bg-white px-3 py-2"
+                onClick={chooseSave}
+              >
+                保存する
+              </button>
+              <button
+                type="button"
+                className="rounded-lg border bg-white px-3 py-2"
+                onClick={() => {
+                  writeLocalSettings({ consult_save_choice: "once" });
+                  setSaveChoice("once");
+                }}
+              >
+                今回だけ
+              </button>
+            </>
+          )}
+          {saveChoice === "once" && (
+            <button type="button" className="underline" onClick={chooseSave}>
+              保存する
+            </button>
+          )}
+          {savedNote && (
+            <p>
+              保存しました（
+              <a href="/profile" className="underline">
+                編集・消す: /profile
+              </a>
+              ）
+            </p>
+          )}
         </div>
       )}
       {error && (
