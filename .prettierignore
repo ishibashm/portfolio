@@ -20,3 +20,9 @@ src/data/estatRent.json
 # prettier はこのファイル自体を整形できない（対応する parser が無く、
 # --check が失敗する）。自分自身も除く。
 .prettierignore
+
+# three.js同梱のDraco配布物はバイト列を保つ。
+public/draco/gltf/**
+
+# カタログから生成する索引は転送量を抑えるため詰めて置く。
+src/data/plateauBldgTilesets.json

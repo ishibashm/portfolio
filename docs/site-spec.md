@@ -98,6 +98,13 @@ RSS から見出しと要約の冒頭を取って並べる頁で、各社の RSS
 CORE_ROUTES・主ナビには追加しない。入力後に結果が成立するため noindex, follow とし、
 サイトマップから除外する。robots.txt では塞がない。
 
+`/houi/3d` は住所を中心に周囲 400m（スマートフォンは 250m）の建物を立体で出し、公開MCPの
+`judge_directions`（`/relocation/arbitrage` と同じ判定）の八方位と、真北に固定した二十四山の目盛りを
+地面に重ねる補助頁。建物は国土地理院ベクトルタイル（高さは種別ごとの目安）、PLATEAU の対象市区町村では
+3D都市モデル（LOD1。索引は `scripts/buildPlateauIndex.mjs` で生成）を使う。いずれも利用者の端末から
+直接読み込み、サーバーの費用は増やさない。入力後に結果が成立するため noindex, follow とし、サイトマップから
+除外する。立体表示とタイルの復号は地点確定後に遅延読み込みし、WebGL が無い端末では平面（SVG）で出す。
+
 ### 非中核
 
 `NON_CORE_ROUTES` は `/relocation/history` と `/admin`。
