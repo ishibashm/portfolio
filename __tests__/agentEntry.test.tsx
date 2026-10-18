@@ -8,6 +8,7 @@ import {
   waitFor,
 } from "@testing-library/react";
 import { readFileSync } from "node:fs";
+import { renderToString } from "react-dom/server";
 import { AgentEntry } from "@/components/home/AgentEntry";
 import { McpExplorer } from "@/app/ask/McpExplorer";
 import { SETTINGS_KEY } from "@/lib/userSettings";
@@ -37,6 +38,10 @@ it("ホームは入力欄やチャットJSを持たず、固定選択肢で会�
       screen.getByRole("link", { name: "引越しを考えている" }),
     ).toHaveAttribute("href", "/ask?start=move"),
   );
+  expect(
+    screen.getByRole("link", { name: "いまの街から方位ごとの街を探す" }),
+  ).toHaveAttribute("href", "/ask?start=towns");
+  expect(localStorage.getItem(SETTINGS_KEY)).toBeNull();
   fireEvent.click(
     screen.getByRole("button", { name: "よくある質問（AI不要）" }),
   );
@@ -58,6 +63,44 @@ it.each(["billing", true])(
     expect(
       screen.queryByRole("link", { name: "引越しを考えている" }),
     ).toBeNull();
+    expect(
+      screen.getByRole("link", { name: /いまの街から方位ごとの街を探す/ }),
+    ).toHaveAttribute("href", "/houi/area");
+  },
+);
+it("保存済みの拠点名はマウント後だけ案内に使い、設定を書き換えない", async () => {
+  const saved = JSON.stringify({ base_label: "名古屋駅" });
+  localStorage.setItem(SETTINGS_KEY, saved);
+  vi.stubGlobal(
+    "fetch",
+    vi.fn(async () => Response.json({ enabled: true, paused: null })),
+  );
+  const html = renderToString(<AgentEntry />);
+  expect(html).toContain("いまの街から方位ごとの街を探す");
+  expect(html).not.toContain("名古屋駅");
+  render(<AgentEntry />);
+  await waitFor(() =>
+    expect(
+      screen.getByRole("link", { name: "名古屋駅から方位ごとの街を探す" }),
+    ).toHaveAttribute("href", "/ask?start=towns"),
+  );
+  expect(localStorage.getItem(SETTINGS_KEY)).toBe(saved);
+});
+it.each(["", "   ", 123])(
+  "拠点名が使えないときは汎用の案内にする: %s",
+  (baseLabel) => {
+    localStorage.setItem(
+      SETTINGS_KEY,
+      JSON.stringify({ base_label: baseLabel }),
+    );
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue(Response.json({ enabled: false })),
+    );
+    render(<AgentEntry />);
+    expect(
+      screen.getByRole("link", { name: /いまの街から方位ごとの街を探す/ }),
+    ).toHaveAttribute("href", "/houi/area");
   },
 );
 it("登録内容を人物候補へ統合し、必要な質問だけ送る。すべて消すも反映", async () => {

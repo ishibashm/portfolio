@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  guidanceIntent,
   guidancePlan,
   guidanceValuesFromText,
   guidanceLinks,
@@ -7,6 +8,7 @@ import {
   type GuidanceSource,
 } from "@/lib/askGuidance";
 import { guidanceFromResults, resolveGuidance } from "@/lib/askGuidanceServer";
+import { shirubeInvitation } from "@/lib/shirubeInvitations";
 const origin = {
   code: "23106",
   name: "愛知県名古屋市中区",
@@ -34,6 +36,17 @@ const judged: GuidanceSource = {
 };
 
 describe("サーバーの固定入力項目とリンク", () => {
+  it("街の案内は出発地と方位を決めつけず、必要な二項目を尋ねる", () => {
+    const invitation = shirubeInvitation("towns")!;
+    expect(invitation.calculationHref).toBe("/houi/area");
+    expect(guidanceIntent(invitation.question)).toBe("towns");
+    const parsed = guidanceValuesFromText(invitation.question);
+    expect(parsed).toEqual({});
+    expect(guidancePlan("towns", parsed).fields).toEqual([
+      "municipality",
+      "direction",
+    ]);
+  });
   it("不足だけを最大2項目ずつ示す", () => {
     expect(guidancePlan("move", {}).fields).toEqual([
       "birthDate",
