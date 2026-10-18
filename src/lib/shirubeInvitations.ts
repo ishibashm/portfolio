@@ -20,9 +20,9 @@ export const SHIRUBE_INVITATIONS = [
   },
   {
     id: "towns",
-    label: "名古屋から東の街",
-    question: "名古屋市中区から東にある街を知りたいです。",
-    calculationHref: "/houi/area/23106",
+    label: "いまの街から方位ごとの街を探す",
+    question: "いま住んでいる街から、方位ごとの街を知りたいです。",
+    calculationHref: "/houi/area",
   },
 ] as const;
 export function shirubeInvitation(id: string | null) {

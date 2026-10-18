@@ -5,10 +5,20 @@ import { coreRouteLabel } from "@/lib/siteStructure";
 import { useEffect, useState } from "react";
 import GuideCharacter from "@/components/guide/GuideCharacter";
 import { SHIRUBE_INVITATIONS } from "@/lib/shirubeInvitations";
+import { readSettingsSync, settingString } from "@/lib/userSettings";
 
 export function AgentEntry() {
   const [available, setAvailable] = useState(false);
   const [faq, setFaq] = useState(false);
+  const [baseLabel, setBaseLabel] = useState("");
+  useEffect(() => {
+    const timer = window.setTimeout(() => {
+      setBaseLabel(
+        settingString(readSettingsSync(), "base_label")?.trim() ?? "",
+      );
+    }, 0);
+    return () => window.clearTimeout(timer);
+  }, []);
   useEffect(() => {
     const abort = new AbortController();
     const check = () => {
@@ -61,7 +71,9 @@ export function AgentEntry() {
             prefetch={false}
             className="rounded-xl border border-rose-200 px-4 py-3 text-sm hover:bg-rose-50"
           >
-            {item.label}
+            {item.id === "towns" && baseLabel
+              ? `${baseLabel}から方位ごとの街を探す`
+              : item.label}
             {!available && (
               <span className="ml-1 text-xs text-slate-500">（計算のみ）</span>
             )}
