@@ -308,8 +308,11 @@ export const MetaphysicalConfigBar: React.FC<MetaphysicalConfigBarProps> = ({
       }
     };
 
+    const openConfig = () => setIsExpanded(true);
+    window.addEventListener("metaphysical-config-open", openConfig);
     window.addEventListener("metaphysical-config-updated", handleGlobalUpdate);
     return () => {
+      window.removeEventListener("metaphysical-config-open", openConfig);
       window.removeEventListener(
         "metaphysical-config-updated",
         handleGlobalUpdate,
