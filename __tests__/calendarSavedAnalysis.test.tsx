@@ -54,7 +54,14 @@ const API = {
 let writeText: ReturnType<typeof vi.fn>;
 beforeEach(() => {
   localStorage.clear();
-  loadSettings.mockResolvedValue({ settings: {} });
+  const settings = {
+    birth_date: "1985-04-10",
+    base_lat: 35.1709,
+    base_lon: 136.8815,
+    base_label: "名古屋駅",
+  };
+  localStorage.setItem("tactical_config_v1", JSON.stringify(settings));
+  loadSettings.mockResolvedValue({ settings });
   loadProfilePresets.mockResolvedValue({ presets: [] });
   writeText = vi.fn(async () => {});
   vi.stubGlobal("navigator", { ...navigator, clipboard: { writeText } });

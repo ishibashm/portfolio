@@ -15,10 +15,18 @@ import {
   loadSettings,
   readSettingsSync,
   settingString,
+  settingNumber,
+  writeLocalSettings,
   type Settings,
 } from "@/lib/userSettings";
 import { KYUSEI } from "@/utils/kigaku";
-import { SampleProfileNotice } from "@/components/profile/SampleProfileNotice";
+import {
+  BirthYearPicker,
+  MonthDayPicker,
+  OriginChooser,
+  DateChips,
+  type PickedOrigin,
+} from "@/components/inputs/QuickChoices";
 import { Loader2, CalendarCheck, ArrowRight, Layers, Star } from "lucide-react";
 import Link from "next/link";
 import { saveWorkingDate } from "@/lib/workingDate";
@@ -34,6 +42,7 @@ import {
   DIRECTION_LABELS,
 } from "@/utils/auspiciousDays";
 import {
+  isTenchusatsuMode,
   DEFAULT_TENCHUSATSU_MODE,
   TENCHUSATSU_MODES,
 } from "@/utils/tenchusatsuPolicy";
@@ -142,45 +151,23 @@ interface Summary {
   days: DayVerdict[];
 }
 
-/**
- * 保存済みの設定が無いときの初期値。
- *
- * 以前は空で始めていたため、初めて来た人が「吉日を出す」を押すと
- * 「生年月日と現住地の経度を入力してください。」とだけ出て、中核ページの
- * 主要な操作が最初の一回で必ず失敗していた。ホームなど他の画面は同じ値を
- * 既定にしているので、ここも揃える。入力欄には値が見えているので、
- * 自分の生年月日と現住地に直せば結果もそのぶん正確になる。
- */
-const DEFAULT_BIRTH_DATE = "2000-01-01";
-/** 断りに出す表示。ホームの帯と同じ書き方にそろえる。 */
-const SAMPLE_BIRTH_LABEL = "2000 年 1 月 1 日";
-/**
- * 保存済みの座標を入力欄に入れる形にする。
- *
- * 端末の GPS から入った値は 136.90539212730098 のように小数 14 桁で
- * 残る。入力欄は step="0.0001" なので、この値は HTML の検証では
- * step に合わない不正な値になり、画面にもそのまま 14 桁で出ていた
- * （利用者の画面で確認）。
- *
- * 小数 4 桁は経度で約 9m。方位は出発地から数 km 以上先を測るので、
- * 45 度の境目がこの差で動くことはない。真太陽時も 0.0001 度は
- * 0.024 秒で、分単位の表示には出ない。判定の答えは変わらない。
- */
+/** 保存座標の表示精度は従来どおり小数 4 桁にそろえる。 */
 function toInputCoord(v: unknown): string {
+  if (v == null || (typeof v === "string" && !v.trim())) return "";
   const n = Number(v);
   if (!Number.isFinite(n)) return "";
   return String(Math.round(n * 10000) / 10000);
 }
 
-const DEFAULT_LAT = "35.6895";
-const DEFAULT_LON = "139.6917";
+const choiceClass =
+  "rounded-lg border px-3 py-2 text-sm aria-pressed:bg-rose-100 aria-pressed:border-rose-500";
 
 export function AuspiciousDayFinder() {
-  const [birthDate, setBirthDate] = useState(DEFAULT_BIRTH_DATE);
-  const [lon, setLon] = useState(DEFAULT_LON);
+  const [birthDate, setBirthDate] = useState("");
+  const [lon, setLon] = useState("");
   // スキャナーへ引き継ぐために緯度も持つ。方位の判定は経度だけで足りるが、
   // 物件を出すには出発地の座標が要る。
-  const [lat, setLat] = useState(DEFAULT_LAT);
+  const [lat, setLat] = useState("");
   const [direction, setDirection] = useState("all");
   const [tenchusatsuMode, setTenchusatsuMode] = useState<string>(
     DEFAULT_TENCHUSATSU_MODE,
@@ -195,11 +182,21 @@ export function AuspiciousDayFinder() {
   };
   const [months, setMonths] = useState(12);
 
-  // 既定値のまま結果を出したかどうか。方位も吉日も生年月日と現住地で
-  // 変わるので、既定のまま見た結果を「自分の結果」だと思われないように
-  // 前提を明示する。物件スキャナー側も同じ理由で出発地を要求している。
-  const usingDefaults =
-    birthDate === DEFAULT_BIRTH_DATE && lon === DEFAULT_LON;
+  const [birthYear, setBirthYear] = useState("");
+  const [editingBirth, setEditingBirth] = useState(false);
+  const [baseLabel, setBaseLabel] = useState("");
+  const [editingOrigin, setEditingOrigin] = useState(false);
+  const [showCoords, setShowCoords] = useState(false);
+  const [resolvingOrigin, setResolvingOrigin] = useState(false);
+  const profileRevision = useRef(0);
+  const originRequest = useRef(0);
+  const missing = [
+    !birthDate && "生年月日を選んでください",
+    (!lat || !lon) && "出発地を選んでください",
+    !from && "開始日を選んでください",
+  ]
+    .filter(Boolean)
+    .join("。 ");
 
   /*
     12 ヶ月で走査すると 1 方位で 99 日、8 方位で 500 日を超える表になる
@@ -237,45 +234,114 @@ export function AuspiciousDayFinder() {
   // 別画面の判定と違う前提で日付を出してしまう。
   useEffect(() => {
     readSaved();
+    const query = new URLSearchParams(window.location.search);
+    const dir = query.get("direction");
+    if (dir && (dir === "all" || ALL_DIRECTIONS.some((d) => d === dir)))
+      setDirection(dir);
+    const date = query.get("targetDate");
+    if (
+      date &&
+      /^\d{4}-\d{2}-\d{2}$/.test(date) &&
+      !Number.isNaN(Date.parse(date)) &&
+      new Date(date).toISOString().slice(0, 10) === date
+    )
+      setFrom(date);
+    const mode = query.get("tenchusatsuMode");
+    if (mode && isTenchusatsuMode(mode)) setTenchusatsuMode(mode);
+    const pendingProfile = profileRevision;
+    const pendingOrigin = originRequest;
+    return () => {
+      pendingProfile.current++;
+      pendingOrigin.current++;
+    };
   }, []);
 
-  /**
-   * 保存済みの設定を入力欄へ写す。開いたときと、上の ProfilePicker で
-   * プロフィールを切り替えたとき（applyProfile が設定に書いたあと）に呼ぶ。
-   *
-   * **端末だけでなくアカウントの値も読む**（2026-09-26 の指摘）。以前は
-   * localStorage の tactical_config_v1 を直に読むだけで、生年月日を
-   * アカウントに登録してある人でも、その端末に写しが無ければ既定の
-   * 2000-01-01・東京のまま出ていた。同じ頁の ProfilePicker は
-   * loadSettings（アカウントを重ねる）で読むので「Kyoto を使用中」と
-   * 出しながら、入力欄は見本の値という食い違いになっていた。
-   * ほかの道具と同じく、先に端末（readSettingsSync）、後からアカウント
-   * （loadSettings）を重ねる。
-   */
+  // 遅れて届いた設定が、選択中の値や切り替えたプロフィールを戻さないようにする。
   function readSaved() {
+    const revision = ++profileRevision.current;
+    originRequest.current++;
+    setResolvingOrigin(false);
     const apply = (c: Settings) => {
-      const birth = settingString(c, "birth_date");
-      if (birth) setBirthDate(birth);
-      /* 座標は数値でも数字の文字列でも入りうる（旧い写し）。以前と同じく
-         toInputCoord に通し、読めないものは欄に写さない */
-      const baseLon = toInputCoord(c.base_lon ?? NaN);
-      if (baseLon) setLon(baseLon);
-      const baseLat = toInputCoord(c.base_lat ?? NaN);
-      if (baseLat) setLat(baseLat);
+      if (revision !== profileRevision.current) return;
+      const birth = settingString(c, "birth_date") ?? "";
+      setBirthDate(birth);
+      setBirthYear(birth.slice(0, 4));
+      setEditingBirth(false);
+      setLon(
+        toInputCoord(
+          settingNumber(c, "base_lon") ?? settingString(c, "base_lon"),
+        ),
+      );
+      setLat(
+        toInputCoord(
+          settingNumber(c, "base_lat") ?? settingString(c, "base_lat"),
+        ),
+      );
+      setBaseLabel(settingString(c, "base_label") ?? "");
+      setEditingOrigin(false);
+      const urlMode = new URLSearchParams(window.location.search).get(
+        "tenchusatsuMode",
+      );
+      const savedMode = settingString(c, "tenchusatsu_mode");
+      if (
+        !(urlMode && isTenchusatsuMode(urlMode)) &&
+        savedMode &&
+        isTenchusatsuMode(savedMode)
+      )
+        setTenchusatsuMode(savedMode);
     };
-    try {
-      apply(readSettingsSync());
-    } catch {
-      // 壊れていれば手入力してもらう
-    }
+    apply(readSettingsSync());
     loadSettings()
       .then(({ settings }) => apply(settings))
       .catch(() => {});
   }
 
+  async function pickOrigin(origin: PickedOrigin) {
+    profileRevision.current++;
+    const request = ++originRequest.current;
+    setResolvingOrigin(true);
+    setError(null);
+    try {
+      let { lat: pickedLat, lon: pickedLon } = origin;
+      if (pickedLat === undefined || pickedLon === undefined) {
+        const res = await fetch(
+          `/api/geocode?q=${encodeURIComponent(origin.name)}`,
+        );
+        const body = await res.json();
+        if (!res.ok) throw new Error("geocode-failed");
+        pickedLat = body.lat;
+        pickedLon = body.lon;
+      }
+      if (
+        typeof pickedLat !== "number" ||
+        !Number.isFinite(pickedLat) ||
+        typeof pickedLon !== "number" ||
+        !Number.isFinite(pickedLon)
+      )
+        throw new Error("coordinates-missing");
+      if (request !== originRequest.current) return;
+      setLat(toInputCoord(pickedLat));
+      setLon(toInputCoord(pickedLon));
+      setBaseLabel(origin.name);
+      setEditingOrigin(false);
+      writeLocalSettings({
+        base_lat: pickedLat,
+        base_lon: pickedLon,
+        base_label: origin.name,
+      });
+    } catch {
+      if (request === originRequest.current)
+        setError(
+          "出発地の座標を取得できませんでした。もう一度選んでください。",
+        );
+    } finally {
+      if (request === originRequest.current) setResolvingOrigin(false);
+    }
+  }
+
   const search = useCallback(async () => {
-    if (!birthDate || !lon) {
-      setError("生年月日と現住地の経度を入力してください。");
+    if (missing || resolvingOrigin) {
+      setError(missing || "出発地を確認中です。");
       return;
     }
     setLoading(true);
@@ -310,7 +376,16 @@ export function AuspiciousDayFinder() {
     } finally {
       setLoading(false);
     }
-  }, [birthDate, lon, from, months, direction, tenchusatsuMode]);
+  }, [
+    birthDate,
+    lon,
+    from,
+    months,
+    direction,
+    tenchusatsuMode,
+    missing,
+    resolvingOrigin,
+  ]);
 
   /**
    * 物件スキャナーへの受け渡し。対象日・方位・天中殺の扱いを引き継ぐ。
@@ -356,113 +431,162 @@ export function AuspiciousDayFinder() {
       <ProfilePicker className="mt-4" onApplied={() => readSaved()} />
 
       <div className="mt-5 grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-        <div className="min-w-0 space-y-1">
-          <label
-            htmlFor="ad-birth"
-            className="text-xs font-semibold text-slate-500 block"
-          >
-            生年月日（時刻まで分かれば入れる）
-          </label>
-          <input
-            id="ad-birth"
-            type="datetime-local"
-            value={birthDate.length === 10 ? `${birthDate}T12:00` : birthDate}
-            onChange={(e) => setBirthDate(e.target.value)}
-            className="w-full px-3 py-2 bg-white border border-slate-300 rounded-xl text-sm outline-none focus:border-rose-400"
-          />
+        <div className="min-w-0 space-y-2">
+          {birthDate && !editingBirth ? (
+            <p>
+              生年月日: {birthDate}{" "}
+              <button
+                type="button"
+                className={choiceClass}
+                onClick={() => {
+                  profileRevision.current++;
+                  setEditingBirth(true);
+                  setBirthYear("");
+                  setBirthDate("");
+                }}
+              >
+                変える
+              </button>
+            </p>
+          ) : (
+            <>
+              <BirthYearPicker
+                value={birthYear}
+                onChange={(year) => {
+                  profileRevision.current++;
+                  setBirthYear(year);
+                  setBirthDate("");
+                }}
+              />
+              {birthYear && (
+                <>
+                  <p className="text-xs text-slate-600">
+                    日盤・天中殺の計算に月日も必要です。
+                  </p>
+                  <MonthDayPicker
+                    key={birthYear}
+                    year={birthYear}
+                    value={birthDate}
+                    onChange={(date) => {
+                      profileRevision.current++;
+                      setBirthDate(date);
+                      if (date) {
+                        writeLocalSettings({ birth_date: date });
+                        setEditingBirth(false);
+                      }
+                    }}
+                  />
+                </>
+              )}
+            </>
+          )}
         </div>
-        <div className="min-w-0 space-y-1">
-          <label
-            className="text-xs font-semibold text-slate-500 block cursor-help"
-            htmlFor="ad-lon"
-            title="今住んでいる場所の経度。方位も太陽時もここを起点に決まります。"
-          >
-            現住地の経度
-          </label>
-          <input
-            id="ad-lon"
-            type="number"
-            step="0.0001"
-            placeholder="例: 136.9008（名古屋）"
-            value={lon}
-            onChange={(e) => setLon(e.target.value)}
-            className="w-full px-3 py-2 bg-white border border-slate-300 rounded-xl text-sm outline-none focus:border-rose-400 font-mono"
-          />
+        <div className="min-w-0 space-y-2">
+          {lat && lon && !editingOrigin ? (
+            <p>
+              出発地: {baseLabel || "登録済み"}{" "}
+              <button
+                type="button"
+                className={choiceClass}
+                onClick={() => {
+                  profileRevision.current++;
+                  setEditingOrigin(true);
+                }}
+              >
+                変える
+              </button>
+            </p>
+          ) : (
+            <OriginChooser onPick={pickOrigin} />
+          )}
+          {resolvingOrigin && <p role="status">出発地を確認中…</p>}
+          {/* 数字の欄は開いたときだけ描く。初めて来た人に座標を求めない。 */}
+          <details onToggle={(e) => setShowCoords(e.currentTarget.open)}>
+            <summary>座標を直接入れる</summary>
+            {showCoords && (
+              <>
+                <label htmlFor="ad-lon">現住地の経度</label>
+                <input
+                  id="ad-lon"
+                  type="number"
+                  step="any"
+                  min={-180}
+                  max={180}
+                  value={lon}
+                  onChange={(e) => {
+                    profileRevision.current++;
+                    originRequest.current++;
+                    setResolvingOrigin(false);
+                    setLon(e.target.value);
+                    setBaseLabel("");
+                  }}
+                />
+                <label htmlFor="ad-lat">現住地の緯度</label>
+                <input
+                  id="ad-lat"
+                  type="number"
+                  step="any"
+                  min={-90}
+                  max={90}
+                  value={lat}
+                  onChange={(e) => {
+                    profileRevision.current++;
+                    originRequest.current++;
+                    setResolvingOrigin(false);
+                    setLat(e.target.value);
+                    setBaseLabel("");
+                  }}
+                />
+              </>
+            )}
+          </details>
         </div>
-        <div className="min-w-0 space-y-1">
-          <label
-            className="text-xs font-semibold text-slate-500 block cursor-help"
-            htmlFor="ad-lat"
-            title="物件一覧へ渡すときに使います。方位の判定だけなら経度だけで足ります。"
-          >
-            現住地の緯度（任意）
-          </label>
-          <input
-            id="ad-lat"
-            type="number"
-            step="0.0001"
-            placeholder="例: 35.1430"
-            value={lat}
-            onChange={(e) => setLat(e.target.value)}
-            className="w-full px-3 py-2 bg-white border border-slate-300 rounded-xl text-sm outline-none focus:border-rose-400 font-mono"
-          />
-        </div>
-        <div className="min-w-0 space-y-1">
-          <label
-            htmlFor="ad-direction"
-            className="text-xs font-semibold text-slate-500 block"
-          >
-            方位
-          </label>
-          <select
-            id="ad-direction"
-            value={direction}
-            onChange={(e) => setDirection(e.target.value)}
-            className="w-full px-3 py-2 bg-white border border-slate-300 rounded-xl text-sm outline-none cursor-pointer focus:border-rose-400"
-          >
-            <option value="all">全方位（多い順に並べる）</option>
-            {ALL_DIRECTIONS.map((d) => (
-              <option key={d} value={d}>
-                {DIRECTION_LABELS[d]}
-              </option>
+        <fieldset className="min-w-0 space-y-1">
+          <legend>方位</legend>
+          <div className="flex flex-wrap gap-2">
+            {["all", ...ALL_DIRECTIONS].map((d) => (
+              <button
+                key={d}
+                type="button"
+                className={choiceClass}
+                aria-pressed={direction === d}
+                onClick={() => setDirection(d)}
+              >
+                {d === "all" ? "全方位" : DIRECTION_LABELS[d]}
+              </button>
             ))}
-          </select>
-        </div>
-        <div className="min-w-0 space-y-1">
-          <label
-            htmlFor="ad-from"
-            className="text-xs font-semibold text-slate-500 block"
-          >
-            開始日
-          </label>
-          <input
-            id="ad-from"
-            type="date"
-            value={from}
-            onChange={(e) => setFrom(e.target.value)}
-            className="w-full px-3 py-2 bg-white border border-slate-300 rounded-xl text-sm outline-none focus:border-rose-400"
-          />
-        </div>
-        <div className="min-w-0 space-y-1">
-          <label
-            htmlFor="ad-months"
-            className="text-xs font-semibold text-slate-500 block"
-          >
-            走査期間
-          </label>
-          <select
-            id="ad-months"
-            value={months}
-            onChange={(e) => setMonths(Number(e.target.value))}
-            className="w-full px-3 py-2 bg-white border border-slate-300 rounded-xl text-sm outline-none cursor-pointer focus:border-rose-400"
-          >
-            <option value={3}>3ヶ月</option>
-            <option value={6}>6ヶ月</option>
-            <option value={12}>12ヶ月</option>
-            <option value={24}>24ヶ月</option>
-          </select>
-        </div>
-        <div className="min-w-0 space-y-1">
+          </div>
+        </fieldset>
+        <fieldset className="min-w-0 space-y-1">
+          <legend>開始日</legend>
+          <p className="text-sm">{from}</p>
+          <DateChips value={from} onChange={setFrom} />
+        </fieldset>
+        <fieldset className="min-w-0 space-y-1">
+          <legend>走査期間</legend>
+          <div className="flex flex-wrap gap-2">
+            {(
+              [
+                [3, "3か月"],
+                [6, "半年"],
+                [12, "1年"],
+                [24, "2年"],
+              ] as const
+            ).map(([value, name]) => (
+              <button
+                key={value}
+                type="button"
+                className={choiceClass}
+                aria-pressed={months === value}
+                onClick={() => setMonths(value)}
+              >
+                {name}
+              </button>
+            ))}
+          </div>
+        </fieldset>
+        <details className="min-w-0 space-y-1">
+          <summary>詳しい設定</summary>
           <label
             className="text-xs font-semibold text-slate-500 block cursor-help"
             htmlFor="ad-tenchusatsu"
@@ -473,7 +597,10 @@ export function AuspiciousDayFinder() {
           <select
             id="ad-tenchusatsu"
             value={tenchusatsuMode}
-            onChange={(e) => setTenchusatsuMode(e.target.value)}
+            onChange={(e) => {
+              profileRevision.current++;
+              setTenchusatsuMode(e.target.value);
+            }}
             className="w-full px-3 py-2 bg-white border border-slate-300 rounded-xl text-sm outline-none cursor-pointer focus:border-rose-400"
           >
             {TENCHUSATSU_MODES.map((m) => (
@@ -482,17 +609,24 @@ export function AuspiciousDayFinder() {
               </option>
             ))}
           </select>
-        </div>
+        </details>
       </div>
 
       <button
         onClick={search}
-        disabled={loading}
+        disabled={loading || !!missing || resolvingOrigin}
+        aria-describedby={missing ? "ad-missing" : undefined}
         className="mt-5 px-5 py-2.5 rounded-xl bg-rose-500 hover:bg-rose-600 disabled:bg-rose-300 text-white text-sm font-bold transition-colors inline-flex items-center gap-2"
       >
         {loading && <Loader2 className="w-4 h-4 animate-spin" />}
         吉日を出す
       </button>
+
+      {missing && (
+        <p id="ad-missing" className="mt-2 text-sm text-slate-600">
+          {missing}。
+        </p>
+      )}
 
       {error && (
         <p className="mt-4 text-sm text-rose-600 bg-rose-50 border border-rose-200 rounded-xl px-3 py-2">
@@ -507,32 +641,17 @@ export function AuspiciousDayFinder() {
         </p>
       )}
 
-      {/* 未登録のまま出した結果の断り。**文言は 1 つの部品に寄せてある**
-          （2026-09-14）。以前はここだけ「いまの結果は仮の設定による
-          ものです」という独自の言い方で、ホームの帯（「これは見本です」）
-          と食い違っていた。同じ状況に 3 通りの言い方があると「別のことを
-          言っているのか」と読める（CLAUDE.md 4 節）。
-
-          **押す前から出す。**以前は `summaries &&` で結果が出てから
-          しか出ておらず、既定値のまま押す瞬間には何も断っていなかった。 */}
-      {usingDefaults && (
-        <SampleProfileNotice
-          className="mt-4"
-          birthLabel={SAMPLE_BIRTH_LABEL}
-          what="吉日と方位の判定"
-          unaffected="暦そのもの（二十四節気・干支）は誰が見ても同じです。上の欄をご自身の生年月日と現住地に変えると、あなたの吉日になります。"
-        />
+      {!missing && (
+        <div ref={boardRef} className="mt-5 scroll-mt-20">
+          <ThreeBoardStack
+            birthDate={birthDate}
+            lon={lon}
+            tenchusatsuMode={tenchusatsuMode}
+            date={boardDate}
+            onDateChange={setBoardDate}
+          />
+        </div>
       )}
-
-      <div ref={boardRef} className="mt-5 scroll-mt-20">
-        <ThreeBoardStack
-          birthDate={birthDate}
-          lon={lon}
-          tenchusatsuMode={tenchusatsuMode}
-          date={boardDate}
-          onDateChange={setBoardDate}
-        />
-      </div>
 
       {summaries && (
         <div className="mt-5 space-y-5">
@@ -698,7 +817,11 @@ export function AuspiciousDayFinder() {
                         {s.window.yearBoardValidUntil}
                       </b>
                       {s.window.afterYearBoardStatus && (
-                        <> まで（翌日から「{label(s.window.afterYearBoardStatus)}」に変わる）</>
+                        <>
+                          {" "}
+                          まで（翌日から「{label(s.window.afterYearBoardStatus)}
+                          」に変わる）
+                        </>
                       )}
                     </span>
                   )}
@@ -708,13 +831,27 @@ export function AuspiciousDayFinder() {
                   <table className="w-full text-sm">
                     <thead className="bg-white text-xs text-slate-500 border-b border-slate-200">
                       <tr>
-                        <th className="px-3 py-2 text-left font-semibold">日付</th>
-                        <th className="px-3 py-2 text-left font-semibold">年盤</th>
-                        <th className="px-3 py-2 text-left font-semibold">月盤</th>
-                        <th className="px-3 py-2 text-left font-semibold">日盤</th>
-                        <th className="px-3 py-2 text-left font-semibold">暦</th>
-                        <th className="px-3 py-2 text-left font-semibold">天中殺</th>
-                        <th className="px-3 py-2 text-left font-semibold">物件</th>
+                        <th className="px-3 py-2 text-left font-semibold">
+                          日付
+                        </th>
+                        <th className="px-3 py-2 text-left font-semibold">
+                          年盤
+                        </th>
+                        <th className="px-3 py-2 text-left font-semibold">
+                          月盤
+                        </th>
+                        <th className="px-3 py-2 text-left font-semibold">
+                          日盤
+                        </th>
+                        <th className="px-3 py-2 text-left font-semibold">
+                          暦
+                        </th>
+                        <th className="px-3 py-2 text-left font-semibold">
+                          天中殺
+                        </th>
+                        <th className="px-3 py-2 text-left font-semibold">
+                          物件
+                        </th>
                       </tr>
                     </thead>
                     <tbody>
@@ -743,7 +880,10 @@ export function AuspiciousDayFinder() {
                                   onClick={() => {
                                     if (!on && (d.tier ?? "S") === "S")
                                       setBurst((b) => ({
-                                        key: favoriteDayKey(d.date, s.direction),
+                                        key: favoriteDayKey(
+                                          d.date,
+                                          s.direction,
+                                        ),
                                         n: (b?.n ?? 0) + 1,
                                       }));
                                     toggleFavoriteDay({
