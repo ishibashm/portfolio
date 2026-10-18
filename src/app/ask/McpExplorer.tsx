@@ -4,6 +4,12 @@ import FaqPanel from "@/components/FaqPanel";
 import { ANSWER_SOURCE_LABELS, type AnswerSource } from "@/lib/answerSource";
 
 import dynamic from "next/dynamic";
+import { AskGuidancePanel } from "@/components/home/AskGuidancePanel";
+import {
+  guidanceValuesFromText,
+  type GuidanceCard,
+  type GuidanceValues,
+} from "@/lib/askGuidance";
 import {
   useEffect,
   useId,
@@ -104,6 +110,7 @@ type ChatMessage = {
   suggestions?: string[];
   answerSource?: AnswerSource;
   /** サーバーが書いた保存の提案。端末にもアカウントにも保存しない。 */
+  guidance?: GuidanceCard;
   saveOffer?: { card: SaveOfferCardData; status: SaveOfferStatus };
   /** サーバーが署名したお知らせの提案（ログイン中だけ届く）。保存しない。 */
   reminderOffers?: ReminderOfferCardData[];
@@ -452,9 +459,15 @@ function ConversationMessage({
   showName = true,
   saveOfferCounts,
   onSaveOffer,
+  guidanceSaved,
+  guidancePrevious,
+  onDismissGuidance,
 }: {
   message: ChatMessage;
   showName?: boolean;
+  guidanceSaved?: AskPerson;
+  guidancePrevious?: GuidanceValues;
+  onDismissGuidance?: (messageId: string) => void;
   saveOfferCounts?: Partial<Record<SaveOfferFieldKey, number>>;
   onSaveOffer?: (messageId: string, action: "accept" | "decline") => void;
 }) {
@@ -503,7 +516,15 @@ function ConversationMessage({
             <AnswerBlocks blocks={message.blocks} />
           )}
           <ToolStatus message={message} />
-          {message.saveOffer && onSaveOffer && (
+          {message.guidance && onDismissGuidance && (
+            <AskGuidancePanel
+              initial={message.guidance}
+              saved={guidanceSaved}
+              previous={guidancePrevious}
+              onDismiss={() => onDismissGuidance(message.id)}
+            />
+          )}
+          {!message.guidance && message.saveOffer && onSaveOffer && (
             <SaveOfferCard
               card={message.saveOffer.card}
               status={message.saveOffer.status}
@@ -512,12 +533,13 @@ function ConversationMessage({
               onDecline={() => onSaveOffer(message.id, "decline")}
             />
           )}
-          {message.reminderOffers?.map((card) => (
-            <ReminderOfferCard
-              key={`${card.date}:${card.direction}`}
-              card={card}
-            />
-          ))}
+          {!message.guidance &&
+            message.reminderOffers?.map((card) => (
+              <ReminderOfferCard
+                key={`${card.date}:${card.direction}`}
+                card={card}
+              />
+            ))}
         </article>
       </div>
     </div>
@@ -555,6 +577,7 @@ export function McpExplorer({
   initialQuestion?: string;
   persistConversation?: boolean;
 }) {
+  const guidancePrompted = useRef(new Set<string>());
   const initialInput = extractAgentInput(initialQuestion);
   const [conversations, setConversations] = useState<ChatConversation[]>([
     {
@@ -1364,12 +1387,37 @@ export function McpExplorer({
           if (item.reasons.includes(AGENT_PAUSED_REASON))
             setBillingPaused(true);
           else if (!item.reasons.length) setBillingPaused(false);
+          let guidance = "guidance" in item ? item.guidance : undefined;
+          if (guidance && (guidance.fields.length || !guidance.links.length)) {
+            if (
+              activeConversation?.guidancePrompted ||
+              guidancePrompted.current.has(activeConversationId)
+            )
+              guidance = undefined;
+            else {
+              guidancePrompted.current.add(activeConversationId);
+              const promptedAt = new Date().toISOString();
+              setWorkspaceUpdatedAt(promptedAt);
+              setConversations((current) =>
+                current.map((conversation) =>
+                  conversation.id === activeConversationId
+                    ? {
+                        ...conversation,
+                        guidancePrompted: true,
+                        updatedAt: promptedAt,
+                      }
+                    : conversation,
+                ),
+              );
+            }
+          }
           const suggestions = sanitizeFollowUpSuggestions(item.suggestions);
           updateAssistant(assistantId, (current) => ({
             ...current,
             state: "done",
             reasons: item.reasons,
             answerSource: "source" in item ? item.source : undefined,
+            ...(guidance ? { guidance } : {}),
             ...(suggestions.length ? { suggestions } : {}),
           }));
           const now = new Date().toISOString();
@@ -1684,15 +1732,32 @@ export function McpExplorer({
   }
 
   const profilePreview = peopleForQuestion(question);
+  const guidanceSaved =
+    selectedPeople[0] ?? people.find((person) => person.active) ?? people[0];
+  const previousConversation = conversations.find(
+    (conversation) =>
+      conversation.id !== activeConversationId &&
+      conversation.messages.some((message) => message.role === "user"),
+  );
+  const guidancePrevious = previousConversation
+    ? guidanceValuesFromText(
+        previousConversation.messages
+          .filter((message) => message.role === "user")
+          .map((message) => message.content)
+          .join("\n"),
+      )
+    : undefined;
   const lastAssistant = [...messages]
     .reverse()
     .find((item) => item.role === "assistant");
   const contextualQuestions = sanitizeFollowUpSuggestions(
     lastAssistant?.suggestions,
   );
-  const suggestedQuestions = contextualQuestions.length
-    ? contextualQuestions
-    : followUps(messages);
+  const suggestedQuestions = lastAssistant?.guidance
+    ? []
+    : contextualQuestions.length
+      ? contextualQuestions
+      : followUps(messages);
   const calculationContext = `${question} ${municipality}`.trim();
   const calculationFallbackMessages: ChatMessage[] = calculationContext
     ? [
@@ -1983,6 +2048,14 @@ export function McpExplorer({
                   }
                   saveOfferCounts={saveOfferCounts}
                   onSaveOffer={handleSaveOffer}
+                  guidanceSaved={guidanceSaved}
+                  guidancePrevious={guidancePrevious}
+                  onDismissGuidance={(id) =>
+                    updateAssistant(id, (current) => ({
+                      ...current,
+                      guidance: undefined,
+                    }))
+                  }
                 />
               ))}
               {voiceMessages.map((item, index) => {
