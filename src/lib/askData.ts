@@ -57,6 +57,8 @@ export interface AskConversation {
   titleEdited: boolean;
   /** Input values are never stored here; only suppress repeated guidance. */
   guidancePrompted?: boolean;
+  /** Preserve manual selection/removal across workspace reloads. */
+  personSelectionChanged?: boolean;
   createdAt: string;
   updatedAt: string;
   messages: AskStoredMessage[];
@@ -319,6 +321,9 @@ function parseConversation(
     title: text(item.title, 80) || titleFromMessages(messages),
     titleEdited: item.titleEdited === true,
     ...(item.guidancePrompted === true ? { guidancePrompted: true } : {}),
+    ...(item.personSelectionChanged === true
+      ? { personSelectionChanged: true }
+      : {}),
     createdAt,
     updatedAt: timestamp(item.updatedAt, createdAt),
     messages,

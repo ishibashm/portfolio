@@ -86,10 +86,7 @@ it("計算のみは分割NDJSONを受け取り、完了前から経過を描く"
           memoryEligible: true,
           calls: 1,
           reasons: ["深さの上限で打ち切りました。"],
-          suggestions: [
-            "長崎県諫早市を出発地にして方位を計算する",
-            "2026年11月の候補日も比べる",
-          ],
+          suggestions: ["南西の街を3つ教えて", "2026年11月の候補日も比べる"],
         }) + "\n",
       ),
     );
@@ -101,11 +98,11 @@ it("計算のみは分割NDJSONを受け取り、完了前から経過を描く"
   expect(screen.getByText("深さの上限で打ち切りました。")).toBeTruthy();
   expect(screen.queryByRole("button", { name: "計算を中止" })).toBeNull();
   const followUp = screen.getByRole("button", {
-    name: "長崎県諫早市を出発地にして方位を計算する",
+    name: "南西の街を3つ教えて",
   });
   fireEvent.click(followUp);
   expect(screen.getByLabelText("自由文から入力")).toHaveValue(
-    "長崎県諫早市を出発地にして方位を計算する",
+    "南西の街を3つ教えて",
   );
   expect(
     fetcher.mock.calls.filter(([url]) => url === "/api/mcp-chain"),
@@ -344,22 +341,14 @@ it("保存済みプロフィールと同行者を重複なく候補にし、実�
 
   render(<McpExplorer agentEnabled persistConversation />);
   const self = await screen.findByRole("button", {
-    name: "本人を相談対象に選ぶ",
+    name: "本人を相談対象から外す",
   });
-  expect(self.textContent).toContain("1991-04-12・静岡県浜松市中央区");
-  expect(
-    screen.getByRole("button", { name: "母を相談対象に選ぶ" }),
-  ).toBeTruthy();
-  expect(
-    screen.getByRole("button", { name: "子どもを相談対象に選ぶ" }),
-  ).toBeTruthy();
-
+  expect(self.textContent).toContain("本人");
   fireEvent.click(screen.getByRole("button", { name: "選択・確認" }));
   expect(screen.getAllByLabelText("母を相談対象にする")).toHaveLength(1);
   fireEvent.click(
     screen.getByRole("button", { name: "相談する人の画面を閉じる" }),
   );
-  fireEvent.click(self);
   const suggestion = screen.getByRole("button", {
     name: "1991年4月12日生まれの本人に合う日取りを相談したい",
   });
@@ -894,9 +883,7 @@ it("設定の出発地と生年月日で相談し、最新回答の期間ボタ�
   });
   vi.stubGlobal("fetch", fetcher);
   render(<McpExplorer agentEnabled persistConversation />);
-  fireEvent.click(
-    await screen.findByRole("button", { name: "本人を相談対象に選ぶ" }),
-  );
+  await screen.findByRole("button", { name: "本人を相談対象から外す" });
   expect(screen.queryByText("本命星だけなら、生年から調べる")).toBeNull();
   expect(screen.queryByLabelText("生年")).toBeNull();
   fireEvent.change(screen.getByLabelText("メッセージ"), {
@@ -1009,9 +996,7 @@ it.each([
       }),
     );
     render(<McpExplorer agentEnabled persistConversation />);
-    fireEvent.click(
-      await screen.findByRole("button", { name: "テストを相談対象に選ぶ" }),
-    );
+    await screen.findByRole("button", { name: "テストを相談対象から外す" });
     fireEvent.change(screen.getByLabelText("メッセージ"), {
       target: { value: "引越しの日付と方位を相談したい" },
     });

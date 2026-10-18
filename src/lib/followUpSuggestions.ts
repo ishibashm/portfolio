@@ -51,6 +51,31 @@ export function sanitizeFollowUpSuggestions(value: unknown): string[] {
   return suggestions.length >= FOLLOW_UP_LIMITS.min ? suggestions : [];
 }
 
+// 都道府県は複合地名の中でも個別に照合する。
+const PREFECTURES =
+  /北海道|青森県|岩手県|宮城県|秋田県|山形県|福島県|茨城県|栃木県|群馬県|埼玉県|千葉県|東京都|神奈川県|新潟県|富山県|石川県|福井県|山梨県|長野県|岐阜県|静岡県|愛知県|三重県|滋賀県|京都府|大阪府|兵庫県|奈良県|和歌山県|鳥取県|島根県|岡山県|広島県|山口県|徳島県|香川県|愛媛県|高知県|福岡県|佐賀県|長崎県|熊本県|大分県|宮崎県|鹿児島県|沖縄県/gu;
+const PLACE_TOKEN =
+  /[\p{Script=Han}\p{Script=Hiragana}\p{Script=Katakana}ー]+(?:都|道|府|県|市|区|町|村|駅)/gu;
+
+/** 地名を追加する候補は、会話・選択人物・道具結果・回答の裏付けが必要。 */
+export function dropUngroundedPlaceSuggestions(
+  suggestions: string[],
+  contextText: string,
+): string[] {
+  const context = contextText.normalize("NFKC");
+  return suggestions.filter((suggestion) => {
+    const text = suggestion.normalize("NFKC");
+    const tokens = [
+      ...(text.match(PREFECTURES) ?? []),
+      ...text
+        .replace(/都道府県|市区町村/g, " ")
+        .split(/から|まで|より|について|[のをにはへでと、。\s]/u)
+        .flatMap((part) => part.match(PLACE_TOKEN) ?? []),
+    ];
+    return tokens.every((token) => context.includes(token));
+  });
+}
+
 function japaneseBirthDate(value: string | undefined): string | undefined {
   const match = value?.match(/^(\d{4})-(\d{2})-(\d{2})$/u);
   if (!match) return;
