@@ -1,9 +1,21 @@
 "use client";
 
-import { useMemo, useState, useSyncExternalStore } from "react";
+import {
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  useSyncExternalStore,
+} from "react";
 /* kigakuContent からではなく葉の directionGeo から引く。kigakuContent は
    ephemerisEngine（→ lunar-javascript）を値として引くので、ラベルの
    ためだけに /houi のバンドルへ暦が乗る。 */
+import { BirthYearPicker } from "@/components/inputs/QuickChoices";
+import {
+  loadSettings,
+  readSettingsSync,
+  settingString,
+} from "@/lib/userSettings";
 import { DIRECTION_LABELS } from "@/utils/directionGeo";
 import {
   FENG_SHUI_SERVER_SNAPSHOT,
@@ -32,9 +44,7 @@ import { FloorPlanFengShui } from "@/components/houi/FloorPlanFengShui";
  *
  * 性別は端末にだけ残す（`fengShuiSettings`）。クラウドには送らない。
  * 生まれ年は残さない。**ここは早見表で、他の画面の設定を変える場所では
- * ない。**設定の生年月日を読んで埋める案もあったが、埋めた年をそのまま
- * 使うと「立春前生まれは前年」の断りを読み飛ばした人が 1 年ずれた本命卦を
- * 見る。自分で入れてもらう。
+ * ない。**保存済みの生年月日から年を表示するが、立春前は前年を選ぶ。
  */
 
 const SEX_LABELS: Record<Sex, string> = {
@@ -62,6 +72,26 @@ export function FengShuiLookup() {
   );
   const sex = stored.sex;
   const [year, setYear] = useState("");
+  const [numeric, setNumeric] = useState(false);
+  const edited = useRef(false);
+  useEffect(() => {
+    let active = true;
+    const apply = (settings: ReturnType<typeof readSettingsSync>) => {
+      if (!active || edited.current) return;
+      const birth = settingString(settings, "birth_date") ?? "";
+      setYear(/^\d{4}-\d{2}-\d{2}/.test(birth) ? birth.slice(0, 4) : "");
+    };
+    const local = readSettingsSync();
+    void Promise.resolve().then(() => apply(local));
+    void loadSettings().then(({ settings }) => apply(settings));
+    return () => {
+      active = false;
+    };
+  }, []);
+  const chooseYear = (value: string) => {
+    edited.current = true;
+    setYear(value);
+  };
 
   const chooseSex = (next: Sex) => writeFengShuiSettings({ sex: next });
 
@@ -77,19 +107,31 @@ export function FengShuiLookup() {
   return (
     <div className="rounded-2xl border border-slate-300 bg-white/90 p-5">
       <div className="flex flex-wrap items-end gap-4">
-        <label className="block">
-          <span className="block text-xs font-bold text-slate-700">
-            生まれ年（西暦）
-          </span>
-          <input
-            type="text"
-            inputMode="numeric"
-            value={year}
-            onChange={(e) => setYear(e.target.value.replace(/[^\d]/g, ""))}
-            placeholder="1990"
-            className="mt-1.5 w-28 rounded-lg border border-slate-300 px-3 py-2 text-sm"
-          />
-        </label>
+        <div>
+          {numeric ? (
+            <label className="block">
+              生まれ年（西暦）
+              <input
+                type="text"
+                inputMode="numeric"
+                value={year}
+                onChange={(e) =>
+                  chooseYear(e.target.value.replace(/[^\d]/g, ""))
+                }
+                className="mt-1.5 w-28 rounded-lg border border-slate-300 px-3 py-2 text-sm"
+              />
+            </label>
+          ) : (
+            <BirthYearPicker value={year} onChange={chooseYear} />
+          )}
+          <button
+            type="button"
+            className="mt-2 text-xs underline"
+            onClick={() => setNumeric(!numeric)}
+          >
+            {numeric ? "ボタンで選ぶ" : "数字で入れる"}
+          </button>
+        </div>
 
         <div>
           <span className="block text-xs font-bold text-slate-700">性別</span>
