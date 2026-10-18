@@ -19,6 +19,7 @@ function encodeWorkspace(workspace: AskWorkspace): Prisma.InputJsonObject {
       id: conversation.id,
       title: conversation.title,
       titleEdited: conversation.titleEdited,
+      ...(conversation.guidancePrompted ? { guidancePrompted: true } : {}),
       createdAt: conversation.createdAt,
       updatedAt: conversation.updatedAt,
       messages: conversation.messages.map((message) => ({
