@@ -58,7 +58,9 @@ it.each([AgentBirthYear, FengShuiLookup])(
   "端末の生年月日を読み、クラウドの年を重ねる: %#",
   async (Component) => {
     vi.mocked(readSettingsSync).mockReturnValue({
-      birth_date: "1988-02-04T09:00",
+      // 風水は立春に近い日付を埋めないので、3月生まれで見る。
+      birth_date:
+        Component === AgentBirthYear ? "1988-02-04T09:00" : "1988-03-04T09:00",
     });
     let resolve!: (value: Awaited<ReturnType<typeof loadSettings>>) => void;
     vi.mocked(loadSettings).mockReturnValue(
@@ -72,7 +74,7 @@ it.each([AgentBirthYear, FengShuiLookup])(
       expect(getHonmeiStar).toHaveBeenLastCalledWith(
         new Date("1988-02-04T12:00:00+09:00"),
       );
-      expect(screen.queryByRole("group")).toBeNull();
+      expect(screen.queryByText("生まれ年は？")).toBeNull();
     } else await screen.findByText("1988年");
     await act(async () =>
       resolve({ settings: { birth_date: "1990-07-20" }, synced: true }),
@@ -154,4 +156,16 @@ it("風水では従来の範囲の年を数字でも指定でき、出生年を�
   expect(screen.getByLabelText("生まれ年（西暦）")).toHaveValue("1930");
   expect(write).not.toHaveBeenCalled();
   write.mockRestore();
+});
+
+it("風水では立春に近い生まれ（1月1日〜2月5日）の年は埋めず、選んでもらう", async () => {
+  vi.mocked(readSettingsSync).mockReturnValue({ birth_date: "1988-01-20" });
+  vi.mocked(loadSettings).mockResolvedValue({
+    settings: { birth_date: "1988-01-20" },
+    synced: true,
+  });
+  render(<FengShuiLookup />);
+  await act(async () => {});
+  expect(screen.queryByText("1988年")).toBeNull();
+  expect(screen.getByText("生まれ年は？")).toBeTruthy();
 });

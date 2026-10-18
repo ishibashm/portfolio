@@ -61,7 +61,11 @@ export function AgentBirthYear() {
     };
   }, [birth, usingSaved, year, exactDate]);
   return (
-    <section className="text-sm" aria-label="本命星だけなら、生年から調べる">
+    // 未登録の人には畳んだまま置く。相談の画面にボタンを並べ続けない。
+    <details className="text-sm" open={usingSaved || manual}>
+      <summary className="cursor-pointer">
+        本命星だけなら、生年から調べる
+      </summary>
       {usingSaved ? (
         <button
           type="button"
@@ -118,6 +122,6 @@ export function AgentBirthYear() {
         </>
       )}
       {birth && result.birth === birth && <p className="mt-3">{result.text}</p>}
-    </section>
+    </details>
   );
 }

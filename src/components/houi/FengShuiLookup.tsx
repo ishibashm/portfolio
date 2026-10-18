@@ -44,7 +44,8 @@ import { FloorPlanFengShui } from "@/components/houi/FloorPlanFengShui";
  *
  * 性別は端末にだけ残す（`fengShuiSettings`）。クラウドには送らない。
  * 生まれ年は残さない。**ここは早見表で、他の画面の設定を変える場所では
- * ない。**保存済みの生年月日から年を表示するが、立春前は前年を選ぶ。
+ * ない。**保存済みの生年月日から年を表示する。ただし 1月1日〜2月5日
+ * 生まれは立春の前後で年がずれうるので埋めず、自分で選んでもらう。
  */
 
 const SEX_LABELS: Record<Sex, string> = {
@@ -79,7 +80,10 @@ export function FengShuiLookup() {
     const apply = (settings: ReturnType<typeof readSettingsSync>) => {
       if (!active || edited.current) return;
       const birth = settingString(settings, "birth_date") ?? "";
-      setYear(/^\d{4}-\d{2}-\d{2}/.test(birth) ? birth.slice(0, 4) : "");
+      // 1月1日〜2月5日生まれは立春の前後で年がずれうるので、埋めずに選んでもらう。
+      const known = /^\d{4}-\d{2}-\d{2}/.test(birth);
+      const nearRisshun = known && birth.slice(5, 10) <= "02-05";
+      setYear(known && !nearRisshun ? birth.slice(0, 4) : "");
     };
     const local = readSettingsSync();
     void Promise.resolve().then(() => apply(local));
