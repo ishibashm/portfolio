@@ -16,6 +16,10 @@ import {
 import { SpotVerdict } from "@/components/relocation/SpotVerdict";
 import { readDestination, writeDestination } from "@/lib/destinationSetting";
 import type { GeocodeSource } from "@/lib/geocodeSource";
+import {
+  OriginChooser,
+  type PickedOrigin,
+} from "@/components/inputs/QuickChoices";
 import { PlaceInput } from "@/components/relocation/PlaceInput";
 import { ActiveProfileBadge } from "@/components/profile/ActiveProfileBadge";
 import type { DirectionTierRow } from "@/components/relocation/DirectionTierOverview";
@@ -118,6 +122,7 @@ interface PageState {
   mapFocusKind: "area" | "spot";
   /** 全国を俯瞰して開くか（時期ツールから来たとき） */
   openOverview: boolean;
+  detailsOpen: boolean;
 }
 
 /** 設定の座標を文字列にする。数でなければ「無い」ことにする（#1426）。 */
@@ -164,6 +169,7 @@ function readInitialState(): PageState {
     mapCenter: OVERVIEW_CENTER,
     mapFocusKind: "area",
     openOverview: false,
+    detailsOpen: false,
   };
 
   state.birthDate = settingString(config, "birth_date") ?? "";
@@ -232,6 +238,15 @@ function readInitialState(): PageState {
     /* URL の解釈に失敗しても保存済みの設定で動かす */
   }
 
+  const qs = new URLSearchParams(window.location.search);
+  state.detailsOpen =
+    state.radiusKm !== DEFAULT_RADIUS_KM ||
+    state.tenchusatsuMode !== DEFAULT_TENCHUSATSU_MODE ||
+    state.involuntaryMove ||
+    ["radiusKm", "tenchusatsuMode", "involuntaryMove"].some((key) =>
+      qs.has(key),
+    );
+
   const lat = parseFloat(state.baseLat);
   const lon = parseFloat(state.baseLon);
   if (state.openOverview) {
@@ -243,6 +258,9 @@ function readInitialState(): PageState {
 }
 
 export default function DirectionTownsPage() {
+  const [settingsLoaded, setSettingsLoaded] = useState(false);
+  const [originError, setOriginError] = useState("");
+  const [originBusy, setOriginBusy] = useState(false);
   const [state, setState] = useState<PageState | null>(null);
   const patch = useCallback((p: Partial<PageState>) => {
     setState((prev) => (prev ? { ...prev, ...p } : prev));
@@ -267,7 +285,7 @@ export default function DirectionTownsPage() {
           const lon = settingNumber(cfg, "base_lon");
           if (!alive || lat === undefined || lon === undefined) return;
           setState((prev) =>
-            prev && prev.baseLat === ""
+            prev && (prev.baseLat === "" || prev.baseLon === "")
               ? {
                   ...prev,
                   baseLat: String(lat),
@@ -279,12 +297,15 @@ export default function DirectionTownsPage() {
           );
         } catch {
           /* 取得できなくても入力欄から設定できる */
+        } finally {
+          if (alive) setSettingsLoaded(true);
         }
       })();
       return () => {
         alive = false;
       };
     }
+    setSettingsLoaded(true);
   }, []);
 
   const birthDate = state?.birthDate ?? "";
@@ -351,6 +372,42 @@ export default function DirectionTownsPage() {
     },
     [patch],
   );
+
+  const pickOrigin = async (origin: PickedOrigin) => {
+    setOriginError("");
+    if (origin.lat !== undefined && origin.lon !== undefined) {
+      setBase(origin.lat, origin.lon, origin.name);
+      return;
+    }
+    setOriginBusy(true);
+    try {
+      const res = await fetch(
+        `/api/geocode?q=${encodeURIComponent(origin.name)}`,
+      );
+      const body = await res.json();
+      if (
+        !res.ok ||
+        typeof body.lat !== "number" ||
+        typeof body.lon !== "number" ||
+        !Number.isFinite(body.lat) ||
+        !Number.isFinite(body.lon)
+      ) {
+        setOriginError(
+          "出発地が見つかりませんでした。もう一度選んでください。",
+        );
+        return;
+      }
+      setBase(
+        body.lat,
+        body.lon,
+        typeof body.name === "string" ? body.name : origin.name,
+      );
+    } catch {
+      setOriginError("出発地を調べられませんでした。通信を確かめてください。");
+    } finally {
+      setOriginBusy(false);
+    }
+  };
 
   const useCurrentLocation = useCallback(() => {
     if (typeof navigator === "undefined" || !navigator.geolocation) return;
@@ -620,36 +677,48 @@ export default function DirectionTownsPage() {
         </div>
 
         {/* 対象日・盤・絞り込みの見方・目的。他の頁と同じ設定バー。 */}
-        <MetaphysicalConfigBar
-          onConfigChange={(c) => {
-            patch({
-              targetDate: c.targetDate,
-              useClassical: c.useClassicalBoard,
-              directionFilterMode: c.directionFilterMode,
-              ...(c.birthDate ? { birthDate: c.birthDate } : {}),
-            });
-          }}
-        />
+        <div id="arb-config">
+          <MetaphysicalConfigBar
+            onConfigChange={(c) => {
+              patch({
+                targetDate: c.targetDate,
+                useClassical: c.useClassicalBoard,
+                directionFilterMode: c.directionFilterMode,
+                ...(c.birthDate ? { birthDate: c.birthDate } : {}),
+              });
+            }}
+          />
+        </div>
 
         {/* 出発地が未設定のときは結果を出さずに設定を促す。
             方位は出発地からの向きで決まるため、ここが無いと判定が成立しない。 */}
-        {state !== null && !hasBaseLocation && (
+        {settingsLoaded && state !== null && !hasBaseLocation && (
           <div className="rounded-3xl border border-amber-200 bg-amber-50 p-5 space-y-3">
             <h2 className="text-sm font-bold text-amber-900">
-              出発地を入れてください
+              どこから引越しますか？
             </h2>
             <p className="text-xs text-amber-800 leading-relaxed max-w-[70ch]">
               方位は「いま住んでいる場所から見てどの向きか」で決まります。出発地が無いと方位が定まらないので、街の一覧も地図の塗り分けも出しません。
             </p>
-            <PlaceInput
-              label="いま住んでいるところ"
-              lat={null}
-              lon={null}
-              onChange={setBase}
-              onUseCurrentLocation={useCurrentLocation}
-              variant="form"
-              help="市区町村名や駅名で探せます。判定は座標で決まり、他の道具でも同じ出発地を使います。"
-            />
+            <fieldset disabled={originBusy}>
+              <OriginChooser onPick={(origin) => void pickOrigin(origin)} />
+            </fieldset>
+            {originBusy && <p role="status">出発地を調べています…</p>}
+            {originError && <p role="alert">{originError}</p>}
+            {!birthDate && (
+              <p className="text-xs text-amber-800">
+                生年月日は未設定です。
+                <a
+                  href="#arb-config"
+                  className="underline"
+                  onClick={() => {
+                    window.dispatchEvent(new Event("metaphysical-config-open"));
+                  }}
+                >
+                  設定バーを開く
+                </a>
+              </p>
+            )}
           </div>
         )}
 
@@ -673,6 +742,37 @@ export default function DirectionTownsPage() {
                   onUseCurrentLocation={useCurrentLocation}
                   help="方位はここから測ります。"
                 />
+                {basePlace && (
+                  <p className="text-xs leading-relaxed text-stone-600">
+                    <Link
+                      href={`/houi/area/${basePlace.code}`}
+                      className="inline-flex min-h-[24px] items-center font-bold underline text-indigo-700 hover:text-indigo-900"
+                    >
+                      {`${basePlace.pref}${basePlace.city}のページ`}
+                    </Link>
+                    {
+                      " には、方位ごとの街と募集を見に行く導線（各社のサイト）があります。"
+                    }
+                  </p>
+                )}
+              </ArbitrageSidebarSection>
+            )}
+
+            {/* 天中殺の扱い。年天中殺は 2 年続くため、既定の厳格な扱いだと
+                その間はどの方位・どの日も動けない判定になる。流派で違うので
+                選べるようにしてある（時期ツールと同じ選択肢）。 */}
+            {hasBaseLocation && (
+              <details
+                open={state?.detailsOpen}
+                onToggle={(event) => {
+                  const open = event.currentTarget.open;
+                  if (open !== state?.detailsOpen) patch({ detailsOpen: open });
+                }}
+                className="rounded-3xl border border-stone-200 bg-white/80 p-4 space-y-3"
+              >
+                <summary className="cursor-pointer text-sm font-bold">
+                  詳しい条件
+                </summary>
                 <div className="space-y-1">
                   <label
                     htmlFor="towns-radius"
@@ -703,30 +803,6 @@ export default function DirectionTownsPage() {
                     ))}
                   </select>
                 </div>
-                {basePlace && (
-                  <p className="text-xs leading-relaxed text-stone-600">
-                    <Link
-                      href={`/houi/area/${basePlace.code}`}
-                      className="inline-flex min-h-[24px] items-center font-bold underline text-indigo-700 hover:text-indigo-900"
-                    >
-                      {`${basePlace.pref}${basePlace.city}のページ`}
-                    </Link>
-                    {
-                      " には、方位ごとの街と募集を見に行く導線（各社のサイト）があります。"
-                    }
-                  </p>
-                )}
-              </ArbitrageSidebarSection>
-            )}
-
-            {/* 天中殺の扱い。年天中殺は 2 年続くため、既定の厳格な扱いだと
-                その間はどの方位・どの日も動けない判定になる。流派で違うので
-                選べるようにしてある（時期ツールと同じ選択肢）。 */}
-            {hasBaseLocation && (
-              <ArbitrageSidebarSection
-                title="天中殺の扱い"
-                summary={tenchusatsuEntry?.label ?? tenchusatsuMode}
-              >
                 <select
                   aria-label="天中殺の扱い"
                   value={tenchusatsuMode}
@@ -755,7 +831,7 @@ export default function DirectionTownsPage() {
                   />
                   転勤などやむを得ない移動（天中殺の影響を受けないとする立場）
                 </label>
-              </ArbitrageSidebarSection>
+              </details>
             )}
 
             {/* どの方位が動ける方位で、そこに街がいくつあるか。
