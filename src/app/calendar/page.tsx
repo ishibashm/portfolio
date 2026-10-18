@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import { ActiveProfileBadge } from "@/components/profile/ActiveProfileBadge";
 import Link from "next/link";
 import { CosmicCalendar } from "@/components/widgets/CosmicCalendar";
 import { Calendar } from "lucide-react";
@@ -88,6 +89,8 @@ export default function CalendarPage() {
             </div>
           </div>
         </header>
+
+        <ActiveProfileBadge purpose="吉日と暦" className="mb-6" />
 
         {/* 手順の説明だけでは日付が決まらない。実際に三盤を重ねて
             候補日を出すところまでをこのページで完結させる。 */}

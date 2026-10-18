@@ -5,6 +5,7 @@ import { FengShuiLookup } from "@/components/houi/FengShuiLookup";
 import { AdBanner } from "@/components/ads/AdBanner";
 import { FaqJsonLd } from "@/components/JsonLd";
 import { pageOpenGraph } from "@/lib/siteUrl";
+import { ActiveProfileBadge } from "@/components/profile/ActiveProfileBadge";
 
 /**
  * 風水（八宅）の頁。
@@ -86,6 +87,8 @@ export default function Page() {
             "です。当サイトの判定（段階評価）は九星気学で行っていて、八宅は既定では使っていません。"
           }
         </p>
+
+        <ActiveProfileBadge purpose="本命卦" className="mt-6" />
 
         <section className="mt-8 rounded-2xl border border-slate-300 bg-white/90 p-5">
           <h2 className="text-sm font-bold">八宅風水のよくある問い</h2>
