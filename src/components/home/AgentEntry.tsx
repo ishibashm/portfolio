@@ -6,9 +6,11 @@ import { useEffect, useState } from "react";
 import GuideCharacter from "@/components/guide/GuideCharacter";
 import { SHIRUBE_INVITATIONS } from "@/lib/shirubeInvitations";
 import { readSettingsSync, settingString } from "@/lib/userSettings";
+import { PAID_APIS_PAUSED_TEXT } from "@/lib/paidApis";
 
 export function AgentEntry() {
   const [available, setAvailable] = useState(false);
+  const [paidApisPaused, setPaidApisPaused] = useState(false);
   const [faq, setFaq] = useState(false);
   const [baseLabel, setBaseLabel] = useState("");
   useEffect(() => {
@@ -30,13 +32,19 @@ export function AgentEntry() {
           if (!r.ok) throw new Error("status");
           return r.json();
         })
-        .then((s) =>
+        .then((s) => {
+          const pausedPaid =
+            s.paused === true || s.reason === "paidApisDisabled";
+          setPaidApisPaused(pausedPaid);
           setAvailable(
             s.enabled === true && !s.paused && s.remaining?.requests !== 0,
-          ),
-        )
+          );
+        })
         .catch(() => {
-          if (!abort.signal.aborted) setAvailable(false);
+          if (!abort.signal.aborted) {
+            setAvailable(false);
+            setPaidApisPaused(false);
+          }
         });
     };
     check();
@@ -63,6 +71,11 @@ export function AgentEntry() {
           サイトの計算と公開記事にもとづく参考情報です。
         </span>
       </GuideCharacter>
+      {paidApisPaused && (
+        <p role="status" className="mt-4 rounded-xl bg-amber-50 p-3 text-sm">
+          {PAID_APIS_PAUSED_TEXT}
+        </p>
+      )}
       <div className="mt-4 flex flex-wrap gap-2" aria-label="しるべの案内">
         {SHIRUBE_INVITATIONS.map((item) => (
           <Link

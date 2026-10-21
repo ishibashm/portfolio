@@ -13,6 +13,7 @@ import { AgentEntry } from "@/components/home/AgentEntry";
 import { McpExplorer } from "@/app/ask/McpExplorer";
 import { SETTINGS_KEY } from "@/lib/userSettings";
 import { clearLocalAccountData } from "@/lib/accountData";
+import { PAID_APIS_PAUSED_TEXT } from "@/lib/paidApis";
 vi.mock("next/dynamic", () => ({
   default: () =>
     function LazyChat() {
@@ -66,6 +67,11 @@ it.each(["billing", true])(
     expect(
       screen.getByRole("link", { name: /いまの街から方位ごとの街を探す/ }),
     ).toHaveAttribute("href", "/houi/area");
+    if (paused === true) {
+      expect(screen.getByText(PAID_APIS_PAUSED_TEXT)).toBeTruthy();
+    } else {
+      expect(screen.queryByText(PAID_APIS_PAUSED_TEXT)).toBeNull();
+    }
   },
 );
 it("保存済みの拠点名はマウント後だけ案内に使い、設定を書き換えない", async () => {

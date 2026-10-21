@@ -7,8 +7,10 @@ import { clientKey } from "@/lib/apiGuard";
 import { agentSessionUser } from "@/lib/agentSession";
 import { voiceStore } from "@/lib/mcpVoiceStore";
 import { remindersConfig } from "@/lib/reminders";
+import { PAID_APIS_DISABLED_REASON, paidApisDisabled } from "@/lib/paidApis";
 export const dynamic = "force-dynamic";
 export async function GET(request: Request) {
+  const paidDisabled = paidApisDisabled();
   const { enabled, mock, provider } = chainLlmState();
   const voice = voiceState();
   const session =
@@ -25,7 +27,8 @@ export async function GET(request: Request) {
   }
   return Response.json(
     {
-      paused: agentBillingState().paused,
+      paused: paidDisabled ? true : agentBillingState().paused,
+      ...(paidDisabled ? { reason: PAID_APIS_DISABLED_REASON } : {}),
       enabled,
       provider,
       // AI回答の単価がそろっているか（false ならAI回答は呼び出し前に止まる）。

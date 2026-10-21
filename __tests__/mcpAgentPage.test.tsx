@@ -1,6 +1,7 @@
 import { afterEach, expect, it, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
 import Page from "@/app/ask/page";
+import { PAID_APIS_PAUSED_TEXT } from "@/lib/paidApis";
 afterEach(() => vi.unstubAllEnvs());
 it("サーバー判定は鍵なしで決定的フォームにし、鍵をpropsへ渡さない", () => {
   vi.stubEnv("MCP_AGENT_ENABLED", "true");
@@ -32,4 +33,17 @@ it("音声の旗・鍵がないとマイクを表示しない", () => {
   vi.stubEnv("XAI_API_KEY", "");
   render(Page());
   expect(screen.queryByRole("button", { name: "押して話す" })).toBeNull();
+});
+it("有料API停止時は鍵があっても計算のみにし、音声入口を出さない", () => {
+  vi.stubEnv("PAID_APIS_DISABLED", "true");
+  vi.stubEnv("MCP_AGENT_ENABLED", "true");
+  vi.stubEnv("GOOGLE_GENERATIVE_AI_API_KEY", "secret-only-on-server");
+  vi.stubEnv("MCP_VOICE_ENABLED", "true");
+  vi.stubEnv("XAI_API_KEY", "secret-voice-key");
+  render(Page());
+  expect(screen.getByText(PAID_APIS_PAUSED_TEXT)).toBeTruthy();
+  expect(screen.getByLabelText("生年月日")).toBeTruthy();
+  expect(screen.queryByLabelText("メッセージ")).toBeNull();
+  expect(screen.queryByRole("button", { name: "押して話す" })).toBeNull();
+  expect(screen.queryByLabelText("AIを使わず計算のみ")).toBeNull();
 });

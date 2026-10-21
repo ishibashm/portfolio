@@ -1,9 +1,12 @@
+import { paidApisDisabled } from "./paidApis";
+
 export function voiceState(
   env: Record<string, string | undefined> = process.env,
 ) {
   const mock = env.NODE_ENV === "development" && env.MCP_VOICE_MOCK === "true";
   return {
     enabled:
+      !paidApisDisabled(env) &&
       env.MCP_VOICE_ENABLED === "true" &&
       (Boolean(env.XAI_API_KEY?.trim()) || mock),
     mock,

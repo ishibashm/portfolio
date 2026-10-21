@@ -1,3 +1,5 @@
+import { paidApisDisabled } from "./paidApis";
+
 /** Google remains the default. xAI requires an explicit model and key. */
 export const DEFAULT_AGENT_MODEL = "gemini-3.5-flash";
 export const DEFAULT_FALLBACK_MODEL = "gemini-3.5-flash-lite";
@@ -24,12 +26,16 @@ export function chainLlmState(
     env.MCP_AGENT_ENABLED === "true" &&
     Boolean(apiKey) &&
     Boolean(model);
+  const enabled =
+    !paidApisDisabled(env) &&
+    supported &&
+    env.MCP_AGENT_ENABLED === "true" &&
+    (configured || mock);
   return {
     provider,
     fallbackModel: fallback === model ? "" : fallback,
     configured,
-    enabled:
-      supported && env.MCP_AGENT_ENABLED === "true" && (configured || mock),
+    enabled,
     mock,
     model,
   };

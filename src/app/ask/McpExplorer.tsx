@@ -7,6 +7,7 @@ import {
 } from "@/lib/askAnswerFields";
 import { nearestMunicipality } from "@/lib/nearestMunicipality";
 import { AGENT_PAUSED_REASON, AGENT_PAUSED_TEXT } from "@/lib/agentPausedText";
+import { PAID_APIS_PAUSED_TEXT } from "@/lib/paidApis";
 import FaqPanel from "@/components/FaqPanel";
 import { ANSWER_SOURCE_LABELS, type AnswerSource } from "@/lib/answerSource";
 
@@ -639,12 +640,14 @@ export function McpExplorer({
   mock = false,
   initialQuestion = "",
   persistConversation = false,
+  paidApisPaused = false,
 }: {
   agentEnabled?: boolean;
   voiceEnabled?: boolean;
   mock?: boolean;
   initialQuestion?: string;
   persistConversation?: boolean;
+  paidApisPaused?: boolean;
 }) {
   const guidancePrompted = useRef(new Set<string>());
   const invitationHandled = useRef(false);
@@ -681,7 +684,7 @@ export function McpExplorer({
   const [calculationComplete, setCalculationComplete] = useState(false);
   const [message, setMessage] = useState("");
   const [running, setRunning] = useState(false);
-  const [calculationOnly, setCalculationOnly] = useState(false);
+  const [calculationOnly, setCalculationOnly] = useState(paidApisPaused);
   const [birthDate, setBirthDate] = useState(initialInput.birthDate);
   const [municipality, setMunicipality] = useState(initialInput.municipality);
   const [year, setYear] = useState(initialInput.year);
@@ -1068,6 +1071,8 @@ export function McpExplorer({
       .then((response) => response.json())
       .then((data) => {
         setBillingPaused(data.paused === "billing");
+        if (data.paused === true || data.reason === "paidApisDisabled")
+          setCalculationOnly(true);
         if (data.remaining && revision === remainingRevision.current)
           setRemaining(String(data.remaining.requests));
         if (
@@ -2061,9 +2066,14 @@ export function McpExplorer({
 
   return (
     <section className="mt-8 space-y-5">
+      {paidApisPaused && (
+        <p role="status" className="rounded-xl bg-amber-50 p-3 text-sm">
+          {PAID_APIS_PAUSED_TEXT}
+        </p>
+      )}
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          {!agentEnabled && (
+          {!agentEnabled && !paidApisPaused && (
             <p className="text-sm text-slate-600">
               AI回答は現在無効です。計算の連鎖だけを表示します。
             </p>
@@ -2189,13 +2199,13 @@ export function McpExplorer({
         </section>
       )}
 
-      {agentEnabled && billingPaused && (
+      {agentEnabled && billingPaused && !paidApisPaused && (
         <p role="status" className="rounded-xl bg-amber-50 p-3 text-sm">
           {AGENT_PAUSED_TEXT}
         </p>
       )}
       <div className="flex flex-wrap items-center gap-4">
-        {agentEnabled && (
+        {agentEnabled && !paidApisPaused && (
           <label className="text-sm">
             <input
               type="checkbox"
@@ -2221,7 +2231,7 @@ export function McpExplorer({
         )}
       </div>
 
-      {voiceEnabled && useAgent && (
+      {voiceEnabled && useAgent && !paidApisPaused && (
         <>
           {voiceSignedIn === null ? (
             <p className="rounded-2xl border border-slate-200 p-4 text-sm">

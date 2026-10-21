@@ -6,6 +6,7 @@ import {
   formatJapaneseDate,
   type ReminderOfferCard,
 } from "./reminderText";
+import { paidApisDisabled } from "./paidApis";
 
 export { REMINDER_TEXT, formatJapaneseDate, type ReminderOfferCard };
 
@@ -57,6 +58,7 @@ export type RemindersConfig =
 export function remindersConfig(
   env: Record<string, string | undefined> = process.env,
 ): RemindersConfig {
+  if (paidApisDisabled(env)) return { enabled: false };
   const apiKey = env.RESEND_API_KEY?.trim();
   const from = env.REMINDER_FROM_EMAIL?.trim();
   const secret = env.REMINDER_SECRET?.trim();

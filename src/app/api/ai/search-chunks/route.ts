@@ -4,6 +4,7 @@ import { toResponseMessage } from "@/lib/errorMessage";
 import { embed } from "ai";
 import { google } from "@ai-sdk/google";
 import prisma from "@/lib/prisma";
+import { paidApisDeniedBody, paidApisDisabled } from "@/lib/paidApis";
 
 /*
   ログイン必須。この口は埋め込み（text-embedding-004）を毎回呼ぶ課金 API で、
@@ -37,6 +38,10 @@ export async function POST(req: Request) {
         { error: `Query must be ${MAX_QUERY_CHARS} characters or fewer` },
         { status: 400 }
       );
+    }
+
+    if (paidApisDisabled()) {
+      return NextResponse.json(paidApisDeniedBody(), { status: 403 });
     }
 
     // 1. Generate embedding for the query
