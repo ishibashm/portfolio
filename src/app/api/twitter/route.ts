@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { errorStatus, toResponseMessage } from "@/lib/errorMessage";
 import { TwitterApi, type TweetPublicMetricsV2 } from "twitter-api-v2";
+import { paidApisDeniedBody, paidApisDisabled } from "@/lib/paidApis";
 
 /**
  * この口が返すツイート 1 件。検索とユーザーの 2 経路で組み立てるので、
@@ -29,6 +30,10 @@ export async function GET(req: Request) {
       { error: 'Query parameter "q" is required' },
       { status: 400 },
     );
+  }
+
+  if (paidApisDisabled()) {
+    return NextResponse.json(paidApisDeniedBody(), { status: 403 });
   }
 
   // Use the Bearer Token for application-only authentication

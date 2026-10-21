@@ -11,6 +11,8 @@ export default function HomeAgentChat({
     enabled: boolean;
     mock: boolean;
     voiceEnabled?: boolean;
+    paused?: unknown;
+    reason?: string;
   }>();
   useEffect(() => {
     const abort = new AbortController();
@@ -28,6 +30,9 @@ export default function HomeAgentChat({
       agentEnabled={state.enabled}
       mock={state.mock}
       initialQuestion={initialQuestion}
+      paidApisPaused={
+        state.paused === true || state.reason === "paidApisDisabled"
+      }
     />
   ) : (
     <div className="mt-4 flex items-center gap-3">

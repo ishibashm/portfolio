@@ -104,6 +104,15 @@ describe("Grok voice API", () => {
     expect((await s.handle("session", request())).status).toBe(404);
     expect(s.fetcher).not.toHaveBeenCalled();
   });
+  it("有料API停止時は鍵があっても xAI を呼ばない", async () => {
+    vi.stubEnv("PAID_APIS_DISABLED", "true");
+    vi.stubEnv("MCP_VOICE_ENABLED", "true");
+    vi.stubEnv("XAI_API_KEY", "private-api-key");
+    const s = setup();
+    expect(voiceState().enabled).toBe(false);
+    expect((await s.handle("session", request())).status).toBe(404);
+    expect(s.fetcher).not.toHaveBeenCalled();
+  });
   it("rejects Origin and invalid bodies before issuance", async () => {
     const s = setup();
     for (const kind of ["session", "tool", "end"] as const)

@@ -52,6 +52,7 @@ import {
 import { hasExplicitBirthDate, UNKNOWN_BIRTH_DATE } from "./agentInput";
 import { toolCallKey } from "./mcpToolCallKey";
 import { chainLlmState } from "./mcpAgentConfig";
+import { paidApisDisabled } from "./paidApis";
 import {
   SAVE_OFFER_RESULT_TOOLS,
   conversationKeySchema,
@@ -380,7 +381,8 @@ export async function createAgentModel(
   modelId?: string,
 ): Promise<LanguageModel> {
   const state = chainLlmState();
-  if (!state.enabled) throw new Error("AI回答は無効です。");
+  if (!state.enabled || paidApisDisabled())
+    throw new Error("AI回答は無効です。");
   if (state.mock) return (await import("./mcpAgentMock")).createAgentMock();
   if (state.provider === "xai")
     return createXai({ apiKey: process.env.XAI_API_KEY?.trim() })(

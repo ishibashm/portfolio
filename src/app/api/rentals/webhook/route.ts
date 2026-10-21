@@ -5,6 +5,7 @@ import { z } from "zod";
 import prisma from "@/lib/prisma";
 import { toResponseMessage } from "@/lib/errorMessage";
 import { recordApiCall, tokensFromAiSdkUsage } from "@/lib/apiUsage";
+import { paidApisDeniedBody, paidApisDisabled } from "@/lib/paidApis";
 
 export const runtime = "nodejs";
 export const maxDuration = 60; // Allow more time for AI processing
@@ -90,6 +91,10 @@ export async function POST(req: Request) {
         { error: "AI API Key not configured" },
         { status: 500 },
       );
+    }
+
+    if (paidApisDisabled()) {
+      return NextResponse.json(paidApisDeniedBody(), { status: 403 });
     }
 
     // 1. Extract property details using Gemini

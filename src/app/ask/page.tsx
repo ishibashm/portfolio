@@ -5,6 +5,7 @@ import { McpExplorer } from "./McpExplorer";
 
 import { voiceState } from "@/lib/mcpVoiceConfig";
 import { chainLlmState } from "@/lib/mcpAgentConfig";
+import { paidApisDisabled } from "@/lib/paidApis";
 
 export const dynamic = "force-dynamic";
 export const metadata: Metadata = {
@@ -21,6 +22,7 @@ export const metadata: Metadata = {
 };
 export default function Page() {
   const state = chainLlmState();
+  const paidPaused = paidApisDisabled();
   return (
     <main className="min-h-screen bg-gradient-to-br from-[#faf7f5] via-[#f5efe9] to-[#f0e9e1] text-slate-900">
       <article className="mx-auto max-w-[1700px] px-5 py-12">
@@ -48,6 +50,7 @@ export default function Page() {
           agentEnabled={state.enabled}
           mock={state.mock}
           persistConversation
+          paidApisPaused={paidPaused}
         />
         <p className="mt-8 text-sm text-slate-600">
           吉凶は九星気学の考え方による参考情報です。契約・費用・通勤など、現実の条件と合わせて検討してください。
