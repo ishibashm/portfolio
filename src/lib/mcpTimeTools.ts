@@ -6,6 +6,12 @@ import {
   TimeSlotsError,
 } from "@/lib/timeSlots";
 
+import {
+  calculateTimeDirections,
+  timeDirectionsInputSchema,
+  timeDirectionsOutputSchema,
+} from "@/lib/timeDirections";
+
 const star = z.strictObject({
   number: z.number().int().min(1).max(9),
   name: z.string(),
@@ -75,6 +81,46 @@ export const timeSlotsOutputSchema = z.strictObject({
 
 /** 公開用。strict schema 自体を渡し、SDK が未知の selector を strip しない。 */
 export function registerPublicTimeTools(server: McpServer) {
+  server.registerTool(
+    "judge_hourly_directions",
+    {
+      title: "12刻の八方位の吉凶とラッキーカラー",
+      description:
+        "日付から真太陽時の12刻ごとの時盤・八方位の吉凶・ラッキーカラーを返します。刻の区切りと九星はjudge_time_slotsと同じ既存計算です。location（lat/lon）省略時は名古屋。本命星honmeiStarか生年月日birthDateは任意・同時指定不可。未指定時は共通の五黄殺・暗剣殺のみ凶、その他は未判定のneutral。指定時は既存の本命殺・本命的殺・相性判定も適用。五黄殺と暗剣殺は誰にとっても凶。色の根拠はサイト既存のsrc/utils/kigaku.tsのKYUSEI.color（時盤中宮の九星の色）で、個人別の吉色ではありません。時盤単独で、年・月・日盤、時破、空亡は合成しません。対応年1900〜2099、場所は緯度20〜46・経度122〜154。保存プロフィールや端末設定は読みません。",
+      inputSchema: timeDirectionsInputSchema,
+      outputSchema: timeDirectionsOutputSchema,
+      annotations: {
+        readOnlyHint: true,
+        destructiveHint: false,
+        openWorldHint: false,
+        idempotentHint: true,
+      },
+    },
+    async (input) => {
+      try {
+        const payload = calculateTimeDirections(input);
+        return {
+          content: [{ type: "text", text: JSON.stringify(payload) }],
+          structuredContent: payload,
+        };
+      } catch (error) {
+        return {
+          isError: true,
+          content: [
+            {
+              type: "text",
+              text: JSON.stringify({
+                error:
+                  error instanceof z.ZodError
+                    ? "INVALID_INPUT"
+                    : "TEMPORARILY_UNAVAILABLE",
+              }),
+            },
+          ],
+        };
+      }
+    },
+  );
   server.registerTool(
     "judge_time_slots",
     {
