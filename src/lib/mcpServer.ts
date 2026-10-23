@@ -4,6 +4,7 @@ import {
   searchArticles,
   getArticle,
 } from "./mcpArticles";
+import { registerPublicRentalTools, type RentalReader } from "./mcpRentals";
 /**
  * MCP（Model Context Protocol）サーバーの本体。
  *
@@ -15,10 +16,11 @@ import {
  *
  * - **公開しているものしか出さない。**ここで返すのは、ログインなしで
  *   画面から得られる計算（方位の吉凶・日取り・市区町村の一覧・県の
- *   まとめ）だけ。個人データ・履歴・管理系は一切触らない。公開範囲を
- *   広げる変更ではない
- * - 記事だけは blogStore から公開 BlogPost を読み取る。書き込みはしない。
+ *   まとめ）と、公開記事、公開されていた賃貸掲載だけ。個人データ・
+ *   履歴・お気に入り・連絡先は触らない
+ * - 記事は blogStore から公開 BlogPost を読み取る。書き込みはしない。
  *   DB が空・接続失敗なら Markdown。計算と地理は in-process と静的 JSON。
+ *   賃貸掲載は SELECT だけ（lib/mcpRentals）。スクレイピングは起動しない
  * - **判定はページと同じ関数を呼ぶ。**auspiciousDays / areaContent /
  *   prefContent をそのまま使う。ここに判定を書き写さない（写すと画面と
  *   食い違う。3 節の方針）
@@ -554,7 +556,7 @@ export function createMcpBaseServer(): McpServer {
   return server;
 }
 
-export function createMcpServer(): McpServer {
+export function createMcpServer(deps?: { rentals?: RentalReader }): McpServer {
   const server = createMcpBaseServer();
   registerPublicTimeTools(server);
   server.registerTool(
@@ -601,6 +603,7 @@ export function createMcpServer(): McpServer {
       }
     },
   );
+  registerPublicRentalTools(server, deps?.rentals);
 
   return server;
 }

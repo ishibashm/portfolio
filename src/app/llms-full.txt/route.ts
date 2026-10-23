@@ -152,7 +152,7 @@ ${AREAS.length.toLocaleString("en-US")}。${AREA_GENERATED_AT.slice(0, 10)} 時�
 ## 道具として呼ぶ（MCP）
 
 ${baseUrl}/api/mcp で MCP（Model Context Protocol）のサーバーを公開しています。
-Streamable HTTP・stateless・POST のみ。いずれも匿名で、画面から得られる計算だけを返します。道具は8つです。
+Streamable HTTP・stateless・POST のみ。匿名で使えます。計算は画面と同じ関数、記事と賃貸掲載は読み取りだけです。道具は13個です。賃貸掲載は最終確認から30日を過ぎたものと掲載期限切れを除き、連絡先・取込メール・お気に入りは返しません。スクレイピングと有料APIは呼びません。
 
 - get_honmei_star: 生年月日から本命星（九星）と天中殺の干支を返す。追加項目 kanshi（年月日）、solarTerms（出生年の24節気）、boundaryAlternatives（時刻不明の境界候補）、calendarBasis
 - get_kanshi: 生年月日から年月日の六十干支、日柱由来の空亡（kanshi.voidBranches）、各柱の干支併臨年（kanshiHeirin）、二十四節気の計算時刻（solarTerms）を返す。1900〜2100年の YYYY-MM-DD または日時を受け付け、時差省略はJST。日付だけは正午の代表値で、節入り当日は前後両候補とそれぞれの併臨年も返す
@@ -161,6 +161,9 @@ Streamable HTTP・stateless・POST のみ。いずれも匿名で、画面から
 - find_auspicious_days: 期間内で、八方位それぞれに動ける日（三盤吉・吉日）を集計する。bestDays[].kanshi に各候補日の年月日干支（JST正午）、solarTerms に走査期間の二十四節気を追加
 - search_articles: キーワード・話題で公開記事のtitle・slug・description・URL・publishedAt・tagsを最大5件返す。
 - get_article: slugで公開記事の見出し別の節を最大4000文字まで返す。DBのBlogPostを読み取り、空・接続失敗時はMarkdownへ落ちる。draftは返さず、書き込み・個人データへのアクセスはしない。
+- search_rentals: 公開されていた賃貸掲載を条件で探す。都道府県・市区町村・家賃上限（既定は管理費込み）・間取り・面積・駅徒歩・築年数。既定10件、最大20件。駅名は無く徒歩分だけ。起点の緯度経度を両方渡すと真北の伝統区分で方位を添える。吉凶は含まない
+- get_rental: 掲載IDの1件。古いか期限切れなら本文を返さず、除いたことだけ返す
+- rental_market_stats: 30日以内の掲載の都道府県別・間取り別の家賃中央値（管理費込み）。画面の凍結集計も snapshot として返す。snapshot は現在の相場ではない
 - search_municipality: 名前の一部から市区町村を探し、コードと代表点を返す
 - area_directions: 市区町村から見た八方位それぞれの市区町村と、候補の無い方位の理由
 - prefecture_summary: 都道府県の市区町村と、県の面積重心から見た八方位ごとの市区町村
@@ -176,7 +179,7 @@ Streamable HTTP・stateless・POST のみ。いずれも匿名で、画面から
 日付だけの出生は刻ツールでは画面互換のJST 9時、既存の日判定ではJST正午として扱います。端末だけの設定は再現しません。
 個人用 ${baseUrl}/api/mcp/personal は実装済みですが既定では無効です。運用者が配置と接続試験を完了して明示的に有効化する必要があります。ChatGPT・Claude・Cursorを対象としていますが、実サービスでの接続確認は未完了です。
 有効化された環境ではOAuth 2.1と既存サイトログインで接続し、read:profiles の権限で接続ごとに選んだクラウド保存プロフィールだけを読みます。新規プロフィールは自動共有されません。公開入口へプロフィール名やIDを渡すことはできません。
-個人用の道具は11個です。上記のうち judge_time_slots を除く7個に、次の4個を加えます。
+個人用の道具は11個です。計算の7個（get_honmei_star、get_kanshi、judge_directions、find_auspicious_days、search_municipality、area_directions、prefecture_summary）に、次の4個を加えます。記事検索と賃貸掲載は公開入口だけです。
 
 - list_profiles: この接続で許可されたプロフィールのID・名前・計算準備状態を返す
 - get_profile: 選んだプロフィールの対応設定を返す。生年月日・出発地の座標は既定では返さず、includeCalculationInputs=true の明示時だけ返す

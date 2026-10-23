@@ -7,10 +7,14 @@ ChatGPT・Claude・Cursorの接続試験は未完了。公開対応済みとは�
 
 ## 入口と認可
 
-公開 `/api/mcp` はDBを読まない既存7ツール（`get_kanshi` を含む）と明示入力専用
-`judge_time_slots` の計8ツール。個人用 `/api/mcp/personal` は既存7ツールに
+公開 `/api/mcp` は計算8ツール（`get_kanshi` と明示入力の `judge_time_slots` を含む）に、
+公開記事の `search_articles` / `get_article` と、賃貸掲載の
+`search_rentals` / `get_rental` / `rental_market_stats` を加えた計13ツール。
+DBを読むのは記事と賃貸掲載だけで、どちらも SELECT のみ。スクレイピングは起動しない。
+賃貸掲載は最終確認から30日を過ぎたものと掲載期限切れを除き、連絡先・取込メール・
+お気に入りは返さない。個人用 `/api/mcp/personal` は計算7ツールに
 `list_profiles`, `get_profile`, `judge_profile_directions`, `judge_time_slots`
-を加えた計11ツール。公開側はプロフィール指定を拒否する。
+を加えた計11ツール。公開側はプロフィール指定を拒否する。賃貸掲載は個人用には置かない。
 
 正式方式はMCP仕様のOAuth 2.1。既存サイトログインで本人を確認し、接続ごとに
 プロフィールを選択する。新規プロフィールを自動共有しない。PATは初版に含めない。
