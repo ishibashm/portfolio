@@ -788,32 +788,6 @@ const FIGURES = [
       </div>`,
   },
   {
-    /*
-      「やむを得ない場合は軽い」という言い方に対して、計算の入力に
-      動機の欄が無いという事実を出す。記事の主旨そのまま。
-    */
-    slug: "moved-to-an-unlucky-direction",
-    kicker: "引越しの考え方",
-    title: "計算に「事情」を<br>入れる欄はない",
-    sub: "「やむを得ない場合は影響が軽い」の線引きを決める計算はありません。",
-    body: `<div style="display:flex;gap:34px;align-items:center">
-        <div style="background:#fff;border:1px solid #e2d9d1;border-radius:14px;padding:20px 24px;width:330px">
-          <div style="font-size:17px;font-weight:800;color:#64748b;margin-bottom:12px">判定が使う入力</div>
-          ${["生年月日", "出発地", "目的地", "移動する日"]
-            .map(
-              (x) =>
-                `<div style="font-size:19px;font-weight:700;color:#0f172a;margin-top:7px">${x}</div>`,
-            )
-            .join("")}
-          <div style="margin-top:14px;padding-top:12px;border-top:1px dashed #d6cec6;
-               font-size:19px;font-weight:700;color:#c0b8b0;text-decoration:line-through">事情・動機</div>
-        </div>
-        <div class="note" style="max-width:330px">
-          取り消す計算もありません。<b>過去の移動を無かったことにする規則は、どの流派にもありません。</b>
-        </div>
-      </div>`,
-  },
-  {
     /* 洛書。縦・横・斜めのどれを足しても 15 になる。記事の並びそのまま。 */
     slug: "why-nine-stars-and-that-order",
     kicker: "引越しの考え方",

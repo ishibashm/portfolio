@@ -44,8 +44,6 @@ draft: false
 
 自分の生年月日で一致する年を知りたい場合は、[暦](/calendar)で年月日の干支を確認できます。計算結果と、その年をどう受け止めるかは分けて考えてください。空亡の扱いの違いは[空亡は流派で扱いが違う](/blog/kuubou-schools-and-directions)に整理しました。
 
-同じ生年月日で公開MCPの全ツールを呼んだ例は、[ひとつの生年月日で暦・方位・刻・干支を通して見る](/blog/one-birthdate-through-all-mcp-tools)にまとめました。
-
 転機を人との出会いから読む説明については、[転機の前に現れる3人をどう確かめるか](/blog/turning-point-three-people)で、人数・期間と記録の方法を分けて扱っています。
 
 具体的な開始年への助言は、[年干と事業を始める年の違い](/blog/year-stems-and-business-start-dates)で、数字と実際の確認条件を整理しています。
