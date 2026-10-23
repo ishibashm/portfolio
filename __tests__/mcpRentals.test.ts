@@ -94,6 +94,19 @@ function sqlBag(query: Prisma.Sql): { text: string; values: unknown[] } {
 }
 
 describe("掲載の鮮度", () => {
+  it("共有の鮮度判定に従い、取込停止中でも30日未満の掲載は残す", () => {
+    for (const days of [-1, 0, 3, 29, 30, 31]) {
+      const lastSeenAt = new Date(NOW.getTime() - days * DAY);
+      const freshness = describeListingFreshness(lastSeenAt.toISOString(), NOW);
+      expect(listingIsFresh(listing(1, { lastSeenAt }), NOW)).toBe(
+        freshness.kind === "fresh" || freshness.kind === "stopped",
+      );
+    }
+    expect(listingIsFresh(listing(1, { lastSeenAt: new Date(NaN) }), NOW)).toBe(
+      false,
+    );
+  });
+
   it("30日ちょうどは外し、1ミリ秒内側と期限ちょうどは残す", () => {
     const edge = listing(1, { lastSeenAt: new Date(NOW.getTime() - 30 * DAY) });
     const inside = listing(1, {

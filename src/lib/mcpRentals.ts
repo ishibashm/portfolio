@@ -261,9 +261,9 @@ export function totalRent(row: Pick<StoredListing, "rent" | "managementFee">) {
  * ちょうど N 日まえは含めない。掲載期限ちょうどは含める（`>=`）。
  */
 export function listingIsFresh(row: StoredListing, now: Date): boolean {
-  const ageMs = now.getTime() - row.lastSeenAt.getTime();
-  /* ちょうど N 日まえは含めない（SQL の `>`）。未来の最終確認は新しいので含める。 */
-  if (!(ageMs < LIVE_LISTING_MAX_AGE_DAYS * 86_400_000)) return false;
+  if (!Number.isFinite(row.lastSeenAt.getTime())) return false;
+  const freshness = describeListingFreshness(row.lastSeenAt.toISOString(), now);
+  if (freshness.kind === "unknown" || freshness.kind === "empty") return false;
   if (row.expireDate && row.expireDate.getTime() < now.getTime()) return false;
   return true;
 }
