@@ -6,9 +6,9 @@ updatedAt: 2026-08-20
 category: 引越しの考え方
 tags: 凶方位,60年,周期,年盤,干支,九星
 draft: false
-youtubeId: "H8lJJu4FPT4"
-videoUploadDate: "2026-10-17"
-videoDuration: "PT1M34S"
+youtubeId: "hqCmeuQ0od8"
+videoUploadDate: "2026-10-24"
+videoDuration: "PT3M50S"
 ---
 
 ## 先に結論

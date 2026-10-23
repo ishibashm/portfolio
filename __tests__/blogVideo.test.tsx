@@ -109,7 +109,7 @@ describe("blog YouTube video", () => {
 
   it("parses published frontmatter and places the directive after the conclusion", () => {
     const post = getBlogPost("moving-during-tenchusatsu")!;
-    expect(post.youtubeId).toBe("_M5DtcoTHcg");
+    expect(post.youtubeId).toBe("ass7xBmJQ2I");
     expect(post.videoUploadDate).toBe("2026-10-17");
     expect(post.videoDuration).toBe("PT1M35S");
     const { container, rerender } = render(
