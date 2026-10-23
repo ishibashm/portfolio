@@ -4,7 +4,7 @@ import { BlogCardVideo } from "@/components/blog/BlogCardVideo";
 import { blogCardVideoId } from "@/lib/blogVideo";
 import { getBlogPost, getBlogPosts } from "@/lib/blog";
 afterEach(cleanup);
-const id = "jO35XXluLpw";
+const id = "HOsZYorHq64";
 it("実記事のfrontmatterと一覧が同じ動画を持つ", () => {
   const slug = "four-foundations-of-eastern-divination";
   expect(getBlogPost(slug)?.youtubeId).toBe(id);

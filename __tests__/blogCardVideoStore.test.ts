@@ -33,7 +33,7 @@ it("DB記事も実Markdownの動画を補完し、DB本文の埋め込みも残�
   ]);
   const posts = await loadBlogPosts();
   expect(posts.map((p) => p.youtubeId)).toEqual([
-    "jO35XXluLpw",
+    "HOsZYorHq64",
     "12345678901",
     undefined,
   ]);

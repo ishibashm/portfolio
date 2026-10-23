@@ -5,9 +5,9 @@ publishedAt: 2026-10-17
 category: 歴史と背景
 tags: 陰陽,五行,干支,暦,四柱推命,九星気学,易学
 draft: false
-youtubeId: "jO35XXluLpw"
-videoUploadDate: "2026-10-17"
-videoDuration: "PT1M35S"
+youtubeId: "HOsZYorHq64"
+videoUploadDate: "2026-10-24"
+videoDuration: "PT3M48S"
 ---
 
 ## 先に結論
