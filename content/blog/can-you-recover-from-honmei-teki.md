@@ -5,9 +5,9 @@ publishedAt: 2026-08-24
 category: 引越しの考え方
 tags: 本命的殺,本命殺,五大凶殺,凶方位,挽回,九星気学
 draft: false
-youtubeId: "uPOX7HUVb-U"
-videoUploadDate: "2026-10-17"
-videoDuration: "PT1M36S"
+youtubeId: "3gPJECLDV98"
+videoUploadDate: "2026-10-24"
+videoDuration: "PT4M4S"
 ---
 
 ## 先に結論

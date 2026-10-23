@@ -6,9 +6,9 @@ updatedAt: 2026-10-17
 category: 引越しの考え方
 tags: 天中殺,空亡,引越し時期,年天中殺,転勤
 draft: false
-youtubeId: "_M5DtcoTHcg"
-videoUploadDate: "2026-10-17"
-videoDuration: "PT1M35S"
+youtubeId: "PUq1v9mPVXM"
+videoUploadDate: "2026-10-24"
+videoDuration: "PT4M55S"
 ---
 
 ## 先に結論
