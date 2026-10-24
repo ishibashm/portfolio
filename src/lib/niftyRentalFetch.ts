@@ -2,6 +2,7 @@ import { SCRAPE_TARGETS } from "./scrapeTargets";
 import { NIFTY_CONTEXT_OPTIONS, MIN_PAGE_INTERVAL_MS } from "./niftyPolite";
 import { rentalRows, type NiftyWindow } from "./niftyRentalData";
 import { buildRentalUpsert } from "./rentalUpsert";
+import { chromiumLaunchArgs } from "./chromiumLaunchArgs";
 import {
   boundedSetting,
   fetchRentalPages,
@@ -17,9 +18,9 @@ export async function fetchNiftyRentalArea(area: RentalArea): Promise<void> {
   const { default: puppeteer } = await import("puppeteer-core");
   const { default: chromium } = await import("@sparticuz/chromium");
   const browser = await puppeteer.launch({
-    args: chromium.args,
+    args: chromiumLaunchArgs(chromium.args),
     executablePath: await chromium.executablePath(),
-    headless: true,
+    headless: "shell",
   });
   const sleep = (ms: number) =>
     new Promise<void>((resolve) => setTimeout(resolve, ms));

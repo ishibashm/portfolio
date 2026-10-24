@@ -485,6 +485,7 @@ jobs:
           # トラフィックを受け取り、ジョブだけが赤くなった（run
           # 34240938010）。指定しなかった項目は既存の値が引き継がれるため
           # 画面は無事だったが、**直したはずの設定が当たっていない**。
+          # Chromium が gVisor（第1世代）で落ちるため第2世代へ。オーナー承認が必要。
           gcloud run deploy "${{ env.SERVICE_NAME }}" \
             --project="${{ env.PROJECT_ID }}" \
             --region="${{ env.REGION }}" \
@@ -499,6 +500,7 @@ jobs:
             --min-instances=0 \
             --concurrency=80 \
             --cpu-boost \
+            --execution-environment=gen2 \
             --allow-unauthenticated \
             --quiet
 
