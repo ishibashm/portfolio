@@ -30,6 +30,7 @@ function dependencies(): RentalRefreshDependencies {
   };
 }
 afterEach(() => {
+  vi.restoreAllMocks();
   vi.clearAllMocks();
   production.last.mockResolvedValue(null);
   production.fetchArea.mockResolvedValue(undefined);
@@ -115,9 +116,12 @@ describe("賃貸のオンデマンド取得", () => {
   it("失敗時はキャッシュを更新せずロックを解放する", async () => {
     vi.stubEnv("RENTALS_ON_DEMAND_ENABLED", "true");
     const deps = dependencies();
+    const error = new Error("Chromium launch failed: libnspr4.so missing");
+    Object.assign(error, { privateContext: "must-not-log" });
+    const log = vi.spyOn(console, "error").mockImplementation(() => {});
     deps.fetchArea = vi
       .fn()
-      .mockRejectedValueOnce(new Error("secret"))
+      .mockRejectedValueOnce(error)
       .mockResolvedValueOnce(undefined);
     const refresh = createRentalRefresher(deps);
     expect(await refresh("東京都", "港区")).toEqual({
@@ -125,7 +129,25 @@ describe("賃貸のオンデマンド取得", () => {
       scrapingStarted: true,
     });
     expect(deps.markFetched).not.toHaveBeenCalled();
+    expect(log).toHaveBeenCalledExactlyOnceWith(
+      "[rentalsOnDemand] fetch failed",
+      { message: error.message, stack: error.stack },
+    );
     expect((await refresh("東京都", "港区")).status).toBe("fetched");
+  });
+
+  it("Error 以外の例外は内容をログに展開しない", async () => {
+    vi.stubEnv("RENTALS_ON_DEMAND_ENABLED", "true");
+    const log = vi.spyOn(console, "error").mockImplementation(() => {});
+    const deps = dependencies();
+    deps.fetchArea = vi.fn().mockRejectedValue({ secret: "must-not-log" });
+    expect((await createRentalRefresher(deps)("東京都", "港区")).status).toBe(
+      "fetch_failed",
+    );
+    expect(log).toHaveBeenCalledExactlyOnceWith(
+      "[rentalsOnDemand] fetch failed",
+      { message: "Unknown error", stack: undefined },
+    );
   });
 
   it("曖昧な地域や未指定は取得しない", async () => {

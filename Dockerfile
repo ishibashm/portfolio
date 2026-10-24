@@ -68,6 +68,11 @@ WORKDIR /app
 ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
 
+# @sparticuz/chromium 143 はこの値の 22.x を見て AL2023 同梱ライブラリを使う。
+# Cloud Run の slim イメージでも apt 不要にする。import 時に LD_LIBRARY_PATH を
+# 設定し、executablePath() で al2023.tar.br を /tmp/al2023/lib に展開する。
+ENV AWS_LAMBDA_JS_RUNTIME=nodejs22.x
+
 RUN addgroup --system --gid 1001 nodejs
 RUN adduser --system --uid 1001 nextjs
 
