@@ -57,7 +57,11 @@ export function createRentalRefresher(deps: RentalRefreshDependencies) {
         await deps.fetchArea(area);
         await deps.markFetched(area, new Date());
         return { status: "fetched", scrapingStarted };
-      } catch {
+      } catch (error) {
+        console.error("[rentalsOnDemand] fetch failed", {
+          message: error instanceof Error ? error.message : "Unknown error",
+          stack: error instanceof Error ? error.stack : undefined,
+        });
         return { status: "fetch_failed", scrapingStarted };
       }
     });
