@@ -310,7 +310,7 @@ jobs:
       # スクレイピングを禁止しているが、オーナー判断で 2026-10-24 に有効化。
       # 止めるときはこの行を false にする（convert_env.py は後勝ち）。
       - name: Enable rentals on-demand fetch
-        run: echo 'RENTALS_ON_DEMAND_ENABLED=false' >> .env
+        run: echo 'RENTALS_ON_DEMAND_ENABLED=true' >> .env
 
       # Supabase の公開鍵は旧 anon JWT ではなく新しい publishable key を使う。
       # NEXT_PUBLIC_* はビルド時に埋め込まれるので、ビルド用 .env と env.json の両方に
