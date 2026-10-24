@@ -22,7 +22,10 @@ const mocks = vi.hoisted(() => ({
 }));
 vi.mock("puppeteer-core", () => ({ default: { launch: mocks.launch } }));
 vi.mock("@sparticuz/chromium", () => ({
-  default: { args: [], executablePath: async () => "/mock-browser" },
+  default: {
+    args: ["--single-process", "--no-zygote"],
+    executablePath: async () => "/mock-browser",
+  },
 }));
 vi.mock("@/lib/prisma", () => ({ default: { $executeRawUnsafe: mocks.save } }));
 afterEach(() => {
@@ -56,6 +59,11 @@ it("索引の該当リンクだけを開き、既存の形式でupsertしてブ�
   });
   await vi.runAllTimersAsync();
   await run;
+  expect(mocks.launch).toHaveBeenCalledWith({
+    args: ["--no-zygote", "--disable-dev-shm-usage", "--disable-gpu"],
+    executablePath: "/mock-browser",
+    headless: "shell",
+  });
   expect(mocks.goto.mock.calls.map((call) => (call as unknown[])[0])).toEqual([
     "https://myhome.nifty.com/rent/tokyo/",
     "https://myhome.nifty.com/rent/tokyo/minatoku_ct/",
