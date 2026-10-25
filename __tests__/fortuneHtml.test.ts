@@ -22,16 +22,71 @@ const now = new Date("2026-10-26T10:00:00+09:00");
 afterEach(() => vi.unstubAllEnvs());
 
 describe("fortune HTML trust boundary", () => {
-  it("retains inline animation but strips metadata, embedding and external attributes", () => {
+  it("retains CSS but strips all scripts, handlers, metadata, forms and URL attributes", () => {
     const clean = sanitizeFortuneHtml(
-      '<meta http-equiv="Content-Security-Policy" content="default-src *"><base href="https://evil.test"><link rel="stylesheet" href="https://evil.test"><iframe srcdoc="evil"></iframe><object>evil</object><embed src="x"><script src="https://evil.test">animate()</script><style>p{color:red}</style><p id="fact" style="color:red">safe</p><a href="javascript:alert(1)">link</a><img src="//evil.test" srcset="https://evil.test 2x"><svg><script>evil</script></svg>',
+      '<meta http-equiv="Content-Security-Policy" content="default-src *"><base href="https://evil.test"><link rel="stylesheet" href="https://evil.test"><iframe srcdoc="evil"></iframe><object>evil</object><form><p>evil</p></form><embed src="x"><script src="https://evil.test">animate()</script><style>p{color:red}</style><p id="fact" style="color:red" onclick="evil()" onmouseover="evil()">safe</p><a href="javascript:alert(1)">link</a><img src="//evil.test" srcset="https://evil.test 2x"><svg><script>evil</script></svg>',
     );
-    expect(clean).toContain("<script>animate()</script>");
+    expect(clean).not.toContain("animate()");
     expect(clean).toContain("<style>p{color:red}</style>");
     expect(clean).not.toMatch(
-      /<(meta|base|link|iframe|object|embed|svg)|src=|srcset=|href=|srcdoc=/,
+      /<(meta|base|link|iframe|object|embed|svg|script|form)|on\w+=|src=|srcset=|href=|srcdoc=/,
     );
     expect(sanitizeFortuneHtml("x".repeat(24001))).toBe("");
+  });
+  it.each([
+    "javascript:alert(1)",
+    "java&#x09;script:alert(1)",
+    "data:text/html,evil",
+    "data:image/png;base64,AAAA",
+    "//evil.test/a",
+  ])("strips href/src URLs including encoded schemes: %s", (url) => {
+    const clean = sanitizeFortuneHtml(
+      `<a href="${url}">link</a><img src="${url}" onerror="evil()">`,
+    );
+    expect(clean).toBe("<a>link</a><img>");
+  });
+  it.each([
+    '@import "https://evil.test/a.css";',
+    "@IMPORT url(https://evil.test/a.css);",
+    "p{background:url(https://evil.test/a)}",
+    "p{background:URL(data:image/png;base64,AAAA)}",
+    "p{width:expression(alert(1))}",
+    "p{behavior:url(evil.htc)}",
+    "p{BEHAVIOR:evil}",
+    "p{background:u/**/rl(https://evil.test/a)}",
+    '@im/**/port "https://evil.test/a.css";',
+    String.raw`p{background:u\72l(https://evil.test/a)}`,
+    String.raw`@\69mport "https://evil.test/a.css";`,
+    String.raw`p{width:expre\73sion(alert(1))}`,
+    "p{width:expre/**/ssion(alert(1))}",
+  ])("discards unsafe CSS in both stylesheets and attributes: %s", (css) => {
+    expect(sanitizeFortuneHtml(`<style>${css}</style>`)).toBe(
+      "<style></style>",
+    );
+    // Encode quotes as HTML entities to exercise decoded attribute values.
+    expect(
+      sanitizeFortuneHtml(
+        `<p style="${css.replaceAll('"', "&quot;")}">safe</p>`,
+      ),
+    ).toBe("<p>safe</p>");
+  });
+  it("cannot manufacture a style closing tag by removing CSS comments", () => {
+    const clean = sanitizeFortuneHtml(
+      "<style></sty/**/le><script>evil()</script></style><p>safe</p>",
+    );
+    expect(clean).not.toContain("<script");
+    expect(
+      new DOMParser()
+        .parseFromString(clean, "text/html")
+        .querySelector("script"),
+    ).toBeNull();
+  });
+  it("keeps ordinary CSS transitions and removes comments", () => {
+    expect(
+      sanitizeFortuneHtml(
+        '<p style="/* comment */opacity:1;transition:opacity 1s">safe</p>',
+      ),
+    ).toBe('<p style="opacity:1;transition:opacity 1s">safe</p>');
   });
   it("puts the authoritative CSP first in the document head", () => {
     const srcdoc = buildFortuneSrcdoc(
@@ -45,18 +100,22 @@ describe("fortune HTML trust boundary", () => {
       FORTUNE_CSP,
     );
     expect(doc.querySelectorAll("meta")).toHaveLength(1);
-    expect(srcdoc).toContain("ResizeObserver");
-    expect(srcdoc).toContain("ai-fortune-height");
+    expect(doc.querySelectorAll("script")).toHaveLength(0);
+    expect(FORTUNE_CSP).toContain("default-src 'none'");
+    expect(FORTUNE_CSP).toContain("style-src 'unsafe-inline'");
+    expect(FORTUNE_CSP).toContain("img-src data:");
+    expect(FORTUNE_CSP).not.toContain("script-src");
+    expect(srcdoc).not.toMatch(/ResizeObserver|postMessage/);
   });
-  it("validates static text while allowing CSS and JS animation", () => {
+  it("validates static text while allowing CSS animation and stripping JS", () => {
     const animation =
       "<style>p{animation:fade 1s} @keyframes fade{from{opacity:0}to{opacity:1}}</style><script>document.body.animate([{opacity:0},{opacity:1}], 500)</script>";
-    expect(
-      decorateFortuneHtml(
-        animation + "<p>{{fact:0}}</p><p>{{fact:1}}</p>",
-        facts,
-      ),
-    ).toContain(animation);
+    const decorated = decorateFortuneHtml(
+      animation + "<p>{{fact:0}}</p><p>{{fact:1}}</p>",
+      facts,
+    );
+    expect(decorated).toContain("@keyframes fade");
+    expect(decorated).not.toMatch(/<script|document.body.animate/);
     expect(
       decorateFortuneHtml(
         animation + "<p>南西</p><p>{{fact:0}}</p><p>{{fact:1}}</p>",
@@ -155,7 +214,7 @@ describe("flag, cache, limits and fallback", () => {
       now,
     );
     expect(result?.srcdoc).toContain("Content-Security-Policy");
-    expect(result?.srcdoc).toContain("<script>document.body.animate");
+    expect(result?.srcdoc).not.toMatch(/<script|document.body.animate/);
     expect(result?.facts).toEqual(fortuneFacts(profile, "2026-10-26"));
     expect(result?.fallbackHtml).toBe(fallbackFortuneHtml(result!.facts));
   });

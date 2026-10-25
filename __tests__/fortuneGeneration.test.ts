@@ -49,7 +49,11 @@ it("forces the in-process tool then decoration, with no retries", async () => {
   mocks.generate.mockImplementation(async (options) => {
     expect(options.maxRetries).toBe(0);
     expect(options.system).toContain("inline CSS");
-    expect(options.system).toContain("inline JavaScript");
+    expect(options.system).toContain("HTML + CSS only");
+    expect(options.system).toContain("No scripts, JavaScript");
+    expect(options.system).toContain(
+      "CSS animations and transitions are allowed",
+    );
     expect(options.system).toContain("never create or change fact text");
     expect(options.prepareStep({ stepNumber: 0 })).toEqual({
       toolChoice: "required",

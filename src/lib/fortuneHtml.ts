@@ -1,7 +1,7 @@
 import { parseFragment, serialize, type DefaultTreeAdapterMap } from "parse5";
 
 const tags = new Set(
-  "div section h1 h2 h3 h4 p ul ol li strong em span table thead tbody tr th td br hr style script img canvas main article header footer a".split(
+  "div section h1 h2 h3 h4 p ul ol li strong em span table thead tbody tr th td br hr style img main article header footer a".split(
     " ",
   ),
 );
@@ -16,22 +16,24 @@ const attributes = new Set([
   "rowspan",
 ]);
 export const FORTUNE_CSP =
-  "default-src 'none'; style-src 'unsafe-inline'; script-src 'unsafe-inline'; img-src data:; font-src 'none'; connect-src 'none'; form-action 'none'; base-uri 'none'";
+  "default-src 'none'; style-src 'unsafe-inline'; img-src data:; font-src 'none'; connect-src 'none'; form-action 'none'; base-uri 'none'";
 
-/** Only use this document in an opaque-origin, allow-scripts-only iframe. */
+/** Only use this document in an iframe with an empty sandbox attribute. */
 export function buildFortuneSrcdoc(html: string): string {
   const clean = sanitizeFortuneHtml(html);
-  return `<!doctype html><html><head><meta http-equiv="Content-Security-Policy" content="${FORTUNE_CSP}"><style>html{overflow-wrap:anywhere}body{margin:0;padding:16px;box-sizing:border-box;font-family:sans-serif}</style><script>
-  (() => {
-    let last = 0;
-    const report = () => {
-      const height = Math.ceil(Math.max(document.body.scrollHeight, document.body.getBoundingClientRect().height));
-      if (height !== last) { last = height; parent.postMessage({type:'ai-fortune-height',height}, '*'); }
-    };
-    addEventListener('DOMContentLoaded', () => { new ResizeObserver(report).observe(document.body); report(); });
-    addEventListener('load', report);
-  })();
-  </script></head><body>${clean}</body></html>`;
+  return `<!doctype html><html><head><meta http-equiv="Content-Security-Policy" content="${FORTUNE_CSP}"><style>html{overflow:auto;overflow-wrap:anywhere}body{margin:0;padding:16px;box-sizing:border-box;font-family:sans-serif}</style></head><body>${clean}</body></html>`;
+}
+
+/** Fail closed for the entire style block/attribute, including obfuscated CSS.
+ * Escapes are unnecessary for this presentation subset; rejecting them avoids
+ * escaped identifiers bypassing the checks. Comments are removed before checking.
+ * Reject less-than signs so comment removal cannot manufacture HTML closing tags.
+ */
+function sanitizeFortuneCss(css: string): string {
+  const clean = css.replace(/\/\*[\s\S]*?(?:\*\/|$)/g, "");
+  if (/[<\\\u0000-\u0008\u000b\u000e-\u001f\u007f]/.test(clean)) return "";
+  if (/@import|url\s*\(|expression\s*\(|behavior\s*:/i.test(clean)) return "";
+  return clean;
 }
 export const fortuneHeadings = [
   "今日の運勢",
@@ -51,8 +53,8 @@ export function escapeHtml(value: string): string {
   );
 }
 
-/** Strip embedding, metadata and URL-bearing attributes before sandboxed rendering.
- * Inline CSS/JS are intentionally retained; CSP and the opaque sandbox isolate them.
+/** Allow only presentation HTML and filtered CSS; drop all URL attributes,
+ * scripts, handlers, embedding, forms, metadata and foreign namespaces.
  */
 export function sanitizeFortuneHtml(html: string): string {
   if (html.length > 24000) return "";
@@ -66,27 +68,27 @@ export function sanitizeFortuneHtml(html: string): string {
     )
       return "";
     const attr = node.attrs
-      .filter(
-        (a) =>
-          !a.namespace &&
-          (attributes.has(a.name) ||
-            (node.tagName === "img" &&
-              a.name === "src" &&
-              /^data:image\/(?:png|gif|jpeg|webp);base64,/i.test(a.value))),
-      )
-      .map((a) => ` ${a.name}="${escapeHtml(a.value)}"`)
+      .filter((a) => !a.namespace && attributes.has(a.name))
+      .map((a) => {
+        const value =
+          a.name === "style" ? sanitizeFortuneCss(a.value) : a.value;
+        return value ? ` ${a.name}="${escapeHtml(value)}"` : "";
+      })
       .join("");
     const start = `<${node.tagName}${attr}>`;
     if (["br", "hr", "img"].includes(node.tagName)) return start;
-    const content = ["script", "style"].includes(node.tagName)
-      ? node.childNodes
-          .map((n) =>
-            n.nodeName === "#text"
-              ? (n as DefaultTreeAdapterMap["textNode"]).value
-              : "",
+    const content =
+      node.tagName === "style"
+        ? sanitizeFortuneCss(
+            node.childNodes
+              .map((n) =>
+                n.nodeName === "#text"
+                  ? (n as DefaultTreeAdapterMap["textNode"]).value
+                  : "",
+              )
+              .join(""),
           )
-          .join("")
-      : node.childNodes.map(visit).join("");
+        : node.childNodes.map(visit).join("");
     return `${start}${content}</${node.tagName}>`;
   }
   return parseFragment(html).childNodes.map(visit).join("");
@@ -101,7 +103,7 @@ export function fallbackFortuneHtml(facts: FortuneFact[]): string {
   );
 }
 
-/** Validate static AI text; runtime script/CSS changes stay inside the iframe.
+/** Validate static AI text; CSS presentation stays inside the iframe.
  * AI can arrange atomic facts, but cannot write or relabel their static values.
  * Each placeholder must be an entire text node and occur exactly once.
  * This also rejects entity-encoded, split-node and Japanese numeral inventions.
@@ -116,7 +118,7 @@ export function decorateFortuneHtml(
   const used = new Set<number>();
   let valid = true;
   function check(node: DefaultTreeAdapterMap["childNode"]) {
-    if ("tagName" in node && ["script", "style"].includes(node.tagName)) return;
+    if ("tagName" in node && node.tagName === "style") return;
     if (node.nodeName === "#text") {
       const text = (node as DefaultTreeAdapterMap["textNode"]).value.trim();
       if (!text || fortuneHeadings.includes(text)) return;
@@ -134,8 +136,7 @@ export function decorateFortuneHtml(
   if (!valid || used.size !== facts.length) return null;
   function inject(parent: DefaultTreeAdapterMap["parentNode"]) {
     parent.childNodes = parent.childNodes.flatMap((node) => {
-      if ("tagName" in node && ["script", "style"].includes(node.tagName))
-        return [node];
+      if ("tagName" in node && node.tagName === "style") return [node];
       if (node.nodeName === "#text") {
         const match = /^\{\{fact:(\d+)\}\}$/.exec(
           (node as DefaultTreeAdapterMap["textNode"]).value,

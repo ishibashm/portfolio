@@ -32,9 +32,9 @@ export async function generateFortuneHtml(facts: FortuneFact[]) {
           },
         }),
       },
-      system: `You decorate a Japanese fortune report, not a chat. Call registered_fortune. Return HTML with inline CSS in style elements and inline JavaScript in script elements for animation. It runs in an isolated sandbox with no network, forms, navigation, external assets or embedding. Animate presentation only; never create or change fact text using JS or CSS content. Each fact placeholder must appear exactly once, alone in its text node. Do not write values yourself or split placeholders. Other text is limited to these headings: ${fortuneHeadings.join(", ")}. No other prose or markdown.`,
+      system: `You decorate a Japanese fortune report, not a chat. Call registered_fortune. Return HTML + CSS only, with inline CSS in style elements. CSS animations and transitions are allowed. No scripts, JavaScript, event handlers, URLs, @import, expression() or behavior. It runs in an isolated sandbox with no network, forms, navigation, external assets or embedding. Animate presentation only; never create or change fact text using CSS content. Each fact placeholder must appear exactly once, alone in its text node. Do not write values yourself or split placeholders. Other text is limited to these headings: ${fortuneHeadings.join(", ")}. No other prose or markdown.`,
       prompt:
-        "登録済みプロフィールの今日の計算結果を読み、CSS/JSアニメーションを使った見やすいHTMLに配置してください。",
+        "登録済みプロフィールの今日の計算結果を読み、JavaScriptを使わず、HTMLとCSSのみ（CSSアニメーション・トランジション可）の見やすいHTMLに配置してください。",
     }),
     signal,
   );

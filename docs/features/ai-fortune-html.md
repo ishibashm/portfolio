@@ -13,19 +13,23 @@ Gemini's required tool call retrieves those calculated facts; the second step
 arranges them into HTML. Birth date, coordinates, email, and user ID are not sent
 to Gemini. Computed direction/time facts are sent when model generation is enabled.
 
-AI HTML, inline CSS and animation JavaScript render only in a srcdoc iframe with
-`sandbox="allow-scripts"` (opaque origin). A CSP meta is the first head element:
-`default-src 'none'; style-src 'unsafe-inline'; script-src 'unsafe-inline'; img-src data:; font-src 'none'; connect-src 'none'; form-action 'none'; base-uri 'none'`.
-The parse5 sanitizer removes AI metadata, base/link, iframe/object/embed, foreign
-namespaces and URL attributes (only raster data images are allowed). The injected
-ResizeObserver reports height via postMessage; the parent checks the iframe window,
-origin `null`, exact message shape and finite numeric height, clamped to 120–4000px.
+AI output is HTML + CSS only; CSS animations and transitions are allowed.
+It renders only in a srcdoc iframe with `sandbox=""` (no scripts or same-origin
+access). A CSP meta is the first head element:
+`default-src 'none'; style-src 'unsafe-inline'; img-src data:; font-src 'none'; connect-src 'none'; form-action 'none'; base-uri 'none'`.
+The parse5 sanitizer removes all scripts, event handlers, metadata, base/link,
+iframe/object/embed/form, foreign namespaces and all href/src URL attributes,
+including javascript: and data: URLs. CSS blocks and style attributes containing
+@import, any url(), expression() or behavior are discarded entirely. CSS escapes
+and control characters are also rejected, and comments are removed before checks.
+The iframe uses a responsive 70vh height with a 480px minimum and document scrolling;
+there is no postMessage listener or injected sizing script. CSS is isolated from
+the rest of the site by the iframe document boundary.
 
 Static AI text remains restricted to fixed headings and exactly one placeholder per
 complete MCP fact. Missing, repeated, altered or invented facts trigger the local
-fallback. Inline JS and CSS are executable presentation and cannot be statically
-validated for runtime text changes. The authoritative server-rendered MCP key-values
-block therefore always appears OUTSIDE the iframe. No AI markup enters the parent
+fallback. CSS can affect the presentation of validated text. The authoritative
+server-rendered MCP key-values block therefore always appears OUTSIDE the iframe. No AI markup enters the parent
 DOM. The deterministic non-AI template remains visible if generation fails.
 
 The model is fixed to `gemini-2.5-flash-lite`, using the shared agent Google key
