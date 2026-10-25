@@ -51,7 +51,11 @@ import {
 } from "./mcpChain";
 import { hasExplicitBirthDate, UNKNOWN_BIRTH_DATE } from "./agentInput";
 import { toolCallKey } from "./mcpToolCallKey";
-import { chainLlmState } from "./mcpAgentConfig";
+import {
+  chainLlmState,
+  fortuneHtmlEnabled,
+  googleAgentApiKey,
+} from "./mcpAgentConfig";
 import { paidApisDisabled } from "./paidApis";
 import {
   SAVE_OFFER_RESULT_TOOLS,
@@ -388,11 +392,17 @@ export async function createAgentModel(
     return createXai({ apiKey: process.env.XAI_API_KEY?.trim() })(
       modelId ?? state.model,
     );
-  const apiKey =
-    process.env.GOOGLE_GENERATIVE_AI_API_KEY?.trim() ||
-    process.env.GEMINI_API_KEY?.trim();
+  const apiKey = googleAgentApiKey();
   return createGoogleGenerativeAI({ apiKey })(modelId ?? state.model);
 }
+/** Fixed free-tier-capable model, no provider fallback or billing activation. */
+export function createFortuneModel(): LanguageModel {
+  const apiKey = googleAgentApiKey();
+  if (!fortuneHtmlEnabled() || paidApisDisabled() || !apiKey)
+    throw new Error("FORTUNE_AI_UNAVAILABLE");
+  return createGoogleGenerativeAI({ apiKey })("gemini-2.5-flash-lite");
+}
+
 export async function runAgent(
   question: string,
   connection: Awaited<ReturnType<typeof connectChainClient>>,

@@ -10,9 +10,7 @@ export function chainLlmState(
   const supported = provider === "google" || provider === "xai";
   const mock = env.NODE_ENV === "development" && env.MCP_AGENT_MOCK === "true";
   const apiKey =
-    provider === "xai"
-      ? env.XAI_API_KEY?.trim()
-      : env.GOOGLE_GENERATIVE_AI_API_KEY?.trim() || env.GEMINI_API_KEY?.trim();
+    provider === "xai" ? env.XAI_API_KEY?.trim() : googleAgentApiKey(env);
   const model =
     provider === "xai"
       ? env.XAI_AGENT_MODEL?.trim() || ""
@@ -39,4 +37,16 @@ export function chainLlmState(
     mock,
     model,
   };
+}
+
+/** Separate, opt-in non-chat report; never inherits a paid provider/model override. */
+export function fortuneHtmlEnabled(
+  env: Record<string, string | undefined> = process.env,
+) {
+  return env.AI_FORTUNE_HTML_ENABLED === "true";
+}
+export function googleAgentApiKey(
+  env: Record<string, string | undefined> = process.env,
+) {
+  return env.GOOGLE_GENERATIVE_AI_API_KEY?.trim() || env.GEMINI_API_KEY?.trim();
 }

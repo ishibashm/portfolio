@@ -1,0 +1,44 @@
+.report {
+  max-width: 80rem;
+  margin: 1rem auto;
+  padding: 1rem;
+  color: #292524;
+  line-height: 1.7;
+  overflow-wrap: anywhere;
+}
+.report :global(.fortune-card) {
+  background: linear-gradient(135deg, #fff7ed, #faf5ff);
+  border: 1px solid #e7e5e4;
+  border-radius: 1rem;
+  padding: 1.25rem;
+}
+.report :global(.fortune-title) {
+  font-size: 1.25rem;
+  font-weight: 700;
+}
+.report :global(.fortune-grid) {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 18rem), 1fr));
+  gap: 0.75rem;
+}
+.report :global(.fortune-fact) {
+  padding: 0.75rem;
+  border: 1px solid #e7e5e4;
+  border-radius: 0.5rem;
+  background: white;
+}
+.report :global(.fortune-muted),
+.report > p {
+  color: #57534e;
+  font-size: 0.875rem;
+  margin-top: 1rem;
+}
+.report table {
+  width: 100%;
+  table-layout: fixed;
+}
+.report th,
+.report td {
+  padding: 0.5rem;
+  border: 1px solid #e7e5e4;
+}
