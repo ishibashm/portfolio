@@ -1,6 +1,8 @@
 import { describe, expect, it, vi, afterEach } from "vitest";
 import {
   sanitizeFortuneHtml,
+  buildFortuneSrcdoc,
+  FORTUNE_CSP,
   decorateFortuneHtml,
   fallbackFortuneHtml,
 } from "@/lib/fortuneHtml";
@@ -20,23 +22,47 @@ const now = new Date("2026-10-26T10:00:00+09:00");
 afterEach(() => vi.unstubAllEnvs());
 
 describe("fortune HTML trust boundary", () => {
-  it("drops executable content, foreign namespaces, external URLs and non-allowlisted attributes/classes", () => {
+  it("retains inline animation but strips metadata, embedding and external attributes", () => {
     const clean = sanitizeFortuneHtml(
-      '<section class="fortune-card fixed fortune-evil" id="x" style="color:red" onclick="alert(1)"><script>alert(1)</script><style>p{display:none}</style><iframe src="https://evil.test"></iframe><img src=x onerror=alert(1)><a href="https://evil.test">link</a><svg><text>evil</text></svg><p class="fortune-fact" onmouseover="x">safe &amp; sound</p></section>',
+      '<meta http-equiv="Content-Security-Policy" content="default-src *"><base href="https://evil.test"><link rel="stylesheet" href="https://evil.test"><iframe srcdoc="evil"></iframe><object>evil</object><embed src="x"><script src="https://evil.test">animate()</script><style>p{color:red}</style><p id="fact" style="color:red">safe</p><a href="javascript:alert(1)">link</a><img src="//evil.test" srcset="https://evil.test 2x"><svg><script>evil</script></svg>',
     );
-    expect(clean).toBe(
-      '<section class="fortune-card"><p class="fortune-fact">safe &amp; sound</p></section>',
+    expect(clean).toContain("<script>animate()</script>");
+    expect(clean).toContain("<style>p{color:red}</style>");
+    expect(clean).not.toMatch(
+      /<(meta|base|link|iframe|object|embed|svg)|src=|srcset=|href=|srcdoc=/,
     );
     expect(sanitizeFortuneHtml("x".repeat(24001))).toBe("");
   });
-  it("handles malformed markup and entity-encoded text safely", () => {
-    const clean = sanitizeFortuneHtml(
-      '<p><strong>hello</p><math><mtext><table><mglyph><style><!--</style><img title="--><img src=1 onerror=alert(1)>">',
+  it("puts the authoritative CSP first in the document head", () => {
+    const srcdoc = buildFortuneSrcdoc(
+      '<html><head><meta http-equiv="refresh" content="0;url=https://evil.test"><style>p{color:red}</style></head><body><p>計算結果</p></body></html>',
     );
-    expect(clean).not.toMatch(/<(script|img|style|math)|onerror/);
+    const doc = new DOMParser().parseFromString(srcdoc, "text/html");
+    expect(doc.head.firstElementChild?.getAttribute("http-equiv")).toBe(
+      "Content-Security-Policy",
+    );
+    expect(doc.head.firstElementChild?.getAttribute("content")).toBe(
+      FORTUNE_CSP,
+    );
+    expect(doc.querySelectorAll("meta")).toHaveLength(1);
+    expect(srcdoc).toContain("ResizeObserver");
+    expect(srcdoc).toContain("ai-fortune-height");
+  });
+  it("validates static text while allowing CSS and JS animation", () => {
+    const animation =
+      "<style>p{animation:fade 1s} @keyframes fade{from{opacity:0}to{opacity:1}}</style><script>document.body.animate([{opacity:0},{opacity:1}], 500)</script>";
     expect(
-      sanitizeFortuneHtml("<p>&lt;script&gt;alert(1)&lt;/script&gt;</p>"),
-    ).toContain("&lt;script&gt;");
+      decorateFortuneHtml(
+        animation + "<p>{{fact:0}}</p><p>{{fact:1}}</p>",
+        facts,
+      ),
+    ).toContain(animation);
+    expect(
+      decorateFortuneHtml(
+        animation + "<p>南西</p><p>{{fact:0}}</p><p>{{fact:1}}</p>",
+        facts,
+      ),
+    ).toBeNull();
   });
   it("injects each complete label/value pair from JSON after decoration", () => {
     const html = decorateFortuneHtml(
@@ -110,11 +136,29 @@ describe("flag, cache, limits and fallback", () => {
       vi.stubEnv("AI_FORTUNE_HTML_ENABLED", "true");
       const generate = vi.fn().mockRejectedValue(error);
       const service = createFortuneReportService(generate);
-      expect(await service("a", profile, now)).toBe(
-        fallbackFortuneHtml(fortuneFacts(profile, "2026-10-26")),
-      );
+      expect(await service("a", profile, now)).toMatchObject({
+        srcdoc: null,
+        fallbackHtml: fallbackFortuneHtml(fortuneFacts(profile, "2026-10-26")),
+      });
     },
   );
+  it("builds sandbox content from validated AI and retains independent MCP facts", async () => {
+    vi.stubEnv("AI_FORTUNE_HTML_ENABLED", "true");
+    const generate = vi.fn(
+      async (values) =>
+        "<style>p{color:red}</style><script>document.body.animate([{opacity:0},{opacity:1}],500)</script>" +
+        values.map((_: unknown, i: number) => `<p>{{fact:${i}}}</p>`).join(""),
+    );
+    const result = await createFortuneReportService(generate)(
+      "a",
+      profile,
+      now,
+    );
+    expect(result?.srcdoc).toContain("Content-Security-Policy");
+    expect(result?.srcdoc).toContain("<script>document.body.animate");
+    expect(result?.facts).toEqual(fortuneFacts(profile, "2026-10-26"));
+    expect(result?.fallbackHtml).toBe(fallbackFortuneHtml(result!.facts));
+  });
   it("single-flights concurrent calls and caches validation failures per profile/day/user", async () => {
     vi.stubEnv("AI_FORTUNE_HTML_ENABLED", "true");
     const generate = vi.fn().mockResolvedValue("<p>南西 2099-01-01</p>");
@@ -124,7 +168,8 @@ describe("flag, cache, limits and fallback", () => {
       service("a", profile, now),
     ]);
     expect(results[0]).toBe(results[1]);
-    expect(results[0]).not.toContain("2099-01-01");
+    expect(results[0]?.srcdoc).toBeNull();
+    expect(results[0]?.fallbackHtml).not.toContain("2099-01-01");
     expect(generate).toHaveBeenCalledTimes(1);
     await service("b", profile, now);
     await service("a", { ...profile, birthDate: "1991-05-15" }, now);

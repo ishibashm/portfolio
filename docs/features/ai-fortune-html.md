@@ -13,12 +13,20 @@ Gemini's required tool call retrieves those calculated facts; the second step
 arranges them into HTML. Birth date, coordinates, email, and user ID are not sent
 to Gemini. Computed direction/time facts are sent when model generation is enabled.
 
-The parse5-based sanitizer reconstructs only allowed HTML tags and five exact
-`fortune-*` classes. All other attributes and foreign/unknown element subtrees are
-removed. AI text is restricted to fixed headings and one placeholder per complete
-label/value fact. The server rejects missing, repeated, altered, or invented facts,
-injects escaped MCP values, then sanitizes again before `dangerouslySetInnerHTML`.
-The deterministic template uses the same facts and sanitizer.
+AI HTML, inline CSS and animation JavaScript render only in a srcdoc iframe with
+`sandbox="allow-scripts"` (opaque origin). A CSP meta is the first head element:
+`default-src 'none'; style-src 'unsafe-inline'; script-src 'unsafe-inline'; img-src data:; font-src 'none'; connect-src 'none'; form-action 'none'; base-uri 'none'`.
+The parse5 sanitizer removes AI metadata, base/link, iframe/object/embed, foreign
+namespaces and URL attributes (only raster data images are allowed). The injected
+ResizeObserver reports height via postMessage; the parent checks the iframe window,
+origin `null`, exact message shape and finite numeric height, clamped to 120–4000px.
+
+Static AI text remains restricted to fixed headings and exactly one placeholder per
+complete MCP fact. Missing, repeated, altered or invented facts trigger the local
+fallback. Inline JS and CSS are executable presentation and cannot be statically
+validated for runtime text changes. The authoritative server-rendered MCP key-values
+block therefore always appears OUTSIDE the iframe. No AI markup enters the parent
+DOM. The deterministic non-AI template remains visible if generation fails.
 
 The model is fixed to `gemini-2.5-flash-lite`, using the shared agent Google key
 resolver (`GOOGLE_GENERATIVE_AI_API_KEY || GEMINI_API_KEY`). Chat provider/model

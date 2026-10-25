@@ -3,6 +3,7 @@ import { calculateMcpDirections } from "./mcpDirections";
 import { calculateTimeSlots, timeSlotsInputSchema } from "./timeSlots";
 import { toJapanDateString } from "@/utils/japanDate";
 import {
+  buildFortuneSrcdoc,
   decorateFortuneHtml,
   fallbackFortuneHtml,
   type FortuneFact,
@@ -40,7 +41,12 @@ export function fortuneFacts(
   ];
 }
 
-type Entry = { day: string; result: Promise<string> };
+export type FortuneReportData = {
+  facts: FortuneFact[];
+  srcdoc: string | null;
+  fallbackHtml: string;
+};
+type Entry = { day: string; result: Promise<FortuneReportData> };
 /** Process-local, bounded state. Single-flight includes fallback results. */
 export function createFortuneReportService(
   generate: (facts: FortuneFact[]) => Promise<string>,
@@ -53,7 +59,7 @@ export function createFortuneReportService(
     userId: string,
     profile: FortuneProfile,
     now = new Date(),
-  ): Promise<string | null> => {
+  ): Promise<FortuneReportData | null> => {
     if (!fortuneHtmlEnabled()) return null;
     const day = toJapanDateString(now);
     if (rateDay !== day) {
@@ -68,14 +74,21 @@ export function createFortuneReportService(
     const hit = cache.get(key);
     if (hit) return hit.result;
     const facts = fortuneFacts(profile, day);
-    const fallback = fallbackFortuneHtml(facts);
+    const fallback: FortuneReportData = {
+      facts,
+      srcdoc: null,
+      fallbackHtml: fallbackFortuneHtml(facts),
+    };
     // At most 20 generations per process/JST day, 2 per user. No retries.
     if (globalCalls >= 20 || (users.get(userId) ?? 0) >= 2) return fallback;
     globalCalls++;
     users.set(userId, (users.get(userId) ?? 0) + 1);
     const result = (async () => {
       try {
-        return decorateFortuneHtml(await generate(facts), facts) ?? fallback;
+        const html = decorateFortuneHtml(await generate(facts), facts);
+        return html
+          ? { ...fallback, srcdoc: buildFortuneSrcdoc(html) }
+          : fallback;
       } catch {
         // Never log SDK errors: they may contain prompts, credentials or profile data.
         return fallback;

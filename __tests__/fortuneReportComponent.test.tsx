@@ -43,7 +43,11 @@ it("uses the authenticated user's stored profile, with no input box", async () =
     base_lat: 35.68,
     base_lon: 139.76,
   });
-  mocks.report.mockResolvedValue("<p>計算結果</p>");
+  mocks.report.mockResolvedValue({
+    facts: [],
+    fallbackHtml: "<p>計算結果</p>",
+    srcdoc: "<p>AI</p>",
+  });
   render(await FortuneReport());
   expect(mocks.report).toHaveBeenCalledWith("verified-user", {
     birthDate: "1990-05-15",
@@ -51,5 +55,26 @@ it("uses the authenticated user's stored profile, with no input box", async () =
     lon: 139.76,
   });
   expect(screen.queryByRole("textbox")).not.toBeInTheDocument();
+  expect(screen.getByText("計算結果")).toBeInTheDocument();
+  const frame = screen.getByTitle("AI装飾の運勢レポート");
+  expect(frame).toHaveAttribute("sandbox", "allow-scripts");
+  expect(frame).toHaveAttribute("srcdoc", "<p>AI</p>");
+  expect(screen.getByText("計算結果").closest("iframe")).toBeNull();
+});
+it("renders the non-AI fallback without an iframe", async () => {
+  vi.stubEnv("AI_FORTUNE_HTML_ENABLED", "true");
+  mocks.auth.mockResolvedValue({ id: "verified-user" });
+  mocks.config.mockResolvedValue({
+    birth_date: "1990-05-15",
+    base_lat: 35.68,
+    base_lon: 139.76,
+  });
+  mocks.report.mockResolvedValue({
+    facts: [],
+    fallbackHtml: "<p>計算結果</p>",
+    srcdoc: null,
+  });
+  const { container } = render(await FortuneReport());
+  expect(container.querySelector("iframe")).toBeNull();
   expect(screen.getByText("計算結果")).toBeInTheDocument();
 });
