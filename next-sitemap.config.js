@@ -543,6 +543,7 @@ module.exports = {
     Promise.all(
       [
         ...AREA_DATA_PATHS,
+        "/houi/tenchusatsu",
         /* /blog は searchParams（?sort=）を読むので動的描画になり、
            next-sitemap が数える事前生成の一覧に出てこない。記事 24 本は
            載るのに一覧だけ無い状態だった。llms.txt が案内している頁でも

@@ -138,6 +138,13 @@ export const CORE_ROUTES: CoreRoute[] = [
     group: "direction",
   },
   {
+    href: "/houi/tenchusatsu",
+    label: "天中殺と引越しの時期を調べる",
+    summary:
+      "生年月日から天中殺のグループと3年間の月別周期を確認し、方位・日取り・仮住まいを検討する。",
+    group: "direction",
+  },
+  {
     /*
       吉方位が分かったあと「その方位に何があるか」を引く頁。#750 から
       固有の文章を書いた市区町村を索引に戻しているが、**サイトの中から
