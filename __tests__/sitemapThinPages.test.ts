@@ -1,7 +1,12 @@
 import { describe, expect, it } from "vitest";
 import { createRequire } from "module";
 import path from "path";
+import housingStats from "@/data/housingStats.json";
 import { AREA_EDITORIAL } from "@/lib/areaEditorial";
+import {
+  hasAreaHousingData,
+  type HousingSnapshotData,
+} from "@/lib/housingSnapshot";
 
 /**
  * 雛形を展開しただけのページを、サイトマップから外したことの固定。
@@ -123,20 +128,21 @@ describe("雛形展開ページのサイトマップ除外", () => {
 });
 
 /**
- * 索引に戻した市区町村ページ（固有の文章を書いたもの）は、
+ * 索引に戻した市区町村ページ（地域固有の住宅統計があるもの）は、
  * **サイトマップにも載せる**。片方だけだと指示が食い違う。
  *
- * 設定は JS なので TS の表を読めず、パスを書き写している。
- * ずれたらここで落とす。
+ * 設定とページは実行環境が違うため、それぞれの判定結果をここで突き合わせる。
  */
-describe("固有の文章を書いた市区町村ページ", () => {
+describe("地域固有の住宅データがある市区町村ページ", () => {
   const paths: string[] = sitemapConfig.additionalPathsSource ?? [];
 
-  it("サイトマップに戻す一覧が、文章を書いた市区町村と一致する", () => {
-    const fromEditorial = Object.keys(AREA_EDITORIAL)
+  it("サイトマップに戻す一覧が、実データを持つ市区町村と一致する", () => {
+    const snapshot = housingStats as unknown as HousingSnapshotData;
+    const fromData = Object.keys(AREA_EDITORIAL)
+      .filter((code) => hasAreaHousingData(snapshot, code))
       .map((code) => `/houi/area/${code}`)
       .sort();
-    expect([...paths].sort()).toEqual(fromEditorial);
+    expect([...paths].sort()).toEqual(fromData);
   });
 
   it("その一覧は exclude に当たっている（戻す前提が生きている）", () => {
