@@ -64,7 +64,7 @@ export const revalidate = 60;
 
 export default function Page() {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-rose-50/80 via-stone-50 to-amber-50/50 p-4 font-sans text-slate-800 md:p-8">
+    <div className="wg-page min-h-screen p-4 font-sans text-slate-800 md:p-8">
       <div className="mx-auto max-w-[1700px]">
         <FaqJsonLd items={FAQ} />
         {/* 県ページに無くて指摘された（#802）ので、ここには最初から
@@ -139,7 +139,7 @@ export default function Page() {
             <li>
               <Link
                 href="/houi"
-                className="font-semibold text-indigo-600 underline"
+                className="font-semibold text-rose-600 underline hover:text-rose-700"
               >
                 本命星と吉方位の早見表
               </Link>
@@ -150,7 +150,7 @@ export default function Page() {
             <li>
               <Link
                 href="/houi/area"
-                className="font-semibold text-indigo-600 underline"
+                className="font-semibold text-rose-600 underline hover:text-rose-700"
               >
                 吉方位にある街を調べる
               </Link>
@@ -161,7 +161,7 @@ export default function Page() {
             <li>
               <Link
                 href="/relocation/simulator"
-                className="font-semibold text-indigo-600 underline"
+                className="font-semibold text-rose-600 underline hover:text-rose-700"
               >
                 引越し先を試算する
               </Link>

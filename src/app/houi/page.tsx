@@ -68,7 +68,7 @@ export default function Page() {
   );
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#faf7f5] via-[#f5efe9] to-[#f0e9e1] text-slate-900 font-sans">
+    <div className="wg-page min-h-screen text-slate-900 font-sans">
       {/* 早見表であって読み物ではない。長い本文はリード文だけで、あとは
           9 つの星の札と年ごとの一覧なので、記事の読み幅で止める理由が無い。
           /guide の索引と同じ 1700px。記事側（/houi/[year]/[star]）は本文が
@@ -87,31 +87,10 @@ export default function Page() {
           で決まります。まず生まれ年から本命星を確認し、その年の方位一覧に進んでください。
         </p>
 
-        <p className="mt-5 text-sm">
-          <Link href="/ask" className="underline text-slate-600">
-            エージェントに案内してもらう
-          </Link>
-        </p>
-
-        <p className="mt-3 text-sm">
-          <Link href="/houi/3d" className="underline text-slate-600">
-            住所から街の立体と方位を見る
-          </Link>
-        </p>
-
-        <section className="mt-10">
+        <section className="mt-6">
           <h2 className="text-xl font-bold font-serif border-b border-slate-300 pb-2">
-            生まれ年から本命星を調べる
+            生年月日から本命星を調べる
           </h2>
-          <p className="text-xs text-slate-600 mt-3 leading-relaxed">
-            九星気学の一年は<b>立春</b>
-            で切り替わります（2月3日〜4日ごろ）。切り替わるのは
-            <b>その日の 0 時ではなく、立春の瞬間</b>
-            です。時刻は年ごとに違います（2026年は2月4日
-            5時1分ごろ、2027年は2月4日 10時46分ごろ）。
-            1月1日から立春前までに生まれた方は、<b>前年</b>の本命星になります。
-            <b>立春の日に生まれた方は、生まれた時刻で分かれます。</b>
-          </p>
           {/* 生年月日で引く早見。立春前の生まれの繰り下げを自動で行うので、
               上の断りを読み飛ばしても 1 年ずれない。星の名前と行き先の年は
               props で渡す（client 側に kigakuContent → ephemerisEngine を
@@ -119,6 +98,25 @@ export default function Page() {
           {/* どのプロフィールで引くかを先に 1 行（利用者の指摘、2026-09-12） */}
           <ActiveProfileBadge purpose="本命星と吉方位" className="mb-3" />
           <HonmeiLookup starNames={STAR_NAMES} linkYear={years[0]} />
+          {/* 立春の注記は入力欄の下に短く（ツールを先に見せる） */}
+          <p className="mt-2 text-xs text-slate-600 leading-relaxed">
+            ※
+            1月1日〜立春（2月4日ごろ）前の生まれは前年の星です。立春当日生まれは時刻で分かれます（自動で判定します）。
+          </p>
+          <p className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-xs">
+            <Link
+              href="/ask"
+              className="text-rose-600 underline hover:text-rose-700"
+            >
+              エージェントに案内してもらう
+            </Link>
+            <Link
+              href="/houi/3d"
+              className="text-rose-600 underline hover:text-rose-700"
+            >
+              住所から街の立体と方位を見る
+            </Link>
+          </p>
           <p className="mt-8 text-xs font-bold text-slate-700">
             生まれ年から表で引く場合
           </p>

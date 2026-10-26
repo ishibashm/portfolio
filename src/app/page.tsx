@@ -1,7 +1,7 @@
-"use client";
-
 import { AgentEntry } from "@/components/home/AgentEntry";
-import { useEffect } from "react";
+import { ScrollTopOnMount } from "@/components/home/ScrollTopOnMount";
+import { HonmeiLookup } from "@/components/houi/HonmeiLookup";
+import { STAR_NAMES, currentYearInJapan } from "@/lib/kigakuContent";
 import Link from "next/link";
 import { Compass, ArrowRight } from "lucide-react";
 import { AdBanner } from "@/components/ads/AdBanner";
@@ -15,19 +15,15 @@ import {
   SITE_DESCRIPTION,
 } from "@/lib/siteStructure";
 
+// 年の切り替え（吉方位の年）に追従させる
+export const revalidate = 86400;
+
 export default function Home() {
-  // Prevent browser auto-scrolling to bottom on load
-  useEffect(() => {
-    if (typeof window !== "undefined") {
-      if ("scrollRestoration" in window.history) {
-        window.history.scrollRestoration = "manual";
-      }
-      window.scrollTo({ top: 0, left: 0, behavior: "instant" });
-    }
-  }, []);
+  const year = currentYearInJapan();
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#faf7f5] via-[#f5efe9] to-[#f0e9e1] text-slate-900 relative flex flex-col items-center justify-start overflow-y-auto py-8 px-4 md:px-8 gap-8 font-sans">
+    <div className="min-h-screen wg-page text-slate-900 relative flex flex-col items-center justify-start overflow-y-auto py-8 px-4 md:px-8 gap-8 font-sans">
+      <ScrollTopOnMount />
       {/* Background Soft Glow Auras */}
       <div className="fixed top-[-10vw] left-[-10vw] w-[40vw] h-[40vw] bg-rose-200/25 rounded-full blur-[100px] pointer-events-none -z-10" />
       <div className="fixed bottom-[-10vw] right-[-10vw] w-[40vw] h-[40vw] bg-amber-200/25 rounded-full blur-[100px] pointer-events-none -z-10" />
@@ -71,6 +67,15 @@ export default function Home() {
           {CORE_ROUTES[0].label}
           <ArrowRight className="w-4 h-4" />
         </Link>
+        {/* ファーストビューの主導線: 生年月日から今年の吉方位へ直行する */}
+        <div className="mt-6 max-w-xl rounded-2xl border border-rose-200 bg-rose-50/60 p-4">
+          <p className="text-sm font-bold text-slate-900">
+            生年月日から{year}年の吉方位を見る
+          </p>
+          <div className="mt-2">
+            <HonmeiLookup starNames={STAR_NAMES} linkYear={year} />
+          </div>
+        </div>
       </header>
 
       {/* 生年月日・現在地・生まれたところ。**このサイトの答えはこの 3 つで
