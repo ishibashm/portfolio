@@ -1,3 +1,4 @@
+import { RelocationStepNavigator } from "@/components/houi/RelocationStepNavigator";
 import Link from "next/link";
 import { CompassDial } from "@/components/motion/CompassDial";
 import { ContentDisclaimer } from "@/components/houi/ContentDisclaimer";
@@ -346,6 +347,8 @@ export default async function Page({
             出発地と生年月日を入れて実際の物件で確認する
           </Link>
         </section>
+
+        <RelocationStepNavigator year={year} star={star} />
 
         <AreaEntryLinks heading="吉方位に何があるかを見る" />
 
