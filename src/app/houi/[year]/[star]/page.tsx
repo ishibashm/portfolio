@@ -1,3 +1,4 @@
+import { RelocationStepNavigator } from "@/components/houi/RelocationStepNavigator";
 import Link from "next/link";
 import { CompassDial } from "@/components/motion/CompassDial";
 import { ContentDisclaimer } from "@/components/houi/ContentDisclaimer";
@@ -10,6 +11,7 @@ import {
   STARS,
   contentYears,
   getYearDirections,
+  getMonthDirections,
   monthContentYears,
   MONTHS,
 } from "@/lib/kigakuContent";
@@ -213,18 +215,48 @@ export default async function Page({
           </div>
         </section>
 
-        {monthContentYears().includes(year) && (
-          <section className="mt-10">
-            <h2 className="text-xl font-bold font-serif border-b border-slate-300 pb-2">
-              月ごとの吉方位
-            </h2>
-            <p className="mt-4 text-sm leading-relaxed text-slate-700">
-              引越しの方位は、年盤と月盤の両方が吉であることを条件にする考え方が一般的です。月ごとの判定は次から確認できます。
-            </p>
-            {/* 12 か月 × 9 星 × 2 年 = 216 頁は同じ雛形の展開（noindex）。
-                開いたまま並べると、回遊するほどテンプレ頁に当たり続ける。
-                導線としては残し、初期表示では畳む（AdSense の導線指摘への
-                対応。2026-08-28）。 */}
+        <section className="mt-10">
+          <h2 className="text-xl font-bold font-serif border-b border-slate-300 pb-2">
+            月ごとの吉方位
+          </h2>
+          <p className="mt-4 text-sm leading-relaxed text-slate-700">
+            引越しの方位は、年盤と月盤の両方が吉であることを条件にする考え方が一般的です。月ごとの判定は次から確認できます。
+          </p>
+          <p className="mt-2 text-xs text-slate-600">
+            以下は月盤のみの判定です。各月は節入りから始まります。年盤の吉方位もあわせて確認してください。
+          </p>
+          <ul className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+            {MONTHS.map((month) => {
+              const { verdicts: monthly } = getMonthDirections(
+                year,
+                month,
+                star,
+                "classical",
+              );
+              const monthlyGood = monthly.filter((v) => v.kind === "good");
+              const monthlyBad = monthly.filter((v) => v.kind === "bad");
+              return (
+                <li key={month} className="wg-card p-4">
+                  <h3 className="font-mono text-sm font-bold">{month}月</h3>
+                  <p className="mt-2 text-xs text-emerald-900">
+                    吉：
+                    {monthlyGood.length
+                      ? monthlyGood.map((v) => v.jp).join("・")
+                      : "なし"}
+                  </p>
+                  <p className="mt-1 text-xs leading-relaxed text-rose-900">
+                    凶：
+                    {monthlyBad.length
+                      ? monthlyBad
+                          .map((v) => `${v.jp}（${v.label}）`)
+                          .join("、")
+                      : "なし"}
+                  </p>
+                </li>
+              );
+            })}
+          </ul>
+          {monthContentYears().includes(year) && (
             <details className="mt-4">
               <summary className="cursor-pointer select-none text-xs font-bold text-slate-600 hover:text-slate-900">
                 月を選んで開く（1月〜12月）
@@ -242,13 +274,90 @@ export default async function Page({
                 ))}
               </div>
             </details>
-          </section>
-        )}
+          )}
+        </section>
+
+        <section className="mt-10 rounded-2xl border border-amber-200 bg-amber-50 p-5">
+          <h2 className="text-sm font-bold text-amber-900">
+            この表だけで引越し先を決められない理由
+          </h2>
+          <ul className="mt-3 text-xs text-amber-900 leading-relaxed list-disc pl-5 space-y-1.5">
+            <li>
+              年盤で吉でも、月によっては凶方位になります。実際の移転では
+              <b>年盤と月盤の両方</b>を確認してください。
+            </li>
+            <li>
+              <b>天中殺</b>
+              は生年月日ごとに異なり、本命星では決まりません。その期間は方位に関係なく移転を避けるという考え方があります。
+            </li>
+            <li>
+              方位は<b>今住んでいる場所から見た向き</b>
+              で決まります。同じ物件でも出発地が違えば方位が変わります。
+            </li>
+            <li>
+              九星気学の一年は<b>立春の瞬間</b>
+              で切り替わります（2月3日〜4日ごろ。時刻は年ごとに違います）。1月生まれ・2月上旬生まれの方は前年の星になることがあります。
+              <b>立春の日に生まれた方は、生まれた時刻で分かれます。</b>
+            </li>
+          </ul>
+          <Link
+            href="/relocation/arbitrage"
+            className="mt-4 inline-flex px-5 py-2.5 rounded-full bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs transition-colors"
+          >
+            出発地と生年月日を入れて実際の物件で確認する
+          </Link>
+        </section>
+
+        <RelocationStepNavigator year={year} star={star} />
+
+        <AreaEntryLinks heading="吉方位に何があるかを見る" />
+
+        <PractitionerStrip />
+
+        <div className="mt-10">
+          <AdBanner />
+        </div>
 
         <section className="mt-10">
           <h2 className="text-xl font-bold font-serif border-b border-slate-300 pb-2">
-            算出方法による違い
+            ほかの本命星
           </h2>
+          <div className="mt-4 flex flex-wrap gap-2">
+            {STARS.filter((s) => s !== star).map((s) => (
+              <Link
+                prefetch={false}
+                key={s}
+                href={`/houi/${year}/${s}`}
+                className="px-3 py-1.5 rounded-full border border-slate-300 bg-white text-xs font-semibold hover:border-rose-400 transition-colors"
+              >
+                {STAR_NAMES[s]}
+              </Link>
+            ))}
+          </div>
+
+          <h2 className="text-xl font-bold font-serif border-b border-slate-300 pb-2 mt-8">
+            ほかの年
+          </h2>
+          <div className="mt-4 flex flex-wrap gap-2">
+            {contentYears()
+              .filter((y) => y !== year)
+              .map((y) => (
+                <Link
+                  prefetch={false}
+                  key={y}
+                  href={`/houi/${y}/${star}`}
+                  className="px-3 py-1.5 rounded-full border border-slate-300 bg-white text-xs font-semibold hover:border-rose-400 transition-colors"
+                >
+                  {y}年の{name}
+                </Link>
+              ))}
+          </div>
+        </section>
+
+        <details className="wg-card mt-10 p-5">
+          <summary className="cursor-pointer text-sm font-bold font-serif text-rose-700">
+            算出方法による違い（古典 vs 物理モデル）
+          </summary>
           <p className="mt-4 text-sm leading-relaxed text-slate-700">
             上の表は一般的な九星気学（{STAR_NAMES[centerStar]}
             中宮）による判定です。このサイトのスキャナーには、木星の黄経から星を求める独自モデルも用意しており、設定で切り替えられます。同じ
@@ -314,82 +423,7 @@ export default async function Page({
             独自モデルは木星の公転周期（約11.86年）にもとづくため、
             9年周期の一般的な九星気学とは星の巡り方が異なります。一般的な資料と照らし合わせる場合は上段を、スキャナーで独自モデルを選ぶ場合は下段をご覧ください。
           </p>
-        </section>
-
-        <section className="mt-10 rounded-2xl border border-amber-200 bg-amber-50 p-5">
-          <h2 className="text-sm font-bold text-amber-900">
-            この表だけで引越し先を決められない理由
-          </h2>
-          <ul className="mt-3 text-xs text-amber-900 leading-relaxed list-disc pl-5 space-y-1.5">
-            <li>
-              ここに載せているのは<b>年盤</b>
-              だけです。実際の移転では月盤も見ます。年盤で吉でも、月によっては凶方位になります。
-            </li>
-            <li>
-              <b>天中殺</b>
-              は生年月日ごとに異なり、本命星では決まりません。その期間は方位に関係なく移転を避けるという考え方があります。
-            </li>
-            <li>
-              方位は<b>今住んでいる場所から見た向き</b>
-              で決まります。同じ物件でも出発地が違えば方位が変わります。
-            </li>
-            <li>
-              九星気学の一年は<b>立春の瞬間</b>
-              で切り替わります（2月3日〜4日ごろ。時刻は年ごとに違います）。1月生まれ・2月上旬生まれの方は前年の星になることがあります。
-              <b>立春の日に生まれた方は、生まれた時刻で分かれます。</b>
-            </li>
-          </ul>
-          <Link
-            href="/relocation/arbitrage"
-            className="mt-4 inline-flex px-5 py-2.5 rounded-full bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs transition-colors"
-          >
-            出発地と生年月日を入れて実際の物件で確認する
-          </Link>
-        </section>
-
-        <AreaEntryLinks heading="吉方位に何があるかを見る" />
-
-        <PractitionerStrip />
-
-        <div className="mt-10">
-          <AdBanner />
-        </div>
-
-        <section className="mt-10">
-          <h2 className="text-xl font-bold font-serif border-b border-slate-300 pb-2">
-            ほかの本命星
-          </h2>
-          <div className="mt-4 flex flex-wrap gap-2">
-            {STARS.filter((s) => s !== star).map((s) => (
-              <Link
-                prefetch={false}
-                key={s}
-                href={`/houi/${year}/${s}`}
-                className="px-3 py-1.5 rounded-full border border-slate-300 bg-white text-xs font-semibold hover:border-rose-400 transition-colors"
-              >
-                {STAR_NAMES[s]}
-              </Link>
-            ))}
-          </div>
-
-          <h2 className="text-xl font-bold font-serif border-b border-slate-300 pb-2 mt-8">
-            ほかの年
-          </h2>
-          <div className="mt-4 flex flex-wrap gap-2">
-            {contentYears()
-              .filter((y) => y !== year)
-              .map((y) => (
-                <Link
-                  prefetch={false}
-                  key={y}
-                  href={`/houi/${y}/${star}`}
-                  className="px-3 py-1.5 rounded-full border border-slate-300 bg-white text-xs font-semibold hover:border-rose-400 transition-colors"
-                >
-                  {y}年の{name}
-                </Link>
-              ))}
-          </div>
-        </section>
+        </details>
 
         <ContentDisclaimer />
       </article>

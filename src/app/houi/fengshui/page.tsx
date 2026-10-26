@@ -1,3 +1,5 @@
+import { RelocationStepNavigator } from "@/components/houi/RelocationStepNavigator";
+import { currentYearInJapan } from "@/lib/kigakuContent";
 import Link from "next/link";
 import type { Metadata } from "next";
 import { ContentDisclaimer } from "@/components/houi/ContentDisclaimer";
@@ -64,7 +66,7 @@ export const revalidate = 60;
 
 export default function Page() {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-rose-50/80 via-stone-50 to-amber-50/50 p-4 font-sans text-slate-800 md:p-8">
+    <div className="wg-page min-h-screen p-4 font-sans md:p-8">
       <div className="mx-auto max-w-[1700px]">
         <FaqJsonLd items={FAQ} />
         {/* 県ページに無くて指摘された（#802）ので、ここには最初から
@@ -90,7 +92,7 @@ export default function Page() {
 
         <ActiveProfileBadge purpose="本命卦" className="mt-6" />
 
-        <section className="mt-8 rounded-2xl border border-slate-300 bg-white/90 p-5">
+        <section className="mt-8 wg-card p-5">
           <h2 className="text-sm font-bold">八宅風水のよくある問い</h2>
           {FAQ.map(({ question, answer }) => (
             <div key={question} className="mt-4">
@@ -106,12 +108,14 @@ export default function Page() {
           <FengShuiLookup />
         </section>
 
+        <RelocationStepNavigator year={currentYearInJapan()} />
+
         {/*
           両方を並べたときの読み方。足し算をしない理由をここに書く。
           頁を分けたぶん、分けた意味を書かないと「どちらが正しいのか」
           という問いだけが残る。
         */}
-        <section className="mt-10 rounded-2xl border border-slate-300 bg-white/90 p-5">
+        <section className="mt-10 wg-card p-5">
           <h2 className="text-sm font-bold">九星気学の結果と食い違うとき</h2>
           <p className="mt-3 max-w-[70ch] text-xs leading-relaxed text-slate-700">
             {
@@ -133,13 +137,13 @@ export default function Page() {
           <AdBanner />
         </div>
 
-        <section className="mt-10 rounded-2xl border border-slate-300 bg-white/90 p-5">
+        <section className="mt-10 wg-card p-5">
           <h2 className="text-sm font-bold">九星気学の側も見る</h2>
           <ul className="mt-3 space-y-2 text-xs">
             <li>
               <Link
                 href="/houi"
-                className="font-semibold text-indigo-600 underline"
+                className="font-semibold text-rose-600 underline hover:text-rose-700"
               >
                 本命星と吉方位の早見表
               </Link>
@@ -150,7 +154,7 @@ export default function Page() {
             <li>
               <Link
                 href="/houi/area"
-                className="font-semibold text-indigo-600 underline"
+                className="font-semibold text-rose-600 underline hover:text-rose-700"
               >
                 吉方位にある街を調べる
               </Link>
@@ -161,7 +165,7 @@ export default function Page() {
             <li>
               <Link
                 href="/relocation/simulator"
-                className="font-semibold text-indigo-600 underline"
+                className="font-semibold text-rose-600 underline hover:text-rose-700"
               >
                 引越し先を試算する
               </Link>

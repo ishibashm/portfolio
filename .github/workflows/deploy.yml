@@ -71,6 +71,7 @@ jobs:
           CRON_SECRET: ${{ secrets.CRON_SECRET }}
           # 未設定なら ENV_FILE の値を残す。AI の旗は vars 優先。
           MCP_AGENT_ENABLED: ${{ vars.MCP_AGENT_ENABLED || secrets.MCP_AGENT_ENABLED }}
+          RENTALS_ON_DEMAND_ENABLED: ${{ vars.RENTALS_ON_DEMAND_ENABLED }}
           MCP_AGENT_PROVIDER: ${{ vars.MCP_AGENT_PROVIDER }}
           XAI_AGENT_MODEL: ${{ vars.XAI_AGENT_MODEL }}
           MCP_AGENT_MODEL: ${{ vars.MCP_AGENT_MODEL }}
@@ -173,6 +174,9 @@ jobs:
           done
           if [ -n "$MCP_AGENT_ENABLED" ]; then
             echo "MCP_AGENT_ENABLED=$MCP_AGENT_ENABLED" >> .env
+          fi
+          if [ -n "$RENTALS_ON_DEMAND_ENABLED" ]; then
+            echo "RENTALS_ON_DEMAND_ENABLED=$RENTALS_ON_DEMAND_ENABLED" >> .env
           fi
           for name in MCP_AGENT_FREE_DAILY_REQUESTS MCP_AGENT_FREE_DAILY_TOKENS MCP_AGENT_DAILY_REQUESTS MCP_AGENT_DAILY_TOKENS MCP_AGENT_FALLBACK_MODEL; do
             if [ -n "${!name}" ]; then
