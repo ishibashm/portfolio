@@ -10,6 +10,7 @@ import {
   STARS,
   contentYears,
   getYearDirections,
+  getMonthDirections,
   monthContentYears,
   MONTHS,
 } from "@/lib/kigakuContent";
@@ -213,18 +214,48 @@ export default async function Page({
           </div>
         </section>
 
-        {monthContentYears().includes(year) && (
-          <section className="mt-10">
-            <h2 className="text-xl font-bold font-serif border-b border-slate-300 pb-2">
-              月ごとの吉方位
-            </h2>
-            <p className="mt-4 text-sm leading-relaxed text-slate-700">
-              引越しの方位は、年盤と月盤の両方が吉であることを条件にする考え方が一般的です。月ごとの判定は次から確認できます。
-            </p>
-            {/* 12 か月 × 9 星 × 2 年 = 216 頁は同じ雛形の展開（noindex）。
-                開いたまま並べると、回遊するほどテンプレ頁に当たり続ける。
-                導線としては残し、初期表示では畳む（AdSense の導線指摘への
-                対応。2026-08-28）。 */}
+        <section className="mt-10">
+          <h2 className="text-xl font-bold font-serif border-b border-slate-300 pb-2">
+            月ごとの吉方位
+          </h2>
+          <p className="mt-4 text-sm leading-relaxed text-slate-700">
+            引越しの方位は、年盤と月盤の両方が吉であることを条件にする考え方が一般的です。月ごとの判定は次から確認できます。
+          </p>
+          <p className="mt-2 text-xs text-slate-600">
+            以下は月盤のみの判定です。各月は節入りから始まります。年盤の吉方位もあわせて確認してください。
+          </p>
+          <ul className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+            {MONTHS.map((month) => {
+              const { verdicts: monthly } = getMonthDirections(
+                year,
+                month,
+                star,
+                "classical",
+              );
+              const monthlyGood = monthly.filter((v) => v.kind === "good");
+              const monthlyBad = monthly.filter((v) => v.kind === "bad");
+              return (
+                <li key={month} className="wg-card p-4">
+                  <h3 className="font-mono text-sm font-bold">{month}月</h3>
+                  <p className="mt-2 text-xs text-emerald-900">
+                    吉：
+                    {monthlyGood.length
+                      ? monthlyGood.map((v) => v.jp).join("・")
+                      : "なし"}
+                  </p>
+                  <p className="mt-1 text-xs leading-relaxed text-rose-900">
+                    凶：
+                    {monthlyBad.length
+                      ? monthlyBad
+                          .map((v) => `${v.jp}（${v.label}）`)
+                          .join("、")
+                      : "なし"}
+                  </p>
+                </li>
+              );
+            })}
+          </ul>
+          {monthContentYears().includes(year) && (
             <details className="mt-4">
               <summary className="cursor-pointer select-none text-xs font-bold text-slate-600 hover:text-slate-900">
                 月を選んで開く（1月〜12月）
@@ -242,78 +273,7 @@ export default async function Page({
                 ))}
               </div>
             </details>
-          </section>
-        )}
-
-        <section className="mt-10">
-          <h2 className="text-xl font-bold font-serif border-b border-slate-300 pb-2">
-            算出方法による違い
-          </h2>
-          <p className="mt-4 text-sm leading-relaxed text-slate-700">
-            上の表は一般的な九星気学（{STAR_NAMES[centerStar]}
-            中宮）による判定です。このサイトのスキャナーには、木星の黄経から星を求める独自モデルも用意しており、設定で切り替えられます。同じ
-            {year}年でも中宮が
-            {STAR_NAMES[physical.centerStar]}になるため、判定が変わります。
-          </p>
-          <div className="mt-4 overflow-x-auto">
-            <table className="w-full text-xs border-collapse">
-              <thead>
-                <tr className="bg-stone-100">
-                  <th className="border border-slate-300 p-2 text-left font-bold">
-                    算出方法
-                  </th>
-                  <th className="border border-slate-300 p-2 text-left font-bold">
-                    中宮
-                  </th>
-                  <th className="border border-slate-300 p-2 text-left font-bold">
-                    吉方位
-                  </th>
-                  <th className="border border-slate-300 p-2 text-left font-bold">
-                    避けるべき方位
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr>
-                  <td className="border border-slate-300 p-2 font-semibold">
-                    一般的な九星気学
-                  </td>
-                  <td className="border border-slate-300 p-2">
-                    {STAR_NAMES[centerStar]}
-                  </td>
-                  <td className="border border-slate-300 p-2">
-                    {good.length ? good.map((v) => v.jp).join("・") : "なし"}
-                  </td>
-                  <td className="border border-slate-300 p-2">
-                    {bad.map((v) => `${v.jp}（${v.label}）`).join("、")}
-                  </td>
-                </tr>
-                <tr>
-                  <td className="border border-slate-300 p-2 font-semibold">
-                    本サイト独自モデル
-                  </td>
-                  <td className="border border-slate-300 p-2">
-                    {STAR_NAMES[physical.centerStar]}
-                  </td>
-                  <td className="border border-slate-300 p-2">
-                    {physGood.length
-                      ? physGood.map((v) => v.jp).join("・")
-                      : "なし"}
-                  </td>
-                  <td className="border border-slate-300 p-2">
-                    {physBad.map((v) => `${v.jp}（${v.label}）`).join("、")}
-                  </td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-          <p className="mt-3 text-xs text-slate-600 leading-relaxed">
-            {systemsAgree
-              ? "この年・この本命星では、どちらの算出方法でも同じ判定になります。"
-              : "この年・この本命星では判定が一致しません。"}
-            独自モデルは木星の公転周期（約11.86年）にもとづくため、
-            9年周期の一般的な九星気学とは星の巡り方が異なります。一般的な資料と照らし合わせる場合は上段を、スキャナーで独自モデルを選ぶ場合は下段をご覧ください。
-          </p>
+          )}
         </section>
 
         <section className="mt-10 rounded-2xl border border-amber-200 bg-amber-50 p-5">
@@ -322,8 +282,8 @@ export default async function Page({
           </h2>
           <ul className="mt-3 text-xs text-amber-900 leading-relaxed list-disc pl-5 space-y-1.5">
             <li>
-              ここに載せているのは<b>年盤</b>
-              だけです。実際の移転では月盤も見ます。年盤で吉でも、月によっては凶方位になります。
+              年盤で吉でも、月によっては凶方位になります。実際の移転では
+              <b>年盤と月盤の両方</b>を確認してください。
             </li>
             <li>
               <b>天中殺</b>
@@ -390,6 +350,77 @@ export default async function Page({
               ))}
           </div>
         </section>
+
+        <details className="wg-card mt-10 p-5">
+          <summary className="cursor-pointer text-sm font-bold font-serif text-rose-700">
+            算出方法による違い（古典 vs 物理モデル）
+          </summary>
+          <p className="mt-4 text-sm leading-relaxed text-slate-700">
+            上の表は一般的な九星気学（{STAR_NAMES[centerStar]}
+            中宮）による判定です。このサイトのスキャナーには、木星の黄経から星を求める独自モデルも用意しており、設定で切り替えられます。同じ
+            {year}年でも中宮が
+            {STAR_NAMES[physical.centerStar]}になるため、判定が変わります。
+          </p>
+          <div className="mt-4 overflow-x-auto">
+            <table className="w-full text-xs border-collapse">
+              <thead>
+                <tr className="bg-stone-100">
+                  <th className="border border-slate-300 p-2 text-left font-bold">
+                    算出方法
+                  </th>
+                  <th className="border border-slate-300 p-2 text-left font-bold">
+                    中宮
+                  </th>
+                  <th className="border border-slate-300 p-2 text-left font-bold">
+                    吉方位
+                  </th>
+                  <th className="border border-slate-300 p-2 text-left font-bold">
+                    避けるべき方位
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td className="border border-slate-300 p-2 font-semibold">
+                    一般的な九星気学
+                  </td>
+                  <td className="border border-slate-300 p-2">
+                    {STAR_NAMES[centerStar]}
+                  </td>
+                  <td className="border border-slate-300 p-2">
+                    {good.length ? good.map((v) => v.jp).join("・") : "なし"}
+                  </td>
+                  <td className="border border-slate-300 p-2">
+                    {bad.map((v) => `${v.jp}（${v.label}）`).join("、")}
+                  </td>
+                </tr>
+                <tr>
+                  <td className="border border-slate-300 p-2 font-semibold">
+                    本サイト独自モデル
+                  </td>
+                  <td className="border border-slate-300 p-2">
+                    {STAR_NAMES[physical.centerStar]}
+                  </td>
+                  <td className="border border-slate-300 p-2">
+                    {physGood.length
+                      ? physGood.map((v) => v.jp).join("・")
+                      : "なし"}
+                  </td>
+                  <td className="border border-slate-300 p-2">
+                    {physBad.map((v) => `${v.jp}（${v.label}）`).join("、")}
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <p className="mt-3 text-xs text-slate-600 leading-relaxed">
+            {systemsAgree
+              ? "この年・この本命星では、どちらの算出方法でも同じ判定になります。"
+              : "この年・この本命星では判定が一致しません。"}
+            独自モデルは木星の公転周期（約11.86年）にもとづくため、
+            9年周期の一般的な九星気学とは星の巡り方が異なります。一般的な資料と照らし合わせる場合は上段を、スキャナーで独自モデルを選ぶ場合は下段をご覧ください。
+          </p>
+        </details>
 
         <ContentDisclaimer />
       </article>
