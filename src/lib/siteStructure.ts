@@ -172,6 +172,15 @@ export const CORE_ROUTES: CoreRoute[] = [
     group: "timing",
   },
   {
+    /* 検索の「今日 吉方位」の受け皿。個人判定は下の dashboard、こちらは
+       本命星別の公開版（サーバー計算・軽量）。 */
+    href: "/houi/today",
+    label: "今日の吉方位と時間を見る",
+    summary:
+      "本命星ごとに、今日の日盤の吉方位・凶方位（五黄殺・暗剣殺・日破）と2時間ごとの動いてよい時間帯を一覧する。明日の予告付き。生年月日の入力は不要。",
+    group: "timing",
+  },
+  {
     href: "/relocation/dashboard",
     label: "今日の方位と時刻を確かめる",
     summary:

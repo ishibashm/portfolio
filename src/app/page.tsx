@@ -58,6 +58,10 @@ export default function Home() {
           <Link href="/houi/area" className="underline hover:text-rose-600">
             エリア別の方位と家賃相場
           </Link>
+          で、今日の吉方位は
+          <Link href="/houi/today" className="underline hover:text-rose-600">
+            今日の吉方位と時間
+          </Link>
           で確認できます。初めて使うときは
           <Link href="/guide" className="underline hover:text-rose-600">
             使い方ガイド
