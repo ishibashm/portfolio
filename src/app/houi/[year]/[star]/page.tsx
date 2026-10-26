@@ -328,6 +328,12 @@ export default async function Page({
             <li>
               <b>天中殺</b>
               は生年月日ごとに異なり、本命星では決まりません。その期間は方位に関係なく移転を避けるという考え方があります。
+              <Link
+                href="/houi/tenchusatsu"
+                className="ml-1 underline hover:text-rose-700"
+              >
+                生年月日で天中殺を判定する
+              </Link>
             </li>
             <li>
               方位は<b>今住んでいる場所から見た向き</b>

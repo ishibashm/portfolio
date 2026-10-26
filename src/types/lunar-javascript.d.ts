@@ -83,6 +83,7 @@ declare module "lunar-javascript" {
     /** 年支（立春の**瞬間**で切り替わる Exact 系。八字の年柱と同じ境界）。 */
     getYearZhiExact(): string;
     getMonthZhi(): string;
+    getMonthZhiExact(): string;
     getDayZhi(): string;
     getDayInGanZhi(): string;
     /** 旧暦の月・日。 */
