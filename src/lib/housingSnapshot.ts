@@ -45,6 +45,27 @@ export interface HousingFigures {
   totalDwellings: number | null;
 }
 
+/**
+ * 市区町村ページを検索対象にできるだけの地域固有データがあるか。
+ *
+ * 行の有無だけでなく、公開統計の数値が少なくとも 1 つあることを見る。
+ * robots・sitemap・テストはこの判定を基準にそろえる。
+ */
+export function hasAreaHousingData(
+  snapshot: HousingSnapshotData,
+  code: string,
+): boolean {
+  const area = snapshot.areas[code];
+  if (!area) return false;
+  return [
+    area.totalDwellings,
+    area.vacantDwellings,
+    area.rentPerTatamiYen,
+    area.tatamiPerRental,
+    area.floorAreaPerRental,
+  ].some((value) => typeof value === "number");
+}
+
 /** 地域コード（JIS 5 桁）で引く。写しに無ければ null。 */
 export function housingFiguresFor(
   snapshot: HousingSnapshotData,

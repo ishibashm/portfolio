@@ -13,17 +13,15 @@ import { AREA_EDITORIAL } from "@/lib/areaEditorial";
  * 圧縮後 111 MB の層が Artifact Registry に積まれる。デプロイは日
  * 30〜70 回あるので効きが大きい（backlog 24 節・24-b 節）。
  *
- * 索引に載せる頁（`areaEditorial` に文章を書いた頁）だけを焼き、残りは
- * `dynamicParams = true` に任せて要求時に作るようにした。
+ * 編集文のある頁（`areaEditorial`）だけを焼き、残りは `dynamicParams = true`
+ * に任せて要求時に作る。robots と sitemap は別途、住宅統計の有無で決める。
  *
  * ## この検査が守るもの
  *
- * **「索引に載せる」と「事前生成する」を同じ式にしておくこと。**
- * 別々に書くと、文章を書いたのに事前生成されない（またはその逆）と
- * いう食い違いが**静かに**起きる。どちらも画面は出来上がるので、
- * 見比べるまで気付けない類（CLAUDE.md 3 節「黙って別のものに落ちる」）。
+ * **編集文を書いた頁は事前生成すること。**統計のある全頁を事前生成すると
+ * ビルド容量が元へ戻るため、index 可否とは意図的に分けている。
  */
-describe("市区町村ページの事前生成は、索引に載せる頁と一致する", () => {
+describe("市区町村ページの事前生成は、編集文のある頁と一致する", () => {
   const params = generateStaticParams();
   const prerendered = new Set(params.map((p) => p.code));
   const editorial = new Set(Object.keys(AREA_EDITORIAL));

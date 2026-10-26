@@ -62,21 +62,20 @@ export async function generateMetadata({
   if (!parsed) return {};
   const { year, star } = parsed;
   const name = STAR_NAMES[star];
-  const { verdicts } = getYearDirections(year, star);
-  const good = verdicts.filter((v) => v.kind === "good").map((v) => v.jp);
-
-  const title = `${year}年 ${name}の吉方位と凶方位`;
-  const description =
-    good.length > 0
-      ? `${year}年、${name}の年盤での吉方位は${good.join("・")}です。五黄殺・暗剣殺・歳破・本命殺がどの方位に当たるかも一覧で確認できます。`
-      : `${year}年、${name}の年盤には吉方位に当たる方位がありません。五黄殺・暗剣殺・歳破・本命殺の位置を一覧で確認できます。`;
+  const heading = `${year}年 ${name}の吉方位・凶方位【月別】`;
+  const title = `${heading} | Cloud Palette`;
+  const description = `${year}年 ${name}の吉方位と凶方位（五黄殺・暗剣殺）を月別に確認できます。年盤の歳破・本命殺と、1月から12月までの月盤も一覧で案内します。`;
 
   return {
-    title,
+    title: { absolute: title },
     description,
     alternates: { canonical: `/houi/${year}/${star}` },
     openGraph: {
-      images: ["/ogp.png"], title, description, type: "article" },
+      images: ["/ogp.png"],
+      title,
+      description,
+      type: "article",
+    },
   };
 }
 
@@ -109,12 +108,13 @@ export default async function Page({
   } as const;
 
   const path = `/houi/${year}/${star}`;
+  const heading = `${year}年 ${name}の吉方位・凶方位【月別】`;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#faf7f5] via-[#f5efe9] to-[#f0e9e1] text-slate-900 font-sans">
       <ArticleJsonLd
-        headline={`${year}年 ${name}の吉方位と凶方位`}
-        description={`${year}年の年盤における${name}の吉方位、五黄殺・暗剣殺・歳破・本命殺の位置。`}
+        headline={heading}
+        description={`${year}年 ${name}の吉方位と凶方位（五黄殺・暗剣殺）を月別に確認できます。`}
         path={path}
         keywords={[`${year}年`, name, "吉方位", "凶方位", "九星気学", "引越し"]}
       />
@@ -137,7 +137,7 @@ export default async function Page({
         </nav>
 
         <h1 className="text-3xl md:text-4xl font-bold font-serif tracking-tight leading-snug">
-          {year}年 {name}の吉方位と凶方位
+          {heading}
         </h1>
 
         <p className="mt-5 text-sm leading-relaxed text-slate-700">
@@ -150,7 +150,8 @@ export default async function Page({
           ) : (
             <>この年は吉方位に当たる方位がありません。</>
           )}
-          避けるべき方位は<b>{bad.map((v) => `${v.jp}（${v.label}）`).join("、")}</b>
+          避けるべき方位は
+          <b>{bad.map((v) => `${v.jp}（${v.label}）`).join("、")}</b>
           です。
         </p>
         {good.length > 0 && (
@@ -173,7 +174,6 @@ export default async function Page({
           periodLabel={`${year}年`}
           personalStar={star}
         />
-
 
         <section className="mt-10">
           <h2 className="text-xl font-bold font-serif border-b border-slate-300 pb-2">
@@ -231,7 +231,8 @@ export default async function Page({
               </summary>
               <div className="mt-3 flex flex-wrap gap-2">
                 {MONTHS.map((m) => (
-                  <Link prefetch={false}
+                  <Link
+                    prefetch={false}
                     key={m}
                     href={`/houi/${year}/${star}/${m}`}
                     className="px-3 py-1.5 rounded-full border border-slate-300 bg-white text-xs font-semibold hover:border-rose-400 transition-colors"
@@ -249,7 +250,9 @@ export default async function Page({
             算出方法による違い
           </h2>
           <p className="mt-4 text-sm leading-relaxed text-slate-700">
-            上の表は一般的な九星気学（{STAR_NAMES[centerStar]}中宮）による判定です。このサイトのスキャナーには、木星の黄経から星を求める独自モデルも用意しており、設定で切り替えられます。同じ{year}年でも中宮が
+            上の表は一般的な九星気学（{STAR_NAMES[centerStar]}
+            中宮）による判定です。このサイトのスキャナーには、木星の黄経から星を求める独自モデルも用意しており、設定で切り替えられます。同じ
+            {year}年でも中宮が
             {STAR_NAMES[physical.centerStar]}になるため、判定が変わります。
           </p>
           <div className="mt-4 overflow-x-auto">
@@ -319,16 +322,21 @@ export default async function Page({
           </h2>
           <ul className="mt-3 text-xs text-amber-900 leading-relaxed list-disc pl-5 space-y-1.5">
             <li>
-              ここに載せているのは<b>年盤</b>だけです。実際の移転では月盤も見ます。年盤で吉でも、月によっては凶方位になります。
+              ここに載せているのは<b>年盤</b>
+              だけです。実際の移転では月盤も見ます。年盤で吉でも、月によっては凶方位になります。
             </li>
             <li>
-              <b>天中殺</b>は生年月日ごとに異なり、本命星では決まりません。その期間は方位に関係なく移転を避けるという考え方があります。
+              <b>天中殺</b>
+              は生年月日ごとに異なり、本命星では決まりません。その期間は方位に関係なく移転を避けるという考え方があります。
             </li>
             <li>
-              方位は<b>今住んでいる場所から見た向き</b>で決まります。同じ物件でも出発地が違えば方位が変わります。
+              方位は<b>今住んでいる場所から見た向き</b>
+              で決まります。同じ物件でも出発地が違えば方位が変わります。
             </li>
             <li>
-              九星気学の一年は<b>立春の瞬間</b>で切り替わります（2月3日〜4日ごろ。時刻は年ごとに違います）。1月生まれ・2月上旬生まれの方は前年の星になることがあります。<b>立春の日に生まれた方は、生まれた時刻で分かれます。</b>
+              九星気学の一年は<b>立春の瞬間</b>
+              で切り替わります（2月3日〜4日ごろ。時刻は年ごとに違います）。1月生まれ・2月上旬生まれの方は前年の星になることがあります。
+              <b>立春の日に生まれた方は、生まれた時刻で分かれます。</b>
             </li>
           </ul>
           <Link
@@ -343,7 +351,6 @@ export default async function Page({
 
         <PractitionerStrip />
 
-
         <div className="mt-10">
           <AdBanner />
         </div>
@@ -354,7 +361,8 @@ export default async function Page({
           </h2>
           <div className="mt-4 flex flex-wrap gap-2">
             {STARS.filter((s) => s !== star).map((s) => (
-              <Link prefetch={false}
+              <Link
+                prefetch={false}
                 key={s}
                 href={`/houi/${year}/${s}`}
                 className="px-3 py-1.5 rounded-full border border-slate-300 bg-white text-xs font-semibold hover:border-rose-400 transition-colors"
@@ -371,7 +379,8 @@ export default async function Page({
             {contentYears()
               .filter((y) => y !== year)
               .map((y) => (
-                <Link prefetch={false}
+                <Link
+                  prefetch={false}
                   key={y}
                   href={`/houi/${y}/${star}`}
                   className="px-3 py-1.5 rounded-full border border-slate-300 bg-white text-xs font-semibold hover:border-rose-400 transition-colors"

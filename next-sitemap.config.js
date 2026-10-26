@@ -16,6 +16,9 @@
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const nonCoreRoutes = require("./src/lib/nonCoreRoutes.json");
 const { routes: NON_CORE, offTheme: OFF_THEME } = nonCoreRoutes;
+// area ページは、表示に使う公開統計そのものから sitemap 対象を決める。
+// eslint-disable-next-line @typescript-eslint/no-require-imports
+const housingStats = require("./src/data/housingStats.json");
 // 記事の更新日を Markdown の frontmatter から読む（下の BLOG_LASTMOD）。
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const fs = require("fs");
@@ -113,18 +116,16 @@ const NOT_A_PAGE = [
 const THIN_GENERATED = ["/houi/area/*", "/houi/*/*/*"];
 
 /**
- * 市区町村ページのうち、**固有の文章を書いて索引に戻した**もの
- * （src/lib/areaEditorial.ts の AREA_EDITORIAL）。
+ * 市区町村ページを additionalPaths へ戻すための配列。
  *
- * 上の THIN_GENERATED が /houi/area/* を丸ごと外すので、書いた頁だけ
+ * 上の THIN_GENERATED が /houi/area/* を丸ごと外すので、データのある頁だけ
  * additionalPaths で戻す。**index にした頁とサイトマップに載せる頁が
  * 食い違うと指示が矛盾する**（noindex なのに載っている、の逆）。
  *
- * ここに書き写しているのは、この設定が JS で TS の表を読めないから。
- * ずれると意味が無いので、__tests__/sitemapThinPages.test.ts が
- * AREA_EDITORIAL の鍵と 1 件ずつ突き合わせて落とす。
+ * 下の編集済みページ一覧から、住宅統計のある URL だけを残す。
+ * テストも同じ実データと突き合わせる。
  */
-const AREA_EDITORIAL_PATHS = [
+const AREA_DATA_PATHS = [
   "/houi/area/01101",
   "/houi/area/01102",
   "/houi/area/01104",
@@ -476,6 +477,29 @@ const AREA_EDITORIAL_PATHS = [
   "/houi/area/47362",
 ];
 
+/*
+ * 編集文があるページでも、公開統計の更新後に地域行が無くなれば sitemap
+ * から外す。逆に、統計行があるという理由だけで雛形ページを大量追加はしない。
+ */
+const hasHousingData = (code) => {
+  const area = housingStats.areas[code];
+  return Boolean(
+    area &&
+    [
+      area.totalDwellings,
+      area.vacantDwellings,
+      area.rentPerTatamiYen,
+      area.tatamiPerRental,
+      area.floorAreaPerRental,
+    ].some((value) => typeof value === "number"),
+  );
+};
+AREA_DATA_PATHS.splice(
+  0,
+  AREA_DATA_PATHS.length,
+  ...AREA_DATA_PATHS.filter((path) => hasHousingData(path.split("/").at(-1))),
+);
+
 /** @type {import('next-sitemap').IConfig} */
 module.exports = {
   siteUrl: process.env.NEXT_PUBLIC_BASE_URL || "https://cloud-palette.com",
@@ -510,16 +534,15 @@ module.exports = {
     ...NOT_A_PAGE,
     ...THIN_GENERATED,
   ],
-  /* 戻す一覧そのもの。検査（sitemapThinPages）が AREA_EDITORIAL と
-     突き合わせるために読む。next-sitemap は知らない鍵を無視する */
-  additionalPathsSource: AREA_EDITORIAL_PATHS,
-  /* exclude で外した市区町村ページのうち、文章を書いた頁だけ戻す。
+  /* 戻す一覧そのもの。検査が住宅統計と突き合わせるために読む。 */
+  additionalPathsSource: AREA_DATA_PATHS,
+  /* exclude で外した市区町村ページのうち、地域別統計がある頁だけ戻す。
      additionalPaths は exclude の後に足されるので、除外を緩めずに
-     数頁だけ載せられる */
+     条件を満たす URL だけ載せられる */
   additionalPaths: async (config) =>
     Promise.all(
       [
-        ...AREA_EDITORIAL_PATHS,
+        ...AREA_DATA_PATHS,
         /* /blog は searchParams（?sort=）を読むので動的描画になり、
            next-sitemap が数える事前生成の一覧に出てこない。記事 24 本は
            載るのに一覧だけ無い状態だった。llms.txt が案内している頁でも
