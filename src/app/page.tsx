@@ -1,7 +1,5 @@
-"use client";
-
 import { AgentEntry } from "@/components/home/AgentEntry";
-import { useEffect } from "react";
+import { ScrollReset } from "@/components/home/ScrollReset";
 import Link from "next/link";
 import { Compass, ArrowRight } from "lucide-react";
 import { AdBanner } from "@/components/ads/AdBanner";
@@ -16,18 +14,9 @@ import {
 } from "@/lib/siteStructure";
 
 export default function Home() {
-  // Prevent browser auto-scrolling to bottom on load
-  useEffect(() => {
-    if (typeof window !== "undefined") {
-      if ("scrollRestoration" in window.history) {
-        window.history.scrollRestoration = "manual";
-      }
-      window.scrollTo({ top: 0, left: 0, behavior: "instant" });
-    }
-  }, []);
-
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#faf7f5] via-[#f5efe9] to-[#f0e9e1] text-slate-900 relative flex flex-col items-center justify-start overflow-y-auto py-8 px-4 md:px-8 gap-8 font-sans">
+      <ScrollReset />
       {/* Background Soft Glow Auras */}
       <div className="fixed top-[-10vw] left-[-10vw] w-[40vw] h-[40vw] bg-rose-200/25 rounded-full blur-[100px] pointer-events-none -z-10" />
       <div className="fixed bottom-[-10vw] right-[-10vw] w-[40vw] h-[40vw] bg-amber-200/25 rounded-full blur-[100px] pointer-events-none -z-10" />
@@ -70,6 +59,12 @@ export default function Home() {
         >
           {CORE_ROUTES[0].label}
           <ArrowRight className="w-4 h-4" />
+        </Link>
+        <Link
+          href="/houi#honmei-lookup"
+          className="mt-4 sm:ml-5 inline-block text-sm font-semibold text-rose-600 underline underline-offset-4 hover:text-rose-700"
+        >
+          生年月日から今年の吉方位を見る
         </Link>
       </header>
 

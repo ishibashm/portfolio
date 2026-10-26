@@ -109,7 +109,7 @@ export function FengShuiLookup() {
   );
 
   return (
-    <div className="rounded-2xl border border-slate-300 bg-white/90 p-5">
+    <div className="wg-card p-5">
       <div className="flex flex-wrap items-end gap-4">
         <div>
           {numeric ? (
@@ -130,7 +130,7 @@ export function FengShuiLookup() {
           )}
           <button
             type="button"
-            className="mt-2 text-xs underline"
+            className="mt-2 text-xs text-rose-600 underline hover:text-rose-700"
             onClick={() => setNumeric(!numeric)}
           >
             {numeric ? "ボタンで選ぶ" : "数字で入れる"}
@@ -148,7 +148,7 @@ export function FengShuiLookup() {
                 aria-pressed={sex === s}
                 className={`rounded-full px-4 py-2 text-xs font-bold transition-colors ${
                   sex === s
-                    ? "bg-slate-900 text-white"
+                    ? "bg-rose-600 text-white"
                     : "border border-slate-300 bg-white text-slate-700 hover:bg-slate-50"
                 }`}
               >
