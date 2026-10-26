@@ -114,6 +114,13 @@ export const CORE_ROUTES: CoreRoute[] = [
     group: "direction",
   },
   {
+    href: "/houi/today",
+    label: "今日の吉方位と時間",
+    summary:
+      "本命星別に今日・明日の日盤と、十二支ごとの時間帯の吉方位・凶方位を確認する。",
+    group: "direction",
+  },
+  {
     href: "/houi",
     label: "本命星と吉方位を調べる",
     summary:

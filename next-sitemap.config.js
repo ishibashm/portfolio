@@ -548,6 +548,7 @@ module.exports = {
            載るのに一覧だけ無い状態だった。llms.txt が案内している頁でも
            あるので、ここで足す */
         "/blog",
+        "/houi/today",
       ].map((loc) => config.transform(config, loc)),
     ),
 };

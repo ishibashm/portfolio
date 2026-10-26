@@ -71,6 +71,11 @@ export default function Home() {
           {CORE_ROUTES[0].label}
           <ArrowRight className="w-4 h-4" />
         </Link>
+        <p className="mt-4 text-sm">
+          <Link href="/houi/today" className="text-rose-600 underline">
+            今日の吉方位と時間を本命星別に見る
+          </Link>
+        </p>
       </header>
 
       {/* 生年月日・現在地・生まれたところ。**このサイトの答えはこの 3 つで
