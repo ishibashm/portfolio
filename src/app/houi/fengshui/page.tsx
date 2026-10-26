@@ -1,3 +1,5 @@
+import { RelocationStepNavigator } from "@/components/houi/RelocationStepNavigator";
+import { currentYearInJapan } from "@/lib/kigakuContent";
 import Link from "next/link";
 import type { Metadata } from "next";
 import { ContentDisclaimer } from "@/components/houi/ContentDisclaimer";
@@ -105,6 +107,8 @@ export default function Page() {
         <section className="mt-8">
           <FengShuiLookup />
         </section>
+
+        <RelocationStepNavigator year={currentYearInJapan()} />
 
         {/*
           両方を並べたときの読み方。足し算をしない理由をここに書く。
