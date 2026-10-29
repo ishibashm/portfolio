@@ -1,5 +1,5 @@
 // @vitest-environment node
-import { afterEach, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import {
   PAID_APIS_DISABLED_REASON,
   PAID_APIS_PAUSED_TEXT,
@@ -54,6 +54,10 @@ vi.mock("@/lib/agentSession", () => ({
   agentSessionUser: async () => ({ signedIn: false }),
 }));
 
+beforeEach(() => {
+  vi.stubEnv("AI_FORTUNE_HTML_ENABLED", "true");
+});
+
 afterEach(() => {
   vi.unstubAllEnvs();
   vi.clearAllMocks();
@@ -70,6 +74,7 @@ it("未設定と true は停止、false だけ再開する", () => {
 it("鍵が揃っていても LLM・音声・メール送信を有効にしない", () => {
   const env = {
     PAID_APIS_DISABLED: "true",
+    AI_FORTUNE_HTML_ENABLED: "true",
     MCP_AGENT_ENABLED: "true",
     GEMINI_API_KEY: "test",
     MCP_VOICE_ENABLED: "true",
