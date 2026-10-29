@@ -316,6 +316,11 @@ jobs:
       - name: Enable rentals on-demand fetch
         run: echo 'RENTALS_ON_DEMAND_ENABLED=false' >> .env
 
+      # AIで飾る占いHTML（#1746）。PAID_APIS_DISABLED とは独立した専用フラグ。
+      # gemini-2.5-flash-lite 固定・1人1日2回・全体1日20回。止めるときは false にする。
+      - name: Enable AI fortune HTML
+        run: echo 'AI_FORTUNE_HTML_ENABLED=true' >> .env
+
       # Supabase の公開鍵は旧 anon JWT ではなく新しい publishable key を使う。
       # NEXT_PUBLIC_* はビルド時に埋め込まれるので、ビルド用 .env と env.json の両方に
       # 効くよう、ここで後勝ちの上書きを足す（公開してよい鍵。旧 JWT 鍵を無効化するため）。
