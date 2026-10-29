@@ -34,7 +34,8 @@ export function calculateTenchusatsu(
   };
 }
 
-function getYearBranch(year: number): string {
+/** 立春で区切った年番号から、その年の十二支を求める。 */
+export function getYearBranch(year: number): string {
   const branches = [
     "子",
     "丑",

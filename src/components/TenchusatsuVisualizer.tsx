@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useMemo } from "react";
-import { calculateTenchusatsu } from "../utils/tenchusatsu";
+import { calculateTenchusatsu, getYearBranch } from "../utils/tenchusatsu";
 import { honmeiYearFor } from "../utils/honmeiYear";
 import { parseJapanDateTime } from "@/utils/japanDate";
 
@@ -41,20 +41,14 @@ export const TenchusatsuVisualizer: React.FC<TenchusatsuVisualizerProps> = ({
 
   if (!data) return null;
 
-  const baseYear = currentYear - 3;
-  /*
-    8 年ぶんの帯。見出しが「天中殺の周期」なのに、長らく日干支の欄と
-    今年の状態の 2 枚しか描いておらず、この配列は計算だけして捨てて
-    いた（CLAUDE.md 4 節の「消してはいけない未使用」に載せていた
-    `years`）。総点検（2026-09-12）で描く先を作って繋いだ。
-    12 年に 2 年が天中殺なので、3 年前から 4 年先までの 8 年を出せば
-    必ず 1 回は見える。
-  */
-  const years = Array.from({ length: 8 }).map((_, i) => {
+  const baseYear = currentYear - 5;
+  // 今年を含む連続した 12 年なら、各グループの天中殺が必ず 2 年入る。
+  const years = Array.from({ length: 12 }).map((_, i) => {
     const y = baseYear + i;
     const isVoid =
-      data.previousVoidYears.includes(y) ||
-      (y === currentYear && data.isYearTenchusatsu);
+      y === currentYear
+        ? data.isYearTenchusatsu
+        : data.tenchusatsu.voidBranches.includes(getYearBranch(y));
     return {
       year: y,
       status: isVoid ? "VOID" : "CLEAR",
@@ -153,10 +147,10 @@ export const TenchusatsuVisualizer: React.FC<TenchusatsuVisualizerProps> = ({
         </div>
       </div>
 
-      {/* 8 年の帯。見出しの「周期」を実際に描く。 */}
+      {/* 12 年の帯。見出しの「周期」を実際に描く。 */}
       <ol
-        className="mt-4 grid grid-cols-4 gap-1 sm:grid-cols-8"
-        aria-label="前後 8 年の天中殺"
+        className="mt-4 grid grid-cols-6 gap-1 sm:grid-cols-12"
+        aria-label="前後 12 年の天中殺"
       >
         {years.map((y) => (
           <li
