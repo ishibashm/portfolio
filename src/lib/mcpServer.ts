@@ -1,3 +1,4 @@
+import { municipalityMatches } from "@/lib/municipalitySearch";
 import {
   articleSearchSchema,
   articleGetSchema,
@@ -129,8 +130,10 @@ function rentOf(code: string): number | null {
   return housingFiguresFor(HOUSING, code)?.rentPerSqm ?? null;
 }
 
-/** Seven shared tools; each caller supplies exactly one time-tool variant. */
-export function createMcpBaseServer(): McpServer {
+/** 共通7ツール。読み検索の拡張は公開入口のみ有効化する。 */
+export function createMcpBaseServer(options?: {
+  municipalityReadings?: boolean;
+}): McpServer {
   const server = new McpServer(
     { name: "cloud-palette", version: "1.0.0" },
     {
@@ -369,20 +372,27 @@ export function createMcpBaseServer(): McpServer {
         openWorldHint: false,
       },
       title: "市区町村を探す",
-      description:
-        "名前の一部から、賃貸の掲載を集計できている市区町村（全国 1,100 前後）を探し、コードと代表点を返します。area_directions / prefecture_summary の入力に使います。",
+      description: options?.municipalityReadings
+        ? "漢字・ひらがな・カタカナ・ヘボン式ローマ字の一部から、賃貸の掲載を集計できている市区町村（全国 1,100 前後）を探し、コードと代表点を返します。area_directions / prefecture_summary の入力に使います。日本郵便の無料公開読みデータを同梱し、大文字小文字・長音・shi/siなどの表記揺れを吸収します。外部APIは呼びません。"
+        : "名前の一部から、賃貸の掲載を集計できている市区町村（全国 1,100 前後）を探し、コードと代表点を返します。area_directions / prefecture_summary の入力に使います。",
       inputSchema: {
         query: z
           .string()
           .min(1)
-          .describe("市区町村名の一部。例: 長崎、札幌市北区"),
+          .describe(
+            options?.municipalityReadings
+              ? "市区町村名の一部。例: 名古屋、Nagoya、なごや、ナゴヤ、札幌市北区"
+              : "市区町村名の一部。例: 長崎、札幌市北区",
+          ),
         limit: z.number().int().min(1).max(50).optional().describe("既定 10"),
       },
     },
     async ({ query, limit }) => {
       const q = query.trim();
-      const hits = AREAS.filter(
-        (a) => a.full.includes(q) || a.city.includes(q) || a.pref.includes(q),
+      const hits = AREAS.filter((a) =>
+        options?.municipalityReadings
+          ? municipalityMatches(a, q)
+          : a.full.includes(q) || a.city.includes(q) || a.pref.includes(q),
       )
         .sort((a, b) => b.count - a.count)
         .slice(0, limit ?? 10)
@@ -557,7 +567,7 @@ export function createMcpBaseServer(): McpServer {
 }
 
 export function createMcpServer(deps?: { rentals?: RentalReader }): McpServer {
-  const server = createMcpBaseServer();
+  const server = createMcpBaseServer({ municipalityReadings: true });
   registerPublicTimeTools(server);
   server.registerTool(
     "search_articles",

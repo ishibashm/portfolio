@@ -45,7 +45,7 @@ const parse = (r: Awaited<ReturnType<Client["callTool"]>>) =>
   JSON.parse((r.content as { text: string }[])[0].text);
 
 describe("MCP サーバー", () => {
-  it("13 の道具を公開している", async () => {
+  it("14 の道具を公開している", async () => {
     const c = await connect();
     const names = (await c.listTools()).tools.map((t) => t.name).sort();
     expect(names).toEqual([
@@ -56,6 +56,7 @@ describe("MCP サーバー", () => {
       "get_kanshi",
       "get_rental",
       "judge_directions",
+      "judge_hourly_directions",
       "judge_time_slots",
       "prefecture_summary",
       "rental_market_stats",
@@ -409,7 +410,7 @@ describe("/api/mcp の入口", () => {
       }),
     );
     expect(list.status).toBe(200);
-    expect((await list.json()).result.tools.length).toBe(13);
+    expect((await list.json()).result.tools.length).toBe(14);
   });
 });
 
