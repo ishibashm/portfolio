@@ -370,3 +370,22 @@ export function getMonthDirections(
 export function formatDate(d: Date): string {
   return `${d.getUTCFullYear()}年${d.getUTCMonth() + 1}月${d.getUTCDate()}日`;
 }
+
+/**
+ * 1 年ぶんの月盤の吉方位・凶方位の要約（/houi/today の 12 か月早見表用）。
+ * 五黄殺・暗剣殺は本命星に関係なく全員の凶方位として bad に入る。
+ */
+export function getMonthlySummary(
+  year: number,
+  star: number,
+  system: KigakuSystem = "classical",
+): { month: number; good: string[]; bad: string[] }[] {
+  return MONTHS.map((month) => {
+    const { verdicts } = getMonthDirections(year, month, star, system);
+    return {
+      month,
+      good: verdicts.filter((v) => v.kind === "good").map((v) => v.jp),
+      bad: verdicts.filter((v) => v.kind === "bad").map((v) => v.jp),
+    };
+  });
+}

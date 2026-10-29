@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { buildTodayDirections } from "@/lib/todayDirections";
+import { getMonthlySummary } from "@/lib/kigakuContent";
 import { pageOpenGraph, SITE_URL } from "@/lib/siteUrl";
 
 export const revalidate = 3600;
@@ -17,6 +18,7 @@ const list = (items: string[]) => items.join("・") || "なし";
 
 export default function TodayPage() {
   const data = buildTodayDirections();
+  const year = Number(data.date.slice(0, 4));
   const shareUrl = `https://twitter.com/intent/tweet?url=${encodeURIComponent(`${SITE_URL}/houi/today`)}&text=${encodeURIComponent("今日の吉方位と時間｜本命星別の早見表")}`;
   return (
     <main className="wg-page px-4 py-10 text-slate-900">
@@ -121,6 +123,49 @@ export default function TodayPage() {
                   </Link>
                   で確認できます。
                 </p>
+                <h3 className="font-bold">{year}年の月ごとの吉方位・凶方位</h3>
+                <p className="text-xs text-slate-600">
+                  月盤（節入り〜翌節入り前）の早見表です。五黄殺・暗剣殺は全員の凶に含みます。
+                </p>
+                <div className="overflow-x-auto">
+                  <table className="w-full min-w-[480px] text-left text-xs">
+                    <caption className="sr-only">
+                      {star.name}の{year}年 月別の方位
+                    </caption>
+                    <thead>
+                      <tr className="border-b">
+                        <th scope="col" className="p-2">
+                          月
+                        </th>
+                        <th scope="col" className="p-2">
+                          吉
+                        </th>
+                        <th scope="col" className="p-2">
+                          凶
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {getMonthlySummary(year, star.star).map((row) => (
+                        <tr
+                          key={row.month}
+                          className="border-b border-slate-200 align-top"
+                        >
+                          <th scope="row" className="p-2">
+                            <Link
+                              href={`/houi/${year}/${star.star}/${row.month}`}
+                              className="text-rose-600 underline"
+                            >
+                              {row.month}月
+                            </Link>
+                          </th>
+                          <td className="p-2">{list(row.good)}</td>
+                          <td className="p-2">{list(row.bad)}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
                 <h3 className="font-bold">明日（{data.tomorrow}）の予告</h3>
                 <p>
                   <b>吉：</b>
