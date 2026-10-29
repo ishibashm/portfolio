@@ -49,13 +49,14 @@ const HOUI_FAQ = [
   90 表示・11.6 位・クリック 1（CTR 1.1%）だった。1 ページ目の縁で、
   検索語の大半は「◯年 吉方位」のように年を含む。年の無い title は
   並んだ結果の中で「今年のことか分からない」ので、押されにくい。
-  ISR（revalidate 60）なので年越しで自動的に更新される。h1 は変えない
-  （docs/qa/05-houi.md が見出しの文言を固定している）。
+  ISR（revalidate 60）なので年越しで自動的に更新される。2026-10-29 に
+  トップとの検索語の役割を分け、h1 にも年と「引越し」を入れた。
+  docs/qa/05-houi.md の見出しの記載も合わせる。
 */
 export function generateMetadata(): Metadata {
   const year = currentYearInJapan();
-  const title = `${year}年の吉方位早見表｜生年月日から本命星・引越し方位を確認`;
-  const description = `${year}年の吉方位を九星気学の本命星別に確認できる早見表です。生年月日から本命星を調べ、引越しで避けるとされる五黄殺・暗剣殺・歳破・本命殺と、月ごとの方位を確認できます。`;
+  const title = `${year}年 引越しの方位｜本命星別の吉方位早見表`;
+  const description = `${year}年に引越す方位の吉凶を、九星気学の本命星別に確認できる早見表です。生年月日から本命星を調べ、五黄殺・暗剣殺・歳破・本命殺など引越しで避けるとされる方位と、月ごとの方位を確認できます。`;
   return {
     alternates: { canonical: "/houi" },
     title,
@@ -69,7 +70,8 @@ export const revalidate = 60;
 export default function Page() {
   const years = contentYears();
   // このページはISRで再生成されるため、年越し後のリクエストで自動更新される。
-  const birthYears = birthYearsThrough(currentYearInJapan());
+  const year = currentYearInJapan();
+  const birthYears = birthYearsThrough(year);
 
   // 生まれ年の表は本命星ごとにまとめたほうが引きやすい
   const byStar = new Map<number, number[]>();
@@ -100,7 +102,7 @@ export default function Page() {
           className="pointer-events-none absolute right-5 top-6 hidden h-40 w-40 opacity-70 lg:block"
         />
         <h1 className="text-3xl md:text-4xl font-bold font-serif tracking-tight leading-snug">
-          九星気学の本命星と吉方位の早見表
+          {year}年 引越しの方位と吉方位早見表
         </h1>
         <p className="mt-5 max-w-[70ch] text-sm leading-relaxed text-slate-700">
           引越しの方位は、自分の<b>本命星</b>と、その年の<b>年盤</b>
