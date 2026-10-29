@@ -169,6 +169,11 @@ const jsonLdSchema = {
       "name": "Cloud Palette Core Labs",
       "url": "https://cloud-palette.com",
       "logo": "https://cloud-palette.com/icon-512.png",
+      // 運営している公式の YouTube チャンネル。検索エンジンが同じ運営元だと
+      // 結び付けられるようにする。作っていないチャンネルは載せない。
+      "sameAs": [
+        "https://www.youtube.com/@houi-sumai-techo",
+      ],
     },
     {
       "@type": "WebApplication",
