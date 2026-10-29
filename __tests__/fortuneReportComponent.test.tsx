@@ -60,6 +60,10 @@ it("uses the authenticated user's stored profile, with no input box", async () =
   expect(frame).toHaveAttribute("sandbox", "");
   expect(frame).toHaveAttribute("srcdoc", "<p>AI</p>");
   expect(screen.getByText("計算結果").closest("iframe")).toBeNull();
+  expect(screen.getByText("計算結果").closest("details")).not.toHaveAttribute(
+    "open",
+  );
+  expect(screen.getByText("計算結果")).not.toBeVisible();
 });
 it("renders the non-AI fallback without an iframe", async () => {
   vi.stubEnv("AI_FORTUNE_HTML_ENABLED", "true");
@@ -76,5 +80,6 @@ it("renders the non-AI fallback without an iframe", async () => {
   });
   const { container } = render(await FortuneReport());
   expect(container.querySelector("iframe")).toBeNull();
+  expect(container.querySelector("details")).toBeNull();
   expect(screen.getByText("計算結果")).toBeInTheDocument();
 });

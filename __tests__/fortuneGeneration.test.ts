@@ -28,23 +28,39 @@ it("pins Google and the free-tier-capable model regardless of chat overrides", (
     modelId: "gemini-2.5-flash-lite",
   });
 });
-it("never calls the SDK with a missing key, disabled flag or active kill switch", async () => {
+it("never calls the SDK with a missing key", async () => {
   vi.stubEnv("GOOGLE_GENERATIVE_AI_API_KEY", "");
-  await expect(generateFortuneHtml(facts)).rejects.toThrow(
-    "FORTUNE_AI_UNAVAILABLE",
-  );
-  vi.stubEnv("GEMINI_API_KEY", "test-not-a-secret");
-  vi.stubEnv("PAID_APIS_DISABLED", "true");
-  await expect(generateFortuneHtml(facts)).rejects.toThrow(
-    "FORTUNE_AI_UNAVAILABLE",
-  );
-  vi.stubEnv("PAID_APIS_DISABLED", "false");
-  vi.stubEnv("AI_FORTUNE_HTML_ENABLED", "false");
   await expect(generateFortuneHtml(facts)).rejects.toThrow(
     "FORTUNE_AI_UNAVAILABLE",
   );
   expect(mocks.generate).not.toHaveBeenCalled();
 });
+it.each(["false", undefined, "", "1", "TRUE"])(
+  "never calls Gemini without explicit opt-in (%s)",
+  async (flag) => {
+    vi.stubEnv("AI_FORTUNE_HTML_ENABLED", flag);
+    await expect(generateFortuneHtml(facts)).rejects.toThrow(
+      "FORTUNE_AI_UNAVAILABLE",
+    );
+    expect(mocks.generate).not.toHaveBeenCalled();
+  },
+);
+it.each(["true", undefined])(
+  "calls Gemini when opted in even with PAID_APIS_DISABLED=%s",
+  async (paidDisabled) => {
+    vi.stubEnv("PAID_APIS_DISABLED", paidDisabled);
+    mocks.generate.mockImplementation(async (options) => {
+      expect(options.model).toMatchObject({
+        provider: "google.generative-ai",
+        modelId: "gemini-2.5-flash-lite",
+      });
+      await options.tools.registered_fortune.execute();
+      return { text: "<p>{{fact:0}}</p>" };
+    });
+    expect(await generateFortuneHtml(facts)).toBe("<p>{{fact:0}}</p>");
+    expect(mocks.generate).toHaveBeenCalledTimes(1);
+  },
+);
 it("forces the in-process tool then decoration, with no retries", async () => {
   mocks.generate.mockImplementation(async (options) => {
     expect(options.maxRetries).toBe(0);

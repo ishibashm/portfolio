@@ -1,3 +1,5 @@
+import { directionLabelName } from "./directionLabels";
+import { TIER_JP } from "@/utils/tierDisplay";
 import { createHash } from "node:crypto";
 import { calculateMcpDirections } from "./mcpDirections";
 import { calculateTimeSlots, timeSlotsInputSchema } from "./timeSlots";
@@ -16,6 +18,21 @@ export const fortuneProfileSchema = timeSlotsInputSchema.pick({
   lon: true,
 });
 export type FortuneProfile = { birthDate: string; lat: number; lon: number };
+const japanDate = new Intl.DateTimeFormat("ja-JP", {
+  timeZone: "Asia/Tokyo",
+  year: "numeric",
+  month: "long",
+  day: "numeric",
+});
+const japanDateTime = new Intl.DateTimeFormat("ja-JP", {
+  timeZone: "Asia/Tokyo",
+  month: "long",
+  day: "numeric",
+  hour: "2-digit",
+  minute: "2-digit",
+  hourCycle: "h23",
+});
+
 export function fortuneFacts(
   profile: FortuneProfile,
   day: string,
@@ -28,14 +45,19 @@ export function fortuneFacts(
   if (!directions.ok) throw new Error("FORTUNE_CALCULATION_UNAVAILABLE");
   const times = calculateTimeSlots({ ...profile, date: day });
   return [
-    { label: "対象日（日本時間）", value: directions.payload.date },
+    {
+      label: "対象日（日本時間）",
+      value: japanDate.format(
+        new Date(directions.payload.date + "T00:00:00+09:00"),
+      ),
+    },
     { label: "本命星", value: String(directions.payload.honmeiStar) },
     ...directions.payload.directions.map((d) => ({
       label: d.label,
-      value: `${d.tier} / ${d.status}`,
+      value: `${TIER_JP[d.tier]} / ${directionLabelName(d.status)}`,
     })),
     ...times.slots.map((s) => ({
-      label: `${s.branch}（${s.start} ～ ${s.end}）`,
+      label: `${s.branch}（${japanDateTime.format(new Date(s.start))} ～ ${japanDateTime.format(new Date(s.end))}・日本時間）`,
       value: s.label,
     })),
   ];

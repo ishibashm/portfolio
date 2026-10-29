@@ -29,13 +29,22 @@ the rest of the site by the iframe document boundary.
 Static AI text remains restricted to fixed headings and exactly one placeholder per
 complete MCP fact. Missing, repeated, altered or invented facts trigger the local
 fallback. CSS can affect the presentation of validated text. The authoritative
-server-rendered MCP key-values block therefore always appears OUTSIDE the iframe. No AI markup enters the parent
-DOM. The deterministic non-AI template remains visible if generation fails.
+server-rendered MCP key-values block remains OUTSIDE the iframe, in a collapsed
+「計算結果を確認」 disclosure on success so values are not displayed twice by default.
+No AI markup enters the parent DOM. The deterministic non-AI template remains
+visible without a disclosure if generation fails. Both presentations use shared
+Japanese direction/tier labels and readable Japanese dates and times explicitly
+formatted in Asia/Tokyo (including dates at midnight boundaries).
 
 The model is fixed to `gemini-2.5-flash-lite`, using the shared agent Google key
 resolver (`GOOGLE_GENERATIVE_AI_API_KEY || GEMINI_API_KEY`). Chat provider/model
-settings cannot redirect this feature. Existing `PAID_APIS_DISABLED` remains a
-kill switch: true/unset produces the local template. No billing settings are
+settings cannot redirect this feature. Its only feature gate is the explicit
+opt-in `AI_FORTUNE_HTML_ENABLED=true` (exact, case-sensitive); false, unset,
+empty, or any other value makes no Gemini request. `PAID_APIS_DISABLED` does
+not gate this feature: even true/unset allows fortune generation when opted in.
+It continues to block all other paid APIs exactly as before, including chat,
+voice, reminders, rental extraction, embedding search, and Twitter.
+A missing Google key still produces the local template. No billing settings are
 changed. Use an **unbilled free-tier Google AI Studio project**: Google offers no
 per-request switch to force a billed project's key onto the free tier.
 
@@ -49,6 +58,6 @@ values. Cache and limits reset on process restart and are independent per replic
 they are not a distributed quota guarantee. No paid fallback exists.
 
 Verification: Vitest covers sanitization, value consistency, local fallback,
-provider/flag/kill-switch gating, SDK timeout and no retries, concurrent caching,
+provider/explicit-flag gating and isolation from the other paid API switch, SDK timeout and no retries, concurrent caching,
 profile/user/day isolation, both rate limits, and authenticated component behavior.
 Tests use fake keys and mock SDK responses; no live model calls are needed.

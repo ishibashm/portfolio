@@ -159,6 +159,20 @@ describe("fortune HTML trust boundary", () => {
   });
 });
 
+it("uses readable Japanese labels and JST dates in the report facts", () => {
+  const result = fortuneFacts(profile, "2026-10-26");
+  expect(result[0].value).toBe("2026年10月26日");
+  expect(result.some((fact) => fact.value.includes("暗剣殺"))).toBe(true);
+  expect(JSON.stringify(result)).not.toMatch(
+    /NOISE_|OPTIMAL|SAFE|T\d{2}:\d{2}/,
+  );
+  const slots = result.slice(10);
+  expect(slots).toHaveLength(12);
+  for (const slot of slots) {
+    expect(slot.label).toMatch(/月\d+日.*\d{2}:\d{2}.*日本時間/);
+  }
+});
+
 describe("flag, cache, limits and fallback", () => {
   it("is off by default and accepts only explicit true", () => {
     expect(fortuneHtmlEnabled({})).toBe(false);

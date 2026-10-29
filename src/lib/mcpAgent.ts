@@ -398,7 +398,8 @@ export async function createAgentModel(
 /** Fixed free-tier-capable model, no provider fallback or billing activation. */
 export function createFortuneModel(): LanguageModel {
   const apiKey = googleAgentApiKey();
-  if (!fortuneHtmlEnabled() || paidApisDisabled() || !apiKey)
+  // This feature has its own explicit opt-in, independent of other paid APIs.
+  if (!fortuneHtmlEnabled() || !apiKey)
     throw new Error("FORTUNE_AI_UNAVAILABLE");
   return createGoogleGenerativeAI({ apiKey })("gemini-2.5-flash-lite");
 }
