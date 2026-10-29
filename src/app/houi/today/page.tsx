@@ -3,6 +3,7 @@ import Link from "next/link";
 import { buildTodayDirections } from "@/lib/todayDirections";
 import { getMonthlySummary } from "@/lib/kigakuContent";
 import { pageOpenGraph, SITE_URL } from "@/lib/siteUrl";
+import { BreadcrumbJsonLd } from "@/components/JsonLd";
 
 export const revalidate = 3600;
 const title = "今日の吉方位と時間｜本命星別の日盤・十二支の早見表";
@@ -22,6 +23,12 @@ export default function TodayPage() {
   const shareUrl = `https://twitter.com/intent/tweet?url=${encodeURIComponent(`${SITE_URL}/houi/today`)}&text=${encodeURIComponent("今日の吉方位と時間｜本命星別の早見表")}`;
   return (
     <main className="wg-page px-4 py-10 text-slate-900">
+      <BreadcrumbJsonLd
+        items={[
+          { name: "吉方位", path: "/houi" },
+          { name: "今日の吉方位", path: "/houi/today" },
+        ]}
+      />
       <article className="mx-auto max-w-5xl space-y-6">
         <header className="space-y-3">
           <h1 className="font-serif text-3xl font-bold">今日の吉方位と時間</h1>
