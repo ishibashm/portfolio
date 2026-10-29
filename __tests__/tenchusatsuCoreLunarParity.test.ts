@@ -3,7 +3,7 @@ import { Solar } from "lunar-javascript";
 import { tenchusatsuForCivilDate } from "@/utils/tenchusatsuCore";
 
 // 閉じた PR #1754 の「暦ライブラリ無し」計算は master の tenchusatsuCore に既にある。
-// ここではその日柱が lunar-javascript（sect=2, JST 0時切替）と一致することを広い範囲で確かめる。
+// ここではその日柱が lunar-javascript（正午時点の日柱）と一致することを広い範囲で確かめる。
 describe("tenchusatsuForCivilDate は lunar-javascript の日柱と一致する", () => {
   it("1900〜2100 年の 7 日おき + 月末・閏日", () => {
     const dates: [number, number, number][] = [];
@@ -25,7 +25,7 @@ describe("tenchusatsuForCivilDate は lunar-javascript の日柱と一致する"
     for (const [y, m, d] of dates) {
       const lunar = Solar.fromYmdHms(y, m, d, 12, 0, 0).getLunar();
       expect(tenchusatsuForCivilDate(y, m, d).ganZhi, `${y}-${m}-${d}`).toBe(
-        lunar.getDayInGanZhiExact2(),
+        lunar.getDayInGanZhi(),
       );
     }
   });
