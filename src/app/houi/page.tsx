@@ -18,6 +18,24 @@ import { PREF_EDITORIAL } from "@/lib/prefEditorial";
 import { ActiveProfileBadge } from "@/components/profile/ActiveProfileBadge";
 import { coreRouteLabel } from "@/lib/siteStructure";
 import { pageOpenGraph } from "@/lib/siteUrl";
+import { BreadcrumbJsonLd, FaqJsonLd } from "@/components/JsonLd";
+
+// 頁に出ている文言（リード文・用語について）だけで組む。
+const HOUI_FAQ = [
+  {
+    question: "本命星はどうやって調べますか？",
+    answer:
+      "引越しの方位は、自分の本命星と、その年の年盤で決まります。まず生まれ年から本命星を確認し、その年の方位一覧に進んでください。",
+  },
+  {
+    question: "五黄殺とは何ですか？",
+    answer: "五黄土星が回座する方位。最も避けるべき方位とされます。",
+  },
+  {
+    question: "暗剣殺とは何ですか？",
+    answer: "五黄殺の正反対にあたる方位です。",
+  },
+] as const;
 
 /**
  * 方位コンテンツの入口。
@@ -73,6 +91,8 @@ export default function Page() {
           9 つの星の札と年ごとの一覧なので、記事の読み幅で止める理由が無い。
           /guide の索引と同じ 1700px。記事側（/houi/[year]/[star]）は本文が
           長いので 820px のまま。行長は段落の max-w-[70ch] で守る。 */}
+      <BreadcrumbJsonLd items={[{ name: "吉方位", path: "/houi" }]} />
+      <FaqJsonLd items={HOUI_FAQ} />
       <article className="relative max-w-[1700px] mx-auto px-5 py-12">
         {/* 金の羅盤の線画（飾り）。広い画面だけ、見出しと重ならない右上に。 */}
         <CompassDial
@@ -326,6 +346,12 @@ export default function Page() {
                   className="ml-1 underline hover:text-rose-600"
                 >
                   天中殺に引っ越ししても大丈夫か、影響と対処を読む
+                </Link>
+                <Link
+                  href="/blog/houi-and-tenchusatsu"
+                  className="ml-1 underline hover:text-rose-600"
+                >
+                  天中殺も気になる人はこちら（吉方位と天中殺の関係）
                 </Link>
               </dd>
             </div>
