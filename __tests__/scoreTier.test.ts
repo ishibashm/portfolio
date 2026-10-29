@@ -356,7 +356,7 @@ describe("状態 → 点", () => {
     }
   });
 
-  it("旧実装と違うのは 月命殺・月命的殺（20 → 40）と、写しに無かった二次凶だけ", () => {
+  it("旧実装と違うのは 月命殺・月命的殺（20 → 40）と、写しに無かった天中殺・土用殺", () => {
     const changed: Record<string, [number, number]> = {};
     for (const s of ALL_STATUSES) {
       const before = oldStatusScore(s);
@@ -368,7 +368,7 @@ describe("状態 → 点", () => {
       NOISE_GETSUTEKI: [20, 40],
       // 以前は表に無く「不明」の 50 に落ちていた。凶なので二次凶の 40。
       NOISE_TENCHU: [50, 40],
-      NOISE_DOYOU: [50, 40],
+      NOISE_DOYOU: [50, 10], // 専用状態も五黄殺と同じ大凶の点。
     });
     // 旧実装は月命殺を本命殺と同じ段に置いていた。
     expect(oldStatusScore("NOISE_GETSUMEI")).toBe(
@@ -398,7 +398,7 @@ describe("状態 → 点", () => {
       NOISE_GETSUMEI: [20, 40],
       NOISE_GETSUTEKI: [20, 40],
       NOISE_TENCHU: [50, 40],
-      NOISE_DOYOU: [50, 40],
+      NOISE_DOYOU: [50, 10], // 専用状態も五黄殺と同じ大凶の点。
     });
   });
 

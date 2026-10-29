@@ -469,6 +469,7 @@ export async function GET(request: Request) {
           case "NOISE_GETSUTEKI":
             score = 20;
             break;
+          case "NOISE_DOYOU":
           case "NOISE_GOU":
           case "NOISE_ANKEN":
           case "NOISE_HA":

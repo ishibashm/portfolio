@@ -169,7 +169,7 @@ describe("三盤吉は三つとも吉であること", () => {
 
   it("土用殺の日は三盤吉に混ざらない（最終の判定を外さない）", () => {
     // 土用殺は年・月・日のどの層にも出ず、`calculateVectorCollision` の
-    // 最後に最終だけを NOISE_GOU に上書きする。条件から最終を落とすと、
+    // 最後に最終だけを NOISE_DOYOU に上書きする。条件から最終を落とすと、
     // 三盤とも OPTIMAL のこの日が三盤吉に混ざってしまう。
     //
     // 上の人（三碧・午未空亡）には 2026〜2027 年に該当日が無いので、
@@ -186,7 +186,8 @@ describe("三盤吉は三つとも吉であること", () => {
       "OPTIMAL",
       "OPTIMAL",
     ]);
-    expect(v.finalStatus).toBe("NOISE_GOU");
+    // 土用殺を五黄殺と区別する専用状態に変更。三盤吉ではない点は同じ。
+    expect(v.finalStatus).toBe("NOISE_DOYOU");
     expect(v.isTripleAuspicious).toBe(false);
     expect(gradeVerdict(v)).toBe("X");
   });

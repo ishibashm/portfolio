@@ -1,3 +1,4 @@
+// 2026-10-30: 土用殺を五黄殺と誤表示しないため、専用ステータスを期待する。
 import { describe, expect, it } from "vitest";
 import {
   calculateVectorCollision,
@@ -69,7 +70,7 @@ describe("土用殺の方位は季節の対応表どおり", () => {
       expect(
         c.finalVectors[dir as keyof typeof c.finalVectors],
         `${date.toISOString()}（${type}）の ${dir}`,
-      ).toBe("NOISE_GOU");
+      ).toBe("NOISE_DOYOU");
     }
 
     // 空回りしていないこと。土用は年 4 回・各 18 日前後あり、

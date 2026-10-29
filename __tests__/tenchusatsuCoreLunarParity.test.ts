@@ -24,6 +24,10 @@ describe("tenchusatsuForCivilDate は lunar-javascript の日柱と一致する"
     );
     for (const [y, m, d] of dates) {
       const lunar = Solar.fromYmdHms(y, m, d, 12, 0, 0).getLunar();
+      expect(
+        tenchusatsuForCivilDate(y, m, d).tenchusatsu.voidBranches.join(""),
+        `${y}-${m}-${d} 空亡`,
+      ).toBe(lunar.getDayXunKong());
       expect(tenchusatsuForCivilDate(y, m, d).ganZhi, `${y}-${m}-${d}`).toBe(
         lunar.getDayInGanZhi(),
       );

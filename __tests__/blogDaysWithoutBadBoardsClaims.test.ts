@@ -137,7 +137,8 @@ describe("記事: 段階の決まり方の表", () => {
     );
     expect(doyou.length).toBeGreaterThan(0);
     for (const v of doyou) {
-      expect(v.finalStatus).toBe("NOISE_GOU");
+      // 土用殺は五黄殺と区別する専用状態に変更。凶の重さは維持する。
+      expect(v.finalStatus).toBe("NOISE_DOYOU");
       expect(gradeVerdict(v)).toBe("X");
     }
   });

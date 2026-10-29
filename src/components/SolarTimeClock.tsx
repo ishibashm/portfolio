@@ -122,7 +122,10 @@ export function formatCsvDetail(value: unknown): string {
  * /api/relocation/nba-evaluate）は日本時間として読むので、揃えないと
  * 同じ人の画面とサーバで答えが割れる。
  */
-function parseSafeDate(dateStr: string | null | undefined, fallback: Date = new Date()): Date {
+function parseSafeDate(
+  dateStr: string | null | undefined,
+  fallback: Date = new Date(),
+): Date {
   if (!dateStr) return fallback;
   const d = parseJapanDateTime(dateStr);
   if (d instanceof Date && !isNaN(d.getTime())) {
@@ -192,14 +195,17 @@ const ConsultPanel = dynamic(() => import("./home/ConsultPanel"), {
 // 中身は既に計算済みの値を並べるだけで軽い。
 import HomePortal from "./home/HomePortal";
 
-const DestinationMapPanel = dynamic(() => import("./home/DestinationMapPanel"), {
-  ssr: false,
-  loading: () => (
-    <div className="w-full h-40 flex items-center justify-center font-mono text-xs text-stone-600">
-      [ 地図とヒートマップを読込中... ]
-    </div>
-  ),
-});
+const DestinationMapPanel = dynamic(
+  () => import("./home/DestinationMapPanel"),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="w-full h-40 flex items-center justify-center font-mono text-xs text-stone-600">
+        [ 地図とヒートマップを読込中... ]
+      </div>
+    ),
+  },
+);
 
 const ScorecardPanel = dynamic(() => import("./home/ScorecardPanel"), {
   ssr: false,
@@ -211,7 +217,6 @@ const ScorecardPanel = dynamic(() => import("./home/ScorecardPanel"), {
 });
 
 // CosmicCalendar は /calendar に一本化したので、ここでは読み込まない。
-
 
 /**
  * 時期のヒートマップ 1 列ぶん。30 日表示は 1 日、12 ヶ月表示は 1 ヶ月。
@@ -377,6 +382,7 @@ const filterLayerData = (
   };
 
   const combineStatuses = (list: string[]): string => {
+    if (list.includes("NOISE_DOYOU")) return "NOISE_DOYOU";
     if (list.includes("NOISE_GOU")) return "NOISE_GOU";
     if (list.includes("NOISE_ANKEN")) return "NOISE_ANKEN";
     if (list.includes("NOISE_HONMEI")) return "NOISE_HONMEI";
@@ -405,7 +411,8 @@ const filterLayerData = (
         }
       });
       if (dir === honmeiD) resList.push("NOISE_HONMEI");
-      else if (honmeiD && dir === getOpposite(honmeiD)) resList.push("NOISE_TEKI");
+      else if (honmeiD && dir === getOpposite(honmeiD))
+        resList.push("NOISE_TEKI");
       else {
         const optStatus = getOptimalStatus(activeBoard ? activeBoard[dir] : 1);
         if (optStatus !== "SAFE") resList.push(optStatus);
@@ -427,6 +434,7 @@ const filterLayerData = (
           }
         });
       }
+      if (status === "NOISE_DOYOU") resList.push("NOISE_DOYOU");
       if (isGou) resList.push("NOISE_GOU");
       if (isAnken) resList.push("NOISE_ANKEN");
       if (status === "NOISE_HA") resList.push("NOISE_HA");
@@ -520,18 +528,11 @@ function jstWeekday(d: Date): number {
 }
 
 export const SolarTimeClock = () => {
-
-
   const [baseTime, setBaseTime] = useState<Date | null>(null);
   const [ephemerisTime, setEphemerisTime] = useState<Date | null>(null);
   const [solarData, setSolarData] = useState<SolarTimeResult | null>(null);
   const [activeTab, setActiveTab] = useState<
-    | "portal"
-    | "profile"
-    | "destination"
-    | "timing"
-    | "consult"
-    | "scorecard"
+    "portal" | "profile" | "destination" | "timing" | "consult" | "scorecard"
   >("portal");
 
   // 前回開いていたタブを覚えておく。プロフィールは初回設定用で、
@@ -729,8 +730,9 @@ export const SolarTimeClock = () => {
   const [directionFilterMode, setDirectionFilterMode] =
     useState<DashboardFilterMode>("composite");
   /** ヒートマップで押した升目。押した列と方位を覚えて詳細を出す。 */
-  const [selectedTrendCell, setSelectedTrendCell] =
-    useState<TrendCell | null>(null);
+  const [selectedTrendCell, setSelectedTrendCell] = useState<TrendCell | null>(
+    null,
+  );
 
   const [targetLat, setTargetLat] = useState<number | null>(null);
   const [targetLon, setTargetLon] = useState<number | null>(null);
@@ -1145,11 +1147,15 @@ export const SolarTimeClock = () => {
     return isLoaded;
   }, []);
 
-  const handleLoadConfig = React.useCallback(async (silent = true) => {
-    const localFound = await loadFromLocal();
-    if (!localFound && !silent) alert("保存された設定が見つかりませんでした。");
-    return localFound;
-  }, [loadFromLocal]);
+  const handleLoadConfig = React.useCallback(
+    async (silent = true) => {
+      const localFound = await loadFromLocal();
+      if (!localFound && !silent)
+        alert("保存された設定が見つかりませんでした。");
+      return localFound;
+    },
+    [loadFromLocal],
+  );
 
   useEffect(() => {
     handleLoadConfig(true);
@@ -1384,14 +1390,7 @@ export const SolarTimeClock = () => {
       };
     }
     return null;
-  }, [
-    targetLat,
-    targetLon,
-    lat,
-    lon,
-    geoData?.declination,
-    useClassicalBoard,
-  ]);
+  }, [targetLat, targetLon, lat, lon, geoData?.declination, useClassicalBoard]);
 
   /**
    * 目的地の方位。地図で選んだ地点から決まる。
@@ -1528,8 +1527,7 @@ export const SolarTimeClock = () => {
 
         if (targetDirInfo) {
           // 判定は真北（上の targetDirection の注記と同じ理由）。
-          const s =
-            vectorData.finalVectors[targetDirInfo.trueDirection];
+          const s = vectorData.finalVectors[targetDirInfo.trueDirection];
           if (s === "SAFE" || s === "OPTIMAL") {
             foundOffset = offset;
             break;
@@ -1990,7 +1988,16 @@ export const SolarTimeClock = () => {
   const scorecard30DaysForecast = React.useMemo(() => {
     if (forecastAnchorMs === null || !honmeiStar) return null;
     const anchor = new Date(forecastAnchorMs);
-    const dirs: ScorecardDirection[] = ["N", "NE", "E", "SE", "S", "SW", "W", "NW"];
+    const dirs: ScorecardDirection[] = [
+      "N",
+      "NE",
+      "E",
+      "SE",
+      "S",
+      "SW",
+      "W",
+      "NW",
+    ];
     const voidZodiacArray = voidZodiacOverride
       ? voidZodiacOverride.split("")
       : getPersonalVoidZodiac(parseSafeDate(birthDate));
@@ -2094,7 +2101,16 @@ export const SolarTimeClock = () => {
   const scorecard30DaysForecastAllModels = React.useMemo(() => {
     if (forecastAnchorMs === null || !honmeiStar) return null;
     const anchor = new Date(forecastAnchorMs);
-    const dirs: ScorecardDirection[] = ["N", "NE", "E", "SE", "S", "SW", "W", "NW"];
+    const dirs: ScorecardDirection[] = [
+      "N",
+      "NE",
+      "E",
+      "SE",
+      "S",
+      "SW",
+      "W",
+      "NW",
+    ];
     const voidZodiacArray = voidZodiacOverride
       ? voidZodiacOverride.split("")
       : getPersonalVoidZodiac(parseSafeDate(birthDate));
@@ -2360,7 +2376,16 @@ export const SolarTimeClock = () => {
 
   const scorecardHonmeiStarsForecast = React.useMemo(() => {
     if (!baseTime) return null;
-    const dirs: ScorecardDirection[] = ["N", "NE", "E", "SE", "S", "SW", "W", "NW"];
+    const dirs: ScorecardDirection[] = [
+      "N",
+      "NE",
+      "E",
+      "SE",
+      "S",
+      "SW",
+      "W",
+      "NW",
+    ];
     /*
       評価時刻は地図・30 日予報と同じ directionBoardInstant（その日の
       日本時間の正午に太陽時の補正を足したもの）。以前はここだけ
@@ -2702,7 +2727,16 @@ export const SolarTimeClock = () => {
         "伝統連動_時間ゲート調整",
       ];
       const rows: (string | number)[][] = [];
-      const dirs: ScorecardDirection[] = ["N", "NE", "E", "SE", "S", "SW", "W", "NW"];
+      const dirs: ScorecardDirection[] = [
+        "N",
+        "NE",
+        "E",
+        "SE",
+        "S",
+        "SW",
+        "W",
+        "NW",
+      ];
       const weekdays = ["日", "月", "火", "水", "木", "金", "土"];
 
       scorecard30DaysForecastAllModels.forEach((day) => {
@@ -2782,7 +2816,16 @@ export const SolarTimeClock = () => {
         "伝統連動_時間ゲート調整",
       ];
       const rows: (string | number)[][] = [];
-      const dirs: ScorecardDirection[] = ["N", "NE", "E", "SE", "S", "SW", "W", "NW"];
+      const dirs: ScorecardDirection[] = [
+        "N",
+        "NE",
+        "E",
+        "SE",
+        "S",
+        "SW",
+        "W",
+        "NW",
+      ];
 
       scorecardHonmeiStarsForecast.forEach((star) => {
         dirs.forEach((dir) => {
@@ -2907,7 +2950,6 @@ export const SolarTimeClock = () => {
       );
       if (!res.ok) throw new Error("エクスポートAPIエラー");
       const apiData = await res.json();
-
 
       const unifiedPayload = {
         ...apiData,
@@ -3537,8 +3579,12 @@ export const SolarTimeClock = () => {
         */
         const current = data.current;
         const drop = data.drop;
-        if (typeof current !== "number" || !Number.isFinite(current) ||
-            typeof drop !== "number" || !Number.isFinite(drop)) {
+        if (
+          typeof current !== "number" ||
+          !Number.isFinite(current) ||
+          typeof drop !== "number" ||
+          !Number.isFinite(drop)
+        ) {
           // 取れていない。0 を入れて「変化なし」と見せない。
           setPressureData(null);
           setPressureDrop(0);
@@ -3810,7 +3856,6 @@ export const SolarTimeClock = () => {
   const isDayVoid = personalVoidZodiac.includes(currentZodiac.dayZodiac);
   const isGlobalVoid = isYearVoid || isMonthVoid;
 
-
   // renderMatrixCell / TooltipCell は「相談」タブと一緒に home/ConsultPanel へ移した。
 
   if (!baseTime || !solarData)
@@ -3942,7 +3987,6 @@ export const SolarTimeClock = () => {
           </button>
         </div>
 
-
         {showHowItWorks && (
           <div className="w-full max-w-[1700px] animate-fade-in px-4">
             <div className="bg-stone-50 border border-stone-200 p-4 sm:p-6 shadow-2xl relative overflow-hidden flex flex-col gap-4 text-justify text-stone-600 text-xs sm:text-sm font-sans leading-relaxed">
@@ -3966,7 +4010,9 @@ export const SolarTimeClock = () => {
                     手順 2: 凶方位を除外する（年・月・日の重ね合わせ）
                   </strong>
                   <p className="text-xs sm:text-xs">
-                    「詳しく見る」の「目的地と地図」で、出発地から見た八方位を評価します。年盤・月盤・日盤の 3 つを同時に重ね、五黄殺や本命殺などの凶が 1 つでも含まれる方位を凶（赤）として外します。
+                    「詳しく見る」の「目的地と地図」で、出発地から見た八方位を評価します。年盤・月盤・日盤の
+                    3 つを同時に重ね、五黄殺や本命殺などの凶が 1
+                    つでも含まれる方位を凶（赤）として外します。
                   </p>
                 </div>
                 <div className="flex flex-col gap-2">
@@ -3982,7 +4028,8 @@ export const SolarTimeClock = () => {
                     手順 4: 動き出す日時を決める（刻と天中殺）
                   </strong>
                   <p className="text-xs sm:text-xs">
-                    「詳しく見る」の「時刻の刻」で、その日の 2 時間ごとの刻を見ます。天中殺の刻を避け、時盤の九星があなたの本命星と相生・比和にあたる刻を「家を出る・契約印を押す」時間として選びます。刻の境目は出発地の真太陽時で切ります。日ごとの一覧は「時期の分析」の頁へ。
+                    「詳しく見る」の「時刻の刻」で、その日の 2
+                    時間ごとの刻を見ます。天中殺の刻を避け、時盤の九星があなたの本命星と相生・比和にあたる刻を「家を出る・契約印を押す」時間として選びます。刻の境目は出発地の真太陽時で切ります。日ごとの一覧は「時期の分析」の頁へ。
                   </p>
                 </div>
               </div>
@@ -4048,61 +4095,61 @@ export const SolarTimeClock = () => {
               自然に収まるので、並べるとちょうど埋まる。
             */}
             <div className="w-full grid grid-cols-1 xl:grid-cols-2 gap-6 items-start">
-            {/* Hardware Init & Anchor Config */}
-            <PersonalProfileConfig
-              birthDate={birthDate}
-              /* 欄を直した時点で「利用者の値」になる（上の註） */
-              setBirthDate={(v) => {
-                setBirthDate(v);
-                setBirthDateOwned(true);
-              }}
-              birthLat={birthLat}
-              setBirthLat={(v) => {
-                setBirthLat(v);
-                setBirthPlaceOwned(true);
-              }}
-              birthLon={birthLon}
-              setBirthLon={(v) => {
-                setBirthLon(v);
-                setBirthPlaceOwned(true);
-              }}
-              /* 控えに出生地を書いてよいか（初期値の東京駅を書かない） */
-              birthPlaceOwned={birthPlaceOwned}
-              baseLat={lat}
-              /* 欄を直した時点で「利用者の値」になる（上の註） */
-              setBaseLat={(v) => {
-                setLat(v);
-                setBasePlaceOwned(true);
-              }}
-              baseLon={lon}
-              setBaseLon={(v) => {
-                setLon(v);
-                setBasePlaceOwned(true);
-              }}
-              onSave={handleSaveConfig}
-              isSaving={isSaving}
-              onLoad={() => handleLoadConfig(false)}
-              onGetGPS={handleGetGPS}
-              voidZodiacOverride={voidZodiacOverride}
-              setVoidZodiacOverride={setVoidZodiacOverride}
-              baselineHrvMean={baselineHrvMean}
-              setBaselineHrvMean={setBaselineHrvMean}
-              baselineHrvStd={baselineHrvStd}
-              setBaselineHrvStd={setBaselineHrvStd}
-              baselineGsrMean={baselineGsrMean}
-              setBaselineGsrMean={setBaselineGsrMean}
-              baseSyncTimestamp={baseSyncTimestamp}
-              setBaseSyncTimestamp={setBaseSyncTimestamp}
-              usePsychologyScorer={usePsychologyScorer}
-              setUsePsychologyScorer={setUsePsychologyScorer}
-              useKigakuScorer={useKigakuScorer}
-              setUseKigakuScorer={setUseKigakuScorer}
-              useAstrologyScorer={useAstrologyScorer}
-              setUseAstrologyScorer={setUseAstrologyScorer}
-              derivedHonmeiStar={honmeiStar}
-              derivedPersonalVoid={personalVoidZodiac}
-            />
-            <TenchusatsuVisualizer birthDateStr={birthDate} />
+              {/* Hardware Init & Anchor Config */}
+              <PersonalProfileConfig
+                birthDate={birthDate}
+                /* 欄を直した時点で「利用者の値」になる（上の註） */
+                setBirthDate={(v) => {
+                  setBirthDate(v);
+                  setBirthDateOwned(true);
+                }}
+                birthLat={birthLat}
+                setBirthLat={(v) => {
+                  setBirthLat(v);
+                  setBirthPlaceOwned(true);
+                }}
+                birthLon={birthLon}
+                setBirthLon={(v) => {
+                  setBirthLon(v);
+                  setBirthPlaceOwned(true);
+                }}
+                /* 控えに出生地を書いてよいか（初期値の東京駅を書かない） */
+                birthPlaceOwned={birthPlaceOwned}
+                baseLat={lat}
+                /* 欄を直した時点で「利用者の値」になる（上の註） */
+                setBaseLat={(v) => {
+                  setLat(v);
+                  setBasePlaceOwned(true);
+                }}
+                baseLon={lon}
+                setBaseLon={(v) => {
+                  setLon(v);
+                  setBasePlaceOwned(true);
+                }}
+                onSave={handleSaveConfig}
+                isSaving={isSaving}
+                onLoad={() => handleLoadConfig(false)}
+                onGetGPS={handleGetGPS}
+                voidZodiacOverride={voidZodiacOverride}
+                setVoidZodiacOverride={setVoidZodiacOverride}
+                baselineHrvMean={baselineHrvMean}
+                setBaselineHrvMean={setBaselineHrvMean}
+                baselineHrvStd={baselineHrvStd}
+                setBaselineHrvStd={setBaselineHrvStd}
+                baselineGsrMean={baselineGsrMean}
+                setBaselineGsrMean={setBaselineGsrMean}
+                baseSyncTimestamp={baseSyncTimestamp}
+                setBaseSyncTimestamp={setBaseSyncTimestamp}
+                usePsychologyScorer={usePsychologyScorer}
+                setUsePsychologyScorer={setUsePsychologyScorer}
+                useKigakuScorer={useKigakuScorer}
+                setUseKigakuScorer={setUseKigakuScorer}
+                useAstrologyScorer={useAstrologyScorer}
+                setUseAstrologyScorer={setUseAstrologyScorer}
+                derivedHonmeiStar={honmeiStar}
+                derivedPersonalVoid={personalVoidZodiac}
+              />
+              <TenchusatsuVisualizer birthDateStr={birthDate} />
             </div>
           </div>
         )}

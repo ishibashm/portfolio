@@ -115,7 +115,7 @@ describe("物件検索の状態 → 点", () => {
     expect(oldBaseScore("OPTIMAL_REGULAR")).toBeLessThan(oldBaseScore("SAFE"));
   });
 
-  it("旧実装と違うのは 吉方位 と 月命殺・月命的殺 だけ", () => {
+  it("旧実装と違うのは 吉方位・月命殺・月命的殺と専用化した土用殺", () => {
     const changed: Record<string, [number, number]> = {};
     for (const s of STATUSES) {
       const before = Math.max(0, Math.min(100, oldBaseScore(s)));
@@ -125,6 +125,7 @@ describe("物件検索の状態 → 点", () => {
       if (before - adj !== after) changed[s] = [before - adj, after];
     }
     expect(changed).toEqual({
+      NOISE_DOYOU: [50, 10], // 土用殺は専用状態でも大凶の点を保つ。
       OPTIMAL_REGULAR: [50, 90],
       NOISE_GETSUMEI: [20, 40],
       NOISE_GETSUTEKI: [20, 40],

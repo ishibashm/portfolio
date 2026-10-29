@@ -43,6 +43,7 @@ export const getStatusScore = (status: string) => {
   if (status === "SAFE") return 80;
   if (status === "WARNING") return 60;
   if (
+    status.startsWith("NOISE_DOYOU") ||
     status.startsWith("NOISE_GOU") ||
     status.startsWith("NOISE_ANKEN") ||
     status.startsWith("NOISE_HA")

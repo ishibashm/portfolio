@@ -114,6 +114,11 @@ export const STATUS_INFO: Record<
     kind: "neutral",
     note: "条件によって評価が変わる方位です。",
   },
+  NOISE_DOYOU: {
+    label: "土用殺",
+    kind: "bad",
+    note: "土用の期間はこの方位を避けるとされます（間日を除く）。",
+  },
   NOISE_GOU: {
     label: "五黄殺",
     kind: "bad",

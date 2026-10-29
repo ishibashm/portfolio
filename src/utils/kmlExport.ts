@@ -61,6 +61,7 @@ function generateCircleCoords(
 }
 
 function getStatusLabel(status: string): string {
+  if (status === "NOISE_DOYOU") return "土用殺";
   if (status === "NOISE_GOU") return "五黄";
   if (status === "NOISE_ANKEN") return "暗剣";
   if (status === "NOISE_HA") return "破";
@@ -271,6 +272,10 @@ export function generateMagneticMapKML(
       <LineStyle><color>ff00a5ff</color><width>2</width></LineStyle>
       <PolyStyle><color>6600a5ff</color></PolyStyle>
     </Style>
+    <Style id="style_NOISE_DOYOU">
+      <LineStyle><color>ff4444ef</color><width>2</width></LineStyle>
+      <PolyStyle><color>994444ef</color></PolyStyle>
+    </Style>
     <Style id="style_NOISE_GOU">
       <LineStyle><color>ff4444ef</color><width>2</width></LineStyle>
       <PolyStyle><color>994444ef</color></PolyStyle>
@@ -341,6 +346,10 @@ export function generateMagneticMapKML(
     <Style id="label_WARNING">
       <IconStyle><scale>0</scale></IconStyle>
       <LabelStyle><color>ff00a5ff</color><scale>1.2</scale></LabelStyle>
+    </Style>
+    <Style id="label_NOISE_DOYOU">
+      <IconStyle><scale>0</scale></IconStyle>
+      <LabelStyle><color>ff4444ef</color><scale>1.3</scale></LabelStyle>
     </Style>
     <Style id="label_NOISE_GOU">
       <IconStyle><scale>0</scale></IconStyle>
