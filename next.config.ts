@@ -3,7 +3,15 @@ import type { NextConfig } from "next";
 const nextConfig: NextConfig = {
   output: "standalone",
   // Native Node API handlers keep oidc-provider's request/cookie semantics.
-  serverExternalPackages: ["oidc-provider"],
+  serverExternalPackages: [
+    "oidc-provider",
+    "puppeteer-core",
+    "@sparticuz/chromium",
+  ],
+  // 公開MCPの任意取得で使うブラウザーを standalone に含める。
+  outputFileTracingIncludes: {
+    "/api/mcp": ["./node_modules/@sparticuz/chromium/bin/**"],
+  },
   async rewrites() {
     return [
       {

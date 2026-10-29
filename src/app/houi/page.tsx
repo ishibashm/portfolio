@@ -18,6 +18,24 @@ import { PREF_EDITORIAL } from "@/lib/prefEditorial";
 import { ActiveProfileBadge } from "@/components/profile/ActiveProfileBadge";
 import { coreRouteLabel } from "@/lib/siteStructure";
 import { pageOpenGraph } from "@/lib/siteUrl";
+import { BreadcrumbJsonLd, FaqJsonLd } from "@/components/JsonLd";
+
+// 頁に出ている文言（リード文・用語について）だけで組む。
+const HOUI_FAQ = [
+  {
+    question: "本命星はどうやって調べますか？",
+    answer:
+      "引越しの方位は、自分の本命星と、その年の年盤で決まります。まず生まれ年から本命星を確認し、その年の方位一覧に進んでください。",
+  },
+  {
+    question: "五黄殺とは何ですか？",
+    answer: "五黄土星が回座する方位。最も避けるべき方位とされます。",
+  },
+  {
+    question: "暗剣殺とは何ですか？",
+    answer: "五黄殺の正反対にあたる方位です。",
+  },
+] as const;
 
 /**
  * 方位コンテンツの入口。
@@ -73,6 +91,8 @@ export default function Page() {
           9 つの星の札と年ごとの一覧なので、記事の読み幅で止める理由が無い。
           /guide の索引と同じ 1700px。記事側（/houi/[year]/[star]）は本文が
           長いので 820px のまま。行長は段落の max-w-[70ch] で守る。 */}
+      <BreadcrumbJsonLd items={[{ name: "吉方位", path: "/houi" }]} />
+      <FaqJsonLd items={HOUI_FAQ} />
       <article className="relative max-w-[1700px] mx-auto px-5 py-12">
         {/* 金の羅盤の線画（飾り）。広い画面だけ、見出しと重ならない右上に。 */}
         <CompassDial
@@ -87,38 +107,32 @@ export default function Page() {
           で決まります。まず生まれ年から本命星を確認し、その年の方位一覧に進んでください。
         </p>
 
-        <p className="mt-5 text-sm">
-          <Link href="/ask" className="underline text-slate-600">
-            エージェントに案内してもらう
-          </Link>
-        </p>
-
-        <p className="mt-3 text-sm">
-          <Link href="/houi/3d" className="underline text-slate-600">
-            住所から街の立体と方位を見る
-          </Link>
-        </p>
-
-        <section className="mt-10">
+        <section id="honmei-lookup" className="mt-6 scroll-mt-6">
           <h2 className="text-xl font-bold font-serif border-b border-slate-300 pb-2">
             生まれ年から本命星を調べる
           </h2>
-          <p className="text-xs text-slate-600 mt-3 leading-relaxed">
-            九星気学の一年は<b>立春</b>
-            で切り替わります（2月3日〜4日ごろ）。切り替わるのは
-            <b>その日の 0 時ではなく、立春の瞬間</b>
-            です。時刻は年ごとに違います（2026年は2月4日
-            5時1分ごろ、2027年は2月4日 10時46分ごろ）。
-            1月1日から立春前までに生まれた方は、<b>前年</b>の本命星になります。
-            <b>立春の日に生まれた方は、生まれた時刻で分かれます。</b>
-          </p>
           {/* 生年月日で引く早見。立春前の生まれの繰り下げを自動で行うので、
-              上の断りを読み飛ばしても 1 年ずれない。星の名前と行き先の年は
+              注釈を読み飛ばしても 1 年ずれない。星の名前と行き先の年は
               props で渡す（client 側に kigakuContent → ephemerisEngine を
               値として乗せないため）。 */}
           {/* どのプロフィールで引くかを先に 1 行（利用者の指摘、2026-09-12） */}
-          <ActiveProfileBadge purpose="本命星と吉方位" className="mb-3" />
+          <ActiveProfileBadge purpose="本命星と吉方位" className="mt-3 mb-3" />
           <HonmeiLookup starNames={STAR_NAMES} linkYear={years[0]} />
+          <p className="mt-3 text-xs leading-relaxed text-slate-600">
+            ※年の切り替わりは立春の瞬間（2月3〜4日ごろ）です。立春前は前年の本命星となり、当日生まれは出生時刻で分かれます。
+          </p>
+          <p className="mt-5 text-sm">
+            <Link href="/ask" className="underline text-slate-600">
+              エージェントに案内してもらう
+            </Link>
+          </p>
+
+          <p className="mt-3 text-sm">
+            <Link href="/houi/3d" className="underline text-slate-600">
+              住所から街の立体と方位を見る
+            </Link>
+          </p>
+
           <p className="mt-8 text-xs font-bold text-slate-700">
             生まれ年から表で引く場合
           </p>
@@ -332,6 +346,12 @@ export default function Page() {
                   className="ml-1 underline hover:text-rose-600"
                 >
                   天中殺に引っ越ししても大丈夫か、影響と対処を読む
+                </Link>
+                <Link
+                  href="/blog/houi-and-tenchusatsu"
+                  className="ml-1 underline hover:text-rose-600"
+                >
+                  天中殺も気になる人はこちら（吉方位と天中殺の関係）
                 </Link>
               </dd>
             </div>

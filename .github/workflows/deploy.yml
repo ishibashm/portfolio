@@ -71,6 +71,7 @@ jobs:
           CRON_SECRET: ${{ secrets.CRON_SECRET }}
           # 未設定なら ENV_FILE の値を残す。AI の旗は vars 優先。
           MCP_AGENT_ENABLED: ${{ vars.MCP_AGENT_ENABLED || secrets.MCP_AGENT_ENABLED }}
+          RENTALS_ON_DEMAND_ENABLED: ${{ vars.RENTALS_ON_DEMAND_ENABLED }}
           MCP_AGENT_PROVIDER: ${{ vars.MCP_AGENT_PROVIDER }}
           XAI_AGENT_MODEL: ${{ vars.XAI_AGENT_MODEL }}
           MCP_AGENT_MODEL: ${{ vars.MCP_AGENT_MODEL }}
@@ -173,6 +174,9 @@ jobs:
           done
           if [ -n "$MCP_AGENT_ENABLED" ]; then
             echo "MCP_AGENT_ENABLED=$MCP_AGENT_ENABLED" >> .env
+          fi
+          if [ -n "$RENTALS_ON_DEMAND_ENABLED" ]; then
+            echo "RENTALS_ON_DEMAND_ENABLED=$RENTALS_ON_DEMAND_ENABLED" >> .env
           fi
           for name in MCP_AGENT_FREE_DAILY_REQUESTS MCP_AGENT_FREE_DAILY_TOKENS MCP_AGENT_DAILY_REQUESTS MCP_AGENT_DAILY_TOKENS MCP_AGENT_FALLBACK_MODEL; do
             if [ -n "${!name}" ]; then
@@ -305,6 +309,17 @@ jobs:
       # convert_env.py uses the final assignment; a later, reviewed rollout may remove this guard.
       - name: Keep personal MCP disabled until rollout
         run: echo 'MCP_PERSONAL_ENABLED=false' >> .env
+
+      # 賃貸MCPの任意取得（#1736）。nifty のサービス特約 第13条5号は
+      # スクレイピングを禁止しているが、オーナー判断で 2026-10-24 に有効化。
+      # 止めるときはこの行を false にする（convert_env.py は後勝ち）。
+      - name: Enable rentals on-demand fetch
+        run: echo 'RENTALS_ON_DEMAND_ENABLED=false' >> .env
+
+      # AIで飾る占いHTML（#1746）。PAID_APIS_DISABLED とは独立した専用フラグ。
+      # gemini-2.5-flash-lite 固定・1人1日2回・全体1日20回。止めるときは false にする。
+      - name: Enable AI fortune HTML
+        run: echo 'AI_FORTUNE_HTML_ENABLED=true' >> .env
 
       # Supabase の公開鍵は旧 anon JWT ではなく新しい publishable key を使う。
       # NEXT_PUBLIC_* はビルド時に埋め込まれるので、ビルド用 .env と env.json の両方に
@@ -479,6 +494,7 @@ jobs:
           # トラフィックを受け取り、ジョブだけが赤くなった（run
           # 34240938010）。指定しなかった項目は既存の値が引き継がれるため
           # 画面は無事だったが、**直したはずの設定が当たっていない**。
+          # Chromium が gVisor（第1世代）で落ちるため第2世代へ。オーナー承認が必要。
           gcloud run deploy "${{ env.SERVICE_NAME }}" \
             --project="${{ env.PROJECT_ID }}" \
             --region="${{ env.REGION }}" \
@@ -493,6 +509,7 @@ jobs:
             --min-instances=0 \
             --concurrency=80 \
             --cpu-boost \
+            --execution-environment=gen2 \
             --allow-unauthenticated \
             --quiet
 

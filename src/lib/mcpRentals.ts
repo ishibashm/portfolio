@@ -13,7 +13,7 @@
  * で除く。座標の有無は地図の掲載条件であって鮮度ではないので、ここでは
  * 要求しない。掲載期限を過ぎた行はリンクが切れるので、鮮度と一緒に除く。
  *
- * SELECT だけ。スクレイパーも有料 API も呼ばない。しるべ（有料の
+ * 検索時のみ、明示的な有効化で地域の掲載を更新する。有料 API は呼ばない。しるべ（有料の
  * 言語モデル）の道具一覧には入れない。
  */
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
@@ -33,6 +33,11 @@ import {
   distanceKmBetween,
 } from "@/utils/directionGeo";
 import { toJapanDateString } from "@/utils/japanDate";
+
+import {
+  refreshRentalsOnDemand,
+  rentalsOnDemandEnabled,
+} from "./rentalsOnDemand";
 
 const SOURCE = "Cloud Palette（https://cloud-palette.com）";
 
@@ -261,9 +266,9 @@ export function totalRent(row: Pick<StoredListing, "rent" | "managementFee">) {
  * ちょうど N 日まえは含めない。掲載期限ちょうどは含める（`>=`）。
  */
 export function listingIsFresh(row: StoredListing, now: Date): boolean {
-  const ageMs = now.getTime() - row.lastSeenAt.getTime();
-  /* ちょうど N 日まえは含めない（SQL の `>`）。未来の最終確認は新しいので含める。 */
-  if (!(ageMs < LIVE_LISTING_MAX_AGE_DAYS * 86_400_000)) return false;
+  if (!Number.isFinite(row.lastSeenAt.getTime())) return false;
+  const freshness = describeListingFreshness(row.lastSeenAt.toISOString(), now);
+  if (freshness.kind === "unknown" || freshness.kind === "empty") return false;
   if (row.expireDate && row.expireDate.getTime() < now.getTime()) return false;
   return true;
 }
@@ -549,7 +554,7 @@ function freshnessOf(latest: Date | null, now: Date) {
 }
 
 export function rentalToolNote(withOrigin: boolean): string {
-  const base = `最終確認から${LIVE_LISTING_MAX_AGE_DAYS}日を過ぎた掲載と、掲載期限を過ぎた掲載は除いています。駅名は保存していないため徒歩分だけ返します。連絡先・取込メール・利用者のお気に入りは返しません。スクレイピングと有料APIは呼んでいません。`;
+  const base = `最終確認から${LIVE_LISTING_MAX_AGE_DAYS}日を過ぎた掲載と、掲載期限を過ぎた掲載は除いています。駅名は保存していないため徒歩分だけ返します。連絡先・取込メール・利用者のお気に入りは返しません。有料APIは呼んでいません。`;
   if (!withOrigin) return base;
   return `${base}方位は起点から見た真北の伝統区分で、吉凶は含みません。吉凶は judge_directions を別に呼んでください。`;
 }
@@ -605,12 +610,23 @@ const flags = {
   paidApiCalled: false as const,
 };
 
+const emptySearchReasons: Record<string, string> = {
+  disabled: "オンデマンド取得は無効です。",
+  area_unknown_or_ambiguous:
+    "地域を一意に特定できません。都道府県と正式な市区町村名を指定してください。",
+  municipality_required: "オンデマンド取得には市区町村が必要です。",
+};
+
 export async function searchRentals(
   input: unknown,
   reader: RentalReader,
   now = new Date(),
 ) {
   const query = parseSearch(input);
+  const refresh = await refreshRentalsOnDemand(
+    query.filters.prefecture,
+    query.filters.municipality,
+  );
   const fetched = await reader.search({
     filters: query.filters,
     sort: query.sort,
@@ -625,6 +641,15 @@ export async function searchRentals(
     .map((row) => toPublic(row, query.origin));
   return {
     ...flags,
+    readOnly: !refresh.scrapingStarted,
+    scrapingStarted: refresh.scrapingStarted,
+    onDemand: refresh.status,
+    reason:
+      refresh.status === "fetch_failed"
+        ? "オンデマンド取得に失敗しました。保存済みの掲載を返します。"
+        : results.length === 0
+          ? `${emptySearchReasons[refresh.status] ?? "条件に合う掲載がありません。"}最終確認から${LIVE_LISTING_MAX_AGE_DAYS}日以上のデータと掲載期限切れは検索対象外です。`
+          : null,
     filters: query.filters,
     sort: query.sort,
     page: query.page,
@@ -1193,9 +1218,13 @@ export function registerPublicRentalTools(
     {
       title: "賃貸掲載を探す",
       description:
-        "公開されていた賃貸掲載を読み取りだけで検索します。都道府県・市区町村・家賃上限（既定は管理費込み）・間取りの完全一致・最小面積・駅徒歩・築年数。既定10件、最大20件、20ページまで。最終確認から30日を過ぎた掲載と掲載期限切れは除きます。駅名は保存していないため徒歩分だけです。連絡先・取込メール・お気に入りは返しません。スクレイピングと有料APIは呼びません。起点の緯度と経度を両方渡すと、真北の伝統区分で方位を添えます。吉凶は judge_directions です。",
+        "賃貸掲載を検索します。都道府県・市区町村・家賃上限（既定は管理費込み）・間取りの完全一致・最小面積・駅徒歩・築年数。既定10件、最大20件、20ページまで。最終確認から30日を過ぎた掲載と掲載期限切れは除きます。駅名は保存していないため徒歩分だけです。連絡先・取込メール・お気に入りは返しません。運営者が明示的に有効化した場合、市区町村ごとの24時間キャッシュがない場合に掲載を取得・保存します。有料APIは呼びません。起点の緯度と経度を両方渡すと、真北の伝統区分で方位を添えます。吉凶は judge_directions です。",
       inputSchema: searchShape,
-      annotations: readOnlyAnnotations,
+      annotations: {
+        ...readOnlyAnnotations,
+        readOnlyHint: !rentalsOnDemandEnabled(),
+        openWorldHint: rentalsOnDemandEnabled(),
+      },
     },
     async (input) => answer(() => searchRentals(input, reader)),
   );

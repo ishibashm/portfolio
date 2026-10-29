@@ -38,6 +38,7 @@ import { INDEXED_ROBOTS, NOINDEX_ROBOTS } from "@/lib/siteStructure";
 import { CityPortalLinks } from "@/components/portal/CityPortalLinks";
 import housingStats from "@/data/housingStats.json";
 import {
+  hasAreaHousingData,
   housingFiguresFor,
   rentDiffPct,
   type HousingSnapshotData,
@@ -86,7 +87,7 @@ export const dynamicParams = true;
 const HOUSING = housingStats as unknown as HousingSnapshotData;
 
 /*
-  **事前生成するのは、索引に載せる頁だけ。**残りは要求が来たときに作る。
+  **事前生成するのは、固有の編集文がある頁だけ。**残りは要求が来たときに作る。
 
   以前は AREAS 全件（実測 1,156 頁）をビルド時に焼いていた。イメージの
   実測 793 MB のうち **554 MB（7 割）がこの事前生成**で、デプロイ 1 回に
@@ -103,9 +104,9 @@ const HOUSING = housingStats as unknown as HousingSnapshotData;
   払うのは**その頁の初回アクセスだけ**が遅くなること（インスタンス
   ごとに 1 回）。得るのはイメージと保管料とビルド時間。
 
-  索引の判定（robots）と**同じ式**を使う。別々に書くと、文章を書いた
-  のに事前生成されない（またはその逆）という食い違いが静かに起きる。
-  __tests__/houiAreaPrerender.test.ts が両者の一致を見張る。
+  robots と sitemap は編集文と住宅統計の両方がある頁に絞っており、全頁をビルド時に
+  焼くと容量削減が失われる。事前生成だけは編集文のある頁に絞り、その他は
+  dynamicParams で初回アクセス時に生成する。
 */
 export function generateStaticParams() {
   return AREAS.filter((a) => AREA_EDITORIAL[a.code]).map((a) => ({
@@ -128,6 +129,9 @@ export async function generateMetadata({
     家賃（住宅・土地統計調査）を冒頭に出しているので、名乗りと中身は合う
   */
   const title = `${area.full}の家賃相場と、方位別に見た周辺の街`;
+  const hasLocalData =
+    Boolean(AREA_EDITORIAL[area.code]) &&
+    hasAreaHousingData(HOUSING, area.code);
   /* 文章のある頁は、その 1 段落目から作る。既定の 1 文は地名しか
      変わらず、索引に戻した頁どうしで description が同じになる */
   const description = `${area.full}の家賃相場（住宅・土地統計調査）。${metaDescriptionFromIntro(
@@ -139,27 +143,10 @@ export async function generateMetadata({
     description,
     alternates: { canonical: `/houi/area/${area.code}` },
     /*
-      索引には載せない。**道具としては残す**（follow は許す）。
-
-      このページは areaDirections.json の 1,022 市区町村を同じ雛形で
-      展開したもので、**地の文はどの URL でも同一**、変わるのは地名と
-      表の数字だけ。1 サイトで 1,022 URL は Google の言う
-      「スケーリングされたコンテンツ」に当たり、AdSense からも
-      「有用性の低いコンテンツ」としてサイト全体の配信を止められた。
-
-      Search Console の実測でも、この 1,022 ページは事実上索引されて
-      いない（878 URL のうち登録済み 78、検出only 811、表示回数ほぼ 0）。
-      **外しても失う流入が無い**ので、索引の対象を「1 ページ 1 記事」に
-      なっているページへ絞る。
-
-      吉方位からエリアを引く導線としては有用なので、リンクも中身も
-      そのまま残す。索引に戻すなら、市区町村ごとではなく都道府県ごとに
-      まとめて、各ページに固有の文章を書くのが先（docs 参照）。
-
-      **その「固有の文章を書いた頁」から 1 つずつ索引に戻す。**
-      areaEditorial に文章のある市区町村だけ index にする。雛形のまま
-      一括で戻すのではないので、上の「スケーリングされたコンテンツ」に
-      当たらない。表に無い市区町村は今までどおり noindex のまま。
+      固有の編集文があり、かつ住宅・土地統計調査の地域別データがある頁だけを index にする。
+      統計値のない頁も吉方位から街を探す道具として残すが、固有情報が
+      方位と地名だけになるため noindex, follow とする。sitemap も同じ
+      データ判定で絞り、検索エンジンへの指示を食い違わせない。
     */
     /*
       **頁側で robots を宣言すると layout.tsx の設定は丸ごと上書きされる。**
@@ -167,7 +154,7 @@ export async function generateMetadata({
       索引に戻した頁が `max-image-preview: large` を落としていた。
       定義は siteStructure に 1 つだけ置いてある。
     */
-    robots: AREA_EDITORIAL[area.code] ? INDEXED_ROBOTS : NOINDEX_ROBOTS,
+    robots: hasLocalData ? INDEXED_ROBOTS : NOINDEX_ROBOTS,
     openGraph: {
       images: ["/ogp.png"],
       title,

@@ -1,5 +1,5 @@
 # syntax=docker/dockerfile:1
-# Python も apt も入れない。**素の Node イメージだけ。**
+# Node slim を基本にする。runner だけ Chromium の NSS 用 SQLite を追加。
 #
 # ## なぜ外したか
 #
@@ -67,6 +67,16 @@ WORKDIR /app
 
 ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
+
+# @sparticuz/chromium 143 はこの値の 22.x を見て AL2023 同梱ライブラリを使う。
+# Cloud Run の slim イメージでも apt 不要にする。import 時に LD_LIBRARY_PATH を
+# 設定し、executablePath() で al2023.tar.br を /tmp/al2023/lib に展開する。
+ENV AWS_LAMBDA_JS_RUNTIME=nodejs22.x
+
+# NSS loads SQLite dynamically on the first HTTPS navigation. Without it Chromium
+# aborts with SIGTRAP and Puppeteer reports "Navigating frame was detached".
+RUN apt-get update && apt-get install -y --no-install-recommends libsqlite3-0 \
+  && rm -rf /var/lib/apt/lists/*
 
 RUN addgroup --system --gid 1001 nodejs
 RUN adduser --system --uid 1001 nextjs

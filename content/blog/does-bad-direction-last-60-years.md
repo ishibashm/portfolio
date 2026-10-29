@@ -6,9 +6,9 @@ updatedAt: 2026-08-20
 category: 引越しの考え方
 tags: 凶方位,60年,周期,年盤,干支,九星
 draft: false
-youtubeId: "H8lJJu4FPT4"
-videoUploadDate: "2026-10-17"
-videoDuration: "PT1M34S"
+youtubeId: "hqCmeuQ0od8"
+videoUploadDate: "2026-10-24"
+videoDuration: "PT3M50S"
 ---
 
 ## 先に結論
@@ -136,8 +136,6 @@ videoDuration: "PT1M34S"
 ## 凶方位が9年でどう巡るかは、どこで確かめられるか
 
 自分の本命星の凶方位が9年でどう巡るかは、[引越し時期を分析する](/relocation/timing)で全期間を並べて見られます。年盤の並びが9年で繰り返していることが、そのまま画面で確認できます。
-
-すでに凶方位へ移動してしまった場合の考え方は、[凶方位へ移動してしまった場合](/blog/moved-to-an-unlucky-direction)に書きました。運営者自身の移動（京都→名古屋）を計算した記録です。
 
 「あとから吉方位へ移れば相殺されるのか」という問いは、[75日後の吉方位への移動で、最初の凶方位は相殺される？](/blog/does-a-lucky-move-cancel-an-unlucky-move)で別に扱っています。
 

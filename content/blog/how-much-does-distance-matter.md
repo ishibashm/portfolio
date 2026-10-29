@@ -5,9 +5,9 @@ publishedAt: 2026-08-24
 category: データの見方
 tags: 方位,距離,近距離移動,ジオコーディング,九星気学,引越し
 draft: false
-youtubeId: "EWTdGewuva0"
-videoUploadDate: "2026-10-17"
-videoDuration: "PT1M26S"
+youtubeId: "Hqh1q4XBIRc"
+videoUploadDate: "2026-10-24"
+videoDuration: "PT3M34S"
 ---
 
 ## 先に結論

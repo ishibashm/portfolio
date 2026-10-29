@@ -114,6 +114,13 @@ export const CORE_ROUTES: CoreRoute[] = [
     group: "direction",
   },
   {
+    href: "/houi/today",
+    label: "今日の吉方位と時間",
+    summary:
+      "本命星別に今日・明日の日盤と、十二支ごとの時間帯の吉方位・凶方位を確認する。",
+    group: "direction",
+  },
+  {
     href: "/houi",
     label: "本命星と吉方位を調べる",
     summary:
@@ -135,6 +142,13 @@ export const CORE_ROUTES: CoreRoute[] = [
     label: "風水（八宅）で吉方位を調べる",
     summary:
       "生まれ年と性別から本命卦を引き、八宅風水の四吉方（生気・天医・延年・伏位）と四凶方（絶命・五鬼・六殺・禍害）がどの方位に当たるかを一覧で確認する。九星気学とは別の流派で、当サイトの判定には使っていない。",
+    group: "direction",
+  },
+  {
+    href: "/houi/tenchusatsu",
+    label: "天中殺と引越しの時期を調べる",
+    summary:
+      "生年月日から天中殺のグループと3年間の月別周期を確認し、方位・日取り・仮住まいを検討する。",
     group: "direction",
   },
   {

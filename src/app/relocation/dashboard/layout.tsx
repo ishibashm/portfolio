@@ -1,4 +1,9 @@
+import { Suspense } from "react";
+import { FortuneReport } from "@/components/fortune/FortuneReport";
 import type { Metadata } from "next";
+
+// Evaluate the server flag and authenticated report on each page request.
+export const dynamic = "force-dynamic";
 
 /**
  * ページ本体がクライアントコンポーネントで metadata を export できないため、
@@ -26,5 +31,12 @@ export default function DashboardLayout({
 }: {
   children: React.ReactNode;
 }) {
-  return children;
+  return (
+    <>
+      <Suspense fallback={null}>
+        <FortuneReport />
+      </Suspense>
+      {children}
+    </>
+  );
 }

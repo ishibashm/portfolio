@@ -482,8 +482,9 @@ describe("本物の記事に題を渡す", () => {
     */
     // 無極・太極・八卦の記事は問いの見出しがあり、題の有無にかかわらず +1。
     /* 2026-10-17: 占いの土台は4つ（four-foundations-of-eastern-divination）で +1 */
-    expect(count(false)).toBe(27);
-    expect(count(true)).toBe(32);
+    /* 2026-10-26: 方位と天中殺の記事（houi-and-tenchusatsu）で +1 */
+    expect(count(false)).toBe(28);
+    expect(count(true)).toBe(33);
   });
 
   it("題から作った問いは、記事の題そのもの（言い換えない）", () => {
