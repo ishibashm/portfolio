@@ -233,9 +233,9 @@ export function buildReminderEmail(input: {
   const label = input.direction
     ? DIRECTION_LABELS[input.direction as keyof typeof DIRECTION_LABELS]
     : "";
-  const subject = `【方位と住まいの手帖】${date}は${label ? `${label}への` : ""}吉日です`;
+  const subject = `【方位すまい手帖】${date}は${label ? `${label}への` : ""}吉日です`;
   const lines = [
-    "こんにちは、方位と住まいの手帖の案内役、しるべです。",
+    "こんにちは、方位すまい手帖の案内役、しるべです。",
     "",
     `ご依頼いただいた吉日のお知らせです。${input.leadDays > 0 ? `${input.leadDays}日後の` : "今日、"}${date}は、${label ? `${label}への` : ""}吉日の候補です。`,
     "",
@@ -249,7 +249,7 @@ export function buildReminderEmail(input: {
     `お知らせを止める：${input.unsubscribeUrl}`,
     `設定の確認・取り消し：${SITE_URL}/account`,
     `お問い合わせ：${SITE_URL}/contact`,
-    "送信者：Cloud Palette（方位と住まいの手帖）",
+    "送信者：Cloud Palette（方位すまい手帖）",
   ];
   const text = lines.join("\n");
   const escape = (value: string) =>
