@@ -320,7 +320,7 @@ export function ShirubeGuide({
       {step === "people" && (
         <>
           <ShirubeBubble>
-            <p>こんにちは。方位と住まいの手帖をご案内する、しるべです。</p>
+            <p>こんにちは。方位すまい手帖をご案内する、しるべです。</p>
             <p className="mt-2">
               {people.length
                 ? "まず、どなたのことを相談するか教えてください。"
