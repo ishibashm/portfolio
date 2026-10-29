@@ -2,7 +2,6 @@ import type { Metadata, Viewport } from "next";
 import { getAdsenseIds } from "@/lib/adsense";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
-import prisma from "@/lib/prisma";
 import {
   CORE_ROUTES,
   INDEXED_ROBOTS,
@@ -131,22 +130,24 @@ import { GlobalSidebar } from "@/components/GlobalSidebar";
 import { PageViewBeacon } from "@/components/PageViewBeacon";
 import { ChunkLoadRecovery } from "@/components/ChunkLoadRecovery";
 import { SerifFontLoader } from "@/components/SerifFontLoader";
-import { unstable_cache } from "next/cache";
 
-const getActiveTheme = unstable_cache(
-  async () => {
-    try {
-      return await prisma.agentTheme.findFirst({
-        orderBy: { createdAt: "desc" },
-      });
-    } catch (err) {
-      console.error("Failed to load active agent theme:", err);
-      return null;
-    }
-  },
-  ["active-agent-theme"],
-  { revalidate: 60, tags: ["agent-theme"] }
-);
+/*
+  サイトの配色・光量・角丸・書体は定数で持つ。
+
+  以前は AgentTheme テーブルの最新行を毎回（60 秒キャッシュ）読んでいたが、
+  サイト内からテーマを書き込む経路（ホームの AI 相談）はもう無く、DB に
+  残っていた最新行の値で固まっていた。ここではその値（2026-10-29 に本番の
+  HTML で確認した値）をそのまま写して、全ページのレイアウトから DB 参照を外す。
+  見た目は変わらない。地色・文字色は以前から固定。
+*/
+const SITE_THEME = {
+  accent: "#3b82f6",
+  glowColor: "#3b82f6",
+  glowIntensity: 0.5,
+  animationSpeed: "4s",
+  noiseOpacity: 0.05,
+  borderRadius: "8px",
+} as const;
 
 const jsonLdSchema = {
   "@context": "https://schema.org",
@@ -189,9 +190,6 @@ export default async function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  // Load active agent theme from Supabase via Prisma (cached for 60s)
-  const theme = await getActiveTheme();
-
   // 見本値のまま広告スクリプトを読み込まない。
   const adsense = getAdsenseIds();
 
@@ -203,23 +201,21 @@ export default async function RootLayout({
   // 出ていた。広告を載せるサイトで、訪問者の操作によって全体の見た目が変わるのは
   // 事故のもとなので、地色と文字色だけは受け付けない。
   //
-  // アクセント・光量・角丸・書体は引き続き反映する（壊れようがない範囲）。
+  // アクセント・光量・角丸・書体も上の SITE_THEME で固定する。
   const bg = "#faf7f3";
   const fg = "#292524";
-  const accent = theme?.accent || "#f43f5e";
-  const glowColor = theme?.glowColor || "#f43f5e";
-  const glowIntensity =
-    theme?.glowIntensity !== undefined ? theme.glowIntensity : 0.35;
-  const animationSpeed = theme?.animationSpeed || "4s";
-  const fontTheme = theme?.fontTheme || "sans";
-  const noiseOpacity =
-    theme?.noiseOpacity !== undefined ? theme.noiseOpacity : 0.03;
-  const borderRadius = theme?.borderRadius || "12px";
+  const {
+    accent,
+    glowColor,
+    glowIntensity,
+    animationSpeed,
+    noiseOpacity,
+    borderRadius,
+  } = SITE_THEME;
 
-  // Dynamic font-family binding。セリフ体テーマの変数クラスは
-  // SerifFontLoader が届いた時点で body に付ける。
-  const fontVarName =
-    fontTheme === "serif" ? "var(--font-serif)" : "var(--font-sans)";
+  // 書体はゴシック（sans）で固定。明朝の変数クラスは SerifFontLoader が
+  // 届いた時点で body に付ける（見出しなどの明朝用）。
+  const fontVarName = "var(--font-sans)";
 
   return (
     <html lang="ja">
