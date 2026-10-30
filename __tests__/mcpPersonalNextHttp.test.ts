@@ -63,6 +63,8 @@ describe.each([false, true])(
       const root = process.cwd();
       for (const path of [
         "src/middleware.ts",
+        "src/lib/apiGuard.ts",
+        "src/lib/requestSecurity.ts",
         "src/app/api/mcp/personal/route.ts",
         "src/lib/mcpDiscovery.ts",
         "src/lib/mcpRuntimeEntry.ts",

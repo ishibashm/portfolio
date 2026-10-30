@@ -16,11 +16,18 @@
  */
 import { WebStandardStreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/webStandardStreamableHttp.js";
 import { createMcpServer } from "@/lib/mcpServer";
-import { toLogMessage } from "@/lib/errorMessage";
+import { readBoundedJson, requestLimiter } from "@/lib/requestSecurity";
+
+const limit = requestLimiter(60, 1);
 
 export const dynamic = "force-dynamic";
 
 export async function POST(request: Request): Promise<Response> {
+  const denied = limit(request.headers);
+  if (denied) return denied;
+  const input = await readBoundedJson(request, 256 * 1024);
+  if (!input.ok) return input.response;
+  // The SDK validates the JSON-RPC envelope and each tool's existing Zod schema.
   const server = createMcpServer();
   const transport = new WebStandardStreamableHTTPServerTransport({
     sessionIdGenerator: undefined,
@@ -28,9 +35,9 @@ export async function POST(request: Request): Promise<Response> {
   });
   try {
     await server.connect(transport);
-    return await transport.handleRequest(request);
-  } catch (e) {
-    console.error(`[mcp] ${toLogMessage(e)}`);
+    return await transport.handleRequest(request, { parsedBody: input.value });
+  } catch {
+    console.error("[mcp] Internal error");
     return Response.json(
       {
         jsonrpc: "2.0",

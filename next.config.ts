@@ -2,6 +2,7 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   output: "standalone",
+  poweredByHeader: false,
   // Native Node API handlers keep oidc-provider's request/cookie semantics.
   serverExternalPackages: [
     "oidc-provider",
@@ -112,6 +113,35 @@ const nextConfig: NextConfig = {
   */
   async headers() {
     return [
+      {
+        source: "/:path*",
+        headers: [
+          { key: "Strict-Transport-Security", value: "max-age=31536000" },
+          { key: "X-Content-Type-Options", value: "nosniff" },
+          { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
+          { key: "X-Frame-Options", value: "DENY" },
+          {
+            key: "Permissions-Policy",
+            value:
+              "camera=(), microphone=(self), geolocation=(self), payment=(), usb=()",
+          },
+          {
+            key: "Content-Security-Policy",
+            value: "frame-ancestors 'none'; object-src 'none'; base-uri 'self'",
+          },
+          // Inventory map, OAuth, media and inline-script needs before enforcing.
+          {
+            key: "Content-Security-Policy-Report-Only",
+            value:
+              "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self' data:; connect-src 'self' https: wss:; media-src 'self' blob: https:; worker-src 'self' blob:; frame-src https:; frame-ancestors 'none'; object-src 'none'; base-uri 'self'; form-action 'self'",
+          },
+        ],
+      },
+      {
+        source:
+          "/api/:path(user-config|profile-presets|ask-data|spots|saved-analyses|favorite-days|reminders|voice|admin|agent|local-media|ai|relocation)/:rest*",
+        headers: [{ key: "Cache-Control", value: "private, no-store" }],
+      },
       {
         source: "/prefectures.geojson",
         headers: [
