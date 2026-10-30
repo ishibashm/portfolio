@@ -63,11 +63,13 @@ These headers rely on the deployment's forwarding proxy configuration.
 
 | Environment variable            | Default |
 | ------------------------------- | ------: |
-| `AI_FORTUNE_DAILY_LIMIT`        |      20 |
-| `AI_FORTUNE_MONTHLY_LIMIT`      |     300 |
-| `AI_FORTUNE_MONTHLY_BUDGET_JPY` |     100 |
+| `AI_FORTUNE_DAILY_LIMIT`        |      50 |
+| `AI_FORTUNE_MONTHLY_LIMIT`      |    1000 |
+| `AI_FORTUNE_MONTHLY_BUDGET_JPY` |     300 |
 | `AI_FORTUNE_USER_DAILY_LIMIT`   |       2 |
 | `AI_FORTUNE_IP_DAILY_LIMIT`     |       4 |
+
+Defaults are option B (approved by the owner on 2026-10-30).
 
 Invalid/negative values use defaults; call limits must be safe integers. Budget
 accepts decimals. Zero disables calls. Day/month boundaries use JST. Each call

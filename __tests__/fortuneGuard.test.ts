@@ -18,16 +18,16 @@ beforeEach(() => {
   vi.stubEnv("AI_FORTUNE_HTML_ENABLED", "true");
 });
 afterEach(() => vi.unstubAllEnvs());
-it("parses conservative defaults, invalid values and zero", () => {
+it("parses option B defaults, invalid values and zero", () => {
   expect(fortuneLimits({})).toEqual({
-    daily: 20,
-    monthly: 300,
-    budget: 100,
+    daily: 50,
+    monthly: 1000,
+    budget: 300,
     user: 2,
     ip: 4,
   });
   for (const value of ["-1", "bad", "Infinity", "", "1.2"])
-    expect(fortuneLimits({ AI_FORTUNE_DAILY_LIMIT: value }).daily).toBe(20);
+    expect(fortuneLimits({ AI_FORTUNE_DAILY_LIMIT: value }).daily).toBe(50);
   expect(
     fortuneLimits({
       AI_FORTUNE_DAILY_LIMIT: "0",

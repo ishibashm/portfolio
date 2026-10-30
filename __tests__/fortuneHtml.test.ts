@@ -262,7 +262,7 @@ describe("flag, cache, limits and fallback", () => {
     vi.stubEnv("AI_FORTUNE_HTML_ENABLED", "true");
     const generate = vi.fn().mockResolvedValue("");
     const service = createFortuneReportService(generate);
-    for (let i = 0; i < 22; i++) await service(String(i), profile, now);
-    expect(generate).toHaveBeenCalledTimes(20);
+    for (let i = 0; i < 52; i++) await service(String(i), profile, now);
+    expect(generate).toHaveBeenCalledTimes(50);
   });
 });

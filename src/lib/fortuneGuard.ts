@@ -19,9 +19,9 @@ export function fortuneLimits(
       : fallback;
   };
   return {
-    daily: read("AI_FORTUNE_DAILY_LIMIT", 20),
-    monthly: read("AI_FORTUNE_MONTHLY_LIMIT", 300),
-    budget: read("AI_FORTUNE_MONTHLY_BUDGET_JPY", 100, false),
+    daily: read("AI_FORTUNE_DAILY_LIMIT", 50),
+    monthly: read("AI_FORTUNE_MONTHLY_LIMIT", 1000),
+    budget: read("AI_FORTUNE_MONTHLY_BUDGET_JPY", 300, false),
     user: read("AI_FORTUNE_USER_DAILY_LIMIT", 2),
     ip: read("AI_FORTUNE_IP_DAILY_LIMIT", 4),
   };
