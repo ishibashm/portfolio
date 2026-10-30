@@ -1,3 +1,10 @@
+import { rows, prismaMock } from "./fortunePrismaMock";
+import { beforeEach } from "vitest";
+vi.mock("@/lib/prisma", () => ({ default: prismaMock }));
+beforeEach(() => {
+  rows.length = 0;
+  vi.stubEnv("AI_FORTUNE_IP_DAILY_LIMIT", "100");
+});
 import { describe, expect, it, vi, afterEach } from "vitest";
 import {
   sanitizeFortuneHtml,
@@ -255,7 +262,7 @@ describe("flag, cache, limits and fallback", () => {
     vi.stubEnv("AI_FORTUNE_HTML_ENABLED", "true");
     const generate = vi.fn().mockResolvedValue("");
     const service = createFortuneReportService(generate);
-    for (let i = 0; i < 22; i++) await service(String(i), profile, now);
-    expect(generate).toHaveBeenCalledTimes(20);
+    for (let i = 0; i < 52; i++) await service(String(i), profile, now);
+    expect(generate).toHaveBeenCalledTimes(50);
   });
 });
