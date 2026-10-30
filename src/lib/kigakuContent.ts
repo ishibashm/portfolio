@@ -80,6 +80,8 @@ export function birthYearsThrough(currentYear: number): number[] {
   return Array.from({ length: currentYear - 1949 }, (_, index) => 1950 + index);
 }
 
+export const HOUI_BREADCRUMB_LABEL = "引越しの方位";
+
 export function currentYearInJapan(now = new Date()): number {
   return Number(
     new Intl.DateTimeFormat("en-US", {

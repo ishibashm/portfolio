@@ -7,6 +7,7 @@ import { DirectionEffects } from "@/components/houi/DirectionEffects";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import {
+  HOUI_BREADCRUMB_LABEL,
   STAR_NAMES,
   STARS,
   contentYears,
@@ -122,7 +123,7 @@ export default async function Page({
       />
       <BreadcrumbJsonLd
         items={[
-          { name: "方位の早見表", path: "/houi" },
+          { name: HOUI_BREADCRUMB_LABEL, path: "/houi" },
           { name: `${year}年 ${name}`, path },
         ]}
       />
@@ -130,7 +131,7 @@ export default async function Page({
       <article className="max-w-[1700px] mx-auto px-5 py-12">
         <nav className="text-xs text-slate-500 mb-6">
           <Link href="/houi" className="hover:text-rose-600">
-            方位の早見表
+            {HOUI_BREADCRUMB_LABEL}
           </Link>
           <span className="mx-2">/</span>
           <span>

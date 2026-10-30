@@ -21,6 +21,7 @@ import {
   siblingAreas,
 } from "@/lib/areaContent";
 import {
+  HOUI_BREADCRUMB_LABEL,
   DIRECTIONS,
   DIRECTION_LABELS,
   STAR_NAMES,
@@ -265,7 +266,7 @@ export default async function Page({
       />
       <BreadcrumbJsonLd
         items={[
-          { name: "方位の早見表", path: "/houi" },
+          { name: HOUI_BREADCRUMB_LABEL, path: "/houi" },
           { name: "エリア別", path: "/houi/area" },
           ...(prefCode
             ? [{ name: area.pref, path: `/houi/pref/${prefCode}` }]
@@ -277,7 +278,7 @@ export default async function Page({
       <article className="max-w-[1700px] mx-auto px-5 py-12">
         <nav className="text-xs text-slate-500 mb-6">
           <Link href="/houi" className="hover:text-rose-600">
-            方位の早見表
+            {HOUI_BREADCRUMB_LABEL}
           </Link>
           <span className="mx-2">/</span>
           <Link href="/houi/area" className="hover:text-rose-600">
