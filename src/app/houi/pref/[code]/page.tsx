@@ -30,7 +30,7 @@ import estatRent from "@/data/estatRent.json";
 import { officialRentsForPref } from "@/lib/officialRentForPlace";
 import { OfficialRentNote } from "@/components/houi/OfficialRentNote";
 import type { EstatRentSnapshot } from "@/utils/estatRent";
-import { DIRECTION_LABELS } from "@/lib/kigakuContent";
+import { HOUI_BREADCRUMB_LABEL, DIRECTION_LABELS } from "@/lib/kigakuContent";
 import { metaDescriptionFromIntro } from "@/lib/editorialMeta";
 import { editorialFirst } from "@/lib/editorialAreaLinks";
 import { AREA_EDITORIAL } from "@/lib/areaEditorial";
@@ -187,7 +187,7 @@ export default async function Page({
           方位の早見表 → エリア別 → 県 → 市区町村 で 1 本に繋がる。 */}
       <BreadcrumbJsonLd
         items={[
-          { name: "方位の早見表", path: "/houi" },
+          { name: HOUI_BREADCRUMB_LABEL, path: "/houi" },
           { name: "エリア別", path: "/houi/area" },
           { name: pref, path },
         ]}
@@ -195,7 +195,7 @@ export default async function Page({
       <article className="max-w-[1700px] mx-auto px-5 py-12">
         <nav className="text-xs text-slate-500 mb-6">
           <Link href="/houi" className="hover:text-rose-600">
-            方位の早見表
+            {HOUI_BREADCRUMB_LABEL}
           </Link>
           <span className="mx-2">/</span>
           <Link href="/houi/area" className="hover:text-rose-600">
