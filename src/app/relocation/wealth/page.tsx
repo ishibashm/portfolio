@@ -56,7 +56,6 @@ const LocationPickerInner = dynamic(
   },
 );
 
-
 /**
  * 方位 1 つぶんの所得の幅。散布図の置き換え（「スコア分布」）で使う。
  *
@@ -95,8 +94,7 @@ interface WealthMetadata {
   hasBirthDate?: boolean;
   /**
    * 土用殺の方位（最終判定の表示のときだけ入る。単盤は null）。
-   * 土用殺は最終を NOISE_GOU で上書きするので、これを照合しないと
-   * 「五黄殺」と表示してしまう（実際にそうなっていた）。
+   * 最終状態 NOISE_DOYOU と併せて、土用殺の理由を表示する。
    */
   doyouSatsuDirection?: string | null;
 }
@@ -146,9 +144,7 @@ export default function RegionalWealthPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const [targetDate, setTargetDate] = useState(
-    todayInJapan(),
-  );
+  const [targetDate, setTargetDate] = useState(todayInJapan());
   const [birthDate, setBirthDate] = useState("");
   const [baseLat, setBaseLat] = useState("");
   const [baseLon, setBaseLon] = useState("");
@@ -446,8 +442,7 @@ export default function RegionalWealthPage() {
       }
     } catch (err) {
       // 生の "Failed to fetch" をそのまま出さない。
-      if (requestId === fetchRequestIdRef.current)
-        setError(toUserMessage(err));
+      if (requestId === fetchRequestIdRef.current) setError(toUserMessage(err));
     } finally {
       if (requestId === fetchRequestIdRef.current) setLoading(false);
     }
@@ -927,7 +922,10 @@ export default function RegionalWealthPage() {
               </p>
               {/* どのプロフィールで方位を出しているかを頭に 1 行（利用者の
                   指摘、2026-09-12） */}
-              <ActiveProfileBadge purpose="方位と移住先の比較" className="mt-3" />
+              <ActiveProfileBadge
+                purpose="方位と移住先の比較"
+                className="mt-3"
+              />
               <div className="flex flex-wrap gap-2 mt-2">
                 <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium bg-blue-50 dark:bg-blue-50 text-blue-700 dark:text-blue-600 border border-blue-200 dark:border-blue-800">
                   <span className="w-1.5 h-1.5 rounded-full bg-blue-500"></span>
@@ -1009,153 +1007,152 @@ export default function RegionalWealthPage() {
               詳細設定（計算方式・北の基準・月相補正）
             </summary>
             <div className="mt-3 grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
-            <div>
-              <label className="block text-xs font-semibold text-stone-600 mb-1">
-                方位計算エンジン
-              </label>
-              <select
-                value={engineType}
-                onChange={(e) => {
-                  setEngineType(e.target.value);
-                  saveUnifiedConfig({
-                    use_classical_board: e.target.value === "classical",
-                  });
-                }}
-                className="w-full bg-gray-50 dark:bg-stone-50 border border-gray-300 dark:border-stone-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
-              >
-                <option value="physical">天体軌道モデル (Physical)</option>
-                <option value="classical">節切り暦モデル (Classical)</option>
-              </select>
-            </div>
-            <div>
-              <label className="block text-xs font-semibold text-stone-600 mb-1">
-                方位計算レイヤー
-              </label>
-              <select
-                value={layerMode}
-                onChange={(e) => {
-                  setLayerMode(e.target.value);
-                  saveUnifiedConfig({ layer_mode: e.target.value });
-                }}
-                className="w-full bg-gray-50 dark:bg-stone-50 border border-gray-300 dark:border-stone-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
-              >
-                <option value="final">統合ベクター (Final)</option>
-                <option value="year">Year (年盤のみ)</option>
-                <option value="month">Month (月盤のみ)</option>
-                <option value="day">Day (日盤のみ)</option>
-                {/* ホームの時間軸ボタンと同じ組み合わせ。設定は画面をまたいで
+              <div>
+                <label className="block text-xs font-semibold text-stone-600 mb-1">
+                  方位計算エンジン
+                </label>
+                <select
+                  value={engineType}
+                  onChange={(e) => {
+                    setEngineType(e.target.value);
+                    saveUnifiedConfig({
+                      use_classical_board: e.target.value === "classical",
+                    });
+                  }}
+                  className="w-full bg-gray-50 dark:bg-stone-50 border border-gray-300 dark:border-stone-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
+                >
+                  <option value="physical">天体軌道モデル (Physical)</option>
+                  <option value="classical">節切り暦モデル (Classical)</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-stone-600 mb-1">
+                  方位計算レイヤー
+                </label>
+                <select
+                  value={layerMode}
+                  onChange={(e) => {
+                    setLayerMode(e.target.value);
+                    saveUnifiedConfig({ layer_mode: e.target.value });
+                  }}
+                  className="w-full bg-gray-50 dark:bg-stone-50 border border-gray-300 dark:border-stone-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
+                >
+                  <option value="final">統合ベクター (Final)</option>
+                  <option value="year">Year (年盤のみ)</option>
+                  <option value="month">Month (月盤のみ)</option>
+                  <option value="day">Day (日盤のみ)</option>
+                  {/* ホームの時間軸ボタンと同じ組み合わせ。設定は画面をまたいで
                     共有されるので、ここに無いとホームで選んだ値が流れ込んだ
                     ときに選択が空に見える。API は組み合わせを合成して答える。 */}
-                <option value="year_month">年+月 (年盤と月盤)</option>
-                <option value="month_day">月+日 (月盤と日盤)</option>
-                <option value="year_day">年+日 (年盤と日盤)</option>
-              </select>
-            </div>
-            <div>
-              <label className="block text-xs font-semibold text-stone-600 mb-1">
-                北基準方位
-              </label>
-              <select
-                value={useTrueNorth ? "true" : "false"}
-                onChange={(e) => {
-                  const val = e.target.value === "true";
-                  setUseTrueNorth(val);
-                  saveUnifiedConfig({ use_true_north: val });
-                }}
-                className="w-full bg-gray-50 dark:bg-stone-50 border border-gray-300 dark:border-stone-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
-              >
-                <option value="false">磁北 (Magnetic)</option>
-                <option value="true">真北 (True)</option>
-              </select>
-            </div>
-            <div>
-              <label className="block text-xs font-semibold text-stone-600 mb-1">
-                月相タイミング補正
-              </label>
-              <select
-                value={lunarPhaseModifier ? "true" : "false"}
-                onChange={(e) => {
-                  const val = e.target.value === "true";
-                  setLunarPhaseModifier(val);
-                  saveUnifiedConfig({ lunar_phase_modifier: val });
-                }}
-                className="w-full bg-gray-50 dark:bg-stone-50 border border-gray-300 dark:border-stone-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
-              >
-                <option value="true">有効 (+/- 10点補正)</option>
-                <option value="false">無効 (古典評価)</option>
-              </select>
-            </div>
+                  <option value="year_month">年+月 (年盤と月盤)</option>
+                  <option value="month_day">月+日 (月盤と日盤)</option>
+                  <option value="year_day">年+日 (年盤と日盤)</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-stone-600 mb-1">
+                  北基準方位
+                </label>
+                <select
+                  value={useTrueNorth ? "true" : "false"}
+                  onChange={(e) => {
+                    const val = e.target.value === "true";
+                    setUseTrueNorth(val);
+                    saveUnifiedConfig({ use_true_north: val });
+                  }}
+                  className="w-full bg-gray-50 dark:bg-stone-50 border border-gray-300 dark:border-stone-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
+                >
+                  <option value="false">磁北 (Magnetic)</option>
+                  <option value="true">真北 (True)</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-stone-600 mb-1">
+                  月相タイミング補正
+                </label>
+                <select
+                  value={lunarPhaseModifier ? "true" : "false"}
+                  onChange={(e) => {
+                    const val = e.target.value === "true";
+                    setLunarPhaseModifier(val);
+                    saveUnifiedConfig({ lunar_phase_modifier: val });
+                  }}
+                  className="w-full bg-gray-50 dark:bg-stone-50 border border-gray-300 dark:border-stone-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
+                >
+                  <option value="true">有効 (+/- 10点補正)</option>
+                  <option value="false">無効 (古典評価)</option>
+                </select>
+              </div>
             </div>
             {/* 出生地は空亡（天中殺）の算出に使う。方位そのものは
                 出発地から決まるので、ここは既定のままの人が多い。 */}
             <div className="mt-4 pt-4 border-t border-gray-100 dark:border-stone-200">
-                {/* Birth Coordinates */}
-                <div className="flex flex-col gap-1 w-full md:w-auto">
-                  <div className="flex items-center justify-between">
-                    <label className="block text-xs font-semibold text-indigo-500 flex items-center gap-1">
-                      <Compass className="w-3 h-3" /> 出生地座標
-                    </label>
-                    <button
-                      onClick={() => setShowBirthMapPicker(!showBirthMapPicker)}
-                      className={`text-[10px] px-1.5 py-0.5 rounded border transition-colors ${showBirthMapPicker ? "bg-indigo-50 dark:bg-indigo-50 text-indigo-600 dark:text-indigo-600 border-indigo-200 dark:border-indigo-800" : "bg-gray-50 dark:bg-white text-stone-600 dark:text-stone-500 border-gray-200 dark:border-stone-200"}`}
-                    >
-                      {showBirthMapPicker ? "地図を閉じる" : "地図検索"}
-                    </button>
-                  </div>
-                  {showBirthMapPicker && (
-                    <div className="w-full h-48 mt-1 mb-2 relative z-20 rounded overflow-hidden border border-gray-300 dark:border-stone-300">
-                      <LocationPickerInner
-                        initialLat={Number(birthLat) || 35.6895}
-                        initialLon={Number(birthLon) || 139.6917}
-                        onSelect={(newLat: number, newLon: number) => {
-                          setBirthLat(newLat.toFixed(5));
-                          setBirthLon(newLon.toFixed(5));
-                          saveUnifiedConfig({
-                            birth_lat: newLat,
-                            birth_lon: newLon,
-                          });
-                        }}
-                      />
-                    </div>
-                  )}
-                  <div className="flex gap-2">
-                    <input
-                      type="number"
-                      value={birthLat || ""}
-                      onChange={(e) => {
-                        setBirthLat(e.target.value);
-                        saveUnifiedConfig({
-                          birth_lat: e.target.value
-                            ? parseFloat(e.target.value)
-                            : undefined,
-                        });
-                      }}
-                      className="w-24 bg-gray-50 dark:bg-stone-50 border border-gray-300 dark:border-stone-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
-                      placeholder="緯度: 35.6"
-                    />
-                    <input
-                      type="number"
-                      value={birthLon || ""}
-                      onChange={(e) => {
-                        setBirthLon(e.target.value);
-                        saveUnifiedConfig({
-                          birth_lon: e.target.value
-                            ? parseFloat(e.target.value)
-                            : undefined,
-                        });
-                      }}
-                      className="w-24 bg-gray-50 dark:bg-stone-50 border border-gray-300 dark:border-stone-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
-                      placeholder="経度: 139.6"
-                    />
-                  </div>
+              {/* Birth Coordinates */}
+              <div className="flex flex-col gap-1 w-full md:w-auto">
+                <div className="flex items-center justify-between">
+                  <label className="block text-xs font-semibold text-indigo-500 flex items-center gap-1">
+                    <Compass className="w-3 h-3" /> 出生地座標
+                  </label>
+                  <button
+                    onClick={() => setShowBirthMapPicker(!showBirthMapPicker)}
+                    className={`text-[10px] px-1.5 py-0.5 rounded border transition-colors ${showBirthMapPicker ? "bg-indigo-50 dark:bg-indigo-50 text-indigo-600 dark:text-indigo-600 border-indigo-200 dark:border-indigo-800" : "bg-gray-50 dark:bg-white text-stone-600 dark:text-stone-500 border-gray-200 dark:border-stone-200"}`}
+                  >
+                    {showBirthMapPicker ? "地図を閉じる" : "地図検索"}
+                  </button>
                 </div>
+                {showBirthMapPicker && (
+                  <div className="w-full h-48 mt-1 mb-2 relative z-20 rounded overflow-hidden border border-gray-300 dark:border-stone-300">
+                    <LocationPickerInner
+                      initialLat={Number(birthLat) || 35.6895}
+                      initialLon={Number(birthLon) || 139.6917}
+                      onSelect={(newLat: number, newLon: number) => {
+                        setBirthLat(newLat.toFixed(5));
+                        setBirthLon(newLon.toFixed(5));
+                        saveUnifiedConfig({
+                          birth_lat: newLat,
+                          birth_lon: newLon,
+                        });
+                      }}
+                    />
+                  </div>
+                )}
+                <div className="flex gap-2">
+                  <input
+                    type="number"
+                    value={birthLat || ""}
+                    onChange={(e) => {
+                      setBirthLat(e.target.value);
+                      saveUnifiedConfig({
+                        birth_lat: e.target.value
+                          ? parseFloat(e.target.value)
+                          : undefined,
+                      });
+                    }}
+                    className="w-24 bg-gray-50 dark:bg-stone-50 border border-gray-300 dark:border-stone-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
+                    placeholder="緯度: 35.6"
+                  />
+                  <input
+                    type="number"
+                    value={birthLon || ""}
+                    onChange={(e) => {
+                      setBirthLon(e.target.value);
+                      saveUnifiedConfig({
+                        birth_lon: e.target.value
+                          ? parseFloat(e.target.value)
+                          : undefined,
+                      });
+                    }}
+                    className="w-24 bg-gray-50 dark:bg-stone-50 border border-gray-300 dark:border-stone-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
+                    placeholder="経度: 139.6"
+                  />
+                </div>
+              </div>
             </div>
           </details>
 
           {/* Bottom Row: Coordinates & Action */}
           <div className="flex flex-col md:flex-row gap-4 justify-between items-end pt-4 border-t border-gray-100 dark:border-stone-200">
             <div className="flex flex-col md:flex-row gap-4 md:gap-8 items-end w-full md:w-auto">
-
               {/* Base Coordinates */}
               <div className="flex flex-col gap-1 w-full md:w-auto">
                 <div className="flex items-center justify-between">
@@ -1329,9 +1326,9 @@ export default function RegionalWealthPage() {
                   isRecommendedRelocationStatus(item.astrologyStatus),
                 ).length === 0 &&
                   !loading && (
-                  <div className="text-sm text-stone-600 text-center py-4">
-                    条件に合う安全な方位が見つかりませんでした
-                  </div>
+                    <div className="text-sm text-stone-600 text-center py-4">
+                      条件に合う安全な方位が見つかりませんでした
+                    </div>
                   )}
               </div>
             </div>
@@ -1381,7 +1378,7 @@ export default function RegionalWealthPage() {
                         }`}
                       >
                         {directionLabelShort(
-                          b.status === "NOISE_GOU" &&
+                          b.status === "NOISE_DOYOU" &&
                             b.dir === metadata?.doyouSatsuDirection
                             ? "NOISE_DOYOU"
                             : b.status,
@@ -1414,7 +1411,8 @@ export default function RegionalWealthPage() {
                   );
                 })}
                 <p className="mt-1 text-xs leading-relaxed text-stone-600">
-                  棒は一人当たり所得の幅（左端が最小・右端が最大）、縦線が中央値です。物差しは全方位で共通。吉凶は方位から決まるので方位ごとに 1 つです。
+                  棒は一人当たり所得の幅（左端が最小・右端が最大）、縦線が中央値です。物差しは全方位で共通。吉凶は方位から決まるので方位ごとに
+                  1 つです。
                 </p>
               </div>
             </div>
@@ -1443,7 +1441,9 @@ export default function RegionalWealthPage() {
               <p className="text-xs text-stone-600 dark:text-stone-500 mb-4 leading-relaxed">
                 各地域の「投資対効果（コスパ）」と「富裕度」は、下記の公的データと、当サイト独自の占術モデルによる方位スコア（アストロカートグラフィ・九星気学）を組み合わせて算出しています。
                 <strong className="font-bold">
-                  {"占術モデルと算出方法は当サイトのもので、公的データの提供元はこれらに一切関与していません。"}
+                  {
+                    "占術モデルと算出方法は当サイトのもので、公的データの提供元はこれらに一切関与していません。"
+                  }
                 </strong>
               </p>
 
@@ -1511,7 +1511,8 @@ export default function RegionalWealthPage() {
                       </svg>
                     </div>
                     <p className="text-xs text-stone-600 leading-tight">
-                      「コスパ指数」は 1人あたり平均所得 ÷ 中心部の地価（円/㎡）です。地価は中心部の公示地点から取っているため、市域が広い自治体ほど実態とずれます。
+                      「コスパ指数」は 1人あたり平均所得 ÷
+                      中心部の地価（円/㎡）です。地価は中心部の公示地点から取っているため、市域が広い自治体ほど実態とずれます。
                     </p>
                   </div>
                 </a>

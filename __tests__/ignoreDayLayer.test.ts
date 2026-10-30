@@ -9,7 +9,11 @@ const DIRS = ["N", "NE", "E", "SE", "S", "SW", "W", "NW"] as const;
 
 /** 2026-08-07 前後の実在しうる盤で、年・月・日に別々の星を置く。 */
 function boards(year: StarFrequency, month: StarFrequency, day: StarFrequency) {
-  return [generateBoard(year), generateBoard(month), generateBoard(day)] as const;
+  return [
+    generateBoard(year),
+    generateBoard(month),
+    generateBoard(day),
+  ] as const;
 }
 
 describe("12ヶ月表示の日盤除外 (ignoreDayLayer)", () => {
@@ -19,8 +23,16 @@ describe("12ヶ月表示の日盤除外 (ignoreDayLayer)", () => {
   it("日盤を外すと dayLayer がすべて SAFE になる", () => {
     const [y, m, d] = boards(6, 5, 7);
     const off = calculateVectorCollision(
-      personal, y, m, d, [], "MIGRATION", target, 139.6917,
-      undefined, true,
+      personal,
+      y,
+      m,
+      d,
+      [],
+      "MIGRATION",
+      target,
+      139.6917,
+      undefined,
+      true,
     );
     for (const dir of DIRS) {
       expect(off.dayLayer[dir], dir).toBe("SAFE");
@@ -30,12 +42,28 @@ describe("12ヶ月表示の日盤除外 (ignoreDayLayer)", () => {
   it("年盤・月盤の判定は日盤を外しても変わらない", () => {
     const [y, m, d] = boards(6, 5, 7);
     const on = calculateVectorCollision(
-      personal, y, m, d, [], "MIGRATION", target, 139.6917,
-      undefined, false,
+      personal,
+      y,
+      m,
+      d,
+      [],
+      "MIGRATION",
+      target,
+      139.6917,
+      undefined,
+      false,
     );
     const off = calculateVectorCollision(
-      personal, y, m, d, [], "MIGRATION", target, 139.6917,
-      undefined, true,
+      personal,
+      y,
+      m,
+      d,
+      [],
+      "MIGRATION",
+      target,
+      139.6917,
+      undefined,
+      true,
     );
     for (const dir of DIRS) {
       expect(off.yearLayer[dir], dir).toBe(on.yearLayer[dir]);
@@ -49,16 +77,27 @@ describe("12ヶ月表示の日盤除外 (ignoreDayLayer)", () => {
     // 出す原因。
     const [y, m, d] = boards(6, 5, 7);
     const off = calculateVectorCollision(
-      personal, y, m, d, [], "MIGRATION", target, 139.6917,
-      undefined, true,
+      personal,
+      y,
+      m,
+      d,
+      [],
+      "MIGRATION",
+      target,
+      139.6917,
+      undefined,
+      true,
     );
     const tendo = off.tendoDirection;
     expect(tendo).toBeTruthy();
     if (!tendo) return;
     // 天道の方位に、本命殺系の凶が残っていないこと。
-    expect(
-      ["NOISE_HONMEI", "NOISE_TEKI", "NOISE_GETSUMEI", "NOISE_GETSUTEKI"],
-    ).not.toContain(off.finalVectors[tendo]);
+    expect([
+      "NOISE_HONMEI",
+      "NOISE_TEKI",
+      "NOISE_GETSUMEI",
+      "NOISE_GETSUTEKI",
+    ]).not.toContain(off.finalVectors[tendo]);
   });
 
   it("日盤を外して判定が悪化することはない", () => {
@@ -78,18 +117,35 @@ describe("12ヶ月表示の日盤除外 (ignoreDayLayer)", () => {
         NOISE_VOID: 7,
         NOISE_HA: 8,
         NOISE_ANKEN: 9,
+        NOISE_DOYOU: 9,
         NOISE_GOU: 9,
       })[s] ?? 2;
 
     const [y, m, d] = boards(6, 5, 7);
     const on = calculateVectorCollision(
-      personal, y, m, d, [], "DEFAULT", target, 139.6917,
-      undefined, false,
+      personal,
+      y,
+      m,
+      d,
+      [],
+      "DEFAULT",
+      target,
+      139.6917,
+      undefined,
+      false,
     );
     const [y2, m2, d2] = boards(6, 5, 7);
     const off = calculateVectorCollision(
-      personal, y2, m2, d2, [], "DEFAULT", target, 139.6917,
-      undefined, true,
+      personal,
+      y2,
+      m2,
+      d2,
+      [],
+      "DEFAULT",
+      target,
+      139.6917,
+      undefined,
+      true,
     );
     for (const dir of DIRS) {
       expect(
@@ -109,23 +165,47 @@ describe("12ヶ月表示の日盤除外 (ignoreDayLayer)", () => {
     const doyouDay = new Date("2026-08-06T03:00:00Z");
     const [y, m, d] = boards(6, 5, 7);
     const off = calculateVectorCollision(
-      personal, y, m, d, [], "DEFAULT", doyouDay, 139.6917,
-      undefined, true,
+      personal,
+      y,
+      m,
+      d,
+      [],
+      "DEFAULT",
+      doyouDay,
+      139.6917,
+      undefined,
+      true,
     );
     // 2026-08-06 は夏土用の最終日。土用殺の南西は、年盤・月盤が凶でなくても大凶。
     expect(off.yearLayer.SW).not.toContain("NOISE_GOU");
     expect(off.monthLayer.SW).not.toContain("NOISE_GOU");
-    expect(off.finalVectors.SW).toBe("NOISE_GOU");
+    // 土用殺は専用状態に変更。日盤を外しても大凶として残す。
+    expect(off.finalVectors.SW).toBe("NOISE_DOYOU");
   });
 
   it("既定では日盤を外さない（後方互換）", () => {
     const [y, m, d] = boards(6, 5, 7);
     const explicit = calculateVectorCollision(
-      personal, y, m, d, [], "MIGRATION", target, 139.6917,
-      undefined, false,
+      personal,
+      y,
+      m,
+      d,
+      [],
+      "MIGRATION",
+      target,
+      139.6917,
+      undefined,
+      false,
     );
     const implicit = calculateVectorCollision(
-      personal, y, m, d, [], "MIGRATION", target, 139.6917,
+      personal,
+      y,
+      m,
+      d,
+      [],
+      "MIGRATION",
+      target,
+      139.6917,
       undefined,
     );
     for (const dir of DIRS) {

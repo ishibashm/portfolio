@@ -58,13 +58,19 @@ const BIRTH_TIME: Record<string, string> = {
 };
 
 /**
- * 誰にでも同じ凶（盤で決まる）。土用殺は最終を NOISE_GOU に上書きする。
+ * 誰にでも同じ凶（盤で決まる）。土用殺は最終を NOISE_DOYOU に上書きする。
  *
  * **`NOISE_NODE`（羅睺・計都軸）はここに無い。**2026-09-19 に判定から
  * 月交点を外したので、どの層にも出ない。ここに残しておくと「盤の側の凶が
  * 4 種類ある」という嘘を見張りが支えることになる。
  */
-const UNIVERSAL = ["NOISE_GOU", "NOISE_ANKEN", "NOISE_HA"] as const;
+// 土用殺を専用状態へ分離しても、全員共通の凶という分類は同じ。
+const UNIVERSAL = [
+  "NOISE_DOYOU",
+  "NOISE_GOU",
+  "NOISE_ANKEN",
+  "NOISE_HA",
+] as const;
 
 /** 自分に紐づく凶（生年月日で決まる）。 */
 const PERSONAL = [

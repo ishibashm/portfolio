@@ -16,8 +16,7 @@ import type { DirectionCell } from "@/components/relocation/SpotVerdict";
  *
  * ## 土用殺
  *
- * 最終だけを NOISE_GOU で上書きするので、段階は NOISE_GOU のまま
- * （X）。理由の 1 行のために `doyouSatsu` を立てるだけ（SpotVerdict の
+ * 最終だけを NOISE_DOYOU で上書きするので、段階は従来どおり X。理由の 1 行のために `doyouSatsu` を立てるだけ（SpotVerdict の
  * `DirectionCell.doyouSatsu` と同じ扱い）。
  */
 export interface BoardLayers {

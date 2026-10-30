@@ -60,11 +60,7 @@ interface MapInnerProps {
     dayLayer: Partial<Record<string, string>>;
     finalVectors: Record<string, string>;
   } | null;
-  /**
-   * 土用殺の方位。土用殺は最終判定だけを NOISE_GOU で上書きするので、
-   * 扇形の札とツールチップの語を「土用殺」に差し替えるために照合する
-   * （backlog 12 節）。色・分岐・段階は NOISE_GOU のまま変えない。
-   */
+  /** 土用殺の方位。最終判定の理由の表示に使う。 */
   doyouSatsuDirection?: string | null;
   honmeiStar?: { physical: number; classical: number } | null;
   kpIndex?: number | null;
@@ -276,6 +272,7 @@ export default function MagneticMapInner({
           style = { color: "#3b82f6", opacity: 0.1 };
           dashArray = undefined;
           break;
+        case "NOISE_DOYOU":
         case "NOISE_GOU":
           style = { color: "#ef4444", opacity: 0.6 };
           dashArray = "10,5";
@@ -389,12 +386,9 @@ export default function MagneticMapInner({
       else labelDistance = 300;
       const labelPos = getDestination(lat, lon, baseBearing, labelDistance);
 
-      // 土用殺は最終判定だけを NOISE_GOU で上書きする（backlog 12 節）。
-      // 語だけ「土用殺」に差し替える。色・分岐・段階は NOISE_GOU のまま。
-      // 単盤の表示（year/month/day）では照合しない。土用殺は単盤に出ないので、
-      // 単盤の本物の五黄殺を「土用殺」と誤表示してしまう。
+      // 土用殺は専用状態で表示する。単盤の五黄殺とは混同しない。
       const isDoyouSatsu =
-        displayStatus === "NOISE_GOU" &&
+        displayStatus === "NOISE_DOYOU" &&
         d.dir === doyouSatsuDirection &&
         activeLayerMode === "final";
       const labelStatus = isDoyouSatsu ? "NOISE_DOYOU" : displayStatus;
@@ -869,6 +863,7 @@ export default function MagneticMapInner({
             <div className="flex items-center gap-1.5">
               <span className="w-2 h-2 rounded-full bg-[#ef4444]"></span>
               <span className="text-stone-600">
+                {directionLabelBadge("NOISE_DOYOU")}・
                 {directionLabelBadge("NOISE_GOU")}・
                 {directionLabelBadge("NOISE_ANKEN")}・
                 {directionLabelBadge("NOISE_HA")}（大凶）

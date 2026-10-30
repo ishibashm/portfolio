@@ -789,6 +789,7 @@ export type VectorStatus =
   | "OPTIMAL_REGULAR"
   | "SAFE"
   | "WARNING"
+  | "NOISE_DOYOU"
   | "NOISE_GOU"
   | "NOISE_ANKEN"
   | "NOISE_HONMEI"
@@ -818,17 +819,7 @@ export interface VectorCollision {
    */
   finalVectors: Record<EightDirection, VectorStatus>;
   tendoDirection?: EightDirection;
-  /**
-   * 土用殺が当たっている方位。当たっていなければ undefined。
-   *
-   * 土用殺は年盤・月盤・日盤のどの層にも出ず、**最終だけを NOISE_GOU に
-   * 上書きする。**NOISE_GOU の見出しは画面のどこでも「五黄殺」なので、
-   * 三盤とも大吉なのに「五黄殺」と出る日ができる。理由が伝わらない。
-   *
-   * 状態そのものを分けると配色と札の対応が全画面に波及するので、まずは
-   * **どの方位が土用殺なのかを呼び出し側が知れるように**する。判定は
-   * 一切変わらない（この値を読まなければ従来どおり）。
-   */
+  /** 土用殺の方位。単盤は変えず、最終判定を NOISE_DOYOU にする。 */
   doyouSatsuDirection?: EightDirection;
   doyouState?: DoyouState;
 }
@@ -1195,9 +1186,24 @@ export function calculateVectorCollision(
     */
     if (actionIntent === "MIGRATION") {
       // For relocation, Year and Month layers are extremely critical (long-term), Day is short-term.
-      const yRed = ["NOISE_GOU", "NOISE_ANKEN", "NOISE_HA"].includes(yStatus);
-      const mRed = ["NOISE_GOU", "NOISE_ANKEN", "NOISE_HA"].includes(mStatus);
-      const dRed = ["NOISE_GOU", "NOISE_ANKEN", "NOISE_HA"].includes(dStatus);
+      const yRed = [
+        "NOISE_DOYOU",
+        "NOISE_GOU",
+        "NOISE_ANKEN",
+        "NOISE_HA",
+      ].includes(yStatus);
+      const mRed = [
+        "NOISE_DOYOU",
+        "NOISE_GOU",
+        "NOISE_ANKEN",
+        "NOISE_HA",
+      ].includes(mStatus);
+      const dRed = [
+        "NOISE_DOYOU",
+        "NOISE_GOU",
+        "NOISE_ANKEN",
+        "NOISE_HA",
+      ].includes(dStatus);
 
       if (yRed) {
         finalVectors[dir] = yStatus; // Year red noise is absolute blocker
@@ -1243,7 +1249,9 @@ export function calculateVectorCollision(
       const hasAnken = layers.includes("NOISE_ANKEN");
       const hasHa = layers.includes("NOISE_HA");
 
-      if (hasGou) {
+      if (layers.includes("NOISE_DOYOU")) {
+        finalVectors[dir] = "NOISE_DOYOU";
+      } else if (hasGou) {
         finalVectors[dir] = "NOISE_GOU";
       } else if (hasAnken) {
         finalVectors[dir] = "NOISE_ANKEN";
@@ -1285,7 +1293,7 @@ export function calculateVectorCollision(
       ? DOYOU_SATSU_DIRECTIONS[doyouState.doyouType]
       : undefined;
   if (doyouSatsuDirection) {
-    finalVectors[doyouSatsuDirection] = "NOISE_GOU";
+    finalVectors[doyouSatsuDirection] = "NOISE_DOYOU";
   }
 
   return {
@@ -1301,21 +1309,9 @@ export function calculateVectorCollision(
 
 /**
  * 生年月日の「日干支」から個人の天中殺（Void Zodiac）を算出する。
- * （2024年1月1日を甲子＝インデックス0とする近似ロジック）
+ * JST の日柱（lunar-javascript の sect=2、0時境界）を使う。
  */
 export function getPersonalVoidZodiac(birthDate: Date): string[] {
-  /* ORIGINAL FORMULA (Preserved for reference):
-  // ユリウス日を用いて日本時間の干支を正確に算出する
-  // 2024年1月1日(甲子=0) の JD は約 2460310.125 (JST 0:00)
-  // Math.floor(JD + 0.5) = 2460310。 2460310 % 60 = 10。
-  // したがって、(Math.floor(JD + 0.5) + 50) % 60 が干支インデックスとなる。
-  const jd = AstroEngine.getJulianDay(birthDate);
-  const ganZhiIndex = (Math.floor(jd + 0.5) + 50) % 60;
-  const gan = ganZhiIndex % 10;
-  const zhi = ganZhiIndex % 12;
-  const voidDiff = (zhi - gan + 12) % 12;
-  */
-
   const fields = getZonedDateTimeFields(birthDate, 9);
   const solar = Solar.fromYmdHms(
     fields.year,
@@ -1453,14 +1449,7 @@ export function getCurrentZodiac(
   ];
   const monthZodiac = ZODIACS_MONTH[(monthIndex + 3) % 12];
 
-  // 日の干支: ユリウス日ベース
-  /* ORIGINAL FORMULA (Preserved for reference):
-  const jd = AstroEngine.getJulianDay(date);
-  const ganZhiIndex = (Math.floor(jd + 0.5) + 50) % 60;
-  const zhi = ganZhiIndex % 12;
-  const ZODIACS_GANZHI = ["子", "丑", "寅", "卯", "辰", "巳", "午", "未", "申", "酉", "戌", "亥"];
-  const dayZodiac = ZODIACS_GANZHI[zhi];
-  */
+  // 日の干支: lunar-javascript の日柱（標準時では JST 0時境界）
   /*
     八字に渡す時刻。"standard" では JST の時計時刻をそのまま使う（従来）。
     "solar" では出発地の真太陽時に直してから渡す。時刻がずれるので、
@@ -1791,6 +1780,7 @@ export function filterCollisionByMode(
         }
       });
     }
+    if (status === "NOISE_DOYOU") return "NOISE_DOYOU";
     if (isGou) return "NOISE_GOU";
     if (isAnken) return "NOISE_ANKEN";
     if (status === "NOISE_HA") return "NOISE_HA";
@@ -1806,6 +1796,7 @@ export function filterCollisionByMode(
     変わらない。五大凶殺 → 本命系 → 天中殺 → ノード、の順に置いた。
   */
   const SEVERITY: VectorStatus[] = [
+    "NOISE_DOYOU",
     "NOISE_GOU",
     "NOISE_ANKEN",
     "NOISE_HA",
@@ -1859,7 +1850,11 @@ export function filterCollisionByMode(
     list.includes("NOISE_VOID") ? "NOISE_VOID" : "SAFE";
   const envFinal = (list: VectorStatus[]): VectorStatus => {
     const hasRed = list.find(
-      (s) => s === "NOISE_GOU" || s === "NOISE_ANKEN" || s === "NOISE_HA",
+      (s) =>
+        s === "NOISE_DOYOU" ||
+        s === "NOISE_GOU" ||
+        s === "NOISE_ANKEN" ||
+        s === "NOISE_HA",
     );
     if (hasRed) return hasRed;
     return "SAFE";

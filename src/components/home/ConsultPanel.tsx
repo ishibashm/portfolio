@@ -57,7 +57,7 @@ export type Layers = {
   tendoDirection?: Direction | null;
   /**
    * 土用殺の方位（土用の期間外は undefined）。土用殺は最終判定だけを
-   * NOISE_GOU で上書きするので、語を「土用殺」に差し替えるために照合する
+   * NOISE_DOYOU で上書きするので、語を「土用殺」に差し替えるために照合する
    * （backlog 12 節）。状態の分岐には使わない。
    */
   doyouSatsuDirection?: Direction | null;
@@ -304,7 +304,11 @@ export function ConsultPanel({
     // 実際に来る値に型を合わせるだけ。
     const getColorClass = (s: string | undefined) => {
       if (!s) return "text-stone-600";
-      if (s.startsWith("NOISE_GOU") || s.startsWith("NOISE_ANKEN"))
+      if (
+        s.startsWith("NOISE_DOYOU") ||
+        s.startsWith("NOISE_GOU") ||
+        s.startsWith("NOISE_ANKEN")
+      )
         return "text-red-700 font-bold bg-red-50 border-red-200";
       if (
         s.startsWith("NOISE_HONMEI") ||
@@ -369,7 +373,7 @@ export function ConsultPanel({
     isClassical: boolean;
   }) => {
     const getColor = (s: string) => {
-      if (s === "NOISE_GOU" || s === "NOISE_ANKEN")
+      if (s === "NOISE_DOYOU" || s === "NOISE_GOU" || s === "NOISE_ANKEN")
         return "text-red-700 font-bold";
       if (
         s === "NOISE_HONMEI" ||
@@ -404,7 +408,10 @@ export function ConsultPanel({
     */
     let title = `🟦 ${label}`;
     let desc = "この盤では凶方位に当たっていません。";
-    if (status === "NOISE_GOU") {
+    if (status === "NOISE_DOYOU") {
+      title = `🟥 ${label}`;
+      desc = "土用の期間はこの方位を避けるとされます（間日を除く）。";
+    } else if (status === "NOISE_GOU") {
       title = `🟥 ${label}`;
       desc = "五黄土星が回っている方位。九星気学で最も重い凶方位とされます。";
     } else if (status === "NOISE_ANKEN") {

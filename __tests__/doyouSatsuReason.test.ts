@@ -1,19 +1,5 @@
-/**
- * 土用殺の日に「五黄殺」としか出せなかったのを、理由が分かる形にする。
- *
- * 土用殺は年盤・月盤・日盤のどの層にも出ない。`calculateVectorCollision`
- * の最後で**最終だけを NOISE_GOU に上書きする**。NOISE_GOU の見出しは
- * 画面のどこでも「五黄殺」なので、
- *
- *   年盤 大吉 / 月盤 大吉 / 日盤 大吉  なのに  最終 五黄殺・段階 X
- *
- * という日ができる。三盤が全部大吉なのに大凶と言われて、理由が画面から
- * 分からない。
- *
- * 状態そのものを NOISE_GOU から分けると配色と札の対応が全画面に波及する
- * ので、まずは**どの方位が土用殺なのかを持ち回れるように**した。
- * **判定は変えていない。**その固定もここで行う。
- */
+// 2026-10-30: 土用殺を五黄殺と誤表示しないため、専用ステータスを期待する。
+/** 土用殺を専用状態で返し、凶の段階と理由を保つ回帰テスト。 */
 import { describe, expect, it } from "vitest";
 import {
   ALL_DIRECTIONS,
@@ -45,7 +31,7 @@ describe("土用殺の方位が分かる", () => {
       "OPTIMAL",
       "OPTIMAL",
     ]);
-    expect(v.finalStatus).toBe("NOISE_GOU");
+    expect(v.finalStatus).toBe("NOISE_DOYOU");
     expect(gradeVerdict(v)).toBe("X");
     // ここが新しい。以前は「五黄殺」としか言えなかった。
     expect(v.isDoyouSatsu).toBe(true);
@@ -63,7 +49,7 @@ describe("土用殺の方位が分かる", () => {
     expect(ALL_DIRECTIONS.filter((d) => all[d].isDoyouSatsu)).toEqual([]);
   });
 
-  it("印が付く方位は必ず土用殺の方位表と一致し、最終も NOISE_GOU", () => {
+  it("印が付く方位は必ず土用殺の方位表と一致し、最終も NOISE_DOYOU", () => {
     // 2 年ぶんを走査して、印と実態が食い違わないことを固定する。
     const seasons = new Set<Direction>(Object.values(DOYOU_SATSU_DIRECTIONS));
     const bad: string[] = [];
@@ -75,7 +61,7 @@ describe("土用殺の方位が分かる", () => {
         const v = all[dir];
         if (!v.isDoyouSatsu) continue;
         marked++;
-        if (!seasons.has(dir as Direction) || v.finalStatus !== "NOISE_GOU") {
+        if (!seasons.has(dir as Direction) || v.finalStatus !== "NOISE_DOYOU") {
           bad.push(`${v.date} ${dir} ${v.finalStatus}`);
         }
       }
@@ -119,8 +105,8 @@ describe("土用殺の方位が分かる", () => {
       directionFilterMode: "environmental",
     });
     expect(composite.isDoyouSatsu).toBe(true);
-    expect(composite.finalStatus).toBe("NOISE_GOU");
+    expect(composite.finalStatus).toBe("NOISE_DOYOU");
     expect(environmental.isDoyouSatsu).toBe(false);
-    expect(environmental.finalStatus).not.toBe("NOISE_GOU");
+    expect(environmental.finalStatus).not.toBe("NOISE_DOYOU");
   });
 });

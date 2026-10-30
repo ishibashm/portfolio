@@ -73,6 +73,7 @@ export const timeDirectionsOutputSchema = z.strictObject({
               reason: z.enum([
                 "OPTIMAL",
                 "SAFE",
+                "NOISE_DOYOU",
                 "NOISE_GOU",
                 "NOISE_ANKEN",
                 "NOISE_HONMEI",
@@ -121,7 +122,10 @@ export function calculateTimeDirections(input: unknown) {
       directions: EIGHT_DIRECTIONS.map((direction) => {
         const raw = layer[direction]!;
         const reason =
-          honmeiStar === null && raw !== "NOISE_GOU" && raw !== "NOISE_ANKEN"
+          honmeiStar === null &&
+          raw !== "NOISE_DOYOU" &&
+          raw !== "NOISE_GOU" &&
+          raw !== "NOISE_ANKEN"
             ? "SAFE"
             : raw;
         return {

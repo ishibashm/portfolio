@@ -698,9 +698,13 @@ export default function RelocationSimulatorPage() {
           mRating = "凶";
           mColor = "text-orange-400 border-orange-500/20 bg-orange-500/5";
         } else if (
-          ["NOISE_VOID", "NOISE_GOU", "NOISE_ANKEN", "NOISE_HA"].includes(
-            mStatus,
-          )
+          [
+            "NOISE_VOID",
+            "NOISE_DOYOU",
+            "NOISE_GOU",
+            "NOISE_ANKEN",
+            "NOISE_HA",
+          ].includes(mStatus)
         ) {
           mRating = "大凶";
           mColor = "text-red-700 border-red-500/30 bg-red-500/10";
@@ -1300,14 +1304,22 @@ export default function RelocationSimulatorPage() {
     let hasSevereClash = false;
     evaluatedSteps.forEach((step) => {
       const mainStatus = step.evaluation?.status || "";
-      if (["NOISE_GOU", "NOISE_ANKEN", "NOISE_HA"].includes(mainStatus)) {
+      if (
+        ["NOISE_DOYOU", "NOISE_GOU", "NOISE_ANKEN", "NOISE_HA"].includes(
+          mainStatus,
+        )
+      ) {
         hasSevereClash = true;
       }
 
       // Use cached companion evaluations for clash checks
       if (step.memberEvaluations) {
         step.memberEvaluations.forEach((m) => {
-          if (["NOISE_GOU", "NOISE_ANKEN", "NOISE_HA"].includes(m.status)) {
+          if (
+            ["NOISE_DOYOU", "NOISE_GOU", "NOISE_ANKEN", "NOISE_HA"].includes(
+              m.status,
+            )
+          ) {
             hasSevereClash = true;
           }
         });
@@ -2306,7 +2318,12 @@ export default function RelocationSimulatorPage() {
                   const clashingMembers: string[] = [];
                   let universalClashType = "";
                   const checkUniversal = (status: string) =>
-                    ["NOISE_GOU", "NOISE_ANKEN", "NOISE_HA"].includes(status);
+                    [
+                      "NOISE_DOYOU",
+                      "NOISE_GOU",
+                      "NOISE_ANKEN",
+                      "NOISE_HA",
+                    ].includes(status);
 
                   if (checkUniversal(step.evaluation?.status || "")) {
                     clashingMembers.push("自分");
@@ -2320,6 +2337,7 @@ export default function RelocationSimulatorPage() {
                   });
 
                   const clashLabelMap: Record<string, string> = {
+                    NOISE_DOYOU: "土用殺",
                     NOISE_GOU: "五黄殺",
                     NOISE_ANKEN: "暗剣殺",
                     NOISE_HA: "歳破/月破/日破",

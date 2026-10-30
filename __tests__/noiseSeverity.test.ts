@@ -8,8 +8,9 @@ import {
 } from "@/utils/noiseSeverity";
 
 describe("noiseSeverity（凶の重さの唯一の定義）", () => {
-  it("五大凶殺は 5 つ", () => {
+  it("五大凶殺と土用殺を絶対凶にする", () => {
     expect(FIVE_FATAL_NOISES).toEqual([
+      "NOISE_DOYOU", // 専用状態になっても従来の大凶の重さを保つ。
       "NOISE_GOU",
       "NOISE_ANKEN",
       "NOISE_HA",
@@ -18,11 +19,13 @@ describe("noiseSeverity（凶の重さの唯一の定義）", () => {
     ]);
   });
 
-  it("優先順の先頭は必ず五大凶殺。致命的な凶が二次凶のラベルに隠れない", () => {
-    expect(NOISE_PRIORITY.slice(0, 5)).toEqual([...FIVE_FATAL_NOISES]);
+  it("優先順の先頭は必ず絶対凶。致命的な凶が二次凶のラベルに隠れない", () => {
+    expect(NOISE_PRIORITY.slice(0, FIVE_FATAL_NOISES.length)).toEqual([
+      ...FIVE_FATAL_NOISES,
+    ]);
   });
 
-  it("isFatalNoise は五大凶殺だけを真にする", () => {
+  it("isFatalNoise は五大凶殺と土用殺を真にする", () => {
     for (const s of FIVE_FATAL_NOISES) expect(isFatalNoise(s)).toBe(true);
     expect(isFatalNoise("NOISE_VOID")).toBe(false);
     expect(isFatalNoise("SAFE")).toBe(false);
