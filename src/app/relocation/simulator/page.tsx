@@ -309,6 +309,8 @@ export default function RelocationSimulatorPage() {
    * 入口の送信で消さないために見る。
    */
   const restoredDraftRef = useRef(false);
+  // 描画で使う写し（ref は描画中に読めない）。
+  const [restoredDraft, setRestoredDraft] = useState(false);
   const [useTrueNorth, setUseTrueNorth] = useState(false);
   const [plans, setPlans] = useState<SavedPlan[]>([]);
   const [currentPlanId, setCurrentPlanId] = useState<string | null>(null);
@@ -504,6 +506,7 @@ export default function RelocationSimulatorPage() {
         if (draft.members && Array.isArray(draft.members))
           setMembers(draft.members);
         restoredDraftRef.current = true;
+        setRestoredDraft(true);
         // 生年月日が下書きに入っているときだけ、判定まで戻す。
         //
         // 既定値を外す前は保存していなかった。その頃の下書きを復元すると
@@ -1707,9 +1710,7 @@ export default function RelocationSimulatorPage() {
               下書きから戻した人は行き先が既に入っている。空で出すと、
               戻したものを自分で消させることになる。
             */
-            initialDestination={
-              restoredDraftRef.current ? steps[0]?.toName || "" : ""
-            }
+            initialDestination={restoredDraft ? steps[0]?.toName || "" : ""}
             onStart={(v) => {
               setBirthDate(v.birthDate);
               setStartName(v.startName);
