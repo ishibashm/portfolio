@@ -64,7 +64,7 @@ export default function Home() {
           href="/houi#honmei-lookup"
           className="mt-4 sm:ml-5 inline-block text-sm font-semibold text-rose-600 underline underline-offset-4 hover:text-rose-700"
         >
-          生年月日から今年の吉方位を見る
+          今年の引越しの方位を本命星別に見る
         </Link>
         <p className="mt-4 text-sm">
           <Link href="/houi/today" className="text-rose-600 underline">
