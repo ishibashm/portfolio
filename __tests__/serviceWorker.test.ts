@@ -104,14 +104,16 @@ class FakeCacheStorage {
   }
 }
 
-type FetchMock = ReturnType<typeof vi.fn>;
+type FetchMock = ReturnType<
+  typeof vi.fn<(...args: unknown[]) => Promise<StoredResponse>>
+>;
 
 const source = readFileSync(join(process.cwd(), "public/sw.js"), "utf8");
 
 let caches: FakeCacheStorage;
 let fetchMock: FetchMock;
 let handlers: Record<string, ((event: unknown) => void)[]>;
-let claim: ReturnType<typeof vi.fn>;
+let claim: ReturnType<typeof vi.fn<() => Promise<void>>>;
 
 function dispatchExtendable(type: "install" | "activate") {
   const waits: Promise<unknown>[] = [];
