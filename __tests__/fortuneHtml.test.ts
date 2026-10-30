@@ -1,3 +1,10 @@
+import { rows, prismaMock } from "./fortunePrismaMock";
+import { beforeEach } from "vitest";
+vi.mock("@/lib/prisma", () => ({ default: prismaMock }));
+beforeEach(() => {
+  rows.length = 0;
+  vi.stubEnv("AI_FORTUNE_IP_DAILY_LIMIT", "100");
+});
 import { describe, expect, it, vi, afterEach } from "vitest";
 import {
   sanitizeFortuneHtml,

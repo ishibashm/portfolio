@@ -1,3 +1,9 @@
+import {
+  reserveFortune,
+  finishFortune,
+  MAX_FORTUNE_FACT_BYTES,
+  type FortuneUsage,
+} from "./fortuneGuard";
 import { directionLabelName } from "./directionLabels";
 import { TIER_JP } from "@/utils/tierDisplay";
 import { createHash } from "node:crypto";
@@ -67,33 +73,34 @@ export type FortuneReportData = {
   facts: FortuneFact[];
   srcdoc: string | null;
   fallbackHtml: string;
+  note?: string;
 };
 type Entry = { day: string; result: Promise<FortuneReportData> };
-/** Process-local, bounded state. Single-flight includes fallback results. */
+/** Process-local cache + DB-backed global caps (fortuneGuard). Single-flight includes fallback results. */
 export function createFortuneReportService(
-  generate: (facts: FortuneFact[]) => Promise<string>,
+  generate: (
+    facts: FortuneFact[],
+    recordUsage: (usage: FortuneUsage) => Promise<void>,
+  ) => Promise<string>,
 ) {
   const cache = new Map<string, Entry>();
-  const users = new Map<string, number>();
   let rateDay = "";
-  let globalCalls = 0;
   return async (
     userId: string,
     profile: FortuneProfile,
     now = new Date(),
+    request = { skip: false, ipHash: "unknown" },
   ): Promise<FortuneReportData | null> => {
     if (!fortuneHtmlEnabled()) return null;
     const day = toJapanDateString(now);
     if (rateDay !== day) {
       rateDay = day;
-      globalCalls = 0;
-      users.clear();
       cache.clear();
     }
     const key = createHash("sha256")
       .update(JSON.stringify([userId, profile, day]))
       .digest("hex");
-    const hit = cache.get(key);
+    const hit = !request.skip && cache.get(key);
     if (hit) return hit.result;
     const facts = fortuneFacts(profile, day);
     const fallback: FortuneReportData = {
@@ -101,13 +108,30 @@ export function createFortuneReportService(
       srcdoc: null,
       fallbackHtml: fallbackFortuneHtml(facts),
     };
-    // At most 20 generations per process/JST day, 2 per user. No retries.
-    if (globalCalls >= 20 || (users.get(userId) ?? 0) >= 2) return fallback;
-    globalCalls++;
-    users.set(userId, (users.get(userId) ?? 0) + 1);
+    if (
+      request.skip ||
+      Buffer.byteLength(JSON.stringify(facts)) > MAX_FORTUNE_FACT_BYTES
+    )
+      return fallback;
     const result = (async () => {
       try {
-        const html = decorateFortuneHtml(await generate(facts), facts);
+        const reservation = await reserveFortune(
+          day,
+          userId,
+          request.ipHash,
+          key,
+        );
+        if (!reservation)
+          return {
+            ...fallback,
+            note: "本日のAI装飾は上限に達したため、計算結果のみ表示しています。",
+          };
+        const html = decorateFortuneHtml(
+          await generate(facts, (usage) =>
+            finishFortune(reservation.id, usage),
+          ),
+          facts,
+        );
         return html
           ? { ...fallback, srcdoc: buildFortuneSrcdoc(html) }
           : fallback;
@@ -116,6 +140,7 @@ export function createFortuneReportService(
         return fallback;
       }
     })();
+    if (cache.size >= 500) cache.delete(cache.keys().next().value!);
     cache.set(key, { day, result });
     return result;
   };

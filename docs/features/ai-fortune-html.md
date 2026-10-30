@@ -48,16 +48,45 @@ A missing Google key still produces the local template. No billing settings are
 changed. Use an **unbilled free-tier Google AI Studio project**: Google offers no
 per-request switch to force a billed project's key onto the free tier.
 
-The process-local cache keys include user ID, all profile inputs, and JST day
-(hashed, never logged). Concurrent identical requests share one promise; failures
-are cached too. Limits are 20 generations globally and 2 per user per JST day,
-with at most two model steps per generation, zero retries, and a 12-second abort.
-No key, quota errors, timeout, or invalid HTML uses the deterministic template.
-Calculation/storage failure displays an unavailable message rather than invented
-values. Cache and limits reset on process restart and are independent per replica;
-they are not a distributed quota guarantee. No paid fallback exists.
+The bounded process-local cache keys include user ID, all profile inputs, and JST
+day (hashed, never logged). Concurrent identical requests share one promise;
+failures are cached too. A shared PostgreSQL transaction advisory lock serializes
+quota checks and reservation inserts across replicas. Existing `api_usage` rows
+with route prefix `ai-fortune-html` count once per generation. The route suffix
+contains hashed user/IP/input subjects, allowing global user/IP limits and
+same-subject/profile/day duplicate suppression even after a restart. A duplicate
+on another replica shows computed facts; generated HTML is only cached locally.
+IP hashes use HMAC with `API_SECRET_KEY` or `NEXTAUTH_SECRET`, falling back to
+SHA-256 with a fixed feature salt. No raw IP is persisted. Cloud Run request IP
+uses the first `x-forwarded-for` hop, then `x-real-ip`; missing IPs share a bucket.
+These headers rely on the deployment's forwarding proxy configuration.
+
+| Environment variable            | Default |
+| ------------------------------- | ------: |
+| `AI_FORTUNE_DAILY_LIMIT`        |      20 |
+| `AI_FORTUNE_MONTHLY_LIMIT`      |     300 |
+| `AI_FORTUNE_MONTHLY_BUDGET_JPY` |     100 |
+| `AI_FORTUNE_USER_DAILY_LIMIT`   |       2 |
+| `AI_FORTUNE_IP_DAILY_LIMIT`     |       4 |
+
+Invalid/negative values use defaults; call limits must be safe integers. Budget
+accepts decimals. Zero disables calls. Day/month boundaries use JST. Each call
+reserves null token counts before Gemini; SDK total usage updates that same row.
+Null/partial usage (including failed calls) costs a conservative 32,000 input plus
+4,400 output tokens for budget checks. Admission includes the next reservation's
+cost. Standard paid prices are 15.934/63.736 JPY per MTok (Google official
+$0.10/$0.40 × 159.34 JPY/USD). Any guard DB failure uses computed fallback; failed
+usage updates retain the conservative reservation. No SDK errors are logged.
+
+This feature is triggered by authenticated GET server rendering; there is no
+form POST, so no CSRF/honeypot path was added. Empty/bot/crawler/spider/preview/
+headless user agents and Next.js/purpose/sec-purpose prefetch requests use only
+computed facts, before DB reservation. Serialized facts exceeding 16,000 UTF-8
+bytes are refused before the SDK. Each step permits at most 2,200 output tokens,
+with at most two steps, zero retries, and a 12-second abort. Cap hits display a
+friendly Japanese note alongside computed facts. No paid fallback exists.
 
 Verification: Vitest covers sanitization, value consistency, local fallback,
 provider/explicit-flag gating and isolation from the other paid API switch, SDK timeout and no retries, concurrent caching,
-profile/user/day isolation, both rate limits, and authenticated component behavior.
+profile/user/day isolation, global daily/monthly/budget/user/IP caps, fail-closed reservations and usage updates, and authenticated component behavior.
 Tests use fake keys and mock SDK responses; no live model calls are needed.

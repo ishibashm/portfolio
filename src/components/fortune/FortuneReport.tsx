@@ -1,3 +1,5 @@
+import { headers } from "next/headers";
+import { fortuneRequest } from "@/lib/fortuneGuard";
 import { FortuneFrame } from "./FortuneFrame";
 import Link from "next/link";
 import { findUserConfig, getAuthUser } from "@/lib/userConfig";
@@ -27,7 +29,14 @@ export async function FortuneReport() {
         </Link>
       );
     }
-    const report = await getFortuneReport(user.id, profile.data);
+    // Authenticated GET server render only; no form/POST or CSRF surface here.
+    const request = fortuneRequest(await headers());
+    const report = await getFortuneReport(
+      user.id,
+      profile.data,
+      new Date(),
+      request,
+    );
     if (!report) return null;
     return (
       <section aria-label="今日の運勢レポート" className={styles.report}>
@@ -48,6 +57,7 @@ export async function FortuneReport() {
             dangerouslySetInnerHTML={{ __html: report.fallbackHtml }}
           />
         )}
+        {report.note && <p>{report.note}</p>}
         <p>
           登録済みの情報にもとづく日本時間の計算結果です。刻の可否は方位の吉凶とは異なります。占術上の参考情報です。
         </p>

@@ -1,10 +1,16 @@
+import { MAX_FORTUNE_FACT_BYTES, type FortuneUsage } from "./fortuneGuard";
 import { generateText, stepCountIs, tool } from "ai";
 import { z } from "zod";
 import { createFortuneModel, withinSignal } from "./mcpAgent";
 import { fortuneHeadings, type FortuneFact } from "./fortuneHtml";
 import { createFortuneReportService } from "./fortuneReport";
 
-export async function generateFortuneHtml(facts: FortuneFact[]) {
+export async function generateFortuneHtml(
+  facts: FortuneFact[],
+  recordUsage?: (usage: FortuneUsage) => Promise<void>,
+) {
+  if (Buffer.byteLength(JSON.stringify(facts)) > MAX_FORTUNE_FACT_BYTES)
+    throw new Error("FORTUNE_INPUT_TOO_LARGE");
   const model = createFortuneModel();
   const signal = AbortSignal.timeout(12000);
   let called = false;
@@ -38,6 +44,7 @@ export async function generateFortuneHtml(facts: FortuneFact[]) {
     }),
     signal,
   );
+  if (recordUsage) await recordUsage(result.totalUsage ?? result.usage ?? {});
   if (!called) throw new Error("FORTUNE_TOOL_REQUIRED");
   return result.text;
 }

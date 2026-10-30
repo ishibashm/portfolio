@@ -108,3 +108,22 @@ it("propagates quota failure once to the cached template fallback", async () => 
   await expect(generateFortuneHtml(facts)).rejects.toThrow("429");
   expect(mocks.generate).toHaveBeenCalledTimes(1);
 });
+it("refuses oversized facts before calling the SDK", async () => {
+  await expect(
+    generateFortuneHtml([{ label: "large", value: "a".repeat(16001) }]),
+  ).rejects.toThrow("FORTUNE_INPUT_TOO_LARGE");
+  expect(mocks.generate).not.toHaveBeenCalled();
+});
+it("records total usage over all SDK steps", async () => {
+  mocks.generate.mockImplementation(async (options) => {
+    await options.tools.registered_fortune.execute();
+    return {
+      text: "<p>{{fact:0}}</p>",
+      usage: { inputTokens: 10, outputTokens: 20 },
+      totalUsage: { inputTokens: 30, outputTokens: 40 },
+    };
+  });
+  const record = vi.fn();
+  await generateFortuneHtml(facts, record);
+  expect(record).toHaveBeenCalledWith({ inputTokens: 30, outputTokens: 40 });
+});
