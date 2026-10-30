@@ -1,3 +1,5 @@
+import { z } from "zod";
+import { readBoundedJson, requestLimiter } from "@/lib/requestSecurity";
 import { NextResponse } from "next/server";
 import { createClient } from "@/utils/supabase/server";
 import { toResponseMessage } from "@/lib/errorMessage";
@@ -13,7 +15,8 @@ import { paidApisDeniedBody, paidApisDisabled } from "@/lib/paidApis";
   ここだけ誰でも叩けた。画面からの呼び出しは無い（grep で 0 件）。
   値も型と長さを見る。埋め込みは入力の長さぶん課金される。
 */
-const MAX_QUERY_CHARS = 500;
+const querySchema = z.object({ query: z.string().trim().min(1).max(500) });
+const limit = requestLimiter(10, 6);
 
 export async function POST(req: Request) {
   try {
@@ -25,20 +28,13 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const { query } = await req.json();
-
-    if (typeof query !== "string" || query.trim() === "") {
-      return NextResponse.json(
-        { error: "Query is required" },
-        { status: 400 }
-      );
-    }
-    if (query.length > MAX_QUERY_CHARS) {
-      return NextResponse.json(
-        { error: `Query must be ${MAX_QUERY_CHARS} characters or fewer` },
-        { status: 400 }
-      );
-    }
+    const denied = limit(new Headers({ "x-real-ip": user.id }));
+    if (denied) return denied;
+    const input = await readBoundedJson(req, 4000);
+    if (!input.ok) return input.response;
+    const parsed = querySchema.safeParse(input.value);
+    if (!parsed.success) return NextResponse.json({ error: "Invalid query" }, { status: 400 });
+    const { query } = parsed.data;
 
     if (paidApisDisabled()) {
       return NextResponse.json(paidApisDeniedBody(), { status: 403 });
@@ -71,14 +67,14 @@ export async function POST(req: Request) {
         d.category
       FROM "KnowledgeChunk" c
       JOIN "KnowledgeDocument" d ON c.document_id = d.id
-      WHERE c.embedding IS NOT NULL
+      WHERE c.embedding IS NOT NULL AND d.user_id = ${user.id}
       ORDER BY c.embedding::text::vector <=> ${vectorLiteral}::vector
       LIMIT 10;
     `;
 
     return NextResponse.json({ success: true, chunks });
   } catch (error) {
-    console.error("Search Chunks API Error:", error);
+    console.error("Search Chunks API Error");
     return NextResponse.json(
       { error: toResponseMessage(error, "Failed to search chunks") },
       { status: 500 }

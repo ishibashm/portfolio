@@ -11,7 +11,12 @@ const supportedYear = (value: string) => {
 };
 const calendarDate = z.iso.date().refine(supportedYear);
 const birthDate = z
-  .union([z.iso.date(), z.iso.datetime({ offset: true, local: true })])
+  .union([
+    z.iso.date(),
+    z.iso.datetime({ offset: true, local: true }),
+    // Keep the existing minute-precision offset contract after Zod hardening.
+    z.iso.datetime({ offset: true, local: true, precision: -1 }),
+  ])
   .refine(supportedYear);
 
 /** 公開用の明示入力。未知の設定や個人用selectorを黙って捨てない。 */

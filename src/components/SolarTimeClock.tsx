@@ -1,4 +1,11 @@
 "use client";
+/*
+  eslint-disable react-hooks/preserve-manual-memoization --
+  eslint-config-next 16.4 で入った React Compiler 用の規則。この部品は手書きの
+  useMemo の値を下の関数へ渡しており、Compiler が「後で書き換わるかもしれない」と
+  判断して最適化を見送る。見送っても動きは今までと同じ（手書きのメモ化がそのまま
+  効く）。4,000 行規模の部品の作り直しになるので、別の作業として切り出す。
+*/
 
 import React, { useState, useEffect, useMemo } from "react";
 import dynamic from "next/dynamic";

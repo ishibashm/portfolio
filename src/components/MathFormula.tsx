@@ -1,6 +1,7 @@
 "use client";
 
-import { InlineMath } from "react-katex";
+import { useMemo } from "react";
+import katex from "katex";
 import "katex/dist/katex.min.css";
 
 /**
@@ -20,5 +21,9 @@ import "katex/dist/katex.min.css";
  * 呼ぶ側は next/dynamic で読み込むこと（静的 import に戻すと元に戻る）。
  */
 export default function MathFormula({ math }: { math: string }) {
-  return <InlineMath math={math} />;
+  const html = useMemo(
+    () => katex.renderToString(math, { throwOnError: false, trust: false }),
+    [math],
+  );
+  return <span dangerouslySetInnerHTML={{ __html: html }} />;
 }

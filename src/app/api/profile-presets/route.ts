@@ -1,3 +1,4 @@
+import { readBoundedJson } from "@/lib/requestSecurity";
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import type { Prisma } from "@prisma/client";
@@ -114,7 +115,9 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const parsed = requestSchema.safeParse(await req.json());
+    const input = await readBoundedJson(req, 256 * 1024);
+    if (!input.ok) return input.response;
+    const parsed = requestSchema.safeParse(input.value);
     if (!parsed.success) {
       return NextResponse.json(
         { error: "Invalid profile presets" },
