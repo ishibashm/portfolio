@@ -1,6 +1,7 @@
 import { afterEach, expect, it, vi } from "vitest";
 import { fetchNiftyRentalArea } from "@/lib/niftyRentalFetch";
 
+const fetchAllowlisted = vi.hoisted(() => vi.fn());
 const mocks = vi.hoisted(() => ({
   goto: vi.fn(async () => ({ ok: () => true })),
   links: vi.fn(async () => [
@@ -19,6 +20,19 @@ const mocks = vi.hoisted(() => ({
   save: vi.fn(async () => 1),
   close: vi.fn(async () => {}),
   launch: vi.fn(),
+}));
+vi.mock("@/lib/safeFetchUrl", async () => {
+  const actual =
+    await vi.importActual<typeof import("@/lib/safeFetchUrl")>(
+      "@/lib/safeFetchUrl",
+    );
+  return { ...actual, fetchAllowlisted };
+});
+vi.mock("node:dns/promises", () => ({
+  lookup: vi.fn(async () => [{ address: "203.0.113.10", family: 4 }]),
+  default: {
+    lookup: vi.fn(async () => [{ address: "203.0.113.10", family: 4 }]),
+  },
 }));
 vi.mock("puppeteer-core", () => ({ default: { launch: mocks.launch } }));
 vi.mock("@sparticuz/chromium", () => ({
@@ -39,10 +53,7 @@ function install() {
   vi.stubEnv("RENTALS_ON_DEMAND_ENABLED", "true");
   vi.stubEnv("RENTALS_ON_DEMAND_MAX_PAGES", "1");
   vi.useFakeTimers();
-  vi.stubGlobal(
-    "fetch",
-    vi.fn().mockRejectedValue(new Error("network unavailable")),
-  );
+  fetchAllowlisted.mockRejectedValue(new Error("network unavailable"));
   mocks.launch.mockResolvedValue({
     newPage: async () => ({
       setUserAgent: async () => {},
@@ -111,15 +122,21 @@ const listingHtml =
 
 it("server-rendered Nagoya data is fetched and saved without launching Chromium", async () => {
   install();
-  const fetch = vi
-    .fn()
-    .mockResolvedValueOnce({ ok: true, text: async () => indexHtml })
-    .mockResolvedValueOnce({ ok: true, text: async () => listingHtml });
-  vi.stubGlobal("fetch", fetch);
+  fetchAllowlisted
+    .mockResolvedValueOnce({
+      ok: true,
+      status: 200,
+      text: async () => indexHtml,
+    })
+    .mockResolvedValueOnce({
+      ok: true,
+      status: 200,
+      text: async () => listingHtml,
+    });
   const run = fetchNiftyRentalArea(area);
   await vi.runAllTimersAsync();
   await run;
-  expect(fetch.mock.calls.map((c) => c[0])).toEqual([
+  expect(fetchAllowlisted.mock.calls.map((c) => c[0])).toEqual([
     "https://myhome.nifty.com/rent/aichi/city/",
     "https://myhome.nifty.com/rent/aichi/nagoyashinakaku_ct/",
   ]);
@@ -131,7 +148,11 @@ it("server-rendered Nagoya data is fetched and saved without launching Chromium"
 
 it("HTTP rate limits fail without browser fallback", async () => {
   install();
-  vi.stubGlobal("fetch", vi.fn().mockResolvedValue({ ok: false, status: 429 }));
+  fetchAllowlisted.mockResolvedValue({
+    ok: false,
+    status: 429,
+    text: async () => "",
+  });
   const assertion = expect(fetchNiftyRentalArea(area)).rejects.toThrow(
     "HTTP 429",
   );

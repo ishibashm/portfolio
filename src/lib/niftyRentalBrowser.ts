@@ -1,7 +1,8 @@
 import type { Page } from "puppeteer-core";
 import { chromiumLaunchArgs } from "./chromiumLaunchArgs";
-import { NIFTY_CONTEXT_OPTIONS } from "./niftyPolite";
+import { NIFTY_CONTEXT_OPTIONS, NIFTY_PAGE_HOSTS } from "./niftyPolite";
 import { rentalsOnDemandEnabled } from "./rentalsOnDemand";
+import { assertSafeBrowserUrl } from "./safeFetchUrl";
 
 /** Puppeteer's `error` event represents a renderer crash (not `pageerror`). */
 export async function readRentalBrowser<T>(
@@ -13,6 +14,7 @@ export async function readRentalBrowser<T>(
   const { default: chromium } = await import("@sparticuz/chromium");
   for (let attempt = 0; attempt < 2; attempt++) {
     if (!rentalsOnDemandEnabled()) throw new Error("disabled");
+    await assertSafeBrowserUrl(url, { allowHosts: NIFTY_PAGE_HOSTS });
     const browser = await puppeteer.launch({
       args: chromiumLaunchArgs(chromium.args),
       executablePath: await chromium.executablePath(),
@@ -35,17 +37,26 @@ export async function readRentalBrowser<T>(
           await current.setUserAgent(NIFTY_CONTEXT_OPTIONS.userAgent);
           await current.setRequestInterception(true);
           current.on("request", (request) => {
-            const sameOrigin =
-              new URL(request.url()).origin === new URL(url).origin;
-            const allowed =
-              sameOrigin &&
-              !["image", "font", "media"].includes(request.resourceType()) &&
-              (!request.isNavigationRequest() ||
-                request.frame() === current.mainFrame());
-            // The target can close between dispatch and interception resolution.
-            void (allowed ? request.continue() : request.abort()).catch(
-              () => {},
-            );
+            // リダイレクトもサブフレームも、続ける前に同じ検査を通す。
+            void (async () => {
+              try {
+                await assertSafeBrowserUrl(request.url(), {
+                  allowHosts: NIFTY_PAGE_HOSTS,
+                });
+                const sameOrigin =
+                  new URL(request.url()).origin === new URL(url).origin;
+                const allowed =
+                  sameOrigin &&
+                  !["image", "font", "media"].includes(
+                    request.resourceType(),
+                  ) &&
+                  (!request.isNavigationRequest() ||
+                    request.frame() === current.mainFrame());
+                await (allowed ? request.continue() : request.abort());
+              } catch {
+                await request.abort().catch(() => {});
+              }
+            })();
           });
           const response = await current.goto(url, {
             waitUntil: "domcontentloaded",

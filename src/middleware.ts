@@ -145,6 +145,6 @@ export const config = {
    * ページはこれまでどおり通す（ログインの判定が要るため）。
    */
   matcher: [
-    "/((?!_next/static|_next/image|favicon.ico|sitemap|robots\\.txt|ads\\.txt|llms|blog/feed\\.xml|manifest\\.json|sw\\.js|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
+    "/((?!_next/static|_next/image|favicon.ico|sitemap|robots\\.txt|ads\\.txt|llms|blog/feed\\.xml|manifest\\.json|sw\\.js|\\.well-known/security\\.txt|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
   ],
 };
