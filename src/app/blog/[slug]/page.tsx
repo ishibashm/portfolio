@@ -19,9 +19,9 @@ import { loadBlogPost, loadBlogPosts } from "@/lib/blogStore";
 import { pickRelatedPosts } from "@/lib/blogRelated";
 import { blogTopic } from "@/lib/comments";
 import { DirectionComments } from "@/components/comments/DirectionComments";
-import { SITE_NAME } from "@/lib/siteStructure";
 import { DEFAULT_SOCIAL_IMAGE, blogImagePath } from "@/lib/blogImage";
-import { SITE_URL } from "@/lib/siteUrl";
+import { pageOpenGraph } from "@/lib/siteUrl";
+import { isAgentLogSlug } from "@/lib/agentLog";
 import { extractHeadings } from "@/lib/blogToc";
 
 /**
@@ -47,7 +47,9 @@ export const revalidate = 60;
  * 限るのが安全。
  */
 export function generateStaticParams() {
-  return getMarkdownBlogPosts().map((post) => ({ slug: post.slug }));
+  return getMarkdownBlogPosts()
+    .filter((post) => !isAgentLogSlug(post.slug))
+    .map((post) => ({ slug: post.slug }));
 }
 
 export async function generateMetadata({
@@ -64,16 +66,13 @@ export async function generateMetadata({
     title: post.title,
     description: post.description,
     alternates: { canonical: path },
-    openGraph: {
-      title: `${post.title} | ${SITE_NAME}`,
-      description: post.description,
-      url: `${SITE_URL}${path}`,
+    openGraph: pageOpenGraph(path, post.title, post.description, {
       type: "article",
+      omitImages: true,
       publishedTime: post.publishedAt,
       modifiedTime: post.updatedAt,
       tags: post.tags,
-      images: [blogImagePath(post.slug)],
-    },
+    }),
   };
 }
 

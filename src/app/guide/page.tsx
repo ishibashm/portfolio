@@ -3,8 +3,8 @@ import type { Metadata } from "next";
 import { ArticleJsonLd } from "@/components/JsonLd";
 import { AdBanner } from "@/components/ads/AdBanner";
 import { GUIDE_INDEX, GUIDE_PAGES } from "@/lib/guideContent";
-import { SITE_NAME } from "@/lib/siteStructure";
 import { coreRouteLabel } from "@/lib/siteStructure";
+import { pageOpenGraph } from "@/lib/siteUrl";
 
 /**
  * 使い方ガイドの入口。
@@ -18,13 +18,9 @@ export const metadata: Metadata = {
   title: GUIDE_INDEX.title,
   description: GUIDE_INDEX.description,
   alternates: { canonical: "/guide" },
-  openGraph: {
-      images: ["/ogp.png"],
-    title: `${GUIDE_INDEX.title} | ${SITE_NAME}`,
-    description: GUIDE_INDEX.description,
-    url: "https://cloud-palette.com/guide",
+  openGraph: pageOpenGraph("/guide", GUIDE_INDEX.title, GUIDE_INDEX.description, {
     type: "article",
-  },
+  }),
 };
 
 /** 決める順序。ガイドの章と、実際に触る画面を並べて出す。 */

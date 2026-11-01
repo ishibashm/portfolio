@@ -14,7 +14,7 @@ import {
   findGuidePage,
   glossaryTerms,
 } from "@/lib/guideContent";
-import { SITE_NAME } from "@/lib/siteStructure";
+import { pageOpenGraph } from "@/lib/siteUrl";
 
 /**
  * ガイドの各章。本文は guideContent.ts 側に持たせている。
@@ -53,13 +53,9 @@ export async function generateMetadata({
     title,
     description: page.description,
     alternates: { canonical: path },
-    openGraph: {
-      images: ["/ogp.png"],
-      title: `${title} | ${SITE_NAME}`,
-      description: page.description,
-      url: `https://cloud-palette.com${path}`,
+    openGraph: pageOpenGraph(path, title, page.description, {
       type: "article",
-    },
+    }),
   };
 }
 

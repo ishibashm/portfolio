@@ -214,7 +214,10 @@ async function triggerAgentEvolution(
                 excerpt: args.excerpt || null,
                 tags: args.tags || "AI, self-evolution",
                 authorId: firstUser.id,
-                published: true,
+                // 作業ログ。公開しない。slug は agent- で始まる。
+                // 公開側（blogStore）も同じ接頭辞を一覧・頁から落とす。
+                // 既存行の published はここでは変えない。
+                published: false,
                 updatedAt: new Date(),
               },
             });

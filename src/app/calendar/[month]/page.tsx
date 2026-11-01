@@ -13,6 +13,7 @@ import {
 import { STAR_NAMES } from "@/lib/kigakuContent";
 import { STAR_MEANINGS } from "@/lib/kigakuMeanings";
 import { BreadcrumbJsonLd } from "@/components/JsonLd";
+import { pageOpenGraph } from "@/lib/siteUrl";
 
 /**
  * 「その月に引越すなら何日か」を月ごとにまとめた記事ページ。
@@ -56,17 +57,15 @@ export async function generateMetadata({
     cal.recommended.length > 0
       ? `${year}年${month}月で引越しに向くのは${days}。大安・天赦日・一粒万倍日と土用を突き合わせた一覧です。本命星ごとの吉方位も併記しています。`
       : `${year}年${month}月は、六曜と土用を突き合わせると引越しに向く日がありません。理由と、前後の月の候補を載せています。`;
+  const canonical = `/calendar/${year}-${String(month).padStart(2, "0")}`;
 
   return {
     title,
     description,
-    alternates: { canonical: `/calendar/${year}-${String(month).padStart(2, "0")}` },
-    openGraph: {
-      images: ["/ogp.png"],
-      title,
-      description,
+    alternates: { canonical },
+    openGraph: pageOpenGraph(canonical, title, description, {
       type: "article",
-    },
+    }),
   };
 }
 

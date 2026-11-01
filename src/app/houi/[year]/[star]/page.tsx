@@ -18,6 +18,7 @@ import {
 import { AdBanner } from "@/components/ads/AdBanner";
 import { AreaEntryLinks } from "@/components/houi/AreaEntryLinks";
 import { ArticleJsonLd, BreadcrumbJsonLd } from "@/components/JsonLd";
+import { pageOpenGraph } from "@/lib/siteUrl";
 
 /**
  * 「2026年 一白水星 吉方位」のような検索に直接応える静的ページ。
@@ -72,12 +73,10 @@ export async function generateMetadata({
     title: { absolute: title },
     description,
     alternates: { canonical: `/houi/${year}/${star}` },
-    openGraph: {
-      images: ["/ogp.png"],
-      title,
-      description,
+    openGraph: pageOpenGraph(`/houi/${year}/${star}`, heading, description, {
       type: "article",
-    },
+      omitImages: true,
+    }),
   };
 }
 

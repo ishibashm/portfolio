@@ -38,6 +38,17 @@ vi.mock("@/lib/blog", async () => {
         draft: false,
         readingMinutes: 3,
       },
+      {
+        slug: "agent-log-from-markdown",
+        title: "作業ログ",
+        description: "log",
+        publishedAt: "2026-08-02",
+        updatedAt: undefined,
+        category: "その他",
+        tags: ["AI"],
+        draft: false,
+        readingMinutes: 1,
+      },
     ],
     getBlogPost: (slug: string) =>
       slug === "from-markdown"
@@ -53,7 +64,20 @@ vi.mock("@/lib/blog", async () => {
             readingMinutes: 3,
             body: "ファイルの本文",
           }
-        : undefined,
+        : slug === "agent-log-from-markdown"
+          ? {
+              slug: "agent-log-from-markdown",
+              title: "作業ログ",
+              description: "log",
+              publishedAt: "2026-08-02",
+              updatedAt: undefined,
+              category: "その他",
+              tags: ["AI"],
+              draft: false,
+              readingMinutes: 1,
+              body: "ログ本文",
+            }
+          : undefined,
   };
 });
 
@@ -103,6 +127,29 @@ describe("loadBlogPosts", () => {
     const posts = await loadBlogPosts();
 
     expect(posts.map((p) => p.slug)).toEqual(["from-markdown"]);
+  });
+
+  it("slug が agent- の公開済み行は一覧に出さない", async () => {
+    findMany.mockResolvedValue([
+      dbRow,
+      {
+        ...dbRow,
+        slug: "agent--cosmic-report-void-of-course-alignment-deep-calibration-sequence-1781282092303",
+        title: "作業ログ",
+      },
+    ]);
+    const posts = await loadBlogPosts();
+    expect(posts.map((p) => p.slug)).toEqual(["from-db"]);
+  });
+
+  it("公開行が作業ログだけなら Markdown を復活させない", async () => {
+    findMany.mockResolvedValue([
+      {
+        ...dbRow,
+        slug: "agent-only",
+      },
+    ]);
+    expect(await loadBlogPosts()).toEqual([]);
   });
 
   it("一覧に本文は載せない", async () => {
@@ -164,6 +211,25 @@ describe("loadBlogPost", () => {
     // 管理画面で非公開にした記事も content/blog の写しでそのまま開けた
     findFirst.mockResolvedValue({ ...dbRow, published: false });
     expect(await loadBlogPost("from-markdown")).toBeUndefined();
+  });
+
+  it("slug が agent- の行は published でも出さない", async () => {
+    findFirst.mockResolvedValue({
+      ...dbRow,
+      slug: "agent--cosmic-report-void-of-course-alignment-deep-calibration-sequence-1781282092303",
+      published: true,
+    });
+    expect(
+      await loadBlogPost(
+        "agent--cosmic-report-void-of-course-alignment-deep-calibration-sequence-1781282092303",
+      ),
+    ).toBeUndefined();
+    expect(findFirst).not.toHaveBeenCalled();
+  });
+
+  it("Markdown 側の agent- も出さない", async () => {
+    findFirst.mockResolvedValue(null);
+    expect(await loadBlogPost("agent-log-from-markdown")).toBeUndefined();
   });
 
   it("DB に記事があるのに slug が無ければ 404（消した記事を復活させない）", async () => {

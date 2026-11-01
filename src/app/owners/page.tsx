@@ -1,7 +1,7 @@
 import Link from "next/link";
 import type { Metadata } from "next";
 import { SITE_NAME } from "@/lib/siteStructure";
-import { SITE_URL } from "@/lib/siteUrl";
+import { pageOpenGraph } from "@/lib/siteUrl";
 
 /**
  * 物件を貸したい・売りたいオーナー向けの案内。
@@ -35,13 +35,7 @@ export const metadata: Metadata = {
   title: TITLE,
   description: DESCRIPTION,
   alternates: { canonical: "/owners" },
-  openGraph: {
-    title: `${TITLE} | ${SITE_NAME}`,
-    description: DESCRIPTION,
-    url: `${SITE_URL}/owners`,
-    type: "website",
-    images: ["/ogp.png"],
-  },
+  openGraph: pageOpenGraph("/owners", TITLE, DESCRIPTION),
 };
 
 function Section({

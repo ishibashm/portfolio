@@ -128,6 +128,8 @@ docs/sessions/
 !src/app/llms.txt/
 !src/app/llms-full.txt/
 !src/app/indexnow-key.txt/
+# OG 画像に同梱した Noto Sans JP のライセンス（ファイル。ディレクトリではない）
+!src/lib/og/OFL.txt
 
 
 # Data and Logs
