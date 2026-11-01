@@ -15,8 +15,8 @@ const scopes = (year: boolean, month: boolean, day: boolean) => ({
 });
 
 describe("evaluateTenchusatsu", () => {
-  it("既定は従来どおり年・月・日のいずれでも移転不可にする", () => {
-    expect(DEFAULT_TENCHUSATSU_MODE).toBe("strict");
+  it("既定は weaken（禁止しない）。strict は年・月・日のいずれでも移転不可にする", () => {
+    expect(DEFAULT_TENCHUSATSU_MODE).toBe("weaken");
     expect(evaluateTenchusatsu(scopes(true, false, false), "strict").blocks).toBe(
       true,
     );
@@ -113,7 +113,7 @@ describe("モード定義", () => {
   });
 
   it("未知の id は既定に落ちる", () => {
-    expect(getTenchusatsuMode("no-such-mode").id).toBe("strict");
+    expect(getTenchusatsuMode("no-such-mode").id).toBe("weaken");
     expect(isTenchusatsuMode("strict")).toBe(true);
     expect(isTenchusatsuMode("whatever")).toBe(false);
   });

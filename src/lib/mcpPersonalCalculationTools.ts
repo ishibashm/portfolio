@@ -31,6 +31,7 @@ const tenchusatsu = z.enum([
   "weaken",
   "off",
 ]);
+const purposeEnum = z.enum(["daytrip", "short_stay", "relocation"]);
 const warnings = z.array(
   z.strictObject({ code: z.string(), message: z.string() }),
 );
@@ -65,9 +66,30 @@ export const personalDirectionsOutputSchema = z.strictObject({
         isTripleAuspicious: z.boolean(),
         hasTendo: z.boolean(),
         isDoyouSatsu: z.boolean(),
+        threeBoardTier: z.enum(["S", "A", "B", "C", "D", "X"]).optional(),
+        threeBoardStatus: z.string().optional(),
       }),
     )
     .length(8),
+  purpose: purposeEnum.nullable(),
+  boardsUsed: z.array(z.enum(["year", "month", "day"])).min(1).max(3),
+  purposeLabel: z.string(),
+  tenchusatsu: z.strictObject({
+    inPeriod: z.boolean(),
+    scopes: z.array(z.enum(["year", "month", "day"])),
+    blocks: z.boolean(),
+    attenuation: z.number(),
+    note: z.string().nullable(),
+  }),
+  auspiciousDirections: z.array(
+    z.enum(["N", "NE", "E", "SE", "S", "SW", "W", "NW"]),
+  ),
+  almanac: z.strictObject({
+    rokuyo: z.string(),
+    ichiryumanbai: z.boolean(),
+    tensha: z.boolean(),
+    note: z.string(),
+  }),
   tiers: z.string(),
   profile: profileIdentity,
   configUpdatedAt: z.iso.datetime().nullable(),
@@ -172,6 +194,7 @@ export function registerPersonalCalculationTools(
         profile: profileSelectorSchema,
         date: timeSlotsInputSchema.shape.date,
         tenchusatsuMode: tenchusatsu.optional(),
+        purpose: purposeEnum.optional(),
         involuntaryMove: z.boolean().optional(),
         directionFilterMode: modes.optional(),
       }),

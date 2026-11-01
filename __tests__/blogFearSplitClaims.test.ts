@@ -12,7 +12,6 @@ import { forecastAnchorMs } from "@/utils/boardInstant";
 import { parseJapanDateTime } from "@/utils/japanDate";
 import { isKnownDirectionStatus } from "@/lib/directionLabels";
 import type { TenchusatsuMode } from "@/utils/tenchusatsuPolicy";
-import { DEFAULT_TENCHUSATSU_MODE } from "@/utils/tenchusatsuPolicy";
 
 /**
  * 公開記事 why-bad-directions-feel-frightening の数字をエンジンと照合する。
@@ -96,7 +95,9 @@ function split(birth: string): Split {
     honmeiStar: getHonmeiStar(d).classical,
     voidZodiacs: getPersonalVoidZodiac(d),
     lon: LON,
-    tenchusatsuMode: DEFAULT_TENCHUSATSU_MODE as TenchusatsuMode,
+    /* 記事は 2026-10 時点の既定（厳格）で数えた。既定は 2026-11-02 に
+       weaken へ変えたが、記事の数字は厳格の条件のまま固定する */
+    tenchusatsuMode: "strict" as TenchusatsuMode,
   };
   let cursor = new Date(forecastAnchorMs(new Date(FROM)));
   const end = new Date(forecastAnchorMs(new Date(TO)));

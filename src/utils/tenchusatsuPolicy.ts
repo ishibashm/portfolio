@@ -19,7 +19,20 @@
  *    得ない移動）」を区別し、後者は天中殺の影響を受けないとする。
  *
  * どれを採るかは利用者の立場によるので、モデルとして選べるようにする。
- * 既定は従来どおり strict（挙動を変えない）。
+ *
+ * ## 既定は weaken（2026-11-02 に strict から変更）
+ *
+ * 以前の既定は strict（年・月・日のどれかが空亡なら移転不可）だった。
+ * この扱いだと 1 年で動ける日が 0〜5 日しか残らない人が出て、本人が
+ * 「厳しすぎる」と判断した。方針は次のとおり:
+ *
+ * - 天中殺は**禁止しない**。吉凶の力を弱めるだけ（weaken）
+ * - 天中殺の日でも全方位を凶にしない。天中殺を除いた判定の吉方位を返し、
+ *   「天中殺なので吉凶の力は弱め」と注記する（`TENCHUSATSU_WEAK_NOTE`）
+ * - 時刻（刻）単位の天中殺は使わない。見るのは年・月・日の空亡だけ
+ * - 期限のある手続き・連絡には効かせない（このモジュールは移動の判定専用）
+ *
+ * strict など他の扱いは、明示的に選べば従来どおり使える。
  */
 
 import {
@@ -27,6 +40,9 @@ import {
   type DirectionFilterMode,
 } from "@/utils/directionFilterMode";
 
+/**
+ * 天中殺を見る範囲。**時刻（刻）は含めない**（方針で使わないため）。
+ */
 export type TenchusatsuScope = "year" | "month" | "day";
 
 export type TenchusatsuMode =
@@ -116,7 +132,10 @@ export function filterModeUsesTenchusatsu(mode: DirectionFilterMode): boolean {
   return filterLayersOf(mode).tenchusatsu;
 }
 
-export const DEFAULT_TENCHUSATSU_MODE: TenchusatsuMode = "strict";
+export const DEFAULT_TENCHUSATSU_MODE: TenchusatsuMode = "weaken";
+
+/** 天中殺に当たるが禁止はしないときに添える注記。 */
+export const TENCHUSATSU_WEAK_NOTE = "天中殺なので吉凶の力は弱め";
 
 export function isTenchusatsuMode(value: string): value is TenchusatsuMode {
   return TENCHUSATSU_MODES.some((m) => m.id === value);
