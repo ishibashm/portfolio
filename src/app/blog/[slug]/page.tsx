@@ -86,8 +86,7 @@ export default async function BlogPostPage({
   if (!post) notFound();
 
   const path = `/blog/${post.slug}`;
-  /* 記事ごとの図。共通の画像に落ちているときは本文に出さない
-     （og:image と構造化データには引き続き使う）。 */
+  /* 記事ごとの図。共通の画像に落ちているときは本文に出さない。 */
   const socialImage = blogImagePath(post.slug);
   const heroImage = socialImage === DEFAULT_SOCIAL_IMAGE ? null : socialImage;
   // 自分以外を全部出していた。3 本の頃は 2 件で済んでいたが、23 本に
@@ -113,11 +112,12 @@ export default async function BlogPostPage({
         path={path}
         keywords={post.tags}
         datePublished={post.publishedAt}
-        dateModified={post.updatedAt}
-        image={socialImage}
+        dateModified={post.updatedAt ?? post.publishedAt}
+        image={`/blog/${post.slug}/opengraph-image`}
       />
       <BreadcrumbJsonLd
         items={[
+          { name: "ホーム", path: "/" },
           { name: "引越しの読みもの", path: "/blog" },
           { name: post.title, path },
         ]}

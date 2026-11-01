@@ -77,7 +77,7 @@ export const metadata: Metadata = {
     ],
   },
   /*
-    **card だけを置く。title / description / images をここに書かない。**
+    **card と site だけを置く。title / description / images をここに書かない。**
 
     2026-09-05 に実測して分かった。ここに title・description・images を
     書いていたせいで、**サイト内の全ページがルートの値を継承していた。**
@@ -91,7 +91,7 @@ export const metadata: Metadata = {
     全部で起きていた。X で共有すると、どこを共有しても同じカードになる。
     #948 で og:image を記事ごとにしたときに、こちら側を見落としている。
 
-    ここを空にすると、Next が**各ページの title / description / og:image**
+    title / description / images を省くと、Next が**各ページの title / description / og:image**
     から twitter を組む。ビルド後の HTML で確かめた（推測ではない）。
 
         記事      twitter:title 凶方位への移動を、吉が上回ることはできるのか
@@ -103,6 +103,7 @@ export const metadata: Metadata = {
   */
   twitter: {
     card: "summary_large_image",
+    site: "@cloud8wq",
   },
   /*
     画像プレビューの上限。**指定が無いときの既定は standard**（小さな
@@ -156,7 +157,8 @@ const jsonLdSchema = {
       "@type": "WebSite",
       "@id": "https://cloud-palette.com/#website",
       "url": "https://cloud-palette.com",
-      "name": `${SITE_NAME} | ${SITE_TAGLINE}`,
+      "name": SITE_NAME,
+      "alternateName": SITE_TAGLINE,
       "description": SITE_DESCRIPTION,
       "publisher": {
         "@id": "https://cloud-palette.com/#organization",
@@ -166,18 +168,23 @@ const jsonLdSchema = {
     {
       "@type": "Organization",
       "@id": "https://cloud-palette.com/#organization",
-      "name": "Cloud Palette Core Labs",
+      "name": SITE_NAME,
+      "alternateName": "Cloud Palette Core Labs",
       "url": "https://cloud-palette.com",
       "logo": "https://cloud-palette.com/icon-512.png",
-      // 運営している公式の YouTube チャンネル。検索エンジンが同じ運営元だと
+      // 運営している公式の YouTube チャンネルと X アカウント。検索エンジンが同じ運営元だと
       // 結び付けられるようにする。作っていないチャンネルは載せない。
       "sameAs": [
         "https://www.youtube.com/@houi-sumai-techo",
+        "https://www.youtube.com/@penthouse-focus",
+        "https://www.youtube.com/@AIの数式",
+        "https://x.com/cloud8wq",
       ],
     },
     {
       "@type": "WebApplication",
-      "name": `${SITE_NAME} ${SITE_TAGLINE}`,
+      "name": SITE_NAME,
+      "alternateName": SITE_TAGLINE,
       "operatingSystem": "All",
       // 引越し・住まい探しの道具として申告する。以前は BusinessApplication で、
       // 中身（住居選び）とカテゴリが一致していなかった。
