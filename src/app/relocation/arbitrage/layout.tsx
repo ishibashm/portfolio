@@ -1,6 +1,7 @@
 import { GmailFeature } from "@/components/relocation/GmailFeature";
 import type { Metadata } from "next";
 import { coreRouteLabel } from "@/lib/siteStructure";
+import { pageOpenGraph } from "@/lib/siteUrl";
 
 /**
  * ページ本体がクライアントコンポーネントで metadata を export できないため、
@@ -17,11 +18,7 @@ export const metadata: Metadata = {
   alternates: { canonical: "/relocation/arbitrage" },
   title: TITLE,
   description: DESCRIPTION,
-  openGraph: {
-    images: ["/ogp.png"],
-    title: TITLE,
-    description: DESCRIPTION,
-  },
+  openGraph: pageOpenGraph("/relocation/arbitrage", TITLE, DESCRIPTION),
 };
 
 export const dynamic = "force-dynamic";

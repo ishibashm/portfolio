@@ -49,6 +49,8 @@ function blogLastmods() {
   const out = {};
   for (const file of fs.readdirSync(dir)) {
     if (!file.endsWith(".md")) continue;
+    // 作業ログ（src/lib/agentLog.ts）。Markdown に置かれても載さない。
+    if (file.startsWith("agent-")) continue;
     const head =
       fs.readFileSync(path.join(dir, file), "utf-8").split(/^---$/m)[1] ?? "";
     const field = (key) =>
@@ -533,6 +535,12 @@ module.exports = {
     ...OFF_THEME.map((p) => `${p}/*`),
     ...NOT_A_PAGE,
     ...THIN_GENERATED,
+    /*
+      自律エージェントの作業ログ。slug は agent- で始まる
+      （src/lib/agentLog.ts）。DB の行は消さない。公開 URL には出さない。
+      ビルドが静的パスを拾っても、ここで落とす。
+    */
+    "/blog/agent-*",
   ],
   /* 戻す一覧そのもの。検査が住宅統計と突き合わせるために読む。 */
   additionalPathsSource: AREA_DATA_PATHS,

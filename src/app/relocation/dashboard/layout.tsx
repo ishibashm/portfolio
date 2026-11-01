@@ -1,6 +1,7 @@
 import { Suspense } from "react";
 import { FortuneReport } from "@/components/fortune/FortuneReport";
 import type { Metadata } from "next";
+import { pageOpenGraph } from "@/lib/siteUrl";
 
 // Evaluate the server flag and authenticated report on each page request.
 export const dynamic = "force-dynamic";
@@ -17,13 +18,11 @@ export const metadata: Metadata = {
      札・検索結果で同じ頁を別の言葉で説明しない）。 */
   description:
     "生年月日と出発地から、今日の 8 方位の吉凶・いまの時間帯の天中殺・真太陽時を 1 画面で確かめる。目的地を地名で指定して、その方位が今日使えるかを見る。",
-  openGraph: {
-    images: ["/ogp.png"],
-    title: "今日の方位と時刻を確かめる",
-    description:
-      "今日の 8 方位の吉凶・いまの時間帯の天中殺・真太陽時を 1 画面で。目的地を地名で指定して、その方位が今日使えるかを見る。",
-    url: "/relocation/dashboard",
-  },
+  openGraph: pageOpenGraph(
+    "/relocation/dashboard",
+    "今日の方位と時刻を確かめる",
+    "今日の 8 方位の吉凶・いまの時間帯の天中殺・真太陽時を 1 画面で。目的地を地名で指定して、その方位が今日使えるかを見る。",
+  ),
 };
 
 export default function DashboardLayout({

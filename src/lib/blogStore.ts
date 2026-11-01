@@ -2,6 +2,7 @@ import prisma from "@/lib/prisma";
 import { blogCardVideoId } from "./blogVideo";
 import { toLogMessage } from "@/lib/errorMessage";
 import { toJapanDateString } from "@/utils/japanDate";
+import { isAgentLogSlug } from "@/lib/agentLog";
 import {
   getBlogPost as getMarkdownBlogPost,
   getBlogPosts as getMarkdownBlogPosts,
@@ -127,6 +128,12 @@ export async function loadBlogPost(
   slug: string,
   options: { quiet?: boolean } = {},
 ): Promise<BlogPost | undefined> {
+  /*
+    作業ログ（slug が agent-）。published が true の既存行も出さない。
+    行の更新・削除はしない。今後の書き込みは daemon が published: false
+    にするが、既に公開済みの行はこちらのふるいが閉じる。
+  */
+  if (isAgentLogSlug(slug)) return undefined;
   try {
     const row = await prisma.blogPost.findFirst({
       where: { slug },
@@ -170,11 +177,13 @@ export async function loadSearchableBlogPosts(options: {
       const videos = new Map(
         getMarkdownBlogPosts().map((post) => [post.slug, post]),
       );
-      return rows.map((row) => {
-        const post = toBlogPost(row);
-        const md = videos.get(row.slug);
-        return md ? withMarkdownVideo(post, md) : post;
-      });
+      return rows
+        .filter((row) => !isAgentLogSlug(row.slug))
+        .map((row) => {
+          const post = toBlogPost(row);
+          const md = videos.get(row.slug);
+          return md ? withMarkdownVideo(post, md) : post;
+        });
     }
     if (await prisma.blogPost.findFirst({ select: { slug: true } })) return [];
   } catch (e) {
@@ -183,8 +192,10 @@ export async function loadSearchableBlogPosts(options: {
   }
 
   // DB が空＝まだ取り込んでいない。Markdown をそのまま出す。
-  return getMarkdownBlogPosts().map((summary) => ({
-    ...summary,
-    body: getMarkdownBlogPost(summary.slug)?.body ?? "",
-  }));
+  return getMarkdownBlogPosts()
+    .filter((summary) => !isAgentLogSlug(summary.slug))
+    .map((summary) => ({
+      ...summary,
+      body: getMarkdownBlogPost(summary.slug)?.body ?? "",
+    }));
 }

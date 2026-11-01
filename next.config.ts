@@ -12,6 +12,14 @@ const nextConfig: NextConfig = {
   // 公開MCPの任意取得で使うブラウザーを standalone に含める。
   outputFileTracingIncludes: {
     "/api/mcp": ["./node_modules/@sparticuz/chromium/bin/**"],
+    /*
+      og:image の日本語フォント。Satori は実行時にファイルを読む。
+      standalone の追跡は import.meta.url だけでは漏れることがあるので、
+      画像を出す経路に明示する。
+    */
+    "/blog/[slug]": ["./src/lib/og/NotoSansJP-Bold.ttf"],
+    "/houi/pref/[code]": ["./src/lib/og/NotoSansJP-Bold.ttf"],
+    "/houi/[year]/[star]": ["./src/lib/og/NotoSansJP-Bold.ttf"],
   },
   async rewrites() {
     return [

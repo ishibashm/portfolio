@@ -6,8 +6,7 @@ import { formatBlogDate } from "@/lib/blog";
 import { loadBlogPosts } from "@/lib/blogStore";
 import type { BlogPostSummary } from "@/lib/blog";
 import { groupPostsByCategory } from "@/lib/blogCategories";
-import { SITE_NAME } from "@/lib/siteStructure";
-import { SITE_URL } from "@/lib/siteUrl";
+import { pageOpenGraph } from "@/lib/siteUrl";
 
 const TITLE = "引越しの読みもの";
 const DESCRIPTION =
@@ -22,13 +21,7 @@ export const metadata: Metadata = {
     canonical: "/blog",
     types: { "application/rss+xml": "/blog/feed.xml" },
   },
-  openGraph: {
-    title: `${TITLE} | ${SITE_NAME}`,
-    description: DESCRIPTION,
-    url: `${SITE_URL}/blog`,
-    type: "website",
-    images: ["/ogp.png"],
-  },
+  openGraph: pageOpenGraph("/blog", TITLE, DESCRIPTION),
 };
 
 /**

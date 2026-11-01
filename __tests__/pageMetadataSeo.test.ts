@@ -218,3 +218,72 @@ describe("canonical を持つ頁は openGraph も持つ（ホームのカード�
     },
   );
 });
+
+/**
+ * openGraph をオブジェクトで書くと、ルートの値を継承せず、かつ
+ * url・siteName・locale を書き忘れる（2026-11 の監査）。共通ヘルパーだけを許す。
+ * ルートの layout は既定そのものなので対象外。
+ */
+function openGraphInitializers(file: string): ts.Expression[] {
+  const out: ts.Expression[] = [];
+  const visit = (n: ts.Node) => {
+    if (ts.isPropertyAssignment(n) && propName(n) === "openGraph") {
+      out.push(n.initializer);
+    }
+    ts.forEachChild(n, visit);
+  };
+  visit(parse(file));
+  return out;
+}
+
+describe("openGraph は pageOpenGraph 経由（url / site_name / locale を落とさない）", () => {
+  const files = metadataFiles(APP).filter(
+    (f) => relative(APP, f) !== "layout.tsx",
+  );
+  const withOg = files.filter((f) => openGraphInitializers(f).length > 0);
+
+  it("検査の対象が見つかっている（空回りしていない）", () => {
+    expect(withOg.length).toBeGreaterThan(15);
+  });
+
+  it.each(withOg.map((f) => relative(process.cwd(), f)))("%s", (file) => {
+    for (const init of openGraphInitializers(join(process.cwd(), file))) {
+      const ok =
+        ts.isCallExpression(init) &&
+        ts.isIdentifier(init.expression) &&
+        init.expression.text === "pageOpenGraph";
+      expect(
+        ok,
+        "openGraph をオブジェクトで書くと og:url・og:site_name・og:locale が落ちる",
+      ).toBe(true);
+    }
+  });
+});
+
+describe("calendar の月ページにサイト名が付く", () => {
+  it("layout の title は template を持つ（文字列だと子でテンプレートが消える）", () => {
+    const sf = parse(join(APP, "calendar/layout.tsx"));
+    let template: string | null = null;
+    const visit = (n: ts.Node) => {
+      if (
+        ts.isPropertyAssignment(n) &&
+        propName(n) === "title" &&
+        ts.isObjectLiteralExpression(n.initializer)
+      ) {
+        const t = n.initializer.properties.find(
+          (p) => propName(p) === "template",
+        );
+        if (
+          t &&
+          ts.isPropertyAssignment(t) &&
+          ts.isTemplateExpression(t.initializer)
+        ) {
+          template = t.initializer.getText();
+        }
+      }
+      ts.forEachChild(n, visit);
+    };
+    visit(sf);
+    expect(template).toContain("SITE_NAME");
+  });
+});

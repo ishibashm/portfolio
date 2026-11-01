@@ -3,8 +3,7 @@ import type { Metadata } from "next";
 import { UserRound } from "lucide-react";
 import { AccountPanel } from "@/components/account/AccountPanel";
 import { RemindersPanel } from "@/components/account/RemindersPanel";
-import { SITE_NAME } from "@/lib/siteStructure";
-import { SITE_URL } from "@/lib/siteUrl";
+import { pageOpenGraph } from "@/lib/siteUrl";
 
 /**
  * マイページ。**いま何が登録されているか**を 1 か所で見せる。
@@ -38,12 +37,7 @@ export const metadata: Metadata = {
   description: DESCRIPTION,
   alternates: { canonical: "/account" },
   robots: { index: false, follow: true },
-  openGraph: {
-    title: `${TITLE} | ${SITE_NAME}`,
-    description: DESCRIPTION,
-    url: `${SITE_URL}/account`,
-    type: "website",
-  },
+  openGraph: pageOpenGraph("/account", TITLE, DESCRIPTION),
 };
 
 export default function Page() {

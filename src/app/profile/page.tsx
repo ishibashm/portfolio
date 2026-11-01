@@ -2,8 +2,7 @@ import Link from "next/link";
 import type { Metadata } from "next";
 import { UserRound } from "lucide-react";
 import { ProfileForm } from "@/components/profile/ProfileForm";
-import { SITE_NAME } from "@/lib/siteStructure";
-import { SITE_URL } from "@/lib/siteUrl";
+import { pageOpenGraph } from "@/lib/siteUrl";
 
 /**
  * 生年月日・出生地・出発地・目的地をまとめて入れる頁。
@@ -35,12 +34,7 @@ export const metadata: Metadata = {
   description: DESCRIPTION,
   alternates: { canonical: "/profile" },
   robots: { index: false, follow: true },
-  openGraph: {
-    title: `${TITLE} | ${SITE_NAME}`,
-    description: DESCRIPTION,
-    url: `${SITE_URL}/profile`,
-    type: "website",
-  },
+  openGraph: pageOpenGraph("/profile", TITLE, DESCRIPTION),
 };
 
 export default function Page() {

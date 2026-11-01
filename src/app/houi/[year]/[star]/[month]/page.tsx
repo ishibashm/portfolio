@@ -13,6 +13,7 @@ import {
 } from "@/lib/kigakuContent";
 import { AreaEntryLinks } from "@/components/houi/AreaEntryLinks";
 import { ArticleJsonLd, BreadcrumbJsonLd } from "@/components/JsonLd";
+import { pageOpenGraph } from "@/lib/siteUrl";
 
 /**
  * 「2026年3月 一白水星 吉方位」のような、月単位の検索に応えるページ。
@@ -90,8 +91,12 @@ export async function generateMetadata({
       URL ごとに中身が違う。ここで一緒に外さないこと。
     */
     robots: { index: false, follow: true },
-    openGraph: {
-      images: ["/ogp.png"], title, description, type: "article" },
+    openGraph: pageOpenGraph(
+      `/houi/${year}/${star}/${month}`,
+      title,
+      description,
+      { type: "article" },
+    ),
   };
 }
 
