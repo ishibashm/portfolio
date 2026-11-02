@@ -1,10 +1,17 @@
 import { EventEmitter } from "node:events";
 import { afterEach, expect, it, vi } from "vitest";
 import { readRentalBrowser } from "@/lib/niftyRentalBrowser";
+const dnsLookup = vi.hoisted(() =>
+  vi.fn(async () => [{ address: "203.0.113.10", family: 4 }]),
+);
 const mocks = vi.hoisted(() => ({ launch: vi.fn() }));
 vi.mock("puppeteer-core", () => ({ default: { launch: mocks.launch } }));
 vi.mock("@sparticuz/chromium", () => ({
   default: { args: [], executablePath: async () => "/chromium" },
+}));
+vi.mock("node:dns/promises", () => ({
+  lookup: dnsLookup,
+  default: { lookup: dnsLookup },
 }));
 afterEach(() => {
   vi.resetAllMocks();
@@ -78,6 +85,25 @@ it("does not retry unrelated errors", async () => {
   ).rejects.toThrow("timeout");
   expect(mocks.launch).toHaveBeenCalledOnce();
 });
+it("does not launch Chromium for a metadata or rebinding target", async () => {
+  vi.stubEnv("RENTALS_ON_DEMAND_ENABLED", "1");
+  await expect(
+    readRentalBrowser(
+      "http://metadata.google.internal/",
+      async () => [],
+      async () => {},
+    ),
+  ).rejects.toThrow("Unsafe fetch URL");
+  dnsLookup.mockResolvedValueOnce([{ address: "169.254.169.254", family: 4 }]);
+  await expect(
+    readRentalBrowser(
+      url,
+      async () => [],
+      async () => {},
+    ),
+  ).rejects.toThrow("Unsafe fetch URL");
+  expect(mocks.launch).not.toHaveBeenCalled();
+});
 it("blocks images, fonts, media and third-party frames while allowing first-party scripts", async () => {
   vi.stubEnv("RENTALS_ON_DEMAND_ENABLED", "1");
   const { p } = page();
@@ -93,9 +119,11 @@ it("blocks images, fonts, media and third-party frames while allowing first-part
           abort: vi.fn().mockResolvedValue(undefined),
         };
         p.emit("request", request);
-        expect(
-          type === "script" ? request.continue : request.abort,
-        ).toHaveBeenCalledOnce();
+        await vi.waitFor(() => {
+          expect(
+            type === "script" ? request.continue : request.abort,
+          ).toHaveBeenCalledOnce();
+        });
       }
       const request = {
         url: () => "https://ads.example/frame",
@@ -105,7 +133,22 @@ it("blocks images, fonts, media and third-party frames while allowing first-part
         abort: vi.fn().mockRejectedValue(new Error("Target closed")),
       };
       p.emit("request", request);
-      expect(request.abort).toHaveBeenCalledOnce();
+      await vi.waitFor(() => {
+        expect(request.abort).toHaveBeenCalledOnce();
+      });
+      const metadata = {
+        url: () => "http://169.254.169.254/computeMetadata/v1/",
+        resourceType: () => "document",
+        isNavigationRequest: () => true,
+        frame: () => "main",
+        continue: vi.fn(),
+        abort: vi.fn().mockResolvedValue(undefined),
+      };
+      p.emit("request", metadata);
+      await vi.waitFor(() => {
+        expect(metadata.abort).toHaveBeenCalledOnce();
+      });
+      expect(metadata.continue).not.toHaveBeenCalled();
     },
     async () => {},
   );

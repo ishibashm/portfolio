@@ -61,6 +61,9 @@ jobs:
           DIRECT_URL: postgresql://ci:ci@localhost:5432/ci
         run: npx prisma generate
 
+      # next.config の typescript.ignoreBuildErrors は true のまま。
+      # 本番の next build は型エラーでは止まらないので、このステップが型の必須検査。
+      # pull_request と master への push の両方で走る（上の on:）。
       - name: Typecheck
         run: npx tsc --noEmit
 

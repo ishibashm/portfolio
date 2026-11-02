@@ -37,6 +37,7 @@ BEGIN
     'VisualizedComponent',
     'XPost',
     'api_usage',
+    'mcp_public_rate',
     'contact_messages',
     'direction_comments',
     'favorite_days',

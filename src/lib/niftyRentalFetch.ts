@@ -1,5 +1,10 @@
 import { SCRAPE_TARGETS } from "./scrapeTargets";
-import { NIFTY_CONTEXT_OPTIONS, MIN_PAGE_INTERVAL_MS } from "./niftyPolite";
+import {
+  NIFTY_CONTEXT_OPTIONS,
+  MIN_PAGE_INTERVAL_MS,
+  NIFTY_PAGE_HOSTS,
+} from "./niftyPolite";
+import { fetchAllowlisted } from "./safeFetchUrl";
 import { rentalRows, type NiftyWindow } from "./niftyRentalData";
 import { buildRentalUpsert } from "./rentalUpsert";
 import { readRentalBrowser } from "./niftyRentalBrowser";
@@ -27,17 +32,19 @@ export async function fetchNiftyRentalArea(area: RentalArea): Promise<void> {
   async function html(url: string): Promise<string | null> {
     if (!rentalsOnDemandEnabled()) throw new Error("disabled");
     try {
-      const response = await fetch(url, {
-        headers: { "User-Agent": NIFTY_CONTEXT_OPTIONS.userAgent },
-        signal: AbortSignal.timeout(15000),
-        redirect: "error",
+      const response = await fetchAllowlisted(url, NIFTY_PAGE_HOSTS, {
+        userAgent: NIFTY_CONTEXT_OPTIONS.userAgent,
+        timeoutMs: 15000,
       });
+      // リダイレクトは追わない。JS が要るページはブラウザー側で、同じ検査を通して開く。
+      if (response.status >= 300 && response.status < 400) return null;
       // Do not retry explicit rate limits or access denials through a browser.
       if (!response.ok) throw new Error(`rental HTTP ${response.status}`);
       return await response.text();
     } catch (error) {
       if (error instanceof Error && error.message.startsWith("rental HTTP"))
         throw error;
+      // DNS の一時失敗はブラウザー側でもう一度検査する。禁止アドレスはそちらでも止まる。
       return null;
     }
   }

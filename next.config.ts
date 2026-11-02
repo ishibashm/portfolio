@@ -9,7 +9,8 @@ const nextConfig: NextConfig = {
     "puppeteer-core",
     "@sparticuz/chromium",
   ],
-  // 公開MCPの任意取得で使うブラウザーを standalone に含める。
+  // 賃貸のオンデマンド取得（公開 MCP・既定オフ）で使うブラウザーを standalone に含める。
+  // 開く先は myhome.nifty.com だけで、URL は safeFetchUrl を通す。
   outputFileTracingIncludes: {
     "/api/mcp": ["./node_modules/@sparticuz/chromium/bin/**"],
     /*
