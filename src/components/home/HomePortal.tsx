@@ -22,7 +22,7 @@
 
 import React from "react";
 import Link from "next/link";
-import { evaluateTimePhase, isVoidTimeHour } from "@/lib/timePhase";
+import { evaluateTimePhase } from "@/lib/timePhase";
 import { ratingForStatus } from "@/lib/verdictRating";
 import { directionLabelShort } from "@/lib/directionLabels";
 import type { KimonScheduleItem } from "@/utils/solarTime";
@@ -204,10 +204,11 @@ export default function HomePortal({
     if (schedule.length === 0) return null;
     const now = evalDate.getTime();
 
+    /* 刻（時間）単位の天中殺は使わない（2026-11-02 本人決定。MCP の
+       judge_time_slots と同じ）。刻は五行の相性だけで見る。 */
     const rows = schedule.map((item) => {
-      const isVoid = isVoidTimeHour(item, personalVoidZodiac);
       const phase = evaluateTimePhase(item, honmeiStar, useClassicalBoard);
-      return { item, isVoid, isOptimal: phase.isOptimal };
+      return { item, isOptimal: phase.isOptimal };
     });
 
     const currentIndex = rows.findIndex(
@@ -219,18 +220,15 @@ export default function HomePortal({
 
     // 次に [GO] になる時間帯。今より後ろだけを見る。
     const next = rows.find(
-      (r) =>
-        r.isOptimal &&
-        !r.isVoid &&
-        new Date(r.item.startStandard).getTime() > now,
+      (r) => r.isOptimal && new Date(r.item.startStandard).getTime() > now,
     );
 
     return {
       current,
       next,
-      goCount: rows.filter((r) => r.isOptimal && !r.isVoid).length,
+      goCount: rows.filter((r) => r.isOptimal).length,
     };
-  }, [schedule, evalDate, personalVoidZodiac, honmeiStar, useClassicalBoard]);
+  }, [schedule, evalDate, honmeiStar, useClassicalBoard]);
 
   /** 30 日で動ける日（凶でない日。SAFE を含む）が多い方位。上位 3 つ。 */
   const windows = React.useMemo(() => {
@@ -284,18 +282,10 @@ export default function HomePortal({
           {timing?.current ? (
             <strong
               className={`text-sm font-bold ${
-                timing.current.isVoid
-                  ? "text-red-700"
-                  : timing.current.isOptimal
-                    ? "text-emerald-700"
-                    : "text-stone-600"
+                timing.current.isOptimal ? "text-emerald-700" : "text-stone-600"
               }`}
             >
-              {timing.current.isVoid
-                ? "動かない（天中殺）"
-                : timing.current.isOptimal
-                  ? "動いてよい"
-                  : "ふつう"}
+              {timing.current.isOptimal ? "動いてよい" : "ふつう"}
             </strong>
           ) : (
             <span className="text-xs text-stone-600">—</span>

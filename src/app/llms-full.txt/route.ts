@@ -157,7 +157,7 @@ Streamable HTTP・stateless・POST のみ。匿名で使えます。計算は画
 - get_honmei_star: 生年月日から本命星（九星）と天中殺の干支を返す。追加項目 kanshi（年月日）、solarTerms（出生年の24節気）、boundaryAlternatives（時刻不明の境界候補）、calendarBasis
 - get_kanshi: 生年月日から年月日の六十干支、日柱由来の空亡（kanshi.voidBranches）、各柱の干支併臨年（kanshiHeirin）、二十四節気の計算時刻（solarTerms）を返す。1900〜2100年の YYYY-MM-DD または日時を受け付け、時差省略はJST。日付だけは正午の代表値で、節入り当日は前後両候補とそれぞれの併臨年も返す
 - judge_directions: 出発地と生年月日から、指定日の八方位の段階（S 三盤吉〜X 五大凶殺）
-- judge_time_slots: 明示した生年月日・緯度・経度から、画面と同じ1日12刻の可否（天中殺／動いてよい／ふつう）と刻の九星を返す。includeBoard=true なら九星配置も返す
+- judge_time_slots: 明示した生年月日・緯度・経度から、1日12刻の可否（動いてよい／ふつう。刻単位の天中殺は使わず isVoid は常に false）と刻の九星を返す。includeBoard=true なら九星配置も返す
 - judge_hourly_directions: 日付必須、location（lat/lon）省略時は名古屋。本命星honmeiStarか生年月日birthDateは任意（同時指定不可）。judge_time_slotsと同じ真太陽時の12刻について時盤の八方位を返す。五黄殺・暗剣殺は全員に凶。未指定時の他方位はneutral（未判定）。色は既存KYUSEI.colorの時盤中宮の九星色で個人別ではない。年・月・日盤、時破、空亡は合成しない
 - find_auspicious_days: 期間内で、八方位それぞれに動ける日（三盤吉・吉日）を集計する。bestDays[].kanshi に各候補日の年月日干支（JST正午）、solarTerms に走査期間の二十四節気を追加
 - search_articles: キーワード・話題で公開記事のtitle・slug・description・URL・publishedAt・tagsを最大5件返す。
