@@ -758,8 +758,8 @@ export default function DirectionTownsPage() {
               </ArbitrageSidebarSection>
             )}
 
-            {/* 天中殺の扱い。年天中殺は 2 年続くため、既定の厳格な扱いだと
-                その間はどの方位・どの日も動けない判定になる。流派で違うので
+            {/* 天中殺の扱い。年天中殺は 2 年続くため、厳格な扱いだと
+                その間はどの方位・どの日も動けない判定になる（既定は弱める）。流派で違うので
                 選べるようにしてある（時期ツールと同じ選択肢）。 */}
             {hasBaseLocation && (
               <details

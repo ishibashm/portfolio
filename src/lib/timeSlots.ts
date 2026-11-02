@@ -1,6 +1,6 @@
 import { z } from "zod";
-import { evaluateTimePhase, isVoidTimeHour } from "@/lib/timePhase";
-import { getHonmeiStar, getPersonalVoidZodiac } from "@/utils/ephemerisEngine";
+import { evaluateTimePhase } from "@/lib/timePhase";
+import { getHonmeiStar } from "@/utils/ephemerisEngine";
 import { parseJapanDateTime, todayInJapan } from "@/utils/japanDate";
 import { getKyuseiBoard } from "@/utils/kigaku";
 import { getDailySolarSchedule } from "@/utils/solarTime";
@@ -88,15 +88,19 @@ export function calculateTimeSlots(input: unknown, requestedAt = new Date()) {
     throw new TimeSlotsError("INVALID_INPUT");
   const honmei = getHonmeiStar(birth);
   const override = args.settings?.voidZodiacOverride;
-  const voids = override ? override.split("") : getPersonalVoidZodiac(birth);
   const schedule = getDailySolarSchedule(
     new Date(`${date}T12:00:00+09:00`),
     args.lon,
   );
   const slots = schedule.map((item, index) => {
-    const isVoid = isVoidTimeHour(item, voids);
+    /*
+      刻（時間）単位の天中殺は使わない（2026-11-02 本人決定）。出力の形は
+      変えず、isVoid は常に false、status は "void"、label は「天中殺」に
+      ならない。天中殺は年・月・日だけを judge_directions で弱めとして扱う。
+    */
+    const isVoid = false;
     const phase = evaluateTimePhase(item, honmei, true);
-    const status = isVoid ? "void" : phase.isOptimal ? "favorable" : "neutral";
+    const status = phase.isOptimal ? "favorable" : "neutral";
     const board = args.includeBoard
       ? (Object.fromEntries(
           getKyuseiBoard(item.kyusei).map((star, i) => [
@@ -113,7 +117,7 @@ export function calculateTimeSlots(input: unknown, requestedAt = new Date()) {
       end: jstTimestamp(item.endStandard),
       hourStar: { number: item.kyusei.number, name: item.kyusei.japanese },
       status,
-      label: isVoid ? "天中殺" : phase.isOptimal ? "動いてよい" : "ふつう",
+      label: phase.isOptimal ? "動いてよい" : "ふつう",
       isVoid,
       isElementFavorable: phase.isFavorable ?? false,
       relation: phase.relation,
@@ -132,6 +136,11 @@ export function calculateTimeSlots(input: unknown, requestedAt = new Date()) {
       code: "TIME_TABLE_NOT_DIRECTIONS",
       message:
         "刻の可否と九星配置です。日の方位は別の方位ツールで確認してください。刻ごとの方位吉凶は提供しません。",
+    },
+    {
+      code: "HOUR_TENCHUSATSU_NOT_USED",
+      message:
+        "刻（時間）単位の天中殺は使いません。天中殺は年・月・日だけで、禁止せず吉凶の力を弱めて扱います。",
     },
     {
       code: "PARTIAL_CIVIL_DAY",

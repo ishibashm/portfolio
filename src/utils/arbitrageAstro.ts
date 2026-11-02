@@ -280,7 +280,7 @@ export interface PropertyAstroContext {
   hasJupiterLine: boolean;
   hasBirthLocation: boolean;
   actionIntent: ActionIntent;
-  /** 天中殺（空亡）の効かせ方。既定は従来どおり年・月・日すべてで禁止。 */
+  /** 天中殺（空亡）の効かせ方。既定は weaken（禁止せず弱める。2026-11-02 に strict から変更）。 */
   tenchusatsuMode?: TenchusatsuMode;
   /**
    * 方位の絞り込みモード。**天中殺を効かせるかどうかの判断に要る。**

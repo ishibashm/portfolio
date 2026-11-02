@@ -13,4 +13,8 @@
  *   - auspiciousDays.gradeVerdict / judgeDay の判定条件
  *   - tenchusatsuPolicy の既定挙動
  */
-export const JUDGMENT_ENGINE_VERSION = "2026.08.10-five-fatal";
+/*
+ * 2026.11.02-tenchusatsu-weaken: 天中殺の既定を strict（禁止）から
+ * weaken（禁止せず弱める）へ変えた。保存済みの履歴は旧版のまま残る。
+ */
+export const JUDGMENT_ENGINE_VERSION = "2026.11.02-tenchusatsu-weaken";

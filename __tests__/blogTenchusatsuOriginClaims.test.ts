@@ -17,7 +17,7 @@ import {
  *   lunar-javascript の日柱の空亡（getDayXunKong。天中殺の判定が読む
  *   ものと同じ）で 60 日を回して確かめる
  * - 12 日・12 か月・12 年のうち 2 つが空亡（十二支の周期に 2 支）
- * - サイトの「天中殺の扱い」5 通りの名前と、初期設定が「厳格」であること
+ * - サイトの「天中殺の扱い」5 通りの名前と、初期設定が「弱める」であること（2026-11 に厳格から変更）
  */
 
 const md = readFileSync(
@@ -102,15 +102,15 @@ describe("記事: 天中殺という言葉の来歴", () => {
     expect(row("年天中殺")).toEqual(["年天中殺", "2年", "12年のうち2年"]);
   });
 
-  it("サイトの扱いは 5 通りで、名前が記事の表と同じ。初期設定は厳格", () => {
+  it("サイトの扱いは 5 通りで、名前が記事の表と同じ。初期設定は弱める", () => {
     expect(TENCHUSATSU_MODES).toHaveLength(5);
     expect(md).toContain("Cloud Palette では5通りから選べる");
     for (const m of TENCHUSATSU_MODES) {
       expect(row(m.label)[0], m.id).toBe(m.label);
     }
-    expect(DEFAULT_TENCHUSATSU_MODE).toBe("strict");
+    expect(DEFAULT_TENCHUSATSU_MODE).toBe("weaken");
     expect(md).toContain(
-      "Cloud Palette の初期設定は「厳格」で年天中殺を含みます",
+      "Cloud Palette の初期設定は「弱める（禁止しない）」です",
     );
   });
 });

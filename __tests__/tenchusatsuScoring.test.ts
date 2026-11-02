@@ -52,8 +52,14 @@ const ctx = (
 });
 
 describe("天中殺の設定がスコアに届く", () => {
-  it("既定（厳格）では年天中殺で移転不可になる", () => {
+  it("既定（弱める）では年天中殺でも移転不可にしない", () => {
     const r = scoreDateForProperty(voidDay(), ctx());
+    expect(r.tenchusatsu.blocks).toBe(false);
+    expect(r.status).not.toBe("NOISE_TENCHU");
+  });
+
+  it("厳格では年天中殺で移転不可になる", () => {
+    const r = scoreDateForProperty(voidDay(), ctx({ tenchusatsuMode: "strict" }));
     expect(r.status).toBe("NOISE_TENCHU");
     expect(r.score).toBe(0);
     expect(r.tenchusatsu.blocks).toBe(true);
@@ -70,14 +76,20 @@ describe("天中殺の設定がスコアに届く", () => {
   });
 
   it("やむを得ない移動なら、厳格のままでも塞がらない", () => {
-    const r = scoreDateForProperty(voidDay(), ctx({ involuntaryMove: true }));
+    const r = scoreDateForProperty(
+      voidDay(),
+      ctx({ tenchusatsuMode: "strict", involuntaryMove: true }),
+    );
     expect(r.tenchusatsu.blocks).toBe(false);
     expect(r.score).toBeGreaterThan(0);
     expect(r.status).not.toBe("NOISE_TENCHU");
   });
 
   it("弱める設定では禁止せず、スコアが中央（50）へ寄る", () => {
-    const strict = scoreDateForProperty(voidDay(), ctx());
+    const strict = scoreDateForProperty(
+      voidDay(),
+      ctx({ tenchusatsuMode: "strict" }),
+    );
     const weaken = scoreDateForProperty(
       voidDay(),
       ctx({ tenchusatsuMode: "weaken" }),
