@@ -5,6 +5,7 @@ import { CompassDial } from "@/components/motion/CompassDial";
 import { MagneticCompass } from "@/components/houi/MagneticCompass";
 import type { Metadata } from "next";
 import {
+  HOUI_BREADCRUMB_LABEL,
   STAR_NAMES,
   STARS,
   birthYearsThrough,
@@ -93,7 +94,7 @@ export default function Page() {
           9 つの星の札と年ごとの一覧なので、記事の読み幅で止める理由が無い。
           /guide の索引と同じ 1700px。記事側（/houi/[year]/[star]）は本文が
           長いので 820px のまま。行長は段落の max-w-[70ch] で守る。 */}
-      <BreadcrumbJsonLd items={[{ name: "吉方位", path: "/houi" }]} />
+      <BreadcrumbJsonLd items={[{ name: HOUI_BREADCRUMB_LABEL, path: "/houi" }]} />
       <FaqJsonLd items={HOUI_FAQ} />
       <article className="relative max-w-[1700px] mx-auto px-5 py-12">
         {/* 金の羅盤の線画（飾り）。広い画面だけ、見出しと重ならない右上に。 */}

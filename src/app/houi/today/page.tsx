@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { buildTodayDirections } from "@/lib/todayDirections";
-import { getMonthlySummary } from "@/lib/kigakuContent";
+import { HOUI_BREADCRUMB_LABEL, getMonthlySummary } from "@/lib/kigakuContent";
 import { pageOpenGraph, SITE_URL } from "@/lib/siteUrl";
 import { BreadcrumbJsonLd } from "@/components/JsonLd";
 
@@ -25,7 +25,7 @@ export default function TodayPage() {
     <main className="wg-page px-4 py-10 text-slate-900">
       <BreadcrumbJsonLd
         items={[
-          { name: "吉方位", path: "/houi" },
+          { name: HOUI_BREADCRUMB_LABEL, path: "/houi" },
           { name: "今日の吉方位", path: "/houi/today" },
         ]}
       />

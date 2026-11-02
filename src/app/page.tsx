@@ -1,3 +1,4 @@
+import { currentYearInJapan } from "@/lib/kigakuContent";
 import { AgentEntry } from "@/components/home/AgentEntry";
 import { ScrollReset } from "@/components/home/ScrollReset";
 import Link from "next/link";
@@ -131,7 +132,7 @@ export default function Home() {
       {/* Footer with Compliance & LLMO Links */}
       <footer className="w-full max-w-[1700px] flex flex-col sm:flex-row items-center justify-between py-6 px-4 text-xs font-semibold text-slate-600 border-t border-slate-300/80 gap-4">
         <div>
-          © 2026 {SITE_NAME}. {SITE_TAGLINE}ためのサービスです。
+          © {currentYearInJapan()} {SITE_NAME}. {SITE_TAGLINE}ためのサービスです。
         </div>
         <div className="flex flex-wrap items-center gap-4 text-slate-500">
           <Link href="/guide" className="hover:text-rose-600 transition-colors">
