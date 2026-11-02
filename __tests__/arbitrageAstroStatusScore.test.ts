@@ -62,7 +62,7 @@ function stateWith(status: string): DailyAstroState {
     luckyDays: getLuckyDays(date),
     holiday: isJapaneseHoliday(date),
     weekday: 2,
-    isVoidTime: false,
+    inVoidPeriod: false,
     voidScopes: { year: false, month: false, day: false },
     baziScore: 50,
   };
