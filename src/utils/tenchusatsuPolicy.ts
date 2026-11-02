@@ -245,3 +245,71 @@ export const SCOPE_LABELS: Record<TenchusatsuScope, string> = {
   month: "月天中殺",
   day: "日天中殺",
 };
+
+/** 空亡の支と、その日の年・月・日の支から、当たっている範囲を出す。 */
+export function voidScopesOf(
+  voidZodiacs: readonly string[],
+  zodiac: { yearZodiac: string; monthZodiac: string; dayZodiac: string },
+): VoidScopes {
+  return {
+    year: voidZodiacs.includes(zodiac.yearZodiac),
+    month: voidZodiacs.includes(zodiac.monthZodiac),
+    day: voidZodiacs.includes(zodiac.dayZodiac),
+  };
+}
+
+/**
+ * API の入力から天中殺の扱いを読む。未指定・不正な値は既定（weaken）。
+ * strict など「止める」扱いは、利用者が明示したときだけ効かせる。
+ */
+export function tenchusatsuModeFrom(value: unknown): TenchusatsuMode {
+  return typeof value === "string" && isTenchusatsuMode(value)
+    ? value
+    : DEFAULT_TENCHUSATSU_MODE;
+}
+
+/** NBA 系の応答に添える、天中殺の効かせ方の要約。 */
+export interface TenchusatsuSummary {
+  mode: TenchusatsuMode;
+  /** 年・月・日のどれかが空亡に当たっているか（事実）。 */
+  inVoidPeriod: boolean;
+  /** 動きを止める扱いにしたか（strict などを明示したときだけ true）。 */
+  blocksMove: boolean;
+  /** 吉凶を中央（50）へ寄せる倍率。1 なら弱めない。 */
+  attenuation: number;
+  activeScopes: TenchusatsuScope[];
+  note: string;
+}
+
+/**
+ * NBA（/api/nba・/api/relocation/nba-evaluate）向けの天中殺の判定。
+ *
+ * 以前はここに相当する処理が無く、年・月・日のどれかが空亡なら
+ * 無条件に「移転を止める」扱い（isVoidTime）になっていた。方針
+ * （禁止しない・弱める）に合わせ、止めるのは止める扱いを明示した
+ * ときだけにする。
+ */
+export function summarizeTenchusatsu(
+  scopes: VoidScopes,
+  mode: TenchusatsuMode,
+  involuntary = false,
+): TenchusatsuSummary {
+  const v = evaluateTenchusatsu(scopes, mode, involuntary);
+  return {
+    mode,
+    inVoidPeriod: v.inVoidPeriod,
+    blocksMove: v.blocks,
+    attenuation: v.attenuation,
+    activeScopes: v.activeScopes,
+    note: v.blocks
+      ? "天中殺のため動かない扱いです（天中殺の扱いを「止める」側に設定しているため）。"
+      : v.attenuation < 1
+        ? TENCHUSATSU_WEAK_NOTE
+        : v.note,
+  };
+}
+
+/** 吉凶の値（0〜100、50 が中立）を、弱める倍率で中央へ寄せる。 */
+export function attenuateTowardNeutral(value: number, attenuation: number) {
+  return attenuation < 1 ? 50 + (value - 50) * attenuation : value;
+}

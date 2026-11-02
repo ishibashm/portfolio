@@ -20,6 +20,12 @@ import {
   CelestialBody,
 } from "@/utils/swissEphemerisEngine";
 import { IChingClient } from "@/lib/ichingClient";
+import {
+  attenuateTowardNeutral,
+  summarizeTenchusatsu,
+  tenchusatsuModeFrom,
+  voidScopesOf,
+} from "@/utils/tenchusatsuPolicy";
 
 /** 1 回の POST で評価する出発日の上限。 */
 const MAX_DATES = 366;
@@ -34,7 +40,10 @@ export async function POST(req: Request) {
       simulatedAns = 20,
       simulatedShield = 80,
       useClassical = true,
+      tenchusatsuMode: tenchusatsuModeRaw,
     } = body;
+    /* 天中殺の扱い。省略時は weaken（止めない）。strict などは明示時だけ。 */
+    const tenchusatsuMode = tenchusatsuModeFrom(tenchusatsuModeRaw);
 
     if (!dates || !Array.isArray(dates)) {
       return NextResponse.json(
@@ -95,10 +104,17 @@ export async function POST(req: Request) {
       // 2. Calculate Bazi & Void Time
       const environmentalBaziData = baziEngine.calculate(targetDate, lon);
       const currentZodiac = getCurrentZodiac(targetDate, lon);
-      const isVoidTime =
-        voidZodiacArray.includes(currentZodiac.yearZodiac) ||
-        voidZodiacArray.includes(currentZodiac.monthZodiac) ||
-        voidZodiacArray.includes(currentZodiac.dayZodiac);
+      /*
+        天中殺（年・月・日の空亡）は**禁止しない・弱める**（2026-11-02 本人
+        決定、tenchusatsuPolicy）。以前は当たれば無条件に envCost +30 と
+        「移転を止める」扱いだった。止める・+30 は strict などを明示した
+        ときだけ。既定は envCost を中央（50）へ寄せ、注記を添える。
+      */
+      const tenchusatsu = summarizeTenchusatsu(
+        voidScopesOf(voidZodiacArray, currentZodiac),
+        tenchusatsuMode,
+      );
+      const tenchusatsuBlocksMove = tenchusatsu.blocksMove;
 
       let isConflictDay = false;
       if (personalBaziData) {
@@ -129,7 +145,7 @@ export async function POST(req: Request) {
         : null;
 
       let envCost = 30 + aspectRisk;
-      if (isVoidTime) envCost += 30;
+      if (tenchusatsuBlocksMove) envCost += 30;
       if (isConflictDay) envCost += 20;
       if (isDoyouHazard) envCost += 25;
       if (metaData?.chineseMetasoft.qiMenGate.status === "Inauspicious")
@@ -138,6 +154,7 @@ export async function POST(req: Request) {
         envCost -= 15;
 
       envCost = Math.max(0, Math.min(100, envCost));
+      envCost = attenuateTowardNeutral(envCost, tenchusatsu.attenuation);
 
       // Calculate Target Nine Star Ki
       const targetEnv = getCurrentEnvironmentalFrequencies(
@@ -240,7 +257,7 @@ export async function POST(req: Request) {
           environmentalNoise: "simulation",
           environmentalRisk: envCost,
           solarPhase: targetSunLon,
-          isVoidTime,
+          isVoidTime: tenchusatsuBlocksMove,
           isConflictDay,
           isDoyouHazard,
           astrologyData,
@@ -265,7 +282,7 @@ export async function POST(req: Request) {
           targetEphemeris: {
             date: targetDate.toISOString().split("T")[0],
             solarPhase: targetSunLon,
-            isVoidTime,
+            isVoidTime: tenchusatsuBlocksMove,
             isConflictDay,
             isDoyouHazard,
             environmentalRisk: envCost,
@@ -284,7 +301,9 @@ export async function POST(req: Request) {
 
       // Collect risk triggers for advice display
       const riskFactors = [];
-      if (isVoidTime) riskFactors.push("天中殺（空亡）");
+      if (tenchusatsuBlocksMove) riskFactors.push("天中殺（空亡）");
+      else if (tenchusatsu.inVoidPeriod && tenchusatsu.attenuation < 1)
+        riskFactors.push(`天中殺（${tenchusatsu.note}）`);
       if (isConflictDay) riskFactors.push("対沖（干渉衝突日）");
       if (isDoyouHazard) riskFactors.push("土用期間（土公神の障り）");
 
@@ -304,7 +323,9 @@ export async function POST(req: Request) {
         date: dateStr,
         qValue: actionResult.expectedReward,
         suggestedAction: actionResult.suggestedAction,
-        isVoidTime,
+        // 互換のため名前は残す。意味は「天中殺で動きを止める扱いか」。
+        isVoidTime: tenchusatsuBlocksMove,
+        tenchusatsu,
         isConflictDay,
         isDoyouHazard,
         riskFactors,

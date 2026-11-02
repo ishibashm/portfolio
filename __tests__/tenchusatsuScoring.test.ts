@@ -30,7 +30,7 @@ function voidDay(
     /* 実物（isJapaneseHoliday）は null を返さない。非祝日はこの形。 */
     holiday: { isHoliday: false, name: "" },
     weekday: 1,
-    isVoidTime: scopes.year || scopes.month || scopes.day,
+    inVoidPeriod: scopes.year || scopes.month || scopes.day,
     voidScopes: scopes,
     baziScore: 50,
   };
@@ -59,7 +59,10 @@ describe("天中殺の設定がスコアに届く", () => {
   });
 
   it("厳格では年天中殺で移転不可になる", () => {
-    const r = scoreDateForProperty(voidDay(), ctx({ tenchusatsuMode: "strict" }));
+    const r = scoreDateForProperty(
+      voidDay(),
+      ctx({ tenchusatsuMode: "strict" }),
+    );
     expect(r.status).toBe("NOISE_TENCHU");
     expect(r.score).toBe(0);
     expect(r.tenchusatsu.blocks).toBe(true);
@@ -110,9 +113,9 @@ describe("天中殺の設定がスコアに届く", () => {
     const none = voidDay({ year: false, month: false, day: false });
     const base = scoreDateForProperty(none, ctx()).score;
     for (const mode of ["month_day", "day_only", "weaken", "off"] as const) {
-      expect(scoreDateForProperty(none, ctx({ tenchusatsuMode: mode })).score).toBe(
-        base,
-      );
+      expect(
+        scoreDateForProperty(none, ctx({ tenchusatsuMode: mode })).score,
+      ).toBe(base);
     }
   });
 
