@@ -277,7 +277,7 @@ export function registerPersonalCalculationTools(
     "judge_time_slots",
     {
       description:
-        "許可済みprofileかbirthDate/lat/lonの明示入力のどちらかで、画面と同じ12刻の可否・空亡・九星を返します。刻別方位吉凶ではありません。日付だけの出生は画面互換のJST9時、日の方位はJST正午です。settingsの明示値を優先し、端末専用設定は読みません。",
+        "許可済みprofileかbirthDate/lat/lonの明示入力のどちらかで、12刻の可否と九星を返します（刻単位の天中殺は使わず isVoid は常に false）。刻別方位吉凶ではありません。日付だけの出生は画面互換のJST9時、日の方位はJST正午です。settingsの明示値を優先し、端末専用設定は読みません。",
       inputSchema: personalTimeInput,
       outputSchema: personalTimeSlotsOutputSchema,
       annotations,

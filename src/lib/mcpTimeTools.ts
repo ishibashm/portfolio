@@ -126,7 +126,7 @@ export function registerPublicTimeTools(server: McpServer) {
     {
       title: "画面と同じ12刻の可否と九星を調べる",
       description:
-        "生年月日・緯度・経度を明示して1日12刻の空亡優先の可否を返します。刻別の方位吉凶ではありません。日の方位は judge_directions を使用。対象日は省略時JSTの今日、暦は1900〜2099年、緯度20〜46・経度122〜154（国内領域の厳密判定ではありません）。古典のみ。日付だけの出生は画面互換のJST 9時で、日判定の正午と異なります。端末設定・保存プロフィールは読みません。includeBoard=trueで九星配置を追加します。",
+        "生年月日・緯度・経度を明示して1日12刻の可否（五行の相性）と九星を返します。刻単位の天中殺（空亡）は使いません（isVoid は常に false。出力の形は互換のため維持）。刻別の方位吉凶ではありません。日の方位は judge_directions を使用。対象日は省略時JSTの今日、暦は1900〜2099年、緯度20〜46・経度122〜154（国内領域の厳密判定ではありません）。古典のみ。日付だけの出生は画面互換のJST 9時で、日判定の正午と異なります。端末設定・保存プロフィールは読みません。includeBoard=trueで九星配置を追加します。",
       inputSchema: timeSlotsInputSchema,
       outputSchema: timeSlotsOutputSchema,
       annotations: {
