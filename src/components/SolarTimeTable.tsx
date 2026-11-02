@@ -9,10 +9,7 @@ import {
 } from "../utils/ephemerisEngine";
 import { KigakuBoard } from "./KigakuBoard";
 import { getZonedDateTimeFields } from "@/utils/solarTime";
-import {
-  evaluateTimePhase as evaluateTimePhaseShared,
-  isVoidTimeHour as isVoidTimeHourShared,
-} from "@/lib/timePhase";
+import { evaluateTimePhase as evaluateTimePhaseShared } from "@/lib/timePhase";
 
 /** SolarTimeClock が渡してくる env そのもの。同じ形をここに書き写さない。 */
 type EnvironmentalFrequencies = ReturnType<
@@ -89,9 +86,8 @@ export function SolarTimeTableComponent({
     personalVoidZodiac?.includes(currentZodiac.dayZodiac) || false;
 
   // 判定は lib/timePhase に集約した（ホームのポータルと共用）。
-  // 呼び出し側の書き方を変えないよう、ここでは束縛だけ足す。
-  const isVoidTimeHour = (item: KimonScheduleItem) =>
-    isVoidTimeHourShared(item, personalVoidZodiac);
+  // 刻（時間）単位の天中殺は使わない（2026-11-02 本人決定。MCP の
+  // judge_time_slots と同じ）。天中殺は年・月・日だけを上の帯で示す。
   const evaluateTimePhase = (item: KimonScheduleItem) =>
     evaluateTimePhaseShared(item, honmeiStar ?? null, useClassical ?? true);
 
@@ -213,7 +209,6 @@ export function SolarTimeTableComponent({
       "Stem Name",
       "Reading",
       "Nine Stars",
-      "Void Time",
       "Standard Start",
       "Standard End",
       "Optimal",
@@ -232,7 +227,6 @@ export function SolarTimeTableComponent({
         item.stemName,
         item.reading,
         item.kyusei.japanese,
-        isVoidTimeHour(item) ? "Yes" : "No",
         item.startStandard.toISOString(),
         item.endStandard.toISOString(),
         phase.isOptimal ? "Yes" : "No",
@@ -427,14 +421,13 @@ export function SolarTimeTableComponent({
             本命星と相生・比和にあたる刻です。伝統的に、決断や出発に向くとされます。
           </p>
         </div>
-        <div className="bg-red-50 border-l-2 border-red-500 p-2 md:p-3 shadow-inner">
-          <div className="text-red-700 font-bold text-[10px] md:text-xs mb-1 tracking-widest uppercase flex items-center gap-2">
-            <span className="w-1.5 h-1.5 bg-red-500 rounded-full animate-pulse"></span>{" "}
-            天中殺の刻
+        <div className="bg-white/80 border-l-2 border-stone-300 p-2 md:p-3 shadow-inner">
+          <div className="text-stone-700 font-bold text-[10px] md:text-xs mb-1 tracking-widest uppercase flex items-center gap-2">
+            刻では天中殺を見ません
           </div>
           <p className="text-stone-600 text-xs leading-relaxed font-sans text-justify">
-            {whose}
-            天中殺（空亡）の十二支にあたる刻です。伝統的に、大きな決断や新しい始まり、長距離の移動は避けるとされます。体調や通信への影響を示すものではありません。
+            天中殺は年・月・日の単位だけで見て、禁止はせず吉凶の力を弱めに見積もります。2
+            時間ごとの刻を天中殺として避けることはしません。
           </p>
         </div>
       </div>
@@ -467,10 +460,11 @@ export function SolarTimeTableComponent({
           </div>
           <div className="p-2 border border-red-200 rounded-xl">
             <strong className="text-red-600 block mb-1 font-mono text-[10px]">
-              ◆ 3. 天中殺の刻
+              ◆ 3. 天中殺は刻では見ない
             </strong>
             <p className="text-stone-600 text-xs text-justify">
-              天中殺（空亡）は、四柱推命で干支の組み合わせが欠ける期間を指す考え方です。伝統的に、この期間の移動や大きな決断は避けるとされます。体調や自律神経への影響を示すものではありません。
+              天中殺（空亡）は、四柱推命で干支の組み合わせが欠ける期間を指す考え方です。この頁では年・月・日の単位だけで扱い、禁止はせず吉凶の力を弱めに見積もります。刻（2
+              時間ごと）の天中殺は判定に使いません。体調や自律神経への影響を示すものではありません。
             </p>
           </div>
           <div className="p-2 border border-emerald-200 rounded-xl">
@@ -489,15 +483,12 @@ export function SolarTimeTableComponent({
       <div className="flex flex-col gap-2">
         {schedule.map((item, index) => {
           const isExpanded = expandedIndex === index;
-          const isVoid = isVoidTimeHour(item);
           const evalPhase = evaluateTimePhase(item);
           const isOptimal = evalPhase.isOptimal;
 
-          const cardClass = isVoid
-            ? "border-red-200 bg-red-50"
-            : isOptimal
-              ? "border-emerald-200 bg-emerald-50 shadow-[0_0_15px_rgba(16,185,129,0.1)]"
-              : "border-stone-200 bg-white/80 hover:bg-white transition-colors";
+          const cardClass = isOptimal
+            ? "border-emerald-200 bg-emerald-50 shadow-[0_0_15px_rgba(16,185,129,0.1)]"
+            : "border-stone-200 bg-white/80 hover:bg-white transition-colors";
 
           return (
             <div
@@ -533,9 +524,7 @@ export function SolarTimeTableComponent({
                     {formatRange(item.startStandard, item.endStandard)}
                   </span>
                   <div className="flex items-center gap-1">
-                    <span
-                      className={`text-sm font-bold ${isVoid ? "text-red-700" : "text-stone-600"}`}
-                    >
+                    <span className="text-sm font-bold text-stone-600">
                       {item.etoKanji}の刻
                     </span>
                   </div>
@@ -548,9 +537,7 @@ export function SolarTimeTableComponent({
                     <span className="text-stone-600 text-[10px] tracking-widest leading-none mb-1">
                       時盤の九星
                     </span>
-                    <span
-                      className={`font-bold ${isVoid ? "text-red-800" : "text-stone-600"}`}
-                    >
+                    <span className="font-bold text-stone-600">
                       {item.kyusei.japanese}
                     </span>
                   </div>
@@ -559,17 +546,12 @@ export function SolarTimeTableComponent({
                 {/* Status Badge & Toggle Button */}
                 <div className="flex items-center justify-between w-full xl:w-auto gap-2 mt-2 xl:mt-0 shrink-0">
                   <div className="flex-shrink-0">
-                    {isVoid && (
-                      <span className="bg-red-50 text-red-700 border border-red-500/80 px-2 py-0.5 font-bold text-[10px] tracking-widest md:animate-pulse shadow-md">
-                        天中殺
-                      </span>
-                    )}
-                    {!isVoid && isOptimal && (
+                    {isOptimal && (
                       <span className="bg-emerald-50 text-emerald-700 border border-emerald-500/80 px-2 py-0.5 font-bold text-[10px] tracking-widest drop-shadow-[0_0_8px_rgba(16,185,129,0.5)]">
                         動いてよい
                       </span>
                     )}
-                    {!isVoid && !isOptimal && (
+                    {!isOptimal && (
                       <span className="text-stone-600 text-[10px] tracking-widest border border-stone-200 px-2 py-0.5 bg-white/70">
                         ふつう
                       </span>
@@ -594,71 +576,59 @@ export function SolarTimeTableComponent({
                 <div className="mt-3 pt-3 border-t border-stone-200 relative z-10 flex flex-col md:flex-row gap-4 bg-white/70 p-2 rounded-xl animate-fade-in">
                   {/* Explain Phase */}
                   <div className="flex-1 flex flex-col gap-2 text-[10px] text-stone-600 leading-relaxed">
-                    {isVoid ? (
-                      <div className="bg-red-50 p-2 border-l-2 border-red-200 text-justify">
-                        <div className="font-mono text-red-700 uppercase tracking-widest mb-1 font-bold md:animate-pulse">
-                          天中殺の刻
-                        </div>
-                        <div className="text-red-700 leading-relaxed">
-                          {item.japanese}
-                          の刻は天中殺（空亡）にあたります。四柱推命では、この時間帯の移動・新しい行動・重要な決断は避けるとされます。物理的な測定に基づく判定ではありません。
-                        </div>
+                    <div className="bg-white/80 p-2 border border-stone-200 flex flex-col gap-2">
+                      <div>
+                        <strong
+                          className={`block mb-1 ${isOptimal ? "text-emerald-700" : "text-stone-600"}`}
+                        >
+                          五行の相性
+                        </strong>
+                        {isOptimal
+                          ? `${whose}本命星と、この刻の九星（時盤）の五行が相生・比和にあたります。伝統的には、決断や出発に向くとされます。`
+                          : "相生・比和ではない刻です。凶ではありません。"}
                       </div>
-                    ) : (
-                      <div className="bg-white/80 p-2 border border-stone-200 flex flex-col gap-2">
-                        <div>
-                          <strong
-                            className={`block mb-1 ${isOptimal ? "text-emerald-700" : "text-stone-600"}`}
-                          >
-                            五行の相性
-                          </strong>
-                          {isOptimal
-                            ? `${whose}本命星と、この刻の九星（時盤）の五行が相生・比和にあたります。伝統的には、決断や出発に向くとされます。`
-                            : "相生・比和ではない刻です。凶ではありません。"}
-                        </div>
 
-                        {evalPhase.myElement && evalPhase.timeElement && (
-                          <div className="border-t border-stone-200 pt-2 mt-1">
-                            <strong className="block mb-1 text-purple-700">
-                              五行の内訳
-                            </strong>
-                            <div className="flex flex-wrap items-center gap-2 mb-1 font-mono">
-                              <span className="bg-white border border-stone-200 px-1.5 py-0.5">
-                                本命星:{" "}
-                                <span
-                                  className={`${evalPhase.myElement.color} font-bold`}
-                                >
-                                  {evalPhase.myElement.name} (
-                                  {evalPhase.myElement.id})
-                                </span>
-                              </span>
-                              <span className="text-stone-600">×</span>
-                              <span className="bg-white border border-stone-200 px-1.5 py-0.5">
-                                刻の九星:{" "}
-                                <span
-                                  className={`${evalPhase.timeElement.color} font-bold`}
-                                >
-                                  {evalPhase.timeElement.name} (
-                                  {evalPhase.timeElement.id})
-                                </span>
-                              </span>
-                            </div>
-                            <div className="flex items-center gap-2">
-                              <span className="text-stone-600">関係:</span>
+                      {evalPhase.myElement && evalPhase.timeElement && (
+                        <div className="border-t border-stone-200 pt-2 mt-1">
+                          <strong className="block mb-1 text-purple-700">
+                            五行の内訳
+                          </strong>
+                          <div className="flex flex-wrap items-center gap-2 mb-1 font-mono">
+                            <span className="bg-white border border-stone-200 px-1.5 py-0.5">
+                              本命星:{" "}
                               <span
-                                className={`font-bold ${evalPhase.isFavorable ? "text-emerald-700" : "text-stone-600"}`}
+                                className={`${evalPhase.myElement.color} font-bold`}
                               >
-                                {evalPhase.relation || "中立"}
+                                {evalPhase.myElement.name} (
+                                {evalPhase.myElement.id})
                               </span>
-                            </div>
-                            <p className="mt-1 text-xs text-justify">
-                              陰陽五行説（木火土金水）に基づく、{whose}
-                              本命星といまの九星の相性です。相生（生み出す関係）や比和（同じ属性）であれば、良い組み合わせとされます。
-                            </p>
+                            </span>
+                            <span className="text-stone-600">×</span>
+                            <span className="bg-white border border-stone-200 px-1.5 py-0.5">
+                              刻の九星:{" "}
+                              <span
+                                className={`${evalPhase.timeElement.color} font-bold`}
+                              >
+                                {evalPhase.timeElement.name} (
+                                {evalPhase.timeElement.id})
+                              </span>
+                            </span>
                           </div>
-                        )}
-                      </div>
-                    )}
+                          <div className="flex items-center gap-2">
+                            <span className="text-stone-600">関係:</span>
+                            <span
+                              className={`font-bold ${evalPhase.isFavorable ? "text-emerald-700" : "text-stone-600"}`}
+                            >
+                              {evalPhase.relation || "中立"}
+                            </span>
+                          </div>
+                          <p className="mt-1 text-xs text-justify">
+                            陰陽五行説（木火土金水）に基づく、{whose}
+                            本命星といまの九星の相性です。相生（生み出す関係）や比和（同じ属性）であれば、良い組み合わせとされます。
+                          </p>
+                        </div>
+                      )}
+                    </div>
                   </div>
 
                   {/* Compass Matrix */}

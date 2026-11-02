@@ -2981,7 +2981,6 @@ export const SolarTimeClock = () => {
         voidTimeDiagnostics: {
           kimon,
           currentZodiac,
-          isPersonalVoid,
           isYearVoid,
           isMonthVoid,
           isDayVoid,
@@ -3493,7 +3492,6 @@ export const SolarTimeClock = () => {
       voidTimeDiagnostics: {
         kimon,
         currentZodiac,
-        isPersonalVoid,
         isYearVoid,
         isMonthVoid,
         isDayVoid,
@@ -3820,9 +3818,6 @@ export const SolarTimeClock = () => {
     : undefined;
 
   const kimon = solarData ? getKimonHour(solarData.solarTime) : null;
-  const isPersonalVoid = kimon
-    ? personalVoidZodiac.includes(kimon.japanese)
-    : false;
 
   const targetDirInfo = getTargetDirectionInfo();
   let targetVectorStatus: string | null = null;
@@ -4032,11 +4027,11 @@ export const SolarTimeClock = () => {
                 </div>
                 <div className="flex flex-col gap-2">
                   <strong className="text-stone-700 bg-white px-2 py-1 border border-stone-200 text-[10px] sm:text-[11px] font-mono">
-                    手順 4: 動き出す日時を決める（刻と天中殺）
+                    手順 4: 動き出す日時を決める（刻）
                   </strong>
                   <p className="text-xs sm:text-xs">
                     「詳しく見る」の「時刻の刻」で、その日の 2
-                    時間ごとの刻を見ます。天中殺の刻を避け、時盤の九星があなたの本命星と相生・比和にあたる刻を「家を出る・契約印を押す」時間として選びます。刻の境目は出発地の真太陽時で切ります。日ごとの一覧は「時期の分析」の頁へ。
+                    時間ごとの刻を見ます。時盤の九星があなたの本命星と相生・比和にあたる刻を「家を出る・契約印を押す」時間として選びます。刻（時間）単位の天中殺は見ません（天中殺は年・月・日だけで、禁止せず弱めに扱います）。刻の境目は出発地の真太陽時で切ります。日ごとの一覧は「時期の分析」の頁へ。
                   </p>
                 </div>
               </div>
@@ -4167,7 +4162,6 @@ export const SolarTimeClock = () => {
             {/* Temporal HUD (Main Clock Focus) */}
             <ClockDisplay
               kimon={kimon}
-              isVoidTime={isPersonalVoid}
               solarTime={solarData.solarTime}
               eot={solarData.equationOfTime}
               longOffset={solarData.longitudeCorrection}
