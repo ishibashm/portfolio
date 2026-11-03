@@ -12,6 +12,7 @@ import {
 import { createAgentMock } from "@/lib/mcpAgentMock";
 import { connectChainClient } from "@/lib/mcpChain";
 import { reminderOfferCard, verifyReminderOffer } from "@/lib/reminders";
+import { unwrapUntrusted } from "@/lib/untrustedData";
 
 vi.mock("@/lib/prisma", () => {
   throw new Error("DB must not be loaded");
@@ -92,11 +93,7 @@ function scripted(
         const out = results[0].output;
         const raw =
           out.type === "text"
-            ? JSON.parse(
-                out.value
-                  .replace(/^BEGIN_UNTRUSTED_TOOL_DATA\n/, "")
-                  .replace(/\nEND_UNTRUSTED_TOOL_DATA$/, ""),
-              )
+            ? JSON.parse(unwrapUntrusted(out.value))
             : out.type === "json"
               ? out.value
               : {};
