@@ -270,6 +270,20 @@ export function monthContentYears(): number[] {
 export const MONTHS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12];
 
 /**
+ * 月別の方位ページ（/houi/[year]/[star]/[month]）が存在するときだけ href を返す。
+ * 存在しない年・星・月は null を返し、404 へのリンクを防ぐ。
+ */
+export function houiMonthHref(
+  year: number,
+  star: number,
+  month: number,
+): string | null {
+  if (!monthContentYears().includes(year)) return null;
+  if (!STARS.includes(star) || !MONTHS.includes(month)) return null;
+  return `/houi/${year}/${star}/${month}`;
+}
+
+/**
  * 記事の代表点。**日本時間の正午**を返す。
  *
  * 判定ツールは盤をその日の正午（JST）で出す（`forecastAnchorMs`）。
