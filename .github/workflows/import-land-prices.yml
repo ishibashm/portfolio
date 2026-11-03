@@ -55,6 +55,11 @@ jobs:
           echo "$ENV_FILE_CONTENT" > .env
           bash scripts/apply-db-override.sh
 
+      # 取り込みは Prisma のクライアントを使う。npm ci だけでは作られない
+      # （run-seed.yml と同じ）。生成は手元だけで、DB には触れない。
+      - name: Generate Prisma client
+        run: npx prisma generate
+
       - name: Import land price points
         env:
           LAND_PRICE_YEAR: ${{ inputs.year }}

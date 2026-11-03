@@ -36,6 +36,11 @@ describe("地価の地点の取り込み先", () => {
     expect(wf).not.toMatch(/--accept-data-loss/);
     expect(wf).toMatch(/LAND_PRICE_POINTS_ONLY:\s*"1"/);
     expect(wf).toContain("scripts/import_land_prices.ts");
+    // クライアントを作らないと「.prisma/client/default が無い」で落ちる
+    expect(wf.indexOf("npx prisma generate")).toBeGreaterThan(-1);
+    expect(wf.indexOf("npx prisma generate")).toBeLessThan(
+      wf.indexOf("scripts/import_land_prices.ts"),
+    );
   });
 
   it("地点だけのモードでは municipality_wealth を更新しない", () => {
