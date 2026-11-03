@@ -10,7 +10,7 @@ import {
   weekdayLabel,
   directionListLabel,
 } from "@/lib/monthlyCalendar";
-import { STAR_NAMES } from "@/lib/kigakuContent";
+import { STAR_NAMES, houiMonthHref } from "@/lib/kigakuContent";
 import { STAR_MEANINGS } from "@/lib/kigakuMeanings";
 import { BreadcrumbJsonLd } from "@/components/JsonLd";
 import { pageOpenGraph } from "@/lib/siteUrl";
@@ -127,13 +127,15 @@ export default async function Page({
             </>
           ) : (
             <>
-              {year}年{month}月は、六曜と土用を突き合わせると、条件を満たす日がありませんでした。前後の月もあわせてご検討ください。
+              {year}年{month}
+              月は、六曜と土用を突き合わせると、条件を満たす日がありませんでした。前後の月もあわせてご検討ください。
             </>
           )}
           {cal.doyou && (
             <>
               {" "}
-              なお<b>
+              なお
+              <b>
                 {cal.doyou.start}から{cal.doyou.end}まで
               </b>
               は土用にあたります。土いじりや基礎に関わることは避けるとされ、間日を除いて候補から外しています。
@@ -145,7 +147,8 @@ export default async function Page({
             どの月を見ているのかが文章からも分かるようにする。 */}
         <p className="mt-4 text-sm leading-relaxed text-slate-700">
           この期間の中宮は<b>{STAR_NAMES[cal.centerStar]}</b>（
-          {STAR_MEANINGS[cal.centerStar]?.keywords}）です。中宮の星は、その月全体に乗る色合いを表すとされます。
+          {STAR_MEANINGS[cal.centerStar]?.keywords}
+          ）です。中宮の星は、その月全体に乗る色合いを表すとされます。
           {STAR_MEANINGS[cal.centerStar]?.good}
         </p>
 
@@ -193,7 +196,12 @@ export default async function Page({
             本命星ごとの吉方位（{cal.termStart}〜{cal.termEnd}）
           </h2>
           <p className="mt-4 text-xs leading-relaxed text-slate-600">
-            日取りが決まっても、向きが凶であれば意味がありません。九星気学の月は暦の1日ではなく<b>節入り</b>で替わるため、この月盤が効くのは<b>{cal.termStart}から{cal.termEnd}まで</b>です。中宮は
+            日取りが決まっても、向きが凶であれば意味がありません。九星気学の月は暦の1日ではなく
+            <b>節入り</b>で替わるため、この月盤が効くのは
+            <b>
+              {cal.termStart}から{cal.termEnd}まで
+            </b>
+            です。中宮は
             {STAR_NAMES[cal.centerStar]}。
           </p>
           <div className="mt-5 overflow-x-auto">
@@ -206,26 +214,33 @@ export default async function Page({
                 </tr>
               </thead>
               <tbody>
-                {cal.starDirections.map((s) => (
-                  <tr key={s.star} className="border-b border-slate-200">
-                    <td className="py-2 pr-3 font-bold whitespace-nowrap">
-                      <Link
-                        prefetch={false}
-                        href={`/houi/${year}/${s.star}/${month}`}
-                        className="hover:text-rose-600 hover:underline"
-                      >
-                        {s.starName}
-                      </Link>
-                    </td>
-                    <td className="py-2 pr-3 text-emerald-800">
-                      {directionListLabel(s.good)}
-                    </td>
-                    <td className="py-2 text-rose-800">
-                      {s.bad.map((b) => `${b.jp}（${b.label}）`).join("、") ||
-                        "なし"}
-                    </td>
-                  </tr>
-                ))}
+                {cal.starDirections.map((s) => {
+                  const href = houiMonthHref(year, s.star, month);
+                  return (
+                    <tr key={s.star} className="border-b border-slate-200">
+                      <td className="py-2 pr-3 font-bold whitespace-nowrap">
+                        {href ? (
+                          <Link
+                            prefetch={false}
+                            href={href}
+                            className="hover:text-rose-600 hover:underline"
+                          >
+                            {s.starName}
+                          </Link>
+                        ) : (
+                          s.starName
+                        )}
+                      </td>
+                      <td className="py-2 pr-3 text-emerald-800">
+                        {directionListLabel(s.good)}
+                      </td>
+                      <td className="py-2 text-rose-800">
+                        {s.bad.map((b) => `${b.jp}（${b.label}）`).join("、") ||
+                          "なし"}
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>
@@ -246,7 +261,9 @@ export default async function Page({
           <ul className="mt-3 space-y-1 text-sm">
             {cal.solarTerms.map((term) => (
               <li key={term.name}>
-                {term.name}：{term.atJst.replace("T", " ").replace("+09:00", " JST")}（計算値・{term.changesMonth ? "月の境界" : "中気"}）
+                {term.name}：
+                {term.atJst.replace("T", " ").replace("+09:00", " JST")}
+                （計算値・{term.changesMonth ? "月の境界" : "中気"}）
               </li>
             ))}
           </ul>
@@ -256,7 +273,9 @@ export default async function Page({
                 <tr className="border-b border-slate-300 text-slate-500">
                   <th className="py-2 pr-3 whitespace-nowrap">日</th>
                   <th className="py-2 pr-3 whitespace-nowrap">六曜</th>
-                  <th className="py-2 pr-3 whitespace-nowrap">干支（年／月／日・正午）</th>
+                  <th className="py-2 pr-3 whitespace-nowrap">
+                    干支（年／月／日・正午）
+                  </th>
                   <th className="py-2 whitespace-nowrap">暦注</th>
                 </tr>
               </thead>
@@ -271,8 +290,12 @@ export default async function Page({
                     <td className="py-1.5 pr-3 whitespace-nowrap">
                       {d.day}日（{weekdayLabel(d.weekday)}）
                     </td>
-                    <td className="py-1.5 pr-3 whitespace-nowrap">{d.rokuyo}</td>
-                    <td className="py-1.5 pr-3 whitespace-nowrap">{d.kanshi.year}／{d.kanshi.month}／{d.kanshi.day}</td>
+                    <td className="py-1.5 pr-3 whitespace-nowrap">
+                      {d.rokuyo}
+                    </td>
+                    <td className="py-1.5 pr-3 whitespace-nowrap">
+                      {d.kanshi.year}／{d.kanshi.month}／{d.kanshi.day}
+                    </td>
                     <td className="py-1.5 text-slate-600">
                       {[
                         ...d.luckyLabels,
@@ -310,7 +333,6 @@ export default async function Page({
             </Link>
           </div>
         </section>
-
 
         <div className="mt-10">
           <AdBanner />

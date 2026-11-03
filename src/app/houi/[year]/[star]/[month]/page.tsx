@@ -9,6 +9,7 @@ import {
   STARS,
   formatDate,
   getMonthDirections,
+  houiMonthHref,
   monthContentYears,
 } from "@/lib/kigakuContent";
 import { AreaEntryLinks } from "@/components/houi/AreaEntryLinks";
@@ -54,8 +55,7 @@ function parse(params: { year: string; star: string; month: string }) {
   const year = parseInt(params.year, 10);
   const star = parseInt(params.star, 10);
   const month = parseInt(params.month, 10);
-  if (!monthContentYears().includes(year)) return null;
-  if (!STARS.includes(star) || !MONTHS.includes(month)) return null;
+  if (!houiMonthHref(year, star, month)) return null;
   return { year, star, month };
 }
 
@@ -180,7 +180,10 @@ export default async function Page({
         <div className="mt-5 rounded-2xl border border-slate-300 bg-white/90 p-4">
           <p className="text-xs text-slate-700 leading-relaxed">
             九星気学の月は暦の1日ではなく<b>節入り</b>で切り替わります。
-            {month}月といっても実際には<b>{formatDate(start)}から{formatDate(end)}まで</b>
+            {month}月といっても実際には
+            <b>
+              {formatDate(start)}から{formatDate(end)}まで
+            </b>
             が対象です。月の前半に動く場合は前の月の盤になることがあるのでご注意ください。
           </p>
         </div>
@@ -255,7 +258,8 @@ export default async function Page({
           </h2>
           <div className="mt-4 flex flex-wrap gap-2">
             {MONTHS.filter((m) => m !== month).map((m) => (
-              <Link prefetch={false}
+              <Link
+                prefetch={false}
                 key={m}
                 href={`/houi/${year}/${star}/${m}`}
                 className="px-3 py-1.5 rounded-full border border-slate-300 bg-white text-xs font-semibold hover:border-rose-400 transition-colors"
@@ -270,7 +274,8 @@ export default async function Page({
           </h2>
           <div className="mt-4 flex flex-wrap gap-2">
             {STARS.filter((s) => s !== star).map((s) => (
-              <Link prefetch={false}
+              <Link
+                prefetch={false}
                 key={s}
                 href={`/houi/${year}/${s}/${month}`}
                 className="px-3 py-1.5 rounded-full border border-slate-300 bg-white text-xs font-semibold hover:border-rose-400 transition-colors"
