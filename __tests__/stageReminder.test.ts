@@ -18,9 +18,17 @@ vi.mock("@/lib/prisma", () => {
 });
 
 const secret = "s".repeat(40);
+/**
+ * モックと scripted() は 2026-11-01 から 30 日の吉日を計算する（固定例）。
+ * 「今日」を実時計のままにすると、日がたつにつれて吉日が
+ * 「送る日（1・3・7 日前）が今日より前」になり、カードが出なくなる
+ * （2026-11-02 JST から CI が赤）。天中殺を弱める方針（#1772）では
+ * 2026-11-01 当日も吉日に入るので、7 日前でも送れる日を「今日」に固定する。
+ */
+const today = "2026-10-25";
 const reminders = {
   offer: (o: { date: string; direction: string }) =>
-    reminderOfferCard(secret, o),
+    reminderOfferCard(secret, o, today),
 };
 
 async function runWith(
