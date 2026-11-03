@@ -483,8 +483,13 @@ describe("本物の記事に題を渡す", () => {
     // 無極・太極・八卦の記事は問いの見出しがあり、題の有無にかかわらず +1。
     /* 2026-10-17: 占いの土台は4つ（four-foundations-of-eastern-divination）で +1 */
     /* 2026-10-26: 方位と天中殺の記事（houi-and-tenchusatsu）で +1 */
-    expect(count(false)).toBe(28);
-    expect(count(true)).toBe(33);
+    /*
+      2026-11-03: 2027 年春の方位の記事（spring-2027-moving-directions-by-star）
+      を足して +1 / +1。問いの見出しが 2 つあり、直下の段落が答えから
+      始まるので、題の有無にかかわらず数に入る
+    */
+    expect(count(false)).toBe(29);
+    expect(count(true)).toBe(34);
   });
 
   it("題から作った問いは、記事の題そのもの（言い換えない）", () => {
