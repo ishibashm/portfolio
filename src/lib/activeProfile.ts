@@ -97,6 +97,17 @@ export function findActiveProfile(
   return presets.find((p) => sameValues(p, settings)) ?? null;
 }
 
+/** Registered profile values take precedence over legacy user-level settings.
+ * Labels belong to the same profile as the coordinates; never inherit old ones.
+ */
+export function activeProfileSettings(
+  presets: readonly ProfilePreset[],
+  settings: Settings,
+): Settings {
+  const active = findActiveProfile(presets, settings);
+  return active ? { ...settings, ...settingsPatchFor(active) } : settings;
+}
+
 /** 一覧の中で id の 1 件だけを使用中にした一覧を返す（純粋関数）。 */
 export function markActive(
   presets: readonly ProfilePreset[],
@@ -125,6 +136,8 @@ export function settingsPatchFor(values: ProfileValues): Settings {
     birth_date: values.birthDate,
     base_lat: values.baseLat,
     base_lon: values.baseLon,
+    base_label: values.baseLabel || null,
+    birth_label: hasBirthPlace ? values.birthLabel || null : null,
     birth_lat: hasBirthPlace ? values.birthLat : null,
     birth_lon: hasBirthPlace ? values.birthLon : null,
   };

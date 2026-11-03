@@ -68,7 +68,10 @@ export function usePlaceName(
   lon: number | null | undefined,
   label?: string | null,
 ): string {
-  const [municipality, setMunicipality] = useState<string | null>(null);
+  const [resolved, setResolved] = useState<{
+    key: string;
+    name: string | null;
+  } | null>(null);
   const hasCoords =
     lat !== null && lat !== undefined && lon !== null && lon !== undefined;
 
@@ -76,12 +79,14 @@ export function usePlaceName(
     if (!hasCoords || label) return;
     let alive = true;
     resolvePlaceName(lat, lon).then((name) => {
-      if (alive) setMunicipality(name);
+      if (alive) setResolved({ key: key(lat, lon), name });
     });
     return () => {
       alive = false;
     };
   }, [hasCoords, lat, lon, label]);
 
+  const municipality =
+    hasCoords && resolved?.key === key(lat, lon) ? resolved.name : null;
   return describePlace(lat, lon, label, municipality);
 }
