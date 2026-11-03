@@ -90,6 +90,7 @@ describe("/api/geocode/reverse が入口を返す", () => {
 
 describe("画面: 地名で調べたら、その街の一覧へのリンクが出る", () => {
   afterEach(() => {
+    window.history.replaceState({}, "", "/");
     vi.unstubAllGlobals();
   });
 
@@ -115,9 +116,12 @@ describe("画面: 地名で調べたら、その街の一覧へのリンクが�
     render(
       <SpotVerdict baseLat={33.5902} baseLon={130.4017} useClassical={true} />,
     );
-    fireEvent.change(screen.getByLabelText("物件URL・住所・座標から調べる"), {
-      target: { value: "広島市中区" },
-    });
+    fireEvent.change(
+      screen.getByLabelText("住所・駅名・座標から調べる（物件URLも可）"),
+      {
+        target: { value: "広島市中区" },
+      },
+    );
     fireEvent.click(screen.getByRole("button", { name: "調べる" }));
 
     const heading = await screen.findByText(/で募集中の部屋を見る$/);
@@ -136,9 +140,12 @@ describe("画面: 地名で調べたら、その街の一覧へのリンクが�
   it("出発地が未入力でも出す（方位の要らない話なので）", async () => {
     stubFetch();
     render(<SpotVerdict baseLat={0} baseLon={0} useClassical={true} />);
-    fireEvent.change(screen.getByLabelText("物件URL・住所・座標から調べる"), {
-      target: { value: `${HIROSHIMA.lat}, ${HIROSHIMA.lon}` },
-    });
+    fireEvent.change(
+      screen.getByLabelText("住所・駅名・座標から調べる（物件URLも可）"),
+      {
+        target: { value: `${HIROSHIMA.lat}, ${HIROSHIMA.lon}` },
+      },
+    );
     fireEvent.click(screen.getByRole("button", { name: "調べる" }));
     await waitFor(() =>
       expect(screen.getByRole("link", { name: /SUUMO/ })).toBeTruthy(),
@@ -160,6 +167,7 @@ describe("画面: 地名で調べたら、その街の一覧へのリンクが�
 */
 describe("画面: 組んだリンクを写せる", () => {
   afterEach(() => {
+    window.history.replaceState({}, "", "/");
     vi.unstubAllGlobals();
   });
 
@@ -180,9 +188,12 @@ describe("画面: 組んだリンクを写せる", () => {
     render(
       <SpotVerdict baseLat={33.5902} baseLon={130.4017} useClassical={true} />,
     );
-    fireEvent.change(screen.getByLabelText("物件URL・住所・座標から調べる"), {
-      target: { value: "広島市中区" },
-    });
+    fireEvent.change(
+      screen.getByLabelText("住所・駅名・座標から調べる（物件URLも可）"),
+      {
+        target: { value: "広島市中区" },
+      },
+    );
     fireEvent.click(screen.getByRole("button", { name: "調べる" }));
 
     const suumo = await screen.findByRole("link", { name: /SUUMO/ });

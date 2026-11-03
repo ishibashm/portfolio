@@ -57,7 +57,7 @@ describe("戻した地点の断りと「× この地点を消す」", () => {
       await screen.findByText("前回調べた地点を戻しました。"),
     ).toBeTruthy();
     const input = screen.getByRole("textbox", {
-      name: "物件URL・住所・座標から調べる",
+      name: "住所・駅名・座標から調べる（物件URLも可）",
     }) as HTMLInputElement;
     expect(input.value).toBe("愛知県名古屋市中村区名駅1丁目");
     /* 開いた直後の null では目的地を消さない */

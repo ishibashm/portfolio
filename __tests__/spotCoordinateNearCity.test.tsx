@@ -42,6 +42,7 @@ function mockReverse(name: string | null) {
 describe("座標だけの点に街の名前を添える", () => {
   afterEach(() => {
     cleanup();
+    window.history.replaceState({}, "", "/");
     vi.restoreAllMocks();
   });
 
@@ -57,7 +58,9 @@ describe("座標だけの点に街の名前を添える", () => {
       />,
     );
     fireEvent.change(
-      screen.getByRole("textbox", { name: "物件URL・住所・座標から調べる" }),
+      screen.getByRole("textbox", {
+        name: "住所・駅名・座標から調べる（物件URLも可）",
+      }),
       { target: { value: `${NAGOYA.lat}, ${NAGOYA.lon}` } },
     );
     fireEvent.click(screen.getByRole("button", { name: "調べる" }));
@@ -137,7 +140,9 @@ describe("座標だけの点に街の名前を添える", () => {
       <SpotVerdict baseLat={KYOTO.lat} baseLon={KYOTO.lon} useClassical />,
     );
     fireEvent.change(
-      screen.getByRole("textbox", { name: "物件URL・住所・座標から調べる" }),
+      screen.getByRole("textbox", {
+        name: "住所・駅名・座標から調べる（物件URLも可）",
+      }),
       { target: { value: "愛知県名古屋市中村区名駅1丁目" } },
     );
     fireEvent.click(screen.getByRole("button", { name: "調べる" }));
