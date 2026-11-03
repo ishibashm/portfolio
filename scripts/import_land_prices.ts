@@ -61,6 +61,16 @@ function latLonToTile(lat: number, lon: number, zoom: number = 15) {
 */
 const YEAR = process.env.LAND_PRICE_YEAR || "2025";
 
+/*
+  地点（land_price_points）だけを書くモード。
+
+  既定では、市区町村ごとの平均を municipality_wealth.land_price_per_sqm
+  にも書く。import-land-prices.yml から地点だけを入れ直すときは、
+  ほかの表に触れないようにこれを立てる（LAND_PRICE_POINTS_ONLY=1）。
+  municipality_wealth は**読むだけ**になる（代表点の座標を引くため）。
+*/
+const POINTS_ONLY = process.env.LAND_PRICE_POINTS_ONLY === "1";
+
 /**
  * タイル 1 枚ぶんの GeoJSON。
  *
@@ -158,6 +168,17 @@ async function main() {
   console.log(
     `Found ${municipalities.length} municipalities with coordinates.`,
   );
+  if (POINTS_ONLY) {
+    console.log("地点だけを書くモード（municipality_wealth には書かない）。");
+  }
+  if (municipalities.length === 0) {
+    // 代表点が無いとタイルを引けない。黙って 0 件で終わらせない。
+    console.error(
+      "座標つきの市区町村が 0 件。接続先の municipality_wealth を確かめること。",
+    );
+    process.exitCode = 1;
+    return;
+  }
 
   let updatedCount = 0;
   /** 当年価格を読めなかった地点の数。0 で埋めずに数える。 */
@@ -246,7 +267,9 @@ async function main() {
       collectedPoints.set(`${point.pointId}_${point.landPriceType}`, point);
     }
 
-    if (count > 0) {
+    if (count > 0 && POINTS_ONLY) {
+      updatedCount++;
+    } else if (count > 0) {
       const avgPrice = Math.round(totalPrice / count);
       await prisma.municipalityWealth.update({
         where: { id: m.id },
@@ -270,8 +293,19 @@ async function main() {
 
   await saveLandPricePoints(collectedPoints);
 
+  const totalRes = await pool.query(
+    `SELECT count(*)::int AS n, count(DISTINCT prefecture)::int AS prefs
+       FROM land_price_points WHERE year = $1`,
+    [Number(YEAR)],
+  );
   console.log(
-    `Finished! Updated ${updatedCount} municipalities with land price data.`,
+    `land_price_points（年=${YEAR}）: ${totalRes.rows[0].n} 件・${totalRes.rows[0].prefs} 都道府県`,
+  );
+
+  console.log(
+    POINTS_ONLY
+      ? `Finished! 地点が見つかった市区町村: ${updatedCount}（municipality_wealth は更新していない）`
+      : `Finished! Updated ${updatedCount} municipalities with land price data.`,
   );
   console.log(`対象年: ${YEAR}`);
   if (skippedPoints > 0) {

@@ -1,0 +1,62 @@
+name: Import land price points
+
+# 地価公示・都道府県地価調査の**地点**（land_price_points）だけを取り込む。
+#
+# ## なぜ run-seed.yml と分けるか
+#
+# run-seed.yml は `prisma db push --accept-data-loss` と市区町村の取り込みを
+# まとめて回すうえ、DB の接続先の上書き（apply-db-override.sh）を当てない。
+# そのため 2026-08-20 の地点（2025 年・926 件）は ENV_FILE 側の DB に入り、
+# 購入の相場（build-purchase-stats.yml、db.cloud-palette.com を読む）からは
+# 1 件も見えなかった。/relocation/purchase の「地価公示の㎡単価」が 47 県
+# すべて「—」だったのはこのため。
+#
+# ここでは:
+#   - 接続先は build-purchase-stats.yml と同じ（apply-db-override.sh）
+#   - スキーマには触れない（db push しない）
+#   - LAND_PRICE_POINTS_ONLY=1 で、municipality_wealth は読むだけにする
+#
+# 鍵は (point_id, year, land_price_type) の upsert なので、二度回しても
+# 行は増えない。取り込んだあと build-purchase-stats.yml を回すと頁に出る。
+
+on:
+  workflow_dispatch:
+    inputs:
+      year:
+        description: "取得する年（例: 2025）"
+        required: false
+        default: "2025"
+
+jobs:
+  import:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Create .env from Secret
+        env:
+          ENV_FILE_CONTENT: ${{ secrets.ENV_FILE }}
+          DATABASE_URL_OVERRIDE: ${{ secrets.DATABASE_URL_OVERRIDE }}
+        run: |
+          if [ -z "$ENV_FILE_CONTENT" ]; then
+            echo "::error::secrets.ENV_FILE が空。DATABASE_URL / LIBRARY_API_KEY が要る。"
+            exit 1
+          fi
+          echo "$ENV_FILE_CONTENT" > .env
+          bash scripts/apply-db-override.sh
+
+      - name: Import land price points
+        env:
+          LAND_PRICE_YEAR: ${{ inputs.year }}
+          LAND_PRICE_POINTS_ONLY: "1"
+        run: npx -y tsx scripts/import_land_prices.ts
