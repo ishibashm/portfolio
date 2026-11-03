@@ -117,7 +117,7 @@ it("keeps a separate bucket per IP hash and does not store the raw IP", async ()
     now,
   );
   expect(other.denied).toBeNull();
-  expect(buckets.size).toBe(2);
+  expect(buckets.size).toBe(3);
 });
 
 it("returns 429 with Retry-After and RateLimit headers when the bucket is empty", async () => {
@@ -134,7 +134,10 @@ it("returns 429 with Retry-After and RateLimit headers when the bucket is empty"
   expect(denied?.headers.get("RateLimit-Reset")).toBe(
     denied?.headers.get("Retry-After"),
   );
-  expect(await denied?.json()).toEqual({ error: "Too many requests" });
+  expect(await denied?.json()).toEqual({
+    error: "Too many requests",
+    scope: "ip",
+  });
 });
 
 it("fails open when the database is unavailable", async () => {

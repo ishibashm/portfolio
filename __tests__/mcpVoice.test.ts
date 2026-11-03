@@ -204,7 +204,7 @@ describe("Grok voice API", () => {
     ).toBe(403);
     const first = await s.handle("tool", request(body));
     expect(first.status).toBe(200);
-    expect((await first.json()).output.length).toBeLessThan(6100);
+    expect((await first.json()).output.length).toBeLessThan(6130);
     expect((await s.handle("tool", request(body))).status).toBe(409);
     const responses = await Promise.all(
       ["two", "three"].map((call_id) =>

@@ -145,9 +145,13 @@ it("AIへ渡す道具結果は6000文字まで。記事内の命令もデータ�
       if (result) {
         expect(result.output.type).toBe("text");
         if (result.output.type === "text") {
-          expect(result.output.value.length).toBeLessThanOrEqual(6060);
-          expect(result.output.value).toContain("BEGIN_UNTRUSTED_TOOL_DATA");
-          expect(result.output.value).toContain("END_UNTRUSTED_TOOL_DATA");
+          expect(result.output.value.length).toBeLessThanOrEqual(6130);
+          expect(result.output.value).toMatch(
+            /^BEGIN_UNTRUSTED_TOOL_DATA_[0-9a-f]{32}\n/,
+          );
+          expect(result.output.value).toMatch(
+            /\nEND_UNTRUSTED_TOOL_DATA_[0-9a-f]{32}$/,
+          );
         }
       }
       return {
