@@ -152,7 +152,7 @@ ${AREAS.length.toLocaleString("en-US")}。${AREA_GENERATED_AT.slice(0, 10)} 時�
 ## 道具として呼ぶ（MCP）
 
 ${baseUrl}/api/mcp で MCP（Model Context Protocol）のサーバーを公開しています。
-Streamable HTTP・stateless・POST のみ。匿名で使えます。計算は画面と同じ関数、記事と賃貸掲載は読み取りだけです。道具は14個です。賃貸掲載は最終確認から30日を過ぎたものと掲載期限切れを除き、連絡先・取込メール・お気に入りは返しません。スクレイピングと有料APIは呼びません。
+Streamable HTTP・stateless・POST のみ。匿名で使えます。計算は画面と同じ関数、記事と賃貸掲載は読み取りだけです。道具は16個です。賃貸掲載は最終確認から30日を過ぎたものと掲載期限切れを除き、連絡先・取込メール・お気に入りは返しません。スクレイピングと有料APIは呼びません。
 
 - get_honmei_star: 生年月日から本命星（九星）と天中殺の干支を返す。追加項目 kanshi（年月日）、solarTerms（出生年の24節気）、boundaryAlternatives（時刻不明の境界候補）、calendarBasis
 - get_kanshi: 生年月日から年月日の六十干支、日柱由来の空亡（kanshi.voidBranches）、各柱の干支併臨年（kanshiHeirin）、二十四節気の計算時刻（solarTerms）を返す。1900〜2100年の YYYY-MM-DD または日時を受け付け、時差省略はJST。日付だけは正午の代表値で、節入り当日は前後両候補とそれぞれの併臨年も返す

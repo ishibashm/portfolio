@@ -2,12 +2,17 @@ import { DIRECTIONS, STARS, STAR_NAMES } from "@/lib/kigakuContent";
 import { directionLabelName, haLabelForLayer } from "@/lib/directionLabels";
 import { DIRECTION_LABELS } from "@/utils/directionGeo";
 import { jstNoonOf } from "@/utils/boardInstant";
-import { todayInJapan, toJapanDateString } from "@/utils/japanDate";
+import {
+  parseJapanDateTime,
+  todayInJapan,
+  toJapanDateString,
+} from "@/utils/japanDate";
 import { getDailySolarSchedule } from "@/utils/solarTime";
 import {
   calculateVectorCollision,
   generateBoard,
   getClassicalDayStar,
+  getHonmeiStar,
   type StarFrequency,
   type VectorStatus,
 } from "@/utils/ephemerisEngine";
@@ -89,5 +94,53 @@ export function buildTodayDirections(now: Date = new Date()) {
         }),
       };
     }),
+  };
+}
+
+/** 現在の刻。夜の最終刻を過ぎたら翌日の表から選び、日盤は今日を使う。 */
+export function buildCurrentDirections(
+  now = new Date(),
+  birthDate?: string,
+  lon = 139.6917,
+) {
+  const birth = birthDate ? parseJapanDateTime(birthDate) : null;
+  const star =
+    birth && Number.isFinite(birth.getTime())
+      ? getHonmeiStar(birth).classical
+      : null;
+  const date = jstNoonOf(now);
+  const schedule = [-1, 0, 1].flatMap((offset) =>
+    getDailySolarSchedule(new Date(date.getTime() + offset * 86400000), lon, 9),
+  );
+  // 日ごとの正午補正には数秒の差があるため、次の刻の開始を終端にする。
+  const index = schedule.findLastIndex((item) => item.startStandard <= now);
+  const slot = schedule[index];
+  const end = schedule[index + 1]?.startStandard ?? slot.endStandard;
+  const general = (layer: ReturnType<typeof verdicts>) => {
+    if (star !== null) return layer;
+    return Object.fromEntries(
+      Object.entries(layer).map(([direction, status]) => [
+        direction,
+        ["NOISE_GOU", "NOISE_ANKEN", "NOISE_HA"].includes(status)
+          ? status
+          : "SAFE",
+      ]),
+    ) as ReturnType<typeof verdicts>;
+  };
+  const daily = general(verdicts(getClassicalDayStar(date), star ?? 5, date));
+  const hourly = general(
+    verdicts(slot.kyusei.number as StarFrequency, star ?? 5),
+  );
+  for (const direction of DIRECTIONS) {
+    if (daily[direction]?.startsWith("NOISE_"))
+      hourly[direction] = daily[direction];
+  }
+  return {
+    date: todayInJapan(now),
+    starName: star ? STAR_NAMES[star] : null,
+    branch: slot.japanese,
+    start: slot.startStandard.toISOString(),
+    end: end.toISOString(),
+    ...summarize(hourly),
   };
 }
