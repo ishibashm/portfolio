@@ -110,7 +110,7 @@ describe("カレンダーの個人天中殺ラベル", () => {
     expect(source).toContain(
       "<p>あなたの天中殺（宿命の空亡）に当たる日です。</p>",
     );
-    expect(source).toContain("あなたの天中殺（宿命の空亡）:</span>");
+    expect(source).toMatch(/あなたの天中殺（宿命の空亡）:\s*<\/span>/);
     expect(source).toContain(
       "本日はあなたの天中殺（宿命の空亡）に当たる日です",
     );
