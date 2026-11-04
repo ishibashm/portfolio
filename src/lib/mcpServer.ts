@@ -1,3 +1,5 @@
+import { buildTodayDirections } from "@/lib/todayDirections";
+import { getMonthDirections } from "@/lib/kigakuContent";
 import { municipalityMatches } from "@/lib/municipalitySearch";
 import {
   articleSearchSchema,
@@ -623,6 +625,55 @@ export function createMcpBaseServer(options?: {
 export function createMcpServer(deps?: { rentals?: RentalReader }): McpServer {
   const server = createMcpBaseServer({ municipalityReadings: true });
   registerPublicTimeTools(server);
+  server.registerTool(
+    "get_today_directions",
+    {
+      title: "今日の吉方位",
+      description:
+        "/houi/today と同じ本命星別の日盤・時間帯。東京基準、日付省略時は今日（JST）。",
+      inputSchema: {
+        date: z.iso
+          .date()
+          .refine(
+            (v) =>
+              Number(v.slice(0, 4)) >= 1900 && Number(v.slice(0, 4)) <= 2099,
+          )
+          .optional(),
+      },
+      annotations: {
+        readOnlyHint: true,
+        destructiveHint: false,
+        openWorldHint: false,
+      },
+    },
+    async ({ date }) =>
+      text(
+        buildTodayDirections(
+          date ? new Date(`${date}T12:00:00+09:00`) : new Date(),
+        ),
+      ),
+  );
+  server.registerTool(
+    "get_month_directions",
+    {
+      title: "年月の吉方位",
+      description:
+        "/houi/[year]/[star]/[month] と同じ月盤の吉方位。期間は節入りから翌節入りまで。",
+      inputSchema: {
+        year: z.number().int().min(1900).max(2099),
+        month: z.number().int().min(1).max(12),
+        star: z.number().int().min(1).max(9).describe("本命星（1〜9）"),
+      },
+      annotations: {
+        readOnlyHint: true,
+        destructiveHint: false,
+        openWorldHint: false,
+      },
+    },
+    async ({ year, month, star }) =>
+      text(JSON.parse(JSON.stringify(getMonthDirections(year, month, star)))),
+  );
+
   server.registerTool(
     "search_articles",
     {

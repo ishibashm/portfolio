@@ -109,6 +109,12 @@ export default function Page() {
           で決まります。まず生まれ年から本命星を確認し、その年の方位一覧に進んでください。
         </p>
 
+        <p className="mt-4">
+          <Link href="/houi/today" className="text-rose-600 underline">
+            今の時間・今日の吉方位を見る
+          </Link>
+        </p>
+
         <section id="honmei-lookup" className="mt-6 scroll-mt-6">
           <h2 className="text-xl font-bold font-serif border-b border-slate-300 pb-2">
             生まれ年から本命星を調べる
