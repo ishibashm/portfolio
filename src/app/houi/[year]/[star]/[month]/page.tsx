@@ -71,11 +71,11 @@ export async function generateMetadata({
   const { verdicts, start, end } = getMonthDirections(year, month, star);
   const good = verdicts.filter((v) => v.kind === "good").map((v) => v.jp);
 
-  const title = `${year}年${month}月 ${name}の吉方位`;
+  const title = `${year}年${month}月 ${name}の吉方位・凶方位｜月盤と節入りを確認`;
   const description =
     good.length > 0
-      ? `${year}年${month}月（${formatDate(start)}〜${formatDate(end)}）、${name}の月盤での吉方位は${good.join("・")}です。五黄殺・暗剣殺・月破の位置も確認できます。`
-      : `${year}年${month}月（${formatDate(start)}〜${formatDate(end)}）、${name}の月盤には吉方位がありません。五黄殺・暗剣殺・月破の位置を確認できます。`;
+      ? `${year}年${month}月（${formatDate(start)}〜${formatDate(end)}）、${name}の吉方位は${good.join("・")}です。五黄殺・暗剣殺・月破も確認。節入りで切り替わる対象期間と月盤で、引越しの方位を検討できます。`
+      : `${year}年${month}月（${formatDate(start)}〜${formatDate(end)}）、${name}の月盤の吉方位はありません。五黄殺・暗剣殺・月破も確認。節入りで切り替わる対象期間と月盤で、引越しの方位を検討できます。`;
 
   return {
     title,
@@ -129,7 +129,7 @@ export default async function Page({
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#faf7f5] via-[#f5efe9] to-[#f0e9e1] text-slate-900 font-sans">
       <ArticleJsonLd
-        headline={`${year}年${month}月 ${name}の吉方位`}
+        headline={`${year}年${month}月 ${name}の吉方位・凶方位｜月盤と節入りを確認`}
         description={`${formatDate(start)}から${formatDate(end)}までの月盤における${name}の吉方位、五黄殺・暗剣殺・月破の位置。`}
         path={path}
         keywords={[`${year}年${month}月`, name, "吉方位", "月盤", "引越し"]}
