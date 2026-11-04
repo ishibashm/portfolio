@@ -10,6 +10,7 @@
  * SolarTimeClock（タブを跨いで同じ値を見るため）。
  */
 
+import { TapTooltip } from "./TapTooltip";
 import React, { useState } from "react";
 import dynamic from "next/dynamic";
 import { directionLabelBadge, directionLabelName } from "@/lib/directionLabels";
@@ -461,73 +462,69 @@ export function ConsultPanel({
       (isClassical ? classicalLayers : physicalLayers)?.tendoDirection === dir;
 
     return (
-      <div className="group relative cursor-help inline-block">
-        <span
-          className={`${getColor(status)} border-b border-stone-300 hover:border-current`}
+      <TapTooltip
+        label={label}
+        className={`${getColor(status)} border-b border-stone-300 hover:border-current`}
+      >
+        <div
+          className={`font-bold mb-1 border-b border-stone-200 pb-1 ${getColor(status)}`}
         >
-          {label}
-        </span>
-        <div className="hidden group-hover:block absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-48 p-2 bg-stone-50 border border-stone-300 text-stone-600 text-xs shadow-2xl z-50 rounded-xl font-sans normal-case leading-relaxed pointer-events-none">
-          <div
-            className={`font-bold mb-1 border-b border-stone-200 pb-1 ${getColor(status)}`}
-          >
-            {title}
-          </div>
-          <div className="text-stone-600 mb-1 leading-tight">{desc}</div>
-          {isTendoDir && (
-            <div className="text-[10px] text-emerald-700 font-bold mb-1 bg-emerald-50 p-1 border border-emerald-200 rounded-xs">
-              {
-                "✨ 天道（その月の吉方）と重なっています（本命殺・的殺などの個人の凶が打ち消されるとする流派の扱いを適用）"
-              }
-            </div>
-          )}
-          {(() => {
-            const activeBoardForBreakdown = isFinal
-              ? useClassicalBoard
-                ? classicalDayBoard
-                : physicalDayBoard
-              : board;
-            const br = getVectorBreakdown(
-              dir,
-              activeBoardForBreakdown,
-              useClassicalBoard ? honmeiStar!.classical : honmeiStar!.physical,
-              personalVoidZodiac,
-              layerType,
-              currentZodiac,
-            );
-            return (
-              <div className="text-[7.5px] text-stone-600 font-mono mt-1.5 pt-1.5 border-t border-stone-200 space-y-0.5">
-                <div className="flex justify-between">
-                  <span>【環境要因】:</span>{" "}
-                  <span
-                    className={
-                      br.environmental.includes("通常")
-                        ? "text-blue-700"
-                        : "text-rose-700 font-bold"
-                    }
-                  >
-                    {br.environmental}
-                  </span>
-                </div>
-                <div className="flex justify-between">
-                  <span>【本命星との相性】:</span>{" "}
-                  <span
-                    className={
-                      br.personal.includes("通常")
-                        ? "text-stone-600"
-                        : br.personal.includes("吉")
-                          ? "text-emerald-700 font-bold"
-                          : "text-purple-700 font-bold"
-                    }
-                  >
-                    {br.personal}
-                  </span>
-                </div>
-              </div>
-            );
-          })()}
+          {title}
         </div>
-      </div>
+        <div className="text-stone-600 mb-1 leading-tight">{desc}</div>
+        {isTendoDir && (
+          <div className="text-[10px] text-emerald-700 font-bold mb-1 bg-emerald-50 p-1 border border-emerald-200 rounded-xs">
+            {
+              "✨ 天道（その月の吉方）と重なっています（本命殺・的殺などの個人の凶が打ち消されるとする流派の扱いを適用）"
+            }
+          </div>
+        )}
+        {(() => {
+          const activeBoardForBreakdown = isFinal
+            ? useClassicalBoard
+              ? classicalDayBoard
+              : physicalDayBoard
+            : board;
+          const br = getVectorBreakdown(
+            dir,
+            activeBoardForBreakdown,
+            useClassicalBoard ? honmeiStar!.classical : honmeiStar!.physical,
+            personalVoidZodiac,
+            layerType,
+            currentZodiac,
+          );
+          return (
+            <div className="text-[7.5px] text-stone-600 font-mono mt-1.5 pt-1.5 border-t border-stone-200 space-y-0.5">
+              <div className="flex justify-between">
+                <span>【環境要因】:</span>{" "}
+                <span
+                  className={
+                    br.environmental.includes("通常")
+                      ? "text-blue-700"
+                      : "text-rose-700 font-bold"
+                  }
+                >
+                  {br.environmental}
+                </span>
+              </div>
+              <div className="flex justify-between">
+                <span>【本命星との相性】:</span>{" "}
+                <span
+                  className={
+                    br.personal.includes("通常")
+                      ? "text-stone-600"
+                      : br.personal.includes("吉")
+                        ? "text-emerald-700 font-bold"
+                        : "text-purple-700 font-bold"
+                  }
+                >
+                  {br.personal}
+                </span>
+              </div>
+            </div>
+          );
+        })()}
+      </TapTooltip>
     );
   };
 

@@ -1,6 +1,15 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import {
+  BirthYearPicker,
+  MonthDayPicker,
+} from "@/components/inputs/QuickChoices";
+import {
+  loadSettings,
+  readSettingsSync,
+  settingString,
+} from "@/lib/userSettings";
 import Link from "next/link";
 import { isValidBirthDateInput } from "@/lib/birthDateInput";
 import { tenchusatsuForCivilDate } from "@/utils/tenchusatsuCore";
@@ -12,6 +21,30 @@ export function TenchusatsuChecker({
   timeline: TenchusatsuTimeline;
 }) {
   const [birth, setBirth] = useState("");
+  const [year, setYear] = useState("");
+  const edited = useRef(false);
+  useEffect(() => {
+    let active = true;
+    const apply = (settings: ReturnType<typeof readSettingsSync>) => {
+      if (!active || edited.current) return;
+      const saved = settingString(settings, "birth_date") ?? "";
+      const date =
+        isValidBirthDateInput(saved) && saved <= timeline.today ? saved : "";
+      setBirth(date);
+      setYear(date.slice(0, 4));
+    };
+    apply(readSettingsSync());
+    void loadSettings()
+      .then(({ settings }) => apply(settings))
+      .catch(() => {});
+    return () => {
+      active = false;
+    };
+  }, [timeline.today]);
+  const chooseBirth = (date: string) => {
+    edited.current = true;
+    setBirth(date);
+  };
   const valid = isValidBirthDateInput(birth) && birth <= timeline.today;
   const result = valid
     ? tenchusatsuForCivilDate(
@@ -65,8 +98,25 @@ export function TenchusatsuChecker({
         </ul>
       </div>
       <div className="wg-card p-6">
-        <label htmlFor="tenchusatsu-birth" className="block font-bold">
-          生年月日から天中殺を調べる
+        <h2 className="block font-bold">生年月日から天中殺を調べる</h2>
+        <BirthYearPicker
+          value={year}
+          onChange={(value) => {
+            edited.current = true;
+            setYear(value);
+            setBirth("");
+          }}
+        />
+        {year && (
+          <MonthDayPicker
+            key={year}
+            year={year}
+            value={birth}
+            onChange={chooseBirth}
+          />
+        )}
+        <label htmlFor="tenchusatsu-birth" className="mt-3 block text-sm">
+          日付欄で選ぶ
         </label>
         <input
           id="tenchusatsu-birth"
@@ -74,7 +124,10 @@ export function TenchusatsuChecker({
           min="1900-01-01"
           max={timeline.today < "2050-12-31" ? timeline.today : "2050-12-31"}
           value={birth}
-          onChange={(e) => setBirth(e.target.value)}
+          onChange={(e) => {
+            chooseBirth(e.target.value);
+            setYear(e.target.value.slice(0, 4));
+          }}
           aria-describedby="tenchusatsu-help"
           className="mt-3 rounded-lg border border-rose-200 bg-white p-3"
         />
