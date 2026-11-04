@@ -163,6 +163,28 @@ export default async function Page({
           対象期間: {formatDate(start)} 〜 {formatDate(end)}
         </p>
 
+        {/* モバイル（表示の 8 割）の 1 画面目に結論だけを置く。詳しい判定は下で開く。 */}
+        <dl
+          data-testid="month-summary"
+          className="mt-4 grid gap-1 rounded-2xl border border-slate-300 bg-white/90 p-4 text-sm"
+        >
+          <div className="flex gap-2">
+            <dt className="shrink-0 font-bold text-emerald-800">吉方位</dt>
+            <dd>{good.length ? good.map((v) => v.jp).join("・") : "なし"}</dd>
+          </div>
+          <div className="flex gap-2">
+            <dt className="shrink-0 font-bold text-rose-800">凶方位</dt>
+            <dd>{bad.map((v) => `${v.jp}（${v.label}）`).join("、")}</dd>
+          </div>
+          <div className="flex gap-2">
+            <dt className="shrink-0 font-bold text-amber-800">注意日</dt>
+            <dd>
+              {formatDate(start)}の節入りより前は前月の盤（{formatDate(end)}
+              まで）
+            </dd>
+          </div>
+        </dl>
+
         <p className="mt-5 text-sm leading-relaxed text-slate-700">
           この期間の月盤は中宮が{STAR_NAMES[centerStar]}です。
           {name}の方にとっての各方位は次のとおりです。
@@ -192,27 +214,32 @@ export default async function Page({
           <h2 className="text-xl font-bold font-serif border-b border-slate-300 pb-2">
             方位ごとの判定
           </h2>
-          <div className="mt-5 grid gap-3 sm:grid-cols-2">
-            {verdicts.map((v) => (
-              <div
-                key={v.direction}
-                className={`rounded-2xl border p-4 ${tone[v.kind]}`}
-              >
-                <div className="flex items-baseline justify-between gap-2">
-                  <span className="text-lg font-bold font-serif">{v.jp}</span>
-                  <span className="text-xs font-bold">{v.label}</span>
-                </div>
-                <p className="text-xs mt-2 leading-relaxed opacity-90">
-                  {v.note}
-                </p>
-                {v.star !== null && (
-                  <p className="text-xs mt-2 opacity-70">
-                    回座している星: {STAR_NAMES[v.star]}
+          <details className="mt-5 group">
+            <summary className="cursor-pointer min-h-11 py-2 text-sm font-bold text-rose-700">
+              8方位の詳しい判定を開く
+            </summary>
+            <div className="mt-3 grid gap-3 sm:grid-cols-2">
+              {verdicts.map((v) => (
+                <div
+                  key={v.direction}
+                  className={`rounded-2xl border p-4 ${tone[v.kind]}`}
+                >
+                  <div className="flex items-baseline justify-between gap-2">
+                    <span className="text-lg font-bold font-serif">{v.jp}</span>
+                    <span className="text-xs font-bold">{v.label}</span>
+                  </div>
+                  <p className="text-xs mt-2 leading-relaxed opacity-90">
+                    {v.note}
                   </p>
-                )}
-              </div>
-            ))}
-          </div>
+                  {v.star !== null && (
+                    <p className="text-xs mt-2 opacity-70">
+                      回座している星: {STAR_NAMES[v.star]}
+                    </p>
+                  )}
+                </div>
+              ))}
+            </div>
+          </details>
         </section>
 
         <DirectionEffects

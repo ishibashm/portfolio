@@ -24,6 +24,7 @@ import { getGeomagneticData, GeomagneticData } from "../utils/geomagnetism";
 import { Solar } from "lunar-javascript";
 import { getZonedDateTimeFields } from "@/utils/solarTime";
 
+import { CandidateDates } from "./relocation/CandidateDates";
 import { ClockDisplay } from "./ClockDisplay";
 import { SampleProfileNotice } from "./profile/SampleProfileNotice";
 import { STAR_NAMES } from "@/lib/kigakuContent";
@@ -3957,6 +3958,12 @@ export const SolarTimeClock = () => {
           どこから開いてもよい。
         */}
         {/* --- 要点（常に出す） --- */}
+        <CandidateDates
+          birthDate={birthDate}
+          lon={lon}
+          ready={birthDateOwned && basePlaceOwned}
+          directionFilterMode={directionFilterMode}
+        />
         <HomePortal
           dateControls={{ baseTime, setTimeOffsetDays: shareTimeOffsetDays }}
           onOpenTab={openDetail}

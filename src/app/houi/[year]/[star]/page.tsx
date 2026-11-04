@@ -221,7 +221,7 @@ export default async function Page({
             引越しの方位は、年盤と月盤の両方が吉であることを条件にする考え方が一般的です。月ごとの判定は次から確認できます。
           </p>
           <p className="mt-2 text-xs text-slate-600">
-            以下は月盤のみの判定です。各月は節入りから始まります。年盤の吉方位もあわせて確認してください。
+            各月は節入りから始まります。「年月とも吉」は同じ方位が年盤・月盤の両方で吉になる月です。1月の年盤は前年を使います。
           </p>
           <ul className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
             {MONTHS.map((month) => {
@@ -233,9 +233,26 @@ export default async function Page({
               );
               const monthlyGood = monthly.filter((v) => v.kind === "good");
               const monthlyBad = monthly.filter((v) => v.kind === "bad");
+              const annual =
+                month === 1
+                  ? getYearDirections(year - 1, star, "classical").verdicts
+                  : verdicts;
+              const bothGood = monthlyGood.filter((v) =>
+                annual.some(
+                  (a) => a.direction === v.direction && a.kind === "good",
+                ),
+              );
               return (
-                <li key={month} className="wg-card p-4">
+                <li
+                  key={month}
+                  className={`wg-card p-4 ${bothGood.length ? "border-emerald-400 bg-emerald-50" : ""}`}
+                >
                   <h3 className="font-mono text-sm font-bold">{month}月</h3>
+                  {bothGood.length > 0 && (
+                    <p className="mt-2 text-xs font-bold text-emerald-900">
+                      年月とも吉：{bothGood.map((v) => v.jp).join("・")}
+                    </p>
+                  )}
                   <p className="mt-2 text-xs text-emerald-900">
                     吉：
                     {monthlyGood.length
