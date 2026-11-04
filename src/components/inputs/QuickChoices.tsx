@@ -103,7 +103,7 @@ export function BirthYearPicker({
       <legend>生まれ年は？</legend>
       <div className="flex flex-wrap gap-2">
         {decade === undefined ? (
-          Array.from({ length: 8 }, (_, i) => 1940 + i * 10).map((year) => (
+          Array.from({ length: 9 }, (_, i) => 1940 + i * 10).map((year) => (
             <button
               key={year}
               type="button"

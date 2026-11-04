@@ -71,7 +71,7 @@ describe("天中殺LP", () => {
   });
   it("入力で結果と36か月が表示され、不正・未来の入力で結果を消す", () => {
     render(<TenchusatsuChecker timeline={tenchusatsuTimeline(now)} />);
-    const input = screen.getByLabelText("生年月日から天中殺を調べる");
+    const input = screen.getByLabelText("日付欄で選ぶ");
     fireEvent.change(input, { target: { value: "2000-01-07" } });
     expect(screen.getByText(/あなたは戌亥天中殺/)).toBeTruthy();
     expect(screen.getAllByText("天中殺月", { exact: true })).toHaveLength(6);

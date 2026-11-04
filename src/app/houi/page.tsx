@@ -1,3 +1,4 @@
+import { HonmeiStarLinks } from "@/components/houi/HonmeiStarLinks";
 import Link from "next/link";
 import { ContentDisclaimer } from "@/components/houi/ContentDisclaimer";
 import { HonmeiLookup } from "@/components/houi/HonmeiLookup";
@@ -114,6 +115,7 @@ export default function Page() {
             今の時間・今日の吉方位を見る
           </Link>
         </p>
+        <HonmeiStarLinks year={year} />
 
         <section id="honmei-lookup" className="mt-6 scroll-mt-6">
           <h2 className="text-xl font-bold font-serif border-b border-slate-300 pb-2">

@@ -58,6 +58,14 @@ export function ArticleToolCta({ tags }: { tags: readonly string[] }) {
           をご覧ください。
         </p>
       )}
+      {tags.includes("天中殺") && (
+        <Link
+          href="/houi/tenchusatsu"
+          className="mt-4 inline-block rounded-xl border border-rose-200 bg-white px-4 py-3 text-sm"
+        >
+          生年月日から天中殺を調べる
+        </Link>
+      )}
       {/* 読み終えた所で案内役が道具へ誘う。本文より下なので lazy で足りる。 */}
       <GuideCharacter pose="thumbsup" size="sm" className="mt-4 max-w-xl">
         読み終えたら、あなたの生年月日で確かめてみましょう。
