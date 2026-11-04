@@ -67,6 +67,13 @@ it("uses the authenticated user's stored profile, with no input box", async () =
   expect(screen.getByText("計算結果")).toBeInTheDocument();
   const frame = screen.getByTitle("AI装飾の運勢レポート");
   expect(frame).toHaveAttribute("sandbox", "");
+  expect(frame).toHaveClass(
+    "h-[50svh]",
+    "min-h-64",
+    "sm:h-[70svh]",
+    "sm:min-h-[480px]",
+  );
+  expect(frame).not.toHaveAttribute("style");
   expect(frame).toHaveAttribute("srcdoc", "<p>AI</p>");
   expect(screen.getByText("計算結果").closest("iframe")).toBeNull();
   expect(screen.getByText("計算結果").closest("details")).not.toHaveAttribute(

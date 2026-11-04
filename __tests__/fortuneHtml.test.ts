@@ -266,3 +266,16 @@ describe("flag, cache, limits and fallback", () => {
     expect(generate).toHaveBeenCalledTimes(50);
   });
 });
+
+// 実計算を通し、数字ではなく既存の九星名をレポートへ渡す。
+it.each([
+  ["1986-06-15", "五黄土星"],
+  ["1985-06-15", "六白金星"],
+  ["1990-01-01", "二黒土星"],
+])("%s の本命星を %s と表示する", (birthDate, name) => {
+  const facts = fortuneFacts({ ...profile, birthDate }, "2026-10-26");
+  expect(facts.find((fact) => fact.label === "本命星")?.value).toBe(name);
+  expect(fallbackFortuneHtml(facts)).toContain(name);
+  const template = facts.map((_, index) => `<p>{{fact:${index}}}</p>`).join("");
+  expect(decorateFortuneHtml(template, facts)).toContain(name);
+});
