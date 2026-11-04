@@ -4,6 +4,7 @@ import {
   MAX_FORTUNE_FACT_BYTES,
   type FortuneUsage,
 } from "./fortuneGuard";
+import { STAR_NAMES } from "./kigakuContent";
 import { directionLabelName } from "./directionLabels";
 import { TIER_JP } from "@/utils/tierDisplay";
 import { createHash } from "node:crypto";
@@ -57,7 +58,7 @@ export function fortuneFacts(
         new Date(directions.payload.date + "T00:00:00+09:00"),
       ),
     },
-    { label: "本命星", value: String(directions.payload.honmeiStar) },
+    { label: "本命星", value: STAR_NAMES[directions.payload.honmeiStar] },
     ...directions.payload.directions.map((d) => ({
       label: d.label,
       value: `${TIER_JP[d.tier]} / ${directionLabelName(d.status)}`,

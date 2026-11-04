@@ -153,3 +153,56 @@ describe("getYearBranch", () => {
     expect(getYearBranch(year)).toBe(branch);
   });
 });
+
+// 固定の years 一覧（2020〜2031）では次周期を判定できなかった回帰を防ぐ。
+describe("実計算による既知の天中殺年", () => {
+  it.each([
+    ["戌亥", "2000-01-07", 2030, 2031],
+    ["寅卯", "2000-02-16", 2034, 2035],
+    ["辰巳", "2000-02-06", 2024, 2025],
+    ["午未", "2000-01-27", 2026, 2027],
+    ["申酉", "2000-01-17", 2028, 2029],
+    ["子丑", "2000-02-26", 2032, 2033],
+  ] as const)(
+    "%s（生年月日 %s）は %i・%i 年に表示される",
+    (group, birth, first, second) => {
+      const date = new Date(`${birth}T00:00:00+09:00`);
+      const voidYears = Array.from({ length: 12 }, (_, i) => 2024 + i).filter(
+        (year) => calculateTenchusatsu(date, year).isYearTenchusatsu,
+      );
+      expect(calculateTenchusatsu(date).tenchusatsu.name).toBe(group);
+      expect(voidYears).toEqual([first, second]);
+      vi.useFakeTimers();
+      vi.setSystemTime(new Date("2029-06-01T12:00:00+09:00"));
+      render(<TenchusatsuVisualizer birthDateStr={birth} />);
+      const cells = Array.from(screen.getByRole("list").querySelectorAll("li"));
+      expect(
+        cells
+          .filter((cell) => cell.children[1].textContent === "天中殺")
+          .map((cell) => Number(cell.children[0].textContent)),
+      ).toEqual([first, second]);
+    },
+  );
+
+  it.each(["1985-06-15", "1990-01-01"])(
+    "%s はどの12年窓でも天中殺が2年ある",
+    (birth) => {
+      const date = new Date(`${birth}T00:00:00+09:00`);
+      for (let start = 2020; start < 2032; start++) {
+        const years = Array.from({ length: 12 }, (_, i) => start + i);
+        expect(
+          years.filter(
+            (year) => calculateTenchusatsu(date, year).isYearTenchusatsu,
+          ),
+        ).toHaveLength(2);
+      }
+      vi.useFakeTimers();
+      vi.setSystemTime(new Date("2026-06-01T12:00:00+09:00"));
+      render(<TenchusatsuVisualizer birthDateStr={birth} />);
+      const cells = Array.from(screen.getByRole("list").querySelectorAll("li"));
+      expect(
+        cells.filter((cell) => cell.children[1].textContent === "天中殺"),
+      ).toHaveLength(2);
+    },
+  );
+});
