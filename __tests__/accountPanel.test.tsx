@@ -1,4 +1,10 @@
-import { render, screen, waitFor } from "@testing-library/react";
+import {
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+  within,
+} from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 /**
@@ -47,9 +53,11 @@ beforeEach(() => {
       const url = String(input);
       /* 座標 → 市区町村名（lib/placeLabel）。一覧の場所は地名で出す */
       if (url.startsWith("/api/geocode/reverse")) {
-        const name = url.includes("35.6812")
-          ? "東京都千代田区"
-          : "大阪府大阪市北区";
+        const name = url.includes("35.165")
+          ? "愛知県名古屋市中区"
+          : url.includes("35.6812")
+            ? "東京都千代田区"
+            : "大阪府大阪市北区";
         return {
           ok: true,
           status: 200,
@@ -79,6 +87,67 @@ function seed() {
 }
 
 describe("AccountPanel", () => {
+  it("uses the active profile instead of stale single-profile coordinates and labels, including after switching", async () => {
+    window.localStorage.setItem(
+      SETTINGS_KEY,
+      JSON.stringify({
+        birth_date: "1970-01-01",
+        base_lat: 35.01,
+        base_lon: 135.75,
+        base_label: "京都府京都市中京区",
+        birth_lat: 35.01,
+        birth_lon: 135.75,
+        birth_label: "古い出生地",
+      }),
+    );
+    window.localStorage.setItem(
+      PRESETS_KEY,
+      JSON.stringify([
+        {
+          id: "test",
+          name: "テスト",
+          birthDate: "1990-01-02",
+          baseLat: 35.165,
+          baseLon: 136.905,
+          active: true,
+          createdAt: "2026-01-01",
+        },
+        {
+          id: "kyoto",
+          name: "Kyoto",
+          birthDate: "1980-02-03",
+          baseLat: 35.02,
+          baseLon: 135.7,
+          baseLabel: "京都市右京区",
+          createdAt: "2026-01-01",
+        },
+      ]),
+    );
+    render(<AccountPanel />);
+    const progress = await screen.findByRole("region", {
+      name: "登録の進み具合",
+    });
+    await waitFor(() =>
+      expect(
+        within(progress).getByText("愛知県名古屋市中区 付近"),
+      ).toBeInTheDocument(),
+    );
+    expect(within(progress).getByText("1990-01-02")).toBeInTheDocument();
+    expect(progress).not.toHaveTextContent("京都");
+    expect(progress).not.toHaveTextContent("古い出生地");
+    expect(
+      screen.getByText(/出発地 愛知県名古屋市中区 付近/),
+    ).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "使う" }));
+    await waitFor(() =>
+      expect(within(progress).getByText("京都市右京区")).toBeInTheDocument(),
+    );
+    expect(within(progress).getByText("1980-02-03")).toBeInTheDocument();
+    expect(progress).not.toHaveTextContent("愛知県");
+    expect(progress).not.toHaveTextContent("京都府京都市中京区");
+  });
+
   it("登録した値を実際の数字で出す", async () => {
     seed();
     render(<AccountPanel />);

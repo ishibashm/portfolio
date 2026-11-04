@@ -24,7 +24,11 @@ import {
   renameProfilePreset,
   type ProfilePreset,
 } from "@/lib/profilePresetSync";
-import { applyProfile, findActiveProfile } from "@/lib/activeProfile";
+import {
+  activeProfileSettings,
+  applyProfile,
+  findActiveProfile,
+} from "@/lib/activeProfile";
 import { usePlaceName } from "@/lib/placeLabel";
 import { deleteAccountData } from "@/lib/accountData";
 import { Plus, UserCheck } from "lucide-react";
@@ -114,7 +118,11 @@ export function AccountPanel() {
       ]);
       if (!alive) return;
       setEmail(data.user?.email ?? null);
-      setCompletion(profileCompletion(settings.settings));
+      setCompletion(
+        profileCompletion(
+          activeProfileSettings(presetResult.presets, settings.settings),
+        ),
+      );
       setPresets(presetResult.presets);
       setCloudSynced(presetResult.cloudSynced);
       setActiveId(
@@ -382,7 +390,11 @@ export function AccountPanel() {
                             setCloudSynced(r.cloudSynced);
                             setActiveId(preset.id);
                             const { settings } = await loadSettings();
-                            setCompletion(profileCompletion(settings));
+                            setCompletion(
+                              profileCompletion(
+                                activeProfileSettings(r.presets, settings),
+                              ),
+                            );
                             setBusyId(null);
                             setSwitchMessage(
                               `「${preset.name}」を使用中にしました。方位の判定・引越しの試算・街探しは、このプロフィールで出します。`,

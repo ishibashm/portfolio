@@ -103,6 +103,8 @@ describe("markActive", () => {
 describe("settingsPatchFor", () => {
   it("出生地が無い控えは設定の出生地を null で消す", () => {
     expect(settingsPatchFor(partner)).toEqual({
+      base_label: null,
+      birth_label: null,
       birth_date: "1992-05-06",
       base_lat: 35.6,
       base_lon: 139.7,

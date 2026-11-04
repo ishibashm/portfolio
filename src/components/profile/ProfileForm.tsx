@@ -15,6 +15,7 @@ import {
 import { readDestination, writeDestination } from "@/lib/destinationSetting";
 import {
   DEFAULT_PROFILE_NAME,
+  activeProfileSettings,
   findActiveProfile,
   upsertActiveProfile,
 } from "@/lib/activeProfile";
@@ -188,29 +189,24 @@ export function ProfileForm() {
             setBirthLon(target.birthLon ?? null);
             setBaseLat(target.baseLat);
             setBaseLon(target.baseLon);
+            setBaseLabel(target.baseLabel ?? "");
+            setBirthLabel(target.birthLabel ?? "");
           } else {
             setPresetMissing(true);
           }
         } else {
-          setBirthDate(settingString(settings, "birth_date") ?? "");
-          setBirthLat(settingNumber(settings, "birth_lat") ?? null);
-          setBirthLon(settingNumber(settings, "birth_lon") ?? null);
-          setBaseLat(settingNumber(settings, "base_lat") ?? null);
-          setBaseLon(settingNumber(settings, "base_lon") ?? null);
-          setBirthLabel(settingString(settings, "birth_label") ?? "");
-          setBaseLabel(settingString(settings, "base_label") ?? "");
-          /* いま使用中のプロフィール。一覧に無ければ既定の名前で、
-             保存のときに一覧へ入れる */
+          const registered = activeProfileSettings(presets, settings);
+          setBirthDate(settingString(registered, "birth_date") ?? "");
+          setBirthLat(settingNumber(registered, "birth_lat") ?? null);
+          setBirthLon(settingNumber(registered, "birth_lon") ?? null);
+          setBaseLat(settingNumber(registered, "base_lat") ?? null);
+          setBaseLon(settingNumber(registered, "base_lon") ?? null);
+          setBirthLabel(settingString(registered, "birth_label") ?? "");
+          setBaseLabel(settingString(registered, "base_label") ?? "");
           const active = findActiveProfile(presets, settings);
           if (active) {
             setProfileName(active.name);
             setActiveId(active.id);
-            /* 端末に地名が無ければ、控えに入っている地名を使う（別の
-               端末で選んだ名前がここで読める） */
-            if (!settingString(settings, "base_label") && active.baseLabel)
-              setBaseLabel(active.baseLabel);
-            if (!settingString(settings, "birth_label") && active.birthLabel)
-              setBirthLabel(active.birthLabel);
           }
         }
 
@@ -365,6 +361,8 @@ export function ProfileForm() {
     birth_lon: birthLon ?? undefined,
     base_lat: baseLat ?? undefined,
     base_lon: baseLon ?? undefined,
+    base_label: baseLabel || undefined,
+    birth_label: birthLabel || undefined,
   });
   const canUseTools = completion.ready;
 
