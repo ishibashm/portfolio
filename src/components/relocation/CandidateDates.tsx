@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import type { DayVerdict } from "@/utils/auspiciousDays";
 import { isAuspiciousStatus } from "@/utils/noiseSeverity";
 import { toJapanDateString } from "@/utils/japanDate";
@@ -50,17 +50,13 @@ export function CandidateDates({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const revision = useRef(0);
-  useEffect(() => {
-    revision.current++;
-    setResult(null);
-    setError("");
-    setLoading(false);
-    return () => {
-      revision.current++;
-    };
-  }, [birthDate, lon, ready, directionFilterMode]);
+  // 入力が変わったら前の結果は出さない（effect で消さず、結果に入力の鍵を持たせる）。
+  const inputKey = `${birthDate}|${lon}|${ready}|${directionFilterMode}`;
+  const [resultKey, setResultKey] = useState("");
+  const stale = resultKey !== inputKey;
   async function search() {
     const request = ++revision.current;
+    setResultKey(inputKey);
     setLoading(true);
     setError("");
     setResult(null);
@@ -97,11 +93,11 @@ export function CandidateDates({
     >
       <button
         type="button"
-        disabled={!ready || loading}
+        disabled={!ready || (loading && !stale)}
         onClick={search}
         className="min-h-11 rounded-xl bg-rose-700 px-4 text-sm font-bold text-white disabled:opacity-50"
       >
-        {loading ? "候補日を計算中…" : "候補日を出す"}
+        {loading && !stale ? "候補日を計算中…" : "候補日を出す"}
       </button>
       <p className="mt-2 text-xs text-stone-600">
         今日から60日間で三盤の総合判定と日盤が吉の日を、日付順に最大3件表示します。
@@ -112,13 +108,13 @@ export function CandidateDates({
         </p>
       )}
       <div aria-live="polite">
-        {error && <p className="mt-2 text-sm">{error}</p>}
-        {result?.length === 0 && (
+        {!stale && error && <p className="mt-2 text-sm">{error}</p>}
+        {!stale && result?.length === 0 && (
           <p className="mt-2 text-sm">
             この60日間には条件に合う候補日がありません。
           </p>
         )}
-        {!!result?.length && (
+        {!stale && !!result?.length && (
           <ol className="mt-3 space-y-2 text-sm">
             {result.map((day) => (
               <li key={day.date}>
