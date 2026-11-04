@@ -65,15 +65,14 @@ export async function generateMetadata({
   if (!parsed) return {};
   const { year, star } = parsed;
   const name = STAR_NAMES[star];
-  const heading = `${year}年 ${name}の吉方位・凶方位【月別】`;
-  const title = `${heading} | Cloud Palette`;
-  const description = `${year}年 ${name}の吉方位と凶方位（五黄殺・暗剣殺）を月別に確認できます。年盤の歳破・本命殺と、1月から12月までの月盤も一覧で案内します。`;
+  const title = `${year}年 ${name}の吉方位・凶方位｜引越しの方位を月別に確認`;
+  const description = `${year}年 ${name}の吉方位と凶方位を年盤・月盤で確認できます。五黄殺・暗剣殺・歳破・本命殺など避けたい方位と、1月から12月までの月別一覧を比較し、引越しや旅行の方位と時期を検討できます。`;
 
   return {
     title: { absolute: title },
     description,
     alternates: { canonical: `/houi/${year}/${star}` },
-    openGraph: pageOpenGraph(`/houi/${year}/${star}`, heading, description, {
+    openGraph: pageOpenGraph(`/houi/${year}/${star}`, title, description, {
       type: "article",
       omitImages: true,
     }),
