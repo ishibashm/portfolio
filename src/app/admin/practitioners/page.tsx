@@ -25,33 +25,50 @@ const statuses: Record<PractitionerStatus, string> = {
 };
 
 // Page access follows the admin middleware; both APIs also enforce denyUnlessAdmin.
+type LoadResult = { rows: Application[]; error: string | null };
+
+async function fetchApplications(): Promise<LoadResult> {
+  try {
+    const response = await fetch("/api/admin/practitioners", {
+      cache: "no-store",
+    });
+    const body = await response.json();
+    if (!response.ok || !body.success)
+      throw new Error(body.error || "申請一覧を読み込めませんでした。");
+    return { rows: body.data, error: null };
+  } catch (e) {
+    return {
+      rows: [],
+      error:
+        e instanceof Error ? e.message : "申請一覧を読み込めませんでした。",
+    };
+  }
+}
+
 export default function AdminPractitionersPage() {
   const [rows, setRows] = useState<Application[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
 
-  const load = useCallback(async () => {
-    try {
-      const response = await fetch("/api/admin/practitioners", {
-        cache: "no-store",
-      });
-      const body = await response.json();
-      if (!response.ok || !body.success)
-        throw new Error(body.error || "申請一覧を読み込めませんでした。");
-      setRows(body.data);
-      setError(null);
-    } catch (e) {
-      setRows([]);
-      setError(
-        e instanceof Error ? e.message : "申請一覧を読み込めませんでした。",
-      );
-    }
+  const applyResult = useCallback((result: LoadResult) => {
+    setRows(result.rows);
+    setError(result.error);
   }, []);
 
+  const load = useCallback(async () => {
+    applyResult(await fetchApplications());
+  }, [applyResult]);
+
   useEffect(() => {
-    void load();
-  }, [load]);
+    let cancelled = false;
+    fetchApplications().then((result) => {
+      if (!cancelled) applyResult(result);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [applyResult]);
 
   async function update(id: string, status: "approved" | "hidden") {
     setBusy(true);
