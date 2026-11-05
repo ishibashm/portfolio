@@ -15,6 +15,7 @@ import {
 import { AreaEntryLinks } from "@/components/houi/AreaEntryLinks";
 import { ArticleJsonLd, BreadcrumbJsonLd } from "@/components/JsonLd";
 import { pageOpenGraph } from "@/lib/siteUrl";
+import { isCanonicalHouiSegment } from "@/lib/houiCanonicalPath";
 
 /**
  * 「2026年3月 一白水星 吉方位」のような、月単位の検索に応えるページ。
@@ -52,9 +53,20 @@ export function generateStaticParams() {
 }
 
 function parse(params: { year: string; star: string; month: string }) {
-  const year = parseInt(params.year, 10);
-  const star = parseInt(params.star, 10);
-  const month = parseInt(params.month, 10);
+  /*
+    parseInt は "01" を 1 と読む。正規の断片以外は 404。
+    実在する月頁へは middleware が 301 で送る。
+  */
+  if (
+    !isCanonicalHouiSegment(params.year) ||
+    !isCanonicalHouiSegment(params.star) ||
+    !isCanonicalHouiSegment(params.month)
+  ) {
+    return null;
+  }
+  const year = Number(params.year);
+  const star = Number(params.star);
+  const month = Number(params.month);
   if (!houiMonthHref(year, star, month)) return null;
   return { year, star, month };
 }

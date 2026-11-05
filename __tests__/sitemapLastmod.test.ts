@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { createRequire } from "module";
 import path from "path";
 import { getBlogPosts } from "@/lib/blog";
+import { isOffThemeBlogSlug } from "@/lib/offThemeBlog";
 
 /**
  * サイトマップの lastmod が、本当に変わった日だけを名乗ること。
@@ -29,7 +30,7 @@ describe("サイトマップの lastmod", () => {
     }
   });
 
-  const posts = getBlogPosts();
+  const posts = getBlogPosts().filter((post) => !isOffThemeBlogSlug(post.slug));
 
   it.each(posts.map((p) => [p.slug, p.updatedAt ?? p.publishedAt] as const))(
     "/blog/%s は記事の更新日（無ければ公開日）",
