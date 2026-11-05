@@ -78,7 +78,8 @@ it("トップの目的ボタンはチャットを経由せず4つの道具を開
   ]);
   const home = readFileSync("src/app/page.tsx", "utf8");
   expect(home).toContain("<PurposeLinks");
-  expect(home).not.toContain("AgentEntry");
+  // #1785 が AgentEntry を外して指さしのしるべが消えた。目的ボタンは残し、案内役を戻す。
+  expect(home).toContain("<AgentEntry");
   expect(home).not.toContain('href="/ask');
   expect(readFileSync("src/app/ask/page.tsx", "utf8")).toBeTruthy();
 });

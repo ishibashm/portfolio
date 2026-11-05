@@ -1,3 +1,4 @@
+import { AgentEntry } from "@/components/home/AgentEntry";
 import { PurposeLinks } from "@/components/home/PurposeLinks";
 import { HonmeiStarLinks } from "@/components/houi/HonmeiStarLinks";
 
@@ -80,6 +81,7 @@ export default function Home() {
           決まる**ので、頁の一番上に置く。以前は下のダッシュボードの
           「1. プロフィール」タブの中にあり、開いた人はまず未入力のままの
           結果を見ていた（利用者の指摘）。 */}
+      <AgentEntry />
       <PurposeLinks />
       <HonmeiStarLinks />
       <QuickProfileBar />
