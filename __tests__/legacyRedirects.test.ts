@@ -85,6 +85,14 @@ describe("消した頁の転送", () => {
     expect(find(list, "/blog")).toBeUndefined();
   });
 
+  it("削除した本命的殺の記事を後継へ 301 で送る", async () => {
+    const list = await redirects();
+    expect(find(list, "/blog/moved-to-an-unlucky-direction")).toMatchObject({
+      destination: "/blog/can-you-recover-from-honmei-teki",
+      statusCode: 301,
+    });
+  });
+
   it("www から正規のホストへ送る設定を消していない", async () => {
     const list = await redirects();
     const canonical = list.find((r) => r.source === "/:path*");

@@ -1,7 +1,15 @@
 import { describe, expect, it } from "vitest";
 
 import { getBlogPost, getBlogPosts } from "@/lib/blog";
+import { isOffThemeBlogSlug } from "@/lib/offThemeBlog";
+import { isAgentLogSlug } from "@/lib/agentLog";
 import { GET as getBlogFeed } from "@/app/blog/feed.xml/route";
+
+function listedPosts() {
+  return getBlogPosts().filter(
+    (post) => !isOffThemeBlogSlug(post.slug) && !isAgentLogSlug(post.slug),
+  );
+}
 
 describe("ブログの公開記事", () => {
   // 記事は増える。**本数を数字で固定しない。**以前は 3 本を列挙していて、
@@ -89,7 +97,9 @@ describe("ブログの公開記事", () => {
     expect(xml).toContain(
       "https://cloud-palette.com/blog/tenchusatsu-and-lucky-directions",
     );
-    // 本数は固定しない（記事は増える）。Markdown 側の公開本数と一致することだけ見る。
-    expect(xml.match(/<item>/g)).toHaveLength(getBlogPosts().length);
+    // 本数は固定しない（記事は増える）。一覧に出す本数と一致することだけ見る。
+    // テーマ外と作業ログは RSS に出さない。
+    expect(xml.match(/<item>/g)).toHaveLength(listedPosts().length);
+    expect(xml).not.toContain("/blog/action-speed-and-completion-time");
   });
 });

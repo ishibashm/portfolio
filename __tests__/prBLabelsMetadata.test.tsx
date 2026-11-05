@@ -87,9 +87,7 @@ describe("PR-B: 検索意図を先頭に置くメタデータ", () => {
         title: `${title} | Cloud Palette`,
       });
       expect(metadata.robots).toBeUndefined();
-      const html = renderToStaticMarkup(
-        await BlogPage({ searchParams: Promise.resolve({}) }),
-      );
+      const html = renderToStaticMarkup(await BlogPage());
       expect(html).toMatch(
         new RegExp(`<h1[^>]*>${title.replace(/[（）]/g, "\\$&")}</h1>`),
       );

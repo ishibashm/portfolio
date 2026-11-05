@@ -19,6 +19,7 @@ import { AdBanner } from "@/components/ads/AdBanner";
 import { AreaEntryLinks } from "@/components/houi/AreaEntryLinks";
 import { ArticleJsonLd, BreadcrumbJsonLd } from "@/components/JsonLd";
 import { pageOpenGraph } from "@/lib/siteUrl";
+import { isCanonicalHouiSegment } from "@/lib/houiCanonicalPath";
 
 /**
  * 「2026年 一白水星 吉方位」のような検索に直接応える静的ページ。
@@ -50,8 +51,18 @@ export function generateStaticParams() {
 }
 
 function parse(params: { year: string; star: string }) {
-  const year = parseInt(params.year, 10);
-  const star = parseInt(params.star, 10);
+  /*
+    parseInt は "01" や "1abc" を 1 と読む。正規の断片以外はここでは
+    404 にする。実在する頁へは middleware が 301 で送る。
+  */
+  if (
+    !isCanonicalHouiSegment(params.year) ||
+    !isCanonicalHouiSegment(params.star)
+  ) {
+    return null;
+  }
+  const year = Number(params.year);
+  const star = Number(params.star);
   if (!contentYears().includes(year) || !STARS.includes(star)) return null;
   return { year, star };
 }

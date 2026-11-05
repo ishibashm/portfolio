@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Play } from "lucide-react";
 import { isValidYouTubeId } from "@/lib/blogVideo";
+import { HOUI_SUMAI_CHANNEL } from "@/lib/siteChannels";
 
 export function YouTubeFacade({
   youtubeId,
@@ -59,6 +60,25 @@ export function YouTubeFacade({
       <figcaption className="mt-2 text-sm text-slate-600">
         ナレーション：VOICEVOX:玄野武宏
       </figcaption>
+      <p className="mt-2 text-sm text-slate-700">
+        <a
+          href={HOUI_SUMAI_CHANNEL.url}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="font-semibold text-rose-700 underline decoration-rose-300 underline-offset-4 hover:text-rose-800"
+        >
+          {`${HOUI_SUMAI_CHANNEL.name}で他の動画を見る`}
+        </a>
+        <span aria-hidden="true"> · </span>
+        <a
+          href={`${HOUI_SUMAI_CHANNEL.url}?sub_confirmation=1`}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="font-semibold text-rose-700 underline decoration-rose-300 underline-offset-4 hover:text-rose-800"
+        >
+          チャンネル登録
+        </a>
+      </p>
     </figure>
   );
 }

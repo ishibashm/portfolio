@@ -1,5 +1,9 @@
 import type { Metadata, Viewport } from "next";
 import { getAdsenseIds } from "@/lib/adsense";
+import { AFFILIATE_OFFERS } from "@/lib/affiliateOffers";
+import { AffiliatePageTopClient } from "@/components/ads/AffiliatePageTopClient";
+import { YouTubeChannelLinks } from "@/components/YouTubeChannelLinks";
+import { SITE_SAME_AS } from "@/lib/siteChannels";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import {
@@ -174,12 +178,7 @@ const jsonLdSchema = {
       "logo": "https://cloud-palette.com/icon-512.png",
       // 運営している公式の YouTube チャンネルと X アカウント。検索エンジンが同じ運営元だと
       // 結び付けられるようにする。作っていないチャンネルは載せない。
-      "sameAs": [
-        "https://www.youtube.com/@houi-sumai-techo",
-        "https://www.youtube.com/@penthouse-focus",
-        "https://www.youtube.com/@AIの数式",
-        "https://x.com/cloud8wq",
-      ],
+      "sameAs": [...SITE_SAME_AS],
     },
     {
       "@type": "WebApplication",
@@ -404,8 +403,20 @@ export default async function RootLayout({
           {/* 投稿欄はここに置かない。記事（/blog/[slug]）だけに出す
               （利用者の指示）。以前は PageComments を置いて中核 9 頁
               すべてに出していた。 */}
-          <main className="flex-1 w-full min-w-0">{children}</main>
+          <main className="flex-1 w-full min-w-0">
+            {AFFILIATE_OFFERS.length > 0 ? <AffiliatePageTopClient /> : null}
+            {children}
+          </main>
         </div>
+        <footer className="border-t border-slate-300/80 px-4 py-4 text-xs text-slate-600">
+          <nav
+            aria-label="YouTube チャンネル"
+            className="mx-auto flex max-w-[1700px] flex-wrap items-center gap-x-4 gap-y-2"
+          >
+            <span className="font-bold text-slate-500">YouTube</span>
+            <YouTubeChannelLinks className="flex flex-wrap gap-x-4 gap-y-2" />
+          </nav>
+        </footer>
       </body>
     </html>
   );
