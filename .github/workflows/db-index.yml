@@ -111,6 +111,9 @@ jobs:
           # Supabase は自前の CA（Supabase Root 2021 CA）で証明書を出して
           # いて、OS の証明書ストアには入っていない。Supabase のホストには
           # .github/certs の写しを使う（db-apply-sql.yml と同じ。2026-11-09）。
+          # uselibpqcompat は node-postgres の引数で、psql は知らないので外す
+          # （db-apply-sql.yml と同じ）。
+          URL="$(printf '%s' "$URL" | sed -E 's/([?&])uselibpqcompat=[^&]*(&|$)/\1/; s/[?&]$//')"
           ROOT=system
           case "$URL" in
             *.supabase.com[:/]*|*.supabase.co[:/]*)

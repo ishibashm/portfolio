@@ -107,6 +107,11 @@ jobs:
           # 「certificate verify failed」で落ちる（2026-11-09、Oracle から
           # Supabase へ戻した直後の run 42566671232）。この CA の写しを
           # .github/certs に置き、Supabase のホストにだけ使う。
+          #
+          # uselibpqcompat は node-postgres の引数で、libpq（psql）は知らない
+          # （「invalid URI query parameter」で落ちる。run 42711481082）。
+          # アプリ用の接続文字列に付いていても、psql に渡す前に外す。
+          URL="$(printf '%s' "$URL" | sed -E 's/([?&])uselibpqcompat=[^&]*(&|$)/\1/; s/[?&]$//')"
           ROOT=system
           case "$URL" in
             *.supabase.com[:/]*|*.supabase.co[:/]*)
