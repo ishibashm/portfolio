@@ -60,18 +60,18 @@ const nextConfig: NextConfig = {
         // 凶方位への不安を扱う公開記事へ。削除した個人情報の記事は送らない。
         source: "/blog/when-you-cannot-avoid-a-bad-direction",
         destination: "/blog/does-bad-direction-last-60-years",
-        permanent: true,
+        statusCode: 301,
       },
       {
         source: "/calendar/2026-09",
         destination: "/calendar",
-        permanent: true,
+        statusCode: 301,
       },
       {
         // RSS 集約の直接の後継はない。不動産関連記事も読める記事一覧が最も近い。
         source: "/news",
         destination: "/blog",
-        permanent: true,
+        statusCode: 301,
       },
       {
         source: "/:path*",

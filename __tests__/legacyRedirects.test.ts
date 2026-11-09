@@ -47,11 +47,13 @@ describe("消した頁の転送", () => {
     ],
     ["/calendar/2026-09", "/calendar"],
     ["/news", "/blog"],
-  ])("%s を %s へ恒久転送する", async (source, destination) => {
-    expect(find(await redirects(), source)).toMatchObject({
+  ])("%s を %s へ 301 で送る", async (source, destination) => {
+    const redirect = find(await redirects(), source);
+    expect(redirect).toMatchObject({
       destination,
-      permanent: true,
+      statusCode: 301,
     });
+    expect(redirect).not.toHaveProperty("permanent");
   });
 
   it("問い合わせの旧 URL を /contact へ 301 で送る", async () => {
