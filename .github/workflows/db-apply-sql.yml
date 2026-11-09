@@ -99,12 +99,30 @@ jobs:
             exit 1
           fi
           # ランナーには ~/.postgresql/root.crt が無く、verify-full が
-          # 証明書ファイルの不在で落ちる。OS の証明書ストアを使う。
+          # 証明書ファイルの不在で落ちる。検証に使う根を明示する。
           # sslmode を緩めるほうは採らない（資格情報を載せる接続のため）。
+          #
+          # Supabase は自前の CA（Supabase Root 2021 CA）で証明書を出して
+          # いて、OS の証明書ストアには入っていない。system のままだと
+          # 「certificate verify failed」で落ちる（2026-11-09、Oracle から
+          # Supabase へ戻した直後の run 42566671232）。この CA の写しを
+          # .github/certs に置き、Supabase のホストにだけ使う。
+          ROOT=system
+          case "$URL" in
+            *.supabase.com[:/]*|*.supabase.co[:/]*)
+              ROOT="$GITHUB_WORKSPACE/.github/certs/supabase-root-2021.crt"
+              # 写しが差し替えられていないことを指紋で確かめる。
+              FP="$(openssl x509 -in "$ROOT" -noout -fingerprint -sha256 | sed 's/.*=//; s/://g')"
+              if [ "$FP" != "807025AD50D4ED219D2C9C7D299C004F824EB00CF7F65AFEF607D07B72E6CAFA" ]; then
+                echo "::error::Supabase の CA の指紋が合わない: $FP"
+                exit 1
+              fi
+              ;;
+          esac
           case "$URL" in
             *sslrootcert=*) ;;
-            *\?*) URL="${URL}&sslrootcert=system" ;;
-            *)    URL="${URL}?sslrootcert=system" ;;
+            *\?*) URL="${URL}&sslrootcert=${ROOT}" ;;
+            *)    URL="${URL}?sslrootcert=${ROOT}" ;;
           esac
           echo "::add-mask::$URL"
           echo "PGURL=$URL" >> "$GITHUB_ENV"
