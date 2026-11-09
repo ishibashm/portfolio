@@ -107,10 +107,25 @@ jobs:
           #
           # sslmode を緩めるほうは採らない。ここは資格情報を載せる接続で、
           # 検証を切ると中間者に対して無防備になる。
+          #
+          # Supabase は自前の CA（Supabase Root 2021 CA）で証明書を出して
+          # いて、OS の証明書ストアには入っていない。Supabase のホストには
+          # .github/certs の写しを使う（db-apply-sql.yml と同じ。2026-11-09）。
+          ROOT=system
+          case "$URL" in
+            *.supabase.com[:/]*|*.supabase.co[:/]*)
+              ROOT="$GITHUB_WORKSPACE/.github/certs/supabase-root-2021.crt"
+              FP="$(openssl x509 -in "$ROOT" -noout -fingerprint -sha256 | sed 's/.*=//; s/://g')"
+              if [ "$FP" != "807025AD50D4ED219D2C9C7D299C004F824EB00CF7F65AFEF607D07B72E6CAFA" ]; then
+                echo "::error::Supabase の CA の指紋が合わない: $FP"
+                exit 1
+              fi
+              ;;
+          esac
           case "$URL" in
             *sslrootcert=*) ;;
-            *\?*) URL="${URL}&sslrootcert=system" ;;
-            *)    URL="${URL}?sslrootcert=system" ;;
+            *\?*) URL="${URL}&sslrootcert=${ROOT}" ;;
+            *)    URL="${URL}?sslrootcert=${ROOT}" ;;
           esac
 
           # 資格情報はログに出さない。マスクしたうえで後続ステップへ渡す。
