@@ -121,6 +121,7 @@ export default async function Page({
       <BreadcrumbJsonLd
         items={[
           { name: "方位の早見表", path: "/houi" },
+          { name: `${year}年`, path: `/houi/${year}` },
           { name: `${year}年 ${name}`, path },
         ]}
       />
@@ -129,6 +130,10 @@ export default async function Page({
         <nav className="text-xs text-slate-500 mb-6">
           <Link href="/houi" className="hover:text-rose-600">
             方位の早見表
+          </Link>
+          <span className="mx-2">/</span>
+          <Link href={`/houi/${year}`} className="hover:text-rose-600">
+            {year}年
           </Link>
           <span className="mx-2">/</span>
           <span>
