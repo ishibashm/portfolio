@@ -35,10 +35,38 @@ const warnIfPointingAtProduction = () => {
   );
 };
 
+/**
+ * DB に繋がらないとき、接続を張るのを何ミリ秒で諦めるか。
+ *
+ * 2026-11-07 に DB のインスタンスが無くなり、接続は拒否されずに応答が
+ * 無くなった。pg の Pool は既定で接続の待ち時間に上限が無く（0）、OS が
+ * SYN の再送を諦めるまで約 2 分待つ。
+ *
+ * - **ビルド**: 記事一覧などは DB が読めなければ Markdown に落ちる作りだが、
+ *   落ちる前に 1 頁 60 秒の上限を越え、3 回の再試行のあとビルドごと落ちた
+ *   （#1793 のデプロイ。`/api/telemetry/history` と `/llms-full.txt`）。
+ *   **DB が落ちていると、接続先を切り替えるための再デプロイも通らない**
+ * - **本番**: DB を読む API が 2 分以上待ってから 500 / 504 を返していた
+ *
+ * CI のビルドが通っていたのは、接続先が localhost で即座に拒否されるから。
+ * 「応答が無い」相手は CI では再現しない。
+ *
+ * 上限が掛かるのは**接続を張るまで**だけで、張れた後の問い合わせの長さには
+ * 掛からない。ふだんの接続は 1 秒もかからない。
+ */
+export function connectionTimeoutMs(
+  phase: string | undefined = process.env.NEXT_PHASE,
+): number {
+  return phase === "phase-production-build" ? 5_000 : 10_000;
+}
+
 const prismaClientSingleton = () => {
   warnIfPointingAtProduction();
   // connectionString defaults to process.env.DATABASE_URL
-  const pool = new Pool({ connectionString: process.env.DATABASE_URL });
+  const pool = new Pool({
+    connectionString: process.env.DATABASE_URL,
+    connectionTimeoutMillis: connectionTimeoutMs(),
+  });
   const adapter = new PrismaPg(pool);
   return new PrismaClient({ adapter });
 };
