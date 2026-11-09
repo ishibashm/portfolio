@@ -64,6 +64,7 @@ describe.each([false, true])(
       for (const path of [
         "src/middleware.ts",
         "src/lib/apiGuard.ts",
+        "src/lib/gonePaths.ts",
         "src/lib/requestSecurity.ts",
         "src/app/api/mcp/personal/route.ts",
         "src/lib/mcpDiscovery.ts",

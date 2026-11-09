@@ -2,6 +2,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { isSameOrigin } from "@/lib/apiGuard";
 import { requestLimiter } from "@/lib/requestSecurity";
 import { updateSession } from "@/utils/supabase/middleware";
+import { isGonePath } from "@/lib/gonePaths";
 
 /**
  * Sub-app subdomains are served by rewriting onto an internal path.
@@ -47,6 +48,13 @@ const apiLimit = requestLimiter(120, 1);
 
 export async function middleware(request: NextRequest) {
   const url = request.nextUrl.clone();
+
+  if (isGonePath(url.pathname)) {
+    return new NextResponse("Gone\n", {
+      status: 410,
+      headers: { "Content-Type": "text/plain; charset=utf-8" },
+    });
+  }
 
   // Personal MCP authenticates every request with its own Bearer boundary.
   // Site cookie refresh must not introduce login redirects, Set-Cookie or a
