@@ -197,7 +197,6 @@ export default async function BlogPostPage({
                       sizes="(min-width: 1024px) 1300px, 100vw"
                     />
                   )}
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
                     src={heroImage}
                     alt={`${post.title} — 記事の要点を図にしたもの`}
