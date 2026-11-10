@@ -1,4 +1,5 @@
 import { CurrentDirections } from "@/components/houi/CurrentDirections";
+import { LineFriendLink } from "@/components/LineFriendLink";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { buildTodayDirections } from "@/lib/todayDirections";
@@ -196,6 +197,9 @@ export default function TodayPage() {
           </a>
           <Link href="/profile/mcp">AIから確認する（MCP設定）</Link>
         </nav>
+        <p className="text-sm">
+          <LineFriendLink />
+        </p>
       </article>
     </main>
   );
