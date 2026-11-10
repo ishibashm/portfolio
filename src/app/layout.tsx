@@ -128,6 +128,7 @@ export const viewport: Viewport = {
 };
 
 import { GlobalSidebar } from "@/components/GlobalSidebar";
+import { SiteFooter } from "@/components/SiteFooter";
 import { PageViewBeacon } from "@/components/PageViewBeacon";
 import { ChunkLoadRecovery } from "@/components/ChunkLoadRecovery";
 import { SerifFontLoader } from "@/components/SerifFontLoader";
@@ -404,7 +405,10 @@ export default async function RootLayout({
           {/* 投稿欄はここに置かない。記事（/blog/[slug]）だけに出す
               （利用者の指示）。以前は PageComments を置いて中核 9 頁
               すべてに出していた。 */}
-          <main className="flex-1 w-full min-w-0">{children}</main>
+          <div className="flex min-w-0 w-full flex-1 flex-col">
+            <main className="flex-1">{children}</main>
+            <SiteFooter />
+          </div>
         </div>
       </body>
     </html>
