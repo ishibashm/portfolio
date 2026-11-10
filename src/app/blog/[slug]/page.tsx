@@ -91,7 +91,9 @@ export default async function BlogPostPage({
   const heroImage = socialImage === DEFAULT_SOCIAL_IMAGE ? null : socialImage;
   // 自分以外を全部出していた。3 本の頃は 2 件で済んでいたが、23 本に
   // なった時点で全記事の脇に 22 件が並んでいた（lib/blogRelated）。
-  const related = pickRelatedPosts(post, await loadBlogPosts());
+  // 関連記事の障害で本文まで失わず、公開状態が不明なリンクも補わない。
+  const relatedPosts = await loadBlogPosts().catch(() => []);
+  const related = pickRelatedPosts(post, relatedPosts);
   const headings = extractHeadings(post.body);
   /*
     問いの形の見出しと直後の段落を組にして FAQPage に出す。**本文から
