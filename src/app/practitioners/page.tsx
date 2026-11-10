@@ -112,8 +112,17 @@ export default function PractitionersPage() {
   const count = rows?.length ?? 0;
 
   // 幅は全画面で 1700px に揃える（1/3 と同じ理由）。
+  // <main> は src/app/layout.tsx が持っている。ここでも書くと <main> が
+  // 入れ子になるので <div> にする（見た目は同じ）。
   return (
-    <main className="mx-auto max-w-[1700px] px-4 py-10">
+    <div className="mx-auto max-w-[1700px] px-4 py-10">
+      <nav aria-label="パンくず" className="mb-4 text-xs text-stone-500">
+        <Link href="/" className="hover:text-rose-600">
+          ホーム
+        </Link>
+        <span aria-hidden="true"> / </span>
+        <span aria-current="page">九星気学の鑑定士</span>
+      </nav>
       <h1 className="font-serif text-2xl font-bold text-stone-900">
         九星気学の鑑定士
       </h1>
@@ -126,8 +135,14 @@ export default function PractitionersPage() {
 
       {count > 0 && (
         <div className="mt-6 flex items-center gap-2">
-          <label className="text-xs text-stone-500">対応地域</label>
+          <label
+            htmlFor="practitioner-area-filter"
+            className="text-xs text-stone-500"
+          >
+            対応地域
+          </label>
           <select
+            id="practitioner-area-filter"
             value={area}
             onChange={(e) => setArea(e.target.value)}
             className="rounded-lg border border-stone-300 px-3 py-1.5 text-sm"
@@ -188,8 +203,16 @@ export default function PractitionersPage() {
         </p>
       )}
 
-      <section className="mt-10 border-t border-stone-200 pt-6">
-        <h2 className="text-base font-bold text-stone-800">掲載を申し込む</h2>
+      <section
+        aria-labelledby="practitioner-apply-heading"
+        className="mt-10 border-t border-stone-200 pt-6"
+      >
+        <h2
+          id="practitioner-apply-heading"
+          className="text-base font-bold text-stone-800"
+        >
+          掲載を申し込む
+        </h2>
         <p className="mt-2 text-xs leading-relaxed text-stone-500">
           掲載は無料です。内容を確認のうえ公開します。公開後に内容を書き換えた場合も、あらためて確認します。
         </p>
@@ -324,7 +347,20 @@ export default function PractitionersPage() {
           </form>
         )}
       </section>
-    </main>
+
+      {/* 内部リンク。ラベルは既存の名前（/houi の見出し・/blog のパンくず）をそのまま使う */}
+      <nav
+        aria-label="関連ページ"
+        className="mt-10 flex flex-wrap gap-x-6 gap-y-2 text-sm"
+      >
+        <Link href="/houi" className="underline hover:text-rose-600">
+          方位の早見表
+        </Link>
+        <Link href="/blog" className="underline hover:text-rose-600">
+          引越しの読みもの
+        </Link>
+      </nav>
+    </div>
   );
 }
 

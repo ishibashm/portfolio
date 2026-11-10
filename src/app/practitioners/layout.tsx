@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { BreadcrumbJsonLd } from "@/components/JsonLd";
 import { pageOpenGraph } from "@/lib/siteUrl";
 
 /**
@@ -22,5 +23,16 @@ export default function PractitionersLayout({
 }: {
   children: React.ReactNode;
 }) {
-  return children;
+  return (
+    <>
+      {/* 画面のパンくず（page.tsx）と同じ 2 段。/houi/area と同じ構造化データ */}
+      <BreadcrumbJsonLd
+        items={[
+          { name: "ホーム", path: "/" },
+          { name: "九星気学の鑑定士", path: "/practitioners" },
+        ]}
+      />
+      {children}
+    </>
+  );
 }
