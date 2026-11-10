@@ -27,7 +27,8 @@ import {
  *
  * 接続障害で DB 専用記事を「無い」と返すと、ISR が 404 を控えてしまう。
  * Markdown にある記事だけ補い、一覧は再生成を失敗させて正常な控えを守る。
- * 表がまだ無い場合などは、取り込み前の Markdown フォールバックを残す。
+ * 初回ビルドは正常な控えがまだ無いため、DB 障害でも Markdown に落ちる。
+ * 表がまだ無い場合なども、取り込み前の Markdown フォールバックを残す。
  *
  * **判定は「0 件かどうか」で見る。**「表があるか」を調べる問い合わせを
  * 足すと、記事を読むたびに往復が 1 つ増える。
@@ -63,6 +64,14 @@ function isTemporaryDatabaseError(error: unknown, depth = 0): boolean {
     (key) =>
       key in error &&
       isTemporaryDatabaseError(Reflect.get(error, key), depth + 1),
+  );
+}
+
+/** Next が静的生成ワーカーの起動前に設定する値。実行時の ISR では未設定。 */
+function shouldPreserveIsrCache(error: unknown): boolean {
+  return (
+    process.env.NEXT_PHASE !== "phase-production-build" &&
+    isTemporaryDatabaseError(error)
   );
 }
 
@@ -189,7 +198,7 @@ export async function loadBlogPost(
     if (seeded) return undefined;
   } catch (e) {
     const markdown = getMarkdownBlogPost(slug);
-    if (isTemporaryDatabaseError(e) && !markdown) throw e;
+    if (shouldPreserveIsrCache(e) && !markdown) throw e;
     if (!options.quiet)
       console.warn("記事の取得に失敗。Markdown に落ちる:", toLogMessage(e));
     return markdown;
@@ -223,8 +232,8 @@ export async function loadSearchableBlogPosts(options: {
     }
     if (await prisma.blogPost.findFirst({ select: { slug: true } })) return [];
   } catch (e) {
-    // 一覧の一部だけを正常な結果として控えない。
-    if (isTemporaryDatabaseError(e)) throw e;
+    // 実行時は一覧の一部だけを正常な結果として控えない。初回ビルドは Markdown。
+    if (shouldPreserveIsrCache(e)) throw e;
     if (!options.quiet)
       console.warn("記事一覧の取得に失敗。Markdown に落ちる:", toLogMessage(e));
   }

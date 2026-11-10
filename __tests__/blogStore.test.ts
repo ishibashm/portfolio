@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 /**
  * 記事の取得口（DB 先・Markdown 後）。
@@ -85,6 +85,64 @@ import {
   loadBlogPosts,
   loadSearchableBlogPosts,
 } from "@/lib/blogStore";
+
+beforeEach(() => vi.stubEnv("NEXT_PHASE", undefined));
+afterEach(() => vi.unstubAllEnvs());
+
+// 同じ障害でも、初回の静的生成と実行時の ISR で扱いを分ける。
+describe.each([undefined, "phase-production-server", "phase-production-build"])(
+  "NEXT_PHASE=%s の DB フォールバック",
+  (phase) => {
+    beforeEach(() => {
+      vi.resetAllMocks();
+      vi.stubEnv("NEXT_PHASE", phase);
+    });
+
+    it.each([
+      { code: "ETIMEDOUT" },
+      { cause: { code: "ETIMEDOUT" } },
+      { code: "P1001" },
+    ])("一時障害: %j", async (error) => {
+      findMany.mockRejectedValue(error);
+      findFirst.mockRejectedValue(error);
+      if (phase === "phase-production-build") {
+        await expect(loadBlogPosts({ quiet: true })).resolves.toMatchObject([
+          { slug: "from-markdown" },
+        ]);
+        await expect(
+          loadSearchableBlogPosts({ quiet: true }),
+        ).resolves.toMatchObject([
+          { slug: "from-markdown", body: "ファイルの本文" },
+        ]);
+        await expect(
+          loadBlogPost("db-only", { quiet: true }),
+        ).resolves.toBeUndefined();
+      } else {
+        await expect(loadBlogPosts({ quiet: true })).rejects.toBe(error);
+        await expect(loadSearchableBlogPosts({ quiet: true })).rejects.toBe(
+          error,
+        );
+        await expect(loadBlogPost("db-only", { quiet: true })).rejects.toBe(
+          error,
+        );
+      }
+      await expect(
+        loadBlogPost("from-markdown", { quiet: true }),
+      ).resolves.toMatchObject({ body: "ファイルの本文" });
+    });
+
+    it("表が未適用なら一覧も本文も Markdown に落ちる", async () => {
+      findMany.mockRejectedValue({ code: "P2021" });
+      findFirst.mockRejectedValue({ code: "P2021" });
+      await expect(loadBlogPosts({ quiet: true })).resolves.toMatchObject([
+        { slug: "from-markdown" },
+      ]);
+      await expect(
+        loadBlogPost("from-markdown", { quiet: true }),
+      ).resolves.toMatchObject({ body: "ファイルの本文" });
+    });
+  },
+);
 
 const dbRow = {
   slug: "from-db",
