@@ -256,7 +256,14 @@ async function main() {
   console.log(`書き出した: ${OUT}`);
 }
 
-main().catch((e) => {
-  console.error(e);
-  process.exitCode = 1;
-});
+/* **import しただけでは動かさない。**テスト（importSpotsParse）が
+   parsePoint を取るためにこのファイルを import しており、以前は import の
+   時点で main() が走って、テストのたびに Wikidata へ本物の SPARQL 要求を
+   投げていた（タイムアウト無し・書き出しまで走る）。直接実行されたとき
+   （tsx scripts/import_spots.ts）だけ動かす。 */
+if (/import_spots\.[cm]?[jt]s$/.test(process.argv[1] ?? "")) {
+  main().catch((e) => {
+    console.error(e);
+    process.exitCode = 1;
+  });
+}

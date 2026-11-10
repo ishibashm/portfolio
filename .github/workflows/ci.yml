@@ -27,7 +27,10 @@ concurrency:
 jobs:
   check:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    # 通常の実行は 8〜14 分（直近 40 件の実測、最長 14 分 25 秒）。以前の 15 分は
+    # 遅いランナーに当たっただけで正常な実行を殺す近さだったので 25 分にする。
+    # 止まったときの上限は各ステップの timeout-minutes（Test / Build）が持つ。
+    timeout-minutes: 25
 
     steps:
       # fetch-depth: 2 は下の「lint の警告が増えていないか」のため。PR の実行は
@@ -87,7 +90,9 @@ jobs:
 
       # 暦・天体計算のテストは年単位で日を回すため、1 本で数秒かかる。
       # vitest.config.ts で testTimeout を 30 秒にしてある。
+      # 通常 4〜8 分（直近 40 件の実測 256〜460 秒）。止まったら 15 分で切る。
       - name: Test
+        timeout-minutes: 15
         run: npm test
 
       # **本番と同じビルドを通す。**
@@ -106,6 +111,7 @@ jobs:
       # next-sitemap は含めない。あれは書き出すだけで、落ちるとしたら
       # ビルドが先に落ちる。CI を遅くするだけになる。
       - name: Build
+        timeout-minutes: 10
         env:
           DATABASE_URL: postgresql://ci:ci@localhost:5432/ci
           DIRECT_URL: postgresql://ci:ci@localhost:5432/ci
