@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import { NOINDEX_ROBOTS } from "@/lib/siteStructure";
 import { pageOpenGraph } from "@/lib/siteUrl";
 
 /**
@@ -21,7 +20,7 @@ import { pageOpenGraph } from "@/lib/siteUrl";
  *
  * **戻すとき**（承認済みの鑑定士が 1 人以上になったら。承認は
  * /admin/practitioners）。次の 3 か所を一度に戻す。
- *   1. このファイルの robots を外す（NOINDEX_ROBOTS の行と import）
+ *   1. このファイルの robots の行を外す
  *   2. next-sitemap.config.js の NOT_A_PAGE から "/practitioners" を外す
  *   3. .github/workflows/site-audit.yml の「索引しない頁」2 か所の
  *      `for path in …` から /practitioners を外す（残すと「noindex が
@@ -30,7 +29,9 @@ import { pageOpenGraph } from "@/lib/siteUrl";
  * 戻したらこのテストも消す。
  */
 export const metadata: Metadata = {
-  robots: NOINDEX_ROBOTS,
+  // 字面で書く（sitemapNoindexAgreement.test.ts が `index: false` を探して、
+  // サイトマップと夜間監査の一覧に載っているかを見る）。
+  robots: { index: false, follow: true },
   title: "九星気学の鑑定士",
   description:
     "引越しの方位と日取りを扱う鑑定士の掲載。暦と方位盤から機械的に決まるところから先、住む人の事情や家の間取りまで含めた判断を相談できます。掲載は登録制・無料。",
