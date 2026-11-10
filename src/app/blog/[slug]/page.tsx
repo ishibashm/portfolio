@@ -19,7 +19,11 @@ import { loadBlogPost, loadBlogPosts } from "@/lib/blogStore";
 import { pickRelatedPosts } from "@/lib/blogRelated";
 import { blogTopic } from "@/lib/comments";
 import { DirectionComments } from "@/components/comments/DirectionComments";
-import { DEFAULT_SOCIAL_IMAGE, blogImagePath } from "@/lib/blogImage";
+import {
+  DEFAULT_SOCIAL_IMAGE,
+  blogHeroWebp,
+  blogImagePath,
+} from "@/lib/blogImage";
 import { pageOpenGraph } from "@/lib/siteUrl";
 import { isAgentLogSlug } from "@/lib/agentLog";
 import { extractHeadings } from "@/lib/blogToc";
@@ -89,6 +93,7 @@ export default async function BlogPostPage({
   /* 記事ごとの図。共通の画像に落ちているときは本文に出さない。 */
   const socialImage = blogImagePath(post.slug);
   const heroImage = socialImage === DEFAULT_SOCIAL_IMAGE ? null : socialImage;
+  const heroWebp = heroImage ? blogHeroWebp(post.slug) : null;
   // 自分以外を全部出していた。3 本の頃は 2 件で済んでいたが、23 本に
   // なった時点で全記事の脇に 22 件が並んでいた（lib/blogRelated）。
   // 関連記事の障害で本文まで失わず、公開状態が不明なリンクも補わない。
@@ -172,19 +177,37 @@ export default async function BlogPostPage({
 
               大きさを属性で持たせて、読み込み前に場所を取らせる。無いと
               本文が読み込みのたびに下へ飛ぶ。
+
+              **この図が記事のモバイル LCP の要素。**PNG（約 170KB）を
+              そのまま配っていたので、WebP（1800 幅・900 幅）を
+              <picture> で先に出し、対応しない環境と WebP が無い記事は
+              今までどおり PNG の <img> に落とす。優先読み込み
+              （fetchPriority）・width/height・eager は <img> に残す
+              （<picture> の中でもこの <img> が LCP の要素になる）。
+              列の幅は lg 以上で最大 1300px 前後（1700px − 本文外の 300px
+              の欄 − 余白）、それ未満は画面幅いっぱい。
             */}
             {heroImage && (
               <figure className="mt-8 m-0">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src={heroImage}
-                  alt={`${post.title} — 記事の要点を図にしたもの`}
-                  width={1800}
-                  height={945}
-                  fetchPriority="high"
-                  decoding="async"
-                  className="w-full h-auto rounded-xl border border-stone-200"
-                />
+                <picture>
+                  {heroWebp && (
+                    <source
+                      type="image/webp"
+                      srcSet={`${heroWebp.small} 900w, ${heroWebp.full} 1800w`}
+                      sizes="(min-width: 1024px) 1300px, 100vw"
+                    />
+                  )}
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={heroImage}
+                    alt={`${post.title} — 記事の要点を図にしたもの`}
+                    width={1800}
+                    height={945}
+                    fetchPriority="high"
+                    decoding="async"
+                    className="w-full h-auto rounded-xl border border-stone-200"
+                  />
+                </picture>
               </figure>
             )}
 
