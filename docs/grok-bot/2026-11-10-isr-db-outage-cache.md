@@ -25,7 +25,7 @@
 ## 確認
 - 作業ツリー（2 本目のあと）: 関連 47 件成功、全テスト 6537 成功・5 skip、lint エラー 0、`tsc --noEmit` 成功。DB 不通のローカル build で `/blog/feed.xml` の事前生成まで成功。
 - 1 本目だけの CI（run 42737680467）は typecheck / lint / test 成功、Build が `/blog/feed.xml` の prerender で `ETIMEDOUT` 失敗。
-- 2 本目の CI は PR #1800 で確認。
+- 2 本目の CI（run 42740453962、11:18 JST 完了）は typecheck / lint / test / build すべて成功。
 
 ## 残る懸念
 - 既存の壊れた ISR 控えはこの PR では消えない（アクセスで作り直されるか、デプロイで入れ替わるまで残る可能性）
