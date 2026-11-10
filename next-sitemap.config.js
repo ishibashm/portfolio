@@ -88,6 +88,8 @@ const NOT_A_PAGE = [
   "/profile/memory",
   "/account",
   "/contact", // 連絡用フォーム。公開は続けるが検索の入口にはしない
+  // 掲載が 0 件のあいだは noindex（src/app/practitioners/layout.tsx に戻す手順）。
+  "/practitioners",
 ];
 
 /**
