@@ -35,62 +35,32 @@ it("optional keys are a subset of the Secret Manager map", () => {
   optionalKeys.forEach((key) => expect(secretMap).toHaveProperty(key));
 });
 
-it("includes every mapped secret when --existing is omitted", () => {
+it("omits optional secrets from --update-secrets and keeps required ones", () => {
   const secrets = parsed();
-  expect(Object.keys(secrets).sort()).toEqual(Object.keys(secretMap).sort());
-  expect(secrets.XAI_API_KEY).toBe("xai-api-key:latest");
-});
-
-it("omits optional secrets that are missing from --existing and keeps required ones", () => {
-  const secrets = parsed(["--existing", "nextauth-secret,gemini-api-key"]);
+  const required = Object.keys(secretMap).filter(
+    (key) => !optionalKeys.includes(key),
+  );
   expect(secrets).not.toHaveProperty("XAI_API_KEY");
+  expect(flag()).not.toContain("xai-api-key");
+  expect(Object.keys(secrets).sort()).toEqual(required.sort());
   expect(secrets.NEXTAUTH_SECRET).toBe("nextauth-secret:latest");
   expect(secrets.GEMINI_API_KEY).toBe("gemini-api-key:latest");
-  expect(flag(["--existing", "nextauth-secret"])).not.toContain("xai-api-key");
 });
 
-it("includes optional secrets when their Secret Manager name exists", () => {
-  const secrets = parsed([
-    "--existing",
-    "projects/blog-471319/secrets/xai-api-key\nnextauth-secret",
-  ]);
-  expect(secrets.XAI_API_KEY).toBe("xai-api-key:latest");
+it("prints only optional env names, never values", () => {
+  expect(flag(["--print-optional"])).toBe("XAI_API_KEY");
+  expect(flag()).not.toContain("synthetic-value");
 });
 
-it("treats an empty --existing list as 'optional secrets are absent'", () => {
-  const secrets = parsed(["--existing", ""]);
-  expect(secrets).not.toHaveProperty("XAI_API_KEY");
-  expect(Object.keys(secrets).length).toBe(
-    Object.keys(secretMap).length - optionalKeys.length,
-  );
-  expect(flag(["--existing", "", "--print-missing-optional"])).toBe(
-    "XAI_API_KEY",
-  );
-});
-
-it("prints only missing optional env names, never values", () => {
-  expect(flag(["--existing", "xai-api-key", "--print-missing-optional"])).toBe(
-    "",
-  );
-  expect(flag(["--existing", "", "--print-missing-optional"])).toBe(
-    "XAI_API_KEY",
-  );
-  expect(flag(["--existing", "synthetic-value"])).not.toContain(
-    "synthetic-value",
-  );
-});
-
-it("deploy.yml skips missing optional secrets and can drop a leftover reference", () => {
+it("deploy.yml never attaches optional secrets and can drop a leftover reference", () => {
   const workflow = readFileSync(
     resolve(".github/workflows/deploy.yml"),
     "utf8",
   );
   expect(workflow).toContain("scripts/optional_secret_manager_keys.json");
-  expect(workflow).toContain("gcloud secrets list");
-  expect(workflow).toContain(
-    'python3 scripts/secret_manager_flag.py --existing "$EXISTING_SECRETS"',
-  );
-  expect(workflow).toContain("--print-missing-optional");
+  expect(workflow).toContain("python3 scripts/secret_manager_flag.py");
+  expect(workflow).toContain("--print-optional");
+  expect(workflow).not.toContain("gcloud secrets list");
   expect(workflow).toContain('--update-secrets="$SECRETS_FLAG"');
   expect(workflow).toContain("DROP_OPTIONAL");
   expect(workflow).toContain('--remove-secrets="$REMOVE_SECRET_KEYS"');

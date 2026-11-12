@@ -445,14 +445,14 @@ jobs:
           ENV_VARS_FLAG="$(python3 scripts/env_to_gcloud_flag.py env.json)"
           # 秘密の値は Secret Manager から参照する（scripts/secret_manager_map.json）。
           # env.json からは convert_env.py で除外済み。ビルド用の .env はそのまま。
-          # 任意キー（scripts/optional_secret_manager_keys.json）は、シークレットが
-          # 無いと --update-secrets でデプロイ全体が失敗するため、存在する名前だけ載せる。
-          # 値は扱わない。一覧取得に失敗したときも任意キーは載せない（必須キーは従来どおり載せる）。
-          EXISTING_SECRETS="$(gcloud secrets list --project="${{ env.PROJECT_ID }}" --format='value(name)' 2>/dev/null || true)"
-          SECRETS_FLAG="$(python3 scripts/secret_manager_flag.py --existing "$EXISTING_SECRETS")"
-          OMITTED_OPTIONAL="$(python3 scripts/secret_manager_flag.py --existing "$EXISTING_SECRETS" --print-missing-optional)"
+          # 任意キー（scripts/optional_secret_manager_keys.json、いまは XAI_API_KEY）は
+          # --update-secrets に載せない。シークレットが無い、または Cloud Run 実行 SA に
+          # 読める権限が無いと Permission denied でデプロイ全体が失敗するため。
+          # IAM の変更には依存しない。値は扱わない。必須キーは従来どおり載せる。
+          SECRETS_FLAG="$(python3 scripts/secret_manager_flag.py)"
+          OMITTED_OPTIONAL="$(python3 scripts/secret_manager_flag.py --print-optional)"
           if [ -n "$OMITTED_OPTIONAL" ]; then
-            echo "Secret Manager に無いため今回載せない任意キー: $OMITTED_OPTIONAL"
+            echo "今回のデプロイに載せない任意キー: $OMITTED_OPTIONAL"
           fi
           # 既存リビジョンに同名の「平文」変数が残っていると型の衝突で失敗するため、
           # 平文で残っているものだけを同じデプロイで外す（名前のみ扱い、値は読まない）。
@@ -475,12 +475,12 @@ jobs:
                          | python3 -c 'import json,sys; d=json.load(sys.stdin); c=d["spec"]["template"]["spec"]["containers"][0]; print("\n".join(e["name"] for e in c.get("env",[]) if "valueFrom" in e))' || true)"
           RETIRED_SECRETS="$(python3 -c 'import json,sys; r=json.load(open("scripts/retired_env_keys.json")); p=set(sys.argv[1].split()); print(",".join(k for k in r if k in p))' "$SECRET_NAMES")"
           RETIRED_PLAIN="$(python3 -c 'import json,sys; r=json.load(open("scripts/retired_env_keys.json")); p=set(sys.argv[1].split()); print(",".join(k for k in r if k in p))' "$PLAIN_NAMES")"
-          # 任意キーのうち Secret Manager に無く、既存リビジョンに Secret 参照が残っていれば外す。
-          # 残したままだと次のリビジョン起動時に参照解決で失敗する。
+          # 任意キーを --update-secrets に載せないため、既存リビジョンに Secret 参照が
+          # 残っていれば外す。残したままだと実行 SA が読めず次のリビジョン起動に失敗する。
           DROP_OPTIONAL="$(python3 -c 'import sys; missing=[k for k in sys.argv[1].split(",") if k]; present=set(sys.argv[2].split()); print(",".join(k for k in missing if k in present))' "$OMITTED_OPTIONAL" "$SECRET_NAMES")"
           REMOVE_SECRET_KEYS="$RETIRED_SECRETS"
           if [ -n "$DROP_OPTIONAL" ]; then
-            echo "存在しない任意 Secret 参照を外すキー: $DROP_OPTIONAL"
+            echo "任意のため外す Secret 参照: $DROP_OPTIONAL"
             if [ -n "$REMOVE_SECRET_KEYS" ]; then
               REMOVE_SECRET_KEYS="$REMOVE_SECRET_KEYS,$DROP_OPTIONAL"
             else
