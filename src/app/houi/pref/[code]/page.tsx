@@ -310,7 +310,9 @@ export default async function Page({
                 を基準にした真北基準・伝統区分（東西南北 30 度・四隅 60
                 度）です。広い県では県内でも方位が変わるため、実際の引越しでは
                 <b>いま住んでいる場所</b>
-                から見た方位で判定してください（各市区町村のページと方位スキャナーがその計算をします）。
+                から見た方位で判定してください（各市区町村のページと「
+                {coreRouteLabel("/relocation/arbitrage")}
+                」がその計算をします。物件の募集は載せていません）。
               </p>
               {/* 印の意味。印だけ付けて説明が無いと、色の違いが相場の
               高低や吉凶と読まれかねない。/houi/area の説明と同じ文言。 */}
@@ -321,13 +323,13 @@ export default async function Page({
               {stats.emptyDirections.length > 0 && (
                 <p className="mt-4 max-w-[70ch] rounded-2xl border border-amber-300 bg-amber-50/80 px-4 py-3 text-xs leading-relaxed text-amber-900">
                   <b>
-                    掲載のある市区町村が入らない方位:{" "}
+                    方位の一覧に市区町村が入らない方位:{" "}
                     {stats.emptyDirections
                       .map((d) => DIRECTION_LABELS[d])
                       .join("・")}
                   </b>
                   。この一覧は<b>{listingCoverageScope()}</b>
-                  を並べており、以降は更新していません。県がその方位に伸びていない場合もあれば、掲載を集計できていなかった市区町村がある場合もあります。
+                  を並べており、以降は更新していません。物件の募集は載せていません。県がその方位に伸びていない場合もあれば、当時の集計に入っていなかった市区町村がある場合もあります。
                   <b>「その方位に街が無い」とは限りません。</b>
                   吉方位がこの方位に出た年は、隣の県も含めて探してください。
                 </p>
