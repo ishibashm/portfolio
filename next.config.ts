@@ -74,6 +74,23 @@ const nextConfig: NextConfig = {
     return [
       { source: "/houi/mcp-explorer", destination: "/ask", permanent: true },
       {
+        // 凶方位への不安を扱う公開記事へ。削除した個人情報の記事は送らない。
+        source: "/blog/when-you-cannot-avoid-a-bad-direction",
+        destination: "/blog/does-bad-direction-last-60-years",
+        statusCode: 301,
+      },
+      {
+        source: "/calendar/2026-09",
+        destination: "/calendar",
+        statusCode: 301,
+      },
+      {
+        // RSS 集約の直接の後継はない。不動産関連記事も読める記事一覧が最も近い。
+        source: "/news",
+        destination: "/blog",
+        statusCode: 301,
+      },
+      {
         source: "/:path*",
         has: [{ type: "host", value: "www.cloud-palette.com" }],
         destination: "https://cloud-palette.com/:path*",

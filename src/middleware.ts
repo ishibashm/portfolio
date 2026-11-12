@@ -3,6 +3,7 @@ import { canonicalHouiRedirect } from "@/lib/houiCanonicalPath";
 import { isSameOrigin } from "@/lib/apiGuard";
 import { requestLimiter } from "@/lib/requestSecurity";
 import { updateSession } from "@/utils/supabase/middleware";
+import { isGonePath } from "@/lib/gonePaths";
 
 /**
  * Sub-app subdomains are served by rewriting onto an internal path.
@@ -48,6 +49,13 @@ const apiLimit = requestLimiter(120, 1);
 
 export async function middleware(request: NextRequest) {
   const url = request.nextUrl.clone();
+
+  if (isGonePath(url.pathname)) {
+    return new NextResponse("Gone\n", {
+      status: 410,
+      headers: { "Content-Type": "text/plain; charset=utf-8" },
+    });
+  }
 
   /*
     /houi/2026/01 のように parseInt が受けてしまうパスは、正規の頁へ 301。

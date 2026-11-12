@@ -292,7 +292,15 @@ export default function Page() {
                 key={y}
                 className="rounded-2xl border border-slate-300 bg-white/90 p-4"
               >
-                <h3 className="font-bold font-serif text-sm mb-2">{y}年</h3>
+                <h3 className="font-bold font-serif text-sm mb-2">
+                  <Link
+                    prefetch={false}
+                    href={`/houi/${y}`}
+                    className="hover:text-rose-600"
+                  >
+                    {y}年
+                  </Link>
+                </h3>
                 <ul className="space-y-1">
                   {STARS.map((s) => (
                     <li key={s}>

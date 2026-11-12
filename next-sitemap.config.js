@@ -93,6 +93,8 @@ const NOT_A_PAGE = [
   "/profile/memory",
   "/account",
   "/contact", // 連絡用フォーム。公開は続けるが検索の入口にはしない
+  // 掲載が 0 件のあいだは noindex（src/app/practitioners/layout.tsx に戻す手順）。
+  "/practitioners",
 ];
 
 /**
@@ -569,6 +571,11 @@ module.exports = {
            next-sitemap が loc で畳む。 */
         "/blog",
         "/houi/today",
+        /* force-dynamic の頁は事前生成の一覧に出ないので、/blog と同じく
+           ここで足す。どちらも索引する頁（noindex ではなく、exclude にも
+           当たらない）で、足さないと sitemap から漏れていた（監査 2026-11-10）。 */
+        "/relocation/dashboard",
+        "/relocation/arbitrage",
       ].map((loc) => config.transform(config, loc)),
     ),
 };

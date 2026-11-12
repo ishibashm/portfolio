@@ -40,6 +40,22 @@ function find(list: Redirect[], source: string) {
 }
 
 describe("消した頁の転送", () => {
+  it.each([
+    [
+      "/blog/when-you-cannot-avoid-a-bad-direction",
+      "/blog/does-bad-direction-last-60-years",
+    ],
+    ["/calendar/2026-09", "/calendar"],
+    ["/news", "/blog"],
+  ])("%s を %s へ 301 で送る", async (source, destination) => {
+    const redirect = find(await redirects(), source);
+    expect(redirect).toMatchObject({
+      destination,
+      statusCode: 301,
+    });
+    expect(redirect).not.toHaveProperty("permanent");
+  });
+
   it("問い合わせの旧 URL を /contact へ 301 で送る", async () => {
     const list = await redirects();
     expect(find(list, "/お問い合わせ")).toMatchObject({

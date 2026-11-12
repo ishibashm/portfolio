@@ -65,6 +65,7 @@ describe.each([false, true])(
         "src/middleware.ts",
         "src/lib/houiCanonicalPath.ts",
         "src/lib/apiGuard.ts",
+        "src/lib/gonePaths.ts",
         "src/lib/requestSecurity.ts",
         "src/app/api/mcp/personal/route.ts",
         "src/lib/mcpDiscovery.ts",

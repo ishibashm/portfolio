@@ -32,6 +32,7 @@ const NAGOYA = { lat: 35.1815, lon: 136.9066 };
 describe("SpotVerdict: 目的地から戻した点と、頁へ知らせる名前", () => {
   afterEach(() => {
     cleanup();
+    window.history.replaceState({}, "", "/");
     vi.restoreAllMocks();
   });
 
@@ -98,7 +99,9 @@ describe("SpotVerdict: 目的地から戻した点と、頁へ知らせる名前
       />,
     );
     fireEvent.change(
-      screen.getByRole("textbox", { name: "物件URL・住所・座標から調べる" }),
+      screen.getByRole("textbox", {
+        name: "住所・駅名・座標から調べる（物件URLも可）",
+      }),
       { target: { value: `${NAGOYA.lat}, ${NAGOYA.lon}` } },
     );
     fireEvent.click(screen.getByRole("button", { name: "調べる" }));

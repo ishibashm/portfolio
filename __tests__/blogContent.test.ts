@@ -1,4 +1,14 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
+
+// 取り込み前の RSS を検証する。接続障害は再生成失敗として扱うため使わない。
+vi.mock("@/lib/prisma", () => ({
+  default: {
+    blogPost: {
+      findMany: vi.fn().mockResolvedValue([]),
+      findFirst: vi.fn().mockResolvedValue(null),
+    },
+  },
+}));
 
 import { getBlogPost, getBlogPosts } from "@/lib/blog";
 import { isOffThemeBlogSlug } from "@/lib/offThemeBlog";
@@ -83,9 +93,7 @@ describe("ブログの公開記事", () => {
     expect(getBlogPost("not-found")).toBeUndefined();
   });
 
-  // RSS は DB を先に見るようになった（lib/blogStore）。このテストは
-  // DB を用意していないので Markdown に落ちる経路を通る。落ちる先が
-  // 壊れると、ここが先に落ちる。
+  // DB が空の取り込み前でも、Markdown の公開記事を RSS に出せる。
   it("公開記事をRSSでも購読できる", async () => {
     const response = await getBlogFeed();
     const xml = await response.text();

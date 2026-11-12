@@ -70,6 +70,7 @@ const NAGOYA = { lat: 35.1815, lon: 136.9066 };
 describe("住所を調べたら頁へ地点を知らせる（SpotVerdict）", () => {
   afterEach(() => {
     cleanup();
+    window.history.replaceState({}, "", "/");
     vi.restoreAllMocks();
   });
 
@@ -100,7 +101,9 @@ describe("住所を調べたら頁へ地点を知らせる（SpotVerdict）", ()
     /* 開いた時点では地点が無い */
     expect(onTargetChange).toHaveBeenLastCalledWith(null, false);
     fireEvent.change(
-      screen.getByRole("textbox", { name: "物件URL・住所・座標から調べる" }),
+      screen.getByRole("textbox", {
+        name: "住所・駅名・座標から調べる（物件URLも可）",
+      }),
       { target: { value: "愛知県名古屋市中村区名駅1丁目" } },
     );
     fireEvent.click(screen.getByRole("button", { name: "調べる" }));
