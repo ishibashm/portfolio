@@ -1,7 +1,6 @@
 import type { ReactNode } from "react";
 import {
-  AFFILIATE_OFFERS,
-  isAffiliatePage,
+  AFFILIATE_AREA_LABEL,
   type AffiliateOffer,
 } from "@/lib/affiliateOffers";
 import { sponsorizeAnchors } from "@/lib/affiliateHtml";
@@ -29,10 +28,16 @@ export function AffiliateLink({
 }
 
 /** ASP の HTML を差し込む。アンカーには広告用の rel と target を付ける。 */
-export function AffiliateHtml({ html }: { html: string }) {
+export function AffiliateHtml({
+  html,
+  showLabel = true,
+}: {
+  html: string;
+  showLabel?: boolean;
+}) {
   return (
     <div>
-      {prLabel}
+      {showLabel ? prLabel : null}
       <div dangerouslySetInnerHTML={{ __html: sponsorizeAnchors(html) }} />
     </div>
   );
@@ -43,8 +48,8 @@ function visibleOffers(offers: readonly AffiliateOffer[]): AffiliateOffer[] {
 }
 
 /**
- * 案件が 1 件も無ければ何も描かない。
- * あるときだけ、頁の上部に開示文と PR 付きのリンクを出す。
+ * 渡された案件を開示文と一緒に描く。呼び出し側が出し先を決める。
+ * 頁への自動掲載には使わない（AffiliatePlacement を使う）。
  */
 export function AffiliateOffers({
   offers,
@@ -77,10 +82,55 @@ export function AffiliateOffers({
 }
 
 /**
- * 広告を置く頁の上部。案件設定が空なら何も出さない。
- * パスはサーバでは分からないので、呼ぶ側が渡す。
+ * 頁先頭の開示文は出さない。広告であることは枠上の「広告」ラベルで示す。
  */
 export function AffiliatePageTop({ pathname }: { pathname: string }) {
-  if (!isAffiliatePage(pathname)) return null;
-  return <AffiliateOffers offers={AFFILIATE_OFFERS} />;
+  void pathname;
+  return null;
+}
+
+/**
+ * サイトの AdBanner と同じ器（幅いっぱい・上下の余白だけ）。
+ * 専用の見出しや囲みは付けず、小さな「広告」ラベルと対象地域の注記だけを置く。
+ * バナーがあるときはバナーだけ出す（同じリンクのテキストは重ねない）。
+ */
+export function AffiliatePlacement({
+  offer,
+  className = "",
+  variant = "sidebar",
+}: {
+  offer: AffiliateOffer;
+  className?: string;
+  variant?: "sidebar" | "compact";
+}) {
+  const bannerHtml =
+    variant === "compact" ? offer.compactBannerHtml : offer.bannerHtml;
+  const html = bannerHtml ?? offer.html;
+  if (!html && !offer.href) return null;
+  return (
+    <div
+      aria-label="スポンサー広告"
+      className={`my-4 w-full overflow-hidden ${className}`}
+    >
+      <p className="mb-1 text-xs leading-4 text-slate-500">広告</p>
+      {html ? (
+        <div
+          className="[&_a]:inline-block [&_img]:max-w-full"
+          dangerouslySetInnerHTML={{ __html: sponsorizeAnchors(html) }}
+        />
+      ) : (
+        <a
+          href={offer.href}
+          target="_blank"
+          rel="sponsored nofollow noopener"
+          className="text-[13px] leading-6 text-slate-700 underline decoration-slate-300 underline-offset-2 hover:text-slate-900"
+        >
+          {offer.label ?? offer.href}
+        </a>
+      )}
+      <p className="mt-1 text-xs leading-4 text-slate-500">
+        {AFFILIATE_AREA_LABEL}
+      </p>
+    </div>
+  );
 }

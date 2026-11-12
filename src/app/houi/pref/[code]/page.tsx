@@ -14,6 +14,8 @@ import {
   DatasetJsonLd,
 } from "@/components/JsonLd";
 import { AdBanner } from "@/components/ads/AdBanner";
+import { AffiliatePlacement } from "@/components/ads/AffiliateLink";
+import { offersForPath } from "@/lib/affiliateOffers";
 import {
   getPrefStats,
   prefNameByCode,
@@ -172,6 +174,7 @@ export default async function Page({
     areas: editorialFirst(g.areas),
   }));
   const path = `/houi/pref/${code}`;
+  const affiliate = offersForPath(path)[0];
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#faf7f5] via-[#f5efe9] to-[#f0e9e1] text-slate-900 font-sans">
@@ -213,127 +216,131 @@ export default async function Page({
           {pref}の家賃と方位別の市区町村
         </h1>
 
-        <RentOverview
-          snapshot={HOUSING}
-          name={pref}
-          count={ranked.length}
-          source={
-            <>
-              <p className="mt-3 text-xs leading-relaxed text-slate-500">
-                {HOUSING.year} 年 住宅・土地統計調査（e-Stat 表 ID{" "}
-                <a
-                  href="https://www.e-stat.go.jp/dbview?sid=0000020108"
-                  className="underline"
-                >
-                  0000020108
-                </a>
-                ）／{ESTAT_SOURCE}
-              </p>
-              <p className="mt-1 text-xs leading-relaxed text-slate-500">
-                {ESTAT_API_CREDIT}
-              </p>
-            </>
+        {affiliate ? (
+          <AffiliatePlacement
+            offer={affiliate}
+            variant="compact"
+            className="lg:hidden"
+          />
+        ) : null}
+
+        <div
+          className={
+            affiliate
+              ? "lg:grid lg:grid-cols-[minmax(0,1fr)_300px] lg:items-start lg:gap-10"
+              : undefined
           }
-        />
-        {ranked.length > 0 && (
-          <p className="mt-3 text-sm leading-relaxed text-slate-700">
-            {`比較対象の1㎡あたり家賃は、${ranked[0].figures.rentPerSqm.toLocaleString()}円/月から${ranked[ranked.length - 1].figures.rentPerSqm.toLocaleString()}円/月です。安い順と高い順の表から、それぞれの街の広さや近隣の家賃も確認できます。`}
-          </p>
-        )}
+        >
+          <div>
+            <RentOverview
+              snapshot={HOUSING}
+              name={pref}
+              count={ranked.length}
+              source={
+                <>
+                  <p className="mt-3 text-xs leading-relaxed text-slate-500">
+                    {HOUSING.year} 年 住宅・土地統計調査（e-Stat 表 ID{" "}
+                    <a
+                      href="https://www.e-stat.go.jp/dbview?sid=0000020108"
+                      className="underline"
+                    >
+                      0000020108
+                    </a>
+                    ）／{ESTAT_SOURCE}
+                  </p>
+                  <p className="mt-1 text-xs leading-relaxed text-slate-500">
+                    {ESTAT_API_CREDIT}
+                  </p>
+                </>
+              }
+            />
+            {ranked.length > 0 && (
+              <p className="mt-3 text-sm leading-relaxed text-slate-700">
+                {`比較対象の1㎡あたり家賃は、${ranked[0].figures.rentPerSqm.toLocaleString()}円/月から${ranked[ranked.length - 1].figures.rentPerSqm.toLocaleString()}円/月です。安い順と高い順の表から、それぞれの街の広さや近隣の家賃も確認できます。`}
+              </p>
+            )}
 
-        {editorial.intro.map((p, i) => (
-          <p
-            key={i}
-            className="mt-5 max-w-[70ch] text-sm leading-relaxed text-slate-700"
-          >
-            {p}
-          </p>
-        ))}
-
-        <div>
-          {/* 毎月の公的な値。本体（住宅・土地統計調査）は 5 年ごとなので、
-              いまの水準と前年からの動きをここで補う */}
-          <OfficialRentNote
-            heading={`${pref}の市の民営家賃`}
-            rents={officialRentsForPref(estatRent as EstatRentSnapshot, code)}
-            month={(estatRent as EstatRentSnapshot).retail.latestMonth}
-          />
-        </div>
-        <p className="mt-4 text-xs leading-relaxed text-slate-600">
-          以下は県内で頁があり、家賃の公表値がある市区町村の比較です。1㎡あたりの月額で並べ、同額は同順位としています。政令市は区単位で、県内の全自治体を網羅した順位ではありません。
-        </p>
-        <div className="grid gap-4 lg:grid-cols-2">
-          <RentComparisonTable
-            title="家賃が安い順（先頭5件）"
-            rows={ranked.slice(0, 5)}
-          />
-          <RentComparisonTable
-            title="家賃が高い順（先頭5件）"
-            rows={expensive.slice(0, 5)}
-          />
-        </div>
-        <details className="mt-4">
-          <summary className="cursor-pointer text-xs font-bold text-slate-600">
-            比較対象の全{ranked.length}市区町村を安い順で見る
-          </summary>
-          <RentComparisonTable title="県内の比較対象一覧" rows={ranked} />
-        </details>
-
-        <section className="mt-10">
-          <h2 className="text-xl font-bold font-serif border-b border-slate-300 pb-2">
-            八方位ごとの市区町村と家賃
-          </h2>
-          <p className="mt-3 max-w-[70ch] text-xs leading-relaxed text-slate-600">
-            方位は{pref}の<b>面積重心</b>
-            を基準にした真北基準・伝統区分（東西南北 30 度・四隅 60
-            度）です。広い県では県内でも方位が変わるため、実際の引越しでは
-            <b>いま住んでいる場所</b>
-            から見た方位で判定してください（各市区町村のページと方位スキャナーがその計算をします）。
-          </p>
-          {/* 印の意味。印だけ付けて説明が無いと、色の違いが相場の
-              高低や吉凶と読まれかねない。/houi/area の説明と同じ文言。 */}
-          <p className="mt-2 text-xs text-slate-500">
-            <span className="mr-1.5 inline-block h-2 w-2 rounded-full bg-rose-500 align-middle" />
-            が付いている市区町村には、方位ごとの街の並びを書いた解説があります。各方位では解説のある街を先に並べています。
-          </p>
-          {stats.emptyDirections.length > 0 && (
-            <p className="mt-4 max-w-[70ch] rounded-2xl border border-amber-300 bg-amber-50/80 px-4 py-3 text-xs leading-relaxed text-amber-900">
-              <b>
-                掲載のある市区町村が入らない方位:{" "}
-                {stats.emptyDirections
-                  .map((d) => DIRECTION_LABELS[d])
-                  .join("・")}
-              </b>
-              。この一覧は<b>{listingCoverageScope()}</b>
-              を並べており、以降は更新していません。県がその方位に伸びていない場合もあれば、掲載を集計できていなかった市区町村がある場合もあります。
-              <b>「その方位に街が無い」とは限りません。</b>
-              吉方位がこの方位に出た年は、隣の県も含めて探してください。
-            </p>
-          )}
-          <div className="mt-5 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-            {directions.map((g) => (
-              <div
-                key={g.dir}
-                className="rounded-2xl border border-slate-300 bg-white/90 p-4"
+            {editorial.intro.map((p, i) => (
+              <p
+                key={i}
+                className="mt-5 max-w-[70ch] text-sm leading-relaxed text-slate-700"
               >
-                <h3 className="font-serif text-base font-bold">{g.jp}</h3>
-                <ul className="mt-2 space-y-1 text-xs">
-                  {g.areas.slice(0, 8).map((a) => (
-                    <AreaLink
-                      key={a.code}
-                      code={a.code}
-                      city={a.city}
-                      rentPerSqm={rentOf(a.code)}
-                    />
-                  ))}
-                </ul>
-                {g.areas.length > 8 && (
-                  <details className="mt-2">
-                    <summary className="cursor-pointer select-none text-[11px] font-bold text-slate-500">
-                      残り {g.areas.length - 8} 市区町村を開く
-                    </summary>
+                {p}
+              </p>
+            ))}
+
+            <div>
+              {/* 毎月の公的な値。本体（住宅・土地統計調査）は 5 年ごとなので、
+              いまの水準と前年からの動きをここで補う */}
+              <OfficialRentNote
+                heading={`${pref}の市の民営家賃`}
+                rents={officialRentsForPref(
+                  estatRent as EstatRentSnapshot,
+                  code,
+                )}
+                month={(estatRent as EstatRentSnapshot).retail.latestMonth}
+              />
+            </div>
+            <p className="mt-4 text-xs leading-relaxed text-slate-600">
+              以下は県内で頁があり、家賃の公表値がある市区町村の比較です。1㎡あたりの月額で並べ、同額は同順位としています。政令市は区単位で、県内の全自治体を網羅した順位ではありません。
+            </p>
+            <div className="grid gap-4 lg:grid-cols-2">
+              <RentComparisonTable
+                title="家賃が安い順（先頭5件）"
+                rows={ranked.slice(0, 5)}
+              />
+              <RentComparisonTable
+                title="家賃が高い順（先頭5件）"
+                rows={expensive.slice(0, 5)}
+              />
+            </div>
+            <details className="mt-4">
+              <summary className="cursor-pointer text-xs font-bold text-slate-600">
+                比較対象の全{ranked.length}市区町村を安い順で見る
+              </summary>
+              <RentComparisonTable title="県内の比較対象一覧" rows={ranked} />
+            </details>
+
+            <section className="mt-10">
+              <h2 className="text-xl font-bold font-serif border-b border-slate-300 pb-2">
+                八方位ごとの市区町村と家賃
+              </h2>
+              <p className="mt-3 max-w-[70ch] text-xs leading-relaxed text-slate-600">
+                方位は{pref}の<b>面積重心</b>
+                を基準にした真北基準・伝統区分（東西南北 30 度・四隅 60
+                度）です。広い県では県内でも方位が変わるため、実際の引越しでは
+                <b>いま住んでいる場所</b>
+                から見た方位で判定してください（各市区町村のページと方位スキャナーがその計算をします）。
+              </p>
+              {/* 印の意味。印だけ付けて説明が無いと、色の違いが相場の
+              高低や吉凶と読まれかねない。/houi/area の説明と同じ文言。 */}
+              <p className="mt-2 text-xs text-slate-500">
+                <span className="mr-1.5 inline-block h-2 w-2 rounded-full bg-rose-500 align-middle" />
+                が付いている市区町村には、方位ごとの街の並びを書いた解説があります。各方位では解説のある街を先に並べています。
+              </p>
+              {stats.emptyDirections.length > 0 && (
+                <p className="mt-4 max-w-[70ch] rounded-2xl border border-amber-300 bg-amber-50/80 px-4 py-3 text-xs leading-relaxed text-amber-900">
+                  <b>
+                    掲載のある市区町村が入らない方位:{" "}
+                    {stats.emptyDirections
+                      .map((d) => DIRECTION_LABELS[d])
+                      .join("・")}
+                  </b>
+                  。この一覧は<b>{listingCoverageScope()}</b>
+                  を並べており、以降は更新していません。県がその方位に伸びていない場合もあれば、掲載を集計できていなかった市区町村がある場合もあります。
+                  <b>「その方位に街が無い」とは限りません。</b>
+                  吉方位がこの方位に出た年は、隣の県も含めて探してください。
+                </p>
+              )}
+              <div className="mt-5 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+                {directions.map((g) => (
+                  <div
+                    key={g.dir}
+                    className="rounded-2xl border border-slate-300 bg-white/90 p-4"
+                  >
+                    <h3 className="font-serif text-base font-bold">{g.jp}</h3>
                     <ul className="mt-2 space-y-1 text-xs">
-                      {g.areas.slice(8).map((a) => (
+                      {g.areas.slice(0, 8).map((a) => (
                         <AreaLink
                           key={a.code}
                           code={a.code}
@@ -342,76 +349,98 @@ export default async function Page({
                         />
                       ))}
                     </ul>
-                  </details>
-                )}
+                    {g.areas.length > 8 && (
+                      <details className="mt-2">
+                        <summary className="cursor-pointer select-none text-[11px] font-bold text-slate-500">
+                          残り {g.areas.length - 8} 市区町村を開く
+                        </summary>
+                        <ul className="mt-2 space-y-1 text-xs">
+                          {g.areas.slice(8).map((a) => (
+                            <AreaLink
+                              key={a.code}
+                              code={a.code}
+                              city={a.city}
+                              rentPerSqm={rentOf(a.code)}
+                            />
+                          ))}
+                        </ul>
+                      </details>
+                    )}
+                  </div>
+                ))}
               </div>
-            ))}
-          </div>
-        </section>
+            </section>
 
-        <div className="mt-10">
-          <AdBanner />
-        </div>
+            <div className="mt-10">
+              <AdBanner />
+            </div>
 
-        <section className="mt-10 rounded-2xl border border-slate-300 bg-white/90 p-5">
-          <h2 className="text-base font-bold font-serif">
-            自分の吉方位と突き合わせる
-          </h2>
-          <p className="mt-3 text-xs leading-relaxed text-slate-700">
-            どの方位が吉かは、本命星（生まれ年）とその年の年盤で決まります。上の一覧と突き合わせるには、まず自分の本命星を確かめてください。
-          </p>
-          <div className="mt-4 flex flex-wrap gap-3">
-            <Link
-              href="/houi"
-              className="inline-flex px-5 py-2.5 rounded-full bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs transition-colors"
-            >
-              本命星と吉方位を調べる
-            </Link>
-            <Link
-              href="/relocation/arbitrage"
-              className="inline-flex px-5 py-2.5 rounded-full border border-slate-400 bg-white hover:bg-slate-50 text-slate-800 font-bold text-xs transition-colors"
-            >
-              {coreRouteLabel("/relocation/arbitrage")}
-            </Link>
-          </div>
-        </section>
+            <section className="mt-10 rounded-2xl border border-slate-300 bg-white/90 p-5">
+              <h2 className="text-base font-bold font-serif">
+                自分の吉方位と突き合わせる
+              </h2>
+              <p className="mt-3 text-xs leading-relaxed text-slate-700">
+                どの方位が吉かは、本命星（生まれ年）とその年の年盤で決まります。上の一覧と突き合わせるには、まず自分の本命星を確かめてください。
+              </p>
+              <div className="mt-4 flex flex-wrap gap-3">
+                <Link
+                  href="/houi"
+                  className="inline-flex px-5 py-2.5 rounded-full bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs transition-colors"
+                >
+                  本命星と吉方位を調べる
+                </Link>
+                <Link
+                  href="/relocation/arbitrage"
+                  className="inline-flex px-5 py-2.5 rounded-full border border-slate-400 bg-white hover:bg-slate-50 text-slate-800 font-bold text-xs transition-colors"
+                >
+                  {coreRouteLabel("/relocation/arbitrage")}
+                </Link>
+              </div>
+            </section>
 
-        {/* 県ページ同士の導線。ここが無く、複数県を見比べるには
+            {/* 県ページ同士の導線。ここが無く、複数県を見比べるには
             一度 /houi へ戻るしかなかった */}
-        {siblings.length > 0 && (
-          <nav className="mt-10 rounded-2xl border border-slate-300 bg-white/90 p-5">
-            <h2 className="text-base font-bold font-serif">
-              {PREF_REGION[code]}のほかの県
-            </h2>
-            <p className="mt-2 text-xs leading-relaxed text-slate-700">
-              {
-                "引越し先の候補が複数の県にまたがるときは、同じ見方で並べたこちらも合わせてどうぞ。"
-              }
+            {siblings.length > 0 && (
+              <nav className="mt-10 rounded-2xl border border-slate-300 bg-white/90 p-5">
+                <h2 className="text-base font-bold font-serif">
+                  {PREF_REGION[code]}のほかの県
+                </h2>
+                <p className="mt-2 text-xs leading-relaxed text-slate-700">
+                  {
+                    "引越し先の候補が複数の県にまたがるときは、同じ見方で並べたこちらも合わせてどうぞ。"
+                  }
+                </p>
+                <ul className="mt-3 flex flex-wrap gap-2">
+                  {siblings.map((s) => (
+                    <li key={s.code}>
+                      <Link
+                        href={`/houi/pref/${s.code}`}
+                        className="inline-flex rounded-full border border-slate-300 bg-white px-3 py-1.5 text-xs font-bold text-slate-700 transition-colors hover:bg-slate-50"
+                      >
+                        {s.name}
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+              </nav>
+            )}
+
+            <p className="mt-8 max-w-[70ch] text-xs leading-relaxed text-slate-500">
+              家賃と空き家率は住宅・土地統計調査の公表値を加工した参考値です。調査年・住宅の広さ・対象の違いに注意し、現在の募集条件は個別に確かめてください。
             </p>
-            <ul className="mt-3 flex flex-wrap gap-2">
-              {siblings.map((s) => (
-                <li key={s.code}>
-                  <Link
-                    href={`/houi/pref/${s.code}`}
-                    className="inline-flex rounded-full border border-slate-300 bg-white px-3 py-1.5 text-xs font-bold text-slate-700 transition-colors hover:bg-slate-50"
-                  >
-                    {s.name}
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          </nav>
-        )}
 
-        <p className="mt-8 max-w-[70ch] text-xs leading-relaxed text-slate-500">
-          家賃と空き家率は住宅・土地統計調査の公表値を加工した参考値です。調査年・住宅の広さ・対象の違いに注意し、現在の募集条件は個別に確かめてください。
-        </p>
-
-        {/* 県内のニュース（他社の RSS の見出し）は 2026-09-21 に外した。
+            {/* 県内のニュース（他社の RSS の見出し）は 2026-09-21 に外した。
             市区町村ページと同じ理由（規約を確認できていない。backlog 33 節）。 */}
 
-        <RentFaq items={faqs} />
-        <ContentDisclaimer />
+            <RentFaq items={faqs} />
+            <ContentDisclaimer />
+          </div>
+          {affiliate ? (
+            <aside className="hidden lg:block lg:sticky lg:top-8">
+              <AffiliatePlacement offer={affiliate} variant="sidebar" />
+            </aside>
+          ) : null}
+        </div>
       </article>
     </div>
   );

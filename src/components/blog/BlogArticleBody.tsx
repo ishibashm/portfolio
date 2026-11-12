@@ -147,12 +147,35 @@ const components: Components = {
 export function BlogArticleBody({
   body,
   video,
+  insertBeforeHeading,
 }: {
   body: string;
   video?: BlogVideoProps;
+  /** 指定した h2 の直前（直前の節の終わり）に差し込む。 */
+  insertBeforeHeading?: { heading: string; content: ReactNode };
 }) {
   const articleComponents: Components = {
     ...components,
+    h2: ({ children, ...props }) => {
+      const heading = textOf(children);
+      const inject =
+        insertBeforeHeading &&
+        headingId(heading) === headingId(insertBeforeHeading.heading)
+          ? insertBeforeHeading.content
+          : null;
+      return (
+        <>
+          {inject}
+          <h2
+            id={headingId(heading)}
+            className={`mt-12 ${MEASURE} scroll-mt-6 border-b border-slate-300 pb-2 font-serif text-2xl font-bold text-slate-900`}
+            {...props}
+          >
+            {children}
+          </h2>
+        </>
+      );
+    },
     p: ({ node, children, ...props }) => {
       // Only a literal standalone paragraph is a directive; code/HTML are never executed.
       if (
