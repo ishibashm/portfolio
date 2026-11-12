@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import { BreadcrumbJsonLd } from "@/components/JsonLd";
 import { ContentDisclaimer } from "@/components/houi/ContentDisclaimer";
 import {
+  HOUI_BREADCRUMB_LABEL,
   contentYears,
   getYearDirections,
   monthContentYears,
@@ -67,14 +68,14 @@ export default async function Page({
     <div className="min-h-screen bg-[#faf7f5] text-slate-900 font-sans">
       <BreadcrumbJsonLd
         items={[
-          { name: "方位の早見表", path: "/houi" },
+          { name: HOUI_BREADCRUMB_LABEL, path: "/houi" },
           { name: `${year}年`, path: `/houi/${year}` },
         ]}
       />
       <article className="max-w-[1700px] mx-auto px-5 py-12">
         <nav aria-label="パンくず" className="text-xs text-slate-500 mb-6">
           <Link href="/houi" className="underline hover:text-slate-900">
-            方位の早見表
+            {HOUI_BREADCRUMB_LABEL}
           </Link>
           <span className="mx-2">/</span>
           <span>{year}年</span>
@@ -160,7 +161,7 @@ export default async function Page({
             </Link>
           ))}
           <Link href="/houi" className="underline hover:text-slate-600">
-            方位の早見表に戻る
+            {HOUI_BREADCRUMB_LABEL}に戻る
           </Link>
         </nav>
         <ContentDisclaimer />
