@@ -8,18 +8,14 @@ import {
   AffiliatePageTop,
   AffiliatePlacement,
 } from "@/components/ads/AffiliateLink";
-import { BlogArticleBody } from "@/components/blog/BlogArticleBody";
 import {
   AFFILIATE_AREA_LABEL,
   AFFILIATE_OFFERS,
-  HAKOBU_BANNER_008_HTML,
   HAKOBU_TEXT_001_MAT,
   HAKOBU_TEXT_002_HTML,
-  disclosureText,
   hasAffiliateOffer,
   isAffiliatePage,
   offersForPath,
-  placementForPath,
 } from "@/lib/affiliateOffers";
 import { OFF_THEME_BLOG_SLUGS } from "@/lib/offThemeBlog";
 import { sponsorizeAnchors } from "@/lib/affiliateHtml";
@@ -90,7 +86,7 @@ describe("アフィリエイトの土台", () => {
 });
 
 describe("ハコブ引っ越しサービスの掲載先", () => {
-  it("案件はハコブ1件で、素材001（最安値級）は使わない", () => {
+  it("案件はハコブ1件で、素材001とバナー008は使わない", () => {
     expect(AFFILIATE_OFFERS).toHaveLength(1);
     expect(AFFILIATE_OFFERS[0]?.id).toBe("hakobu-moving");
     const serialized = JSON.stringify(AFFILIATE_OFFERS);
@@ -98,6 +94,10 @@ describe("ハコブ引っ越しサービスの掲載先", () => {
     expect(serialized).toContain("www11.a8.net/0.gif");
     expect(serialized).not.toContain(HAKOBU_TEXT_001_MAT);
     expect(serialized).not.toContain("最安値");
+    expect(serialized).not.toContain("s00000020949005008000");
+    expect(serialized).not.toContain("4BGDZD+CU0E7M+4HN6+TTDZ5");
+    expect(serialized).not.toContain("コスパ最高");
+    expect(serialized).not.toContain("三冠");
     expect(HAKOBU_TEXT_002_HTML).toContain("【ハコブ引っ越しサービス】");
   });
 
@@ -129,32 +129,24 @@ describe("ハコブ引っ越しサービスの掲載先", () => {
     const blocked = {
       id: "blocked",
       html: HAKOBU_TEXT_002_HTML,
-      placements: [
-        {
-          path: `/blog/${OFF_THEME_BLOG_SLUGS[0]}`,
-          intro: "出してはいけない",
-        },
-      ],
+      placements: [{ path: `/blog/${OFF_THEME_BLOG_SLUGS[0]}` }],
     };
     expect(
       offersForPath(`/blog/${OFF_THEME_BLOG_SLUGS[0]}`, [blocked]),
     ).toEqual([]);
   });
 
-  it("頁先頭は開示文だけで、広告リンクは置かない", () => {
-    const article = renderToStaticMarkup(
-      createElement(AffiliatePageTop, { pathname: SHINJUKU }),
-    );
-    expect(article).toContain(disclosureText(SHINJUKU));
-    expect(article).toContain(
-      "この記事には広告（アフィリエイト）が含まれます。",
-    );
-    expect(article).not.toContain("px.a8.net");
+  it("頁先頭には開示文も広告リンクも出さない", () => {
+    expect(
+      renderToStaticMarkup(
+        createElement(AffiliatePageTop, { pathname: SHINJUKU }),
+      ),
+    ).toBe("");
     expect(
       renderToStaticMarkup(
         createElement(AffiliatePageTop, { pathname: "/houi/pref/13" }),
       ),
-    ).toContain("このページには広告（アフィリエイト）が含まれます。");
+    ).toBe("");
     expect(
       renderToStaticMarkup(
         createElement(AffiliatePageTop, { pathname: "/blog/example" }),
@@ -162,15 +154,20 @@ describe("ハコブ引っ越しサービスの掲載先", () => {
     ).toBe("");
   });
 
-  it("広告枠は PR（広告）と対象地域を出し、rel を揃える", () => {
+  it("広告ユニットは小さな「広告」ラベルと対象地域の注記、テキスト002だけを出し、専用の囲みは付けない", () => {
     const offer = AFFILIATE_OFFERS[0]!;
-    const placement = placementForPath(SHINJUKU, offer)!;
-    const html = renderToStaticMarkup(
-      <AffiliatePlacement offer={offer} intro={placement.intro} />,
-    );
-    expect(html).toContain("PR（広告）");
+    const html = renderToStaticMarkup(<AffiliatePlacement offer={offer} />);
+    expect(html).toContain("広告");
+    expect(html).toContain('aria-label="スポンサー広告"');
+    expect(html).toContain("w-full");
+    expect(html).toContain("overflow-hidden");
+    expect(html).not.toContain("PR（広告）");
+    expect(html).not.toContain("この記事には広告");
+    expect(html).not.toContain("このページには広告");
+    expect(html).not.toContain("rounded-2xl");
+    expect(html).not.toContain("border-slate-200");
+    expect(html).not.toContain("bg-white/80");
     expect(html).toContain(AFFILIATE_AREA_LABEL);
-    expect(html).toContain(placement.intro);
     expect(html).toContain(
       "https://px.a8.net/svt/ejp?a8mat=4BGDZD+CU0E7M+4HN6+TS3OI",
     );
@@ -178,55 +175,26 @@ describe("ハコブ引っ越しサービスの掲載先", () => {
     expect(html).toContain('rel="sponsored nofollow noopener"');
     expect(html).toContain('target="_blank"');
     expect(html).toContain("【ハコブ引っ越しサービス】");
+    expect(html).toContain("text-slate-500");
     expect(html).not.toContain("最安値");
     expect(html).not.toContain(HAKOBU_TEXT_001_MAT);
     expect(html).not.toContain('width="300"');
     expect(html).not.toContain("s00000020949005008000");
+    expect(html).not.toContain("コスパ最高");
+    expect(html).not.toContain("三冠");
   });
 
-  it("県ページだけ 300×250 バナーを添える", () => {
+  it("狭い画面用とサイド用の出し分けクラスを付けられる", () => {
     const offer = AFFILIATE_OFFERS[0]!;
-    const pref = placementForPath("/houi/pref/13", offer)!;
-    expect(pref.showBanner).toBe(true);
-    const html = renderToStaticMarkup(
-      <AffiliatePlacement
-        offer={offer}
-        intro={pref.intro}
-        showBanner={pref.showBanner}
-      />,
-    );
-    expect(html).toContain(AFFILIATE_AREA_LABEL);
-    expect(html).toContain("s00000020949005008000");
-    expect(html).toContain('width="300"');
-    expect(html).toContain('height="250"');
-    expect(HAKOBU_BANNER_008_HTML).toContain("www28.a8.net");
-    expect(html).toContain("www14.a8.net/0.gif");
-    expect(placementForPath(SHINJUKU, offer)?.showBanner).toBeFalsy();
-  });
-
-  it("記事本文では注記の直前に広告枠を差し込む", () => {
-    const offer = AFFILIATE_OFFERS[0]!;
-    const placement = placementForPath(HIDORI, offer)!;
-    expect(placement.beforeHeading).toBe("注記");
-    const html = renderToStaticMarkup(
-      <BlogArticleBody
-        body={
-          "## 暦と生活の都合が合わないときは、どうするか\n\n本文。\n\n## 注記\n\n注記の本文。"
-        }
-        insertBeforeHeading={{
-          heading: placement.beforeHeading!,
-          content: <AffiliatePlacement offer={offer} intro={placement.intro} />,
-        }}
-      />,
-    );
-    const adAt = html.indexOf("PR（広告）");
-    const noteAt = html.indexOf(">注記<");
-    const earlierAt = html.indexOf(
-      "暦と生活の都合が合わないときは、どうするか",
-    );
-    expect(adAt).toBeGreaterThan(-1);
-    expect(noteAt).toBeGreaterThan(adAt);
-    expect(adAt).toBeGreaterThan(earlierAt);
-    expect(html).toContain(AFFILIATE_AREA_LABEL);
+    expect(
+      renderToStaticMarkup(
+        <AffiliatePlacement offer={offer} className="lg:hidden" />,
+      ),
+    ).toContain("lg:hidden");
+    expect(
+      renderToStaticMarkup(
+        <AffiliatePlacement offer={offer} className="hidden lg:block" />,
+      ),
+    ).toContain("hidden lg:block");
   });
 });

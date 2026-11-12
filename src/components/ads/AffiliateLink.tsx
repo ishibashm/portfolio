@@ -1,8 +1,6 @@
 import type { ReactNode } from "react";
 import {
   AFFILIATE_AREA_LABEL,
-  disclosureText,
-  hasAffiliateOffer,
   type AffiliateOffer,
 } from "@/lib/affiliateOffers";
 import { sponsorizeAnchors } from "@/lib/affiliateHtml";
@@ -51,7 +49,7 @@ function visibleOffers(offers: readonly AffiliateOffer[]): AffiliateOffer[] {
 
 /**
  * 渡された案件を開示文と一緒に描く。呼び出し側が出し先を決める。
- * 頁への自動掲載には使わない（AffiliatePageTop と AffiliatePlacement を使う）。
+ * 頁への自動掲載には使わない（AffiliatePlacement を使う）。
  */
 export function AffiliateOffers({
   offers,
@@ -84,67 +82,49 @@ export function AffiliateOffers({
 }
 
 /**
- * 対象頁の先頭（ファーストビュー）に出す開示文。広告リンク自体は置かない。
- * 広告枠は本文中または県ページの独立枠（AffiliatePlacement）に出す。
+ * 頁先頭の開示文は出さない。広告であることは枠上の「広告」ラベルで示す。
  */
 export function AffiliatePageTop({ pathname }: { pathname: string }) {
-  if (!hasAffiliateOffer(pathname)) return null;
-  return (
-    <aside
-      aria-label="広告の表示"
-      className="mx-auto max-w-[1700px] px-5 pt-4 text-sm leading-7 text-slate-700"
-    >
-      <p>{disclosureText(pathname)}</p>
-    </aside>
-  );
+  void pathname;
+  return null;
 }
 
 /**
- * 広告枠。直前に「PR（広告）」と対象地域を出し、素材のリンクを置く。
- * 料金や順位の断定は書かない。
+ * サイトの AdBanner と同じ器（幅いっぱい・上下の余白だけ）。
+ * 専用の見出しや囲みは付けず、小さな「広告」ラベルと対象地域の注記だけを置く。
  */
 export function AffiliatePlacement({
   offer,
-  intro,
-  showBanner = false,
+  className = "",
 }: {
   offer: AffiliateOffer;
-  intro?: string;
-  showBanner?: boolean;
+  className?: string;
 }) {
   if (!offer.html && !offer.href) return null;
   return (
-    <aside
-      aria-label="広告"
-      className="my-8 rounded-2xl border border-stone-300 bg-stone-50 px-5 py-4 text-sm leading-7 text-slate-700"
+    <div
+      aria-label="スポンサー広告"
+      className={`my-4 w-full overflow-hidden ${className}`}
     >
-      <p className="text-xs font-bold tracking-wide text-stone-700">
-        PR（広告）
-      </p>
-      <p className="mt-1 text-xs font-medium text-stone-600">
+      <p className="mb-1 text-xs leading-4 text-slate-500">広告</p>
+      {offer.html ? (
+        <div
+          className="text-[13px] leading-6 text-slate-700 [&_a]:text-slate-700 [&_a]:underline [&_a]:decoration-slate-300 [&_a]:underline-offset-2 hover:[&_a]:text-slate-900 [&_img]:align-top"
+          dangerouslySetInnerHTML={{ __html: sponsorizeAnchors(offer.html) }}
+        />
+      ) : (
+        <a
+          href={offer.href}
+          target="_blank"
+          rel="sponsored nofollow noopener"
+          className="text-[13px] leading-6 text-slate-700 underline decoration-slate-300 underline-offset-2 hover:text-slate-900"
+        >
+          {offer.label ?? offer.href}
+        </a>
+      )}
+      <p className="mt-1 text-xs leading-4 text-slate-500">
         {AFFILIATE_AREA_LABEL}
       </p>
-      {intro ? <p className="mt-3 text-[15px] leading-7">{intro}</p> : null}
-      {offer.html ? (
-        <div className="mt-3">
-          <AffiliateHtml html={offer.html} showLabel={false} />
-        </div>
-      ) : (
-        <p className="mt-3">
-          <a
-            href={offer.href}
-            target="_blank"
-            rel="sponsored nofollow noopener"
-          >
-            {offer.label ?? offer.href}
-          </a>
-        </p>
-      )}
-      {showBanner && offer.bannerHtml ? (
-        <div className="mt-3">
-          <AffiliateHtml html={offer.bannerHtml} showLabel={false} />
-        </div>
-      ) : null}
-    </aside>
+    </div>
   );
 }

@@ -12,7 +12,7 @@ import {
 import { extractFaq, hasEnoughFaq } from "@/lib/articleFaq";
 import { AdBanner } from "@/components/ads/AdBanner";
 import { AffiliatePlacement } from "@/components/ads/AffiliateLink";
-import { offersForPath, placementForPath } from "@/lib/affiliateOffers";
+import { offersForPath } from "@/lib/affiliateOffers";
 import {
   getBlogPosts as getMarkdownBlogPosts,
   formatBlogDate,
@@ -119,9 +119,6 @@ export default async function BlogPostPage({
   */
   const faq = extractFaq(post.body, post.title);
   const affiliate = offersForPath(path)[0];
-  const affiliatePlacement = affiliate
-    ? placementForPath(path, affiliate)
-    : undefined;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#faf7f5] via-[#f5efe9] to-[#f0e9e1] text-slate-900">
@@ -223,6 +220,10 @@ export default async function BlogPostPage({
               </figure>
             )}
 
+            {affiliate ? (
+              <AffiliatePlacement offer={affiliate} className="lg:hidden" />
+            ) : null}
+
             <div className="mt-8">
               <BlogArticleBody
                 body={post.body}
@@ -234,20 +235,6 @@ export default async function BlogPostPage({
                   duration: post.videoDuration,
                   cover: socialImage,
                 }}
-                insertBeforeHeading={
-                  affiliate && affiliatePlacement?.beforeHeading
-                    ? {
-                        heading: affiliatePlacement.beforeHeading,
-                        content: (
-                          <AffiliatePlacement
-                            offer={affiliate}
-                            intro={affiliatePlacement.intro}
-                            showBanner={affiliatePlacement.showBanner}
-                          />
-                        ),
-                      }
-                    : undefined
-                }
               />
             </div>
 
@@ -274,6 +261,12 @@ export default async function BlogPostPage({
           </article>
 
           <aside className="space-y-5 lg:sticky lg:top-8">
+            {affiliate ? (
+              <AffiliatePlacement
+                offer={affiliate}
+                className="hidden lg:block"
+              />
+            ) : null}
             <section className="rounded-2xl border border-slate-300 bg-white/80 p-5">
               <h2 className="font-serif text-sm font-bold">この記事のタグ</h2>
               <div className="mt-3 flex flex-wrap gap-2">
