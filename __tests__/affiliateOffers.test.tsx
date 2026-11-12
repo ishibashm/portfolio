@@ -15,6 +15,8 @@ import {
   HAKOBU_BANNER_008_HTML,
   HAKOBU_TEXT_001_MAT,
   HAKOBU_TEXT_002_HTML,
+  RAKUTEN_BANNER_009_HTML,
+  RAKUTEN_TEXT_060_HTML,
   hasAffiliateOffer,
   isAffiliatePage,
   offersForPath,
@@ -29,6 +31,10 @@ const PREF_PATHS = [
   "/houi/pref/11",
   "/houi/pref/12",
   "/houi/pref/14",
+] as const;
+const RAKUTEN_PATHS = [
+  "/blog/feng-shui-where-to-put-things-in-a-room",
+  "/blog/feng-shui-looks-inside-the-home",
 ] as const;
 
 describe("アフィリエイトの土台", () => {
@@ -88,9 +94,11 @@ describe("アフィリエイトの土台", () => {
 });
 
 describe("ハコブ引っ越しサービスの掲載先", () => {
-  it("案件はハコブ1件で、素材001は使わず、バナーは008と005を持つ", () => {
-    expect(AFFILIATE_OFFERS).toHaveLength(1);
-    expect(AFFILIATE_OFFERS[0]?.id).toBe("hakobu-moving");
+  it("案件はハコブと楽天の2件で、誇張した文言や DMM FX は持たない", () => {
+    expect(AFFILIATE_OFFERS.map((offer) => offer.id)).toEqual([
+      "hakobu-moving",
+      "rakuten-market",
+    ]);
     const serialized = JSON.stringify(AFFILIATE_OFFERS);
     expect(serialized).toContain("4BGDZD+CU0E7M+4HN6+TTDZ5");
     expect(serialized).toContain("s00000020949005008000");
@@ -101,6 +109,17 @@ describe("ハコブ引っ越しサービスの掲載先", () => {
     expect(HAKOBU_BANNER_008_HTML).toContain('width="300"');
     expect(HAKOBU_BANNER_005_HTML).toContain('width="320"');
     expect(HAKOBU_TEXT_002_HTML).toContain("【ハコブ引っ越しサービス】");
+    expect(serialized).toContain("4BGDZD+BTOYB6+2HOM+609HT");
+    expect(serialized).toContain("4BGDZD+BTOYB6+2HOM+6B70I");
+    expect(serialized).toContain("https://hbb.afl.rakuten.co.jp/hsb/");
+    expect(serialized).not.toContain("http://hbb.afl.rakuten.co.jp/");
+    expect(serialized).not.toContain("日本最大級");
+    expect(serialized).not.toContain("断然お得");
+    expect(serialized).not.toContain("激安");
+    expect(serialized).not.toContain("s00000008903001");
+    expect(serialized).not.toContain("4BGDZD+BUADWY");
+    expect(RAKUTEN_BANNER_009_HTML).toContain("609HT");
+    expect(RAKUTEN_TEXT_060_HTML).toContain("楽天市場");
   });
 
   it("第一波の記事と1都3県の県ページだけに出す", () => {
@@ -108,6 +127,7 @@ describe("ハコブ引っ越しサービスの掲載先", () => {
       expect(hasAffiliateOffer(path)).toBe(true);
       expect(hasAffiliateOffer(`${path}/`)).toBe(true);
       expect(offersForPath(path)).toHaveLength(1);
+      expect(offersForPath(path)[0]?.id).toBe("hakobu-moving");
     }
     expect(hasAffiliateOffer("/")).toBe(false);
     expect(hasAffiliateOffer("/blog")).toBe(false);
@@ -121,6 +141,22 @@ describe("ハコブ引っ越しサービスの掲載先", () => {
     expect(hasAffiliateOffer("/calendar")).toBe(false);
     expect(hasAffiliateOffer("/guide")).toBe(false);
     expect(hasAffiliateOffer("/login")).toBe(false);
+  });
+
+  it("楽天は部屋の配置に関する記事だけに出し、ハコブの頁とは重ねない", () => {
+    const paths = AFFILIATE_OFFERS.flatMap(
+      (offer) => offer.placements?.map((placement) => placement.path) ?? [],
+    );
+    expect(paths).toHaveLength(new Set(paths).size);
+    for (const path of RAKUTEN_PATHS) {
+      expect(hasAffiliateOffer(path)).toBe(true);
+      expect(hasAffiliateOffer(`${path}/`)).toBe(true);
+      expect(offersForPath(path)).toHaveLength(1);
+      expect(offersForPath(path)[0]?.id).toBe("rakuten-market");
+    }
+    for (const path of [SHINJUKU, HIDORI, ...PREF_PATHS]) {
+      expect(RAKUTEN_PATHS).not.toContain(path);
+    }
   });
 
   it("テーマ外（noindex）の記事には出さない", () => {
@@ -157,7 +193,7 @@ describe("ハコブ引っ越しサービスの掲載先", () => {
   });
 
   it("サイド欄は 300×250 バナー（008）と「広告」ラベル、対象地域の注記だけを出す", () => {
-    const offer = AFFILIATE_OFFERS[0]!;
+    const offer = AFFILIATE_OFFERS.find((item) => item.id === "hakobu-moving")!;
     const html = renderToStaticMarkup(
       <AffiliatePlacement offer={offer} variant="sidebar" />,
     );
@@ -190,7 +226,7 @@ describe("ハコブ引っ越しサービスの掲載先", () => {
   });
 
   it("狭い画面は 320×50 バナー（005）を出し、008は出さない", () => {
-    const offer = AFFILIATE_OFFERS[0]!;
+    const offer = AFFILIATE_OFFERS.find((item) => item.id === "hakobu-moving")!;
     const html = renderToStaticMarkup(
       <AffiliatePlacement
         offer={offer}
@@ -222,5 +258,54 @@ describe("ハコブ引っ越しサービスの掲載先", () => {
         />,
       ),
     ).toContain("hidden lg:block");
+  });
+});
+
+describe("楽天アフィリエイトの掲載", () => {
+  it("サイド欄は素材 009 のバナーと「広告」ラベルだけで、対象地域の注記は出さない", () => {
+    const offer = AFFILIATE_OFFERS.find(
+      (item) => item.id === "rakuten-market",
+    )!;
+    const html = renderToStaticMarkup(
+      <AffiliatePlacement offer={offer} variant="sidebar" />,
+    );
+    expect(html).toContain("広告");
+    expect(html).toContain('aria-label="スポンサー広告"');
+    expect(html).toContain("w-full");
+    expect(html).toContain("overflow-hidden");
+    expect(html).not.toContain(AFFILIATE_AREA_LABEL);
+    expect(html).toContain(
+      "https://rpx.a8.net/svt/ejp?a8mat=4BGDZD+BTOYB6+2HOM+609HT",
+    );
+    expect(html).toContain(
+      "https://hbb.afl.rakuten.co.jp/hsb/0eb4bbb3.93b2e556.0eb4bbaa.95151395/",
+    );
+    expect(html).toContain("www16.a8.net/0.gif");
+    expect(html).toContain('rel="sponsored nofollow noopener"');
+    expect(html).toContain('target="_blank"');
+    expect(html).not.toContain("楽天市場</a>");
+    expect(html).not.toContain("4BGDZD+BTOYB6+2HOM+6B70I");
+    expect(html).not.toContain("日本最大級");
+    expect(html).not.toContain("http://hbb.afl.rakuten.co.jp/");
+  });
+
+  it("狭い画面も同じ 468×60 の素材 009 を出し、テキストは重ねない", () => {
+    const offer = AFFILIATE_OFFERS.find(
+      (item) => item.id === "rakuten-market",
+    )!;
+    const html = renderToStaticMarkup(
+      <AffiliatePlacement
+        offer={offer}
+        variant="compact"
+        className="lg:hidden"
+      />,
+    );
+    expect(html).toContain("lg:hidden");
+    expect(html).toContain("広告");
+    expect(html).not.toContain(AFFILIATE_AREA_LABEL);
+    expect(html).toContain(
+      "https://rpx.a8.net/svt/ejp?a8mat=4BGDZD+BTOYB6+2HOM+609HT",
+    );
+    expect(html).not.toContain("楽天市場</a>");
   });
 });

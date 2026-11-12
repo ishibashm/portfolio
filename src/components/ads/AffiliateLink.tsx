@@ -1,8 +1,5 @@
 import type { ReactNode } from "react";
-import {
-  AFFILIATE_AREA_LABEL,
-  type AffiliateOffer,
-} from "@/lib/affiliateOffers";
+import { type AffiliateOffer } from "@/lib/affiliateOffers";
 import { sponsorizeAnchors } from "@/lib/affiliateHtml";
 
 const prLabel = (
@@ -91,7 +88,7 @@ export function AffiliatePageTop({ pathname }: { pathname: string }) {
 
 /**
  * サイトの AdBanner と同じ器（幅いっぱい・上下の余白だけ）。
- * 専用の見出しや囲みは付けず、小さな「広告」ラベルと対象地域の注記だけを置く。
+ * 専用の見出しや囲みは付けず、小さな「広告」ラベルと、あれば短い注記だけを置く。
  * バナーがあるときはバナーだけ出す（同じリンクのテキストは重ねない）。
  */
 export function AffiliatePlacement({
@@ -128,9 +125,9 @@ export function AffiliatePlacement({
           {offer.label ?? offer.href}
         </a>
       )}
-      <p className="mt-1 text-xs leading-4 text-slate-500">
-        {AFFILIATE_AREA_LABEL}
-      </p>
+      {offer.note ? (
+        <p className="mt-1 text-xs leading-4 text-slate-500">{offer.note}</p>
+      ) : null}
     </div>
   );
 }
