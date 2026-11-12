@@ -25,6 +25,10 @@ export interface AffiliateOffer {
    * アンカーには rel="sponsored nofollow noopener" と target="_blank" を付ける。
    */
   html?: string;
+  /** サイド欄向けのバナー HTML（ハコブは 300×250 の素材 008）。 */
+  bannerHtml?: string;
+  /** 狭い画面向けのバナー HTML（ハコブは 320×50 の素材 005）。 */
+  compactBannerHtml?: string;
   /** 出し先。無い・空ならどの頁にも出さない。 */
   placements?: readonly AffiliateOfferPlacement[];
 }
@@ -33,7 +37,17 @@ export interface AffiliateOffer {
 export const HAKOBU_TEXT_002_HTML = `<a href="https://px.a8.net/svt/ejp?a8mat=4BGDZD+CU0E7M+4HN6+TS3OI" rel="nofollow">【ハコブ引っ越しサービス】</a>
 <img border="0" width="1" height="1" src="https://www11.a8.net/0.gif?a8mat=4BGDZD+CU0E7M+4HN6+TS3OI" alt="">`;
 
-/** 素材 001（最安値級）とバナー 008（「コスパ最高」「三冠」）は使わない。 */
+/** ハコブ バナー素材 008（300×250）。デスクトップのサイド欄で使う。 */
+export const HAKOBU_BANNER_008_HTML = `<a href="https://px.a8.net/svt/ejp?a8mat=4BGDZD+CU0E7M+4HN6+TTDZ5" rel="nofollow">
+<img border="0" width="300" height="250" alt="" src="https://www28.a8.net/svt/bgt?aid=261105097776&wid=001&eno=01&mid=s00000020949005008000&mc=1"></a>
+<img border="0" width="1" height="1" src="https://www14.a8.net/0.gif?a8mat=4BGDZD+CU0E7M+4HN6+TTDZ5" alt="">`;
+
+/** ハコブ バナー素材 005（320×50）。狭い画面の本文途中で使う。 */
+export const HAKOBU_BANNER_005_HTML = `<a href="https://px.a8.net/svt/ejp?a8mat=4BGDZD+CU0E7M+4HN6+TSQTT" rel="nofollow">
+<img border="0" width="320" height="50" alt="" src="https://www27.a8.net/svt/bgt?aid=261105097776&wid=001&eno=01&mid=s00000020949005005000&mc=1"></a>
+<img border="0" width="1" height="1" src="https://www15.a8.net/0.gif?a8mat=4BGDZD+CU0E7M+4HN6+TSQTT" alt="">`;
+
+/** 素材 001（「最安値級」）は使わない。 */
 export const HAKOBU_TEXT_001_MAT = "4BGDZD+CU0E7M+4HN6+TRVYQ";
 
 export const AFFILIATE_AREA_LABEL =
@@ -45,6 +59,8 @@ export const AFFILIATE_OFFERS: readonly AffiliateOffer[] = [
   {
     id: "hakobu-moving",
     html: HAKOBU_TEXT_002_HTML,
+    bannerHtml: HAKOBU_BANNER_008_HTML,
+    compactBannerHtml: HAKOBU_BANNER_005_HTML,
     placements: [
       {
         path: "/blog/shinjuku-2027-directions-and-rent",
@@ -86,8 +102,14 @@ export function offersForPath(
   pathname: string,
   offers: readonly AffiliateOffer[] = AFFILIATE_OFFERS,
 ): AffiliateOffer[] {
-  return offers.filter(
-    (offer) => (offer.html || offer.href) && placementForPath(pathname, offer),
+  return offers.filter((offer) =>
+    Boolean(
+      (offer.html ||
+        offer.href ||
+        offer.bannerHtml ||
+        offer.compactBannerHtml) &&
+      placementForPath(pathname, offer),
+    ),
   );
 }
 

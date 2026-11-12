@@ -217,7 +217,11 @@ export default async function Page({
         </h1>
 
         {affiliate ? (
-          <AffiliatePlacement offer={affiliate} className="lg:hidden" />
+          <AffiliatePlacement
+            offer={affiliate}
+            variant="compact"
+            className="lg:hidden"
+          />
         ) : null}
 
         <div
@@ -433,7 +437,7 @@ export default async function Page({
           </div>
           {affiliate ? (
             <aside className="hidden lg:block lg:sticky lg:top-8">
-              <AffiliatePlacement offer={affiliate} />
+              <AffiliatePlacement offer={affiliate} variant="sidebar" />
             </aside>
           ) : null}
         </div>

@@ -221,7 +221,11 @@ export default async function BlogPostPage({
             )}
 
             {affiliate ? (
-              <AffiliatePlacement offer={affiliate} className="lg:hidden" />
+              <AffiliatePlacement
+                offer={affiliate}
+                variant="compact"
+                className="lg:hidden"
+              />
             ) : null}
 
             <div className="mt-8">
@@ -264,6 +268,7 @@ export default async function BlogPostPage({
             {affiliate ? (
               <AffiliatePlacement
                 offer={affiliate}
+                variant="sidebar"
                 className="hidden lg:block"
               />
             ) : null}

@@ -92,25 +92,31 @@ export function AffiliatePageTop({ pathname }: { pathname: string }) {
 /**
  * サイトの AdBanner と同じ器（幅いっぱい・上下の余白だけ）。
  * 専用の見出しや囲みは付けず、小さな「広告」ラベルと対象地域の注記だけを置く。
+ * バナーがあるときはバナーだけ出す（同じリンクのテキストは重ねない）。
  */
 export function AffiliatePlacement({
   offer,
   className = "",
+  variant = "sidebar",
 }: {
   offer: AffiliateOffer;
   className?: string;
+  variant?: "sidebar" | "compact";
 }) {
-  if (!offer.html && !offer.href) return null;
+  const bannerHtml =
+    variant === "compact" ? offer.compactBannerHtml : offer.bannerHtml;
+  const html = bannerHtml ?? offer.html;
+  if (!html && !offer.href) return null;
   return (
     <div
       aria-label="スポンサー広告"
       className={`my-4 w-full overflow-hidden ${className}`}
     >
       <p className="mb-1 text-xs leading-4 text-slate-500">広告</p>
-      {offer.html ? (
+      {html ? (
         <div
-          className="text-[13px] leading-6 text-slate-700 [&_a]:text-slate-700 [&_a]:underline [&_a]:decoration-slate-300 [&_a]:underline-offset-2 hover:[&_a]:text-slate-900 [&_img]:align-top"
-          dangerouslySetInnerHTML={{ __html: sponsorizeAnchors(offer.html) }}
+          className="[&_a]:inline-block [&_img]:max-w-full"
+          dangerouslySetInnerHTML={{ __html: sponsorizeAnchors(html) }}
         />
       ) : (
         <a

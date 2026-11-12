@@ -11,6 +11,8 @@ import {
 import {
   AFFILIATE_AREA_LABEL,
   AFFILIATE_OFFERS,
+  HAKOBU_BANNER_005_HTML,
+  HAKOBU_BANNER_008_HTML,
   HAKOBU_TEXT_001_MAT,
   HAKOBU_TEXT_002_HTML,
   hasAffiliateOffer,
@@ -86,18 +88,18 @@ describe("アフィリエイトの土台", () => {
 });
 
 describe("ハコブ引っ越しサービスの掲載先", () => {
-  it("案件はハコブ1件で、素材001とバナー008は使わない", () => {
+  it("案件はハコブ1件で、素材001は使わず、バナーは008と005を持つ", () => {
     expect(AFFILIATE_OFFERS).toHaveLength(1);
     expect(AFFILIATE_OFFERS[0]?.id).toBe("hakobu-moving");
     const serialized = JSON.stringify(AFFILIATE_OFFERS);
-    expect(serialized).toContain("4BGDZD+CU0E7M+4HN6+TS3OI");
-    expect(serialized).toContain("www11.a8.net/0.gif");
+    expect(serialized).toContain("4BGDZD+CU0E7M+4HN6+TTDZ5");
+    expect(serialized).toContain("s00000020949005008000");
+    expect(serialized).toContain("4BGDZD+CU0E7M+4HN6+TSQTT");
+    expect(serialized).toContain("s00000020949005005000");
     expect(serialized).not.toContain(HAKOBU_TEXT_001_MAT);
     expect(serialized).not.toContain("最安値");
-    expect(serialized).not.toContain("s00000020949005008000");
-    expect(serialized).not.toContain("4BGDZD+CU0E7M+4HN6+TTDZ5");
-    expect(serialized).not.toContain("コスパ最高");
-    expect(serialized).not.toContain("三冠");
+    expect(HAKOBU_BANNER_008_HTML).toContain('width="300"');
+    expect(HAKOBU_BANNER_005_HTML).toContain('width="320"');
     expect(HAKOBU_TEXT_002_HTML).toContain("【ハコブ引っ越しサービス】");
   });
 
@@ -154,46 +156,70 @@ describe("ハコブ引っ越しサービスの掲載先", () => {
     ).toBe("");
   });
 
-  it("広告ユニットは小さな「広告」ラベルと対象地域の注記、テキスト002だけを出し、専用の囲みは付けない", () => {
+  it("サイド欄は 300×250 バナー（008）と「広告」ラベル、対象地域の注記だけを出す", () => {
     const offer = AFFILIATE_OFFERS[0]!;
-    const html = renderToStaticMarkup(<AffiliatePlacement offer={offer} />);
+    const html = renderToStaticMarkup(
+      <AffiliatePlacement offer={offer} variant="sidebar" />,
+    );
     expect(html).toContain("広告");
     expect(html).toContain('aria-label="スポンサー広告"');
     expect(html).toContain("w-full");
     expect(html).toContain("overflow-hidden");
     expect(html).not.toContain("PR（広告）");
     expect(html).not.toContain("この記事には広告");
-    expect(html).not.toContain("このページには広告");
     expect(html).not.toContain("rounded-2xl");
     expect(html).not.toContain("border-slate-200");
     expect(html).not.toContain("bg-white/80");
     expect(html).toContain(AFFILIATE_AREA_LABEL);
     expect(html).toContain(
-      "https://px.a8.net/svt/ejp?a8mat=4BGDZD+CU0E7M+4HN6+TS3OI",
+      "https://px.a8.net/svt/ejp?a8mat=4BGDZD+CU0E7M+4HN6+TTDZ5",
     );
-    expect(html).toContain("www11.a8.net/0.gif");
+    expect(html).toContain("www28.a8.net/svt/bgt");
+    expect(html).toContain("s00000020949005008000");
+    expect(html).toContain('width="300"');
+    expect(html).toContain('height="250"');
+    expect(html).toContain("www14.a8.net/0.gif");
     expect(html).toContain('rel="sponsored nofollow noopener"');
     expect(html).toContain('target="_blank"');
-    expect(html).toContain("【ハコブ引っ越しサービス】");
     expect(html).toContain("text-slate-500");
-    expect(html).not.toContain("最安値");
+    expect(html).not.toContain("【ハコブ引っ越しサービス】");
+    expect(html).not.toContain("4BGDZD+CU0E7M+4HN6+TS3OI");
+    expect(html).not.toContain("s00000020949005005000");
     expect(html).not.toContain(HAKOBU_TEXT_001_MAT);
-    expect(html).not.toContain('width="300"');
-    expect(html).not.toContain("s00000020949005008000");
-    expect(html).not.toContain("コスパ最高");
-    expect(html).not.toContain("三冠");
+    expect(html).not.toContain("最安値");
   });
 
-  it("狭い画面用とサイド用の出し分けクラスを付けられる", () => {
+  it("狭い画面は 320×50 バナー（005）を出し、008は出さない", () => {
     const offer = AFFILIATE_OFFERS[0]!;
+    const html = renderToStaticMarkup(
+      <AffiliatePlacement
+        offer={offer}
+        variant="compact"
+        className="lg:hidden"
+      />,
+    );
+    expect(html).toContain("lg:hidden");
+    expect(html).toContain("広告");
+    expect(html).toContain(AFFILIATE_AREA_LABEL);
+    expect(html).toContain(
+      "https://px.a8.net/svt/ejp?a8mat=4BGDZD+CU0E7M+4HN6+TSQTT",
+    );
+    expect(html).toContain("www27.a8.net/svt/bgt");
+    expect(html).toContain("s00000020949005005000");
+    expect(html).toContain('width="320"');
+    expect(html).toContain('height="50"');
+    expect(html).toContain("www15.a8.net/0.gif");
+    expect(html).toContain('rel="sponsored nofollow noopener"');
+    expect(html).not.toContain("s00000020949005008000");
+    expect(html).not.toContain('width="300"');
+    expect(html).not.toContain("【ハコブ引っ越しサービス】");
     expect(
       renderToStaticMarkup(
-        <AffiliatePlacement offer={offer} className="lg:hidden" />,
-      ),
-    ).toContain("lg:hidden");
-    expect(
-      renderToStaticMarkup(
-        <AffiliatePlacement offer={offer} className="hidden lg:block" />,
+        <AffiliatePlacement
+          offer={offer}
+          variant="sidebar"
+          className="hidden lg:block"
+        />,
       ),
     ).toContain("hidden lg:block");
   });
