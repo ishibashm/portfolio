@@ -136,15 +136,6 @@ const nextConfig: NextConfig = {
         destination: "/blog/feed.xml",
         permanent: true,
       },
-      {
-        /*
-          削除済みの記事。後継は本命的殺から戻す話。
-          permanent: true は 308 なので、301 を statusCode で指定する。
-        */
-        source: "/blog/moved-to-an-unlucky-direction",
-        destination: "/blog/can-you-recover-from-honmei-teki",
-        statusCode: 301,
-      },
     ];
   },
   /*
