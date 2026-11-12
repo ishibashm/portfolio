@@ -106,10 +106,14 @@ describe("YouTube の導線", () => {
       expect(html).toContain(`href="${channel.url}"`);
       expect(html).toContain(channel.name);
     }
-    expect(html).toContain("本ページはプロモーションを含みます");
+    expect(html).toContain("アフィリエイトプログラム");
+    expect(html).toContain("紹介料");
+    expect(html).not.toContain("本ページはプロモーションを含みます");
     const privacy = readFileSync("src/app/privacy/page.tsx", "utf8");
     expect(privacy).toContain("アフィリエイトプログラム");
-    expect(privacy).toContain("本ページはプロモーションを含みます");
+    expect(privacy).toContain("A8.net");
+    expect(privacy).toContain("Cookie");
+    expect(privacy).not.toContain("本ページはプロモーションを含みます");
   });
 
   it("動画の下に方位と住まいの手帖と登録リンクを出す", () => {
