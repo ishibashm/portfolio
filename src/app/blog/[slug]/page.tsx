@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { Clock3 } from "lucide-react";
 import { BlogArticleBody } from "@/components/blog/BlogArticleBody";
+import { BlogHero } from "@/components/blog/BlogHero";
 import { ArticleToolCta } from "@/components/blog/ArticleToolCta";
 import {
   ArticleJsonLd,
@@ -17,7 +18,7 @@ import {
   getBlogPosts as getMarkdownBlogPosts,
   formatBlogDate,
 } from "@/lib/blog";
-import { loadBlogPost, loadBlogPosts } from "@/lib/blogStore";
+import { loadBlogPageData } from "@/lib/blogStore";
 import { pickRelatedPosts } from "@/lib/blogRelated";
 import { blogTopic } from "@/lib/comments";
 import { DirectionComments } from "@/components/comments/DirectionComments";
@@ -66,7 +67,7 @@ export async function generateMetadata({
   params: Promise<{ slug: string }>;
 }): Promise<Metadata> {
   const { slug } = await params;
-  const post = await loadBlogPost(slug);
+  const { post } = await loadBlogPageData(slug);
   if (!post) return {};
 
   const path = `/blog/${post.slug}`;
@@ -95,7 +96,9 @@ export default async function BlogPostPage({
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = await params;
-  const post = await loadBlogPost(slug);
+  // generateMetadata と同じ呼び出し。リクエスト内では 1 回に畳まれる
+  // （lib/blogStore の loadBlogPageData）。
+  const { post, related: relatedPosts } = await loadBlogPageData(slug);
   if (!post) notFound();
 
   const path = `/blog/${post.slug}`;
@@ -105,8 +108,6 @@ export default async function BlogPostPage({
   const heroWebp = heroImage ? blogHeroWebp(post.slug) : null;
   // 自分以外を全部出していた。3 本の頃は 2 件で済んでいたが、23 本に
   // なった時点で全記事の脇に 22 件が並んでいた（lib/blogRelated）。
-  // 関連記事の障害で本文まで失わず、公開状態が不明なリンクも補わない。
-  const relatedPosts = await loadBlogPosts().catch(() => []);
   const related = pickRelatedPosts(post, relatedPosts);
   const headings = extractHeadings(post.body);
   /*
@@ -176,48 +177,12 @@ export default async function BlogPostPage({
               {post.description}
             </p>
 
-            {/*
-              記事の図。`public/blog/<slug>.png` があるときだけ出す。
-              共通の /ogp.png はサイトの顔であって記事の中身ではないので、
-              本文の頭に置くと「どの記事も同じ絵」になる。
-
-              置き場所は説明文の直後。図の中身は記事の主張そのもの
-              （「本命的殺の方位は毎年動く」など）なので、見出しと説明を
-              読んだ直後がいちばん効く。
-
-              大きさを属性で持たせて、読み込み前に場所を取らせる。無いと
-              本文が読み込みのたびに下へ飛ぶ。
-
-              **この図が記事のモバイル LCP の要素。**PNG（約 170KB）を
-              そのまま配っていたので、WebP（1800 幅・900 幅）を
-              <picture> で先に出し、対応しない環境と WebP が無い記事は
-              今までどおり PNG の <img> に落とす。優先読み込み
-              （fetchPriority）・width/height・eager は <img> に残す
-              （<picture> の中でもこの <img> が LCP の要素になる）。
-              列の幅は lg 以上で最大 1300px 前後（1700px − 本文外の 300px
-              の欄 − 余白）、それ未満は画面幅いっぱい。
-            */}
             {heroImage && (
-              <figure className="mt-8 m-0">
-                <picture>
-                  {heroWebp && (
-                    <source
-                      type="image/webp"
-                      srcSet={`${heroWebp.small} 900w, ${heroWebp.full} 1800w`}
-                      sizes="(min-width: 1024px) 1300px, 100vw"
-                    />
-                  )}
-                  <img
-                    src={heroImage}
-                    alt={`${post.title} — 記事の要点を図にしたもの`}
-                    width={1800}
-                    height={945}
-                    fetchPriority="high"
-                    decoding="async"
-                    className="w-full h-auto rounded-xl border border-stone-200"
-                  />
-                </picture>
-              </figure>
+              <BlogHero
+                src={heroImage}
+                webp={heroWebp}
+                alt={`${post.title} — 記事の要点を図にしたもの`}
+              />
             )}
 
             {affiliate ? (

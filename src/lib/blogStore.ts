@@ -1,3 +1,4 @@
+import { cache } from "react";
 import prisma from "@/lib/prisma";
 import { blogCardVideoId } from "./blogVideo";
 import { errorCode, toLogMessage } from "@/lib/errorMessage";
@@ -154,14 +155,58 @@ function isListedBlogSlug(slug: string): boolean {
   return !isAgentLogSlug(slug) && !isOffThemeBlogSlug(slug);
 }
 
-/** 公開中の記事を新しい順で。DB が空・スキーマ未適用なら Markdown。 */
-export async function loadBlogPosts(
-  options: { quiet?: boolean } = {},
-): Promise<BlogPostSummary[]> {
-  const posts = await loadSearchableBlogPosts(options);
-  // 一覧に本文は載せない。分割代入で捨てると未使用の変数が残るので、
-  // 出す項目を並べる。
-  return posts.map((post) => ({
+type BlogRow = {
+  slug: string;
+  title: string;
+  content: string;
+  excerpt: string | null;
+  category: string | null;
+  publishedAt: Date;
+  updatedAt: Date;
+  tags: string;
+  published: boolean;
+};
+
+/** unstable_cache は JSON にできる値しか往復しない。Date は文字列にする。 */
+type CachedBlogRow = Omit<BlogRow, "publishedAt" | "updatedAt"> & {
+  publishedAt: string;
+  updatedAt: string;
+};
+
+const PUBLISHED_ORDER = [
+  { publishedAt: "desc" as const },
+  { slug: "asc" as const },
+];
+
+function queryPublishedRows() {
+  return prisma.blogPost.findMany({
+    where: { published: true },
+    select: ROW_FIELDS,
+    // 同じ日付の記事が並んだときに順序が決まらないと、一覧・RSS・
+    // サイトマップの並びが実行のたびに変わりうる。slug で決着させる
+    // （Markdown 側と同じ規則）。
+    orderBy: PUBLISHED_ORDER,
+  });
+}
+
+function postsFromRows(rows: BlogRow[]): BlogPost[] {
+  /*
+    動画 ID は Markdown の frontmatter にしか無い。一覧のために
+    全記事の本文をもう一度抱えない（getMarkdownVideoIndex）。
+    読了時間は DB の本文で数える。
+  */
+  const videos = getMarkdownVideoIndex();
+  return rows
+    .filter((row) => !isAgentLogSlug(row.slug))
+    .map((row) => {
+      const post = toBlogPost(row);
+      const md = videos.get(row.slug);
+      return md ? withMarkdownVideo(post, md) : post;
+    });
+}
+
+function toSummary(post: BlogPost): BlogPostSummary {
+  return {
     youtubeId: blogCardVideoId(post),
     slug: post.slug,
     title: post.title,
@@ -172,8 +217,108 @@ export async function loadBlogPosts(
     tags: post.tags,
     draft: post.draft,
     readingMinutes: post.readingMinutes,
+  };
+}
+
+/**
+ * 公開行を 60 秒控える。記事頁の ISR と同じ長さ。
+ *
+ * 頁の再生成は、これまで記事 1 件・DB が空でないかの確認・関連記事の
+ * 全件、と最大 3 往復していた。公開行が 1 件でもあれば、その 1 回の
+ * 一覧で本文も関連も足りる。メタデータと本文は同じリクエストなので
+ * `cache` で 1 回に畳む。別リクエスト（一覧を開いた直後の記事、など）は
+ * この控えが新しければ DB へ行かない。
+ *
+ * 失敗は控えない。接続障害を「記事が無い」として 60 秒覚えると、
+ * ISR が 404 を持ってしまう。
+ */
+let publishedRowsCache: (() => Promise<CachedBlogRow[]>) | undefined;
+
+async function readPublishedRows(): Promise<BlogRow[]> {
+  if (!publishedRowsCache) {
+    const { unstable_cache } = await import("next/cache");
+    publishedRowsCache = unstable_cache(
+      async () => {
+        const rows = await queryPublishedRows();
+        return rows.map((row) => ({
+          slug: row.slug,
+          title: row.title,
+          content: row.content,
+          excerpt: row.excerpt,
+          category: row.category,
+          publishedAt: row.publishedAt.toISOString(),
+          updatedAt: row.updatedAt.toISOString(),
+          tags: row.tags,
+          published: row.published,
+        }));
+      },
+      ["blog-published-rows-v1"],
+      { revalidate: 60 },
+    );
+  }
+  const rows = await publishedRowsCache();
+  return rows.map((row) => ({
+    ...row,
+    publishedAt: new Date(row.publishedAt),
+    updatedAt: new Date(row.updatedAt),
   }));
 }
+
+/** 公開中の記事を新しい順で。DB が空・スキーマ未適用なら Markdown。 */
+export async function loadBlogPosts(
+  options: { quiet?: boolean } = {},
+): Promise<BlogPostSummary[]> {
+  const posts = await loadSearchableBlogPosts(options);
+  // 一覧に本文は載せない。
+  return posts.map(toSummary);
+}
+
+/**
+ * 記事頁がメタデータと本文で使う 1 回分。
+ *
+ * 公開行があれば findMany 1 回で、その slug の本文と関連記事の両方が
+ * 出る。行が無い slug は Markdown に戻さない（DB を正とする既存の規則）。
+ * 公開行が 0 件、または表がまだ無いときは、これまでどおり
+ * `loadBlogPost` と `loadBlogPosts` に落とす。
+ *
+ * 接続障害で Markdown に無い記事は例外のまま返す。ISR が 404 を
+ * 控えないようにするため。Markdown にある記事は本文だけ返し、関連は
+ * 空にする（一覧の再生成を失敗させて正常な控えを守る、の頁側）。
+ */
+export const loadBlogPageData = cache(async function loadBlogPageData(
+  slug: string,
+): Promise<{ post: BlogPost | undefined; related: BlogPostSummary[] }> {
+  if (isAgentLogSlug(slug)) return { post: undefined, related: [] };
+  try {
+    const rows = await readPublishedRows();
+    if (rows.length > 0) {
+      const posts = postsFromRows(rows);
+      const post = posts.find((item) => item.slug === slug);
+      if (!post) return { post: undefined, related: [] };
+      return {
+        post,
+        related: posts
+          .filter((item) => isListedBlogSlug(item.slug))
+          .map(toSummary),
+      };
+    }
+  } catch (e) {
+    /*
+      一覧が取れなくても、1 件の取得は生きていることがある。
+      そのときは本文を出し、関連だけ空にする（頁が loadBlogPosts の
+      失敗を握りつぶしていたのと同じ）。1 件も失敗したときは
+      loadBlogPost が Markdown へ落とすか、ISR を守って例外を返す。
+    */
+    if (shouldPreserveIsrCache(e)) {
+      return { post: await loadBlogPost(slug), related: [] };
+    }
+  }
+  const [post, related] = await Promise.all([
+    loadBlogPost(slug),
+    loadBlogPosts().catch(() => [] as BlogPostSummary[]),
+  ]);
+  return { post, related };
+});
 
 /** 1 本ぶん。本文つき。 */
 export async function loadBlogPost(
@@ -220,29 +365,10 @@ export async function loadSearchableBlogPosts(options: {
   quiet?: boolean;
 }): Promise<BlogPost[]> {
   try {
-    const rows = await prisma.blogPost.findMany({
-      where: { published: true },
-      select: ROW_FIELDS,
-      // 同じ日付の記事が並んだときに順序が決まらないと、一覧・RSS・
-      // サイトマップの並びが実行のたびに変わりうる。slug で決着させる
-      // （Markdown 側と同じ規則）。
-      orderBy: [{ publishedAt: "desc" }, { slug: "asc" }],
-    });
+    const rows = await queryPublishedRows();
     if (rows.length > 0) {
-      /*
-        動画 ID は Markdown の frontmatter にしか無い。一覧のために
-        全記事の本文をもう一度抱えない（getMarkdownVideoIndex）。
-        読了時間は DB の本文で数える。返したあと loadBlogPosts が
-        本文を落とすので、画面の HTML には本文を載せない。
-      */
-      const videos = getMarkdownVideoIndex();
-      return rows
-        .filter((row) => isListedBlogSlug(row.slug))
-        .map((row) => {
-          const post = toBlogPost(row);
-          const md = videos.get(row.slug);
-          return md ? withMarkdownVideo(post, md) : post;
-        });
+      // 画面の HTML には本文を載せない。返したあと loadBlogPosts が落とす。
+      return postsFromRows(rows).filter((post) => isListedBlogSlug(post.slug));
     }
     if (await prisma.blogPost.findFirst({ select: { slug: true } })) return [];
   } catch (e) {

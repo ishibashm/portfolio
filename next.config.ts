@@ -194,6 +194,26 @@ const nextConfig: NextConfig = {
           },
         ],
       },
+      /*
+        記事の図（public/blog）と案内役の絵（public/guide）。
+
+        実在するのは次だけ。blog は png と webp（900 幅の `-900.webp` を
+        含む）。guide は png / webp / jpg / avif。地図タイル
+        （/zoning-overview）と /ogp.png・アイコンは記事の表示とは別物なので
+        ここには含めない。
+
+        県境と同じ理由で、ファイル名に内容ハッシュが無い。1 年の immutable
+        にはしない。1 日を過ぎたら裏で取り直し、画面には手元のものを出す。
+      */
+      {
+        source: "/:dir(blog|guide)/:file(.*\\.(?:png|webp|jpe?g|avif))",
+        headers: [
+          {
+            key: "Cache-Control",
+            value: "public, max-age=86400, stale-while-revalidate=604800",
+          },
+        ],
+      },
     ];
   },
   /*

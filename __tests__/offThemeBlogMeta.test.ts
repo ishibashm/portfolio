@@ -1,21 +1,24 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-const loadBlogPost = vi.hoisted(() => vi.fn());
-vi.mock("@/lib/blogStore", () => ({ loadBlogPost }));
+const loadBlogPageData = vi.hoisted(() => vi.fn());
+vi.mock("@/lib/blogStore", () => ({ loadBlogPageData }));
 
 import { generateMetadata } from "@/app/blog/[slug]/page";
 
 beforeEach(() => {
-  loadBlogPost.mockImplementation(async (slug: string) => ({
-    slug,
-    title: "題",
-    description: "説明",
-    publishedAt: "2026-01-01",
-    category: "その他",
-    tags: ["a"],
-    draft: false,
-    readingMinutes: 1,
-    body: "本文",
+  loadBlogPageData.mockImplementation(async (slug: string) => ({
+    post: {
+      slug,
+      title: "題",
+      description: "説明",
+      publishedAt: "2026-01-01",
+      category: "その他",
+      tags: ["a"],
+      draft: false,
+      readingMinutes: 1,
+      body: "本文",
+    },
+    related: [],
   }));
 });
 

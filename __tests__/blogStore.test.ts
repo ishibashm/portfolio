@@ -1,5 +1,9 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
+vi.mock("next/cache", () => ({
+  unstable_cache: (fn: () => unknown) => fn,
+}));
+
 /**
  * 記事の取得口（DB 先・Markdown 後）。
  *
@@ -81,6 +85,7 @@ vi.mock("@/lib/blog", async () => {
 });
 
 import {
+  loadBlogPageData,
   loadBlogPost,
   loadBlogPosts,
   loadSearchableBlogPosts,
@@ -381,5 +386,96 @@ describe("loadBlogPost", () => {
       .mockResolvedValueOnce(null) // その slug の行は無い
       .mockResolvedValueOnce({ slug: "other" }); // だが DB は空ではない
     expect(await loadBlogPost("from-markdown")).toBeUndefined();
+  });
+});
+
+describe("loadBlogPageData", () => {
+  beforeEach(() => vi.resetAllMocks());
+
+  it("公開行が 1 件でもあれば findMany 1 回で本文と関連を出す", async () => {
+    findMany.mockResolvedValue([
+      dbRow,
+      { ...dbRow, slug: "money-and-time-units", title: "テーマ外" },
+      { ...dbRow, slug: "agent-log-row", title: "作業ログ" },
+    ]);
+    const { post, related } = await loadBlogPageData("from-db");
+
+    expect(post?.body).toBe("DB の本文");
+    expect(post?.slug).toBe("from-db");
+    // ISO 文字列を Date に戻してから日本時間の暦へ切る。日付が前日にずれない。
+    expect(post?.publishedAt).toBe("2026-08-10");
+    expect(post?.updatedAt).toBeUndefined();
+    expect(related.map((item) => item.slug)).toEqual(["from-db"]);
+    expect("body" in related[0]).toBe(false);
+    expect(findMany).toHaveBeenCalledTimes(1);
+    expect(findFirst).not.toHaveBeenCalled();
+  });
+
+  it("公開行の中に slug が無ければ Markdown へ戻さない", async () => {
+    findMany.mockResolvedValue([dbRow]);
+    const { post } = await loadBlogPageData("from-markdown");
+
+    expect(post).toBeUndefined();
+    expect(findFirst).not.toHaveBeenCalled();
+  });
+
+  it("テーマ外の公開行は本文つきで出し、関連には入れない", async () => {
+    findMany.mockResolvedValue([
+      dbRow,
+      {
+        ...dbRow,
+        slug: "money-and-time-units",
+        content: "テーマ外の本文",
+      },
+    ]);
+    const { post, related } = await loadBlogPageData("money-and-time-units");
+
+    expect(post?.body).toBe("テーマ外の本文");
+    expect(related.map((item) => item.slug)).toEqual(["from-db"]);
+  });
+
+  it("公開行が 0 件なら従来どおり Markdown に落ちる", async () => {
+    findMany.mockResolvedValue([]);
+    findFirst.mockResolvedValue(null);
+    const { post, related } = await loadBlogPageData("from-markdown");
+
+    expect(post?.body).toBe("ファイルの本文");
+    expect(related.map((item) => item.slug)).toEqual(["from-markdown"]);
+  });
+
+  it("公開行が無く非公開だけなら Markdown に落とさない", async () => {
+    findMany.mockResolvedValue([]);
+    findFirst.mockResolvedValue({
+      ...dbRow,
+      slug: "from-markdown",
+      published: false,
+    });
+    expect((await loadBlogPageData("from-markdown")).post).toBeUndefined();
+  });
+
+  it("接続障害では 1 件の取得に落ち、関連は空", async () => {
+    const error = Object.assign(new Error("unavailable"), { code: "P1001" });
+    findMany.mockRejectedValue(error);
+    findFirst.mockResolvedValue(dbRow);
+    const { post, related } = await loadBlogPageData("from-db");
+
+    expect(post?.body).toBe("DB の本文");
+    expect(related).toEqual([]);
+  });
+
+  it("接続障害で Markdown に無い slug は例外を伝播する", async () => {
+    const error = Object.assign(new Error("unavailable"), { code: "P1001" });
+    findMany.mockRejectedValue(error);
+    findFirst.mockRejectedValue(error);
+    await expect(loadBlogPageData("db-only")).rejects.toBe(error);
+  });
+
+  it("slug が agent- のときは DB を引かない", async () => {
+    expect(await loadBlogPageData("agent-log-from-markdown")).toEqual({
+      post: undefined,
+      related: [],
+    });
+    expect(findMany).not.toHaveBeenCalled();
+    expect(findFirst).not.toHaveBeenCalled();
   });
 });

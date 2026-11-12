@@ -142,6 +142,23 @@ const components: Components = {
   hr: ({ ...props }) => (
     <hr className={`my-10 ${MEASURE} border-slate-300`} {...props} />
   ),
+  /*
+    React 19 は、サーバーで描いた `<img>` のうち loading="lazy" でも
+    fetchPriority="low" でもなく、`<picture>` の外にあるものに
+    `<link rel="preload" as="image">` を足す。
+
+    スライドは本文の途中にある。先に読むと、先頭の図（WebP）と帯域を
+    取り合う。priority は付けない。lazy にすると先読みも止まる。
+  */
+  img: ({ node, alt, ...props }) => {
+    // node は DOM に載せない。載せると属性が [object Object] になる。
+    // next/image の priority は先読みを足すので、スライドには使わない。
+    void node;
+    return (
+      // eslint-disable-next-line @next/next/no-img-element
+      <img {...props} alt={alt ?? ""} loading="lazy" />
+    );
+  },
 };
 
 export function BlogArticleBody({
