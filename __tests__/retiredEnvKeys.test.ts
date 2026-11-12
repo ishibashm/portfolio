@@ -41,5 +41,6 @@ it("deploy.yml removes retired secret references from Cloud Run", () => {
     "utf8",
   );
   expect(workflow).toContain("scripts/retired_env_keys.json");
-  expect(workflow).toContain('--remove-secrets="$RETIRED_SECRETS"');
+  expect(workflow).toContain('REMOVE_SECRET_KEYS="$RETIRED_SECRETS"');
+  expect(workflow).toContain('--remove-secrets="$REMOVE_SECRET_KEYS"');
 });
