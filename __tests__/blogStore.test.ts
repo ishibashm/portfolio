@@ -190,6 +190,15 @@ describe("loadBlogPosts", () => {
     expect(posts.map((p) => p.slug)).toEqual(["from-markdown"]);
   });
 
+  it("テーマ外の公開済み行は一覧に出さない", async () => {
+    findMany.mockResolvedValue([
+      dbRow,
+      { ...dbRow, slug: "money-and-time-units", title: "テーマ外" },
+    ]);
+    const posts = await loadBlogPosts();
+    expect(posts.map((p) => p.slug)).toEqual(["from-db"]);
+  });
+
   it.each([
     { code: "P1001" },
     { code: "P1002" },
@@ -336,6 +345,16 @@ describe("loadBlogPost", () => {
     // 管理画面で非公開にした記事も content/blog の写しでそのまま開けた
     findFirst.mockResolvedValue({ ...dbRow, published: false });
     expect(await loadBlogPost("from-markdown")).toBeUndefined();
+  });
+
+  it("テーマ外の行は published でも本文つきで出す", async () => {
+    findFirst.mockResolvedValue({
+      ...dbRow,
+      slug: "money-and-time-units",
+      content: "テーマ外の本文",
+    });
+    const post = await loadBlogPost("money-and-time-units");
+    expect(post?.body).toBe("テーマ外の本文");
   });
 
   it("slug が agent- の行は published でも出さない", async () => {

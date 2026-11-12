@@ -1,4 +1,5 @@
 import { NextResponse, type NextRequest } from "next/server";
+import { canonicalHouiRedirect } from "@/lib/houiCanonicalPath";
 import { isSameOrigin } from "@/lib/apiGuard";
 import { requestLimiter } from "@/lib/requestSecurity";
 import { updateSession } from "@/utils/supabase/middleware";
@@ -54,6 +55,17 @@ export async function middleware(request: NextRequest) {
       status: 410,
       headers: { "Content-Type": "text/plain; charset=utf-8" },
     });
+  }
+
+  /*
+    /houi/2026/01 のように parseInt が受けてしまうパスは、正規の頁へ 301。
+    認証の前に返す。正規のパスと、送り先が実在しないパスはここでは触らない。
+  */
+  const houiTarget = canonicalHouiRedirect(url.pathname);
+  if (houiTarget) {
+    const dest = request.nextUrl.clone();
+    dest.pathname = houiTarget;
+    return NextResponse.redirect(dest, 301);
   }
 
   // Personal MCP authenticates every request with its own Bearer boundary.

@@ -2,6 +2,7 @@ import Link from "next/link";
 import type { Metadata } from "next";
 import { SITE_NAME, SITE_DESCRIPTION, CORE_ROUTES } from "@/lib/siteStructure";
 import { pageOpenGraph } from "@/lib/siteUrl";
+import { YouTubeChannelLinks } from "@/components/YouTubeChannelLinks";
 
 /**
  * 運営者情報とデータの出典。
@@ -211,10 +212,20 @@ export default function AboutPage() {
 
         <section className="mt-10">
           <h2 className="text-lg font-bold font-serif border-b border-slate-300 pb-2">
+            動画
+          </h2>
+          <p className="mt-4 text-sm leading-relaxed text-slate-700">
+            運営している YouTube チャンネルです。
+          </p>
+          <YouTubeChannelLinks className="mt-4 space-y-2 text-sm text-slate-700" />
+        </section>
+
+        <section className="mt-10">
+          <h2 className="text-lg font-bold font-serif border-b border-slate-300 pb-2">
             広告について
           </h2>
           <p className="mt-4 text-sm leading-relaxed text-slate-700">
-            本サイトでは第三者配信の広告を利用する場合があります。取り扱いの詳細は
+            本サイトでは第三者配信の広告を利用する場合があります。アフィリエイトプログラムに参加する場合があり、リンクから商品やサービスを申し込むと紹介料を受け取ることがあります。紹介料を受け取るページでは、上部に「本ページはプロモーションを含みます」と表示し、広告リンクには「PR」と表記します。紹介料の有無は、方位の判定や記事の結論には影響しません。取り扱いの詳細は
             <Link href="/privacy" className="underline hover:text-rose-600">
               プライバシーポリシー
             </Link>

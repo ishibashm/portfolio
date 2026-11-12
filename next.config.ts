@@ -23,20 +23,37 @@ const nextConfig: NextConfig = {
     "/houi/[year]/[star]": ["./src/lib/og/NotoSansJP-Bold.ttf"],
   },
   async rewrites() {
-    return [
-      {
-        source: "/oauth/:oauthPath*",
-        destination: "/api/mcp-authorization/:oauthPath*",
-      },
-      {
-        source: "/.well-known/oauth-authorization-server/oauth",
-        destination: "/api/mcp-authorization/.well-known/openid-configuration",
-      },
-      {
-        source: "/.well-known/openid-configuration/oauth",
-        destination: "/api/mcp-authorization/.well-known/openid-configuration",
-      },
-    ];
+    /*
+      配列で返すと afterFiles になり、静的な /blog が先に当たる。
+      ?sort=date はクエリなのでファイルとしては /blog のままで、
+      振り替えが起きずカテゴリ別の HTML が出た。beforeFiles は
+      静的ファイルより前に見る。
+    */
+    return {
+      beforeFiles: [
+        {
+          source: "/blog",
+          has: [{ type: "query", key: "sort", value: "date" }],
+          destination: "/blog/sort/date",
+        },
+      ],
+      afterFiles: [
+        {
+          source: "/oauth/:oauthPath*",
+          destination: "/api/mcp-authorization/:oauthPath*",
+        },
+        {
+          source: "/.well-known/oauth-authorization-server/oauth",
+          destination:
+            "/api/mcp-authorization/.well-known/openid-configuration",
+        },
+        {
+          source: "/.well-known/openid-configuration/oauth",
+          destination:
+            "/api/mcp-authorization/.well-known/openid-configuration",
+        },
+      ],
+    };
   },
   typescript: {
     ignoreBuildErrors: true,

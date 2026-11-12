@@ -163,6 +163,69 @@ function readBlogPosts(): BlogPost[] {
   );
 }
 
+export interface MarkdownVideoMeta {
+  youtubeId?: string;
+  videoUploadDate?: string;
+  videoDuration?: string;
+  videoTitle?: string;
+  videoDescription?: string;
+}
+
+/**
+ * 動画の項目だけを Markdown から拾う。本文は残さない。
+ *
+ * 一覧は DB の本文で読了時間を数える。動画 ID は frontmatter にしか
+ * 無いので、ここで全記事の本文を BlogPost として抱えない。
+ * 1 ファイルずつ読み、動画の項目以外は捨てる。
+ */
+export function getMarkdownVideoIndex(): Map<string, MarkdownVideoMeta> {
+  const map = new Map<string, MarkdownVideoMeta>();
+  if (!fs.existsSync(BLOG_DIRECTORY)) return map;
+
+  for (const file of fs.readdirSync(BLOG_DIRECTORY)) {
+    if (!file.endsWith(".md")) continue;
+    const slug = file.slice(0, -3);
+    const source = fs.readFileSync(path.join(BLOG_DIRECTORY, file), "utf8");
+    const meta = videoMetaFromSource(source);
+    if (meta) map.set(slug, meta);
+  }
+  return map;
+}
+
+/** frontmatter の動画項目。下書きと、frontmatter が壊れたファイルは省く。 */
+function videoMetaFromSource(source: string): MarkdownVideoMeta | null {
+  const normalized = source.replace(/\r\n/g, "\n");
+  if (!normalized.startsWith(`${FRONTMATTER_BOUNDARY}\n`)) return null;
+  const closing = normalized.indexOf(
+    `\n${FRONTMATTER_BOUNDARY}\n`,
+    FRONTMATTER_BOUNDARY.length + 1,
+  );
+  if (closing < 0) return null;
+  const rawMetadata = normalized.slice(
+    FRONTMATTER_BOUNDARY.length + 1,
+    closing,
+  );
+  const metadata = new Map<string, string>();
+  for (const line of rawMetadata.split("\n")) {
+    const separator = line.indexOf(":");
+    if (separator < 1) continue;
+    metadata.set(
+      line.slice(0, separator).trim(),
+      line.slice(separator + 1).trim(),
+    );
+  }
+  if (metadata.get("draft") === "true") return null;
+  const videoValue = (key: string) =>
+    metadata.get(key)?.replace(/^(["'])(.*)\1$/, "$2");
+  return {
+    youtubeId: videoValue("youtubeId"),
+    videoUploadDate: videoValue("videoUploadDate"),
+    videoDuration: videoValue("videoDuration"),
+    videoTitle: videoValue("videoTitle"),
+    videoDescription: videoValue("videoDescription"),
+  };
+}
+
 export function getBlogPosts(): BlogPostSummary[] {
   return readBlogPosts().map((post) => ({
     youtubeId: blogCardVideoId(post),

@@ -26,6 +26,8 @@ import {
 } from "@/lib/blogImage";
 import { pageOpenGraph } from "@/lib/siteUrl";
 import { isAgentLogSlug } from "@/lib/agentLog";
+import { isOffThemeBlogSlug } from "@/lib/offThemeBlog";
+import { NOINDEX_ROBOTS } from "@/lib/siteStructure";
 import { extractHeadings } from "@/lib/blogToc";
 
 /**
@@ -77,6 +79,11 @@ export async function generateMetadata({
       modifiedTime: post.updatedAt,
       tags: post.tags,
     }),
+    /*
+      テーマ外は 200 のまま noindex。robots を書くと layout の索引指定は
+      丸ごと上書きされるので、載せる記事には書かない（画像プレビューを残す）。
+    */
+    ...(isOffThemeBlogSlug(post.slug) ? { robots: NOINDEX_ROBOTS } : {}),
   };
 }
 

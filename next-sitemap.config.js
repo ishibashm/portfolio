@@ -16,6 +16,9 @@
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const nonCoreRoutes = require("./src/lib/nonCoreRoutes.json");
 const { routes: NON_CORE, offTheme: OFF_THEME } = nonCoreRoutes;
+// テーマ外の記事。頁は 200 + noindex。一覧・RSS と同じ slug 一覧。
+// eslint-disable-next-line @typescript-eslint/no-require-imports
+const offThemeBlogSlugs = require("./src/lib/offThemeBlogSlugs.json");
 // area ページは、表示に使う公開統計そのものから sitemap 対象を決める。
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const housingStats = require("./src/data/housingStats.json");
@@ -51,6 +54,8 @@ function blogLastmods() {
     if (!file.endsWith(".md")) continue;
     // 作業ログ（src/lib/agentLog.ts）。Markdown に置かれても載さない。
     if (file.startsWith("agent-")) continue;
+    // テーマ外（src/lib/offThemeBlog.ts）。索引の更新日にも使わない。
+    if (offThemeBlogSlugs.includes(file.replace(/\.md$/, ""))) continue;
     const head =
       fs.readFileSync(path.join(dir, file), "utf-8").split(/^---$/m)[1] ?? "";
     const field = (key) =>
@@ -543,6 +548,12 @@ module.exports = {
       ビルドが静的パスを拾っても、ここで落とす。
     */
     "/blog/agent-*",
+    /*
+      新着順の内部パス。公開 URL は /blog?sort=date、正典は /blog。
+    */
+    "/blog/sort/date",
+    /* テーマ外の記事。200 + noindex のまま、サイトマップには出さない。 */
+    ...offThemeBlogSlugs.map((slug) => `/blog/${slug}`),
   ],
   /* 戻す一覧そのもの。検査が住宅統計と突き合わせるために読む。 */
   additionalPathsSource: AREA_DATA_PATHS,
@@ -554,10 +565,10 @@ module.exports = {
       [
         ...AREA_DATA_PATHS,
         "/houi/tenchusatsu",
-        /* /blog は searchParams（?sort=）を読むので動的描画になり、
-           next-sitemap が数える事前生成の一覧に出てこない。記事 24 本は
-           載るのに一覧だけ無い状態だった。llms.txt が案内している頁でも
-           あるので、ここで足す */
+        /* /blog は ISR になったのでビルドの一覧にも出る。ここにも足すのは、
+           頁が再び動的になって一覧から落ちても、llms.txt が案内する
+           入口がサイトマップから消えないようにするため。重複は
+           next-sitemap が loc で畳む。 */
         "/blog",
         "/houi/today",
         /* force-dynamic の頁は事前生成の一覧に出ないので、/blog と同じく

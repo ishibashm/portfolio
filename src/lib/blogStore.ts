@@ -3,12 +3,15 @@ import { blogCardVideoId } from "./blogVideo";
 import { errorCode, toLogMessage } from "@/lib/errorMessage";
 import { toJapanDateString } from "@/utils/japanDate";
 import { isAgentLogSlug } from "@/lib/agentLog";
+import { isOffThemeBlogSlug } from "@/lib/offThemeBlog";
 import {
   getBlogPost as getMarkdownBlogPost,
   getBlogPosts as getMarkdownBlogPosts,
+  getMarkdownVideoIndex,
   readingMinutesOf,
   type BlogPost,
   type BlogPostSummary,
+  type MarkdownVideoMeta,
 } from "@/lib/blog";
 
 /**
@@ -119,7 +122,9 @@ function toBlogPost(row: {
  */
 function withMarkdownVideo(
   post: BlogPost,
-  md: BlogPostSummary | undefined = getMarkdownBlogPost(post.slug),
+  md: BlogPostSummary | MarkdownVideoMeta | undefined = getMarkdownBlogPost(
+    post.slug,
+  ),
 ): BlogPost {
   if (!md?.youtubeId) return post;
   return {
@@ -143,6 +148,11 @@ const ROW_FIELDS = {
   tags: true,
   published: true,
 } as const;
+
+/** 一覧・RSS・サイトマップに出してよいか。作業ログとテーマ外は出さない。 */
+function isListedBlogSlug(slug: string): boolean {
+  return !isAgentLogSlug(slug) && !isOffThemeBlogSlug(slug);
+}
 
 /** 公開中の記事を新しい順で。DB が空・スキーマ未適用なら Markdown。 */
 export async function loadBlogPosts(
@@ -219,11 +229,15 @@ export async function loadSearchableBlogPosts(options: {
       orderBy: [{ publishedAt: "desc" }, { slug: "asc" }],
     });
     if (rows.length > 0) {
-      const videos = new Map(
-        getMarkdownBlogPosts().map((post) => [post.slug, post]),
-      );
+      /*
+        動画 ID は Markdown の frontmatter にしか無い。一覧のために
+        全記事の本文をもう一度抱えない（getMarkdownVideoIndex）。
+        読了時間は DB の本文で数える。返したあと loadBlogPosts が
+        本文を落とすので、画面の HTML には本文を載せない。
+      */
+      const videos = getMarkdownVideoIndex();
       return rows
-        .filter((row) => !isAgentLogSlug(row.slug))
+        .filter((row) => isListedBlogSlug(row.slug))
         .map((row) => {
           const post = toBlogPost(row);
           const md = videos.get(row.slug);
@@ -240,7 +254,7 @@ export async function loadSearchableBlogPosts(options: {
 
   // DB が空＝まだ取り込んでいない。Markdown をそのまま出す。
   return getMarkdownBlogPosts()
-    .filter((summary) => !isAgentLogSlug(summary.slug))
+    .filter((summary) => isListedBlogSlug(summary.slug))
     .map((summary) => ({
       ...summary,
       body: getMarkdownBlogPost(summary.slug)?.body ?? "",

@@ -63,6 +63,7 @@ describe.each([false, true])(
       const root = process.cwd();
       for (const path of [
         "src/middleware.ts",
+        "src/lib/houiCanonicalPath.ts",
         "src/lib/apiGuard.ts",
         "src/lib/gonePaths.ts",
         "src/lib/requestSecurity.ts",

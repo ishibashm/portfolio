@@ -42,7 +42,9 @@ jobs:
       # 記事の一覧だけ要るので sparse-checkout にする。
       - uses: actions/checkout@v4
         with:
-          sparse-checkout: content/blog
+          sparse-checkout: |
+            content/blog
+            src/lib/offThemeBlogSlugs.json
           sparse-checkout-cone-mode: false
 
       - name: Fetch sitemap and check every URL
@@ -147,6 +149,16 @@ jobs:
           REPO=$(for f in content/blog/*.md; do
             grep -q '^draft: true' "$f" || basename "$f" .md
           done | sort -u)
+
+          # テーマ外は noindex で RSS にも出さない。取り込み漏れではない。
+          # 一覧は src/lib/offThemeBlogSlugs.json（頁のふるいと同じ）。
+          if [ ! -f src/lib/offThemeBlogSlugs.json ]; then
+            echo "::error::src/lib/offThemeBlogSlugs.json が無い" | tee -a "$GITHUB_STEP_SUMMARY"
+            echo "FAIL=1" >> "$GITHUB_ENV"
+            exit 0
+          fi
+          SKIP=$(node -e 'const s=require("./src/lib/offThemeBlogSlugs.json"); if(!Array.isArray(s)) process.exit(1); process.stdout.write(s.join("\n"))')
+          REPO=$(comm -23 <(printf '%s\n' "$REPO" | sed '/^$/d' | sort -u) <(printf '%s\n' "$SKIP" | sed '/^$/d' | sort -u))
 
           # 本番側（RSS は lib/blogStore 経由 = DB を先に見る）。
           LIVE=$(curl -sf --compressed "$BASE/blog/feed.xml" \

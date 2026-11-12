@@ -36,7 +36,7 @@ export default function PrivacyPolicyPage() {
               プライバシーポリシー
             </h1>
             <p className="text-xs text-slate-600 mt-1">
-              最終更新日: 2026年10月17日
+              最終更新日: 2026年11月5日
             </p>
           </div>
         </div>
@@ -87,6 +87,9 @@ export default function PrivacyPolicyPage() {
                 Googleの広告設定
               </a>
               から行えます。
+            </p>
+            <p className="mt-2">
+              当サイトは、アフィリエイトプログラム（成果報酬型の広告）に参加する場合があります。リンクから商品やサービスを申し込むと、当サイトが紹介料を受け取ることがあります。紹介料を受け取るページでは、上部に「本ページはプロモーションを含みます」と表示し、広告リンクには「PR」と表記します。紹介料の有無によって、方位の判定や記事の結論を変えることはありません。
             </p>
           </section>
 

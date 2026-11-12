@@ -1,5 +1,23 @@
 import Link from "next/link";
+import type { Metadata } from "next";
 import GuideCharacter from "@/components/guide/GuideCharacter";
+
+/**
+ * 見つからない頁。
+ *
+ * ルートの layout は canonical: "/" と index を持つ。何も書かないと
+ * 404 がホームを正典と名乗り、Next が付ける noindex と index が混ざる。
+ * canonical は出さず、noindex だけにする。
+ */
+export const metadata: Metadata = {
+  title: "ページが見つかりません",
+  robots: {
+    index: false,
+    follow: true,
+    googleBot: { index: false, follow: true },
+  },
+  alternates: { canonical: null },
+};
 
 export default function NotFound() {
   return (
