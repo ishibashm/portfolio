@@ -1,5 +1,3 @@
-import { CandidateEmailImport } from "@/components/relocation/EmailListingDraft";
-import { GmailFeature } from "@/components/relocation/GmailFeature";
 import { getAuthUser, toUserId } from "@/lib/userConfig";
 import Link from "next/link";
 import { Bookmark, MapPin } from "lucide-react";
@@ -11,7 +9,7 @@ import CandidateHistory from "@/components/relocation/CandidateHistory";
 
   - 名前を「本人の候補履歴」から「保存した候補」に。中身は操作の履歴では
     なく、「候補に保存」した物件・地点と保存したときの判定の一覧
-  - Gmail の取り込みが頁のいちばん上で主役になっていた。畳んだ節に移す
+  - Gmail取り込みは 2026-11-03 に廃止
   - 幅は 1700px（CLAUDE.md 3 節。入力欄が主役の頁ではない）。候補は札で並ぶ
   - スマホでは左上に固定の目次ボタン（GlobalSidebar）があり、見出しの頭が
     隠れていた（「≡ への候補履歴」）。lg 未満は上を空ける
@@ -58,7 +56,6 @@ export default async function CandidatesPage() {
       </div>
     );
 
-  const gmailEnabled = process.env.LISTING_EMAIL_GMAIL_ENABLED === "true";
   return (
     <div className={SHELL}>
       <main className={MAIN}>
@@ -90,12 +87,6 @@ export default async function CandidatesPage() {
             </Link>
           </div>
         </header>
-
-        {gmailEnabled && (
-          <GmailFeature enabled>
-            <CandidateEmailImport />
-          </GmailFeature>
-        )}
 
         <CandidateHistory />
       </main>
