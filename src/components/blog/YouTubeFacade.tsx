@@ -39,12 +39,19 @@ export function YouTubeFacade({
             aria-label={`動画を再生: ${title}`}
             onClick={() => setPlayingId(youtubeId)}
           >
+            {/*
+              表紙は記事の PNG と同じ URL になることが多い。loading を
+              付けないと React 19 が `<picture>` の外のこの img を
+              `<link rel="preload">` にし、先頭で出す WebP と二重に取りに行く。
+              再生前の表紙は本文の途中なので、先読みしない。
+            */}
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src={cover}
               alt=""
               width={1800}
               height={945}
+              loading="lazy"
               className="h-full w-full object-contain"
             />
             <span className="absolute inset-0 flex items-center justify-center">

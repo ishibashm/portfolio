@@ -60,6 +60,9 @@ describe("blog YouTube video", () => {
     expect(img).toHaveAttribute("src", video.cover);
     expect(img).toHaveAttribute("width", "1800");
     expect(img).toHaveAttribute("height", "945");
+    // picture の外なので、lazy が無いと React 19 が PNG を先読みする。
+    expect(img).toHaveAttribute("loading", "lazy");
+    expect(img).not.toHaveAttribute("fetchpriority");
     const button = screen.getByRole("button", {
       name: `動画を再生: ${video.title}`,
     });
