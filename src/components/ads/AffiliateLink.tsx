@@ -1,7 +1,8 @@
 import type { ReactNode } from "react";
 import {
-  AFFILIATE_OFFERS,
-  isAffiliatePage,
+  AFFILIATE_AREA_LABEL,
+  disclosureText,
+  hasAffiliateOffer,
   type AffiliateOffer,
 } from "@/lib/affiliateOffers";
 import { sponsorizeAnchors } from "@/lib/affiliateHtml";
@@ -29,10 +30,16 @@ export function AffiliateLink({
 }
 
 /** ASP の HTML を差し込む。アンカーには広告用の rel と target を付ける。 */
-export function AffiliateHtml({ html }: { html: string }) {
+export function AffiliateHtml({
+  html,
+  showLabel = true,
+}: {
+  html: string;
+  showLabel?: boolean;
+}) {
   return (
     <div>
-      {prLabel}
+      {showLabel ? prLabel : null}
       <div dangerouslySetInnerHTML={{ __html: sponsorizeAnchors(html) }} />
     </div>
   );
@@ -43,8 +50,8 @@ function visibleOffers(offers: readonly AffiliateOffer[]): AffiliateOffer[] {
 }
 
 /**
- * 案件が 1 件も無ければ何も描かない。
- * あるときだけ、頁の上部に開示文と PR 付きのリンクを出す。
+ * 渡された案件を開示文と一緒に描く。呼び出し側が出し先を決める。
+ * 頁への自動掲載には使わない（AffiliatePageTop と AffiliatePlacement を使う）。
  */
 export function AffiliateOffers({
   offers,
@@ -77,10 +84,67 @@ export function AffiliateOffers({
 }
 
 /**
- * 広告を置く頁の上部。案件設定が空なら何も出さない。
- * パスはサーバでは分からないので、呼ぶ側が渡す。
+ * 対象頁の先頭（ファーストビュー）に出す開示文。広告リンク自体は置かない。
+ * 広告枠は本文中または県ページの独立枠（AffiliatePlacement）に出す。
  */
 export function AffiliatePageTop({ pathname }: { pathname: string }) {
-  if (!isAffiliatePage(pathname)) return null;
-  return <AffiliateOffers offers={AFFILIATE_OFFERS} />;
+  if (!hasAffiliateOffer(pathname)) return null;
+  return (
+    <aside
+      aria-label="広告の表示"
+      className="mx-auto max-w-[1700px] px-5 pt-4 text-sm leading-7 text-slate-700"
+    >
+      <p>{disclosureText(pathname)}</p>
+    </aside>
+  );
+}
+
+/**
+ * 広告枠。直前に「PR（広告）」と対象地域を出し、素材のリンクを置く。
+ * 料金や順位の断定は書かない。
+ */
+export function AffiliatePlacement({
+  offer,
+  intro,
+  showBanner = false,
+}: {
+  offer: AffiliateOffer;
+  intro?: string;
+  showBanner?: boolean;
+}) {
+  if (!offer.html && !offer.href) return null;
+  return (
+    <aside
+      aria-label="広告"
+      className="my-8 rounded-2xl border border-stone-300 bg-stone-50 px-5 py-4 text-sm leading-7 text-slate-700"
+    >
+      <p className="text-xs font-bold tracking-wide text-stone-700">
+        PR（広告）
+      </p>
+      <p className="mt-1 text-xs font-medium text-stone-600">
+        {AFFILIATE_AREA_LABEL}
+      </p>
+      {intro ? <p className="mt-3 text-[15px] leading-7">{intro}</p> : null}
+      {offer.html ? (
+        <div className="mt-3">
+          <AffiliateHtml html={offer.html} showLabel={false} />
+        </div>
+      ) : (
+        <p className="mt-3">
+          <a
+            href={offer.href}
+            target="_blank"
+            rel="sponsored nofollow noopener"
+          >
+            {offer.label ?? offer.href}
+          </a>
+        </p>
+      )}
+      {showBanner && offer.bannerHtml ? (
+        <div className="mt-3">
+          <AffiliateHtml html={offer.bannerHtml} showLabel={false} />
+        </div>
+      ) : null}
+    </aside>
+  );
 }

@@ -14,6 +14,8 @@ import {
   DatasetJsonLd,
 } from "@/components/JsonLd";
 import { AdBanner } from "@/components/ads/AdBanner";
+import { AffiliatePlacement } from "@/components/ads/AffiliateLink";
+import { offersForPath, placementForPath } from "@/lib/affiliateOffers";
 import {
   getPrefStats,
   prefNameByCode,
@@ -172,6 +174,10 @@ export default async function Page({
     areas: editorialFirst(g.areas),
   }));
   const path = `/houi/pref/${code}`;
+  const affiliate = offersForPath(path)[0];
+  const affiliatePlacement = affiliate
+    ? placementForPath(path, affiliate)
+    : undefined;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#faf7f5] via-[#f5efe9] to-[#f0e9e1] text-slate-900 font-sans">
@@ -348,6 +354,14 @@ export default async function Page({
             ))}
           </div>
         </section>
+
+        {affiliate && affiliatePlacement ? (
+          <AffiliatePlacement
+            offer={affiliate}
+            intro={affiliatePlacement.intro}
+            showBanner={affiliatePlacement.showBanner}
+          />
+        ) : null}
 
         <div className="mt-10">
           <AdBanner />

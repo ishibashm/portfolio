@@ -11,6 +11,8 @@ import {
 } from "@/components/JsonLd";
 import { extractFaq, hasEnoughFaq } from "@/lib/articleFaq";
 import { AdBanner } from "@/components/ads/AdBanner";
+import { AffiliatePlacement } from "@/components/ads/AffiliateLink";
+import { offersForPath, placementForPath } from "@/lib/affiliateOffers";
 import {
   getBlogPosts as getMarkdownBlogPosts,
   formatBlogDate,
@@ -116,6 +118,10 @@ export default async function BlogPostPage({
     頁に出ている（題は下の h1、結論は本文）。
   */
   const faq = extractFaq(post.body, post.title);
+  const affiliate = offersForPath(path)[0];
+  const affiliatePlacement = affiliate
+    ? placementForPath(path, affiliate)
+    : undefined;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#faf7f5] via-[#f5efe9] to-[#f0e9e1] text-slate-900">
@@ -228,6 +234,20 @@ export default async function BlogPostPage({
                   duration: post.videoDuration,
                   cover: socialImage,
                 }}
+                insertBeforeHeading={
+                  affiliate && affiliatePlacement?.beforeHeading
+                    ? {
+                        heading: affiliatePlacement.beforeHeading,
+                        content: (
+                          <AffiliatePlacement
+                            offer={affiliate}
+                            intro={affiliatePlacement.intro}
+                            showBanner={affiliatePlacement.showBanner}
+                          />
+                        ),
+                      }
+                    : undefined
+                }
               />
             </div>
 
