@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { pageOpenGraph } from "@/lib/siteUrl";
+import { ToolPageIntro } from "@/components/relocation/ToolPageIntro";
 
 export const metadata: Metadata = {
   title: "引っ越し時期の全期間分析",
@@ -19,5 +20,15 @@ export default function TimingLayout({
 }: {
   children: React.ReactNode;
 }) {
-  return children;
+  return (
+    <>
+      <ToolPageIntro
+        guideHref="/guide/choose-date"
+        guideLabel="日取りの使い方を読む"
+      >
+        生年月日と出発地から、年・月・日の条件が重なる引越しの時期を見ます。動ける日が先に決まると、探す範囲を絞れます。
+      </ToolPageIntro>
+      {children}
+    </>
+  );
 }

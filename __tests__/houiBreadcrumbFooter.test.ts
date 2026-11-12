@@ -1,10 +1,7 @@
 import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
-import {
-  HOUI_BREADCRUMB_LABEL,
-  currentYearInJapan,
-} from "@/lib/kigakuContent";
+import { HOUI_BREADCRUMB_LABEL, currentYearInJapan } from "@/lib/kigakuContent";
 
 function sourceFiles(directory: string): string[] {
   return readdirSync(directory, { withFileTypes: true }).flatMap((entry) => {
@@ -24,10 +21,14 @@ describe("方位のパンくずとフッター", () => {
     }
   });
 
-  it("トップのフッターは日本時間の現在年を使う", () => {
-    const source = readFileSync("src/app/page.tsx", "utf8");
+  it("共通フッターは日本時間の現在年を使う", () => {
+    const source = readFileSync("src/components/SiteFooter.tsx", "utf8");
     expect(source).not.toContain("© 2026");
     expect(source).toContain("© {currentYearInJapan()}");
+    // 案内リンクはトップ専用フッターではなく、全頁共通の SiteFooter に置く。
+    expect(readFileSync("src/app/page.tsx", "utf8")).not.toContain(
+      "Footer with Compliance & LLMO Links",
+    );
   });
 
   it("日本時間で年を繰り上げる", () => {

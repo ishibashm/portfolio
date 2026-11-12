@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { coreRouteLabel } from "@/lib/siteStructure";
 import { pageOpenGraph } from "@/lib/siteUrl";
+import { ToolPageIntro } from "@/components/relocation/ToolPageIntro";
 
 /**
  * ページ本体がクライアントコンポーネントで metadata を export できないため、
@@ -23,5 +24,15 @@ export const metadata: Metadata = {
 export const dynamic = "force-dynamic";
 
 export default function Layout({ children }: { children: React.ReactNode }) {
-  return children;
+  return (
+    <>
+      <ToolPageIntro
+        guideHref="/guide/find-property"
+        guideLabel="街の探し方を読む"
+      >
+        決まった日付に開いている方位の街を、家賃の水準と空き家率つきで並べます。いま募集中の部屋の一覧ではありません。
+      </ToolPageIntro>
+      {children}
+    </>
+  );
 }

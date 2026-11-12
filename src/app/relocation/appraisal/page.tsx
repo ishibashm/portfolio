@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { AppraisalForm } from "./AppraisalForm";
 import { pageOpenGraph } from "@/lib/siteUrl";
 
@@ -43,7 +44,11 @@ export default function AppraisalPage() {
             の分布のどこにあるかを出します。ポータルに出ている相場は売主の希望額を並べたもので、成立した額ではありません。
           </p>
           <p className="mt-2 max-w-[70ch] text-xs leading-relaxed text-stone-500">
-            入力した内容は保存していません。この画面を閉じると残りません。
+            入力した内容は保存していません。この画面を閉じると残りません。方位や日取りの道具の順番は
+            <Link href="/guide" className="underline hover:text-rose-600">
+              使い方ガイド
+            </Link>
+            にあります。
           </p>
         </header>
 

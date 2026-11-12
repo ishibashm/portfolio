@@ -18,9 +18,14 @@ export const metadata: Metadata = {
   title: GUIDE_INDEX.title,
   description: GUIDE_INDEX.description,
   alternates: { canonical: "/guide" },
-  openGraph: pageOpenGraph("/guide", GUIDE_INDEX.title, GUIDE_INDEX.description, {
-    type: "article",
-  }),
+  openGraph: pageOpenGraph(
+    "/guide",
+    GUIDE_INDEX.title,
+    GUIDE_INDEX.description,
+    {
+      type: "article",
+    },
+  ),
 };
 
 /** 決める順序。ガイドの章と、実際に触る画面を並べて出す。 */
@@ -189,6 +194,61 @@ export default function Page() {
           >
             画面共通の使い方を読む →
           </Link>
+        </section>
+
+        <section className="mt-12">
+          <h2 className="text-xl font-bold font-serif border-b border-slate-300 pb-2">
+            地域の解説と記事
+          </h2>
+          <p className="mt-4 max-w-[70ch] text-sm leading-relaxed text-slate-700">
+            道具の使い方とは別に、出発地の街や県の解説、用語の背景を読む頁があります。
+          </p>
+          <div className="mt-5 grid gap-3 sm:grid-cols-2">
+            <Link
+              href="/houi/area"
+              className="group rounded-2xl border border-slate-300 bg-white/90 p-4 hover:border-rose-300 transition-colors"
+            >
+              <h3 className="text-sm font-bold font-serif group-hover:text-rose-600 transition-colors">
+                エリア別の方位と家賃相場
+              </h3>
+              <p className="mt-2 text-xs leading-relaxed text-slate-600">
+                いま住んでいる市区町村から、八方位の街と公表統計の家賃水準を見ます。
+              </p>
+            </Link>
+            <Link
+              href="/houi/pref"
+              className="group rounded-2xl border border-slate-300 bg-white/90 p-4 hover:border-rose-300 transition-colors"
+            >
+              <h3 className="text-sm font-bold font-serif group-hover:text-rose-600 transition-colors">
+                都道府県のまとめ
+              </h3>
+              <p className="mt-2 text-xs leading-relaxed text-slate-600">
+                47都道府県の頁へ進み、県の重心から見た方位と相場の傾きを比べます。
+              </p>
+            </Link>
+            <Link
+              href="/blog"
+              className="group rounded-2xl border border-slate-300 bg-white/90 p-4 hover:border-rose-300 transition-colors"
+            >
+              <h3 className="text-sm font-bold font-serif group-hover:text-rose-600 transition-colors">
+                記事
+              </h3>
+              <p className="mt-2 text-xs leading-relaxed text-slate-600">
+                九星気学・方位・天中殺・日取りの考え方を、操作せずに読めます。
+              </p>
+            </Link>
+            <Link
+              href="/editorial"
+              className="group rounded-2xl border border-slate-300 bg-white/90 p-4 hover:border-rose-300 transition-colors"
+            >
+              <h3 className="text-sm font-bold font-serif group-hover:text-rose-600 transition-colors">
+                編集方針
+              </h3>
+              <p className="mt-2 text-xs leading-relaxed text-slate-600">
+                出典、索引に載せる範囲、広告の扱い、訂正の窓口をまとめています。
+              </p>
+            </Link>
+          </div>
         </section>
 
         <div className="mt-10">

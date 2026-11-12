@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { pageOpenGraph } from "@/lib/siteUrl";
+import { ToolPageIntro } from "@/components/relocation/ToolPageIntro";
 
 /**
  * ページ本体がクライアントコンポーネントで metadata を export できないため、
@@ -19,5 +20,15 @@ export const metadata: Metadata = {
 };
 
 export default function Layout({ children }: { children: React.ReactNode }) {
-  return <>{children}</>;
+  return (
+    <>
+      <ToolPageIntro
+        guideHref="/guide/simulate"
+        guideLabel="引越し先の試算の使い方を読む"
+      >
+        引越し先の候補地について、出発地からの方位・距離・時期の吉凶を試算します。物件が決まる前の地域選びに使えます。生年月日と出発地を入れると判定が出ます。
+      </ToolPageIntro>
+      {children}
+    </>
+  );
 }
