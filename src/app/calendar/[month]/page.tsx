@@ -10,6 +10,7 @@ import {
   weekdayLabel,
   directionListLabel,
 } from "@/lib/monthlyCalendar";
+import { calendarMonthNote } from "@/lib/calendarMonthNotes";
 import { STAR_NAMES, houiMonthHref } from "@/lib/kigakuContent";
 import { STAR_MEANINGS } from "@/lib/kigakuMeanings";
 import { BreadcrumbJsonLd } from "@/components/JsonLd";
@@ -79,6 +80,7 @@ export default async function Page({
   const { year, month } = parsed;
   const cal = buildMonthlyCalendar(year, month);
   const slug = `${year}-${String(month).padStart(2, "0")}`;
+  const note = calendarMonthNote(year, month);
 
   const all = calendarMonths();
   const idx = all.findIndex((c) => c.year === year && c.month === month);
@@ -151,6 +153,16 @@ export default async function Page({
           ）です。中宮の星は、その月全体に乗る色合いを表すとされます。
           {STAR_MEANINGS[cal.centerStar]?.good}
         </p>
+
+        {/* 月ごとに書き分けた説明。中宮・節入り・日取り・方位表から読んだ事実だけ。 */}
+        {note ? (
+          <p
+            className="mt-4 text-sm leading-relaxed text-slate-700"
+            data-calendar-month-note={slug}
+          >
+            {note}
+          </p>
+        ) : null}
 
         <section className="mt-10">
           <h2 className="text-xl font-bold font-serif border-b border-slate-300 pb-2">
