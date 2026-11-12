@@ -546,7 +546,7 @@ export default function TimingAnalyticsPage() {
     } finally {
       setBusy(false);
     }
-  }, [settings, pastMonths, futureMonths, partyMembers]);
+  }, [settings, pastMonths, futureMonths, partyMembers, setScannedKey]);
 
   /*
     **走査は押したときだけ始める**（利用者の依頼、2026-09-21）。

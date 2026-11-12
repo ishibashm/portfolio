@@ -93,7 +93,8 @@ describe("Kyusei Kigaku High-Precision Calculations", () => {
       // Verify Summer Doyou-satsu blocks SW (坤宮) direction
       expect(collision.doyouState?.inDoyou).toBe(true);
       expect(collision.doyouState?.doyouType).toBe("SUMMER");
-      expect(collision.finalVectors.SW).toBe("NOISE_GOU");
+      // 土用殺は五黄殺と区別する専用状態に変更。凶の重さは維持する。
+      expect(collision.finalVectors.SW).toBe("NOISE_DOYOU");
     });
 
     it("applies a soft warning for daily-level blocker under MIGRATION instead of absolute block", () => {

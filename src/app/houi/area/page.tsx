@@ -15,9 +15,9 @@ import {
 import { GreatCircleGlobe } from "@/components/houi/GreatCircleGlobe";
 import { pageOpenGraph } from "@/lib/siteUrl";
 
-const TITLE = "エリア別の方位と家賃相場";
+const TITLE = "地域名から方位と家賃相場を調べる｜市区町村別の引越し先を比較";
 const DESCRIPTION =
-  "出発地の市区町村を選ぶと、八方位それぞれにどの市区町村があり、家賃相場がいくらかを確認できます。吉方位が分かっても、その方位に何があるか分からないと引越し先は決められません。";
+  "地域名から出発地の市区町村を選び、八方位それぞれにある街と家賃相場を確認できます。都道府県別の一覧から地域を探し、吉方位にある引越し先の候補や周辺エリアの相場を比較できます。";
 
 export const metadata: Metadata = {
   alternates: { canonical: "/houi/area" },

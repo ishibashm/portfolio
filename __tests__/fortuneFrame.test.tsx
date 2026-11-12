@@ -18,8 +18,10 @@ it("renders a script-free srcdoc with an exactly empty sandbox and responsive he
     expect(frame.srcdoc).toContain("Content-Security-Policy");
     expect(frame.srcdoc).toContain("overflow:auto");
     expect(frame.srcdoc).not.toContain("<script");
-    expect(frame.style.height).toBe("70vh");
-    expect(frame.style.minHeight).toBe("480px");
+    // モバイルは 50svh、sm 以上で 70svh（固定 70vh だと 1 画面を占有した）
+    expect(frame.className).toContain("h-[50svh]");
+    expect(frame.className).toContain("sm:h-[70svh]");
+    expect(frame.style.height).toBe("");
     expect(listener.mock.calls.some(([event]) => event === "message")).toBe(
       false,
     );
@@ -32,7 +34,7 @@ it("renders a script-free srcdoc with an exactly empty sandbox and responsive he
         }),
       ),
     );
-    expect(frame.style.height).toBe("70vh");
+    expect(frame.style.height).toBe("");
   } finally {
     listener.mockRestore();
   }

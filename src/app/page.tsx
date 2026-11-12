@@ -1,5 +1,9 @@
 import { currentYearInJapan } from "@/lib/kigakuContent";
 import { AgentEntry } from "@/components/home/AgentEntry";
+import { PurposeLinks } from "@/components/home/PurposeLinks";
+import { HonmeiStarLinks } from "@/components/houi/HonmeiStarLinks";
+
+export const revalidate = 60;
 import { ScrollReset } from "@/components/home/ScrollReset";
 import Link from "next/link";
 import { Compass, ArrowRight } from "lucide-react";
@@ -65,7 +69,7 @@ export default function Home() {
           href="/houi#honmei-lookup"
           className="mt-4 sm:ml-5 inline-block text-sm font-semibold text-rose-600 underline underline-offset-4 hover:text-rose-700"
         >
-          生年月日から今年の吉方位を見る
+          今年の引越しの方位を本命星別に見る
         </Link>
         <p className="mt-4 text-sm">
           <Link href="/houi/today" className="text-rose-600 underline">
@@ -79,6 +83,8 @@ export default function Home() {
           「1. プロフィール」タブの中にあり、開いた人はまず未入力のままの
           結果を見ていた（利用者の指摘）。 */}
       <AgentEntry />
+      <PurposeLinks />
+      <HonmeiStarLinks />
       <QuickProfileBar />
 
       {/* 中核ページへの導線。siteStructure の定義がそのまま並ぶので、

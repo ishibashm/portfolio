@@ -1,3 +1,5 @@
+import { z } from "zod";
+import { readBoundedJson } from "@/lib/requestSecurity";
 import { revokeMcpOnRegistrationDeletion } from "@/lib/mcpDeletion";
 import { isSameOrigin } from "@/lib/apiGuard";
 import { lockCandidateOwner, privateHeaders } from "@/lib/listingCandidateApi";
@@ -186,11 +188,17 @@ export async function POST(req: Request) {
   }
 
   try {
-    const body = await req.json();
-    if (!body || typeof body !== "object") {
+    const input = await readBoundedJson(req, 16 * 1024);
+    if (!input.ok) return input.response;
+    const parsed = z
+      .object({ birth_date: z.string().max(64).nullable().optional() })
+      .passthrough()
+      .safeParse(input.value);
+    if (!parsed.success) {
       return NextResponse.json({ error: "Invalid body" }, { status: 400 });
     }
 
+    const body = parsed.data;
     const data = buildPatch(body as Record<string, unknown>);
     const incoming = pickMetaphysical(body as Record<string, unknown>);
     const updatedAt = new Date();

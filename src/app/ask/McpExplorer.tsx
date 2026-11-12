@@ -746,6 +746,10 @@ export function McpExplorer({
   const messages = activeConversation?.messages ?? EMPTY_CHAT_MESSAGES;
   const question = activeConversation?.draft ?? "";
   const chosenOrigins = useRef(new Map<string, AskOrigin>());
+  // 描画中は ref を読めないので、プレビュー用に同じ内容の写しを state で持つ。
+  const [chosenOriginsView, setChosenOriginsView] = useState<
+    ReadonlyMap<string, AskOrigin>
+  >(() => new Map());
   const selectedPeople = people.filter((person) =>
     activeConversation?.personIds.includes(person.id),
   );
@@ -1358,7 +1362,10 @@ export function McpExplorer({
     );
   }
 
-  function peopleForQuestion(text: string): AgentPerson[] | undefined {
+  function peopleForQuestion(
+    text: string,
+    origins: ReadonlyMap<string, AskOrigin>,
+  ): AgentPerson[] | undefined {
     const userQuestions = [
       ...messages
         .filter((item) => item.role === "user")
@@ -1376,13 +1383,11 @@ export function McpExplorer({
       id: person.id,
       name: person.name,
       ...(includeResidence &&
-      (chosenOrigins.current.get(`${activeConversationId}:${person.id}`) ??
-        person.origin)
+      (origins.get(`${activeConversationId}:${person.id}`) ?? person.origin)
         ? {
             origin:
-              chosenOrigins.current.get(
-                `${activeConversationId}:${person.id}`,
-              ) ?? person.origin,
+              origins.get(`${activeConversationId}:${person.id}`) ??
+              person.origin,
           }
         : {}),
       ...(includeBirth && person.birthDate
@@ -1488,7 +1493,7 @@ export function McpExplorer({
       blocks: [],
       tools: [],
     };
-    const profiles = peopleForQuestion(text);
+    const profiles = peopleForQuestion(text, chosenOrigins.current);
     if (profiles) {
       for (const person of profiles) {
         if (pickedOrigin && profiles.length === 1) {
@@ -1510,6 +1515,7 @@ export function McpExplorer({
       pickedOrigin ?? chosenOrigins.current.get(activeConversationId);
     if (pickedOrigin && !profiles?.length)
       chosenOrigins.current.set(activeConversationId, pickedOrigin);
+    if (pickedOrigin) setChosenOriginsView(new Map(chosenOrigins.current));
     const remembered = memoriesForApi(memories, activeConversationId);
     const contextCharacters =
       text.length +
@@ -2011,7 +2017,7 @@ export function McpExplorer({
     );
   }
 
-  const profilePreview = peopleForQuestion(question);
+  const profilePreview = peopleForQuestion(question, chosenOriginsView);
   const guidanceSaved =
     selectedPeople[0] ?? people.find((person) => person.active) ?? people[0];
   const previousConversation = conversations.find(

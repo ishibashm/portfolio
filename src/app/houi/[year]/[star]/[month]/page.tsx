@@ -10,10 +10,12 @@ import {
   STARS,
   formatDate,
   getMonthDirections,
+  houiMonthHref,
   monthContentYears,
 } from "@/lib/kigakuContent";
 import { AreaEntryLinks } from "@/components/houi/AreaEntryLinks";
 import { ArticleJsonLd, BreadcrumbJsonLd } from "@/components/JsonLd";
+import { pageOpenGraph } from "@/lib/siteUrl";
 
 /**
  * 「2026年3月 一白水星 吉方位」のような、月単位の検索に応えるページ。
@@ -54,8 +56,7 @@ function parse(params: { year: string; star: string; month: string }) {
   const year = parseInt(params.year, 10);
   const star = parseInt(params.star, 10);
   const month = parseInt(params.month, 10);
-  if (!monthContentYears().includes(year)) return null;
-  if (!STARS.includes(star) || !MONTHS.includes(month)) return null;
+  if (!houiMonthHref(year, star, month)) return null;
   return { year, star, month };
 }
 
@@ -71,11 +72,11 @@ export async function generateMetadata({
   const { verdicts, start, end } = getMonthDirections(year, month, star);
   const good = verdicts.filter((v) => v.kind === "good").map((v) => v.jp);
 
-  const title = `${year}年${month}月 ${name}の吉方位`;
+  const title = `${year}年${month}月 ${name}の吉方位・凶方位｜月盤と節入りを確認`;
   const description =
     good.length > 0
-      ? `${year}年${month}月（${formatDate(start)}〜${formatDate(end)}）、${name}の月盤での吉方位は${good.join("・")}です。五黄殺・暗剣殺・月破の位置も確認できます。`
-      : `${year}年${month}月（${formatDate(start)}〜${formatDate(end)}）、${name}の月盤には吉方位がありません。五黄殺・暗剣殺・月破の位置を確認できます。`;
+      ? `${year}年${month}月（${formatDate(start)}〜${formatDate(end)}）、${name}の吉方位は${good.join("・")}です。五黄殺・暗剣殺・月破も確認。節入りで切り替わる対象期間と月盤で、引越しの方位を検討できます。`
+      : `${year}年${month}月（${formatDate(start)}〜${formatDate(end)}）、${name}の月盤の吉方位はありません。五黄殺・暗剣殺・月破も確認。節入りで切り替わる対象期間と月盤で、引越しの方位を検討できます。`;
 
   return {
     title,
@@ -91,8 +92,12 @@ export async function generateMetadata({
       URL ごとに中身が違う。ここで一緒に外さないこと。
     */
     robots: { index: false, follow: true },
-    openGraph: {
-      images: ["/ogp.png"], title, description, type: "article" },
+    openGraph: pageOpenGraph(
+      `/houi/${year}/${star}/${month}`,
+      title,
+      description,
+      { type: "article" },
+    ),
   };
 }
 
@@ -125,7 +130,7 @@ export default async function Page({
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#faf7f5] via-[#f5efe9] to-[#f0e9e1] text-slate-900 font-sans">
       <ArticleJsonLd
-        headline={`${year}年${month}月 ${name}の吉方位`}
+        headline={`${year}年${month}月 ${name}の吉方位・凶方位｜月盤と節入りを確認`}
         description={`${formatDate(start)}から${formatDate(end)}までの月盤における${name}の吉方位、五黄殺・暗剣殺・月破の位置。`}
         path={path}
         keywords={[`${year}年${month}月`, name, "吉方位", "月盤", "引越し"]}
@@ -133,6 +138,7 @@ export default async function Page({
       <BreadcrumbJsonLd
         items={[
           { name: HOUI_BREADCRUMB_LABEL, path: "/houi" },
+          { name: `${year}年`, path: `/houi/${year}` },
           { name: `${year}年 ${name}`, path: `/houi/${year}/${star}` },
           { name: `${month}月`, path },
         ]}
@@ -142,6 +148,10 @@ export default async function Page({
         <nav className="text-xs text-slate-500 mb-6">
           <Link href="/houi" className="hover:text-rose-600">
             {HOUI_BREADCRUMB_LABEL}
+          </Link>
+          <span className="mx-2">/</span>
+          <Link href={`/houi/${year}`} className="hover:text-rose-600">
+            {year}年
           </Link>
           <span className="mx-2">/</span>
           <Link href={`/houi/${year}/${star}`} className="hover:text-rose-600">
@@ -158,6 +168,28 @@ export default async function Page({
         <p className="mt-4 text-xs font-semibold text-slate-500">
           対象期間: {formatDate(start)} 〜 {formatDate(end)}
         </p>
+
+        {/* モバイル（表示の 8 割）の 1 画面目に結論だけを置く。詳しい判定は下で開く。 */}
+        <dl
+          data-testid="month-summary"
+          className="mt-4 grid gap-1 rounded-2xl border border-slate-300 bg-white/90 p-4 text-sm"
+        >
+          <div className="flex gap-2">
+            <dt className="shrink-0 font-bold text-emerald-800">吉方位</dt>
+            <dd>{good.length ? good.map((v) => v.jp).join("・") : "なし"}</dd>
+          </div>
+          <div className="flex gap-2">
+            <dt className="shrink-0 font-bold text-rose-800">凶方位</dt>
+            <dd>{bad.map((v) => `${v.jp}（${v.label}）`).join("、")}</dd>
+          </div>
+          <div className="flex gap-2">
+            <dt className="shrink-0 font-bold text-amber-800">注意日</dt>
+            <dd>
+              {formatDate(start)}の節入りより前は前月の盤（{formatDate(end)}
+              まで）
+            </dd>
+          </div>
+        </dl>
 
         <p className="mt-5 text-sm leading-relaxed text-slate-700">
           この期間の月盤は中宮が{STAR_NAMES[centerStar]}です。
@@ -176,7 +208,10 @@ export default async function Page({
         <div className="mt-5 rounded-2xl border border-slate-300 bg-white/90 p-4">
           <p className="text-xs text-slate-700 leading-relaxed">
             九星気学の月は暦の1日ではなく<b>節入り</b>で切り替わります。
-            {month}月といっても実際には<b>{formatDate(start)}から{formatDate(end)}まで</b>
+            {month}月といっても実際には
+            <b>
+              {formatDate(start)}から{formatDate(end)}まで
+            </b>
             が対象です。月の前半に動く場合は前の月の盤になることがあるのでご注意ください。
           </p>
         </div>
@@ -185,27 +220,32 @@ export default async function Page({
           <h2 className="text-xl font-bold font-serif border-b border-slate-300 pb-2">
             方位ごとの判定
           </h2>
-          <div className="mt-5 grid gap-3 sm:grid-cols-2">
-            {verdicts.map((v) => (
-              <div
-                key={v.direction}
-                className={`rounded-2xl border p-4 ${tone[v.kind]}`}
-              >
-                <div className="flex items-baseline justify-between gap-2">
-                  <span className="text-lg font-bold font-serif">{v.jp}</span>
-                  <span className="text-xs font-bold">{v.label}</span>
-                </div>
-                <p className="text-xs mt-2 leading-relaxed opacity-90">
-                  {v.note}
-                </p>
-                {v.star !== null && (
-                  <p className="text-xs mt-2 opacity-70">
-                    回座している星: {STAR_NAMES[v.star]}
+          <details className="mt-5 group">
+            <summary className="cursor-pointer min-h-11 py-2 text-sm font-bold text-rose-700">
+              8方位の詳しい判定を開く
+            </summary>
+            <div className="mt-3 grid gap-3 sm:grid-cols-2">
+              {verdicts.map((v) => (
+                <div
+                  key={v.direction}
+                  className={`rounded-2xl border p-4 ${tone[v.kind]}`}
+                >
+                  <div className="flex items-baseline justify-between gap-2">
+                    <span className="text-lg font-bold font-serif">{v.jp}</span>
+                    <span className="text-xs font-bold">{v.label}</span>
+                  </div>
+                  <p className="text-xs mt-2 leading-relaxed opacity-90">
+                    {v.note}
                   </p>
-                )}
-              </div>
-            ))}
-          </div>
+                  {v.star !== null && (
+                    <p className="text-xs mt-2 opacity-70">
+                      回座している星: {STAR_NAMES[v.star]}
+                    </p>
+                  )}
+                </div>
+              ))}
+            </div>
+          </details>
         </section>
 
         <DirectionEffects
@@ -251,7 +291,8 @@ export default async function Page({
           </h2>
           <div className="mt-4 flex flex-wrap gap-2">
             {MONTHS.filter((m) => m !== month).map((m) => (
-              <Link prefetch={false}
+              <Link
+                prefetch={false}
                 key={m}
                 href={`/houi/${year}/${star}/${m}`}
                 className="px-3 py-1.5 rounded-full border border-slate-300 bg-white text-xs font-semibold hover:border-rose-400 transition-colors"
@@ -266,7 +307,8 @@ export default async function Page({
           </h2>
           <div className="mt-4 flex flex-wrap gap-2">
             {STARS.filter((s) => s !== star).map((s) => (
-              <Link prefetch={false}
+              <Link
+                prefetch={false}
                 key={s}
                 href={`/houi/${year}/${s}/${month}`}
                 className="px-3 py-1.5 rounded-full border border-slate-300 bg-white text-xs font-semibold hover:border-rose-400 transition-colors"

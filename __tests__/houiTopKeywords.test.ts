@@ -23,11 +23,11 @@ describe("トップと /houi の検索キーワードの役割", () => {
     vi.setSystemTime(new Date(`${year}-06-01T00:00:00+09:00`));
     const metadata = generateMetadata();
     expect(metadata.title).toBe(
-      `${year}年 引越しの方位｜本命星別の吉方位早見表`,
+      `${year}年 吉方位早見表｜本命星別に引越しの方位と時期を確認`,
     );
-    // description は指定文言の「年に引越す方位」で年次更新を確認する。
+    // title と description の年次更新を確認する。
     expect(metadata.description).toBe(
-      `${year}年に引越す方位の吉凶を、九星気学の本命星別に確認できる早見表です。生年月日から本命星を調べ、五黄殺・暗剣殺・歳破・本命殺など引越しで避けるとされる方位と、月ごとの方位を確認できます。`,
+      `${year}年の吉方位と引越しで避けたい方位を、九星気学の本命星別に確認できます。生まれ年から本命星を調べ、年盤の五黄殺・暗剣殺・歳破・本命殺と月別の方位を早見表で比較し、引越しの時期を検討できます。`,
     );
     expect(metadata.title).not.toBe(SITE_TAGLINE);
   });

@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 /**
  * 記事の取得口（DB 先・Markdown 後）。
@@ -7,9 +7,8 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
  *   1. DB に行があればそちらを出す
  *   2. **DB が空なら Markdown を出す。**取り込みを流す前にコードが本番へ
  *      出ても /blog を空にしないため
- *   3. **DB が読めなくても Markdown を出す。**記事は公開ページなので、
- *      DB の不調で 500 にする理由が無い。ビルド時の事前生成も同じ経路を
- *      通るので、ビルドが DB の生死に依存しなくなる
+ *   3. 接続障害では DB 専用記事の 404 や不完全な一覧を控えない。
+ *      Markdown にある記事の本文は接続障害でも返す。
  */
 
 const { findMany, findFirst } = vi.hoisted(() => ({
@@ -38,6 +37,17 @@ vi.mock("@/lib/blog", async () => {
         draft: false,
         readingMinutes: 3,
       },
+      {
+        slug: "agent-log-from-markdown",
+        title: "作業ログ",
+        description: "log",
+        publishedAt: "2026-08-02",
+        updatedAt: undefined,
+        category: "その他",
+        tags: ["AI"],
+        draft: false,
+        readingMinutes: 1,
+      },
     ],
     getBlogPost: (slug: string) =>
       slug === "from-markdown"
@@ -53,11 +63,86 @@ vi.mock("@/lib/blog", async () => {
             readingMinutes: 3,
             body: "ファイルの本文",
           }
-        : undefined,
+        : slug === "agent-log-from-markdown"
+          ? {
+              slug: "agent-log-from-markdown",
+              title: "作業ログ",
+              description: "log",
+              publishedAt: "2026-08-02",
+              updatedAt: undefined,
+              category: "その他",
+              tags: ["AI"],
+              draft: false,
+              readingMinutes: 1,
+              body: "ログ本文",
+            }
+          : undefined,
   };
 });
 
-import { loadBlogPost, loadBlogPosts } from "@/lib/blogStore";
+import {
+  loadBlogPost,
+  loadBlogPosts,
+  loadSearchableBlogPosts,
+} from "@/lib/blogStore";
+
+beforeEach(() => vi.stubEnv("NEXT_PHASE", undefined));
+afterEach(() => vi.unstubAllEnvs());
+
+// 同じ障害でも、初回の静的生成と実行時の ISR で扱いを分ける。
+describe.each([undefined, "phase-production-server", "phase-production-build"])(
+  "NEXT_PHASE=%s の DB フォールバック",
+  (phase) => {
+    beforeEach(() => {
+      vi.resetAllMocks();
+      vi.stubEnv("NEXT_PHASE", phase);
+    });
+
+    it.each([
+      { code: "ETIMEDOUT" },
+      { cause: { code: "ETIMEDOUT" } },
+      { code: "P1001" },
+    ])("一時障害: %j", async (error) => {
+      findMany.mockRejectedValue(error);
+      findFirst.mockRejectedValue(error);
+      if (phase === "phase-production-build") {
+        await expect(loadBlogPosts({ quiet: true })).resolves.toMatchObject([
+          { slug: "from-markdown" },
+        ]);
+        await expect(
+          loadSearchableBlogPosts({ quiet: true }),
+        ).resolves.toMatchObject([
+          { slug: "from-markdown", body: "ファイルの本文" },
+        ]);
+        await expect(
+          loadBlogPost("db-only", { quiet: true }),
+        ).resolves.toBeUndefined();
+      } else {
+        await expect(loadBlogPosts({ quiet: true })).rejects.toBe(error);
+        await expect(loadSearchableBlogPosts({ quiet: true })).rejects.toBe(
+          error,
+        );
+        await expect(loadBlogPost("db-only", { quiet: true })).rejects.toBe(
+          error,
+        );
+      }
+      await expect(
+        loadBlogPost("from-markdown", { quiet: true }),
+      ).resolves.toMatchObject({ body: "ファイルの本文" });
+    });
+
+    it("表が未適用なら一覧も本文も Markdown に落ちる", async () => {
+      findMany.mockRejectedValue({ code: "P2021" });
+      findFirst.mockRejectedValue({ code: "P2021" });
+      await expect(loadBlogPosts({ quiet: true })).resolves.toMatchObject([
+        { slug: "from-markdown" },
+      ]);
+      await expect(
+        loadBlogPost("from-markdown", { quiet: true }),
+      ).resolves.toMatchObject({ body: "ファイルの本文" });
+    });
+  },
+);
 
 const dbRow = {
   slug: "from-db",
@@ -72,7 +157,7 @@ const dbRow = {
 };
 
 describe("loadBlogPosts", () => {
-  beforeEach(() => vi.clearAllMocks());
+  beforeEach(() => vi.resetAllMocks());
 
   it("DB に行があればそちらを出す", async () => {
     findMany.mockResolvedValue([dbRow]);
@@ -105,6 +190,55 @@ describe("loadBlogPosts", () => {
     expect(posts.map((p) => p.slug)).toEqual(["from-markdown"]);
   });
 
+  it.each([
+    { code: "P1001" },
+    { code: "P1002" },
+    { code: "P1008" },
+    { code: "P1017" },
+    { code: "P2024" },
+    { code: "P2037" },
+    { code: "ECONNREFUSED" },
+    { code: "P2010", meta: { code: "57014" } },
+    { meta: { driverAdapterError: { cause: { kind: "ConnectionClosed" } } } },
+    { cause: { code: "ETIMEDOUT" } },
+    { meta: { driverAdapterError: new Error("DatabaseNotReachable") } },
+    new Error("timeout exceeded when trying to connect"),
+  ])("接続障害では不完全な一覧を返さない: %j", async (error) => {
+    findMany.mockRejectedValue(error);
+    await expect(loadBlogPosts({ quiet: true })).rejects.toBe(error);
+    await expect(loadSearchableBlogPosts({ quiet: true })).rejects.toBe(error);
+  });
+
+  it("空の一覧の seeded 確認が失敗しても伝播する", async () => {
+    findMany.mockResolvedValue([]);
+    const error = Object.assign(new Error("unavailable"), { code: "P1001" });
+    findFirst.mockRejectedValue(error);
+    await expect(loadBlogPosts({ quiet: true })).rejects.toBe(error);
+  });
+
+  it("slug が agent- の公開済み行は一覧に出さない", async () => {
+    findMany.mockResolvedValue([
+      dbRow,
+      {
+        ...dbRow,
+        slug: "agent--cosmic-report-void-of-course-alignment-deep-calibration-sequence-1781282092303",
+        title: "作業ログ",
+      },
+    ]);
+    const posts = await loadBlogPosts();
+    expect(posts.map((p) => p.slug)).toEqual(["from-db"]);
+  });
+
+  it("公開行が作業ログだけなら Markdown を復活させない", async () => {
+    findMany.mockResolvedValue([
+      {
+        ...dbRow,
+        slug: "agent-only",
+      },
+    ]);
+    expect(await loadBlogPosts()).toEqual([]);
+  });
+
   it("一覧に本文は載せない", async () => {
     findMany.mockResolvedValue([dbRow]);
     const posts = await loadBlogPosts();
@@ -128,7 +262,7 @@ describe("loadBlogPosts", () => {
 });
 
 describe("loadBlogPost", () => {
-  beforeEach(() => vi.clearAllMocks());
+  beforeEach(() => vi.resetAllMocks());
 
   it("DB にあれば本文つきで出す", async () => {
     findFirst.mockResolvedValue(dbRow);
@@ -158,12 +292,69 @@ describe("loadBlogPost", () => {
     expect(post?.slug).toBe("from-markdown");
   });
 
+  it.each([
+    new Error("connection refused"),
+    Object.assign(new Error("unavailable"), { code: "P1001" }),
+    new Error("timeout exceeded when trying to connect"),
+  ])("接続障害で Markdown に無い slug は例外を伝播する: %j", async (error) => {
+    findFirst.mockRejectedValue(error);
+    await expect(loadBlogPost("db-only", { quiet: true })).rejects.toBe(error);
+    await expect(
+      loadBlogPost("from-markdown", { quiet: true }),
+    ).resolves.toMatchObject({
+      slug: "from-markdown",
+      title: "ファイルの記事",
+      description: "md",
+      body: "ファイルの本文",
+    });
+  });
+
+  it("seeded 確認中の接続障害も記事なしに変えない", async () => {
+    const error = Object.assign(new Error("unavailable"), { code: "P2024" });
+    findFirst.mockResolvedValueOnce(null).mockRejectedValueOnce(error);
+    await expect(loadBlogPost("db-only", { quiet: true })).rejects.toBe(error);
+  });
+
+  it.each([new Error('relation "BlogPost" does not exist'), { code: "P2021" }])(
+    "表が未適用なら従来の Markdown フォールバックを残す: %j",
+    async (error) => {
+      findFirst.mockRejectedValue(error);
+      await expect(
+        loadBlogPost("from-markdown", { quiet: true }),
+      ).resolves.toMatchObject({
+        body: "ファイルの本文",
+      });
+      await expect(
+        loadBlogPost("nowhere", { quiet: true }),
+      ).resolves.toBeUndefined();
+    },
+  );
+
   // 下書き・非公開は公開ページに出さない。
   it("非公開の行は Markdown に落とさず undefined", async () => {
     // 以前は published: true で引いて無ければ Markdown を見ていたので、
     // 管理画面で非公開にした記事も content/blog の写しでそのまま開けた
     findFirst.mockResolvedValue({ ...dbRow, published: false });
     expect(await loadBlogPost("from-markdown")).toBeUndefined();
+  });
+
+  it("slug が agent- の行は published でも出さない", async () => {
+    findFirst.mockResolvedValue({
+      ...dbRow,
+      slug: "agent--cosmic-report-void-of-course-alignment-deep-calibration-sequence-1781282092303",
+      published: true,
+    });
+    expect(
+      await loadBlogPost(
+        "agent--cosmic-report-void-of-course-alignment-deep-calibration-sequence-1781282092303",
+      ),
+    ).toBeUndefined();
+    expect(findFirst).not.toHaveBeenCalled();
+  });
+
+  it("Markdown 側の agent- も出さない", async () => {
+    findFirst.mockResolvedValue(null);
+    expect(await loadBlogPost("agent-log-from-markdown")).toBeUndefined();
   });
 
   it("DB に記事があるのに slug が無ければ 404（消した記事を復活させない）", async () => {

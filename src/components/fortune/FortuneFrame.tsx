@@ -4,7 +4,7 @@ export function FortuneFrame({ srcdoc }: { srcdoc: string }) {
       title="AI装飾の運勢レポート"
       sandbox=""
       srcDoc={srcdoc}
-      style={{ width: "100%", height: "70vh", minHeight: 480, border: 0 }}
+      className="w-full h-[50svh] min-h-64 border-0 sm:h-[70svh] sm:min-h-[480px]"
     />
   );
 }

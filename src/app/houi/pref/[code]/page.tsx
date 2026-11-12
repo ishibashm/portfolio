@@ -21,6 +21,7 @@ import {
   regionSiblings,
 } from "@/lib/prefContent";
 import { PREF_EDITORIAL } from "@/lib/prefEditorial";
+import { pageOpenGraph } from "@/lib/siteUrl";
 import housingStats from "@/data/housingStats.json";
 import {
   housingFiguresFor,
@@ -133,7 +134,10 @@ export async function generateMetadata({
     title,
     description,
     alternates: { canonical: `/houi/pref/${code}` },
-    openGraph: { images: ["/ogp.png"], title, description, type: "article" },
+    openGraph: pageOpenGraph(`/houi/pref/${code}`, title, description, {
+      type: "article",
+      omitImages: true,
+    }),
   };
 }
 

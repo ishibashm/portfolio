@@ -287,7 +287,9 @@ export function TenChiJinEvaluation({
       ratings.push(step.evaluation.rating);
 
       const status = step.evaluation.status || "";
-      if (["NOISE_GOU", "NOISE_ANKEN", "NOISE_HA"].includes(status)) {
+      if (
+        ["NOISE_DOYOU", "NOISE_GOU", "NOISE_ANKEN", "NOISE_HA"].includes(status)
+      ) {
         hasSevereClash = true;
         worstRating = "大凶";
         // 呼び名は @/lib/directionLabels に集約。ここに表を戻さないこと。

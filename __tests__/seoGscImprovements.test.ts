@@ -23,12 +23,12 @@ describe("Search Console 向けメタデータ", () => {
         params: Promise.resolve({ year: "2026", star: String(star) }),
       });
       expect(metadata.title).toEqual({
-        absolute: `2026年 ${name}の吉方位・凶方位【月別】 | Cloud Palette`,
+        absolute: `2026年 ${name}の吉方位・凶方位｜引越しの方位を月別に確認`,
       });
       const og = metadata.openGraph as { title?: string } | undefined;
       expect(og?.title?.match(/Cloud Palette/g) ?? []).toHaveLength(1);
       expect(metadata.description).toContain(
-        `2026年 ${name}の吉方位と凶方位（五黄殺・暗剣殺）を月別に`,
+        `2026年 ${name}の吉方位と凶方位を年盤・月盤で`,
       );
     },
   );

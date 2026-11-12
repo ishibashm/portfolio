@@ -1,3 +1,5 @@
+import { CurrentDirections } from "@/components/houi/CurrentDirections";
+import { LineFriendLink } from "@/components/LineFriendLink";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { buildTodayDirections } from "@/lib/todayDirections";
@@ -30,6 +32,7 @@ export default function TodayPage() {
         ]}
       />
       <article className="mx-auto max-w-5xl space-y-6">
+        <CurrentDirections />
         <header className="space-y-3">
           <h1 className="font-serif text-3xl font-bold">今日の吉方位と時間</h1>
           <p className="font-bold">
@@ -54,12 +57,7 @@ export default function TodayPage() {
             星の名前を押して開いてください。一般的な九星気学の本命星で見る早見表です。
           </p>
           {data.stars.map((star) => (
-            <details
-              key={star.star}
-              name="honmei"
-              open={star.star === 1}
-              className="wg-card p-4"
-            >
+            <details key={star.star} name="honmei" className="wg-card p-4">
               <summary className="cursor-pointer font-bold text-rose-700">
                 {star.name}
               </summary>
@@ -199,6 +197,9 @@ export default function TodayPage() {
           </a>
           <Link href="/profile/mcp">AIから確認する（MCP設定）</Link>
         </nav>
+        <p className="text-sm">
+          <LineFriendLink />
+        </p>
       </article>
     </main>
   );

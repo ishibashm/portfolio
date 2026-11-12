@@ -16,13 +16,15 @@ function screenRows(
   lon: number,
   override = "",
   classical = true,
+  hourVoid = true,
 ) {
   const birth = parseJapanDateTime(birthDate);
   const honmei = getHonmeiStar(birth);
   const voids = override ? override.split("") : getPersonalVoidZodiac(birth);
   return getDailySolarSchedule(new Date(`${date}T12:00:00+09:00`), lon).map(
     (item) => {
-      const isVoid = isVoidTimeHour(item, voids);
+      /* MCP の刻表は 2026-11-02 から刻単位の天中殺を使わない（hourVoid=false） */
+      const isVoid = hourVoid && isVoidTimeHour(item, voids);
       const phase = evaluateTimePhase(item, honmei, classical);
       return {
         branch: item.japanese,
@@ -91,7 +93,7 @@ describe("刻の通信アダプター", () => {
             lon,
             includeBoard: true,
           });
-          const expected = screenRows(birthDate, date, lon);
+          const expected = screenRows(birthDate, date, lon, "", true, false);
           expect(
             actual.slots.map((row) => ({
               branch: row.branch,
@@ -115,19 +117,17 @@ describe("刻の通信アダプター", () => {
           for (const [index, row] of actual.slots.entries()) {
             expect(row.index).toBe(index);
             expect(row.start).toMatch(/\.\d{3}\+09:00$/);
+            expect(row.isVoid).toBe(false);
+            expect(row.label).not.toBe("天中殺");
             expect(row.status).toBe(
-              row.isVoid
-                ? "void"
-                : row.isElementFavorable
-                  ? "favorable"
-                  : "neutral",
+              row.isElementFavorable ? "favorable" : "neutral",
             );
           }
         }
     }
   });
 
-  it("空亡overrideを優先し、空文字なら出生から計算する", () => {
+  it("空亡overrideは設定の出所として記録するが、刻を天中殺にしない", () => {
     const base = calculateTimeSlots(input);
     expect(
       calculateTimeSlots({ ...input, settings: { voidZodiacOverride: "" } })
@@ -140,9 +140,14 @@ describe("刻の通信アダプター", () => {
       settings: { useClassicalBoard: true, voidZodiacOverride: override },
     });
     expect(actual.slots.find((s) => s.branch === branch)).toMatchObject({
-      status: "void",
+      status: "favorable",
+      isVoid: false,
       isElementFavorable: true,
     });
+    expect(actual.slots).toEqual(base.slots);
+    expect(actual.warnings.map((w) => w.code)).toContain(
+      "HOUR_TENCHUSATSU_NOT_USED",
+    );
     expect(actual.settingsUsed.voidZodiacSource).toBe("override");
     expect(actual.settingsSources).toEqual({
       useClassicalBoard: "explicit",

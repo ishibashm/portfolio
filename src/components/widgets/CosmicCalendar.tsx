@@ -179,36 +179,48 @@ function getLunarPhase(date: Date) {
 }
 
 const CLASH_MAP: Record<string, string> = {
-  "子": "午", "午": "子",
-  "丑": "未", "未": "丑",
-  "寅": "申", "申": "寅",
-  "卯": "酉", "酉": "卯",
-  "辰": "戌", "戌": "辰",
-  "巳": "亥", "亥": "巳"
+  子: "午",
+  午: "子",
+  丑: "未",
+  未: "丑",
+  寅: "申",
+  申: "寅",
+  卯: "酉",
+  酉: "卯",
+  辰: "戌",
+  戌: "辰",
+  巳: "亥",
+  亥: "巳",
 };
 
 const HARMONY_MAP: Record<string, string> = {
-  "子": "丑", "丑": "子",
-  "寅": "亥", "亥": "寅",
-  "卯": "戌", "戌": "卯",
-  "辰": "酉", "酉": "辰",
-  "巳": "申", "申": "巳",
-  "午": "未", "未": "午"
+  子: "丑",
+  丑: "子",
+  寅: "亥",
+  亥: "寅",
+  卯: "戌",
+  戌: "卯",
+  辰: "酉",
+  酉: "辰",
+  巳: "申",
+  申: "巳",
+  午: "未",
+  未: "午",
 };
 
 const ZHI_ELEMENTS: Record<string, string> = {
-  "子": "水 (Water)",
-  "丑": "土 (Earth)",
-  "寅": "木 (Wood)",
-  "卯": "木 (Wood)",
-  "辰": "土 (Earth)",
-  "巳": "火 (Fire)",
-  "午": "火 (Fire)",
-  "未": "土 (Earth)",
-  "申": "金 (Metal)",
-  "酉": "金 (Metal)",
-  "戌": "土 (Earth)",
-  "亥": "水 (Water)",
+  子: "水 (Water)",
+  丑: "土 (Earth)",
+  寅: "木 (Wood)",
+  卯: "木 (Wood)",
+  辰: "土 (Earth)",
+  巳: "火 (Fire)",
+  午: "火 (Fire)",
+  未: "土 (Earth)",
+  申: "金 (Metal)",
+  酉: "金 (Metal)",
+  戌: "土 (Earth)",
+  亥: "水 (Water)",
 };
 
 /**
@@ -257,7 +269,7 @@ function getActionableAdvice(day: DayData): string {
   // Personal Fortune overrides
   if (day.personalFortune) {
     if (day.personalFortune.isVoid) {
-      return "🌀 [天中殺/VOID] 本日はあなたにとって「天中殺（空亡）」の日です。伝統的に、新しい契約や高額な買い物は避け、内省や身の回りの整理に充てるのが良いとされます。";
+      return "🌀 [天中殺/VOID] 本日はあなたの天中殺（宿命の空亡）に当たる日です。伝統的に、新しい契約や高額な買い物は避け、内省や身の回りの整理に充てるのが良いとされます。";
     }
     if (day.personalFortune.isClash) {
       return "⚡ [日破/CLASH] 本日はあなたの日支と対沖（日破）する日です。伝統的に、衝突や突発的な障害が生じやすいとされます。大事な交渉や契約は別の日に回すのが無難です。";
@@ -341,7 +353,7 @@ const LEGEND_MARKS = [
   },
   {
     mark: "殺",
-    label: "天中殺",
+    label: "あなたの天中殺（宿命の空亡）",
     className: "text-purple-600 bg-purple-500/20 border border-purple-200",
   },
   {
@@ -376,11 +388,16 @@ export function CosmicCalendar({
   setSelectedDayState?: (day: DayData | null) => void;
 }) {
   const [currentDate, setCurrentDate] = useState<Date>(new Date());
-  const [internalSelectedDay, setInternalSelectedDay] = useState<DayData | null>(null);
-  
-  const selectedDay = selectedDayState !== undefined ? selectedDayState : internalSelectedDay;
-  const setSelectedDay = setSelectedDayState !== undefined ? setSelectedDayState : setInternalSelectedDay;
-  
+  const [internalSelectedDay, setInternalSelectedDay] =
+    useState<DayData | null>(null);
+
+  const selectedDay =
+    selectedDayState !== undefined ? selectedDayState : internalSelectedDay;
+  const setSelectedDay =
+    setSelectedDayState !== undefined
+      ? setSelectedDayState
+      : setInternalSelectedDay;
+
   const [days, setDays] = useState<DayData[]>([]);
 
   // Birthdate settings for personal calculations
@@ -514,7 +531,7 @@ export function CosmicCalendar({
           fields.day,
           12, // Standardize to noon to avoid boundary issues
           0,
-          0
+          0,
         );
         const lunar = solar.getLunar();
         const dayZhi = lunar.getEightChar().getDayZhi();
@@ -527,7 +544,7 @@ export function CosmicCalendar({
           isVoid,
           isClash,
           isHarmony,
-          dayZhi
+          dayZhi,
         };
       } catch (e) {
         console.error("Personal fortune calculation failed:", e);
@@ -568,7 +585,12 @@ export function CosmicCalendar({
   const monthSummary = useMemo(() => {
     const current = days.filter((d) => d.isCurrentMonth);
     if (current.length === 0) {
-      return { lucky: 0, voidDays: 0, avgScore: 0, best: null as DayData | null };
+      return {
+        lucky: 0,
+        voidDays: 0,
+        avgScore: 0,
+        best: null as DayData | null,
+      };
     }
     return {
       lucky: current.filter(
@@ -674,8 +696,7 @@ export function CosmicCalendar({
       {/* Day Grid */}
       <div className="grid grid-cols-7 auto-rows-fr gap-1.5">
         {days.map((day, idx) => {
-          const isToday =
-            new Date().toDateString() === day.date.toDateString();
+          const isToday = new Date().toDateString() === day.date.toDateString();
           const isSelected =
             selectedDay?.date.toDateString() === day.date.toDateString();
 
@@ -727,29 +748,44 @@ export function CosmicCalendar({
                 <div className="flex gap-0.5 items-center leading-none">
                   {/* Tiny label for major days */}
                   {day.luckyDays.isTensho && (
-                    <span className="text-[10px] font-bold text-amber-600 font-mono scale-90 select-none bg-amber-500/10 px-0.5 rounded" title="天赦日">
+                    <span
+                      className="text-[10px] font-bold text-amber-600 font-mono scale-90 select-none bg-amber-500/10 px-0.5 rounded"
+                      title="天赦日"
+                    >
                       赦
                     </span>
                   )}
                   {!day.luckyDays.isTensho && day.luckyDays.isIchiryumanbai && (
-                    <span className="text-[10px] font-bold text-emerald-600 font-mono scale-90 select-none bg-emerald-500/10 px-0.5 rounded" title="一粒万倍日">
+                    <span
+                      className="text-[10px] font-bold text-emerald-600 font-mono scale-90 select-none bg-emerald-500/10 px-0.5 rounded"
+                      title="一粒万倍日"
+                    >
                       万
                     </span>
                   )}
 
                   {/* Personal Astro Fortunes */}
                   {day.personalFortune?.isVoid && (
-                    <span className="text-[10px] font-bold text-purple-600 font-mono scale-90 select-none bg-purple-500/20 border border-purple-200 px-0.5 rounded animate-pulse" title="天中殺 (Void)">
+                    <span
+                      className="text-[10px] font-bold text-purple-600 font-mono scale-90 select-none bg-purple-500/20 border border-purple-200 px-0.5 rounded animate-pulse"
+                      title="あなたの天中殺（宿命の空亡）"
+                    >
                       殺
                     </span>
                   )}
                   {day.personalFortune?.isClash && (
-                    <span className="text-[10px] font-bold text-rose-600 font-mono scale-90 select-none bg-rose-500/20 border border-rose-200 px-0.5 rounded" title="日破 (Clash)">
+                    <span
+                      className="text-[10px] font-bold text-rose-600 font-mono scale-90 select-none bg-rose-500/20 border border-rose-200 px-0.5 rounded"
+                      title="日破 (Clash)"
+                    >
                       破
                     </span>
                   )}
                   {day.personalFortune?.isHarmony && (
-                    <span className="text-[10px] font-bold text-sky-600 font-mono scale-90 select-none bg-sky-500/20 border border-sky-200 px-0.5 rounded" title="支合 (Harmony)">
+                    <span
+                      className="text-[10px] font-bold text-sky-600 font-mono scale-90 select-none bg-sky-500/20 border border-sky-200 px-0.5 rounded"
+                      title="支合 (Harmony)"
+                    >
                       合
                     </span>
                   )}
@@ -813,7 +849,7 @@ export function CosmicCalendar({
                 unit: "日",
               },
               {
-                label: "天中殺",
+                label: "あなたの天中殺（宿命の空亡）",
                 value: `${monthSummary.voidDays}`,
                 unit: "日",
               },
@@ -858,9 +894,7 @@ export function CosmicCalendar({
             onClick={() => setIsSettingsOpen(!isSettingsOpen)}
             className="w-full flex justify-between items-center text-stone-600 hover:text-stone-800 py-1 transition-colors"
           >
-            <span className="flex items-center gap-1.5">
-              ⚙️ 暦・占術設定
-            </span>
+            <span className="flex items-center gap-1.5">⚙️ 暦・占術設定</span>
             <span>{isSettingsOpen ? "▲" : "▼"}</span>
           </button>
 
@@ -905,7 +939,7 @@ export function CosmicCalendar({
                 </div>
               </div>
               <p className="text-xs text-stone-600 leading-normal">
-                ※生年月日と経度を設定すると、あなたの宿命干支（日柱地支）と空亡（天中殺）を自動算出し、吉凶日と補正指数をカレンダーへ動的に投影します。
+                ※生年月日と経度を設定すると、あなたの宿命干支（日柱地支）と宿命の空亡（あなたの天中殺）を自動算出し、吉凶日と補正指数をカレンダーへ動的に投影します。
               </p>
             </div>
           )}
@@ -1018,7 +1052,7 @@ export function CosmicCalendar({
                 {selectedDay.personalFortune ? (
                   <div className="space-y-1 text-[11px] leading-relaxed text-stone-700">
                     {selectedDay.personalFortune.isVoid && (
-                      <p>天中殺（空亡）の日です。</p>
+                      <p>あなたの天中殺（宿命の空亡）に当たる日です。</p>
                     )}
                     {selectedDay.personalFortune.isClash && (
                       <p>日破（あなたの日支と対沖）の日です。</p>
@@ -1114,7 +1148,8 @@ export function CosmicCalendar({
                   <div className="flex justify-between border-b border-stone-200/60 pb-1.5 text-[11px] font-mono">
                     <span className="text-stone-600">本日の地支:</span>
                     <span className="text-stone-900 font-bold">
-                      {selectedDay.personalFortune.dayZhi} ({ZHI_ELEMENTS[selectedDay.personalFortune.dayZhi]})
+                      {selectedDay.personalFortune.dayZhi} (
+                      {ZHI_ELEMENTS[selectedDay.personalFortune.dayZhi]})
                     </span>
                   </div>
                   <div className="flex justify-between border-b border-stone-200/60 pb-1.5 text-[11px] font-mono">
@@ -1124,7 +1159,9 @@ export function CosmicCalendar({
                     </span>
                   </div>
                   <div className="flex justify-between border-b border-stone-200/60 pb-1.5 text-[11px] font-mono">
-                    <span className="text-stone-600">宿命の空亡:</span>
+                    <span className="text-stone-600">
+                      あなたの天中殺（宿命の空亡）:
+                    </span>
                     <span className="text-purple-600 font-bold">
                       {userVoidZodiacs.join("")}天中殺
                     </span>
@@ -1134,7 +1171,7 @@ export function CosmicCalendar({
                     <span className="font-bold">
                       {selectedDay.personalFortune.isVoid && (
                         <span className="px-1.5 py-0.5 rounded text-[10px] bg-purple-500/10 text-purple-600 border border-purple-200">
-                          天中殺 (Void Day)
+                          あなたの天中殺（宿命の空亡）
                         </span>
                       )}
                       {selectedDay.personalFortune.isClash && (
@@ -1232,7 +1269,6 @@ export function CosmicCalendar({
                   {getActionAdvice(selectedDay)}
                 </p>
               </div>
-
             </div>
           </div>
         ) : (
@@ -1253,7 +1289,9 @@ export function CosmicCalendar({
   }
 
   return (
-    <div className={`w-full grid gap-6 items-start ${compact ? "grid-cols-1" : "grid-cols-1 xl:grid-cols-1 2xl:grid-cols-3"}`}>
+    <div
+      className={`w-full grid gap-6 items-start ${compact ? "grid-cols-1" : "grid-cols-1 xl:grid-cols-1 2xl:grid-cols-3"}`}
+    >
       {renderCalendar(compact ? "" : "2xl:col-span-2")}
       {renderTelemetry("space-y-6")}
     </div>

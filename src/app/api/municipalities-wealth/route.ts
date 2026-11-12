@@ -237,7 +237,7 @@ export async function GET(request: Request) {
        `=== vectorData.finalVectors` はそのまま成り立つ。 */
     activeVectors = vectorsForLayerMode(vectorData, layerMode);
 
-    // 土用殺は年盤・月盤・日盤のどれにも出ず、最終だけを NOISE_GOU で
+    // 土用殺は年盤・月盤・日盤のどれにも出ず、最終だけを NOISE_DOYOU で
     // 上書きする。画面が「五黄殺」ではなく「土用殺」と書けるように、
     // どの方位が土用殺かを添える。単盤の表示では意味を持たないので null。
     doyouSatsuDirection =

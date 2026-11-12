@@ -1,3 +1,5 @@
+import { buildTodayDirections } from "@/lib/todayDirections";
+import { getMonthDirections } from "@/lib/kigakuContent";
 import { municipalityMatches } from "@/lib/municipalitySearch";
 import {
   articleSearchSchema,
@@ -49,6 +51,7 @@ import {
 import { registerPublicTimeTools } from "@/lib/mcpTimeTools";
 import {
   findAuspiciousDaysAllDirections,
+  findPurposeDaysAllDirections,
   gradeVerdict,
 } from "@/utils/auspiciousDays";
 import { getHonmeiStar, getPersonalVoidZodiac } from "@/utils/ephemerisEngine";
@@ -67,6 +70,8 @@ import {
 import { ESTAT_API_CREDIT } from "@/lib/estatCredit";
 import { coreRouteLabel } from "@/lib/siteStructure";
 import { toJapanDateString } from "@/utils/japanDate";
+import { PURPOSE_BOARDS, PURPOSE_LABELS } from "@/utils/tripPurpose";
+import { TENCHUSATSU_WEAK_NOTE } from "@/utils/tenchusatsuPolicy";
 import {
   getPrefStats,
   prefCodeByName,
@@ -80,7 +85,13 @@ const tenchusatsuSchema = z
   .enum(["strict", "month_day", "day_only", "weaken", "off"])
   .optional()
   .describe(
-    "天中殺の扱い。strict=年月日すべて避ける / month_day / day_only / weaken=弱める（禁止しない） / off。既定は画面と同じ",
+    "天中殺の扱い。weaken=弱める（禁止しない・既定） / strict=年月日すべて避ける / month_day / day_only / off。時刻（刻）単位の天中殺は使わない",
+  );
+const purposeSchema = z
+  .enum(["daytrip", "short_stay", "relocation"])
+  .optional()
+  .describe(
+    "用事の種類。daytrip=日帰り（日盤） / short_stay=1〜2泊（月盤＋日盤） / relocation=引越し（年盤＋月盤）。省略時は従来どおり三盤（年盤・月盤・日盤）の合成判定",
   );
 const directionFilterSchema = z
   .enum(["composite", "personal_kigaku", "personal_bazi", "environmental"])
@@ -248,7 +259,7 @@ export function createMcpBaseServer(options?: {
         openWorldHint: false,
       },
       title: "指定日の八方位の吉凶",
-      description: `出発地の経度と生年月日から、指定日の八方位それぞれの段階（S 三盤吉〜X 五大凶殺）と状態を返します。年盤・月盤・日盤を合成した判定で、画面の「${coreRouteLabel("/relocation/arbitrage")}」と同じ関数です。`,
+      description: `出発地の経度と生年月日から、指定日の八方位それぞれの段階（S 三盤吉〜X 五大凶殺）と状態を返します。purpose 省略時は年盤・月盤・日盤を合成した判定で、画面の「${coreRouteLabel("/relocation/arbitrage")}」と同じ関数です。purpose を指定すると用事の盤だけで段階を出します。天中殺は既定で禁止せず弱めるだけで、天中殺の日も auspiciousDirections（天中殺を除いた判定の吉方位）と注記を返します。六曜・一粒万倍日は almanac に目安として返し、判定には使いません。`,
       inputSchema: {
         birthDate: z.string().describe("生年月日。YYYY-MM-DD"),
         lon: z.number().min(122).max(154).describe("出発地の経度（日本国内）"),
@@ -257,6 +268,7 @@ export function createMcpBaseServer(options?: {
           .optional()
           .describe("判定する日。YYYY-MM-DD。省略時は今日（日本時間）"),
         tenchusatsuMode: tenchusatsuSchema,
+        purpose: purposeSchema,
         involuntaryMove: z
           .boolean()
           .optional()
@@ -281,7 +293,7 @@ export function createMcpBaseServer(options?: {
       },
       title: "吉方位の日取りを探す",
       description:
-        "期間内で、八方位それぞれに動ける日（三盤吉・吉日）を集計します。画面の「引っ越し時期を探す」と同じ関数です。日数が多いほど計算に時間がかかります。",
+        "期間内で、八方位それぞれに動ける日（三盤吉・吉日）を集計します。purpose 省略時は画面の「引っ越し時期を探す」と同じ関数（三盤吉）です。purpose を指定すると用事の盤がすべて吉の日を拾います。天中殺は既定で禁止せず弱めるだけです。日数が多いほど計算に時間がかかります。",
       inputSchema: {
         birthDate: z.string().describe("生年月日。YYYY-MM-DD"),
         lon: z.number().min(122).max(154).describe("出発地の経度（日本国内）"),
@@ -304,6 +316,7 @@ export function createMcpBaseServer(options?: {
           .optional()
           .describe("方位ごとに返す日付の上限。既定 10"),
         tenchusatsuMode: tenchusatsuSchema,
+        purpose: purposeSchema,
         involuntaryMove: z.boolean().optional(),
         directionFilterMode: directionFilterSchema,
       },
@@ -317,6 +330,47 @@ export function createMcpBaseServer(options?: {
       const to = new Date(from);
       to.setDate(to.getDate() + days);
       const cap = input.maxDaysPerDirection ?? 10;
+      if (input.purpose) {
+        const purpose = input.purpose;
+        const summaries = findPurposeDaysAllDirections(
+          from,
+          to,
+          built.base,
+          purpose,
+        );
+        return text({
+          calendarBasis: KANSHI_BASIS,
+          from: toJapanDateString(from),
+          days,
+          honmeiStar: built.honmei.classical,
+          voidZodiacs: built.voidZodiacs,
+          tenchusatsuMode: built.tenchusatsuMode,
+          purpose,
+          purposeLabel: PURPOSE_LABELS[purpose],
+          boardsUsed: [...PURPOSE_BOARDS[purpose]],
+          note: `${TENCHUSATSU_WEAK_NOTE}（inTenchusatsu が true の日）。天中殺は用事の盤の範囲だけで見て、時刻単位は使いません。六曜・一粒万倍日は目安で、判定には使っていません。`,
+          directions: summaries.map((s) => ({
+            direction: s.direction,
+            label: s.directionLabel,
+            scannedDays: s.scannedDays,
+            auspiciousDays: s.auspiciousDays,
+            availableDays: s.availableDays,
+            blockedByTenchusatsuDays: s.blockedByTenchusatsuDays,
+            weakenedByTenchusatsuDays: s.weakenedByTenchusatsuDays,
+            yearBoardWindow: s.window,
+            bestDays: s.days.slice(0, cap).map((d) => ({
+              date: d.date,
+              kanshi: kanshiAt(new Date(`${d.date}T12:00:00+09:00`)),
+              tier: d.tier,
+              status: d.status,
+              inTenchusatsu: d.inTenchusatsu,
+              blockedByTenchusatsu: d.blockedByTenchusatsu,
+              rokuyo: d.rokuyo,
+              tags: d.tags,
+            })),
+          })),
+        });
+      }
       const summaries = findAuspiciousDaysAllDirections(from, to, built.base);
       const firstYear = Number(toJapanDateString(from).slice(0, 4));
       const lastYear = Number(toJapanDateString(to).slice(0, 4));
@@ -354,6 +408,8 @@ export function createMcpBaseServer(options?: {
             kanshi: kanshiAt(new Date(`${d.date}T12:00:00+09:00`)),
             tier: gradeVerdict(d),
             status: d.finalStatus,
+            inTenchusatsu:
+              d.voidScopes.year || d.voidScopes.month || d.voidScopes.day,
             rokuyo: d.rokuyo,
             tags: d.tags,
           })),
@@ -569,6 +625,55 @@ export function createMcpBaseServer(options?: {
 export function createMcpServer(deps?: { rentals?: RentalReader }): McpServer {
   const server = createMcpBaseServer({ municipalityReadings: true });
   registerPublicTimeTools(server);
+  server.registerTool(
+    "get_today_directions",
+    {
+      title: "今日の吉方位",
+      description:
+        "/houi/today と同じ本命星別の日盤・時間帯。東京基準、日付省略時は今日（JST）。",
+      inputSchema: {
+        date: z.iso
+          .date()
+          .refine(
+            (v) =>
+              Number(v.slice(0, 4)) >= 1900 && Number(v.slice(0, 4)) <= 2099,
+          )
+          .optional(),
+      },
+      annotations: {
+        readOnlyHint: true,
+        destructiveHint: false,
+        openWorldHint: false,
+      },
+    },
+    async ({ date }) =>
+      text(
+        buildTodayDirections(
+          date ? new Date(`${date}T12:00:00+09:00`) : new Date(),
+        ),
+      ),
+  );
+  server.registerTool(
+    "get_month_directions",
+    {
+      title: "年月の吉方位",
+      description:
+        "/houi/[year]/[star]/[month] と同じ月盤の吉方位。期間は節入りから翌節入りまで。",
+      inputSchema: {
+        year: z.number().int().min(1900).max(2099),
+        month: z.number().int().min(1).max(12),
+        star: z.number().int().min(1).max(9).describe("本命星（1〜9）"),
+      },
+      annotations: {
+        readOnlyHint: true,
+        destructiveHint: false,
+        openWorldHint: false,
+      },
+    },
+    async ({ year, month, star }) =>
+      text(JSON.parse(JSON.stringify(getMonthDirections(year, month, star)))),
+  );
+
   server.registerTool(
     "search_articles",
     {

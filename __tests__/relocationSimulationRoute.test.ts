@@ -37,7 +37,7 @@ vi.mock("@/lib/prisma", () => ({
 
 import { DELETE, GET, POST } from "@/app/api/relocation/simulation/route";
 
-const user = { id: "user-1", email: "owner@example.com" };
+const user = { id: "user-1", email: "owner@example.com", emailVerified: true };
 
 function post(body: unknown) {
   return new Request("http://localhost/api/relocation/simulation", {
@@ -130,6 +130,32 @@ describe("/api/relocation/simulation", () => {
       orderBy: { updatedAt: "desc" },
     });
     expect(userCreate).not.toHaveBeenCalled();
+  });
+
+  it("does not link a legacy row using an unverified email", async () => {
+    getAuthUser.mockResolvedValue({ ...user, emailVerified: false });
+    userFindUnique.mockResolvedValueOnce(null);
+    expect((await GET()).status).toBe(503);
+    expect(userFindUnique).toHaveBeenCalledTimes(1);
+    expect(findMany).not.toHaveBeenCalled();
+  });
+
+  it("does not claim another Supabase identity through email", async () => {
+    userFindUnique.mockResolvedValueOnce(null).mockResolvedValueOnce({
+      id: "11111111-2222-4333-8444-555555555555",
+      email: user.email,
+    });
+    expect((await GET()).status).toBe(503);
+    expect(findMany).not.toHaveBeenCalled();
+  });
+
+  it("rejects malformed and oversized plans before database access", async () => {
+    expect((await POST(post({ name: {}, steps: [] }))).status).toBe(400);
+    expect(
+      (await POST(post({ name: "fixture", steps: Array(101).fill({}) })))
+        .status,
+    ).toBe(400);
+    expect(userFindUnique).not.toHaveBeenCalled();
   });
 
   it("does not update a plan owned by another user", async () => {

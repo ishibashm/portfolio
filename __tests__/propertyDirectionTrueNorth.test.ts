@@ -60,7 +60,7 @@ function makeState(): DailyAstroState {
     /* 実物（isJapaneseHoliday）は null を返さない。非祝日はこの形。 */
     holiday: { isHoliday: false, name: "" },
     weekday: 1,
-    isVoidTime: false,
+    inVoidPeriod: false,
     voidScopes: { year: false, month: false, day: false },
     baziScore: 50,
   };

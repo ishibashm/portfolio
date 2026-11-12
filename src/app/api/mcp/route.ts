@@ -7,7 +7,9 @@
  * （enableJsonResponse）。応答は 1 リクエスト 1 JSON。
  *
  * 認証は掛けない。計算は DB を読まない。記事と賃貸掲載だけが
- * SELECT する。個人データ・お気に入り・連絡先は返さない。
+ * SELECT する。呼び出し回数の上限だけ、IP の HMAC を共有の表で数える
+ * （表が無い・DB が落ちているときは通す）。個人データ・お気に入り・
+ * 連絡先は返さない。
  * スクレイピングは起動しない（lib/mcpServer の註）。site-spec の
  * 「個人データを返す API は自分で認証すること」には当たらない。
  *
@@ -16,11 +18,21 @@
  */
 import { WebStandardStreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/webStandardStreamableHttp.js";
 import { createMcpServer } from "@/lib/mcpServer";
-import { toLogMessage } from "@/lib/errorMessage";
+import { applyRateHeaders, checkMcpPublicLimit } from "@/lib/mcpPublicLimit";
+import { readBoundedJson, requestLimiter } from "@/lib/requestSecurity";
+
+const limit = requestLimiter(60, 1);
 
 export const dynamic = "force-dynamic";
 
 export async function POST(request: Request): Promise<Response> {
+  const denied = limit(request.headers);
+  if (denied) return denied;
+  const budget = await checkMcpPublicLimit(request.headers);
+  if (budget.denied) return budget.denied;
+  const input = await readBoundedJson(request, 256 * 1024);
+  if (!input.ok) return input.response;
+  // The SDK validates the JSON-RPC envelope and each tool's existing Zod schema.
   const server = createMcpServer();
   const transport = new WebStandardStreamableHTTPServerTransport({
     sessionIdGenerator: undefined,
@@ -28,9 +40,12 @@ export async function POST(request: Request): Promise<Response> {
   });
   try {
     await server.connect(transport);
-    return await transport.handleRequest(request);
-  } catch (e) {
-    console.error(`[mcp] ${toLogMessage(e)}`);
+    const response = await transport.handleRequest(request, {
+      parsedBody: input.value,
+    });
+    return applyRateHeaders(response, budget.headers);
+  } catch {
+    console.error("[mcp] Internal error");
     return Response.json(
       {
         jsonrpc: "2.0",

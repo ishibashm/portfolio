@@ -1,3 +1,4 @@
+import { HonmeiStarLinks } from "@/components/houi/HonmeiStarLinks";
 import Link from "next/link";
 import { ContentDisclaimer } from "@/components/houi/ContentDisclaimer";
 import { HonmeiLookup } from "@/components/houi/HonmeiLookup";
@@ -56,8 +57,8 @@ const HOUI_FAQ = [
 */
 export function generateMetadata(): Metadata {
   const year = currentYearInJapan();
-  const title = `${year}年 引越しの方位｜本命星別の吉方位早見表`;
-  const description = `${year}年に引越す方位の吉凶を、九星気学の本命星別に確認できる早見表です。生年月日から本命星を調べ、五黄殺・暗剣殺・歳破・本命殺など引越しで避けるとされる方位と、月ごとの方位を確認できます。`;
+  const title = `${year}年 吉方位早見表｜本命星別に引越しの方位と時期を確認`;
+  const description = `${year}年の吉方位と引越しで避けたい方位を、九星気学の本命星別に確認できます。生まれ年から本命星を調べ、年盤の五黄殺・暗剣殺・歳破・本命殺と月別の方位を早見表で比較し、引越しの時期を検討できます。`;
   return {
     alternates: { canonical: "/houi" },
     title,
@@ -109,6 +110,13 @@ export default function Page() {
           引越しの方位は、自分の<b>本命星</b>と、その年の<b>年盤</b>
           で決まります。まず生まれ年から本命星を確認し、その年の方位一覧に進んでください。
         </p>
+
+        <p className="mt-4">
+          <Link href="/houi/today" className="text-rose-600 underline">
+            今の時間・今日の吉方位を見る
+          </Link>
+        </p>
+        <HonmeiStarLinks year={year} />
 
         <section id="honmei-lookup" className="mt-6 scroll-mt-6">
           <h2 className="text-xl font-bold font-serif border-b border-slate-300 pb-2">
@@ -285,7 +293,15 @@ export default function Page() {
                 key={y}
                 className="rounded-2xl border border-slate-300 bg-white/90 p-4"
               >
-                <h3 className="font-bold font-serif text-sm mb-2">{y}年</h3>
+                <h3 className="font-bold font-serif text-sm mb-2">
+                  <Link
+                    prefetch={false}
+                    href={`/houi/${y}`}
+                    className="hover:text-rose-600"
+                  >
+                    {y}年
+                  </Link>
+                </h3>
                 <ul className="space-y-1">
                   {STARS.map((s) => (
                     <li key={s}>

@@ -36,6 +36,7 @@ import { ESTAT_API_CREDIT } from "@/lib/estatCredit";
 import { prefCodeByName } from "@/lib/prefContent";
 import { metaDescriptionFromIntro } from "@/lib/editorialMeta";
 import { INDEXED_ROBOTS, NOINDEX_ROBOTS } from "@/lib/siteStructure";
+import { pageOpenGraph } from "@/lib/siteUrl";
 import { CityPortalLinks } from "@/components/portal/CityPortalLinks";
 import housingStats from "@/data/housingStats.json";
 import {
@@ -156,12 +157,9 @@ export async function generateMetadata({
       定義は siteStructure に 1 つだけ置いてある。
     */
     robots: hasLocalData ? INDEXED_ROBOTS : NOINDEX_ROBOTS,
-    openGraph: {
-      images: ["/ogp.png"],
-      title,
-      description,
+    openGraph: pageOpenGraph(`/houi/area/${area.code}`, title, description, {
       type: "article",
-    },
+    }),
   };
 }
 

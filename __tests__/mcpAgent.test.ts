@@ -216,6 +216,20 @@ describe("AIが公開MCPを選ぶループ", () => {
                 toolName: "get_honmei_star",
                 input: JSON.stringify({ birthYear: 1900 + i }),
               });
+            // Patched AI SDK waits for a completed model turn before executing tools.
+            c.enqueue({
+              type: "finish",
+              finishReason: { unified: "tool-calls", raw: undefined },
+              usage: {
+                inputTokens: {
+                  total: 0,
+                  noCache: 0,
+                  cacheRead: 0,
+                  cacheWrite: 0,
+                },
+                outputTokens: { total: 0, text: 0, reasoning: 0 },
+              },
+            });
             c.close();
           },
         }),
@@ -226,7 +240,7 @@ describe("AIが公開MCPを選ぶループ", () => {
       undefined,
       model,
     );
-    expect(call.mock.calls.length).toBeLessThanOrEqual(20);
+    expect(call.mock.calls.length).toBe(20);
     expect(JSON.stringify(events.at(-1))).toContain("回数上限");
   });
 });

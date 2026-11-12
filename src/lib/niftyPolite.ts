@@ -34,6 +34,9 @@
  */
 export const MIN_PAGE_INTERVAL_MS = 20000;
 
+/** ページ取得で開いてよいホスト。リダイレクト先もこの名前だけ。 */
+export const NIFTY_PAGE_HOSTS = ["myhome.nifty.com"] as const;
+
 /** 取得開始から MIN_PAGE_INTERVAL_MS 経つまで待つ。既に過ぎていれば待たない。 */
 export async function waitForMinimumPageInterval(
   startedAt: number,

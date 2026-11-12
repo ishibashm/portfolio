@@ -85,6 +85,8 @@ declare module "lunar-javascript" {
     getMonthZhi(): string;
     getDayZhi(): string;
     getDayInGanZhi(): string;
+    getDayXun(): string;
+    getDayXunKong(): string;
     /** 旧暦の月・日。 */
     getMonth(): number;
     getDay(): number;

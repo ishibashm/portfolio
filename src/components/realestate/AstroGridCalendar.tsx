@@ -17,6 +17,7 @@ import { plainRokuyo } from "@/lib/rokuyoLabel";
   同じ NOISE_HA。盤で呼び名が変わるだけなので 1 つにまとめた。
 */
 const DISASTER_EXPLANATIONS: Record<string, string> = {
+  NOISE_DOYOU: "土用殺：土用の期間はこの方位を避けるとされます（間日を除く）。",
   NOISE_GOU:
     "五黄殺（ごおうさつ）：周囲を巻き込み、自滅をもたらす最大凶方位。全ての人に大凶。",
   NOISE_ANKEN:
@@ -95,7 +96,9 @@ export function AstroGridCalendar({
   enableExtendedViews = true,
   fetchTimeline,
 }: AstroGridCalendarProps) {
-  const [rangeMode, setRangeMode] = React.useState<"7days" | "30days" | "12months">("7days");
+  const [rangeMode, setRangeMode] = React.useState<
+    "7days" | "30days" | "12months"
+  >("7days");
   const [luckyOnlyFilter, setLuckyOnlyFilter] = React.useState<boolean>(false);
 
   // 曜日名
@@ -202,6 +205,7 @@ export function AstroGridCalendar({
 
     // 重い凶があるか判定
     const isHeavyBad = [
+      "NOISE_DOYOU",
       "NOISE_GOU",
       "NOISE_ANKEN",
       "NOISE_HA",
@@ -322,17 +326,20 @@ export function AstroGridCalendar({
           {rangeMode === "12months" ? "12ヶ月分" : "30日分"}の吉凶を計算中…
         </div>
       )}
-      {rangeMode !== "7days" && !extendedLoading && displayedDays.length === 0 && (
-        <div className="text-[11px] text-stone-600 px-1 py-2">
-          この期間の吉凶を取得できませんでした。
-        </div>
-      )}
+      {rangeMode !== "7days" &&
+        !extendedLoading &&
+        displayedDays.length === 0 && (
+          <div className="text-[11px] text-stone-600 px-1 py-2">
+            この期間の吉凶を取得できませんでした。
+          </div>
+        )}
 
       <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none">
         {displayedDays.map((day, idx) => {
           const [, monthPart, dayPart] = day.date.split("-");
           // 12ヶ月表示で日部分を出すと全セルが同じ数字になる。月を出す。
-          const dayNum = rangeMode === "12months" ? `${Number(monthPart)}月` : dayPart;
+          const dayNum =
+            rangeMode === "12months" ? `${Number(monthPart)}月` : dayPart;
           // 7days / 30days は先頭から4番目が対象日。12months に対象日の概念は無い。
           const isToday = rangeMode !== "12months" && idx === 3;
 
@@ -354,6 +361,7 @@ export function AstroGridCalendar({
             );
 
           const isHeavyBad = [
+            "NOISE_DOYOU",
             "NOISE_GOU",
             "NOISE_ANKEN",
             "NOISE_HA",

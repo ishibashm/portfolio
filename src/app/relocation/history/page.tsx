@@ -112,6 +112,7 @@ function getRatingLabel(status: string): {
         color: "text-orange-400 border border-orange-500/20 bg-orange-500/5",
       };
     case "NOISE_VOID":
+    case "NOISE_DOYOU":
     case "NOISE_GOU":
     case "NOISE_ANKEN":
     case "NOISE_HA":

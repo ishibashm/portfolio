@@ -12,7 +12,6 @@ interface ClockDisplayProps {
     reading: string;
     note?: string;
   } | null;
-  isVoidTime: boolean;
   /**
    * 呼び出し側が `calculateSolarTime` で出した太陽時。
    *
@@ -31,7 +30,6 @@ interface ClockDisplayProps {
 
 export function ClockDisplay({
   kimon,
-  isVoidTime,
   eot,
   longOffset,
   targetDate = new Date(),
@@ -126,13 +124,12 @@ export function ClockDisplay({
             （真太陽時で切る 2 時間ごとの十二支）
           </span>
         </div>
-        <div
-          className={`text-4xl sm:text-5xl font-serif font-thin tracking-widest ${isVoidTime ? "text-red-700 text-glow-red md:animate-pulse" : "text-emerald-700 text-glow"}`}
-        >
+        <div className="text-4xl sm:text-5xl font-serif font-thin tracking-widest text-emerald-700 text-glow">
           {kimon?.japanese || "--"}
         </div>
         <div className="text-xs md:text-sm tracking-widest text-stone-600 font-serif">
-          {kimon ? (isVoidTime ? "天中殺の刻" : "の刻") : "--"}
+          {/* 刻（時間）単位の天中殺は使わない（2026-11-02 本人決定） */}
+          {kimon ? "の刻" : "--"}
         </div>
       </div>
 

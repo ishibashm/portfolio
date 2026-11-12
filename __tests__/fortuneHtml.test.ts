@@ -1,3 +1,10 @@
+import { rows, prismaMock } from "./fortunePrismaMock";
+import { beforeEach } from "vitest";
+vi.mock("@/lib/prisma", () => ({ default: prismaMock }));
+beforeEach(() => {
+  rows.length = 0;
+  vi.stubEnv("AI_FORTUNE_IP_DAILY_LIMIT", "100");
+});
 import { describe, expect, it, vi, afterEach } from "vitest";
 import {
   sanitizeFortuneHtml,
@@ -255,7 +262,20 @@ describe("flag, cache, limits and fallback", () => {
     vi.stubEnv("AI_FORTUNE_HTML_ENABLED", "true");
     const generate = vi.fn().mockResolvedValue("");
     const service = createFortuneReportService(generate);
-    for (let i = 0; i < 22; i++) await service(String(i), profile, now);
-    expect(generate).toHaveBeenCalledTimes(20);
+    for (let i = 0; i < 52; i++) await service(String(i), profile, now);
+    expect(generate).toHaveBeenCalledTimes(50);
   });
+});
+
+// 実計算を通し、数字ではなく既存の九星名をレポートへ渡す。
+it.each([
+  ["1986-06-15", "五黄土星"],
+  ["1985-06-15", "六白金星"],
+  ["1990-01-01", "二黒土星"],
+])("%s の本命星を %s と表示する", (birthDate, name) => {
+  const facts = fortuneFacts({ ...profile, birthDate }, "2026-10-26");
+  expect(facts.find((fact) => fact.label === "本命星")?.value).toBe(name);
+  expect(fallbackFortuneHtml(facts)).toContain(name);
+  const template = facts.map((_, index) => `<p>{{fact:${index}}}</p>`).join("");
+  expect(decorateFortuneHtml(template, facts)).toContain(name);
 });

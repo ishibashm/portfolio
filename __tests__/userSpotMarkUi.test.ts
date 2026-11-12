@@ -140,7 +140,7 @@ describe("URL を貼って場所を決める導線", () => {
   const SRC = read(VERDICT).replace(/\s+/g, " ");
 
   it("貼れることを入力欄と説明の両方で言っている", () => {
-    expect(SRC).toContain("物件URL、住所、または");
+    expect(SRC).toContain("住所・駅名・座標から調べる（物件URLも可）");
     expect(SRC).toContain("地図で所在地を確認してください");
   });
 

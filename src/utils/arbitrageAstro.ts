@@ -31,6 +31,7 @@ import {
   VoidScopes,
   evaluateTenchusatsu,
   filterModeUsesTenchusatsu,
+  voidScopesOf,
 } from "@/utils/tenchusatsuPolicy";
 
 // 吉凶ステータスの判定は文字列を見るだけの純粋な処理で、天体暦エンジンも
@@ -150,7 +151,12 @@ export interface DailyAstroState {
   luckyDays: ReturnType<typeof getLuckyDays>;
   holiday: ReturnType<typeof isJapaneseHoliday>;
   weekday: number;
-  isVoidTime: boolean;
+  /**
+   * 年・月・日のどれかが空亡に当たっているか（事実だけ）。禁止するか・
+   * 弱めるかは scoreDateForProperty が tenchusatsuPolicy で決める。
+   * 旧名 isVoidTime（時刻の意味に読めたので改名）。
+   */
+  inVoidPeriod: boolean;
   /**
    * 年・月・日それぞれが空亡に当たっているか。
    * 「空亡かどうか」の 1 ビットだけでは、年天中殺で 2 年塞がっているのか
@@ -241,12 +247,8 @@ export function buildDailyAstroStates(
     // 切らないと、targetDate 省略時（＝いま）に 0〜9 時で 1 日ずれる
     const dateStr = toJapanDateString(d);
     const zodiacs_d = getCurrentZodiac(new Date(dateStr), p.baseLon);
-    const voidScopes_d: VoidScopes = {
-      year: p.voidZodiacs.includes(zodiacs_d.yearZodiac),
-      month: p.voidZodiacs.includes(zodiacs_d.monthZodiac),
-      day: p.voidZodiacs.includes(zodiacs_d.dayZodiac),
-    };
-    const isVoidTime_d =
+    const voidScopes_d: VoidScopes = voidScopesOf(p.voidZodiacs, zodiacs_d);
+    const inVoidPeriod_d =
       voidScopes_d.year || voidScopes_d.month || voidScopes_d.day;
 
     return {
@@ -261,7 +263,7 @@ export function buildDailyAstroStates(
       luckyDays: getLuckyDays(d),
       holiday: isJapaneseHoliday(d),
       weekday: d.getDay(),
-      isVoidTime: isVoidTime_d,
+      inVoidPeriod: inVoidPeriod_d,
       voidScopes: voidScopes_d,
       baziScore: p.hasBirthLocation
         ? calculateBaziCompatibility(p.bDate, new Date(dateStr))
@@ -280,7 +282,7 @@ export interface PropertyAstroContext {
   hasJupiterLine: boolean;
   hasBirthLocation: boolean;
   actionIntent: ActionIntent;
-  /** 天中殺（空亡）の効かせ方。既定は従来どおり年・月・日すべてで禁止。 */
+  /** 天中殺（空亡）の効かせ方。既定は weaken（禁止せず弱める。2026-11-02 に strict から変更）。 */
   tenchusatsuMode?: TenchusatsuMode;
   /**
    * 方位の絞り込みモード。**天中殺を効かせるかどうかの判断に要る。**

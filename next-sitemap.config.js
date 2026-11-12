@@ -49,6 +49,8 @@ function blogLastmods() {
   const out = {};
   for (const file of fs.readdirSync(dir)) {
     if (!file.endsWith(".md")) continue;
+    // 作業ログ（src/lib/agentLog.ts）。Markdown に置かれても載さない。
+    if (file.startsWith("agent-")) continue;
     const head =
       fs.readFileSync(path.join(dir, file), "utf-8").split(/^---$/m)[1] ?? "";
     const field = (key) =>
@@ -86,6 +88,8 @@ const NOT_A_PAGE = [
   "/profile/memory",
   "/account",
   "/contact", // 連絡用フォーム。公開は続けるが検索の入口にはしない
+  // 掲載が 0 件のあいだは noindex（src/app/practitioners/layout.tsx に戻す手順）。
+  "/practitioners",
 ];
 
 /**
@@ -533,6 +537,12 @@ module.exports = {
     ...OFF_THEME.map((p) => `${p}/*`),
     ...NOT_A_PAGE,
     ...THIN_GENERATED,
+    /*
+      自律エージェントの作業ログ。slug は agent- で始まる
+      （src/lib/agentLog.ts）。DB の行は消さない。公開 URL には出さない。
+      ビルドが静的パスを拾っても、ここで落とす。
+    */
+    "/blog/agent-*",
   ],
   /* 戻す一覧そのもの。検査が住宅統計と突き合わせるために読む。 */
   additionalPathsSource: AREA_DATA_PATHS,
@@ -550,6 +560,11 @@ module.exports = {
            あるので、ここで足す */
         "/blog",
         "/houi/today",
+        /* force-dynamic の頁は事前生成の一覧に出ないので、/blog と同じく
+           ここで足す。どちらも索引する頁（noindex ではなく、exclude にも
+           当たらない）で、足さないと sitemap から漏れていた（監査 2026-11-10）。 */
+        "/relocation/dashboard",
+        "/relocation/arbitrage",
       ].map((loc) => config.transform(config, loc)),
     ),
 };

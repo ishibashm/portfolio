@@ -1082,6 +1082,7 @@ export default function DestinationMapPanel({
                           const isOptimal =
                             st === "OPTIMAL" || st === "OPTIMAL_REGULAR";
                           const isMajorNoise =
+                            st?.startsWith("NOISE_DOYOU") ||
                             st?.startsWith("NOISE_GOU") ||
                             st?.startsWith("NOISE_ANKEN") ||
                             st === "NOISE_HA";

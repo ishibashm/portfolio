@@ -52,10 +52,7 @@ const DIRECTION_LABELS: Record<string, DirectionLabel> = {
     detailed: "五黄殺 (大凶 - 万事に凶とされる)",
   },
   NOISE_DOYOU: {
-    // エンジンの状態としては存在しない（土用殺は最終判定を NOISE_GOU で
-    // 上書きする。経緯は docs/improvement-backlog.md の 12 節）。
-    // doyouSatsuDirection を照合して「土用殺だと分かっている」呼び出し側
-    // だけが、語を差し替えるために引く鍵。状態の分岐には使わないこと。
+    // 土用殺専用の状態。五黄殺とは区別し、同じ大凶として表示する。
     name: "土用殺",
     badge: "土用",
     short: "土用殺 (大凶)",

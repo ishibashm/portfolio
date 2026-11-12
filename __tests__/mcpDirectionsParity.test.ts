@@ -20,6 +20,18 @@ afterEach(async () => {
   await Promise.all(clients.splice(0).map((c) => c.close()));
   await Promise.all(servers.splice(0).map((s) => s.close()));
 });
+const LEGACY_KEYS = [
+  "date",
+  "weekday",
+  "rokuyo",
+  "tags",
+  "blockedByTenchusatsu",
+  "honmeiStar",
+  "voidZodiacs",
+  "tenchusatsuMode",
+  "directions",
+  "tiers",
+] as const;
 describe("日判定の共通化前に公開MCPの全出力を固定", () => {
   it("birth formats / 9 years / leap day / year and spring boundaries / settings", async () => {
     const c = await connect();
@@ -68,7 +80,16 @@ describe("日判定の共通化前に公開MCPの全出力を固定", () => {
               (r.content as { text: string }[])[0].text,
             );
             expect(r.structuredContent).toEqual(payload);
-            hash.update(JSON.stringify({ args, payload }));
+            /*
+              2026-11-02 に purpose・tenchusatsu・auspiciousDirections・almanac
+              などの欄を足した（purpose 省略時）。従来からある欄だけを
+              元の順で取り出して同じ hash になることで、既存の出力が
+              1 バイトも変わっていないことを確かめる。
+            */
+            const legacy = Object.fromEntries(
+              LEGACY_KEYS.map((k) => [k, payload[k]]),
+            );
+            hash.update(JSON.stringify({ args, payload: legacy }));
             count++;
           }
         }

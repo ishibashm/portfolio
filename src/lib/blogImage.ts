@@ -32,3 +32,29 @@ export function blogImagePath(slug: string): string {
     ? `/blog/${slug}.png`
     : DEFAULT_SOCIAL_IMAGE;
 }
+
+/**
+ * 記事ページ本文の図に使う WebP。**og:image・JSON-LD には使わない**
+ * （共有カードは PNG のまま。`blogImagePath` が返す）。
+ *
+ * `scripts/build_blog_webp.mjs` が `<slug>.webp`（1800 幅）と
+ * `<slug>-900.webp`（900 幅）を作る。2 枚とも揃っているときだけ返す。
+ * 無い記事（DB にだけある新しい記事など）は null で、ページは今までどおり
+ * PNG の `<img>` だけを出す。
+ *
+ * **サーバー側でのみ呼ぶ**（`blogImagePath` と同じ理由）。
+ */
+export type BlogHeroWebp = {
+  /** 1800 幅（可逆）。 */
+  full: string;
+  /** 900 幅（非可逆）。スマホ向け。 */
+  small: string;
+};
+
+export function blogHeroWebp(slug: string): BlogHeroWebp | null {
+  if (!/^[a-z0-9-]+$/.test(slug)) return null;
+  const full = path.join(BLOG_IMAGE_DIR, `${slug}.webp`);
+  const small = path.join(BLOG_IMAGE_DIR, `${slug}-900.webp`);
+  if (!existsSync(full) || !existsSync(small)) return null;
+  return { full: `/blog/${slug}.webp`, small: `/blog/${slug}-900.webp` };
+}

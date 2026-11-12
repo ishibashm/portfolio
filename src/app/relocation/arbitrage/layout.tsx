@@ -1,6 +1,6 @@
-import { GmailFeature } from "@/components/relocation/GmailFeature";
 import type { Metadata } from "next";
 import { coreRouteLabel } from "@/lib/siteStructure";
+import { pageOpenGraph } from "@/lib/siteUrl";
 
 /**
  * ページ本体がクライアントコンポーネントで metadata を export できないため、
@@ -17,19 +17,11 @@ export const metadata: Metadata = {
   alternates: { canonical: "/relocation/arbitrage" },
   title: TITLE,
   description: DESCRIPTION,
-  openGraph: {
-    images: ["/ogp.png"],
-    title: TITLE,
-    description: DESCRIPTION,
-  },
+  openGraph: pageOpenGraph("/relocation/arbitrage", TITLE, DESCRIPTION),
 };
 
 export const dynamic = "force-dynamic";
 
 export default function Layout({ children }: { children: React.ReactNode }) {
-  return (
-    <GmailFeature enabled={process.env.LISTING_EMAIL_GMAIL_ENABLED === "true"}>
-      {children}
-    </GmailFeature>
-  );
+  return children;
 }

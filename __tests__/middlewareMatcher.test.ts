@@ -68,9 +68,16 @@ describe("middleware を掛ける範囲", () => {
       "/blog/feed.xml",
       "/manifest.json",
       "/sw.js",
+      "/.well-known/security.txt",
     ]) {
       expect(isMatched(p), `${p} に middleware が掛かっている`).toBe(false);
     }
+  });
+
+  it("OAuth の well-known は今までどおり middleware を通す", () => {
+    expect(
+      isMatched("/.well-known/oauth-protected-resource/api/mcp/personal"),
+    ).toBe(true);
   });
 
   it("画像と Next.js の内部にも掛けない（今までどおり）", () => {

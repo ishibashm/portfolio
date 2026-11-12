@@ -25,6 +25,11 @@ import { fetchSpaceWeather } from "@/utils/spaceWeather";
 import { fetchMacroEconomics } from "@/utils/macroEconomics";
 import { fetchMetaphysicalData } from "@/utils/metaphysicalApis";
 import {
+  summarizeTenchusatsu,
+  tenchusatsuModeFrom,
+  voidScopesOf,
+} from "@/utils/tenchusatsuPolicy";
+import {
   daysAgoInJapan,
   parseJapanDateTime,
   toJapanDateString,
@@ -48,6 +53,8 @@ export async function POST(req: Request) {
       zodiacTimeBasis?: ZodiacTimeBasis;
       directionFilterMode?: string;
       actionIntent?: string;
+      /** 天中殺の扱い。省略時は weaken（止めない）。strict などは明示時だけ。 */
+      tenchusatsuMode?: string;
     } = {};
     try {
       clientBody = await req.json();
@@ -201,10 +208,19 @@ export async function POST(req: Request) {
     const zodiacTimeBasis: ZodiacTimeBasis =
       clientBody.zodiacTimeBasis === "solar" ? "solar" : "standard";
     const currentZodiac = getCurrentZodiac(today, lon, zodiacTimeBasis);
-    const isVoidTime =
-      voidZodiacArray.includes(currentZodiac.yearZodiac) ||
-      voidZodiacArray.includes(currentZodiac.monthZodiac) ||
-      voidZodiacArray.includes(currentZodiac.dayZodiac);
+    /*
+      天中殺（年・月・日の空亡）は**禁止しない・弱める**（2026-11-02 本人
+      決定、tenchusatsuPolicy）。以前は当たれば無条件に isVoidTime=true で、
+      エンジンが「移転を止める」側に倒していた。止めるのは、利用者が
+      strict などの扱いを明示したときだけにする。エンジンへ渡す
+      isVoidTime は「天中殺で動きを止めるか」の意味で、事実としての
+      当たり外れは tenchusatsu.inVoidPeriod に持つ。
+    */
+    const tenchusatsu = summarizeTenchusatsu(
+      voidScopesOf(voidZodiacArray, currentZodiac),
+      tenchusatsuModeFrom(clientBody.tenchusatsuMode),
+    );
+    const tenchusatsuBlocksMove = tenchusatsu.blocksMove;
 
     let isConflictDay = false;
     if (personalBaziData) {
@@ -386,7 +402,9 @@ export async function POST(req: Request) {
         riskScore: parseFloat(tideRisk.toFixed(2)),
       },
       metaphysical: metaphysicalData,
-      isVoidTime,
+      // 互換のため名前は残す。意味は「天中殺で動きを止める扱いか」。
+      isVoidTime: tenchusatsuBlocksMove,
+      tenchusatsu,
       isConflictDay,
       isDoyouHazard,
       unifiedRiskScore,
@@ -460,7 +478,7 @@ export async function POST(req: Request) {
       shieldCapacity: shieldCapacity,
       environmentalRisk: envRisk, // Matches formula weight usage
       unifiedRiskScore,
-      isVoidTime,
+      isVoidTime: tenchusatsuBlocksMove,
       isConflictDay,
       isDoyouHazard,
       solarPhase: sunLon,
@@ -495,7 +513,7 @@ export async function POST(req: Request) {
       targetEphemeris: {
         date: toJapanDateString(today),
         solarPhase: sunLon,
-        isVoidTime,
+        isVoidTime: tenchusatsuBlocksMove,
         isConflictDay,
         isDoyouHazard,
         environmentalRisk: envRisk,
@@ -539,10 +557,7 @@ export async function POST(req: Request) {
           actionResult?: { suggestedAction?: string };
           stateVector?: { ansLoad?: number; shieldCapacity?: number };
         };
-      }>(
-        historyFilePath,
-        (rec) => !!(rec && rec.nba && rec.nba.actionResult),
-      );
+      }>(historyFilePath, (rec) => !!(rec && rec.nba && rec.nba.actionResult));
 
       if (lastRecord) {
         // 欄が無い履歴もありうる。previousAction は null 可なので、

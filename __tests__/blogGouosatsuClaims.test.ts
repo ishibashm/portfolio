@@ -113,7 +113,10 @@ describe("記事: 五黄殺と暗剣殺（年盤の表）", () => {
 
 describe("記事: 五黄殺と暗剣殺（重なりの順と歳破）", () => {
   it("重なりの順は五黄殺・暗剣殺・破・本命殺・本命的殺", () => {
-    expect(NOISE_PRIORITY.slice(0, 5)).toEqual([
+    // 土用殺は専用状態として追加。五大凶殺同士の順序は維持する。
+    expect(
+      NOISE_PRIORITY.filter((s) => s !== "NOISE_DOYOU").slice(0, 5),
+    ).toEqual([
       "NOISE_GOU",
       "NOISE_ANKEN",
       "NOISE_HA",

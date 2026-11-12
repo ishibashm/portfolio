@@ -122,6 +122,13 @@ export interface ModelPrice {
 export const MODEL_PRICES: ModelPrice[] = [
   {
     provider: "google",
+    model: "gemini-2.5-flash-lite",
+    inputYenPerMTok: 15.934,
+    outputYenPerMTok: 63.736,
+    note: "Google 公式 Standard paid tier $0.10/$0.40 per MTok（2026-10-30確認 https://ai.google.dev/gemini-api/docs/pricing）× 日銀 2026-08-13 中心相場 159.34円/USD",
+  },
+  {
+    provider: "google",
     model: "gemini-2.5-flash",
     inputYenPerMTok: 47.802,
     outputYenPerMTok: 398.35,

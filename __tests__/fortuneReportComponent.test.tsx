@@ -1,3 +1,7 @@
+vi.mock("next/headers", () => ({
+  headers: async () =>
+    new Headers({ "user-agent": "Mozilla/5.0", "x-real-ip": "192.0.2.1" }),
+}));
 import { afterEach, expect, it, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
 import { FortuneReport } from "@/components/fortune/FortuneReport";
@@ -49,15 +53,27 @@ it("uses the authenticated user's stored profile, with no input box", async () =
     srcdoc: "<p>AI</p>",
   });
   render(await FortuneReport());
-  expect(mocks.report).toHaveBeenCalledWith("verified-user", {
-    birthDate: "1990-05-15",
-    lat: 35.68,
-    lon: 139.76,
-  });
+  expect(mocks.report).toHaveBeenCalledWith(
+    "verified-user",
+    {
+      birthDate: "1990-05-15",
+      lat: 35.68,
+      lon: 139.76,
+    },
+    expect.any(Date),
+    expect.objectContaining({ skip: false }),
+  );
   expect(screen.queryByRole("textbox")).not.toBeInTheDocument();
   expect(screen.getByText("計算結果")).toBeInTheDocument();
   const frame = screen.getByTitle("AI装飾の運勢レポート");
   expect(frame).toHaveAttribute("sandbox", "");
+  expect(frame).toHaveClass(
+    "h-[50svh]",
+    "min-h-64",
+    "sm:h-[70svh]",
+    "sm:min-h-[480px]",
+  );
+  expect(frame).not.toHaveAttribute("style");
   expect(frame).toHaveAttribute("srcdoc", "<p>AI</p>");
   expect(screen.getByText("計算結果").closest("iframe")).toBeNull();
   expect(screen.getByText("計算結果").closest("details")).not.toHaveAttribute(
@@ -77,9 +93,15 @@ it("renders the non-AI fallback without an iframe", async () => {
     facts: [],
     fallbackHtml: "<p>計算結果</p>",
     srcdoc: null,
+    note: "本日のAI装飾は上限に達したため、計算結果のみ表示しています。",
   });
   const { container } = render(await FortuneReport());
   expect(container.querySelector("iframe")).toBeNull();
   expect(container.querySelector("details")).toBeNull();
+  expect(
+    screen.getByText(
+      "本日のAI装飾は上限に達したため、計算結果のみ表示しています。",
+    ),
+  ).toBeInTheDocument();
   expect(screen.getByText("計算結果")).toBeInTheDocument();
 });

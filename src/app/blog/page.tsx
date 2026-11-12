@@ -6,30 +6,28 @@ import { formatBlogDate } from "@/lib/blog";
 import { loadBlogPosts } from "@/lib/blogStore";
 import type { BlogPostSummary } from "@/lib/blog";
 import { groupPostsByCategory } from "@/lib/blogCategories";
-import { SITE_NAME } from "@/lib/siteStructure";
-import { SITE_URL } from "@/lib/siteUrl";
+import { pageOpenGraph } from "@/lib/siteUrl";
+import { currentYearInJapan } from "@/lib/kigakuContent";
 
-const TITLE = "引越しの読みもの";
+const blogTitle = () =>
+  `九星気学・方位・天中殺の記事一覧（${currentYearInJapan()}年）`;
 const DESCRIPTION =
   "吉方位、天中殺、75日の起点移動など、Cloud Paletteの計算で迷いやすい考え方を、実装上の規則と流派による解釈に分けて解説します。";
 
-export const metadata: Metadata = {
-  title: TITLE,
-  description: DESCRIPTION,
-  alternates: {
-    // ?sort=date は同じ記事の並べ替えで、別の頁ではない。正典を
-    // /blog に固定して、重複した内容として扱われないようにする。
-    canonical: "/blog",
-    types: { "application/rss+xml": "/blog/feed.xml" },
-  },
-  openGraph: {
-    title: `${TITLE} | ${SITE_NAME}`,
+export function generateMetadata(): Metadata {
+  const TITLE = blogTitle();
+  return {
+    title: TITLE,
     description: DESCRIPTION,
-    url: `${SITE_URL}/blog`,
-    type: "website",
-    images: ["/ogp.png"],
-  },
-};
+    alternates: {
+      // ?sort=date は同じ記事の並べ替えで、別の頁ではない。正典を
+      // /blog に固定して、重複した内容として扱われないようにする。
+      canonical: "/blog",
+      types: { "application/rss+xml": "/blog/feed.xml" },
+    },
+    openGraph: pageOpenGraph("/blog", TITLE, DESCRIPTION),
+  };
+}
 
 /**
  * 記事は DB に入るようになったので、ビルド時に焼き切らない。
@@ -140,7 +138,7 @@ export default async function BlogPage({
               CLOUD PALETTE JOURNAL
             </div>
             <h1 className="mt-4 font-serif text-3xl font-bold tracking-tight md:text-4xl">
-              {TITLE}
+              {blogTitle()}
             </h1>
             <p className="mt-4 max-w-[70ch] text-sm leading-7 text-slate-700">
               {DESCRIPTION}

@@ -19,7 +19,20 @@
  *    得ない移動）」を区別し、後者は天中殺の影響を受けないとする。
  *
  * どれを採るかは利用者の立場によるので、モデルとして選べるようにする。
- * 既定は従来どおり strict（挙動を変えない）。
+ *
+ * ## 既定は weaken（2026-11-02 に strict から変更）
+ *
+ * 以前の既定は strict（年・月・日のどれかが空亡なら移転不可）だった。
+ * この扱いだと 1 年で動ける日が 0〜5 日しか残らない人が出て、本人が
+ * 「厳しすぎる」と判断した。方針は次のとおり:
+ *
+ * - 天中殺は**禁止しない**。吉凶の力を弱めるだけ（weaken）
+ * - 天中殺の日でも全方位を凶にしない。天中殺を除いた判定の吉方位を返し、
+ *   「天中殺なので吉凶の力は弱め」と注記する（`TENCHUSATSU_WEAK_NOTE`）
+ * - 時刻（刻）単位の天中殺は使わない。見るのは年・月・日の空亡だけ
+ * - 期限のある手続き・連絡には効かせない（このモジュールは移動の判定専用）
+ *
+ * strict など他の扱いは、明示的に選べば従来どおり使える。
  */
 
 import {
@@ -27,6 +40,9 @@ import {
   type DirectionFilterMode,
 } from "@/utils/directionFilterMode";
 
+/**
+ * 天中殺を見る範囲。**時刻（刻）は含めない**（方針で使わないため）。
+ */
 export type TenchusatsuScope = "year" | "month" | "day";
 
 export type TenchusatsuMode =
@@ -116,7 +132,10 @@ export function filterModeUsesTenchusatsu(mode: DirectionFilterMode): boolean {
   return filterLayersOf(mode).tenchusatsu;
 }
 
-export const DEFAULT_TENCHUSATSU_MODE: TenchusatsuMode = "strict";
+export const DEFAULT_TENCHUSATSU_MODE: TenchusatsuMode = "weaken";
+
+/** 天中殺に当たるが禁止はしないときに添える注記。 */
+export const TENCHUSATSU_WEAK_NOTE = "天中殺なので吉凶の力は弱め";
 
 export function isTenchusatsuMode(value: string): value is TenchusatsuMode {
   return TENCHUSATSU_MODES.some((m) => m.id === value);
@@ -226,3 +245,71 @@ export const SCOPE_LABELS: Record<TenchusatsuScope, string> = {
   month: "月天中殺",
   day: "日天中殺",
 };
+
+/** 空亡の支と、その日の年・月・日の支から、当たっている範囲を出す。 */
+export function voidScopesOf(
+  voidZodiacs: readonly string[],
+  zodiac: { yearZodiac: string; monthZodiac: string; dayZodiac: string },
+): VoidScopes {
+  return {
+    year: voidZodiacs.includes(zodiac.yearZodiac),
+    month: voidZodiacs.includes(zodiac.monthZodiac),
+    day: voidZodiacs.includes(zodiac.dayZodiac),
+  };
+}
+
+/**
+ * API の入力から天中殺の扱いを読む。未指定・不正な値は既定（weaken）。
+ * strict など「止める」扱いは、利用者が明示したときだけ効かせる。
+ */
+export function tenchusatsuModeFrom(value: unknown): TenchusatsuMode {
+  return typeof value === "string" && isTenchusatsuMode(value)
+    ? value
+    : DEFAULT_TENCHUSATSU_MODE;
+}
+
+/** NBA 系の応答に添える、天中殺の効かせ方の要約。 */
+export interface TenchusatsuSummary {
+  mode: TenchusatsuMode;
+  /** 年・月・日のどれかが空亡に当たっているか（事実）。 */
+  inVoidPeriod: boolean;
+  /** 動きを止める扱いにしたか（strict などを明示したときだけ true）。 */
+  blocksMove: boolean;
+  /** 吉凶を中央（50）へ寄せる倍率。1 なら弱めない。 */
+  attenuation: number;
+  activeScopes: TenchusatsuScope[];
+  note: string;
+}
+
+/**
+ * NBA（/api/nba・/api/relocation/nba-evaluate）向けの天中殺の判定。
+ *
+ * 以前はここに相当する処理が無く、年・月・日のどれかが空亡なら
+ * 無条件に「移転を止める」扱い（isVoidTime）になっていた。方針
+ * （禁止しない・弱める）に合わせ、止めるのは止める扱いを明示した
+ * ときだけにする。
+ */
+export function summarizeTenchusatsu(
+  scopes: VoidScopes,
+  mode: TenchusatsuMode,
+  involuntary = false,
+): TenchusatsuSummary {
+  const v = evaluateTenchusatsu(scopes, mode, involuntary);
+  return {
+    mode,
+    inVoidPeriod: v.inVoidPeriod,
+    blocksMove: v.blocks,
+    attenuation: v.attenuation,
+    activeScopes: v.activeScopes,
+    note: v.blocks
+      ? "天中殺のため動かない扱いです（天中殺の扱いを「止める」側に設定しているため）。"
+      : v.attenuation < 1
+        ? TENCHUSATSU_WEAK_NOTE
+        : v.note,
+  };
+}
+
+/** 吉凶の値（0〜100、50 が中立）を、弱める倍率で中央へ寄せる。 */
+export function attenuateTowardNeutral(value: number, attenuation: number) {
+  return attenuation < 1 ? 50 + (value - 50) * attenuation : value;
+}

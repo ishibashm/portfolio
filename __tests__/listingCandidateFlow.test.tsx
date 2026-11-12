@@ -33,6 +33,7 @@ function mount() {
 }
 afterEach(() => {
   cleanup();
+  window.history.replaceState({}, "", "/");
   vi.restoreAllMocks();
 });
 describe("listing candidate flow", () => {
@@ -52,7 +53,9 @@ describe("listing candidate flow", () => {
       }),
     );
     expect(
-      screen.getByRole("textbox", { name: "物件URL・住所・座標から調べる" }),
+      screen.getByRole("textbox", {
+        name: "住所・駅名・座標から調べる（物件URLも可）",
+      }),
     ).toHaveValue("https://suumo.jp/a");
     fireEvent.click(screen.getByRole("button", { name: "調べる" }));
     expect(
@@ -68,7 +71,9 @@ describe("listing candidate flow", () => {
     const store = vi.spyOn(Storage.prototype, "setItem");
     mount();
     fireEvent.change(
-      screen.getByRole("textbox", { name: "物件URL・住所・座標から調べる" }),
+      screen.getByRole("textbox", {
+        name: "住所・駅名・座標から調べる（物件URLも可）",
+      }),
       { target: { value: "https://suumo.jp/chintai/123/?utm_source=test" } },
     );
     fireEvent.click(screen.getByRole("button", { name: "調べる" }));
@@ -97,7 +102,9 @@ describe("listing candidate flow", () => {
     });
     const { rerender, props, onFocus } = mount();
     fireEvent.change(
-      screen.getByRole("textbox", { name: "物件URL・住所・座標から調べる" }),
+      screen.getByRole("textbox", {
+        name: "住所・駅名・座標から調べる（物件URLも可）",
+      }),
       { target: { value: "35.4,135.5" } },
     );
     fireEvent.click(screen.getByRole("button", { name: "調べる" }));
@@ -143,7 +150,9 @@ describe("listing candidate flow", () => {
   it("same point cannot be judged or saved", () => {
     mount();
     fireEvent.change(
-      screen.getByRole("textbox", { name: "物件URL・住所・座標から調べる" }),
+      screen.getByRole("textbox", {
+        name: "住所・駅名・座標から調べる（物件URLも可）",
+      }),
       { target: { value: "35,135" } },
     );
     fireEvent.click(screen.getByRole("button", { name: "調べる" }));
@@ -174,7 +183,9 @@ it("anonymous address lookup reaches the public search and still needs map confi
   mount();
   expect(screen.getByText(/検索サービスに住所を送ります/)).toBeInTheDocument();
   fireEvent.change(
-    screen.getByRole("textbox", { name: "物件URL・住所・座標から調べる" }),
+    screen.getByRole("textbox", {
+      name: "住所・駅名・座標から調べる（物件URLも可）",
+    }),
     { target: { value: "京都市中京区" } },
   );
   fireEvent.click(screen.getByRole("button", { name: "調べる" }));
@@ -199,7 +210,9 @@ it.each([403, 503])(
     );
     mount();
     fireEvent.change(
-      screen.getByRole("textbox", { name: "物件URL・住所・座標から調べる" }),
+      screen.getByRole("textbox", {
+        name: "住所・駅名・座標から調べる（物件URLも可）",
+      }),
       { target: { value: "京都市中京区" } },
     );
     fireEvent.click(screen.getByRole("button", { name: "調べる" }));

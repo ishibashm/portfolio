@@ -1,5 +1,8 @@
 import { NextResponse, type NextRequest } from "next/server";
+import { isSameOrigin } from "@/lib/apiGuard";
+import { requestLimiter } from "@/lib/requestSecurity";
 import { updateSession } from "@/utils/supabase/middleware";
+import { isGonePath } from "@/lib/gonePaths";
 
 /**
  * Sub-app subdomains are served by rewriting onto an internal path.
@@ -27,7 +30,9 @@ const HOST_NEUTRAL_PREFIXES = ["/login", "/auth", "/guide", "/blog"];
 
 function resolveSubdomainPath(host: string, pathname: string): string | null {
   const app = SUBDOMAIN_APPS.find(
-    (a) => host.startsWith(a.prefix) || host.includes(`${a.prefix}cloud-palette.com`),
+    (a) =>
+      host.startsWith(a.prefix) ||
+      host.includes(`${a.prefix}cloud-palette.com`),
   );
   if (!app) return null;
 
@@ -38,8 +43,18 @@ function resolveSubdomainPath(host: string, pathname: string): string | null {
   return `${app.base}${pathname === "/" ? "" : pathname}`;
 }
 
+// Backstop for legacy APIs; private MCP has shared DB-backed budgets of its own.
+const apiLimit = requestLimiter(120, 1);
+
 export async function middleware(request: NextRequest) {
   const url = request.nextUrl.clone();
+
+  if (isGonePath(url.pathname)) {
+    return new NextResponse("Gone\n", {
+      status: 410,
+      headers: { "Content-Type": "text/plain; charset=utf-8" },
+    });
+  }
 
   // Personal MCP authenticates every request with its own Bearer boundary.
   // Site cookie refresh must not introduce login redirects, Set-Cookie or a
@@ -56,6 +71,39 @@ export async function middleware(request: NextRequest) {
     url.pathname === "/.well-known/openid-configuration/oauth"
   ) {
     return NextResponse.next();
+  }
+
+  if (
+    url.pathname.startsWith("/api/") &&
+    !url.pathname.startsWith("/api/cron/")
+  ) {
+    const denied = apiLimit(request.headers);
+    if (denied) return denied;
+  }
+
+  // Cookie-authenticated mutations must originate from this site. Machine APIs
+  // (MCP, cron and webhooks) authenticate independently and are excluded.
+  const cookieMutation =
+    [
+      "/api/user-config",
+      "/api/profile-presets",
+      "/api/ask-data",
+      "/api/comments",
+      "/api/practitioners",
+      "/api/reminders",
+      "/api/favorite-days",
+      "/api/spots",
+      "/api/saved-analyses",
+      "/api/relocation/simulation",
+      "/api/relocation/history",
+    ].includes(url.pathname.replace(/\/$/, "")) ||
+    url.pathname.startsWith("/api/admin/");
+  if (
+    cookieMutation &&
+    !["GET", "HEAD", "OPTIONS"].includes(request.method) &&
+    !isSameOrigin(request)
+  ) {
+    return NextResponse.json({ error: "Forbidden origin" }, { status: 403 });
   }
 
   const forwardedHost = request.headers.get("x-forwarded-host") || "";
@@ -105,6 +153,6 @@ export const config = {
    * ページはこれまでどおり通す（ログインの判定が要るため）。
    */
   matcher: [
-    "/((?!_next/static|_next/image|favicon.ico|sitemap|robots\\.txt|ads\\.txt|llms|blog/feed\\.xml|manifest\\.json|sw\\.js|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
+    "/((?!_next/static|_next/image|favicon.ico|sitemap|robots\\.txt|ads\\.txt|llms|blog/feed\\.xml|manifest\\.json|sw\\.js|\\.well-known/security\\.txt|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
   ],
 };

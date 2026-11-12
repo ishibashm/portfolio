@@ -1,4 +1,6 @@
 import { NextResponse } from "next/server";
+import { z } from "zod";
+import { readBoundedJson, requestLimiter } from "@/lib/requestSecurity";
 import prisma from "@/lib/prisma";
 
 /**
@@ -9,52 +11,25 @@ import prisma from "@/lib/prisma";
  * 長さの上限と簡単なボット除けだけ入れている。
  */
 
-const MAX = { name: 100, email: 200, body: 4000 };
+const limit = requestLimiter(5, 60);
+const contactSchema = z.object({
+  name: z.string().trim().min(1).max(100),
+  email: z.string().trim().email().max(200),
+  body: z.string().trim().min(1).max(4000),
+  website: z.string().max(2000).optional(),
+});
 
 export async function POST(request: Request) {
-  /* 外から来る素の JSON。読む側は typeof / String() で確かめてから使う。 */
-  let payload: Record<string, unknown>;
-  try {
-    payload = await request.json();
-  } catch {
-    return NextResponse.json(
-      { error: "リクエストの形式が正しくありません。" },
-      { status: 400 },
-    );
+  const denied = limit(request.headers);
+  if (denied) return denied;
+  const input = await readBoundedJson(request, 24_000);
+  if (!input.ok) return input.response;
+  const parsed = contactSchema.safeParse(input.value);
+  if (!parsed.success) {
+    return NextResponse.json({ error: "入力の形式が正しくありません。" }, { status: 400 });
   }
-
-  // 画面上は隠しているフィールド。人間は触れないので、
-  // 値が入っていれば自動投稿とみなす。
-  if (typeof payload?.website === "string" && payload.website.length > 0) {
-    return NextResponse.json({ ok: true });
-  }
-
-  const name = String(payload?.name ?? "").trim();
-  const email = String(payload?.email ?? "").trim();
-  const body = String(payload?.body ?? "").trim();
-
-  if (!name || !email || !body) {
-    return NextResponse.json(
-      { error: "お名前・メールアドレス・お問い合わせ内容を入力してください。" },
-      { status: 400 },
-    );
-  }
-  if (
-    name.length > MAX.name ||
-    email.length > MAX.email ||
-    body.length > MAX.body
-  ) {
-    return NextResponse.json(
-      { error: "入力が長すぎます。" },
-      { status: 400 },
-    );
-  }
-  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-    return NextResponse.json(
-      { error: "メールアドレスの形式が正しくありません。" },
-      { status: 400 },
-    );
-  }
+  if (parsed.data.website) return NextResponse.json({ ok: true });
+  const { name, email, body } = parsed.data;
 
   try {
     await prisma.contact_messages.create({
@@ -66,8 +41,8 @@ export async function POST(request: Request) {
       },
     });
     return NextResponse.json({ ok: true });
-  } catch (e) {
-    console.error("Failed to store contact message:", e);
+  } catch {
+    console.error("Failed to store contact message");
     return NextResponse.json(
       { error: "送信に失敗しました。時間をおいてお試しください。" },
       { status: 500 },

@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { pageOpenGraph } from "@/lib/siteUrl";
 
 /**
  * ページ本体がクライアントコンポーネントで metadata を export できないため、
@@ -12,13 +13,11 @@ export const metadata: Metadata = {
   // canonical と og:image を持っている。ここと timing だけ抜けていた。
   // canonical が無いと、クエリ付きの URL が別ページとして索引されうる。
   alternates: { canonical: "/relocation/market" },
-  openGraph: {
-    title: "家賃市場の計量分析",
-    description:
-      "ヘドニック回帰による適正家賃、割安・割高の分布、掲載の消化速度（流動性）を毎晩更新。",
-    url: "/relocation/market",
-    images: ["/ogp.png"],
-  },
+  openGraph: pageOpenGraph(
+    "/relocation/market",
+    "家賃市場の計量分析",
+    "ヘドニック回帰による適正家賃、割安・割高の分布、掲載の消化速度（流動性）を毎晩更新。",
+  ),
 };
 
 export default function MarketLayout({

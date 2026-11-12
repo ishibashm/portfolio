@@ -1,7 +1,8 @@
 import prisma from "@/lib/prisma";
 import { blogCardVideoId } from "./blogVideo";
-import { toLogMessage } from "@/lib/errorMessage";
+import { errorCode, toLogMessage } from "@/lib/errorMessage";
 import { toJapanDateString } from "@/utils/japanDate";
+import { isAgentLogSlug } from "@/lib/agentLog";
 import {
   getBlogPost as getMarkdownBlogPost,
   getBlogPosts as getMarkdownBlogPosts,
@@ -24,13 +25,55 @@ import {
  * デプロイ、という順序を守らせる作りにすると、順序を間違えた瞬間に記事が
  * 全部消える。落ちる先があれば、順序はどちらでもよくなる。
  *
- * DB が読めない（接続できない・表がまだ無い）ときも Markdown に落ちる。
- * 記事は公開ページなので、DB の不調で 500 にする理由が無い。ビルド時の
- * 事前生成でも同じ経路を通るため、ビルドが DB の生死に依存しなくなる。
+ * 接続障害で DB 専用記事を「無い」と返すと、ISR が 404 を控えてしまう。
+ * Markdown にある記事だけ補い、一覧は再生成を失敗させて正常な控えを守る。
+ * 初回ビルドは正常な控えがまだ無いため、DB 障害でも Markdown に落ちる。
+ * 表がまだ無い場合なども、取り込み前の Markdown フォールバックを残す。
  *
  * **判定は「0 件かどうか」で見る。**「表があるか」を調べる問い合わせを
  * 足すと、記事を読むたびに往復が 1 つ増える。
  */
+
+/** 接続・待ち時間の失敗だけを分け、スキーマ未適用は従来どおり扱う。 */
+function isTemporaryDatabaseError(error: unknown, depth = 0): boolean {
+  if (depth > 5) return false;
+  const code = errorCode(error);
+  if (
+    code &&
+    /^(P1001|P1002|P1008|P1017|P2024|P2037|ECONNREFUSED|ECONNRESET|ETIMEDOUT|ENOTFOUND|EAI_AGAIN|08000|08001|08003|08006|57P01|57P02|57P03|53300|57014)$/.test(
+      code,
+    )
+  )
+    return true;
+  if (
+    /connection (?:refused|terminated|closed|timeout)|connect(?:ion)? timed out|timeout exceeded when trying to connect|can't reach database server|timed out fetching a new connection|DatabaseNotReachable|SocketTimeout/i.test(
+      toLogMessage(error),
+    )
+  )
+    return true;
+  // pg アダプターは接続エラーを cause / meta に包むことがある。
+  if (typeof error !== "object" || error === null) return false;
+  if (
+    "kind" in error &&
+    /^(DatabaseNotReachable|SocketTimeout|ConnectionClosed|TooManyConnections)$/.test(
+      String(error.kind),
+    )
+  )
+    return true;
+  return ["cause", "meta", "driverAdapterError"].some(
+    (key) =>
+      key in error &&
+      isTemporaryDatabaseError(Reflect.get(error, key), depth + 1),
+  );
+}
+
+/** Next が静的生成ワーカーの起動前に設定する値。実行時の ISR では未設定。 */
+function shouldPreserveIsrCache(error: unknown): boolean {
+  return (
+    process.env.NEXT_PHASE !== "phase-production-build" &&
+    isTemporaryDatabaseError(error)
+  );
+}
 
 /** DB の 1 行を、Markdown 由来のものと同じ形にする。 */
 function toBlogPost(row: {
@@ -101,7 +144,7 @@ const ROW_FIELDS = {
   published: true,
 } as const;
 
-/** 公開中の記事を新しい順で。DB が空か読めなければ Markdown。 */
+/** 公開中の記事を新しい順で。DB が空・スキーマ未適用なら Markdown。 */
 export async function loadBlogPosts(
   options: { quiet?: boolean } = {},
 ): Promise<BlogPostSummary[]> {
@@ -127,6 +170,12 @@ export async function loadBlogPost(
   slug: string,
   options: { quiet?: boolean } = {},
 ): Promise<BlogPost | undefined> {
+  /*
+    作業ログ（slug が agent-）。published が true の既存行も出さない。
+    行の更新・削除はしない。今後の書き込みは daemon が published: false
+    にするが、既に公開済みの行はこちらのふるいが閉じる。
+  */
+  if (isAgentLogSlug(slug)) return undefined;
   try {
     const row = await prisma.blogPost.findFirst({
       where: { slug },
@@ -141,15 +190,18 @@ export async function loadBlogPost(
 
       行があって非公開なら 404。行が無くても DB に記事が 1 本でもあれば
       DB を正として 404（消した記事を Markdown で復活させない）。
-      DB が空か読めないときだけ Markdown（取り込み前・DB の不調）。
+      DB が空なら Markdown。接続障害時は下で記事の有無を確かめる。
     */
     if (row)
       return row.published ? withMarkdownVideo(toBlogPost(row)) : undefined;
     const seeded = await prisma.blogPost.findFirst({ select: { slug: true } });
     if (seeded) return undefined;
   } catch (e) {
+    const markdown = getMarkdownBlogPost(slug);
+    if (shouldPreserveIsrCache(e) && !markdown) throw e;
     if (!options.quiet)
       console.warn("記事の取得に失敗。Markdown に落ちる:", toLogMessage(e));
+    return markdown;
   }
   return getMarkdownBlogPost(slug);
 }
@@ -170,21 +222,27 @@ export async function loadSearchableBlogPosts(options: {
       const videos = new Map(
         getMarkdownBlogPosts().map((post) => [post.slug, post]),
       );
-      return rows.map((row) => {
-        const post = toBlogPost(row);
-        const md = videos.get(row.slug);
-        return md ? withMarkdownVideo(post, md) : post;
-      });
+      return rows
+        .filter((row) => !isAgentLogSlug(row.slug))
+        .map((row) => {
+          const post = toBlogPost(row);
+          const md = videos.get(row.slug);
+          return md ? withMarkdownVideo(post, md) : post;
+        });
     }
     if (await prisma.blogPost.findFirst({ select: { slug: true } })) return [];
   } catch (e) {
+    // 実行時は一覧の一部だけを正常な結果として控えない。初回ビルドは Markdown。
+    if (shouldPreserveIsrCache(e)) throw e;
     if (!options.quiet)
       console.warn("記事一覧の取得に失敗。Markdown に落ちる:", toLogMessage(e));
   }
 
   // DB が空＝まだ取り込んでいない。Markdown をそのまま出す。
-  return getMarkdownBlogPosts().map((summary) => ({
-    ...summary,
-    body: getMarkdownBlogPost(summary.slug)?.body ?? "",
-  }));
+  return getMarkdownBlogPosts()
+    .filter((summary) => !isAgentLogSlug(summary.slug))
+    .map((summary) => ({
+      ...summary,
+      body: getMarkdownBlogPost(summary.slug)?.body ?? "",
+    }));
 }

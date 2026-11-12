@@ -41,6 +41,7 @@ const LAYER_NAME: Record<string, string> = {
 
 /** 凶 → 1 文字。ここに無い NOISE_* は "?"（名前は「凶」に戻す）。 */
 const NOISE_CODE: Record<string, string> = {
+  NOISE_DOYOU: "D",
   NOISE_GOU: "G",
   NOISE_ANKEN: "A",
   NOISE_HA: "H",

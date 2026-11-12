@@ -2,15 +2,25 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   output: "standalone",
+  poweredByHeader: false,
   // Native Node API handlers keep oidc-provider's request/cookie semantics.
   serverExternalPackages: [
     "oidc-provider",
     "puppeteer-core",
     "@sparticuz/chromium",
   ],
-  // 公開MCPの任意取得で使うブラウザーを standalone に含める。
+  // 賃貸のオンデマンド取得（公開 MCP・既定オフ）で使うブラウザーを standalone に含める。
+  // 開く先は myhome.nifty.com だけで、URL は safeFetchUrl を通す。
   outputFileTracingIncludes: {
     "/api/mcp": ["./node_modules/@sparticuz/chromium/bin/**"],
+    /*
+      og:image の日本語フォント。Satori は実行時にファイルを読む。
+      standalone の追跡は import.meta.url だけでは漏れることがあるので、
+      画像を出す経路に明示する。
+    */
+    "/blog/[slug]": ["./src/lib/og/NotoSansJP-Bold.ttf"],
+    "/houi/pref/[code]": ["./src/lib/og/NotoSansJP-Bold.ttf"],
+    "/houi/[year]/[star]": ["./src/lib/og/NotoSansJP-Bold.ttf"],
   },
   async rewrites() {
     return [
@@ -46,6 +56,23 @@ const nextConfig: NextConfig = {
   async redirects() {
     return [
       { source: "/houi/mcp-explorer", destination: "/ask", permanent: true },
+      {
+        // 凶方位への不安を扱う公開記事へ。削除した個人情報の記事は送らない。
+        source: "/blog/when-you-cannot-avoid-a-bad-direction",
+        destination: "/blog/does-bad-direction-last-60-years",
+        statusCode: 301,
+      },
+      {
+        source: "/calendar/2026-09",
+        destination: "/calendar",
+        statusCode: 301,
+      },
+      {
+        // RSS 集約の直接の後継はない。不動産関連記事も読める記事一覧が最も近い。
+        source: "/news",
+        destination: "/blog",
+        statusCode: 301,
+      },
       {
         source: "/:path*",
         has: [{ type: "host", value: "www.cloud-palette.com" }],
@@ -112,6 +139,35 @@ const nextConfig: NextConfig = {
   */
   async headers() {
     return [
+      {
+        source: "/:path*",
+        headers: [
+          { key: "Strict-Transport-Security", value: "max-age=31536000" },
+          { key: "X-Content-Type-Options", value: "nosniff" },
+          { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
+          { key: "X-Frame-Options", value: "DENY" },
+          {
+            key: "Permissions-Policy",
+            value:
+              "camera=(), microphone=(self), geolocation=(self), payment=(), usb=()",
+          },
+          {
+            key: "Content-Security-Policy",
+            value: "frame-ancestors 'none'; object-src 'none'; base-uri 'self'",
+          },
+          // Inventory map, OAuth, media and inline-script needs before enforcing.
+          {
+            key: "Content-Security-Policy-Report-Only",
+            value:
+              "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self' data:; connect-src 'self' https: wss:; media-src 'self' blob: https:; worker-src 'self' blob:; frame-src https:; frame-ancestors 'none'; object-src 'none'; base-uri 'self'; form-action 'self'",
+          },
+        ],
+      },
+      {
+        source:
+          "/api/:path(user-config|profile-presets|ask-data|spots|saved-analyses|favorite-days|reminders|voice|admin|agent|local-media|ai|relocation)/:rest*",
+        headers: [{ key: "Cache-Control", value: "private, no-store" }],
+      },
       {
         source: "/prefectures.geojson",
         headers: [

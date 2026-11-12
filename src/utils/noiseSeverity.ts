@@ -24,8 +24,9 @@
  * tenchusatsuPolicy が扱う（NOISE_VOID はその方位版で、二次凶に置く）。
  */
 
-/** 絶対に避ける凶（五大凶殺）。候補・次善として決して提示しない */
+/** 絶対に避ける凶（五大凶殺と土用殺）。候補・次善として提示しない。 */
 export const FIVE_FATAL_NOISES: readonly string[] = [
+  "NOISE_DOYOU", // 土用殺。五黄殺と同じ重さだが名前を区別する。
   "NOISE_GOU", // 五黄殺
   "NOISE_ANKEN", // 暗剣殺
   "NOISE_HA", // 歳破・月破・日破
@@ -39,6 +40,7 @@ export const FIVE_FATAL_NOISES: readonly string[] = [
  * 致命的な凶が二次凶のラベルに隠れることがない。
  */
 export const NOISE_PRIORITY: readonly string[] = [
+  "NOISE_DOYOU", // 土用殺。五黄殺と同じ重さだが名前を区別する。
   "NOISE_GOU",
   "NOISE_ANKEN",
   "NOISE_HA",

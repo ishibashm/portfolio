@@ -309,6 +309,8 @@ export default function RelocationSimulatorPage() {
    * 入口の送信で消さないために見る。
    */
   const restoredDraftRef = useRef(false);
+  // 描画で使う写し（ref は描画中に読めない）。
+  const [restoredDraft, setRestoredDraft] = useState(false);
   const [useTrueNorth, setUseTrueNorth] = useState(false);
   const [plans, setPlans] = useState<SavedPlan[]>([]);
   const [currentPlanId, setCurrentPlanId] = useState<string | null>(null);
@@ -504,6 +506,7 @@ export default function RelocationSimulatorPage() {
         if (draft.members && Array.isArray(draft.members))
           setMembers(draft.members);
         restoredDraftRef.current = true;
+        setRestoredDraft(true);
         // 生年月日が下書きに入っているときだけ、判定まで戻す。
         //
         // 既定値を外す前は保存していなかった。その頃の下書きを復元すると
@@ -698,9 +701,13 @@ export default function RelocationSimulatorPage() {
           mRating = "凶";
           mColor = "text-orange-400 border-orange-500/20 bg-orange-500/5";
         } else if (
-          ["NOISE_VOID", "NOISE_GOU", "NOISE_ANKEN", "NOISE_HA"].includes(
-            mStatus,
-          )
+          [
+            "NOISE_VOID",
+            "NOISE_DOYOU",
+            "NOISE_GOU",
+            "NOISE_ANKEN",
+            "NOISE_HA",
+          ].includes(mStatus)
         ) {
           mRating = "大凶";
           mColor = "text-red-700 border-red-500/30 bg-red-500/10";
@@ -1300,14 +1307,22 @@ export default function RelocationSimulatorPage() {
     let hasSevereClash = false;
     evaluatedSteps.forEach((step) => {
       const mainStatus = step.evaluation?.status || "";
-      if (["NOISE_GOU", "NOISE_ANKEN", "NOISE_HA"].includes(mainStatus)) {
+      if (
+        ["NOISE_DOYOU", "NOISE_GOU", "NOISE_ANKEN", "NOISE_HA"].includes(
+          mainStatus,
+        )
+      ) {
         hasSevereClash = true;
       }
 
       // Use cached companion evaluations for clash checks
       if (step.memberEvaluations) {
         step.memberEvaluations.forEach((m) => {
-          if (["NOISE_GOU", "NOISE_ANKEN", "NOISE_HA"].includes(m.status)) {
+          if (
+            ["NOISE_DOYOU", "NOISE_GOU", "NOISE_ANKEN", "NOISE_HA"].includes(
+              m.status,
+            )
+          ) {
             hasSevereClash = true;
           }
         });
@@ -1695,9 +1710,7 @@ export default function RelocationSimulatorPage() {
               下書きから戻した人は行き先が既に入っている。空で出すと、
               戻したものを自分で消させることになる。
             */
-            initialDestination={
-              restoredDraftRef.current ? steps[0]?.toName || "" : ""
-            }
+            initialDestination={restoredDraft ? steps[0]?.toName || "" : ""}
             onStart={(v) => {
               setBirthDate(v.birthDate);
               setStartName(v.startName);
@@ -2306,7 +2319,12 @@ export default function RelocationSimulatorPage() {
                   const clashingMembers: string[] = [];
                   let universalClashType = "";
                   const checkUniversal = (status: string) =>
-                    ["NOISE_GOU", "NOISE_ANKEN", "NOISE_HA"].includes(status);
+                    [
+                      "NOISE_DOYOU",
+                      "NOISE_GOU",
+                      "NOISE_ANKEN",
+                      "NOISE_HA",
+                    ].includes(status);
 
                   if (checkUniversal(step.evaluation?.status || "")) {
                     clashingMembers.push("自分");
@@ -2320,6 +2338,7 @@ export default function RelocationSimulatorPage() {
                   });
 
                   const clashLabelMap: Record<string, string> = {
+                    NOISE_DOYOU: "土用殺",
                     NOISE_GOU: "五黄殺",
                     NOISE_ANKEN: "暗剣殺",
                     NOISE_HA: "歳破/月破/日破",

@@ -128,6 +128,10 @@ docs/sessions/
 !src/app/llms.txt/
 !src/app/llms-full.txt/
 !src/app/indexnow-key.txt/
+# OG 画像に同梱した Noto Sans JP のライセンス（ファイル。ディレクトリではない）
+!src/lib/og/OFL.txt
+# RFC 9116。*.txt の一括除外に当たるので、明示的に戻さないと git add が黙って飛ばす。
+!public/.well-known/security.txt
 
 
 # Data and Logs

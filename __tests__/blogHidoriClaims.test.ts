@@ -16,12 +16,12 @@ const SLUG = "what-is-hidori-for-moving";
 const md = readFileSync(join(__dirname, `../content/blog/${SLUG}.md`), "utf-8");
 
 const MONTHS: [number, number][] = [
-  [2026, 10],
   [2026, 11],
   [2026, 12],
   [2027, 1],
   [2027, 2],
   [2027, 3],
+  [2027, 4],
 ];
 
 function facts(y: number, m: number) {
@@ -60,7 +60,7 @@ describe(`記事 ${SLUG} の数字`, () => {
   });
 
   it.each(MONTHS)("%i 年 %i 月: 向く日とうち土日の表", (y, m) => {
-    const t = section("## 2026年10月〜2027年3月の「引越しに向く日」");
+    const t = section("## 2026年11月〜2027年4月の「引越しに向く日」");
     const [good, weekend, link] = cells(t, y, m);
     const f = facts(y, m);
     expect(good).toBe(`${f.good} 日`);

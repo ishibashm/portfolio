@@ -1,6 +1,5 @@
 "use client";
 
-import { useEmailListingDraft } from "./EmailListingDraft";
 import {
   listingDetailsSchema,
   type ListingDetails,
@@ -53,7 +52,7 @@ export type DirectionCell = {
   /**
    * 土用殺が当たっている方位か。
    *
-   * 土用殺は年盤・月盤・日盤のどれにも出ず、最終だけを NOISE_GOU
+   * 土用殺は年盤・月盤・日盤のどれにも出ず、最終だけを NOISE_DOYOU
    * （＝どの画面でも「五黄殺」）にする。三盤とも大吉なのに段階が
    * X になり、理由が画面から分からない日ができていた。
    *
@@ -103,6 +102,21 @@ type SpotPortal = {
 
 function spotKey(lat: number, lon: number): string {
   return `${lat.toFixed(3)},${lon.toFixed(3)}`;
+}
+
+function syncSearchQueryInUrl(q: string) {
+  if (typeof window === "undefined") return;
+  const url = new URL(window.location.href);
+  if (q) {
+    url.searchParams.set("q", q);
+  } else {
+    url.searchParams.delete("q");
+  }
+  window.history.replaceState(
+    window.history.state,
+    "",
+    `${url.pathname}${url.search}${url.hash}`,
+  );
 }
 
 export function parseCoordinates(
@@ -199,11 +213,8 @@ export function SpotVerdict({
     fromMap: boolean,
   ) => void;
 }) {
-  const draftContext = useEmailListingDraft();
-  const consumedDraft = useRef<unknown>(null);
-  const draft = draftContext?.draft;
-  const setDraft = draftContext?.setDraft;
   const lookupSeq = useRef(0);
+  const initialQueryRead = useRef(false);
   const [query, setQuery] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -392,14 +403,24 @@ export function SpotVerdict({
       ? nearCity.name
       : null;
 
+  const hasCandidateContext = Boolean(candidateContext);
+
   const lookup = useCallback(
-    async (address?: string) => {
+    async (
+      address?: string,
+      options?: { isManual?: boolean; syncUrl?: boolean },
+    ) => {
+      const isManual = options?.isManual ?? address === undefined;
+      const syncUrl = options?.syncUrl ?? false;
       const text = (address ?? query).trim();
-      if (!text) return;
+      if (!text) {
+        if (syncUrl) syncSearchQueryInUrl("");
+        return;
+      }
       setError(null);
       setNote(null);
       const seq = ++lookupSeq.current;
-      if (candidateContext) {
+      if (hasCandidateContext) {
         const input = classifyCandidateInput(text);
         if (input.kind === "invalid") {
           setTarget(null);
@@ -426,12 +447,13 @@ export function SpotVerdict({
           name: `${coords.lat}, ${coords.lon}`,
           inputSource: "coordinates",
         });
+        if (syncUrl) syncSearchQueryInUrl(text);
         return;
       }
 
       setBusy(true);
       try {
-        let res = candidateContext
+        let res = hasCandidateContext
           ? await fetch("/api/relocation/candidates/geocode", {
               method: "POST",
               headers: { "Content-Type": "application/json" },
@@ -441,7 +463,7 @@ export function SpotVerdict({
         if (seq !== lookupSeq.current) return;
         // Anonymous manual input uses the existing public address search.
         // Other failures (including provider OFF) must retain their explanation.
-        if (candidateContext && res.status === 401 && address === undefined) {
+        if (hasCandidateContext && res.status === 401 && isManual) {
           res = await fetch(`/api/geocode?q=${encodeURIComponent(text)}`, {
             cache: "no-store",
           });
@@ -469,6 +491,7 @@ export function SpotVerdict({
           name: body.name || text,
           source: parseGeocodeSource(body.source),
         });
+        if (syncUrl) syncSearchQueryInUrl(text);
       } catch {
         if (seq !== lookupSeq.current) return;
         setTarget(null);
@@ -477,8 +500,19 @@ export function SpotVerdict({
         setBusy(false);
       }
     },
-    [query, candidateContext],
+    [query, hasCandidateContext],
   );
+
+  useEffect(() => {
+    if (initialQueryRead.current) return;
+    initialQueryRead.current = true;
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("candidate")) return;
+    const q = (params.get("q") ?? "").trim();
+    if (!q || q.length > 200) return;
+    setQuery(q);
+    void lookup(q, { isManual: true });
+  }, [lookup]);
 
   const selectEmail = useCallback(
     (url: string, details?: ListingDetails) => {
@@ -495,13 +529,6 @@ export function SpotVerdict({
     },
     [lookup],
   );
-  useEffect(() => {
-    if (!draft || !candidateContext || consumedDraft.current === draft) return;
-    consumedDraft.current = draft;
-    const { url, ...details } = draft;
-    setDraft?.(null);
-    selectEmail(url, details);
-  }, [draft, setDraft, selectEmail, candidateContext]);
 
   /* 決まった点を頁へ。requestedPoint（地図のクリック・街の一覧）から
      来た点は fromMap。入力欄から決めた点は name が入力そのもの */
@@ -561,46 +588,49 @@ export function SpotVerdict({
     >
       {candidateContext && (
         <p className="text-xs font-semibold text-stone-700">
-          まずは物件URL・住所を入力するか、下でメール本文を貼り付けてください。調べるだけならログイン・メール接続は不要です。候補の保存にはログインが必要です。
+          住所か駅名をひとつ入れると、地図にピンを立てて出発地からの方位と吉凶を出します。調べるだけならログイン不要です。候補の保存にはログインが必要です。
         </p>
       )}
       <label
         htmlFor="arb-spot-query"
         className="text-xs font-semibold text-stone-600 dark:text-stone-500 block"
       >
-        物件URL・住所・座標から調べる
+        住所・駅名・座標から調べる（物件URLも可）
       </label>
-      <div className="flex items-stretch gap-2">
+      <form
+        method="get"
+        action="/relocation/arbitrage#candidate-import"
+        role="search"
+        onSubmit={(e) => {
+          e.preventDefault();
+          void lookup(undefined, { isManual: true, syncUrl: true });
+        }}
+        className="flex items-stretch gap-2"
+      >
         <div className="relative min-w-0 flex-1">
           <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-emerald-600" />
           <input
             id="arb-spot-query"
+            name="q"
             type="text"
-            placeholder="物件URL、住所、または 35.0116, 135.7681"
+            placeholder="例: 新宿区西新宿2丁目 / 吉祥寺駅 / 35.0116, 135.7681"
             value={query}
             onChange={(e) => {
               lookupSeq.current++;
               setQuery(e.target.value);
               if (candidateContext) setTarget(null);
             }}
-            onKeyDown={(e) => {
-              if (e.key === "Enter") {
-                e.preventDefault();
-                void lookup();
-              }
-            }}
             className="min-h-11 w-full pl-9 pr-3 py-2 bg-emerald-50/40 dark:bg-white border border-emerald-200/70 dark:border-stone-200 rounded-xl text-base sm:text-sm focus:ring-2 focus:ring-emerald-400 outline-none transition-all"
           />
         </div>
         <button
-          type="button"
-          onClick={() => void lookup()}
+          type="submit"
           disabled={busy}
           className="min-h-11 shrink-0 px-3 py-2 rounded-lg bg-stone-800 text-white text-sm font-bold hover:bg-stone-700 disabled:opacity-50"
         >
           {busy ? <Loader2 className="w-3 h-3 animate-spin" /> : "調べる"}
         </button>
-      </div>
+      </form>
       {/*
         説明は 1 文にする（利用者の指摘、2026-09-24）。以前は URL の貼り方
         まで 2 段落で並べていて、**市区町村名を入れればリンクまで出る**
@@ -609,6 +639,9 @@ export function SpotVerdict({
       */}
       {candidateContext ? (
         <>
+          <p className="text-xs text-stone-600 leading-relaxed">
+            駅名は同じ名前の駅が別の場所にあることがあります。ピンの位置を確かめてください。
+          </p>
           <p className="text-xs text-stone-600 leading-relaxed">
             住所検索では国土地理院などの検索サービスに住所を送ります。氏名・連絡先・部屋番号は入れないでください。住所を送らずに地図で場所を指定することもできます。
           </p>
@@ -787,6 +820,13 @@ export function SpotVerdict({
                 {`${cell?.directionLabel ?? direction}の他の街を見る →`}
               </button>
             )}
+            <Link
+              href="/relocation/purchase"
+              prefetch={false}
+              className="inline-flex min-h-[44px] items-center rounded-lg border border-stone-300 px-3 text-xs font-bold text-stone-700 hover:bg-stone-50"
+            >
+              成約価格・地価を見る（国交省の公開データ）
+            </Link>
             {/* 入力欄を空にして札とピンを消す。覚えていた目的地も頁が消す
                 （onClearTarget）。入力欄を書き換えるだけでは目的地は残る */}
             <button

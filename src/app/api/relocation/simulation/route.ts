@@ -1,6 +1,18 @@
+import { z } from "zod";
+import { readBoundedJson } from "@/lib/requestSecurity";
 import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { getAuthUser, type AuthUser } from "@/lib/userConfig";
+
+const records = z.array(z.record(z.string(), z.json())).max(100);
+const simulationSchema = z.object({
+  id: z.string().min(1).max(128).optional(),
+  name: z.string().min(1).max(200),
+  steps: z.union([
+    records,
+    z.object({ steps: records, members: records.optional() }),
+  ]),
+});
 
 const unauthorized = () =>
   NextResponse.json(
@@ -26,10 +38,17 @@ async function resolveOwnerId(user: AuthUser) {
 
   // NextAuth 時代の User が同じメールで残っている環境では、Supabase の id で
   // 新規作成すると email の一意制約に当たる。既存行を所有者として再利用する。
+  if (user.emailVerified !== true) throw new Error("VERIFIED_EMAIL_REQUIRED");
   const legacyUser = await prisma.user.findUnique({
     where: { email: user.email },
   });
-  if (legacyUser) return legacyUser.id;
+  if (legacyUser) {
+    // A UUID belongs to another Supabase identity, not a legacy NextAuth row.
+    if (/^[0-9a-f]{8}-[0-9a-f-]{27}$/i.test(legacyUser.id)) {
+      throw new Error("OWNER_MIGRATION_REQUIRED");
+    }
+    return legacyUser.id;
+  }
 
   const createdUser = await prisma.user.create({
     data: { id: user.id, email: user.email },
@@ -48,8 +67,8 @@ export async function GET() {
       orderBy: { updatedAt: "desc" },
     });
     return NextResponse.json({ success: true, data: simulations });
-  } catch (error) {
-    console.error("Failed to resolve relocation simulations:", error);
+  } catch {
+    console.error("Failed to resolve relocation simulations:");
     return unavailable();
   }
 }
@@ -59,18 +78,16 @@ export async function POST(req: Request) {
     const user = await getAuthUser();
     if (!user) return unauthorized();
 
-    const body = await req.json();
-    const { id, name, steps } = body;
-
-    if (!name || !steps || typeof steps !== "object") {
+    const input = await readBoundedJson(req, 256 * 1024);
+    if (!input.ok) return input.response;
+    const parsed = simulationSchema.safeParse(input.value);
+    if (!parsed.success) {
       return NextResponse.json(
-        {
-          success: false,
-          error: "プラン名と移動内容を入力してください。",
-        },
+        { success: false, error: "Invalid simulation" },
         { status: 400 },
       );
     }
+    const { id, name, steps } = parsed.data;
 
     const ownerId = await resolveOwnerId(user);
 
@@ -98,8 +115,8 @@ export async function POST(req: Request) {
     });
 
     return NextResponse.json({ success: true, data: record });
-  } catch (error) {
-    console.error("Failed to save relocation simulation:", error);
+  } catch {
+    console.error("Failed to save relocation simulation:");
     return unavailable();
   }
 }
@@ -133,8 +150,8 @@ export async function DELETE(req: Request) {
     }
 
     return NextResponse.json({ success: true });
-  } catch (error) {
-    console.error("Failed to delete relocation simulation:", error);
+  } catch {
+    console.error("Failed to delete relocation simulation:");
     return unavailable();
   }
 }

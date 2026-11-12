@@ -1,4 +1,5 @@
-"use server";
+// Public deterministic calculation: no Server Action endpoint is needed.
+import { z } from "zod";
 
 import { geomagneticAt, type GeomagneticData } from "@/utils/geomagneticModel";
 
@@ -13,5 +14,13 @@ export async function getGeomagneticData(
   lon: number,
   timestamp: number = Date.now(),
 ): Promise<GeomagneticData | null> {
-  return geomagneticAt(lat, lon, timestamp);
+  const input = z
+    .tuple([
+      z.number().finite().min(-90).max(90),
+      z.number().finite().min(-180).max(180),
+      z.number().finite().min(-8640000000000000).max(8640000000000000),
+    ])
+    .safeParse([lat, lon, timestamp]);
+  if (!input.success) return null;
+  return geomagneticAt(...input.data);
 }

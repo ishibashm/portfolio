@@ -43,7 +43,7 @@ export function ArticleJsonLd({
   keywords?: string[];
   datePublished?: string;
   dateModified?: string;
-  /** 記事の代表画像。サイト内の絶対パスで渡す（`/ogp.png` など） */
+  /** 記事の代表画像。ブログは `/blog/<slug>/opengraph-image` を渡す。 */
   image?: string;
 }) {
   return (
@@ -61,8 +61,8 @@ export function ArticleJsonLd({
           持たない。og:image は共有カード用の別の口なので、そちらだけでは
           構造化データ側は空のままになる。
 
-          既定は全頁共通の /ogp.png（1200×630）。**記事ごとに違う画像を
-          持たせるまでは、Discover でこの記事を他と区別する材料が無い。**
+          既定は全頁共通の /ogp.png（1200×630）。ブログは記事ごとの
+          opengraph-image パスを渡して、og:image と揃える。
         */
         image: `${BASE}${image}`,
         publisher: { "@id": `${BASE}/#organization` },

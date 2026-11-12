@@ -19,6 +19,7 @@ import {
 import { AdBanner } from "@/components/ads/AdBanner";
 import { AreaEntryLinks } from "@/components/houi/AreaEntryLinks";
 import { ArticleJsonLd, BreadcrumbJsonLd } from "@/components/JsonLd";
+import { pageOpenGraph } from "@/lib/siteUrl";
 
 /**
  * 「2026年 一白水星 吉方位」のような検索に直接応える静的ページ。
@@ -65,20 +66,17 @@ export async function generateMetadata({
   if (!parsed) return {};
   const { year, star } = parsed;
   const name = STAR_NAMES[star];
-  const heading = `${year}年 ${name}の吉方位・凶方位【月別】`;
-  const title = `${heading} | Cloud Palette`;
-  const description = `${year}年 ${name}の吉方位と凶方位（五黄殺・暗剣殺）を月別に確認できます。年盤の歳破・本命殺と、1月から12月までの月盤も一覧で案内します。`;
+  const title = `${year}年 ${name}の吉方位・凶方位｜引越しの方位を月別に確認`;
+  const description = `${year}年 ${name}の吉方位と凶方位を年盤・月盤で確認できます。五黄殺・暗剣殺・歳破・本命殺など避けたい方位と、1月から12月までの月別一覧を比較し、引越しや旅行の方位と時期を検討できます。`;
 
   return {
     title: { absolute: title },
     description,
     alternates: { canonical: `/houi/${year}/${star}` },
-    openGraph: {
-      images: ["/ogp.png"],
-      title,
-      description,
+    openGraph: pageOpenGraph(`/houi/${year}/${star}`, title, description, {
       type: "article",
-    },
+      omitImages: true,
+    }),
   };
 }
 
@@ -124,6 +122,7 @@ export default async function Page({
       <BreadcrumbJsonLd
         items={[
           { name: HOUI_BREADCRUMB_LABEL, path: "/houi" },
+          { name: `${year}年`, path: `/houi/${year}` },
           { name: `${year}年 ${name}`, path },
         ]}
       />
@@ -132,6 +131,10 @@ export default async function Page({
         <nav className="text-xs text-slate-500 mb-6">
           <Link href="/houi" className="hover:text-rose-600">
             {HOUI_BREADCRUMB_LABEL}
+          </Link>
+          <span className="mx-2">/</span>
+          <Link href={`/houi/${year}`} className="hover:text-rose-600">
+            {year}年
           </Link>
           <span className="mx-2">/</span>
           <span>
@@ -224,7 +227,7 @@ export default async function Page({
             引越しの方位は、年盤と月盤の両方が吉であることを条件にする考え方が一般的です。月ごとの判定は次から確認できます。
           </p>
           <p className="mt-2 text-xs text-slate-600">
-            以下は月盤のみの判定です。各月は節入りから始まります。年盤の吉方位もあわせて確認してください。
+            各月は節入りから始まります。「年月とも吉」は同じ方位が年盤・月盤の両方で吉になる月です。1月の年盤は前年を使います。
           </p>
           <ul className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
             {MONTHS.map((month) => {
@@ -236,9 +239,26 @@ export default async function Page({
               );
               const monthlyGood = monthly.filter((v) => v.kind === "good");
               const monthlyBad = monthly.filter((v) => v.kind === "bad");
+              const annual =
+                month === 1
+                  ? getYearDirections(year - 1, star, "classical").verdicts
+                  : verdicts;
+              const bothGood = monthlyGood.filter((v) =>
+                annual.some(
+                  (a) => a.direction === v.direction && a.kind === "good",
+                ),
+              );
               return (
-                <li key={month} className="wg-card p-4">
+                <li
+                  key={month}
+                  className={`wg-card p-4 ${bothGood.length ? "border-emerald-400 bg-emerald-50" : ""}`}
+                >
                   <h3 className="font-mono text-sm font-bold">{month}月</h3>
+                  {bothGood.length > 0 && (
+                    <p className="mt-2 text-xs font-bold text-emerald-900">
+                      年月とも吉：{bothGood.map((v) => v.jp).join("・")}
+                    </p>
+                  )}
                   <p className="mt-2 text-xs text-emerald-900">
                     吉：
                     {monthlyGood.length

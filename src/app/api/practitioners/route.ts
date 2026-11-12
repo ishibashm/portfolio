@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
+import { notifyPractitionerApplication } from "@/lib/practitionerNotification";
 import { getAuthUser } from "@/lib/userConfig";
 import { denyUnlessAdmin } from "@/lib/adminApi";
 import {
@@ -125,6 +126,17 @@ export async function POST(request: Request) {
       create: { user_id: user.id, ...data },
       update: data,
     });
+
+    // Await delivery so serverless teardown cannot discard it, but never fail a saved application.
+    try {
+      await notifyPractitionerApplication({
+        ...result,
+        email: user.email,
+        userId: user.id,
+      });
+    } catch (error) {
+      console.error("Failed to notify practitioner application:", error);
+    }
 
     return NextResponse.json({
       success: true,
