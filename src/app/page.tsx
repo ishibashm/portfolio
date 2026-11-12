@@ -1,4 +1,3 @@
-import { currentYearInJapan } from "@/lib/kigakuContent";
 import { AgentEntry } from "@/components/home/AgentEntry";
 import { PurposeLinks } from "@/components/home/PurposeLinks";
 import { HonmeiStarLinks } from "@/components/houi/HonmeiStarLinks";
@@ -135,68 +134,7 @@ export default function Home() {
         <AdBanner />
       </div>
 
-      {/* Footer with Compliance & LLMO Links */}
-      <footer className="w-full max-w-[1700px] flex flex-col sm:flex-row items-center justify-between py-6 px-4 text-xs font-semibold text-slate-600 border-t border-slate-300/80 gap-4">
-        <div>
-          © {currentYearInJapan()} {SITE_NAME}. {SITE_TAGLINE}ためのサービスです。
-        </div>
-        <div className="flex flex-wrap items-center gap-4 text-slate-500">
-          <Link href="/guide" className="hover:text-rose-600 transition-colors">
-            使い方ガイド
-          </Link>
-          <span>•</span>
-          {/*
-            鑑定士の掲載は登録制で、掲載が 0 件のあいだは記事側の導線
-            （PractitionerStrip）が何も描かない。ここに置いておかないと、
-            登録したい人がページに辿り着けない。
-          */}
-          <Link
-            href="/practitioners"
-            className="hover:text-rose-600 transition-colors"
-          >
-            鑑定士の掲載
-          </Link>
-          <span>•</span>
-          {/* 物件を貸したい・売りたい人の入口。鑑定士と同じで、ここに
-              置いておかないと辿り着く道が無い（記事側の導線が無い）。 */}
-          <Link
-            href="/owners"
-            className="hover:text-rose-600 transition-colors"
-          >
-            オーナーの方へ
-          </Link>
-          <span>•</span>
-          <Link href="/about" className="hover:text-rose-600 transition-colors">
-            このサイトについて
-          </Link>
-          <span>•</span>
-          <Link
-            href="/contact"
-            className="hover:text-rose-600 transition-colors"
-          >
-            お問い合わせ
-          </Link>
-          <span>•</span>
-          <Link
-            href="/privacy"
-            className="hover:text-rose-600 transition-colors"
-          >
-            プライバシーポリシー
-          </Link>
-          <span>•</span>
-          <Link href="/terms" className="hover:text-rose-600 transition-colors">
-            利用規約
-          </Link>
-          <span>•</span>
-          <Link
-            href="/llms.txt"
-            target="_blank"
-            className="hover:text-rose-600 transition-colors font-mono text-[11px]"
-          >
-            AI Agent Spec (/llms.txt)
-          </Link>
-        </div>
-      </footer>
+      {/* 著作権表示と案内リンクは全頁共通の SiteFooter（layout）へ移した。 */}
     </div>
   );
 }

@@ -147,6 +147,65 @@ export default async function Page({
             月別ページは各本命星の「月別ページを開く」から選べます。月盤は節入りで切り替わります。引越しなどを検討するときは、年盤と月盤の両方をご確認ください。
           </p>
         )}
+        <section className="mt-10">
+          <h2 className="text-xl font-bold font-serif border-b border-slate-300 pb-2">
+            この一覧の使い方
+          </h2>
+          <p className="mt-4 text-sm leading-relaxed text-slate-700">
+            本命星の求め方と、年盤の見方は
+            <Link
+              href="/guide/honmei"
+              className="underline hover:text-slate-600"
+            >
+              使い方ガイド（本命星と吉方位）
+            </Link>
+            にあります。全星を並べた早見表は
+            <Link href="/houi" className="underline hover:text-slate-600">
+              引越しの方位
+            </Link>
+            、日取りの候補は
+            <Link href="/calendar" className="underline hover:text-slate-600">
+              引越しの日取り
+            </Link>
+            、天中殺の期間は
+            <Link
+              href="/houi/tenchusatsu"
+              className="underline hover:text-slate-600"
+            >
+              天中殺の早見
+            </Link>
+            で確認できます。
+          </p>
+          <p className="mt-3 text-sm leading-relaxed text-slate-700">
+            出発地から見た街と家賃の水準は、
+            <Link href="/houi/area" className="underline hover:text-slate-600">
+              エリア別の一覧
+            </Link>
+            と
+            <Link href="/houi/pref" className="underline hover:text-slate-600">
+              都道府県のまとめ
+            </Link>
+            にあります。判定の考え方の背景は
+            <Link
+              href="/blog/where-kigaku-and-houi-came-from"
+              className="underline hover:text-slate-600"
+            >
+              九星気学と方位はどこから来たのか
+            </Link>
+            に、この道具が決めないことは
+            <Link
+              href="/blog/what-this-tool-can-and-cannot-decide"
+              className="underline hover:text-slate-600"
+            >
+              何を決められて、何を決められないか
+            </Link>
+            と
+            <Link href="/about" className="underline hover:text-slate-600">
+              このサイトについて
+            </Link>
+            に書いています。
+          </p>
+        </section>
         <nav
           aria-label="前後の年"
           className="mt-10 flex flex-wrap gap-5 text-sm"

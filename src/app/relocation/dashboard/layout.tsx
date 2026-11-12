@@ -2,6 +2,7 @@ import { Suspense } from "react";
 import { FortuneReport } from "@/components/fortune/FortuneReport";
 import type { Metadata } from "next";
 import { pageOpenGraph } from "@/lib/siteUrl";
+import { ToolPageIntro } from "@/components/relocation/ToolPageIntro";
 
 // Evaluate the server flag and authenticated report on each page request.
 export const dynamic = "force-dynamic";
@@ -32,6 +33,14 @@ export default function DashboardLayout({
 }) {
   return (
     <>
+      <ToolPageIntro
+        guideHref="/guide/honmei"
+        guideLabel="本命星と吉方位の使い方を読む"
+      >
+        生年月日と出発地を入れると、今日の八方位の吉凶、時間帯の吉凶、真太陽時を
+        1
+        画面で確かめられます。目的地を地名で指定すると、その方位が今日使えるかを見られます。ログインは不要です。
+      </ToolPageIntro>
       <Suspense fallback={null}>
         <FortuneReport />
       </Suspense>

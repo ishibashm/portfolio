@@ -43,7 +43,10 @@ export default function AboutPage() {
           <ul className="mt-4 text-sm text-slate-700 space-y-2 list-disc pl-5">
             {CORE_ROUTES.map((r) => (
               <li key={r.href}>
-                <Link href={r.href} className="font-semibold hover:text-rose-600">
+                <Link
+                  href={r.href}
+                  className="font-semibold hover:text-rose-600"
+                >
                   {r.label}
                 </Link>
                 <span className="text-xs text-slate-600"> — {r.summary}</span>
@@ -152,7 +155,9 @@ export default function AboutPage() {
               </dd>
             </div>
             <div>
-              <dt className="font-bold text-xs text-slate-500">方位・暦の計算</dt>
+              <dt className="font-bold text-xs text-slate-500">
+                方位・暦の計算
+              </dt>
               <dd className="leading-relaxed">
                 九星気学の方位盤、六曜、天赦日・一粒万倍日、天中殺、土用の期間をサイト内で計算しています。方位は出発地から目的地への大圏方位角で求め、判定の基準は常に真北です。磁北は「方位磁針で測るとずれる」という注意として表示するだけで、吉凶の判定には使いません。地磁気偏角は出発地ごとに求め、取得できない場合は補正しません。暦の日付は日本時間で切り替えます。
               </dd>
@@ -202,7 +207,10 @@ export default function AboutPage() {
                 連絡先
               </dt>
               <dd>
-                <Link href="/contact" className="font-semibold hover:text-rose-600 underline">
+                <Link
+                  href="/contact"
+                  className="font-semibold hover:text-rose-600 underline"
+                >
                   お問い合わせフォーム
                 </Link>
               </dd>
@@ -229,7 +237,11 @@ export default function AboutPage() {
             <Link href="/privacy" className="underline hover:text-rose-600">
               プライバシーポリシー
             </Link>
-            をご覧ください。
+            をご覧ください。ページを公開し検索の対象にするときの考え方は
+            <Link href="/editorial" className="underline hover:text-rose-600">
+              編集方針
+            </Link>
+            にまとめています。
           </p>
         </section>
       </article>

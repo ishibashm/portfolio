@@ -101,9 +101,19 @@ export default function Page() {
         <AreaQuickFind areas={quick} />
 
         {/* 県の目次。JS が無くても効くよう、頁内の飛び先へのリンクにする */}
+        <p className="mt-6 text-sm text-slate-700">
+          県ごとの相場と方位のまとめは
+          <Link
+            href="/houi/pref"
+            className="font-semibold text-rose-600 underline hover:text-rose-700"
+          >
+            都道府県の一覧
+          </Link>
+          からも開けます。
+        </p>
         <nav
           aria-label="都道府県の目次"
-          className="mt-6 rounded-2xl border border-slate-300 bg-white/80 p-4"
+          className="mt-4 rounded-2xl border border-slate-300 bg-white/80 p-4"
         >
           <p className="text-xs font-bold text-slate-600">都道府県から探す</p>
           <dl className="mt-2 space-y-1.5">

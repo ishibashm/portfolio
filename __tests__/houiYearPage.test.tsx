@@ -99,6 +99,20 @@ describe("方位の年ページ", () => {
         "/houi",
       ]);
       expect(doc.body.textContent).toContain("このページの位置づけ");
+      expect(doc.body.textContent).toContain("この一覧の使い方");
+      const usageHrefs = [...doc.querySelectorAll("a")].map((a) =>
+        a.getAttribute("href"),
+      );
+      for (const href of [
+        "/guide/honmei",
+        "/calendar",
+        "/houi/tenchusatsu",
+        "/houi/area",
+        "/houi/pref",
+        "/about",
+      ]) {
+        expect(usageHrefs, href).toContain(href);
+      }
       const metadata = await generateMetadata(paramsFor(year));
       expect(metadata.alternates?.canonical).toBe(`/houi/${year}`);
       expect(metadata.openGraph?.url).toContain(`/houi/${year}`);
