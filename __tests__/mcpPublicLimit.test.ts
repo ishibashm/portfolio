@@ -154,7 +154,8 @@ it("fails open when the database is unavailable", async () => {
     now,
   );
   expect(gate.denied).toBeNull();
-  expect(gate.headers.get("RateLimit-Limit")).toBeNull();
+  expect(gate.headers.get("RateLimit-Policy")).toBe("fallback");
+  expect(gate.headers.get("RateLimit-Limit")).toBe("60");
 });
 
 it("fails open when the limiter does not answer in time", async () => {
@@ -167,6 +168,8 @@ it("fails open when the limiter does not answer in time", async () => {
   await vi.advanceTimersByTimeAsync(1500);
   const gate = await pending;
   expect(gate.denied).toBeNull();
+  expect(gate.headers.get("RateLimit-Policy")).toBe("fallback");
+  expect(gate.headers.get("RateLimit-Limit")).toBe("60");
   vi.useRealTimers();
 });
 

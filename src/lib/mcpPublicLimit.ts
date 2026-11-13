@@ -1,5 +1,5 @@
 import { createHash, createHmac } from "node:crypto";
-import { clientKey } from "@/lib/apiGuard";
+import { TokenBucket, clientKey } from "@/lib/apiGuard";
 import { errorCode } from "@/lib/errorMessage";
 import { MCP_PUBLIC_TOOL_NAMES } from "@/lib/mcpServer";
 
@@ -13,9 +13,9 @@ import { MCP_PUBLIC_TOOL_NAMES } from "@/lib/mcpServer";
  * セッション・道具ごとの上限を 1 トランザクションで検査する。生の IP は残さない。
  *
  * 識別は apiGuard.clientKey（転送ヘッダの末尾。利用者が足した先頭は
- * 信用しない）。DB が落ちている・表がまだ無いときは通すが、外から分かるよう
- * RateLimit-Policy: unavailable と構造化 WARNING ログを出す。プロセス内の
- * 歯止め（requestLimiter）は別にある。
+ * 信用しない）。DB が落ちている・表がまだ無いときはプロセス内の IP ごと
+ * 60 回/分のトークンバケットに切り替え、RateLimit-Policy: fallback と
+ * 構造化 WARNING ログを出す。
  */
 
 export const MCP_PUBLIC_IP_HOURLY_LIMIT = 2000;
@@ -33,8 +33,16 @@ export const MCP_PUBLIC_ALLOWED_TOOLS: ReadonlySet<string> = new Set<string>(
 );
 export { MCP_PUBLIC_TOOL_NAMES };
 
+export const MCP_PUBLIC_TX_MAX_WAIT_MS = 800;
+export const MCP_PUBLIC_TX_TIMEOUT_MS = 1400;
+export const MCP_PUBLIC_DB_TIMEOUT_MS = 1500;
+export const MCP_PUBLIC_COLD_TX_MAX_WAIT_MS = 2500;
+export const MCP_PUBLIC_COLD_TX_TIMEOUT_MS = 3000;
+export const MCP_PUBLIC_COLD_DB_TIMEOUT_MS = 3500;
+export const MCP_PUBLIC_FALLBACK_LIMIT = 60;
+export const MCP_PUBLIC_FALLBACK_WINDOW_MS = 60_000;
+
 const WINDOW_MS = 60 * 60 * 1000;
-const DB_TIMEOUT_MS = 1500;
 const STALE_MS = 6 * 60 * 60 * 1000;
 const MAX_SESSION_ID_LENGTH = 200;
 const DISABLED_VALUES = new Set(["false", "0", "off", "no"]);
@@ -135,7 +143,7 @@ export type McpLimitDecision = {
   remaining: number;
   resetSeconds: number;
   retryAfterSeconds: number;
-  scope?: McpLimitScope;
+  scope?: McpLimitScope | "fallback";
 };
 
 export type McpBucketSpec = {
@@ -163,16 +171,69 @@ type RateTx = {
   };
 };
 
+export type McpRateTxOptions = {
+  maxWait?: number;
+  timeout?: number;
+  isolationLevel?: "ReadCommitted";
+};
+
 export type McpRateDb = {
+  $queryRaw?: (
+    query: TemplateStringsArray,
+    ...values: unknown[]
+  ) => Promise<unknown>;
   $transaction<T>(
     fn: (tx: RateTx) => Promise<T>,
-    options?: {
-      maxWait?: number;
-      timeout?: number;
-      isolationLevel?: "ReadCommitted";
-    },
+    options?: McpRateTxOptions,
   ): Promise<T>;
 };
+
+type McpPublicRateState = {
+  warmed: boolean;
+  warmPromise: Promise<boolean> | null;
+  warmClient: McpRateDb | null;
+  defaultClient: McpRateDb | null;
+  fallbackBucket: TokenBucket;
+};
+
+const mcpRateGlobal = globalThis as typeof globalThis & {
+  __mcpPublicRateState?: McpPublicRateState;
+};
+
+function createFallbackBucket(): TokenBucket {
+  return new TokenBucket(
+    MCP_PUBLIC_FALLBACK_LIMIT,
+    MCP_PUBLIC_FALLBACK_LIMIT / MCP_PUBLIC_FALLBACK_WINDOW_MS,
+  );
+}
+
+function getRateState(): McpPublicRateState {
+  return (mcpRateGlobal.__mcpPublicRateState ??= {
+    warmed: false,
+    warmPromise: null,
+    warmClient: null,
+    defaultClient: null,
+    fallbackBucket: createFallbackBucket(),
+  });
+}
+
+export function resetMcpPublicRateState(): void {
+  mcpRateGlobal.__mcpPublicRateState = {
+    warmed: false,
+    warmPromise: null,
+    warmClient: null,
+    defaultClient: null,
+    fallbackBucket: createFallbackBucket(),
+  };
+}
+
+export function isMcpRateDbWarm(): boolean {
+  return getRateState().warmed;
+}
+
+export function getMcpPublicFallbackBucket(): TokenBucket {
+  return getRateState().fallbackBucket;
+}
 
 function decision(
   allowed: boolean,
@@ -269,8 +330,12 @@ export async function consumeMcpPublicBuckets(
   db: McpRateDb,
   buckets: McpBucketSpec[],
   now: Date,
+  options?: McpRateTxOptions,
 ): Promise<McpLimitDecision & { scope: McpLimitScope }> {
-  return db.$transaction(
+  const maxWait = options?.maxWait ?? MCP_PUBLIC_TX_MAX_WAIT_MS;
+  const timeout = options?.timeout ?? MCP_PUBLIC_TX_TIMEOUT_MS;
+  const isolationLevel = options?.isolationLevel ?? "ReadCommitted";
+  const result = await db.$transaction(
     async (tx) => {
       // デッドロックを防ぐため、鍵の昇順でロックを取る。
       const sortedKeys = [...new Set(buckets.map((b) => b.key))].sort();
@@ -335,8 +400,10 @@ export async function consumeMcpPublicBuckets(
       }
       return mostRestrictive!;
     },
-    { maxWait: 800, timeout: 1400, isolationLevel: "ReadCommitted" },
+    { maxWait, timeout, isolationLevel },
   );
+  getRateState().warmed = true;
+  return result;
 }
 
 export async function consumeMcpPublicBudget(
@@ -344,11 +411,13 @@ export async function consumeMcpPublicBudget(
   ipHash: string,
   now: Date,
   limits = mcpPublicLimits(),
+  options?: McpRateTxOptions,
 ): Promise<McpLimitDecision> {
   return consumeMcpPublicBuckets(
     db,
     [{ scope: "ip", key: ipHash, limits, isIp: true }],
     now,
+    options,
   );
 }
 
@@ -386,17 +455,38 @@ export type McpPublicGate = {
   headers: Headers;
 };
 
-function allowGate(): McpPublicGate {
+function fallbackGate(headers: Headers, now: Date): McpPublicGate {
+  const bucket = getRateState().fallbackBucket;
+  const key = clientKey(headers);
+  const nowMs = now.getTime();
+  const allowed = bucket.take(key, nowMs);
+  const remaining = allowed ? bucket.remaining(key, nowMs) : 0;
+  const retryAfterSeconds = allowed
+    ? 0
+    : Math.max(1, bucket.retryAfterSec(key, nowMs));
+  const resetSeconds = allowed
+    ? Math.max(1, bucket.resetSec(key, nowMs))
+    : retryAfterSeconds;
+  const limitHeaders = rateLimitHeaders({
+    allowed,
+    limit: MCP_PUBLIC_FALLBACK_LIMIT,
+    remaining,
+    resetSeconds,
+    retryAfterSeconds,
+    scope: "fallback",
+  });
+  limitHeaders.set("RateLimit-Policy", "fallback");
+  if (allowed) return { denied: null, headers: limitHeaders };
   return {
-    denied: null,
-    headers: new Headers({
-      "RateLimit-Policy": "unavailable",
-      "Cache-Control": "no-store",
-    }),
+    denied: Response.json(
+      { error: "Too many requests", scope: "fallback" },
+      { status: 429, headers: limitHeaders },
+    ),
+    headers: limitHeaders,
   };
 }
 
-function failOpenReason(error: unknown): string {
+export function failOpenReason(error: unknown): string {
   const code = errorCode(error);
   if (code && /^(P\d{4}|E[A-Z0-9_]{2,30})$/.test(code)) return code;
   if (
@@ -419,6 +509,70 @@ function warnRateLimitUnavailable(reason: string): void {
   );
 }
 
+export function shouldAutoWarmMcpRateDb(
+  env: Record<string, string | undefined> = process.env,
+): boolean {
+  if (!mcpPublicEnabled(env)) return false;
+  if (env.NODE_ENV === "test" || Boolean(env.VITEST)) return false;
+  if (env.NEXT_PHASE === "phase-production-build") return false;
+  if (env.NEXT_RUNTIME && env.NEXT_RUNTIME !== "nodejs") return false;
+  return true;
+}
+
+export function warmMcpRateDb(db?: McpRateDb): Promise<boolean> {
+  const state = getRateState();
+  if (state.warmPromise && state.warmClient === (db ?? state.defaultClient)) {
+    return state.warmPromise;
+  }
+  let promise: Promise<boolean> | null = null;
+  promise = (async (): Promise<boolean> => {
+    try {
+      const client = db ?? (await loadRateDb());
+      if (!db) state.defaultClient = client;
+      state.warmClient = client;
+      if (typeof client.$queryRaw === "function") {
+        await client.$queryRaw`SELECT 1 AS ok`;
+      }
+      state.warmed = true;
+      return true;
+    } catch (error) {
+      if (state.warmPromise === promise) {
+        state.warmPromise = null;
+      }
+      warnRateLimitUnavailable(failOpenReason(error));
+      return false;
+    }
+  })();
+  state.warmClient = db ?? state.defaultClient;
+  state.warmPromise = promise;
+  return promise;
+}
+
+export function maybeWarmMcpRateDb(
+  env: Record<string, string | undefined> = process.env,
+  db?: McpRateDb,
+): Promise<boolean> | null {
+  if (!shouldAutoWarmMcpRateDb(env)) return null;
+  return warmMcpRateDb(db);
+}
+
+async function awaitBoundedWarmup(
+  warmPromise: Promise<boolean>,
+  maxWaitMs: number,
+): Promise<void> {
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  try {
+    await Promise.race([
+      warmPromise.catch(() => false),
+      new Promise<false>((resolve) => {
+        timer = setTimeout(() => resolve(false), maxWaitMs);
+      }),
+    ]);
+  } finally {
+    if (timer) clearTimeout(timer);
+  }
+}
+
 export async function checkMcpPublicLimit(
   headers: Headers,
   now = new Date(),
@@ -426,13 +580,38 @@ export async function checkMcpPublicLimit(
   db?: McpRateDb,
 ): Promise<McpPublicGate> {
   const buckets = buildMcpPublicBuckets(headers, parsedBody);
+  const state = getRateState();
+  const cold = !state.warmed;
+  const txOptions: McpRateTxOptions = cold
+    ? {
+        maxWait: MCP_PUBLIC_COLD_TX_MAX_WAIT_MS,
+        timeout: MCP_PUBLIC_COLD_TX_TIMEOUT_MS,
+      }
+    : {
+        maxWait: MCP_PUBLIC_TX_MAX_WAIT_MS,
+        timeout: MCP_PUBLIC_TX_TIMEOUT_MS,
+      };
+  const outerTimeoutMs = cold
+    ? MCP_PUBLIC_COLD_DB_TIMEOUT_MS
+    : MCP_PUBLIC_DB_TIMEOUT_MS;
   let settled = false;
   const work = (async (): Promise<
     (McpLimitDecision & { scope: McpLimitScope }) | null
   > => {
     try {
+      if (
+        cold &&
+        (state.warmPromise !== null ||
+          shouldAutoWarmMcpRateDb() ||
+          typeof db?.$queryRaw === "function")
+      ) {
+        await awaitBoundedWarmup(
+          state.warmPromise ?? warmMcpRateDb(db),
+          MCP_PUBLIC_COLD_TX_MAX_WAIT_MS,
+        );
+      }
       const client = db ?? (await loadRateDb());
-      return await consumeMcpPublicBuckets(client, buckets, now);
+      return await consumeMcpPublicBuckets(client, buckets, now, txOptions);
     } catch (error) {
       if (!settled) {
         settled = true;
@@ -449,12 +628,12 @@ export async function checkMcpPublicLimit(
         warnRateLimitUnavailable("timeout");
       }
       resolve(null);
-    }, DB_TIMEOUT_MS);
+    }, outerTimeoutMs);
   });
   const result = await Promise.race([work, timeout]);
   settled = true;
   if (timer) clearTimeout(timer);
-  if (!result) return allowGate();
+  if (!result) return fallbackGate(headers, now);
   const limitHeaders = rateLimitHeaders(result);
   if (result.allowed) return { denied: null, headers: limitHeaders };
   return {
@@ -470,3 +649,5 @@ async function loadRateDb(): Promise<McpRateDb> {
   const { default: prisma } = await import("@/lib/prisma");
   return prisma;
 }
+
+void maybeWarmMcpRateDb();

@@ -77,6 +77,38 @@ export class TokenBucket {
     return Math.ceil((1 - tokens) / this.refillPerMs / 1000);
   }
 
+  /** 現在の残りトークン数（整数切り捨て） */
+  remaining(key: string, nowMs: number): number {
+    const prev = this.buckets.get(key);
+    if (!prev) return this.capacity;
+    const tokens = Math.min(
+      this.capacity,
+      prev.tokens + Math.max(0, nowMs - prev.at) * this.refillPerMs,
+    );
+    return Math.max(0, Math.floor(tokens));
+  }
+
+  /** 満杯（拒否時は 1 トークン回復）までのおおよその秒数。RateLimit-Reset に使う */
+  resetSec(key: string, nowMs: number): number {
+    const prev = this.buckets.get(key);
+    if (!prev) return 0;
+    const tokens = Math.min(
+      this.capacity,
+      prev.tokens + Math.max(0, nowMs - prev.at) * this.refillPerMs,
+    );
+    if (tokens < 1) {
+      return Math.max(1, Math.ceil((1 - tokens) / this.refillPerMs / 1000));
+    }
+    const deficit = Math.max(0, this.capacity - tokens);
+    return deficit > 0
+      ? Math.max(1, Math.ceil(deficit / this.refillPerMs / 1000))
+      : 0;
+  }
+
+  clear(): void {
+    this.buckets.clear();
+  }
+
   get size(): number {
     return this.buckets.size;
   }
