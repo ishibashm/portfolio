@@ -12,6 +12,7 @@ export const FAQ_TOOL_QUESTIONS: Record<string, string> = {
   get_honmei_star: "自分の本命星を調べたい",
   judge_directions: "自分の場合の方位を計算したい",
   find_auspicious_days: "自分の引越しの日取りを調べたい",
+  find_relocation_windows: "自分が引越しできる期間を一覧で見たい",
   get_kanshi: "自分の干支と空亡を調べたい",
   area_directions: "移動先の市区町村を探したい",
 };
