@@ -82,6 +82,48 @@ import {
 export const SITE_NAME = "Cloud Palette";
 export const SITE_URL = "https://cloud-palette.com";
 
+export const MCP_PUBLIC_TOOLS = {
+  area_directions: "area_directions",
+  compare_fortune_perspectives: "compare_fortune_perspectives",
+  find_auspicious_days: "find_auspicious_days",
+  get_article: "get_article",
+  get_honmei_star: "get_honmei_star",
+  get_kanshi: "get_kanshi",
+  get_month_directions: "get_month_directions",
+  get_rental: "get_rental",
+  get_today_directions: "get_today_directions",
+  judge_directions: "judge_directions",
+  judge_hourly_directions: "judge_hourly_directions",
+  judge_time_slots: "judge_time_slots",
+  prefecture_summary: "prefecture_summary",
+  rental_market_stats: "rental_market_stats",
+  search_articles: "search_articles",
+  search_municipality: "search_municipality",
+  search_rentals: "search_rentals",
+} as const;
+
+export const MCP_PUBLIC_TOOL_NAMES = [
+  MCP_PUBLIC_TOOLS.area_directions,
+  MCP_PUBLIC_TOOLS.compare_fortune_perspectives,
+  MCP_PUBLIC_TOOLS.find_auspicious_days,
+  MCP_PUBLIC_TOOLS.get_article,
+  MCP_PUBLIC_TOOLS.get_honmei_star,
+  MCP_PUBLIC_TOOLS.get_kanshi,
+  MCP_PUBLIC_TOOLS.get_month_directions,
+  MCP_PUBLIC_TOOLS.get_rental,
+  MCP_PUBLIC_TOOLS.get_today_directions,
+  MCP_PUBLIC_TOOLS.judge_directions,
+  MCP_PUBLIC_TOOLS.judge_hourly_directions,
+  MCP_PUBLIC_TOOLS.judge_time_slots,
+  MCP_PUBLIC_TOOLS.prefecture_summary,
+  MCP_PUBLIC_TOOLS.rental_market_stats,
+  MCP_PUBLIC_TOOLS.search_articles,
+  MCP_PUBLIC_TOOLS.search_municipality,
+  MCP_PUBLIC_TOOLS.search_rentals,
+] as const;
+
+export type McpPublicToolName = (typeof MCP_PUBLIC_TOOL_NAMES)[number];
+
 const tenchusatsuSchema = z
   .enum(["strict", "month_day", "day_only", "weaken", "off"])
   .optional()
@@ -159,7 +201,7 @@ export function createMcpBaseServer(options?: {
   );
 
   server.registerTool(
-    "get_kanshi",
+    MCP_PUBLIC_TOOLS.get_kanshi,
     {
       annotations: {
         readOnlyHint: true,
@@ -188,7 +230,7 @@ export function createMcpBaseServer(options?: {
   );
 
   server.registerTool(
-    "get_honmei_star",
+    MCP_PUBLIC_TOOLS.get_honmei_star,
     {
       annotations: {
         readOnlyHint: true,
@@ -251,7 +293,7 @@ export function createMcpBaseServer(options?: {
   );
 
   server.registerTool(
-    "judge_directions",
+    MCP_PUBLIC_TOOLS.judge_directions,
     {
       annotations: {
         readOnlyHint: true,
@@ -284,7 +326,7 @@ export function createMcpBaseServer(options?: {
   );
 
   server.registerTool(
-    "find_auspicious_days",
+    MCP_PUBLIC_TOOLS.find_auspicious_days,
     {
       annotations: {
         readOnlyHint: true,
@@ -420,7 +462,7 @@ export function createMcpBaseServer(options?: {
   );
 
   server.registerTool(
-    "search_municipality",
+    MCP_PUBLIC_TOOLS.search_municipality,
     {
       annotations: {
         readOnlyHint: true,
@@ -472,7 +514,7 @@ export function createMcpBaseServer(options?: {
   );
 
   server.registerTool(
-    "area_directions",
+    MCP_PUBLIC_TOOLS.area_directions,
     {
       annotations: {
         readOnlyHint: true,
@@ -562,7 +604,7 @@ export function createMcpBaseServer(options?: {
   );
 
   server.registerTool(
-    "prefecture_summary",
+    MCP_PUBLIC_TOOLS.prefecture_summary,
     {
       annotations: {
         readOnlyHint: true,
@@ -627,7 +669,7 @@ export function createMcpServer(deps?: { rentals?: RentalReader }): McpServer {
   const server = createMcpBaseServer({ municipalityReadings: true });
   registerPublicTimeTools(server);
   server.registerTool(
-    "get_today_directions",
+    MCP_PUBLIC_TOOLS.get_today_directions,
     {
       title: "今日の吉方位",
       description:
@@ -655,7 +697,7 @@ export function createMcpServer(deps?: { rentals?: RentalReader }): McpServer {
       ),
   );
   server.registerTool(
-    "get_month_directions",
+    MCP_PUBLIC_TOOLS.get_month_directions,
     {
       title: "年月の吉方位",
       description:
@@ -676,7 +718,7 @@ export function createMcpServer(deps?: { rentals?: RentalReader }): McpServer {
   );
 
   server.registerTool(
-    "search_articles",
+    MCP_PUBLIC_TOOLS.search_articles,
     {
       title: "公開記事を探す",
       description:
@@ -698,7 +740,7 @@ export function createMcpServer(deps?: { rentals?: RentalReader }): McpServer {
     },
   );
   server.registerTool(
-    "get_article",
+    MCP_PUBLIC_TOOLS.get_article,
     {
       title: "公開記事の抜粋を読む",
       description:
@@ -721,7 +763,7 @@ export function createMcpServer(deps?: { rentals?: RentalReader }): McpServer {
   );
   registerPublicRentalTools(server, deps?.rentals);
   server.registerTool(
-    "compare_fortune_perspectives",
+    MCP_PUBLIC_TOOLS.compare_fortune_perspectives,
     {
       annotations: {
         readOnlyHint: true,

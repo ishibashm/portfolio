@@ -12,6 +12,7 @@ import { assertChainTool, CHAIN_TOOLS, connectChainClient } from "./mcpChain";
 import { AGENT_LIMITS, AGENT_SYSTEM, withinSignal } from "./mcpAgent";
 import { voiceLimit, voiceState } from "./mcpVoiceConfig";
 import { voiceStore, VoiceStoreError, type VoiceStore } from "./mcpVoiceStore";
+import { wrapUntrusted } from "./untrustedData";
 
 const ERROR = "音声の処理を続けられませんでした。時間をおいてお試しください。";
 const LOGIN_ERROR = "音声で話すにはログインが必要です。";
@@ -340,8 +341,7 @@ export function createVoiceService(
       }
       const bounded = JSON.stringify(output).slice(0, 6000);
       return reply({
-        output:
-          "BEGIN_UNTRUSTED_TOOL_DATA\n" + bounded + "\nEND_UNTRUSTED_TOOL_DATA",
+        output: wrapUntrusted(bounded),
         summary: "道具の結果を取得しました。",
         durationMs: deps.now() - started,
       });

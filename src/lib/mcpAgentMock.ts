@@ -2,6 +2,7 @@ import { MockLanguageModelV3 } from "ai/test";
 import type { LanguageModelV3StreamPart } from "@ai-sdk/provider";
 import { z } from "zod";
 import { formatFollowUpEnvelope } from "./followUpSuggestions";
+import { unwrapUntrusted } from "./untrustedData";
 
 /** ローカル確認専用。質問の解析はせず、画面に明示した固定例を計算する。 */
 export function createAgentMock() {
@@ -22,11 +23,7 @@ export function createAgentMock() {
         const result = results.find((r) => r.toolName === name)?.output;
         if (result?.type === "text") {
           try {
-            return JSON.parse(
-              result.value
-                .replace(/^BEGIN_UNTRUSTED_TOOL_DATA\n/, "")
-                .replace(/\nEND_UNTRUSTED_TOOL_DATA$/, ""),
-            );
+            return JSON.parse(unwrapUntrusted(result.value));
           } catch {
             return undefined;
           }
