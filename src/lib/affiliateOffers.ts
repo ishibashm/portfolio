@@ -70,7 +70,24 @@ export const RAKUTEN_BANNER_009_HTML = `<a href="https://rpx.a8.net/svt/ejp?a8ma
 <img src="https://hbb.afl.rakuten.co.jp/hsb/0eb4bbb3.93b2e556.0eb4bbaa.95151395/" border="0"></a>
 <img border="0" width="1" height="1" src="https://www16.a8.net/0.gif?a8mat=4BGDZD+BTOYB6+2HOM+609HT" alt="">`;
 
-const HAKOBU_PREF_CODES = ["13", "11", "12", "14"] as const;
+/** ハコブ引っ越しサービスの成果対象となる 1 都 3 県の都道府県名。 */
+export const HAKOBU_TARGET_PREFS = [
+  "東京都",
+  "千葉県",
+  "埼玉県",
+  "神奈川県",
+] as const;
+
+/** ハコブ引っ越しサービスの成果対象となる 1 都 3 県の JIS 都道府県コード。 */
+export const HAKOBU_PREF_CODES = ["13", "11", "12", "14"] as const;
+
+const HAKOBU_TARGET_PREF_SET: ReadonlySet<string> = new Set([
+  ...HAKOBU_TARGET_PREFS,
+  "東京",
+  "千葉",
+  "埼玉",
+  "神奈川",
+]);
 
 const RAKUTEN_PATHS = [
   "/blog/feng-shui-where-to-put-things-in-a-room",
@@ -151,6 +168,28 @@ export function offersForPath(
 
 export function hasAffiliateOffer(pathname: string): boolean {
   return offersForPath(pathname).length > 0;
+}
+
+/**
+ * ハコブ引っ越しサービスの成果対象（東京都・千葉県・埼玉県・神奈川県）の
+ * 都道府県名かどうかを判定する。対象外の地域では false を返す。
+ */
+export function isHakobuTargetPref(
+  prefName: string | null | undefined,
+): boolean {
+  if (!prefName) return false;
+  return HAKOBU_TARGET_PREF_SET.has(prefName);
+}
+
+/**
+ * 都道府県名が 1 都 3 県（東京都・千葉県・埼玉県・神奈川県）に該当するときだけ
+ * ハコブ引っ越しサービスの案件を返し、それ以外は undefined を返す。
+ */
+export function hakobuOfferForPref(
+  prefName: string | null | undefined,
+): AffiliateOffer | undefined {
+  if (!isHakobuTargetPref(prefName)) return undefined;
+  return AFFILIATE_OFFERS.find((offer) => offer.id === "hakobu-moving");
 }
 
 /** 広告（AdSense 枠かアフィリエイト）を置く頁。空の案件では何も出さない。 */

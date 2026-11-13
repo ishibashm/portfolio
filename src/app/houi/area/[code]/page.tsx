@@ -38,9 +38,10 @@ import { metaDescriptionFromIntro } from "@/lib/editorialMeta";
 import { INDEXED_ROBOTS, NOINDEX_ROBOTS } from "@/lib/siteStructure";
 import { pageOpenGraph } from "@/lib/siteUrl";
 import { CityPortalLinks } from "@/components/portal/CityPortalLinks";
+import { AffiliatePlacement } from "@/components/ads/AffiliateLink";
+import { areaAffiliateOffer, isIndexedArea } from "@/lib/areaAffiliate";
 import housingStats from "@/data/housingStats.json";
 import {
-  hasAreaHousingData,
   housingFiguresFor,
   rentDiffPct,
   type HousingSnapshotData,
@@ -131,9 +132,7 @@ export async function generateMetadata({
     家賃（住宅・土地統計調査）を冒頭に出しているので、名乗りと中身は合う
   */
   const title = `${area.full}の家賃相場と、方位別に見た周辺の街`;
-  const hasLocalData =
-    Boolean(AREA_EDITORIAL[area.code]) &&
-    hasAreaHousingData(HOUSING, area.code);
+  const hasLocalData = isIndexedArea(area.code, HOUSING);
   /* 文章のある頁は、その 1 段落目から作る。既定の 1 文は地名しか
      変わらず、索引に戻した頁どうしで description が同じになる */
   const description = `${area.full}の家賃相場（住宅・土地統計調査）。${metaDescriptionFromIntro(
@@ -247,6 +246,8 @@ export default async function Page({
   );
   const faqs = rentFaqs(HOUSING, area.full, prefPlaces, area.code);
   const path = `/houi/area/${area.code}`;
+  /* 1都3県かつ索引対象（編集文と住宅統計あり）の頁だけにハコブを出す */
+  const affiliate = areaAffiliateOffer(area.code, HOUSING);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#faf7f5] via-[#f5efe9] to-[#f0e9e1] text-slate-900 font-sans">
@@ -301,112 +302,129 @@ export default async function Page({
           {area.full}の家賃相場と、方位別に見た周辺の街
         </h1>
 
-        <p className="mt-5 text-sm leading-relaxed text-slate-700">
-          吉方位が分かっても、その方位に実際どんな街があっていくらなのかが分からないと引越し先は決められません。
-          {area.full}
-          を出発地として、八方位それぞれにある市区町村と、住宅・土地統計調査から作った借家の家賃をまとめました。
-        </p>
+        {affiliate ? (
+          <AffiliatePlacement
+            offer={affiliate}
+            variant="compact"
+            className="lg:hidden"
+          />
+        ) : null}
 
-        <RentOverview
-          snapshot={HOUSING}
-          code={area.code}
-          name={area.full}
-          rank={rank}
-          count={ranking.length}
-          source={
-            <>
-              <p className="mt-3 text-xs leading-relaxed text-slate-500">
-                {HOUSING.year} 年 住宅・土地統計調査（e-Stat 表 ID{" "}
-                <a
-                  href="https://www.e-stat.go.jp/dbview?sid=0000020108"
-                  className="underline"
-                >
-                  0000020108
-                </a>
-                ）／{ESTAT_SOURCE}
-              </p>
-              <p className="mt-1 text-xs leading-relaxed text-slate-500">
-                {ESTAT_API_CREDIT}
-              </p>
-            </>
+        <div
+          className={
+            affiliate
+              ? "lg:grid lg:grid-cols-[minmax(0,1fr)_300px] lg:items-start lg:gap-10"
+              : undefined
           }
-        />
+        >
+          <div>
+            <p className="mt-5 text-sm leading-relaxed text-slate-700">
+              吉方位が分かっても、その方位に実際どんな街があっていくらなのかが分からないと引越し先は決められません。
+              {area.full}
+              を出発地として、八方位それぞれにある市区町村と、住宅・土地統計調査から作った借家の家賃をまとめました。
+            </p>
 
-        {/* 固有の文章。書いた市区町村だけが索引に載る（AREA_EDITORIAL）。
+            <RentOverview
+              snapshot={HOUSING}
+              code={area.code}
+              name={area.full}
+              rank={rank}
+              count={ranking.length}
+              source={
+                <>
+                  <p className="mt-3 text-xs leading-relaxed text-slate-500">
+                    {HOUSING.year} 年 住宅・土地統計調査（e-Stat 表 ID{" "}
+                    <a
+                      href="https://www.e-stat.go.jp/dbview?sid=0000020108"
+                      className="underline"
+                    >
+                      0000020108
+                    </a>
+                    ）／{ESTAT_SOURCE}
+                  </p>
+                  <p className="mt-1 text-xs leading-relaxed text-slate-500">
+                    {ESTAT_API_CREDIT}
+                  </p>
+                </>
+              }
+            />
+
+            {/* 固有の文章。書いた市区町村だけが索引に載る（AREA_EDITORIAL）。
             数字は下の札とデータ側が持ち、ここは地理の構造だけを書く */}
-        {editorial && (
-          <div className="mt-5 space-y-3">
-            {editorial.intro.map((paragraph, i) => (
-              <p
-                key={i}
-                className="max-w-[70ch] text-sm leading-relaxed text-slate-700"
-              >
-                {paragraph}
+            {editorial && (
+              <div className="mt-5 space-y-3">
+                {editorial.intro.map((paragraph, i) => (
+                  <p
+                    key={i}
+                    className="max-w-[70ch] text-sm leading-relaxed text-slate-700"
+                  >
+                    {paragraph}
+                  </p>
+                ))}
+              </div>
+            )}
+
+            {prefCode && (
+              <p className="mt-3 text-xs text-slate-600">
+                <Link
+                  href={`/houi/pref/${prefCode}`}
+                  className="underline hover:text-rose-600"
+                >
+                  {area.pref}の家賃を安い順・高い順で比べる
+                </Link>
               </p>
-            ))}
-          </div>
-        )}
-
-        {prefCode && (
-          <p className="mt-3 text-xs text-slate-600">
-            <Link
-              href={`/houi/pref/${prefCode}`}
-              className="underline hover:text-rose-600"
-            >
-              {area.pref}の家賃を安い順・高い順で比べる
-            </Link>
-          </p>
-        )}
-        <div>
-          {/* 毎月の公的な値（県庁所在市と人口 15 万以上の市だけ）。政令市の
+            )}
+            <div>
+              {/* 毎月の公的な値（県庁所在市と人口 15 万以上の市だけ）。政令市の
               区には市の値を出す。当たる市が無ければ札ごと出さない */}
-          {(() => {
-            const snap = estatRent as EstatRentSnapshot;
-            const r = officialRentForArea(snap, area.code, area.city);
-            return r ? (
-              <OfficialRentNote
-                heading={
-                  r.name === area.city
-                    ? `${r.name}の民営家賃`
-                    : `${r.name}（${area.city}を含む）の民営家賃`
-                }
-                rents={[r]}
-                month={snap.retail.latestMonth}
-              />
-            ) : null;
-          })()}
-        </div>
+              {(() => {
+                const snap = estatRent as EstatRentSnapshot;
+                const r = officialRentForArea(snap, area.code, area.city);
+                return r ? (
+                  <OfficialRentNote
+                    heading={
+                      r.name === area.city
+                        ? `${r.name}の民営家賃`
+                        : `${r.name}（${area.city}を含む）の民営家賃`
+                    }
+                    rents={[r]}
+                    month={snap.retail.latestMonth}
+                  />
+                ) : null;
+              })()}
+            </div>
 
-        {/* 相場の札のすぐ下。**この頁は「いくらか」までしか答えない。**
+            {/* 相場の札のすぐ下。**この頁は「いくらか」までしか答えない。**
             賃貸の巡回は規約に従って止めたので（backlog 29 節）、募集中の
             部屋は持っていない。次に読む人がやりたいのは「その街の部屋を
             見る」ことなので、そこで渡す。1 頁 1 か所だけに置く（方位ごと
             の表の各行に貼ると 1 頁 96 本の外部リンクになる）。 */}
-        <CityPortalLinks
-          code={area.code}
-          cityName={area.full}
-          className="mt-3"
-        />
+            <CityPortalLinks
+              code={area.code}
+              cityName={area.full}
+              className="mt-3"
+            />
 
-        <RentComparisonTable
-          title="近隣の市区町村と家賃・空き家率を比べる"
-          rows={rentRows(HOUSING, nearby)}
-          origin={figures}
-        />
-        <p className="mt-3 text-xs leading-relaxed text-slate-600">
-          下の方位一覧にある同県の市区町村から、距離が近い順に最大8件を選びました。境界が接している自治体の一覧ではありません。
-          {`家賃差＝（比較先の1㎡あたり家賃−${area.city}の1㎡あたり家賃）÷${area.city}の1㎡あたり家賃×100（整数に丸め）。公表値がない場合は比較しません。`}
-        </p>
+            <RentComparisonTable
+              title="近隣の市区町村と家賃・空き家率を比べる"
+              rows={rentRows(HOUSING, nearby)}
+              origin={figures}
+            />
+            <p className="mt-3 text-xs leading-relaxed text-slate-600">
+              下の方位一覧にある同県の市区町村から、距離が近い順に最大8件を選びました。境界が接している自治体の一覧ではありません。
+              {`家賃差＝（比較先の1㎡あたり家賃−${area.city}の1㎡あたり家賃）÷${area.city}の1㎡あたり家賃×100（整数に丸め）。公表値がない場合は比較しません。`}
+            </p>
 
-        <section className="mt-10">
-          <h2 className="text-xl font-bold font-serif border-b border-slate-300 pb-2">
-            方位ごとのエリア
-          </h2>
-          <p className="text-xs text-slate-600 mt-3">
-            {area.full}の中心から 5〜150km の範囲。距離が近い順に並べています。
-          </p>
+            <section className="mt-10">
+              <h2 className="text-xl font-bold font-serif border-b border-slate-300 pb-2">
+                方位ごとのエリア
+              </h2>
+              <p className="text-xs text-slate-600 mt-3">
+                {area.full}の中心から 5〜150km
+                の範囲。距離が近い順に並べています。
+              </p>
 
-          {/* 候補の入らない方位。吉方位が出ても引越し先が無いので、
+              {/* 候補の入らない方位。吉方位が出ても引越し先が無いので、
               候補の一覧より先に置く。**3 通りある。**
 
               1. 行き止まり … 海や山で陸が尽きている（227 方位）
@@ -422,310 +440,324 @@ export default async function Page({
 
               2 は**名前まで出す**（#841）。「街はあるが掲載が無い」で
               終えると読む側が次に進めない。 */}
-          {deadEnd.length > 0 && (
-            <p className="mt-3 rounded-xl border border-amber-200 bg-amber-50/80 px-3 py-2 text-xs leading-relaxed text-amber-900">
-              <b>
-                市区町村が 1 つも無い方位:{" "}
-                {deadEnd.map((e) => DIRECTION_LABELS[e.direction]).join("・")}
-              </b>
-              。海や山で陸が尽きています。掲載の有無ではなく
-              <b>全国 1,894 市区町村の位置で確かめた</b>
-              結果なので、暦の上でこの方位が吉に出ても引越し先はありません。別の方位で探すことになります。
-            </p>
-          )}
-          {tooClose.length > 0 && (
-            <p className="mt-2 rounded-xl border border-violet-200 bg-violet-50/80 px-3 py-2 text-xs leading-relaxed text-violet-900">
-              <b>
-                近すぎて一覧から外れている方位:{" "}
-                {tooClose.map((e) => DIRECTION_LABELS[e.direction]).join("・")}
-              </b>
-              。
-              {tooClose
-                .map(
-                  (e) =>
-                    `${DIRECTION_LABELS[e.direction]}は${e.nearestTooClose
-                      .map((n) => `${n.city}（${n.distanceKm}km）`)
-                      .join("、")}`,
-                )
-                .join("、")}
-              があります。
-              <b>行き止まりではありません。</b>
-              {
-                "この一覧は 5km 未満を外しています。距離が近いほど八方位のどこに当たるかが代表点のわずかな差で変わるためで、街が無いという意味ではありません。"
-              }
-            </p>
-          )}
-          {notListed.length > 0 && (
-            <div className="mt-2 rounded-xl border border-sky-200 bg-sky-50/80 px-3 py-2 text-xs leading-relaxed text-sky-900">
-              <p>
-                <b>
-                  街はあるが、この一覧に候補が入らない方位:{" "}
-                  {notListed
-                    .map((e) => DIRECTION_LABELS[e.direction])
-                    .join("・")}
-                </b>
-                。市区町村は実在しますが、その賃貸の掲載をまだ集計できていません。
-                <b>行き止まりではありません。</b>
-                吉方位がこの方位に出た年は、この一覧の外も含めて探してください。
-              </p>
-              {/* 実在する街の名前まで出す。「街はある」で終えると読む側は
+              {deadEnd.length > 0 && (
+                <p className="mt-3 rounded-xl border border-amber-200 bg-amber-50/80 px-3 py-2 text-xs leading-relaxed text-amber-900">
+                  <b>
+                    市区町村が 1 つも無い方位:{" "}
+                    {deadEnd
+                      .map((e) => DIRECTION_LABELS[e.direction])
+                      .join("・")}
+                  </b>
+                  。海や山で陸が尽きています。掲載の有無ではなく
+                  <b>全国 1,894 市区町村の位置で確かめた</b>
+                  結果なので、暦の上でこの方位が吉に出ても引越し先はありません。別の方位で探すことになります。
+                </p>
+              )}
+              {tooClose.length > 0 && (
+                <p className="mt-2 rounded-xl border border-violet-200 bg-violet-50/80 px-3 py-2 text-xs leading-relaxed text-violet-900">
+                  <b>
+                    近すぎて一覧から外れている方位:{" "}
+                    {tooClose
+                      .map((e) => DIRECTION_LABELS[e.direction])
+                      .join("・")}
+                  </b>
+                  。
+                  {tooClose
+                    .map(
+                      (e) =>
+                        `${DIRECTION_LABELS[e.direction]}は${e.nearestTooClose
+                          .map((n) => `${n.city}（${n.distanceKm}km）`)
+                          .join("、")}`,
+                    )
+                    .join("、")}
+                  があります。
+                  <b>行き止まりではありません。</b>
+                  {
+                    "この一覧は 5km 未満を外しています。距離が近いほど八方位のどこに当たるかが代表点のわずかな差で変わるためで、街が無いという意味ではありません。"
+                  }
+                </p>
+              )}
+              {notListed.length > 0 && (
+                <div className="mt-2 rounded-xl border border-sky-200 bg-sky-50/80 px-3 py-2 text-xs leading-relaxed text-sky-900">
+                  <p>
+                    <b>
+                      街はあるが、この一覧に候補が入らない方位:{" "}
+                      {notListed
+                        .map((e) => DIRECTION_LABELS[e.direction])
+                        .join("・")}
+                    </b>
+                    。市区町村は実在しますが、その賃貸の掲載をまだ集計できていません。
+                    <b>行き止まりではありません。</b>
+                    吉方位がこの方位に出た年は、この一覧の外も含めて探してください。
+                  </p>
+                  {/* 実在する街の名前まで出す。「街はある」で終えると読む側は
                   次に何もできない。名前と距離があれば掲載の外を自分で
                   当たれる。150km より遠い相手は挙げない（areaContent の
                   註。切った結果ここが空になる方位もあるが、上の文だけで
                   意味は通る） */}
-              {notListed.some((e) => e.nearestUnlisted.length > 0) && (
-                <ul className="mt-1.5 space-y-0.5">
-                  {notListed
-                    .filter((e) => e.nearestUnlisted.length > 0)
-                    .map((e) => (
-                      <li key={e.direction}>
-                        <b>{DIRECTION_LABELS[e.direction]}</b>：
-                        {e.nearestUnlisted
-                          .map((u) => `${u.city}（${u.distanceKm}km）`)
-                          .join("、")}
-                      </li>
-                    ))}
-                </ul>
+                  {notListed.some((e) => e.nearestUnlisted.length > 0) && (
+                    <ul className="mt-1.5 space-y-0.5">
+                      {notListed
+                        .filter((e) => e.nearestUnlisted.length > 0)
+                        .map((e) => (
+                          <li key={e.direction}>
+                            <b>{DIRECTION_LABELS[e.direction]}</b>：
+                            {e.nearestUnlisted
+                              .map((u) => `${u.city}（${u.distanceKm}km）`)
+                              .join("、")}
+                          </li>
+                        ))}
+                    </ul>
+                  )}
+                </div>
               )}
-            </div>
-          )}
-          {farOnly.length > 0 && (
-            <p className="mt-2 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs leading-relaxed text-slate-700">
-              <b>
-                150km 以内に市区町村が無い方位:{" "}
-                {farOnly.map((e) => DIRECTION_LABELS[e.direction]).join("・")}
-              </b>
-              。いちばん近い街でも、この一覧の範囲より遠いという意味です。行き止まりではありません。
-            </p>
-          )}
+              {farOnly.length > 0 && (
+                <p className="mt-2 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs leading-relaxed text-slate-700">
+                  <b>
+                    150km 以内に市区町村が無い方位:{" "}
+                    {farOnly
+                      .map((e) => DIRECTION_LABELS[e.direction])
+                      .join("・")}
+                  </b>
+                  。いちばん近い街でも、この一覧の範囲より遠いという意味です。行き止まりではありません。
+                </p>
+              )}
 
-          <div className="mt-6 space-y-6">
-            {populated.map((d) => (
-              <div key={d}>
-                <h3 className="text-base font-bold font-serif flex items-baseline gap-2">
-                  <span>{DIRECTION_LABELS[d]}</span>
-                  <span className="text-xs font-normal text-slate-500">
-                    {groups[d].length}エリア
-                  </span>
-                </h3>
-                <div className="mt-3 overflow-x-auto">
-                  <table className="w-full text-xs border-collapse">
-                    <thead>
-                      <tr className="bg-stone-100">
-                        <th className="border border-slate-300 p-2 text-left font-bold">
-                          市区町村
-                        </th>
-                        <th className="border border-slate-300 p-2 text-right font-bold">
-                          距離
-                        </th>
-                        <th className="border border-slate-300 p-2 text-right font-bold">
-                          家賃（円/㎡）
-                        </th>
-                        <th className="border border-slate-300 p-2 text-right font-bold">
-                          1戸の目安
-                        </th>
-                        <th className="border border-slate-300 p-2 text-right font-bold">
-                          {area.city}比
-                        </th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {groups[d].slice(0, 12).map((n) => {
-                        /* 方位ごとの一覧も同じ公開統計から引く。**頁の札と
+              <div className="mt-6 space-y-6">
+                {populated.map((d) => (
+                  <div key={d}>
+                    <h3 className="text-base font-bold font-serif flex items-baseline gap-2">
+                      <span>{DIRECTION_LABELS[d]}</span>
+                      <span className="text-xs font-normal text-slate-500">
+                        {groups[d].length}エリア
+                      </span>
+                    </h3>
+                    <div className="mt-3 overflow-x-auto">
+                      <table className="w-full text-xs border-collapse">
+                        <thead>
+                          <tr className="bg-stone-100">
+                            <th className="border border-slate-300 p-2 text-left font-bold">
+                              市区町村
+                            </th>
+                            <th className="border border-slate-300 p-2 text-right font-bold">
+                              距離
+                            </th>
+                            <th className="border border-slate-300 p-2 text-right font-bold">
+                              家賃（円/㎡）
+                            </th>
+                            <th className="border border-slate-300 p-2 text-right font-bold">
+                              1戸の目安
+                            </th>
+                            <th className="border border-slate-300 p-2 text-right font-bold">
+                              {area.city}比
+                            </th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {groups[d].slice(0, 12).map((n) => {
+                            /* 方位ごとの一覧も同じ公開統計から引く。**頁の札と
                            別の出どころにしない。**公表値の無い市区町村は
                            「—」。0 と書くと家賃が 0 円に読める。 */
-                        const f = housingFiguresFor(HOUSING, n.code);
-                        const diff = rentDiffPct(figures, f);
-                        return (
-                          <tr key={n.code}>
-                            <td className="border border-slate-300 p-2">
-                              <Link
-                                prefetch={false}
-                                href={`/houi/area/${n.code}`}
-                                className="hover:text-rose-600 font-semibold"
-                              >
-                                {n.full}
-                              </Link>
-                            </td>
-                            <td className="border border-slate-300 p-2 text-right font-mono">
-                              {n.distanceKm}km
-                            </td>
-                            <td className="border border-slate-300 p-2 text-right font-mono">
-                              {f?.rentPerSqm?.toLocaleString() ?? "—"}
-                            </td>
-                            <td className="border border-slate-300 p-2 text-right font-mono">
-                              {f?.monthlyRentEstimate?.toLocaleString() ?? "—"}
-                            </td>
-                            <td
-                              className={`border border-slate-300 p-2 text-right font-mono font-bold ${
-                                diff === null
-                                  ? "text-slate-500"
-                                  : diff < 0
-                                    ? "text-emerald-700"
-                                    : diff > 0
-                                      ? "text-rose-700"
-                                      : "text-slate-500"
-                              }`}
-                            >
-                              {diff === null
-                                ? "—"
-                                : `${diff > 0 ? "+" : ""}${diff}%`}
-                            </td>
-                          </tr>
-                        );
-                      })}
-                    </tbody>
-                  </table>
-                </div>
+                            const f = housingFiguresFor(HOUSING, n.code);
+                            const diff = rentDiffPct(figures, f);
+                            return (
+                              <tr key={n.code}>
+                                <td className="border border-slate-300 p-2">
+                                  <Link
+                                    prefetch={false}
+                                    href={`/houi/area/${n.code}`}
+                                    className="hover:text-rose-600 font-semibold"
+                                  >
+                                    {n.full}
+                                  </Link>
+                                </td>
+                                <td className="border border-slate-300 p-2 text-right font-mono">
+                                  {n.distanceKm}km
+                                </td>
+                                <td className="border border-slate-300 p-2 text-right font-mono">
+                                  {f?.rentPerSqm?.toLocaleString() ?? "—"}
+                                </td>
+                                <td className="border border-slate-300 p-2 text-right font-mono">
+                                  {f?.monthlyRentEstimate?.toLocaleString() ??
+                                    "—"}
+                                </td>
+                                <td
+                                  className={`border border-slate-300 p-2 text-right font-mono font-bold ${
+                                    diff === null
+                                      ? "text-slate-500"
+                                      : diff < 0
+                                        ? "text-emerald-700"
+                                        : diff > 0
+                                          ? "text-rose-700"
+                                          : "text-slate-500"
+                                  }`}
+                                >
+                                  {diff === null
+                                    ? "—"
+                                    : `${diff > 0 ? "+" : ""}${diff}%`}
+                                </td>
+                              </tr>
+                            );
+                          })}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                ))}
               </div>
-            ))}
-          </div>
-        </section>
+            </section>
 
-        {/*
+            {/*
           広告は置かない。索引から外した雛形展開のページに広告を置くのは、
           AdSense の「有用性の低いコンテンツ」の指摘にそのまま当たる。
           広告は記事・手引き・ホーム・索引ページに絞る。
         */}
 
-        <section className="mt-10">
-          <h2 className="text-xl font-bold font-serif border-b border-slate-300 pb-2">
-            {year}年、自分にとっての吉方位はどれか
-          </h2>
-          <p className="mt-4 text-sm leading-relaxed text-slate-700">
-            方位の吉凶は本命星ごとに違います。{year}
-            年の年盤では次のとおりです。上の表と突き合わせてください。
-          </p>
-          <div className="mt-4 overflow-x-auto">
-            <table className="w-full text-xs border-collapse">
-              <thead>
-                <tr className="bg-stone-100">
-                  <th className="border border-slate-300 p-2 text-left font-bold">
-                    本命星
-                  </th>
-                  <th className="border border-slate-300 p-2 text-left font-bold">
-                    {year}年の吉方位
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                {goodByStar.map((g) => (
-                  <tr key={g.star}>
-                    <td className="border border-slate-300 p-2">
-                      <Link
-                        prefetch={false}
-                        href={`/houi/${year}/${g.star}`}
-                        className="font-semibold hover:text-rose-600"
-                      >
-                        {STAR_NAMES[g.star]}
-                      </Link>
-                    </td>
-                    <td className="border border-slate-300 p-2">
-                      {g.dirs.length
-                        ? g.dirs.map((d) => DIRECTION_LABELS[d]).join("・")
-                        : "この年は吉方位なし"}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-          <p className="mt-3 text-xs text-slate-600 leading-relaxed">
-            自分の本命星が分からない場合は
-            <Link href="/houi" className="underline hover:text-rose-600">
-              生まれ年から引ける早見表
-            </Link>
-            をご覧ください。年盤で吉でも月によって変わるため、実際に動く月の月盤も確認してください。
-          </p>
-        </section>
-
-        <section className="mt-10 rounded-2xl border border-amber-200 bg-amber-50 p-5">
-          <h2 className="text-sm font-bold text-amber-900">
-            この表の読み方と限界
-          </h2>
-          <ul className="mt-3 text-xs text-amber-900 leading-relaxed list-disc pl-5 space-y-1.5">
-            <li>
-              方位は市区町村の<b>中心どうし</b>
-              で計算しています。同じ市の中でも端のほうは方位が変わることがあります。実際の物件で確認してください。
-            </li>
-            <li>
-              家賃は住宅・土地統計調査の 1 畳当たり家賃を 1
-              ㎡あたりに直したものです。間取りや築年数の構成がエリアごとに違うため、単純比較には限界があります。公表値の無い市区町村は「—」で出しています。
-            </li>
-            <li>
-              九星気学は伝統的な考え方であり、科学的に効果が確認されたものではありません。
-            </li>
-          </ul>
-          <Link
-            href={`/relocation/arbitrage?baseLat=${area.lat}&baseLon=${area.lon}&radiusKm=all&prefecture=${encodeURIComponent(area.pref)}`}
-            className="mt-4 inline-flex px-5 py-2.5 rounded-full bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs transition-colors"
-          >
-            {area.full}を出発地にして物件を探す
-          </Link>
-        </section>
-
-        {/* 方位別の一覧は 5〜150km で切ってあるので、同一市内の区や県内の遠い市は
-            そこに出てこない。出発地を選び直したい人のために県で辿れるようにする。 */}
-        {siblings.length > 0 && (
-          <section className="mt-10">
-            <h2 className="text-xl font-bold font-serif border-b border-slate-300 pb-2">
-              {area.pref}のほかのエリアを出発地にする
-            </h2>
-            <p className="mt-3 text-xs text-slate-600">
-              出発地が変われば方位も変わります。近くにお住まいの場合はこちらから。
-              {siblings.length < prefAreaCount && (
-                <>
-                  解説のある街を先に{siblings.length}件（{area.pref}の
-                  {prefAreaCount}件中）を出しています。
-                </>
-              )}
-            </p>
-            {/* 解説を書いた頁には印を付ける。一覧（/houi/area）と同じ規約。
-                雛形のままの頁と、方位ごとの街の並びまで書いた頁は中身が違う */}
-            <p className="mt-1 text-xs text-slate-500">
-              <span className="mr-1.5 inline-block h-2 w-2 rounded-full bg-rose-500 align-middle" />
-              が付いているエリアには解説があります。
-            </p>
-            <div className="mt-4 flex flex-wrap gap-2">
-              {siblings.map((s) => (
-                <Link
-                  prefetch={false}
-                  key={s.code}
-                  href={`/houi/area/${s.code}`}
-                  className="px-3 py-1.5 rounded-full border border-slate-300 bg-white text-xs font-semibold hover:border-rose-400 transition-colors"
-                >
-                  {s.code in AREA_EDITORIAL && (
-                    <span className="mr-1.5 inline-block h-2 w-2 rounded-full bg-rose-500 align-middle" />
-                  )}
-                  {s.city}
+            <section className="mt-10">
+              <h2 className="text-xl font-bold font-serif border-b border-slate-300 pb-2">
+                {year}年、自分にとっての吉方位はどれか
+              </h2>
+              <p className="mt-4 text-sm leading-relaxed text-slate-700">
+                方位の吉凶は本命星ごとに違います。{year}
+                年の年盤では次のとおりです。上の表と突き合わせてください。
+              </p>
+              <div className="mt-4 overflow-x-auto">
+                <table className="w-full text-xs border-collapse">
+                  <thead>
+                    <tr className="bg-stone-100">
+                      <th className="border border-slate-300 p-2 text-left font-bold">
+                        本命星
+                      </th>
+                      <th className="border border-slate-300 p-2 text-left font-bold">
+                        {year}年の吉方位
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {goodByStar.map((g) => (
+                      <tr key={g.star}>
+                        <td className="border border-slate-300 p-2">
+                          <Link
+                            prefetch={false}
+                            href={`/houi/${year}/${g.star}`}
+                            className="font-semibold hover:text-rose-600"
+                          >
+                            {STAR_NAMES[g.star]}
+                          </Link>
+                        </td>
+                        <td className="border border-slate-300 p-2">
+                          {g.dirs.length
+                            ? g.dirs.map((d) => DIRECTION_LABELS[d]).join("・")
+                            : "この年は吉方位なし"}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+              <p className="mt-3 text-xs text-slate-600 leading-relaxed">
+                自分の本命星が分からない場合は
+                <Link href="/houi" className="underline hover:text-rose-600">
+                  生まれ年から引ける早見表
                 </Link>
-              ))}
-            </div>
-            <div className="mt-4 flex flex-wrap gap-x-5 gap-y-2">
-              {prefCode && (
-                <Link
-                  href={`/houi/pref/${prefCode}`}
-                  className="inline-flex text-xs font-semibold text-rose-600 underline hover:text-rose-700"
-                >
-                  {area.pref}全体の相場と方位を見る
-                </Link>
-              )}
+                をご覧ください。年盤で吉でも月によって変わるため、実際に動く月の月盤も確認してください。
+              </p>
+            </section>
+
+            <section className="mt-10 rounded-2xl border border-amber-200 bg-amber-50 p-5">
+              <h2 className="text-sm font-bold text-amber-900">
+                この表の読み方と限界
+              </h2>
+              <ul className="mt-3 text-xs text-amber-900 leading-relaxed list-disc pl-5 space-y-1.5">
+                <li>
+                  方位は市区町村の<b>中心どうし</b>
+                  で計算しています。同じ市の中でも端のほうは方位が変わることがあります。実際の物件で確認してください。
+                </li>
+                <li>
+                  家賃は住宅・土地統計調査の 1 畳当たり家賃を 1
+                  ㎡あたりに直したものです。間取りや築年数の構成がエリアごとに違うため、単純比較には限界があります。公表値の無い市区町村は「—」で出しています。
+                </li>
+                <li>
+                  九星気学は伝統的な考え方であり、科学的に効果が確認されたものではありません。
+                </li>
+              </ul>
               <Link
-                href="/houi/area"
-                className="inline-flex text-xs font-semibold text-rose-600 underline hover:text-rose-700"
+                href={`/relocation/arbitrage?baseLat=${area.lat}&baseLon=${area.lon}&radiusKm=all&prefecture=${encodeURIComponent(area.pref)}`}
+                className="mt-4 inline-flex px-5 py-2.5 rounded-full bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs transition-colors"
               >
-                すべての市区町村から選ぶ（{AREAS.length}エリア）
+                {area.full}を出発地にして物件を探す
               </Link>
-            </div>
-          </section>
-        )}
+            </section>
 
-        {/* その地域のニュース（他社の RSS の見出し）は 2026-09-21 に外した。
+            {/* 方位別の一覧は 5〜150km で切ってあるので、同一市内の区や県内の遠い市は
+            そこに出てこない。出発地を選び直したい人のために県で辿れるようにする。 */}
+            {siblings.length > 0 && (
+              <section className="mt-10">
+                <h2 className="text-xl font-bold font-serif border-b border-slate-300 pb-2">
+                  {area.pref}のほかのエリアを出発地にする
+                </h2>
+                <p className="mt-3 text-xs text-slate-600">
+                  出発地が変われば方位も変わります。近くにお住まいの場合はこちらから。
+                  {siblings.length < prefAreaCount && (
+                    <>
+                      解説のある街を先に{siblings.length}件（{area.pref}の
+                      {prefAreaCount}件中）を出しています。
+                    </>
+                  )}
+                </p>
+                {/* 解説を書いた頁には印を付ける。一覧（/houi/area）と同じ規約。
+                雛形のままの頁と、方位ごとの街の並びまで書いた頁は中身が違う */}
+                <p className="mt-1 text-xs text-slate-500">
+                  <span className="mr-1.5 inline-block h-2 w-2 rounded-full bg-rose-500 align-middle" />
+                  が付いているエリアには解説があります。
+                </p>
+                <div className="mt-4 flex flex-wrap gap-2">
+                  {siblings.map((s) => (
+                    <Link
+                      prefetch={false}
+                      key={s.code}
+                      href={`/houi/area/${s.code}`}
+                      className="px-3 py-1.5 rounded-full border border-slate-300 bg-white text-xs font-semibold hover:border-rose-400 transition-colors"
+                    >
+                      {s.code in AREA_EDITORIAL && (
+                        <span className="mr-1.5 inline-block h-2 w-2 rounded-full bg-rose-500 align-middle" />
+                      )}
+                      {s.city}
+                    </Link>
+                  ))}
+                </div>
+                <div className="mt-4 flex flex-wrap gap-x-5 gap-y-2">
+                  {prefCode && (
+                    <Link
+                      href={`/houi/pref/${prefCode}`}
+                      className="inline-flex text-xs font-semibold text-rose-600 underline hover:text-rose-700"
+                    >
+                      {area.pref}全体の相場と方位を見る
+                    </Link>
+                  )}
+                  <Link
+                    href="/houi/area"
+                    className="inline-flex text-xs font-semibold text-rose-600 underline hover:text-rose-700"
+                  >
+                    すべての市区町村から選ぶ（{AREAS.length}エリア）
+                  </Link>
+                </div>
+              </section>
+            )}
+
+            {/* その地域のニュース（他社の RSS の見出し）は 2026-09-21 に外した。
             各社の RSS 利用規約をこちらで確認できていないため（backlog 33 節）。
             台帳（data/newsSources）は残してあるので、規約を確かめたら戻せる。 */}
 
-        <RentFaq items={faqs} />
-        <ContentDisclaimer />
+            <RentFaq items={faqs} />
+            <ContentDisclaimer />
+          </div>
+          {affiliate ? (
+            <aside className="hidden lg:block lg:sticky lg:top-8">
+              <AffiliatePlacement offer={affiliate} variant="sidebar" />
+            </aside>
+          ) : null}
+        </div>
       </article>
     </div>
   );

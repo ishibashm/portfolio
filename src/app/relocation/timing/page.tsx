@@ -103,6 +103,8 @@ import {
   writeTimingScan,
   writeTimingView,
 } from "@/lib/timingViewState";
+import { AffiliatePlacement } from "@/components/ads/AffiliateLink";
+import { hakobuOfferForPref } from "@/lib/affiliateOffers";
 
 interface TimelineDay {
   date: string;
@@ -753,6 +755,8 @@ export default function TimingAnalyticsPage() {
   }, [days, settings, memberTimelines]);
 
   const destination = destPref ? PREFECTURE_CENTERS[destPref] : undefined;
+  /* 行き先県が1都3県のときだけハコブを出す */
+  const hakobuOffer = hakobuOfferForPref(destPref);
   /**
    * **出発地から合流先への方位（あなた 1 人ぶん）。**
    *
@@ -1424,6 +1428,9 @@ export default function TimingAnalyticsPage() {
                       )}
                     </p>
                   )}
+                  {hakobuOffer ? (
+                    <AffiliatePlacement offer={hakobuOffer} variant="compact" />
+                  ) : null}
                   {/*
                 **選ばせる前に候補を出す。**利用者の指摘（2026-09-18）。
                 人ごとに出発地が違うので、同じ合流先でも方位が違って
