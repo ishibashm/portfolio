@@ -275,7 +275,7 @@ export async function consumeMcpPublicBuckets(
       // デッドロックを防ぐため、鍵の昇順でロックを取る。
       const sortedKeys = [...new Set(buckets.map((b) => b.key))].sort();
       for (const key of sortedKeys) {
-        await tx.$queryRaw`SELECT pg_advisory_xact_lock(hashtextextended(${`mcp-public:${key}`}, 0))`;
+        await tx.$queryRaw`SELECT 1 AS locked FROM pg_advisory_xact_lock(hashtextextended(${`mcp-public:${key}`}, 0))`;
       }
       const states: {
         spec: McpBucketSpec;
@@ -413,7 +413,7 @@ function warnRateLimitUnavailable(reason: string): void {
   console.warn(
     JSON.stringify({
       severity: "WARNING",
-      message: "[mcp] rate limit unavailable",
+      message: `[mcp] rate limit unavailable: ${reason}`,
       reason,
     }),
   );

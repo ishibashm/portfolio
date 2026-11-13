@@ -5,11 +5,13 @@ type Bucket = { ipHash: string; tokens: number; updatedAt: Date };
 function createMemoryRateDb() {
   const buckets = new Map<string, Bucket>();
   const locks: string[] = [];
+  const queries: string[] = [];
   const tx = {
     $queryRaw: vi.fn(
-      async (_query: TemplateStringsArray, ...values: unknown[]) => {
+      async (query: TemplateStringsArray, ...values: unknown[]) => {
+        queries.push(query.join("?"));
         if (typeof values[0] === "string") locks.push(values[0]);
-        return [];
+        return [{ locked: 1 }];
       },
     ),
     mcpPublicRate: {
@@ -55,11 +57,13 @@ function createMemoryRateDb() {
   const db: McpRateDb & {
     buckets: Map<string, Bucket>;
     locks: string[];
+    queries: string[];
     tx: typeof tx;
     $transaction: typeof $transaction;
   } = {
     buckets,
     locks,
+    queries,
     tx,
     $transaction: $transaction as unknown as McpRateDb["$transaction"] &
       typeof $transaction,
@@ -98,6 +102,7 @@ const now = new Date("2026-11-01T00:00:00.000Z");
 beforeEach(() => {
   sharedDb.buckets.clear();
   sharedDb.locks.length = 0;
+  sharedDb.queries.length = 0;
   vi.clearAllMocks();
   vi.unstubAllEnvs();
 });
@@ -347,7 +352,7 @@ describe("MCP public multi-scope caps", () => {
     const logged = String(warn.mock.calls[0][0]);
     expect(JSON.parse(logged)).toEqual({
       severity: "WARNING",
-      message: "[mcp] rate limit unavailable",
+      message: "[mcp] rate limit unavailable: P2021",
       reason: "P2021",
     });
     expect(logged).not.toContain("super-secret-password");
@@ -370,9 +375,35 @@ describe("MCP public multi-scope caps", () => {
     expect(timeoutGate.headers.get("Cache-Control")).toBe("no-store");
     expect(JSON.parse(String(warn.mock.calls[0][0]))).toEqual({
       severity: "WARNING",
-      message: "[mcp] rate limit unavailable",
+      message: "[mcp] rate limit unavailable: timeout",
       reason: "timeout",
     });
+  });
+
+  it("never selects pg_advisory_xact_lock as a bare void column in $queryRaw", async () => {
+    const db = createMemoryRateDb();
+    const gate = await checkMcpPublicLimit(
+      new Headers({
+        "x-real-ip": "198.51.100.42",
+        "mcp-session-id": "void-lock-regression",
+      }),
+      now,
+      {
+        jsonrpc: "2.0",
+        id: 1,
+        method: "tools/call",
+        params: { name: "get_honmei_star" },
+      },
+      db,
+    );
+    expect(gate.denied).toBeNull();
+    expect(db.queries.length).toBeGreaterThan(0);
+    for (const sql of db.queries) {
+      expect(sql).toContain("1 AS");
+      expect(sql).toContain("AS locked");
+      expect(sql).toContain("FROM pg_advisory_xact_lock");
+      expect(sql).not.toMatch(/SELECT\s+pg_advisory_xact_lock\s*\(/i);
+    }
   });
 
   it("applies tool rate limit after reading JSON in POST /api/mcp", async () => {

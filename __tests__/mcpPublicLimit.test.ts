@@ -93,6 +93,11 @@ it("allows a burst, then asks the caller to wait", async () => {
   expect(third.denied?.status).toBe(429);
   expect(third.denied?.headers.get("Retry-After")).toBeTruthy();
   expect(db.$queryRaw).toHaveBeenCalled();
+  const lockSql = (
+    db.$queryRaw.mock.calls[0] as unknown as [TemplateStringsArray]
+  )[0].join("?");
+  expect(lockSql).toContain("1 AS locked");
+  expect(lockSql).not.toMatch(/SELECT\s+pg_advisory_xact_lock\s*\(/i);
   const later = await checkMcpPublicLimit(
     headers,
     new Date(now.getTime() + 1000),

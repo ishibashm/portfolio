@@ -160,7 +160,7 @@ describe("DbUsageLedger persistence", () => {
     const logged = JSON.parse(String(warn.mock.calls[0][0]));
     expect(logged).toEqual({
       severity: "WARNING",
-      message: "[agent] usage ledger unavailable",
+      message: "[agent] usage ledger unavailable: P2021",
       reason: "P2021",
     });
     expect(JSON.stringify(warn.mock.calls)).not.toContain("sensitive SQL");
@@ -185,7 +185,7 @@ describe("DbUsageLedger persistence", () => {
     expect(warn).toHaveBeenCalledOnce();
     expect(JSON.parse(String(warn.mock.calls[0][0]))).toEqual({
       severity: "WARNING",
-      message: "[agent] usage ledger unavailable",
+      message: "[agent] usage ledger unavailable: ECONNREFUSED",
       reason: "ECONNREFUSED",
     });
 
