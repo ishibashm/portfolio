@@ -20,19 +20,23 @@ export interface UsageLedger {
     at: number,
     subject?: string,
   ): { requests: number; tokens: number; costUsd?: number };
+  hydrate?(subjectHash: string, day?: string): Promise<boolean>;
+  isHealthy?(at: number, subject?: string): boolean;
 }
 /** インスタンス内だけの台帳。識別子もログには出さない。 */
 export class MemoryUsageLedger implements UsageLedger {
-  private days = new Map<
+  protected days = new Map<
     string,
     Map<string, { requests: number; tokens: number; costUsd?: number }>
   >();
-  private roll(at: number) {
-    const key = jstDayKey(at);
+  protected rollDay(key: string) {
     if (!this.days.has(key)) this.days.set(key, new Map());
     // 日付を跨いで完了した実行は開始日に記録する。新しい日の台帳を消さない。
     if (this.days.size > 2) this.days.delete([...this.days.keys()].sort()[0]);
-    return this.days.get(key);
+    return this.days.get(key)!;
+  }
+  protected roll(at: number) {
+    return this.rollDay(jstDayKey(at));
   }
   daily(at: number, subject = "*") {
     return this.roll(at)?.get(subject) ?? { requests: 0, tokens: 0 };
@@ -65,28 +69,262 @@ export class MemoryUsageLedger implements UsageLedger {
     );
   }
 }
+
+export type AgentUsageDbRow = {
+  subject_hash?: string;
+  subjectHash?: string;
+  requests: number | bigint;
+  tokens: number | bigint;
+  cost_usd?: number;
+  costUsd?: number;
+};
+
+export type AgentUsageDb = {
+  $queryRaw?<T = AgentUsageDbRow[]>(
+    query: TemplateStringsArray,
+    ...values: unknown[]
+  ): Promise<T>;
+  $executeRaw(
+    query: TemplateStringsArray,
+    ...values: unknown[]
+  ): Promise<unknown>;
+  agentUsageDaily?: {
+    findMany(args: {
+      where: { day: Date; subjectHash: { in: string[] } };
+    }): Promise<AgentUsageDbRow[]>;
+  };
+};
+
+const DB_TIMEOUT_MS = 1500;
+const GLOBAL_ZERO_SUBJECT = "0".repeat(64);
+
+function warnLedgerUnavailable(error: unknown) {
+  const rawCode =
+    typeof error === "object" && error !== null && "code" in error
+      ? (error as { code?: unknown }).code
+      : undefined;
+  const reason =
+    typeof rawCode === "string" && rawCode
+      ? rawCode
+      : typeof rawCode === "number"
+        ? String(rawCode)
+        : error instanceof Error && error.message === "TIMEOUT"
+          ? "TIMEOUT"
+          : "UNKNOWN";
+  console.warn(
+    JSON.stringify({
+      severity: "WARNING",
+      message: "[agent] usage ledger unavailable",
+      reason,
+    }),
+  );
+}
+
+async function withDbTimeout<T>(
+  work: Promise<T>,
+  ms = DB_TIMEOUT_MS,
+): Promise<T> {
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  const timeout = new Promise<never>((_, reject) => {
+    timer = setTimeout(() => {
+      const err = new Error("TIMEOUT") as Error & { code: string };
+      err.code = "TIMEOUT";
+      reject(err);
+    }, ms);
+  });
+  try {
+    return await Promise.race([work, timeout]);
+  } finally {
+    if (timer) clearTimeout(timer);
+  }
+}
+
+export class DbUsageLedger extends MemoryUsageLedger {
+  private failedSubjects = new Set<string>();
+  private lastHydrateFailed = false;
+  private pendingWrites = new Set<Promise<void>>();
+
+  constructor(
+    private readonly db?: AgentUsageDb,
+    private readonly timeoutMs = DB_TIMEOUT_MS,
+  ) {
+    super();
+  }
+
+  private async loadDb(): Promise<AgentUsageDb> {
+    if (this.db) return this.db;
+    const { default: prisma } = await import("./prisma");
+    return prisma as unknown as AgentUsageDb;
+  }
+
+  private mergeRow(
+    day: string,
+    key: string,
+    dbRow: { requests: number; tokens: number; costUsd: number },
+  ) {
+    const map = this.rollDay(day);
+    const old = map.get(key) ?? { requests: 0, tokens: 0, costUsd: 0 };
+    map.set(key, {
+      requests: Math.max(old.requests, dbRow.requests),
+      tokens: Math.max(old.tokens, dbRow.tokens),
+      costUsd: Math.max(old.costUsd ?? 0, dbRow.costUsd),
+    });
+  }
+
+  isHealthy(at: number, subject?: string): boolean {
+    if (this.lastHydrateFailed) return false;
+    if (subject && this.failedSubjects.has(`${jstDayKey(at)}:${subject}`))
+      return false;
+    return true;
+  }
+
+  async hydrate(
+    subjectHash: string,
+    day: string = jstDayKey(Date.now()),
+  ): Promise<boolean> {
+    const globalHash = agentGlobalSubject();
+    try {
+      const db = this.db ?? (await this.loadDb());
+      const rows =
+        typeof db.$queryRaw === "function"
+          ? await withDbTimeout(
+              db.$queryRaw<AgentUsageDbRow[]>`
+                SELECT subject_hash::text AS subject_hash,
+                       requests,
+                       tokens,
+                       cost_usd
+                FROM agent_usage_daily
+                WHERE day = ${day}::date
+                  AND subject_hash IN (${subjectHash}, ${globalHash})
+              `,
+              this.timeoutMs,
+            )
+          : db.agentUsageDaily?.findMany
+            ? await withDbTimeout(
+                db.agentUsageDaily.findMany({
+                  where: {
+                    day: new Date(`${day}T00:00:00.000Z`),
+                    subjectHash: { in: [subjectHash, globalHash] },
+                  },
+                }),
+                this.timeoutMs,
+              )
+            : (() => {
+                throw Object.assign(new Error("DB_UNAVAILABLE"), {
+                  code: "DB_UNAVAILABLE",
+                });
+              })();
+      if (!Array.isArray(rows)) {
+        throw Object.assign(new Error("INVALID_ROWS"), {
+          code: "INVALID_ROWS",
+        });
+      }
+      for (const row of rows) {
+        const hash = String(row.subject_hash ?? row.subjectHash ?? "").trim();
+        const parsed = {
+          requests: Number(row.requests ?? 0),
+          tokens: Number(row.tokens ?? 0),
+          costUsd: Number(row.cost_usd ?? row.costUsd ?? 0),
+        };
+        if (hash === subjectHash) {
+          this.mergeRow(day, subjectHash, parsed);
+        }
+        if (
+          hash === globalHash ||
+          hash === GLOBAL_ZERO_SUBJECT ||
+          hash === "*" ||
+          hash === "global"
+        ) {
+          this.mergeRow(day, "*", parsed);
+        }
+      }
+      this.failedSubjects.delete(`${day}:${subjectHash}`);
+      this.lastHydrateFailed = false;
+      return true;
+    } catch (error) {
+      this.failedSubjects.add(`${day}:${subjectHash}`);
+      this.lastHydrateFailed = true;
+      warnLedgerUnavailable(error);
+      return false;
+    }
+  }
+
+  override recordUsage(r: UsageRecord) {
+    super.recordUsage(r);
+    if (r.mode !== "llm") return;
+    const day = jstDayKey(r.at);
+    const tokens = r.inputTokens + r.outputTokens;
+    const costUsd = r.costUsd ?? 0;
+    const globalHash = agentGlobalSubject();
+    const write = (async () => {
+      try {
+        const db = this.db ?? (await this.loadDb());
+        await withDbTimeout(
+          Promise.all(
+            [globalHash, r.subject].map(
+              (subjectHash) => db.$executeRaw`
+                INSERT INTO agent_usage_daily (
+                  day, subject_hash, requests, tokens, cost_usd, updated_at
+                )
+                VALUES (
+                  ${day}::date, ${subjectHash}, 1, ${tokens}, ${costUsd}, now()
+                )
+                ON CONFLICT (day, subject_hash) DO UPDATE
+                SET requests = agent_usage_daily.requests + EXCLUDED.requests,
+                    tokens = agent_usage_daily.tokens + EXCLUDED.tokens,
+                    cost_usd = agent_usage_daily.cost_usd + EXCLUDED.cost_usd,
+                    updated_at = now()
+              `,
+            ),
+          ),
+          this.timeoutMs,
+        );
+      } catch (error) {
+        warnLedgerUnavailable(error);
+      }
+    })();
+    this.pendingWrites.add(write);
+    void write.finally(() => {
+      this.pendingWrites.delete(write);
+    });
+  }
+
+  async flush(): Promise<void> {
+    await Promise.all([...this.pendingWrites]);
+  }
+}
+
 // Route bundles in one Node process must share both accounting and rate limits.
 const agentGlobal = globalThis as typeof globalThis & {
-  mcpAgentLedger?: MemoryUsageLedger;
+  mcpAgentLedger?: UsageLedger;
   mcpAgentGate?: ReturnType<typeof createAgentEntitlement>;
   mcpAgentSalt?: Buffer;
 };
-export const usageLedger =
-  process.env.NODE_ENV === "test"
+export const usageLedger: UsageLedger =
+  process.env.NODE_ENV === "test" || Boolean(process.env.VITEST)
     ? new MemoryUsageLedger()
-    : (agentGlobal.mcpAgentLedger ??= new MemoryUsageLedger());
+    : (agentGlobal.mcpAgentLedger ??= new DbUsageLedger());
 export function recordUsage(record: UsageRecord) {
   usageLedger.recordUsage(record);
 }
 export const resolveAgentPlan = () => "free" as const;
-// 再起動時に変わる鍵。IPを辞書攻撃できる単純ハッシュにはしない。
-const salt = (agentGlobal.mcpAgentSalt ??= randomBytes(32));
-export function agentSubject(input: {
-  userId?: string;
-  sessionId?: string;
-  ip: string;
-}) {
-  return createHmac("sha256", salt)
+// API_SECRET_KEY / NEXTAUTH_SECRET があれば再起動を跨いで安定する鍵を使う。
+const fallbackSalt = (agentGlobal.mcpAgentSalt ??= randomBytes(32));
+function subjectHmacKey(
+  env: Record<string, string | undefined> = process.env,
+): string | Buffer {
+  const secret = env.API_SECRET_KEY?.trim() || env.NEXTAUTH_SECRET?.trim();
+  return secret ? `agent-subject-v1:${secret}` : fallbackSalt;
+}
+export function agentSubject(
+  input: {
+    userId?: string;
+    sessionId?: string;
+    ip: string;
+  },
+  env: Record<string, string | undefined> = process.env,
+) {
+  return createHmac("sha256", subjectHmacKey(env))
     .update(
       input.userId
         ? `user:${input.userId}`
@@ -95,6 +333,40 @@ export function agentSubject(input: {
           : `ip:${input.ip}`,
     )
     .digest("hex");
+}
+export function agentGlobalSubject(
+  env: Record<string, string | undefined> = process.env,
+) {
+  return createHmac("sha256", subjectHmacKey(env))
+    .update("global")
+    .digest("hex");
+}
+export async function prepareAgentEntitlement(
+  input:
+    | string
+    | {
+        userId?: string;
+        sessionId?: string;
+        ip: string;
+        at?: number;
+      },
+  dayOrLedger?: string | UsageLedger,
+  maybeLedger: UsageLedger = usageLedger,
+): Promise<boolean> {
+  const subject = typeof input === "string" ? input : agentSubject(input);
+  const at =
+    typeof input === "object" && input !== null && typeof input.at === "number"
+      ? input.at
+      : Date.now();
+  const day = typeof dayOrLedger === "string" ? dayOrLedger : jstDayKey(at);
+  const ledger =
+    typeof dayOrLedger === "object" && dayOrLedger !== null
+      ? dayOrLedger
+      : maybeLedger;
+  if (ledger.hydrate) {
+    return ledger.hydrate(subject, day);
+  }
+  return true;
 }
 function limit(name: string, fallback: number) {
   const raw = process.env[name];
@@ -151,12 +423,14 @@ export function createAgentEntitlement(ledger: UsageLedger = usageLedger) {
     ).length;
     const reservedUsd =
       input.mode === "llm" ? agentReservation(AGENT_TOKEN_RESERVATION) : 0;
-    const remainingUsd = Math.max(
-      0,
-      agentDailyBudget() -
-        (global.costUsd ?? 0) -
-        reservations.reduce((sum, r) => sum + r.costUsd, 0),
-    );
+    const maxSpendUsd = 0;
+    const dailyBudgetUsd = agentDailyBudget();
+    const spentUsd =
+      (global.costUsd ?? 0) +
+      reservations.reduce((sum, r) => sum + r.costUsd, 0);
+    const remainingSpendCapUsd = Math.max(0, maxSpendUsd - spentUsd);
+    const remainingBudgetUsd = Math.max(0, dailyBudgetUsd - spentUsd);
+    const remainingUsd = Math.min(remainingBudgetUsd, remainingSpendCapUsd);
     const remaining = {
       usd: remainingUsd,
       requests: Math.max(
@@ -188,7 +462,15 @@ export function createAgentEntitlement(ledger: UsageLedger = usageLedger) {
       Math.floor(remaining.tokens / AGENT_TOKEN_RESERVATION),
     );
     let reason = "";
+    let code: string | undefined;
     if (
+      input.mode === "llm" &&
+      ledger.isHealthy &&
+      !ledger.isHealthy(at, subject)
+    ) {
+      reason = "利用量の確認に失敗しました。計算のみの方式をご利用ください。";
+      code = "ledger_unavailable";
+    } else if (
       !input.inspect &&
       (!bucket.take(subject, at) ||
         !globalBucket.take("all", at) ||
@@ -208,17 +490,22 @@ export function createAgentEntitlement(ledger: UsageLedger = usageLedger) {
           globalAllowance.tokens)
     )
       reason = "本日のAI無料枠に達しました。計算のみの方式をご利用ください。";
-    if (
-      !reason &&
-      input.mode === "llm" &&
-      (reservedUsd === null ||
-        reservedUsd > remainingUsd ||
-        agentDailyBudget() === 0)
-    )
-      reason =
-        reservedUsd === null
-          ? "AI回答の単価が未設定です。計算のみの方式をご利用ください。"
-          : "本日のAI回答の枠が終わりました。計算のみの方式・FAQをご利用ください。";
+    if (!reason && input.mode === "llm") {
+      if (reservedUsd === null) {
+        reason = "AI回答の単価が未設定です。計算のみの方式をご利用ください。";
+      } else if (
+        reservedUsd > maxSpendUsd ||
+        (global.costUsd ?? 0) > maxSpendUsd ||
+        spentUsd > maxSpendUsd
+      ) {
+        reason =
+          "spend_cap: 本日のAI回答の枠が終わりました。計算のみの方式・FAQをご利用ください。";
+        code = "spend_cap";
+      } else if (reservedUsd > remainingBudgetUsd || dailyBudgetUsd === 0) {
+        reason =
+          "本日のAI回答の枠が終わりました。計算のみの方式・FAQをご利用ください。";
+      }
+    }
     const token = Symbol();
     let released = false;
     if (!reason && !input.inspect) {
@@ -236,12 +523,14 @@ export function createAgentEntitlement(ledger: UsageLedger = usageLedger) {
       remaining,
       allowance,
       reason,
+      ...(code ? { code } : {}),
       plan,
       subject,
       finish(usage?: {
         model: string;
         toolCalls: number;
         voiceSeconds?: number;
+        costUsd?: number;
         measured?: {
           model: string;
           inputTokens: number;
@@ -258,14 +547,26 @@ export function createAgentEntitlement(ledger: UsageLedger = usageLedger) {
         const costs = usage.measured?.map((entry) =>
           agentCost(entry.model, entry.inputTokens, entry.outputTokens),
         );
+        const measuredUsd =
+          costs?.reduce<number>(
+            (sum, cost) => sum + (cost !== null && cost > 0 ? cost : 0),
+            0,
+          ) ?? 0;
         const settledUsd =
           usage.complete &&
           costs?.length &&
           costs.every((cost) => cost !== null)
             ? costs.reduce<number>((sum, cost) => sum + cost!, 0)
-            : (reservedUsd ?? 0);
+            : Math.max(reservedUsd ?? 0, measuredUsd);
+        const reportedUsd =
+          typeof usage.costUsd === "number" &&
+          Number.isFinite(usage.costUsd) &&
+          usage.costUsd > 0
+            ? usage.costUsd
+            : 0;
+        const finalCostUsd = Math.max(settledUsd, reportedUsd, measuredUsd);
         ledger.recordUsage({
-          costUsd: input.mode === "llm" ? settledUsd : 0,
+          costUsd: input.mode === "llm" ? finalCostUsd : 0,
           subject,
           mode: input.mode,
           model: usage.model,
@@ -280,6 +581,6 @@ export function createAgentEntitlement(ledger: UsageLedger = usageLedger) {
   };
 }
 export const canUseAgent =
-  process.env.NODE_ENV === "test"
+  process.env.NODE_ENV === "test" || Boolean(process.env.VITEST)
     ? createAgentEntitlement()
     : (agentGlobal.mcpAgentGate ??= createAgentEntitlement());

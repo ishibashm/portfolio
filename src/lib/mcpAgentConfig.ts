@@ -1,7 +1,7 @@
 import { paidApisDisabled } from "./paidApis";
 
 /** Google remains the default. xAI requires an explicit model and key. */
-export const DEFAULT_AGENT_MODEL = "gemini-3.5-flash";
+export const DEFAULT_AGENT_MODEL = "gemini-3.6-flash";
 export const DEFAULT_FALLBACK_MODEL = "gemini-3.5-flash-lite";
 export function chainLlmState(
   env: Record<string, string | undefined> = process.env,

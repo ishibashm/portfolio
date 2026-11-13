@@ -6,23 +6,20 @@ import {
 export type AgentPrice = { input: number; output: number };
 /** Unknown prices stay null. No guessed xAI tariff. Units: USD / million tokens. */
 export const AGENT_PRICING: Record<string, AgentPrice | null> = {
-  [`google:${DEFAULT_AGENT_MODEL}`]: null,
-  [`google:${DEFAULT_FALLBACK_MODEL}`]: null,
+  [`google:${DEFAULT_AGENT_MODEL}`]: { input: 1.5, output: 7.5 },
+  [`google:${DEFAULT_FALLBACK_MODEL}`]: { input: 0.3, output: 2.5 },
 };
 export function agentPrice(
   model: string,
   env: Record<string, string | undefined> = process.env,
 ): AgentPrice | null {
-  // These two models retain the explicitly documented Google free-tier policy.
-  // Set false for paid-tier credentials; then explicit prices are required.
   if (
-    (env.MCP_AGENT_GOOGLE_FREE_TIER ?? "true") === "true" &&
-    [
-      `google:${DEFAULT_AGENT_MODEL}`,
-      `google:${DEFAULT_FALLBACK_MODEL}`,
-    ].includes(model)
+    env.MCP_AGENT_GOOGLE_FREE_TIER === "true" &&
+    (model === `google:${DEFAULT_AGENT_MODEL}` ||
+      model === `google:${DEFAULT_FALLBACK_MODEL}`)
   )
     return { input: 0, output: 0 };
+  const builtin = AGENT_PRICING[model] ?? null;
   try {
     const value = JSON.parse(env.MCP_AGENT_PRICING_JSON || "{}")[model];
     if (
@@ -33,12 +30,21 @@ export function agentPrice(
       Number.isFinite(value.output) &&
       value.input >= 0 &&
       value.output >= 0
-    )
-      return { input: value.input, output: value.output };
+    ) {
+      if (builtin) {
+        return {
+          input: Math.max(builtin.input, value.input),
+          output: Math.max(builtin.output, value.output),
+        };
+      }
+      if (value.input > 0 && value.output > 0) {
+        return { input: value.input, output: value.output };
+      }
+    }
   } catch {
     /* Missing or malformed prices fail closed. */
   }
-  return AGENT_PRICING[model] ?? null;
+  return builtin;
 }
 export function agentCost(model: string, input: number, output: number) {
   const price = agentPrice(model);

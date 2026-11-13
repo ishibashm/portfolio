@@ -74,6 +74,8 @@ function setup(real = false) {
 beforeEach(() => {
   vi.stubEnv("MCP_VOICE_ENABLED", "true");
   vi.stubEnv("XAI_API_KEY", "private-api-key");
+  vi.stubEnv("MCP_AGENT_GOOGLE_FREE_TIER", "true");
+  vi.stubEnv("MCP_AGENT_DAILY_BUDGET_USD", "100");
   vi.spyOn(console, "info").mockImplementation(() => {});
 });
 afterEach(() => {

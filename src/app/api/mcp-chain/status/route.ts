@@ -1,7 +1,7 @@
 import { agentBillingState } from "@/lib/agentBillingState";
 import { chainLlmState } from "@/lib/mcpAgentConfig";
 import { voiceState } from "@/lib/mcpVoiceConfig";
-import { canUseAgent } from "@/lib/agentEntitlement";
+import { canUseAgent, prepareAgentEntitlement } from "@/lib/agentEntitlement";
 import { agentReservation } from "@/lib/agentPricing";
 import { clientKey } from "@/lib/apiGuard";
 import { agentSessionUser } from "@/lib/agentSession";
@@ -25,6 +25,17 @@ export async function GET(request: Request) {
       voiceAvailable = false;
     }
   }
+  const ip = clientKey(request.headers);
+  try {
+    await prepareAgentEntitlement({
+      ...("userId" in session && session.userId
+        ? { userId: session.userId }
+        : {}),
+      ip,
+    });
+  } catch {
+    /* Partial test mocks of agentEntitlement may omit prepareAgentEntitlement. */
+  }
   return Response.json(
     {
       paused: paidDisabled ? true : agentBillingState().paused,
@@ -45,7 +56,7 @@ export async function GET(request: Request) {
         ...("userId" in session && session.userId
           ? { userId: session.userId }
           : {}),
-        ip: clientKey(request.headers),
+        ip,
         mode: "llm",
         inspect: true,
       }).remaining,

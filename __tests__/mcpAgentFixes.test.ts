@@ -128,6 +128,9 @@ it.each([503, 429])("%iの再試行とフォールバック", async (statusCode)
 });
 it("20回設定・全体min・予約・解放と照会は共通の残数", () => {
   vi.spyOn(console, "info").mockImplementation(() => {});
+  vi.stubEnv("NODE_ENV", "development");
+  vi.stubEnv("MCP_AGENT_ENABLED", "true");
+  vi.stubEnv("MCP_AGENT_MOCK", "true");
   vi.stubEnv("MCP_AGENT_FREE_DAILY_REQUESTS", "20");
   vi.stubEnv("MCP_AGENT_DAILY_REQUESTS", "20");
   delete process.env.MCP_AGENT_FREE_DAILY_TOKENS;
