@@ -53,6 +53,8 @@ import {
   isTenchusatsuMode,
 } from "@/utils/tenchusatsuPolicy";
 import { OVERVIEW_CENTER } from "@/utils/arbitrageSearchArea";
+import { AffiliatePlacement } from "@/components/ads/AffiliateLink";
+import { hakobuOfferForPref } from "@/lib/affiliateOffers";
 
 /*
   暦エンジンをこのファイルから値で import しない。
@@ -612,6 +614,9 @@ export default function DirectionTownsPage() {
     [hasBaseLocation, baseLatNum, baseLonNum],
   );
   const basePlaceLabel = nearestPlaceLabel(basePlace);
+  /* 出発地が1都3県で、かつ全国検索（radiusKm === null）でないときだけハコブを出す */
+  const hakobuOffer =
+    radiusKm !== null ? hakobuOfferForPref(basePlace?.pref) : undefined;
 
   const selectedDirectionLabel = ALL_DIRECTIONS.some(
     (d) => d === selectedDirection,
@@ -757,6 +762,10 @@ export default function DirectionTownsPage() {
                 )}
               </ArbitrageSidebarSection>
             )}
+
+            {hakobuOffer ? (
+              <AffiliatePlacement offer={hakobuOffer} variant="compact" />
+            ) : null}
 
             {/* 天中殺の扱い。年天中殺は 2 年続くため、厳格な扱いだと
                 その間はどの方位・どの日も動けない判定になる（既定は弱める）。流派で違うので
