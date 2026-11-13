@@ -45,11 +45,12 @@ const parse = (r: Awaited<ReturnType<Client["callTool"]>>) =>
   JSON.parse((r.content as { text: string }[])[0].text);
 
 describe("MCP サーバー", () => {
-  it("17 の道具を公開している", async () => {
+  it("18 の道具を公開している", async () => {
     const c = await connect();
     const names = (await c.listTools()).tools.map((t) => t.name).sort();
     expect(names).toEqual([
       "area_directions",
+      "compare_fortune_perspectives",
       "find_auspicious_days",
       "find_relocation_windows",
       "get_article",
@@ -105,6 +106,37 @@ describe("MCP サーバー", () => {
     } finally {
       await c.close();
     }
+  });
+
+  it("compare_fortune_perspectives は観点を返し、足りない入力を未確認にする", async () => {
+    const c = await connect();
+    const out = parse(
+      await c.callTool({
+        name: "compare_fortune_perspectives",
+        arguments: {
+          candidates: [{ date: "2026-01-08", direction: "E" }],
+        },
+      }),
+    );
+    expect(out.disclaimer).toContain("保証はありません");
+    const ids = out.candidates[0].perspectives.map(
+      (item: { id: string }) => item.id,
+    );
+    expect(ids).toContain("junichoku");
+    expect(ids).not.toContain("qimen");
+    expect(
+      out.candidates[0].perspectives.find(
+        (item: { id: string }) => item.id === "kyusei_year",
+      ).judgment,
+    ).toBe("未確認");
+    const tooMany = await c.callTool({
+      name: "compare_fortune_perspectives",
+      arguments: {
+        candidates: Array.from({ length: 11 }, () => ({ date: "2026-01-08" })),
+      },
+    });
+    expect(tooMany.isError).toBe(true);
+    await c.close();
   });
 
   it("get_honmei_star は engine と同じ本命星を返す", async () => {
@@ -451,7 +483,7 @@ describe("/api/mcp の入口", () => {
       }),
     );
     expect(list.status).toBe(200);
-    expect((await list.json()).result.tools.length).toBe(17);
+    expect((await list.json()).result.tools.length).toBe(18);
   });
 });
 

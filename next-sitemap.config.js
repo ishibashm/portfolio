@@ -577,6 +577,9 @@ module.exports = {
            当たらない）で、足さないと sitemap から漏れていた（監査 2026-11-10）。 */
         "/relocation/dashboard",
         "/relocation/arbitrage",
+        /* クエリ無しは索引する。クエリ付きは頁側で noindex。
+           force-dynamic なので事前生成の一覧には出ない。 */
+        "/houi/fortune-compare",
       ].map((loc) => config.transform(config, loc)),
     ),
 };

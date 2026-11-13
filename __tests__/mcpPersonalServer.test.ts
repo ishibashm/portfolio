@@ -45,7 +45,7 @@ afterEach(async () => {
   await Promise.all(closers.splice(0).map((close) => close()));
 });
 describe("request-local personal MCP server", () => {
-  it("registers exactly eleven unique audited tools while public discovery exposes seventeen", async () => {
+  it("registers exactly eleven unique audited tools while public discovery exposes eighteen", async () => {
     const personal = await connect(createMcpPersonalServer(auth));
     const publicClient = await connect(createMcpServer());
     const tools = (await personal.listTools()).tools;
@@ -64,7 +64,18 @@ describe("request-local personal MCP server", () => {
     ]);
     for (const tool of tools)
       expect(mcpAuditEvent.safeParse(tool.name).success).toBe(true);
-    expect((await publicClient.listTools()).tools).toHaveLength(17);
+    const publicNames = (await publicClient.listTools()).tools.map(
+      (tool) => tool.name,
+    );
+    expect(publicNames).toHaveLength(18);
+    expect(publicNames).toContain("compare_fortune_perspectives");
+    expect(publicNames).toContain("find_relocation_windows");
+    expect(tools.map((tool) => tool.name)).not.toContain(
+      "compare_fortune_perspectives",
+    );
+    expect(tools.map((tool) => tool.name)).not.toContain(
+      "find_relocation_windows",
+    );
     expect(JSON.stringify(tools)).not.toContain(preset.name);
     expect(findFirst).not.toHaveBeenCalled();
   });
