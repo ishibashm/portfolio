@@ -25,6 +25,8 @@ X 閲覧・研究レポートが同居しており、17 ページ／47 API の�
 
 ## 2. ページ
 
+`/houi/relocation-calendar` は年盤・月盤の引越し期間を表示するサーバー頁。公開MCP `find_relocation_windows` と計算を共有する。query付きはnoindex。詳細は[引越し期間一覧](features/relocation-windows.md)。
+
 ### 中核（検索に出す・ナビに載せる・広告を出す）
 
 `src/lib/siteStructure.ts` の `CORE_ROUTES` が唯一の定義元。ナビ

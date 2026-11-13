@@ -20,6 +20,7 @@ export const CHAIN_TOOLS = [
   "get_honmei_star",
   "judge_directions",
   "find_auspicious_days",
+  "find_relocation_windows",
   "search_municipality",
   "area_directions",
   "prefecture_summary",

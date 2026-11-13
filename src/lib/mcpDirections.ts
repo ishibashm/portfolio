@@ -61,12 +61,19 @@ type BuiltBase =
 
 export function buildBase(input: {
   birthDate?: string | undefined;
+  birthTime?: string | undefined;
   lon?: number | undefined;
   tenchusatsuMode?: string | undefined;
   involuntaryMove?: boolean | undefined;
   directionFilterMode?: string | undefined;
 }): BuiltBase {
-  const birth = input.birthDate ? parseJstDate(input.birthDate) : null;
+  const birth = input.birthDate
+    ? parseJstDate(
+        input.birthTime
+          ? `${input.birthDate}T${input.birthTime}`
+          : input.birthDate,
+      )
+    : null;
   if (!birth)
     return { ok: false, error: "birthDate は YYYY-MM-DD で指定してください。" };
   if (typeof input.lon !== "number" || !Number.isFinite(input.lon)) {
@@ -134,7 +141,15 @@ export function calculateMcpDirections(
       ok: false as const,
       error: "date は YYYY-MM-DD で指定してください。",
     };
-  const purpose = input.purpose;
+  return calculateMcpDirectionsDay(built, day, input.purpose);
+}
+
+/** Shared daily core: callers scanning a range build the birth base only once. */
+export function calculateMcpDirectionsDay(
+  built: Extract<BuiltBase, { ok: true }>,
+  day: Date,
+  purpose?: TripPurpose,
+) {
   const all = judgeDayAllDirections(
     new Date(forecastAnchorMs(day)),
     built.base,
@@ -194,7 +209,9 @@ export function calculateMcpDirections(
       tenchusatsuMode: built.tenchusatsuMode,
       purpose: purpose ?? null,
       boardsUsed: [...boardsForPurpose(purpose)],
-      purposeLabel: purpose ? PURPOSE_LABELS[purpose] : "三盤（年盤・月盤・日盤）",
+      purposeLabel: purpose
+        ? PURPOSE_LABELS[purpose]
+        : "三盤（年盤・月盤・日盤）",
       tenchusatsu: {
         inPeriod: verdict.inVoidPeriod,
         scopes: activeVoidScopes(scopes),

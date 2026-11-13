@@ -565,6 +565,7 @@ module.exports = {
       [
         ...AREA_DATA_PATHS,
         "/houi/tenchusatsu",
+        "/houi/relocation-calendar",
         /* /blog は ISR になったのでビルドの一覧にも出る。ここにも足すのは、
            頁が再び動的になって一覧から落ちても、llms.txt が案内する
            入口がサイトマップから消えないようにするため。重複は

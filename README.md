@@ -125,6 +125,7 @@ npm run lint           # error 0 / warning あり が正常。総数を増やさ
 | ファイル                                                     | 中身                                             |
 | ------------------------------------------------------------ | ------------------------------------------------ |
 | [`docs/site-spec.md`](docs/site-spec.md)                     | 仕様の正。ページ・判定・暦・データ・品質の見張り |
+| [`docs/features/relocation-windows.md`](docs/features/relocation-windows.md) | 引越し期間一覧・公開MCP・検証と引き継ぎ |
 | [`CLAUDE.md`](CLAUDE.md)                                     | 作業の決め事。検証・PR の出し方・触るときの注意  |
 | [`docs/improvement-backlog.md`](docs/improvement-backlog.md) | 改善の積み残しと判断待ち                         |
 | [`docs/gcp-billing-costs.md`](docs/gcp-billing-costs.md)     | 管理画面の GCP 請求実額の設定                    |

@@ -1,3 +1,4 @@
+import { findRelocationWindows } from "./relocationWindows";
 import { buildTodayDirections } from "@/lib/todayDirections";
 import { getMonthDirections } from "@/lib/kigakuContent";
 import { municipalityMatches } from "@/lib/municipalitySearch";
@@ -262,6 +263,11 @@ export function createMcpBaseServer(options?: {
       description: `出発地の経度と生年月日から、指定日の八方位それぞれの段階（S 三盤吉〜X 五大凶殺）と状態を返します。purpose 省略時は年盤・月盤・日盤を合成した判定で、画面の「${coreRouteLabel("/relocation/arbitrage")}」と同じ関数です。purpose を指定すると用事の盤だけで段階を出します。天中殺は既定で禁止せず弱めるだけで、天中殺の日も auspiciousDirections（天中殺を除いた判定の吉方位）と注記を返します。六曜・一粒万倍日は almanac に目安として返し、判定には使いません。`,
       inputSchema: {
         birthDate: z.string().describe("生年月日。YYYY-MM-DD"),
+        birthTime: z
+          .string()
+          .regex(/^([01]\d|2[0-3]):[0-5]\d$/)
+          .optional()
+          .describe("出生時刻 HH:MM（JST）。時刻の天中殺は使わない"),
         lon: z.number().min(122).max(154).describe("出発地の経度（日本国内）"),
         date: z
           .string()
@@ -624,6 +630,43 @@ export function createMcpBaseServer(options?: {
 
 export function createMcpServer(deps?: { rentals?: RentalReader }): McpServer {
   const server = createMcpBaseServer({ municipalityReadings: true });
+  server.registerTool(
+    "find_relocation_windows",
+    {
+      title: "引越しできる日の一覧",
+      description:
+        "年盤・月盤の方位と強さが同じ連続期間を一覧にします。既定600日、最大730日。天中殺は既定で弱めるだけ。年・月・日盤すべて吉の3盤そろう日も返します。",
+      annotations: {
+        readOnlyHint: true,
+        destructiveHint: false,
+        idempotentHint: true,
+        openWorldHint: false,
+      },
+      inputSchema: {
+        birthDate: z.string().describe("生年月日 YYYY-MM-DD"),
+        birthTime: z.string().optional().describe("出生時刻 HH:MM（JST）"),
+        lon: z.number().min(122).max(154),
+        from: z
+          .string()
+          .optional()
+          .describe("開始日 YYYY-MM-DD。既定は今日JST"),
+        days: z
+          .number()
+          .int()
+          .min(30)
+          .max(730)
+          .optional()
+          .describe("既定600日"),
+        tenchusatsuMode: tenchusatsuSchema,
+        involuntaryMove: z.boolean().optional(),
+        directionFilterMode: directionFilterSchema,
+      },
+    },
+    async (input) => {
+      const result = findRelocationWindows(input);
+      return result.ok ? text(result.payload) : fail(result.error);
+    },
+  );
   registerPublicTimeTools(server);
   server.registerTool(
     "get_today_directions",

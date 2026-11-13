@@ -127,7 +127,11 @@
           "url": "https://cloud-palette.com/blog/what-is-hidori-for-moving"
         }
       ],
-      "relatedTools": ["find_auspicious_days", "judge_directions"],
+      "relatedTools": [
+        "find_auspicious_days",
+        "find_relocation_windows",
+        "judge_directions"
+      ],
       "chapter": "日取り"
     },
     {
