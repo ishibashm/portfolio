@@ -143,6 +143,9 @@ describe("無料枠と台帳", () => {
   const start = Date.parse("2026-10-16T14:59:00Z");
   it("日次枠を予約し、JSTの日替わりで戻す。質問はログに入れない", () => {
     const log = vi.spyOn(console, "info").mockImplementation(() => {});
+    vi.stubEnv("NODE_ENV", "development");
+    vi.stubEnv("MCP_AGENT_ENABLED", "true");
+    vi.stubEnv("MCP_AGENT_MOCK", "true");
     vi.stubEnv("MCP_AGENT_FREE_DAILY_REQUESTS", "1");
     const ledger = new MemoryUsageLedger(),
       use = createAgentEntitlement(ledger);
@@ -167,6 +170,9 @@ describe("無料枠と台帳", () => {
   });
   it("全体トークン・回数上限をIPを替えても超えない。計算のみは使える", () => {
     vi.spyOn(console, "info").mockImplementation(() => {});
+    vi.stubEnv("NODE_ENV", "development");
+    vi.stubEnv("MCP_AGENT_ENABLED", "true");
+    vi.stubEnv("MCP_AGENT_MOCK", "true");
     for (const kind of ["tokens", "requests"]) {
       vi.stubEnv(
         "MCP_AGENT_DAILY_TOKENS",
@@ -190,6 +196,9 @@ describe("無料枠と台帳", () => {
   });
   it("無料トークン枠と同時実行の制限", () => {
     vi.spyOn(console, "info").mockImplementation(() => {});
+    vi.stubEnv("NODE_ENV", "development");
+    vi.stubEnv("MCP_AGENT_ENABLED", "true");
+    vi.stubEnv("MCP_AGENT_MOCK", "true");
     vi.stubEnv(
       "MCP_AGENT_FREE_DAILY_TOKENS",
       String(AGENT_TOKEN_RESERVATION - 1),
@@ -197,6 +206,9 @@ describe("無料枠と台帳", () => {
     let use = createAgentEntitlement(new MemoryUsageLedger());
     expect(use({ ip: "a", mode: "llm", at: start }).allowed).toBe(false);
     vi.unstubAllEnvs();
+    vi.stubEnv("NODE_ENV", "development");
+    vi.stubEnv("MCP_AGENT_ENABLED", "true");
+    vi.stubEnv("MCP_AGENT_MOCK", "true");
     use = createAgentEntitlement(new MemoryUsageLedger());
     const first = use({ ip: "a", mode: "llm", at: start });
     expect(use({ ip: "b", mode: "llm", at: start }).reason).toContain("混み");

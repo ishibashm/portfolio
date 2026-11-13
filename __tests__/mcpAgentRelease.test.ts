@@ -10,7 +10,9 @@ it.each(["success", "error", "abort", "cancel", "timeout"])(
   "%sでもclose停止に関係なくロックを解放しstatusと一致",
   async (kind) => {
     vi.resetModules();
+    vi.stubEnv("NODE_ENV", "development");
     vi.stubEnv("MCP_AGENT_ENABLED", "true");
+    vi.stubEnv("MCP_AGENT_MOCK", "true");
     vi.stubEnv("GOOGLE_GENERATIVE_AI_API_KEY", "test");
     vi.stubEnv("MCP_AGENT_FREE_DAILY_REQUESTS", "20");
     let started!: () => void;

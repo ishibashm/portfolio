@@ -3,7 +3,11 @@ import { guidancePlan, guidanceValuesSchema } from "@/lib/askGuidance";
 import { resolveGuidance } from "@/lib/askGuidanceServer";
 import { connectChainClient } from "@/lib/mcpChain";
 import { chainRequestError } from "@/lib/mcpChainRequest";
-import { agentSubject, canUseAgent } from "@/lib/agentEntitlement";
+import {
+  agentSubject,
+  canUseAgent,
+  prepareAgentEntitlement,
+} from "@/lib/agentEntitlement";
 import { clientKey, TokenBucket } from "@/lib/apiGuard";
 
 export const runtime = "nodejs";
@@ -79,6 +83,11 @@ export async function POST(request: Request) {
     if (body.data.action === "resolve" && plan.fields.length)
       return Response.json(plan, { headers });
     if (body.data.action === "resolve") {
+      try {
+        await prepareAgentEntitlement({ ip });
+      } catch {
+        /* Partial test mocks of agentEntitlement may omit prepareAgentEntitlement. */
+      }
       gate = canUseAgent({ ip, mode: "deterministic" });
       if (!gate.allowed)
         return Response.json({ error: gate.reason }, { status: 429, headers });

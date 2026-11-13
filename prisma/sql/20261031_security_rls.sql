@@ -36,6 +36,7 @@ BEGIN
     'VerificationToken',
     'VisualizedComponent',
     'XPost',
+    'agent_usage_daily',
     'api_usage',
     'mcp_public_rate',
     'contact_messages',

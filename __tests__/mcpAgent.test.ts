@@ -320,10 +320,10 @@ describe("追質問候補", () => {
 });
 describe("モデル設定", () => {
   it("既定モデルと上書き、キーの別名", async () => {
-    expect(chainLlmState({}).model).toBe("gemini-3.5-flash");
+    expect(chainLlmState({}).model).toBe("gemini-3.6-flash");
     expect(chainLlmState({}).fallbackModel).toBe("gemini-3.5-flash-lite");
     expect(
-      chainLlmState({ MCP_AGENT_MODEL: "gemini-3.5-flash" }).fallbackModel,
+      chainLlmState({ MCP_AGENT_MODEL: "gemini-3.6-flash" }).fallbackModel,
     ).toBe("gemini-3.5-flash-lite");
     expect(
       chainLlmState({
@@ -339,7 +339,7 @@ describe("モデル設定", () => {
     vi.stubEnv("GOOGLE_GENERATIVE_AI_API_KEY", "");
     vi.stubEnv("GEMINI_API_KEY", "test");
     expect(await createAgentModel()).toMatchObject({
-      modelId: "gemini-3.5-flash",
+      modelId: "gemini-3.6-flash",
     });
   });
   it("productionではモック旗だけでは有効化できない", () => {
@@ -400,7 +400,9 @@ describe("AI API", () => {
     ).toBe(404);
   });
   it("長さ・本文バイト数・IPレートを制限", async () => {
+    vi.stubEnv("NODE_ENV", "development");
     vi.stubEnv("MCP_AGENT_ENABLED", "true");
+    vi.stubEnv("MCP_AGENT_MOCK", "true");
     vi.stubEnv("GOOGLE_GENERATIVE_AI_API_KEY", "test");
     const post = await api();
     expect(
@@ -421,7 +423,9 @@ describe("AI API", () => {
     ).toBe(413);
   });
   it("IPを変えても全体レートを制限", async () => {
+    vi.stubEnv("NODE_ENV", "development");
     vi.stubEnv("MCP_AGENT_ENABLED", "true");
+    vi.stubEnv("MCP_AGENT_MOCK", "true");
     vi.stubEnv("GOOGLE_GENERATIVE_AI_API_KEY", "test");
     const post = await api();
     for (let i = 0; i < 6; i++)

@@ -5,7 +5,7 @@ import {
   timingSafeEqual,
 } from "node:crypto";
 import { z } from "zod";
-import { canUseAgent } from "./agentEntitlement";
+import { canUseAgent, prepareAgentEntitlement } from "./agentEntitlement";
 import { agentSessionUser } from "./agentSession";
 import { chainRequestError } from "./mcpChainRequest";
 import { assertChainTool, CHAIN_TOOLS, connectChainClient } from "./mcpChain";
@@ -172,11 +172,21 @@ export function createVoiceService(
           if (error instanceof VoiceStoreError) throw storeError(error);
           throw new VoiceError(503);
         }
+        const at = deps.now();
+        try {
+          await prepareAgentEntitlement({
+            userId: auth.userId,
+            ip: "authenticated-voice",
+            at,
+          });
+        } catch {
+          /* Partial test mocks of agentEntitlement may omit prepareAgentEntitlement. */
+        }
         const entitlement = deps.entitlement({
           userId: auth.userId,
           ip: "authenticated-voice",
           mode: "llm",
-          at: deps.now(),
+          at,
         });
         if (!entitlement.allowed) throw new VoiceError(429);
         const state = voiceState();

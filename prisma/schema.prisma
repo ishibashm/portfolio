@@ -1133,6 +1133,21 @@ model McpPublicRate {
   @@map("mcp_public_rate")
 }
 
+// 公開エージェントの日次利用量台帳。生の IP や user_id は置かず HMAC（64 文字）だけ。
+// 定義は prisma/sql/20261103_add_agent_usage_daily.sql と揃える。
+model AgentUsageDaily {
+  day         DateTime @db.Date
+  subjectHash String   @map("subject_hash") @db.Char(64)
+  requests    Int      @default(0)
+  tokens      BigInt   @default(0)
+  costUsd     Float    @default(0) @map("cost_usd")
+  updatedAt   DateTime @default(now()) @map("updated_at") @db.Timestamptz(3)
+
+  @@id([day, subjectHash])
+  @@index([day])
+  @@map("agent_usage_daily")
+}
+
 // Shared token buckets: atomic update under a DB transaction, never read-modify-write.
 model McpRateBucket {
   userId    String   @db.Uuid

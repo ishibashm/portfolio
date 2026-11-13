@@ -471,7 +471,7 @@ NDJSONは `text-delta`、`tool-call`、`tool-result`（要約・生JSON・所要
 
 `MCP_AGENT_ENABLED=true` と鍵が揃ったときだけ有効。鍵は
 `GOOGLE_GENERATIVE_AI_API_KEY` を優先し、無ければ `GEMINI_API_KEY` を使う。
-モデルは `MCP_AGENT_MODEL`、未設定時は `gemini-3.5-flash`。
+モデルは `MCP_AGENT_MODEL`、未設定時は `gemini-3.6-flash`。
 旗・鍵が無ければLLM要求は404。サーバー側で判定して画面へ真偽値だけ渡し、決定的フォームを出す。
 有効時は会話履歴・案内役の初回候補と追質問候補・逐次回答・折り畳みの経緯を表示する。Googleへの質問と結果の送信を
 入力前に説明する。鍵はクライアントに渡さない。
@@ -759,7 +759,7 @@ AIチャットの補足（2026-10-17）:
 - 個人の既定枠は30実行/日、全体は100実行/日。トークン枠は従来どおり回数×524288で算出し、環境変数の明示値を優先する。プロバイダーのgenerateContent枠とは別で、1実行に複数のモデル要求を使う。
 - 成功・例外・中断・切断・時間上限のfinallyで予約と同時実行数を解放し、transportのclose完了を待たない。短時間のレート制限は「実行中」と区別する。
 - deploy.ymlでは回数・トークン・フォールバックをGitHub Variablesから渡す。GitHubで空と未設定を区別できないため、フォールバック無効化にはMCP_AGENT_FALLBACK_DISABLED=trueを設定する。ローカル設定例は.env.local.example（このリポジトリの.env.example相当）。
-- 2026-10-16 時点の運用: 主モデルは無料枠の `gemini-3.5-flash`（repo 変数 `MCP_AGENT_MODEL`）。この鍵では `gemini-4-argon`・Pro 系は無料枠 0 で 429、3.7/3.8-flash は高負荷で 503 が出た。無料枠には分あたり・日あたりの回数上限があり、混雑時は 429/503 になる。
+- 2026-10-16 時点の運用: 主モデルは無料枠の `gemini-3.6-flash`（repo 変数 `MCP_AGENT_MODEL`）。この鍵では `gemini-4-argon`・Pro 系は無料枠 0 で 429、3.7/3.8-flash は高負荷で 503 が出た。無料枠には分あたり・日あたりの回数上限があり、混雑時は 429/503 になる。
 
 ### エージェントに案内してもらう（旧「AIに聞く」）・回答ブロック
 
@@ -840,9 +840,10 @@ deploy.ymlはrepo変数MCP_AGENT_PROVIDER・XAI_AGENT_MODELを渡せるように
 ### テキストAIのUSD日次上限（2026-10-17）
 
 canUseAgentを唯一のLLM入口として、MCP_AGENT_DAILY_BUDGET_USD（既定0.20、0は停止、不正値も停止）をJSTの日付ごと・プロセス内で管理する。実行前に既存の524288トークン予約と主モデル・fallbackの最大単価からUSDを予約する。完了時は各モデルのSDK usage×入力/出力単価で精算し、usage不明・失敗・中断時は予約を保持する。二重finishは無効。日跨ぎでも開始日に精算する。
-単価表の未知値はnull。MCP_AGENT_PRICING_JSONにprovider:modelをキー、input/output（USD/100万トークン）を値として確認済みの単価を設定できる。xAIや未知モデルは単価が無ければ呼ばない。主モデルの単価が無いときだけAI回答を止め、単価の無いfallbackは予約に含めず切替もしない（主モデルは止めない）。/api/mcp-chain/status の aiPriced で単価がそろっているか（値は返さない）を確認できる。既定Googleのgemini-3.5-flashとgemini-3.5-flash-liteのみ、従来の無料枠運用を明示して0ドルとする。Googleの有料枠ではMCP_AGENT_GOOGLE_FREE_TIER=falseと確認済み単価が必要。不正な無料枠フラグでは無料扱いしない。
-超過は429と「本日のAI回答の枠が終わりました」、X-Agent-Remaining-USDを返す。計算のみと無料FAQ・資料抜粋は利用できる。既存の回数・トークン上限と402停止は維持する。agent_usageログには推定costUsdだけを追加し、DB記録・個人情報の保存は追加しない。
-これはテキストAIの概算上限で、音声費用は対象外。共有ストアではなく、再起動でリセットされる。max-instances=2では0.20ドル設定は最大0.40ドル相当／日（再起動が無い場合）。保守的な予約額が上限に収まらないモデルは実行前に止まる。厳密な総額保証には共有台帳が必要で、今回DB・本番設定は変更しない。
+単価表の未知値はnull。MCP_AGENT_PRICING_JSONにprovider:modelをキー、input/output（USD/100万トークン）を値として確認済みの単価を設定できる（組み込みの保守的な単価を引き上げることはできるが、引き下げることはできない）。xAIや未知モデルは単価が無ければ呼ばない。主モデルの単価が無いときだけAI回答を止め、単価の無いfallbackは予約に含めず切替もしない（主モデルは止めない）。/api/mcp-chain/status の aiPriced で単価がそろっているか（値は返さない）を確認できる。既定Googleのgemini-3.6-flashとgemini-3.5-flash-liteは保守的な定価を持ち、MCP_AGENT_GOOGLE_FREE_TIERが厳密に"true"のときだけ0ドル（無料枠）として扱う（未設定・空文字・その他の値やxAI・未知モデルは無料扱いしない）。
+実費上限は環境変数で変更できない固定の0ドル（無料枠のみ許可）とし、予約額が0ドルを超える呼び出しや当日の記録済みcostUsdが0ドルを超えている場合はspend_capで拒否する。完了時に正の費用が記録された場合もその日の後続LLM呼び出しをすべて拒否し、日次利用量とcost_usdはDBのagent_usage_daily台帳（DbUsageLedger）に永続化されるためプロセス再起動を跨いでも維持される。
+超過は429と「本日のAI回答の枠が終わりました」、X-Agent-Remaining-USDを返す。計算のみと無料FAQ・資料抜粋は利用できる。既存の回数・トークン上限と402停止は維持する。agent_usageログには推定costUsdだけを追加し、個人情報の保存は追加しない。
+これはテキストAIの概算上限で、音声費用は対象外。保守的な予約額が上限に収まらないモデルは実行前に止まる。
 
 ### 相談メモから未回答ターンを除外（PR10）
 

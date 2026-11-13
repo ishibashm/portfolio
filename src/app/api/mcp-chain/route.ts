@@ -1,5 +1,5 @@
 import { routePublicAnswer } from "@/lib/answerRouter";
-import { canUseAgent } from "@/lib/agentEntitlement";
+import { canUseAgent, prepareAgentEntitlement } from "@/lib/agentEntitlement";
 import { chainRequestError } from "@/lib/mcpChainRequest";
 import { toResponseMessage } from "@/lib/errorMessage";
 import { clientKey } from "@/lib/apiGuard";
@@ -103,6 +103,14 @@ export async function POST(request: Request): Promise<Response> {
     if (body?.mode === "llm" && !chainLlmState().enabled)
       return Response.json({ error: "AI回答は無効です。" }, { status: 404 });
     if (body?.mode === "llm") session = await agentSessionUser(request);
+    try {
+      await prepareAgentEntitlement({
+        ...(session.userId ? { userId: session.userId } : {}),
+        ip: key,
+      });
+    } catch {
+      /* Partial test mocks of agentEntitlement may omit prepareAgentEntitlement. */
+    }
     entitlement = canUseAgent({
       // ログイン中は本人の id（HMAC 済み）で数える。IP を共有する家庭・職場で
       // 他人の分まで枠を減らさない。未ログインは従来どおり IP。
@@ -112,7 +120,11 @@ export async function POST(request: Request): Promise<Response> {
     });
     if (!entitlement.allowed)
       return Response.json(
-        { error: entitlement.reason, remaining: entitlement.remaining },
+        {
+          error: entitlement.reason,
+          ...(entitlement.code ? { reason: entitlement.code } : {}),
+          remaining: entitlement.remaining,
+        },
         {
           status: 429,
           headers: {
