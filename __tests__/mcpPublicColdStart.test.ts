@@ -33,9 +33,9 @@ const tx = {
 };
 
 const prismaMock = {
-  $queryRaw: vi.fn(
-    async (_query?: TemplateStringsArray, ..._values: unknown[]) => [{ ok: 1 }],
-  ),
+  $queryRaw: vi.fn<
+    (query?: TemplateStringsArray, ...values: unknown[]) => Promise<unknown>
+  >(async () => [{ ok: 1 }]),
   $transaction: vi.fn(async <T>(fn: (client: typeof tx) => Promise<T>) =>
     fn(tx),
   ),
