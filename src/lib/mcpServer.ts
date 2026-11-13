@@ -49,6 +49,7 @@ import {
   solarTermsForYear,
 } from "@/lib/kanshi";
 import { registerPublicTimeTools } from "@/lib/mcpTimeTools";
+import { compareFortunePerspectives } from "@/lib/fortunePerspectives";
 import {
   findAuspiciousDaysAllDirections,
   findPurposeDaysAllDirections,
@@ -719,6 +720,60 @@ export function createMcpServer(deps?: { rentals?: RentalReader }): McpServer {
     },
   );
   registerPublicRentalTools(server, deps?.rentals);
+  server.registerTool(
+    "compare_fortune_perspectives",
+    {
+      annotations: {
+        readOnlyHint: true,
+        destructiveHint: false,
+        idempotentHint: true,
+        openWorldHint: false,
+      },
+      title: "日付と方位を観点ごとに比べる",
+      description:
+        "日付と方位の組を最大10件、観点（九星の年盤・月盤・日盤・三盤、天中殺、天道、土用殺、干支、五行、陰陽、納音、六曜、一粒万倍日、天赦日、天恩日、不成就日、三隣亡、大明日、母倉日、寅の日、巳の日、己巳の日、神吉日、十二直、数秘の個人年・個人日）ごとに値・判定・確かさ・説明で返します。九星は judge_directions と同じ関数で、天中殺は弱めるだけで禁止しません。出生時刻・方位・経度が無い観点は未確認で、推測で埋めません。入力は保存しません。言い伝えは目安で、効果の保証はありません。四柱推命・算命学・宿・八宅・奇門遁甲・西洋占星術・タロット・易は返しません。",
+      inputSchema: {
+        birthDate: z
+          .string()
+          .optional()
+          .describe("生年月日。YYYY-MM-DD。無ければ九星と数秘は未確認"),
+        birthTime: z
+          .string()
+          .optional()
+          .describe("出生時刻。HH:mm（日本時間）。無ければ時柱は出さない"),
+        lon: z
+          .number()
+          .min(122)
+          .max(154)
+          .optional()
+          .describe("出発地の経度。無ければ九星の方位は未確認"),
+        candidates: z
+          .array(
+            z.object({
+              date: z.string().describe("比べる日。YYYY-MM-DD"),
+              direction: z
+                .enum(["N", "NE", "E", "SE", "S", "SW", "W", "NW"])
+                .optional()
+                .describe("方位。省略すると暦注だけを確定する"),
+            }),
+          )
+          .min(1)
+          .max(10),
+      },
+    },
+    async (input) => {
+      const compared = compareFortunePerspectives({
+        birthDate: input.birthDate,
+        birthTime: input.birthTime,
+        lon: input.lon,
+        candidates: input.candidates.map((candidate) => ({
+          date: candidate.date,
+          direction: candidate.direction,
+        })),
+      });
+      return compared.ok ? text(compared.result) : fail(compared.error);
+    },
+  );
 
   return server;
 }
