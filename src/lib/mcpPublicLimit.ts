@@ -1,6 +1,7 @@
 import { createHash, createHmac } from "node:crypto";
 import { clientKey } from "@/lib/apiGuard";
 import { errorCode } from "@/lib/errorMessage";
+import { MCP_PUBLIC_TOOL_NAMES } from "@/lib/mcpServer";
 
 /**
  * 公開 MCP（/api/mcp）の呼び出し上限と停止スイッチ。
@@ -25,12 +26,17 @@ export const MCP_PUBLIC_SESSION_HOURLY_LIMIT = 1000;
 export const MCP_PUBLIC_SESSION_BURST = 100;
 export const MCP_PUBLIC_TOOL_HOURLY_LIMIT = 5000;
 export const MCP_PUBLIC_TOOL_BURST = 300;
+export const MCP_PUBLIC_MAX_TOOL_BUCKETS = 8;
+export const MCP_PUBLIC_UNKNOWN_TOOL = "unknown";
+export const MCP_PUBLIC_ALLOWED_TOOLS: ReadonlySet<string> = new Set<string>(
+  MCP_PUBLIC_TOOL_NAMES,
+);
+export { MCP_PUBLIC_TOOL_NAMES };
 
 const WINDOW_MS = 60 * 60 * 1000;
 const DB_TIMEOUT_MS = 1500;
 const STALE_MS = 6 * 60 * 60 * 1000;
 const MAX_SESSION_ID_LENGTH = 200;
-const MAX_TOOL_NAME_LENGTH = 64;
 const DISABLED_VALUES = new Set(["false", "0", "off", "no"]);
 
 export type McpLimitScope = "ip" | "global" | "session" | "tool";
@@ -193,7 +199,8 @@ function decision(
 
 export function extractMcpToolNames(parsedBody: unknown): string[] {
   const items = Array.isArray(parsedBody) ? parsedBody : [parsedBody];
-  const names = new Set<string>();
+  const known = new Set<string>();
+  let hasUnknown = false;
   for (const item of items) {
     if (
       typeof item !== "object" ||
@@ -205,16 +212,24 @@ export function extractMcpToolNames(parsedBody: unknown): string[] {
     }
     const params = (item as { params?: unknown }).params;
     if (typeof params !== "object" || params === null || !("name" in params)) {
+      hasUnknown = true;
       continue;
     }
     const rawName = (params as { name?: unknown }).name;
-    if (typeof rawName !== "string") continue;
-    const sanitized = rawName
-      .replace(/[^A-Za-z0-9_.-]/g, "")
-      .slice(0, MAX_TOOL_NAME_LENGTH);
-    if (sanitized) names.add(sanitized);
+    if (typeof rawName !== "string" || !MCP_PUBLIC_ALLOWED_TOOLS.has(rawName)) {
+      hasUnknown = true;
+      continue;
+    }
+    if (known.has(rawName)) continue;
+    if (known.size < MCP_PUBLIC_MAX_TOOL_BUCKETS) {
+      known.add(rawName);
+    } else {
+      hasUnknown = true;
+    }
   }
-  return [...names];
+  const result = [...known];
+  if (hasUnknown) result.push(MCP_PUBLIC_UNKNOWN_TOOL);
+  return result;
 }
 
 export function buildMcpPublicBuckets(
