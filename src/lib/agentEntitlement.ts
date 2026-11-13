@@ -114,7 +114,7 @@ function warnLedgerUnavailable(error: unknown) {
   console.warn(
     JSON.stringify({
       severity: "WARNING",
-      message: "[agent] usage ledger unavailable",
+      message: `[agent] usage ledger unavailable: ${reason}`,
       reason,
     }),
   );
