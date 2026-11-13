@@ -80,6 +80,11 @@ import { POST } from "@/app/api/mcp/route";
 import { createMcpServer, MCP_PUBLIC_TOOL_NAMES } from "@/lib/mcpServer";
 import {
   MCP_PUBLIC_ALLOWED_TOOLS,
+  MCP_PUBLIC_COLD_DB_TIMEOUT_MS,
+  MCP_PUBLIC_COLD_TX_MAX_WAIT_MS,
+  MCP_PUBLIC_COLD_TX_TIMEOUT_MS,
+  MCP_PUBLIC_DB_TIMEOUT_MS,
+  MCP_PUBLIC_FALLBACK_LIMIT,
   MCP_PUBLIC_GLOBAL_BURST,
   MCP_PUBLIC_GLOBAL_HOURLY_LIMIT,
   MCP_PUBLIC_IP_BURST,
@@ -89,11 +94,18 @@ import {
   MCP_PUBLIC_SESSION_HOURLY_LIMIT,
   MCP_PUBLIC_TOOL_BURST,
   MCP_PUBLIC_TOOL_HOURLY_LIMIT,
+  MCP_PUBLIC_TX_MAX_WAIT_MS,
+  MCP_PUBLIC_TX_TIMEOUT_MS,
   buildMcpPublicBuckets,
   checkMcpPublicLimit,
   extractMcpToolNames,
+  isMcpRateDbWarm,
+  maybeWarmMcpRateDb,
   mcpIpHash,
   mcpPublicScopeLimits,
+  resetMcpPublicRateState,
+  shouldAutoWarmMcpRateDb,
+  warmMcpRateDb,
   type McpRateDb,
 } from "@/lib/mcpPublicLimit";
 
@@ -327,7 +339,7 @@ describe("MCP public multi-scope caps", () => {
     expect(gate.headers.get("RateLimit-Remaining")).toBe("4");
   });
 
-  it("emits RateLimit-Policy: unavailable and structured WARNING log without secrets on fail-open", async () => {
+  it("emits RateLimit-Policy: fallback and structured WARNING log without secrets when DB is unavailable", async () => {
     const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
     const db = createMemoryRateDb();
     db.tx.$queryRaw.mockRejectedValueOnce(
@@ -346,7 +358,10 @@ describe("MCP public multi-scope caps", () => {
       db,
     );
     expect(gate.denied).toBeNull();
-    expect(gate.headers.get("RateLimit-Policy")).toBe("unavailable");
+    expect(gate.headers.get("RateLimit-Policy")).toBe("fallback");
+    expect(gate.headers.get("RateLimit-Limit")).toBe("60");
+    expect(gate.headers.get("RateLimit-Remaining")).toBe("59");
+    expect(gate.headers.get("RateLimit-Reset")).toBe("1");
     expect(gate.headers.get("Cache-Control")).toBe("no-store");
     expect(warn).toHaveBeenCalledTimes(1);
     const logged = String(warn.mock.calls[0][0]);
@@ -358,7 +373,7 @@ describe("MCP public multi-scope caps", () => {
     expect(logged).not.toContain("super-secret-password");
     expect(logged).not.toContain("postgres://");
 
-    // Also test timeout fail-open
+    // Also test timeout fallback
     warn.mockClear();
     vi.useFakeTimers();
     db.$transaction.mockImplementationOnce(() => new Promise(() => {}));
@@ -371,7 +386,10 @@ describe("MCP public multi-scope caps", () => {
     await vi.advanceTimersByTimeAsync(1500);
     const timeoutGate = await pending;
     expect(timeoutGate.denied).toBeNull();
-    expect(timeoutGate.headers.get("RateLimit-Policy")).toBe("unavailable");
+    expect(timeoutGate.headers.get("RateLimit-Policy")).toBe("fallback");
+    expect(timeoutGate.headers.get("RateLimit-Limit")).toBe("60");
+    expect(timeoutGate.headers.get("RateLimit-Remaining")).toBe("59");
+    expect(timeoutGate.headers.get("RateLimit-Reset")).toBe("1");
     expect(timeoutGate.headers.get("Cache-Control")).toBe("no-store");
     expect(JSON.parse(String(warn.mock.calls[0][0]))).toEqual({
       severity: "WARNING",
@@ -592,5 +610,252 @@ describe("MCP public multi-scope caps", () => {
       ),
       mcpIpHash("tool:unknown", {}),
     ]);
+  });
+
+  it("uses the cold transaction and outer timeouts on the first cold call and the short warm budgets once warmed", async () => {
+    resetMcpPublicRateState();
+    expect(isMcpRateDbWarm()).toBe(false);
+    const db = createMemoryRateDb();
+    const headers = new Headers({ "x-real-ip": "198.51.100.120" });
+
+    // 1st call: cold path uses long maxWait (2500) and timeout (3000)
+    const first = await checkMcpPublicLimit(headers, now, undefined, db);
+    expect(first.denied).toBeNull();
+    expect(isMcpRateDbWarm()).toBe(true);
+    expect(db.$transaction).toHaveBeenNthCalledWith(1, expect.any(Function), {
+      maxWait: MCP_PUBLIC_COLD_TX_MAX_WAIT_MS,
+      timeout: MCP_PUBLIC_COLD_TX_TIMEOUT_MS,
+      isolationLevel: "ReadCommitted",
+    });
+
+    // 2nd call: warm path uses short maxWait (800) and timeout (1400)
+    const second = await checkMcpPublicLimit(headers, now, undefined, db);
+    expect(second.denied).toBeNull();
+    expect(db.$transaction).toHaveBeenNthCalledWith(2, expect.any(Function), {
+      maxWait: MCP_PUBLIC_TX_MAX_WAIT_MS,
+      timeout: MCP_PUBLIC_TX_TIMEOUT_MS,
+      isolationLevel: "ReadCommitted",
+    });
+
+    // If warmMcpRateDb succeeds first, even the very first transaction uses warm budgets
+    resetMcpPublicRateState();
+    const db2 = {
+      ...createMemoryRateDb(),
+      $queryRaw: vi.fn(async () => [{ ok: 1 }]),
+    };
+    expect(await warmMcpRateDb(db2)).toBe(true);
+    expect(isMcpRateDbWarm()).toBe(true);
+    await checkMcpPublicLimit(headers, now, undefined, db2);
+    expect(db2.$transaction).toHaveBeenNthCalledWith(1, expect.any(Function), {
+      maxWait: MCP_PUBLIC_TX_MAX_WAIT_MS,
+      timeout: MCP_PUBLIC_TX_TIMEOUT_MS,
+      isolationLevel: "ReadCommitted",
+    });
+
+    // Cold outer race timeout is 3500ms while warm outer race timeout is 1500ms
+    resetMcpPublicRateState();
+    vi.useFakeTimers();
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    const hangingDb = createMemoryRateDb();
+    hangingDb.$transaction.mockImplementationOnce(() => new Promise(() => {}));
+    let coldResolved = false;
+    const coldPending = checkMcpPublicLimit(
+      headers,
+      now,
+      undefined,
+      hangingDb,
+    ).then((res) => {
+      coldResolved = true;
+      return res;
+    });
+    await vi.advanceTimersByTimeAsync(MCP_PUBLIC_DB_TIMEOUT_MS);
+    expect(coldResolved).toBe(false);
+    await vi.advanceTimersByTimeAsync(
+      MCP_PUBLIC_COLD_DB_TIMEOUT_MS - MCP_PUBLIC_DB_TIMEOUT_MS,
+    );
+    const coldResult = await coldPending;
+    expect(coldResolved).toBe(true);
+    expect(coldResult.headers.get("RateLimit-Policy")).toBe("fallback");
+    warn.mockRestore();
+  });
+
+  it("runs SELECT 1 once in warmMcpRateDb, memoizes success, and retries after sanitized failure", async () => {
+    resetMcpPublicRateState();
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    const sqlCalls: string[] = [];
+    const rawQuery = vi
+      .fn<
+        (query: TemplateStringsArray, ...values: unknown[]) => Promise<unknown>
+      >()
+      .mockRejectedValueOnce(
+        Object.assign(
+          new Error(
+            "connect ECONNREFUSED postgres://user:secret-pw@db.example:5432/app",
+          ),
+          { code: "P1001" },
+        ),
+      )
+      .mockImplementation(async (query: TemplateStringsArray) => {
+        sqlCalls.push(query.join("?"));
+        return [{ ok: 1 }];
+      });
+    const db: McpRateDb = {
+      ...createMemoryRateDb(),
+      $queryRaw: rawQuery,
+    };
+
+    // First attempt fails, swallows error, logs sanitized reason code
+    const firstAttempt = await warmMcpRateDb(db);
+    expect(firstAttempt).toBe(false);
+    expect(isMcpRateDbWarm()).toBe(false);
+    expect(rawQuery).toHaveBeenCalledTimes(1);
+    expect(warn).toHaveBeenCalledTimes(1);
+    const logged = String(warn.mock.calls[0][0]);
+    expect(JSON.parse(logged)).toEqual({
+      severity: "WARNING",
+      message: "[mcp] rate limit unavailable: P1001",
+      reason: "P1001",
+    });
+    expect(logged).not.toContain("secret-pw");
+
+    // Second attempt retries and succeeds
+    const p1 = warmMcpRateDb(db);
+    const p2 = warmMcpRateDb(db);
+    expect(p1).toBe(p2);
+    expect(await p1).toBe(true);
+    expect(isMcpRateDbWarm()).toBe(true);
+    expect(rawQuery).toHaveBeenCalledTimes(2);
+    expect(sqlCalls[0]).toContain("SELECT 1");
+
+    // Subsequent call reuses memoized promise without querying again
+    expect(await warmMcpRateDb(db)).toBe(true);
+    expect(rawQuery).toHaveBeenCalledTimes(2);
+  });
+
+  it("enforces the 60/min per-IP fallback token bucket when the DB throws, denying the 61st request while allowing another IP", async () => {
+    resetMcpPublicRateState();
+    vi.spyOn(console, "warn").mockImplementation(() => {});
+    const db = createMemoryRateDb();
+    db.$transaction.mockRejectedValue(
+      Object.assign(new Error("Transaction start timeout"), { code: "P2028" }),
+    );
+
+    const ipA = new Headers({ "x-real-ip": "198.51.100.201" });
+    const ipB = new Headers({ "x-real-ip": "198.51.100.202" });
+
+    for (let i = 0; i < MCP_PUBLIC_FALLBACK_LIMIT; i++) {
+      const gate = await checkMcpPublicLimit(ipA, now, undefined, db);
+      expect(gate.denied).toBeNull();
+      expect(gate.headers.get("RateLimit-Policy")).toBe("fallback");
+      expect(gate.headers.get("RateLimit-Limit")).toBe("60");
+      expect(gate.headers.get("RateLimit-Remaining")).toBe(
+        String(MCP_PUBLIC_FALLBACK_LIMIT - 1 - i),
+      );
+      expect(Number(gate.headers.get("RateLimit-Reset"))).toBeGreaterThan(0);
+      expect(gate.headers.get("Cache-Control")).toBe("no-store");
+    }
+
+    // 61st request from the same IP within a minute is denied with 429 and scope: fallback
+    const deniedGate = await checkMcpPublicLimit(ipA, now, undefined, db);
+    expect(deniedGate.denied?.status).toBe(429);
+    expect(deniedGate.denied?.headers.get("RateLimit-Policy")).toBe("fallback");
+    expect(deniedGate.denied?.headers.get("RateLimit-Limit")).toBe("60");
+    expect(deniedGate.denied?.headers.get("RateLimit-Remaining")).toBe("0");
+    expect(deniedGate.denied?.headers.get("Retry-After")).toBe("1");
+    expect(deniedGate.denied?.headers.get("Cache-Control")).toBe("no-store");
+    expect(await deniedGate.denied?.json()).toEqual({
+      error: "Too many requests",
+      scope: "fallback",
+    });
+
+    // Another IP still passes
+    const otherGate = await checkMcpPublicLimit(ipB, now, undefined, db);
+    expect(otherGate.denied).toBeNull();
+    expect(otherGate.headers.get("RateLimit-Policy")).toBe("fallback");
+    expect(otherGate.headers.get("RateLimit-Limit")).toBe("60");
+    expect(otherGate.headers.get("RateLimit-Remaining")).toBe("59");
+  });
+
+  it("does not start warm-up under NODE_ENV=test or phase-production-build", async () => {
+    resetMcpPublicRateState();
+    const db = {
+      ...createMemoryRateDb(),
+      $queryRaw: vi.fn(async () => [{ ok: 1 }]),
+    };
+
+    expect(
+      shouldAutoWarmMcpRateDb({
+        NODE_ENV: "test",
+        NEXT_RUNTIME: "nodejs",
+      }),
+    ).toBe(false);
+    expect(
+      maybeWarmMcpRateDb(
+        {
+          NODE_ENV: "test",
+          NEXT_RUNTIME: "nodejs",
+        },
+        db,
+      ),
+    ).toBeNull();
+
+    expect(
+      shouldAutoWarmMcpRateDb({
+        NODE_ENV: "production",
+        NEXT_RUNTIME: "nodejs",
+        NEXT_PHASE: "phase-production-build",
+      }),
+    ).toBe(false);
+    expect(
+      maybeWarmMcpRateDb(
+        {
+          NODE_ENV: "production",
+          NEXT_RUNTIME: "nodejs",
+          NEXT_PHASE: "phase-production-build",
+        },
+        db,
+      ),
+    ).toBeNull();
+
+    vi.resetModules();
+    const imported = vi.fn();
+    const shouldAutoWarmMock = vi.fn(() => false);
+    const warmMock = vi.fn(async () => true);
+    vi.doMock("@/lib/mcpPublicLimit", () => {
+      imported();
+      return {
+        shouldAutoWarmMcpRateDb: shouldAutoWarmMock,
+        warmMcpRateDb: warmMock,
+      };
+    });
+    try {
+      const { register: registerInstrumentation } =
+        await import("@/instrumentation");
+
+      delete process.env.NEXT_RUNTIME;
+      await registerInstrumentation();
+      await Promise.resolve();
+      expect(imported).not.toHaveBeenCalled();
+
+      vi.stubEnv("NEXT_RUNTIME", "edge");
+      await registerInstrumentation();
+      await Promise.resolve();
+      expect(imported).not.toHaveBeenCalled();
+
+      vi.stubEnv("NEXT_RUNTIME", "nodejs");
+      shouldAutoWarmMock.mockReturnValueOnce(false);
+      await registerInstrumentation();
+      await vi.waitFor(() => {
+        expect(shouldAutoWarmMock).toHaveBeenCalledTimes(1);
+      });
+      expect(imported).toHaveBeenCalledTimes(1);
+      expect(warmMock).not.toHaveBeenCalled();
+    } finally {
+      vi.doUnmock("@/lib/mcpPublicLimit");
+      vi.resetModules();
+    }
+
+    expect(db.$queryRaw).not.toHaveBeenCalled();
+    expect(isMcpRateDbWarm()).toBe(false);
   });
 });

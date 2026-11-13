@@ -21,11 +21,13 @@ import { createMcpServer } from "@/lib/mcpServer";
 import {
   applyRateHeaders,
   checkMcpPublicLimit,
+  maybeWarmMcpRateDb,
   mcpPublicEnabled,
 } from "@/lib/mcpPublicLimit";
 import { readBoundedJson, requestLimiter } from "@/lib/requestSecurity";
 
 const limit = requestLimiter(60, 1);
+void maybeWarmMcpRateDb();
 
 export const dynamic = "force-dynamic";
 
