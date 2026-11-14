@@ -3,33 +3,74 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 type Bucket = { ipHash: string; tokens: number; updatedAt: Date };
 
 const buckets = new Map<string, Bucket>();
+const runTxQueryRaw = async (
+  query: TemplateStringsArray,
+  ...values: unknown[]
+) => {
+  const sql = query.join("?");
+  if (/pg_advisory_xact_lock/i.test(sql)) {
+    const list = Array.isArray(values[0]) ? values[0] : [];
+    return [{ locked: list.length }];
+  }
+  if (
+    /SELECT\s+ip_hash,\s*tokens,\s*updated_at\s+FROM\s+mcp_public_rate/i.test(
+      sql,
+    )
+  ) {
+    const keys = Array.isArray(values[0]) ? (values[0] as string[]) : [];
+    const rows: { ip_hash: string; tokens: number; updated_at: Date }[] = [];
+    for (const k of keys) {
+      const found = buckets.get(k.trim());
+      if (found) {
+        rows.push({
+          ip_hash: found.ipHash.padEnd(64, " "),
+          tokens: found.tokens,
+          updated_at: found.updatedAt,
+        });
+      }
+    }
+    return rows;
+  }
+  return [];
+};
+const runTxExecuteRaw = async (
+  query: TemplateStringsArray,
+  ...values: unknown[]
+) => {
+  const sql = query.join("?");
+  if (/DELETE\s+FROM\s+mcp_public_rate/i.test(sql)) {
+    const cutoff =
+      values[0] instanceof Date ? values[0] : new Date(String(values[0]));
+    let count = 0;
+    for (const [key, row] of buckets) {
+      if (row.updatedAt < cutoff) {
+        buckets.delete(key);
+        count++;
+      }
+    }
+    return count;
+  }
+  if (/INSERT\s+INTO\s+mcp_public_rate/i.test(sql)) {
+    const keys = (values[0] as string[]) ?? [];
+    const tokens = (values[1] as number[]) ?? [];
+    const times = (values[2] as Date[]) ?? [];
+    for (let i = 0; i < keys.length; i++) {
+      const ipHash = keys[i].trim();
+      const t = times[i];
+      const updatedAt = t instanceof Date ? t : new Date(String(t));
+      buckets.set(ipHash, {
+        ipHash,
+        tokens: Number(tokens[i]),
+        updatedAt,
+      });
+    }
+    return keys.length;
+  }
+  return 0;
+};
 const tx = {
-  $queryRaw: vi.fn(async () => [{ locked: 1 }]),
-  mcpPublicRate: {
-    findUnique: vi.fn(async ({ where }: { where: { ipHash: string } }) => {
-      const found = buckets.get(where.ipHash);
-      return found ? { ...found } : null;
-    }),
-    upsert: vi.fn(
-      async ({
-        where,
-        create,
-        update,
-      }: {
-        where: { ipHash: string };
-        create: Bucket;
-        update: { tokens: number; updatedAt: Date };
-      }) => {
-        const prev = buckets.get(where.ipHash);
-        const row = prev
-          ? { ...prev, ...update, ipHash: where.ipHash }
-          : { ...create };
-        buckets.set(where.ipHash, row);
-        return row;
-      },
-    ),
-    deleteMany: vi.fn(async () => ({ count: 0 })),
-  },
+  $queryRaw: vi.fn(runTxQueryRaw),
+  $executeRaw: vi.fn(runTxExecuteRaw),
 };
 
 const prismaMock = {
@@ -70,7 +111,8 @@ beforeEach(() => {
   vi.unstubAllEnvs();
   prismaMock.$queryRaw.mockImplementation(async () => [{ ok: 1 }]);
   prismaMock.$transaction.mockImplementation(async (fn) => fn(tx));
-  tx.$queryRaw.mockImplementation(async () => [{ locked: 1 }]);
+  tx.$queryRaw.mockImplementation(runTxQueryRaw);
+  tx.$executeRaw.mockImplementation(runTxExecuteRaw);
 });
 
 afterEach(() => {
@@ -134,7 +176,9 @@ describe("MCP public rate limiter cold start and fallback", () => {
       },
     );
     expect(MCP_PUBLIC_COLD_DB_TIMEOUT_MS).toBe(3500);
-    expect(MCP_PUBLIC_DB_TIMEOUT_MS).toBe(1500);
+    expect(MCP_PUBLIC_DB_TIMEOUT_MS).toBe(2200);
+    expect(MCP_PUBLIC_TX_TIMEOUT_MS).toBe(2000);
+    expect(MCP_PUBLIC_TX_MAX_WAIT_MS).toBe(800);
   });
 
   it("warm-up runs SELECT 1 once and is retried after failure with sanitized logging", async () => {
@@ -166,17 +210,23 @@ describe("MCP public rate limiter cold start and fallback", () => {
     });
     expect(warnPayload).not.toContain("topsecret");
 
-    // Retry after failure succeeds and is memoized
+    // Retry after failure succeeds and is memoized (warmed flips only after tx commits)
     const retryA = warmMcpRateDb();
     const retryB = warmMcpRateDb();
     expect(retryA).toBe(retryB);
     expect(await retryA).toBe(true);
-    expect(isMcpRateDbWarm()).toBe(true);
+    expect(isMcpRateDbWarm()).toBe(false);
     expect(prismaMock.$queryRaw).toHaveBeenCalledTimes(2);
     expect(queries[0]).toContain("SELECT 1");
 
     expect(await warmMcpRateDb()).toBe(true);
     expect(prismaMock.$queryRaw).toHaveBeenCalledTimes(2);
+
+    await checkMcpPublicLimit(
+      new Headers({ "x-real-ip": "198.51.100.11" }),
+      now,
+    );
+    expect(isMcpRateDbWarm()).toBe(true);
   });
 
   it("applies 60/min per-IP fallback bucket when DB throws in POST /api/mcp, returning 429 on 61st while another IP passes", async () => {

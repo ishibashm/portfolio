@@ -6,50 +6,83 @@ function createMemoryRateDb() {
   const buckets = new Map<string, Bucket>();
   const locks: string[] = [];
   const queries: string[] = [];
+  const statements: { sql: string; values: unknown[] }[] = [];
+  const runQueryRaw = async (
+    query: TemplateStringsArray,
+    ...values: unknown[]
+  ) => {
+    const sql = query.join("?");
+    queries.push(sql);
+    statements.push({ sql, values });
+    if (/pg_advisory_xact_lock/i.test(sql)) {
+      const list = Array.isArray(values[0])
+        ? (values[0] as string[])
+        : typeof values[0] === "string"
+          ? [values[0]]
+          : [];
+      locks.push(...list);
+      return [{ locked: list.length }];
+    }
+    if (
+      /SELECT\s+ip_hash,\s*tokens,\s*updated_at\s+FROM\s+mcp_public_rate/i.test(
+        sql,
+      )
+    ) {
+      const keys = Array.isArray(values[0]) ? (values[0] as string[]) : [];
+      const rows: { ip_hash: string; tokens: number; updated_at: Date }[] = [];
+      for (const k of keys) {
+        const found = buckets.get(k.trim());
+        if (found) {
+          rows.push({
+            ip_hash: found.ipHash.padEnd(64, " "),
+            tokens: found.tokens,
+            updated_at: found.updatedAt,
+          });
+        }
+      }
+      return rows;
+    }
+    return [];
+  };
+  const runExecuteRaw = async (
+    query: TemplateStringsArray,
+    ...values: unknown[]
+  ) => {
+    const sql = query.join("?");
+    statements.push({ sql, values });
+    if (/DELETE\s+FROM\s+mcp_public_rate/i.test(sql)) {
+      const cutoff =
+        values[0] instanceof Date ? values[0] : new Date(String(values[0]));
+      let count = 0;
+      for (const [key, row] of buckets) {
+        if (row.updatedAt < cutoff) {
+          buckets.delete(key);
+          count++;
+        }
+      }
+      return count;
+    }
+    if (/INSERT\s+INTO\s+mcp_public_rate/i.test(sql)) {
+      const keys = (values[0] as string[]) ?? [];
+      const tokens = (values[1] as number[]) ?? [];
+      const times = (values[2] as Date[]) ?? [];
+      for (let i = 0; i < keys.length; i++) {
+        const ipHash = keys[i].trim();
+        const t = times[i];
+        const updatedAt = t instanceof Date ? t : new Date(String(t));
+        buckets.set(ipHash, {
+          ipHash,
+          tokens: Number(tokens[i]),
+          updatedAt,
+        });
+      }
+      return keys.length;
+    }
+    return 0;
+  };
   const tx = {
-    $queryRaw: vi.fn(
-      async (query: TemplateStringsArray, ...values: unknown[]) => {
-        queries.push(query.join("?"));
-        if (typeof values[0] === "string") locks.push(values[0]);
-        return [{ locked: 1 }];
-      },
-    ),
-    mcpPublicRate: {
-      findUnique: vi.fn(async ({ where }: { where: { ipHash: string } }) => {
-        const found = buckets.get(where.ipHash);
-        return found ? { ...found } : null;
-      }),
-      upsert: vi.fn(
-        async ({
-          where,
-          create,
-          update,
-        }: {
-          where: { ipHash: string };
-          create: Bucket;
-          update: { tokens: number; updatedAt: Date };
-        }) => {
-          const prev = buckets.get(where.ipHash);
-          const row = prev
-            ? { ...prev, ...update, ipHash: where.ipHash }
-            : { ...create };
-          buckets.set(where.ipHash, row);
-          return row;
-        },
-      ),
-      deleteMany: vi.fn(
-        async ({ where }: { where: { updatedAt: { lt: Date } } }) => {
-          let count = 0;
-          for (const [key, row] of buckets) {
-            if (row.updatedAt < where.updatedAt.lt) {
-              buckets.delete(key);
-              count++;
-            }
-          }
-          return { count };
-        },
-      ),
-    },
+    $queryRaw: vi.fn(runQueryRaw),
+    $executeRaw: vi.fn(runExecuteRaw),
   };
   const $transaction = vi.fn(
     async <T>(fn: (client: typeof tx) => Promise<T>): Promise<T> => fn(tx),
@@ -58,12 +91,14 @@ function createMemoryRateDb() {
     buckets: Map<string, Bucket>;
     locks: string[];
     queries: string[];
+    statements: { sql: string; values: unknown[] }[];
     tx: typeof tx;
     $transaction: typeof $transaction;
   } = {
     buckets,
     locks,
     queries,
+    statements,
     tx,
     $transaction: $transaction as unknown as McpRateDb["$transaction"] &
       typeof $transaction,
@@ -115,6 +150,7 @@ beforeEach(() => {
   sharedDb.buckets.clear();
   sharedDb.locks.length = 0;
   sharedDb.queries.length = 0;
+  sharedDb.statements.length = 0;
   vi.clearAllMocks();
   vi.unstubAllEnvs();
 });
@@ -298,7 +334,7 @@ describe("MCP public multi-scope caps", () => {
     expect(db.buckets.get(mcpIpHash("global:v1"))?.tokens).toBe(9);
     expect(db.buckets.get(mcpIpHash("tool:judge_directions"))?.tokens).toBe(0);
 
-    db.tx.mcpPublicRate.upsert.mockClear();
+    db.tx.$executeRaw.mockClear();
 
     // Second call is denied by tool bucket; IP and global must remain at 9
     const second = await checkMcpPublicLimit(headers, now, callBody, db);
@@ -307,7 +343,7 @@ describe("MCP public multi-scope caps", () => {
       error: "Too many requests",
       scope: "tool",
     });
-    expect(db.tx.mcpPublicRate.upsert).not.toHaveBeenCalled();
+    expect(db.tx.$executeRaw).not.toHaveBeenCalled();
     expect(db.buckets.get(mcpIpHash("198.51.100.50"))?.tokens).toBe(9);
     expect(db.buckets.get(mcpIpHash("global:v1"))?.tokens).toBe(9);
   });
@@ -383,7 +419,7 @@ describe("MCP public multi-scope caps", () => {
       undefined,
       db,
     );
-    await vi.advanceTimersByTimeAsync(1500);
+    await vi.advanceTimersByTimeAsync(MCP_PUBLIC_DB_TIMEOUT_MS);
     const timeoutGate = await pending;
     expect(timeoutGate.denied).toBeNull();
     expect(timeoutGate.headers.get("RateLimit-Policy")).toBe("fallback");
@@ -416,11 +452,12 @@ describe("MCP public multi-scope caps", () => {
     );
     expect(gate.denied).toBeNull();
     expect(db.queries.length).toBeGreaterThan(0);
+    const lockSql = db.queries[0];
+    expect(lockSql).toContain("AS locked");
+    expect(lockSql).toContain("pg_advisory_xact_lock");
+    expect(lockSql).toContain("unnest(");
     for (const sql of db.queries) {
-      expect(sql).toContain("1 AS");
-      expect(sql).toContain("AS locked");
-      expect(sql).toContain("FROM pg_advisory_xact_lock");
-      expect(sql).not.toMatch(/SELECT\s+pg_advisory_xact_lock\s*\(/i);
+      expect(sql).not.toMatch(/^\s*SELECT\s+pg_advisory_xact_lock\s*\(/i);
     }
   });
 
@@ -628,7 +665,7 @@ describe("MCP public multi-scope caps", () => {
       isolationLevel: "ReadCommitted",
     });
 
-    // 2nd call: warm path uses short maxWait (800) and timeout (1400)
+    // 2nd call: warm path uses short maxWait (800) and timeout (2000)
     const second = await checkMcpPublicLimit(headers, now, undefined, db);
     expect(second.denied).toBeNull();
     expect(db.$transaction).toHaveBeenNthCalledWith(2, expect.any(Function), {
@@ -637,22 +674,29 @@ describe("MCP public multi-scope caps", () => {
       isolationLevel: "ReadCommitted",
     });
 
-    // If warmMcpRateDb succeeds first, even the very first transaction uses warm budgets
+    // Even if warmMcpRateDb (SELECT 1) succeeds first, cold flag stays false until the 1st tx commits
     resetMcpPublicRateState();
     const db2 = {
       ...createMemoryRateDb(),
       $queryRaw: vi.fn(async () => [{ ok: 1 }]),
     };
     expect(await warmMcpRateDb(db2)).toBe(true);
-    expect(isMcpRateDbWarm()).toBe(true);
+    expect(isMcpRateDbWarm()).toBe(false);
     await checkMcpPublicLimit(headers, now, undefined, db2);
+    expect(isMcpRateDbWarm()).toBe(true);
     expect(db2.$transaction).toHaveBeenNthCalledWith(1, expect.any(Function), {
+      maxWait: MCP_PUBLIC_COLD_TX_MAX_WAIT_MS,
+      timeout: MCP_PUBLIC_COLD_TX_TIMEOUT_MS,
+      isolationLevel: "ReadCommitted",
+    });
+    await checkMcpPublicLimit(headers, now, undefined, db2);
+    expect(db2.$transaction).toHaveBeenNthCalledWith(2, expect.any(Function), {
       maxWait: MCP_PUBLIC_TX_MAX_WAIT_MS,
       timeout: MCP_PUBLIC_TX_TIMEOUT_MS,
       isolationLevel: "ReadCommitted",
     });
 
-    // Cold outer race timeout is 3500ms while warm outer race timeout is 1500ms
+    // Cold outer race timeout is 3500ms while warm outer race timeout is 2200ms
     resetMcpPublicRateState();
     vi.useFakeTimers();
     const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
@@ -718,12 +762,12 @@ describe("MCP public multi-scope caps", () => {
     });
     expect(logged).not.toContain("secret-pw");
 
-    // Second attempt retries and succeeds
+    // Second attempt retries and succeeds (SELECT 1 alone does not flip warm flag)
     const p1 = warmMcpRateDb(db);
     const p2 = warmMcpRateDb(db);
     expect(p1).toBe(p2);
     expect(await p1).toBe(true);
-    expect(isMcpRateDbWarm()).toBe(true);
+    expect(isMcpRateDbWarm()).toBe(false);
     expect(rawQuery).toHaveBeenCalledTimes(2);
     expect(sqlCalls[0]).toContain("SELECT 1");
 
@@ -857,5 +901,161 @@ describe("MCP public multi-scope caps", () => {
 
     expect(db.$queryRaw).not.toHaveBeenCalled();
     expect(isMcpRateDbWarm()).toBe(false);
+  });
+
+  it("issues at most 4 parameterized ANY/unnest statements for ip+global+session+3 tools without interpolating keys", async () => {
+    const db = createMemoryRateDb();
+    const staleKey = "a".repeat(64);
+    const freshKey = "b".repeat(64);
+    db.buckets.set(staleKey, {
+      ipHash: staleKey,
+      tokens: 10,
+      updatedAt: new Date(now.getTime() - 7 * 60 * 60 * 1000),
+    });
+    db.buckets.set(freshKey, {
+      ipHash: freshKey,
+      tokens: 10,
+      updatedAt: new Date(now.getTime() - 1 * 60 * 60 * 1000),
+    });
+
+    const headers = new Headers({
+      "x-real-ip": "198.51.100.150",
+      "mcp-session-id": "sess-multi-3-tools",
+    });
+    const batch3Tools = [
+      {
+        jsonrpc: "2.0",
+        id: 1,
+        method: "tools/call",
+        params: { name: "get_honmei_star" },
+      },
+      {
+        jsonrpc: "2.0",
+        id: 2,
+        method: "tools/call",
+        params: { name: "get_kanshi" },
+      },
+      {
+        jsonrpc: "2.0",
+        id: 3,
+        method: "tools/call",
+        params: { name: "judge_directions" },
+      },
+    ];
+
+    const expectedBuckets = buildMcpPublicBuckets(headers, batch3Tools);
+    expect(expectedBuckets).toHaveLength(6); // ip + global + session + 3 tools
+    const allBucketKeys = expectedBuckets.map((b) => b.key);
+
+    const first = await checkMcpPublicLimit(headers, now, batch3Tools, db);
+    expect(first.denied).toBeNull();
+
+    // At most 4 statements inside the transaction (lock, select, stale delete, multi-row upsert)
+    expect(db.statements.length).toBeLessThanOrEqual(4);
+    expect(db.statements).toHaveLength(4);
+    expect(db.tx.$queryRaw).toHaveBeenCalledTimes(2);
+    expect(db.tx.$executeRaw).toHaveBeenCalledTimes(2);
+
+    // No bucket key hash is interpolated into any SQL text
+    for (const stmt of db.statements) {
+      for (const key of allBucketKeys) {
+        expect(stmt.sql).not.toContain(key);
+      }
+    }
+
+    // 1. Advisory lock uses unnest with sorted prefixed keys array
+    expect(db.statements[0].sql).toContain("pg_advisory_xact_lock");
+    expect(db.statements[0].sql).toContain("unnest(");
+    expect(db.statements[0].values[0]).toEqual(
+      [...allBucketKeys].sort().map((k) => `mcp-public:${k}`),
+    );
+
+    // 2. SELECT uses ANY with bound array of keys
+    expect(db.statements[1].sql).toContain("FROM mcp_public_rate");
+    expect(db.statements[1].sql).toContain("ANY(");
+    expect(Array.isArray(db.statements[1].values[0])).toBe(true);
+    expect(db.statements[1].values[0]).toHaveLength(6);
+
+    // 3. Stale DELETE removed the 7h-old row and kept the 1h-old row
+    expect(db.statements[2].sql).toMatch(/DELETE\s+FROM\s+mcp_public_rate/i);
+    expect(db.buckets.has(staleKey)).toBe(false);
+    expect(db.buckets.has(freshKey)).toBe(true);
+
+    // 4. Upsert uses unnest with bound arrays for keys, tokens, and timestamps
+    expect(db.statements[3].sql).toContain("INSERT INTO mcp_public_rate");
+    expect(db.statements[3].sql).toContain("unnest(");
+    expect(db.statements[3].sql).toContain("ON CONFLICT (ip_hash) DO UPDATE");
+    expect(db.statements[3].values[0]).toEqual(allBucketKeys);
+    expect(db.statements[3].values[1]).toHaveLength(6);
+    expect(db.statements[3].values[2]).toHaveLength(6);
+
+    // Second request for the same IP skips stale DELETE -> 3 statements total
+    db.statements.length = 0;
+    const second = await checkMcpPublicLimit(headers, now, batch3Tools, db);
+    expect(second.denied).toBeNull();
+    expect(db.statements).toHaveLength(3);
+    expect(db.buckets.get(mcpIpHash("198.51.100.150"))?.tokens).toBe(
+      MCP_PUBLIC_IP_BURST - 2,
+    );
+  });
+
+  it("flips the cold flag only after a rate-limit transaction has actually committed", async () => {
+    resetMcpPublicRateState();
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    const baseDb = createMemoryRateDb();
+    const db = {
+      ...baseDb,
+      $queryRaw: vi.fn(async () => [{ ok: 1 }]),
+    };
+    const headers = new Headers({ "x-real-ip": "198.51.100.160" });
+
+    // Warm-up SELECT 1 succeeds, but cold flag must remain false
+    expect(await warmMcpRateDb(db)).toBe(true);
+    expect(isMcpRateDbWarm()).toBe(false);
+
+    // A failing transaction must NOT flip the cold flag
+    db.$transaction.mockRejectedValueOnce(
+      Object.assign(new Error("Interactive transaction expired"), {
+        code: "P2028",
+      }),
+    );
+    const failedGate = await checkMcpPublicLimit(headers, now, undefined, db);
+    expect(failedGate.headers.get("RateLimit-Policy")).toBe("fallback");
+    expect(isMcpRateDbWarm()).toBe(false);
+    expect(db.$transaction).toHaveBeenNthCalledWith(1, expect.any(Function), {
+      maxWait: MCP_PUBLIC_COLD_TX_MAX_WAIT_MS,
+      timeout: MCP_PUBLIC_COLD_TX_TIMEOUT_MS,
+      isolationLevel: "ReadCommitted",
+    });
+
+    // Next call still runs with cold budget; warm flag only flips after commit
+    let warmDuringTx = true;
+    db.$transaction.mockImplementationOnce(async (fn) => {
+      warmDuringTx = isMcpRateDbWarm();
+      return fn(db.tx);
+    });
+    const committedGate = await checkMcpPublicLimit(
+      headers,
+      now,
+      undefined,
+      db,
+    );
+    expect(committedGate.denied).toBeNull();
+    expect(warmDuringTx).toBe(false);
+    expect(isMcpRateDbWarm()).toBe(true);
+    expect(db.$transaction).toHaveBeenNthCalledWith(2, expect.any(Function), {
+      maxWait: MCP_PUBLIC_COLD_TX_MAX_WAIT_MS,
+      timeout: MCP_PUBLIC_COLD_TX_TIMEOUT_MS,
+      isolationLevel: "ReadCommitted",
+    });
+
+    // Subsequent call after commit uses warm budget (800 / 2000)
+    await checkMcpPublicLimit(headers, now, undefined, db);
+    expect(db.$transaction).toHaveBeenNthCalledWith(3, expect.any(Function), {
+      maxWait: MCP_PUBLIC_TX_MAX_WAIT_MS,
+      timeout: MCP_PUBLIC_TX_TIMEOUT_MS,
+      isolationLevel: "ReadCommitted",
+    });
+    warn.mockRestore();
   });
 });
