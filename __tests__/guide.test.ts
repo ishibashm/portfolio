@@ -962,6 +962,8 @@ describe("/kensho と /mcp のページ検証", () => {
     const element = await McpGuidePage();
     const html = renderToStaticMarkup(element);
     expect(html).toContain("https://cloud-palette.com/api/mcp");
+    expect(html).toContain("つないだら最初に聞く文");
+    expect(html).toContain("今日の本命星別の吉方位を教えてください。");
     expect(html).toContain('href="/annai"');
     expect(html).toContain("256KB");
     expect(html).toContain("占いの計算結果は参考情報です");

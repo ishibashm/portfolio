@@ -3,6 +3,11 @@ import { buildTodayDirections } from "@/lib/todayDirections";
 import { getMonthDirections } from "@/lib/kigakuContent";
 import { municipalityMatches } from "@/lib/municipalitySearch";
 import {
+  isOriginSelection,
+  resolveMcpOrigin,
+  type McpOriginInput,
+} from "@/lib/mcpOrigin";
+import {
   articleSearchSchema,
   articleGetSchema,
   searchArticles,
@@ -83,6 +88,58 @@ import {
 export const SITE_NAME = "Cloud Palette";
 export const SITE_URL = "https://cloud-palette.com";
 
+/** 共通の短い注意。個人用 MCP の土台でも使う。 */
+export const MCP_BASE_INSTRUCTIONS = [
+  `${SITE_NAME}（${SITE_URL}）の九星気学の方位判定と、市区町村ごとの方位別一覧を道具として提供します。`,
+  "判定は出発地の経度と生年月日に依存します。結果を断定せず、条件と一緒に伝えてください。",
+  "効果や健康への影響は断定しません。「〜とされる」の範囲で扱ってください。",
+  `出典は「${SITE_NAME}（${SITE_URL}）」と表記してください。詳細: ${SITE_URL}/llms.txt`,
+].join("\n");
+
+/** 公開 MCP のサーバー説明。よくある呼び順を短く添える。 */
+export const MCP_PUBLIC_INSTRUCTIONS = [
+  MCP_BASE_INSTRUCTIONS,
+  "よくある呼び順:",
+  "本命星だけなら get_honmei_star。今日の日盤の早見は get_today_directions。月盤は get_month_directions。",
+  "街の名前から方位を見るときは、municipalityName または municipalityCode を judge_directions / find_auspicious_days / find_relocation_windows に渡せます。同名が複数なら候補の code を選んで再呼び出し。経度が分かっているときは lon のままでもよいです。search_municipality でもコードと経度を引けます。",
+  "市区町村から見える街の一覧は area_directions（code または name）。県のまとめは prefecture_summary。",
+  "引越しの期間は find_relocation_windows。日取りの候補は find_auspicious_days。指定日の八方位は judge_directions。",
+  "時間帯は judge_hourly_directions（場所の省略時は名古屋）。刻の可否は judge_time_slots（緯度・経度が必要）。",
+  "記事は search_articles のあと get_article。家賃の統計は get_rental / rental_market_stats / search_rentals。",
+].join("\n");
+
+const municipalityCodeField = z
+  .string()
+  .regex(/^\d{5}$/)
+  .optional()
+  .describe(
+    "出発地の市区町村コード（5桁）。search_municipality で引ける。lon の代わりに使える",
+  );
+const municipalityNameField = z
+  .string()
+  .min(1)
+  .max(80)
+  .optional()
+  .describe(
+    "出発地の市区町村名（例: 名古屋市）。一意ならその経度を使う。同名が複数なら候補を返す。lon の代わりに使える",
+  );
+
+function originFromInput(input: McpOriginInput) {
+  const resolved = resolveMcpOrigin(input);
+  if (resolved.ok) return { ok: true as const, lon: resolved.lon };
+  if (isOriginSelection(resolved)) {
+    return {
+      ok: false as const,
+      selection: {
+        needsMunicipalitySelection: true,
+        message: resolved.message,
+        candidates: resolved.candidates,
+      },
+    };
+  }
+  return { ok: false as const, error: resolved.error };
+}
+
 export const MCP_PUBLIC_TOOLS = {
   area_directions: "area_directions",
   compare_fortune_perspectives: "compare_fortune_perspectives",
@@ -144,11 +201,14 @@ const directionFilterSchema = z
   .optional()
   .describe("絞り込みの見方。既定 composite（総合判定）");
 
+/**
+ * 同じ JSON を content の text と structuredContent の両方に載せる。
+ * テキストしか読まないクライアントと、構造化を使うクライアントの両方に渡す。
+ * 字下げはしない（中身は同じで、転送量が減る）。
+ */
 function text(payload: unknown) {
   return {
-    content: [
-      { type: "text" as const, text: JSON.stringify(payload, null, 2) },
-    ],
+    content: [{ type: "text" as const, text: JSON.stringify(payload) }],
     structuredContent: payload as Record<string, unknown>,
   };
 }
@@ -190,16 +250,12 @@ function rentOf(code: string): number | null {
 /** 共通7ツール。読み検索の拡張は公開入口のみ有効化する。 */
 export function createMcpBaseServer(options?: {
   municipalityReadings?: boolean;
+  instructions?: string;
 }): McpServer {
   const server = new McpServer(
     { name: "cloud-palette", version: "1.0.0" },
     {
-      instructions: [
-        `${SITE_NAME}（${SITE_URL}）の九星気学の方位判定と、市区町村ごとの方位別一覧を道具として提供します。`,
-        "判定は出発地の経度と生年月日に依存します。結果を断定せず、条件と一緒に伝えてください。",
-        "効果や健康への影響は断定しません。「〜とされる」の範囲で扱ってください。",
-        `出典は「${SITE_NAME}（${SITE_URL}）」と表記してください。詳細: ${SITE_URL}/llms.txt`,
-      ].join("\n"),
+      instructions: options?.instructions ?? MCP_BASE_INSTRUCTIONS,
     },
   );
 
@@ -313,7 +369,16 @@ export function createMcpBaseServer(options?: {
           .regex(/^([01]\d|2[0-3]):[0-5]\d$/)
           .optional()
           .describe("出生時刻 HH:MM（JST）。時刻の天中殺は使わない"),
-        lon: z.number().min(122).max(154).describe("出発地の経度（日本国内）"),
+        lon: z
+          .number()
+          .min(122)
+          .max(154)
+          .optional()
+          .describe(
+            "出発地の経度（日本国内）。municipalityCode / municipalityName の代わり",
+          ),
+        municipalityCode: municipalityCodeField,
+        municipalityName: municipalityNameField,
         date: z
           .string()
           .optional()
@@ -328,7 +393,13 @@ export function createMcpBaseServer(options?: {
       },
     },
     async (input) => {
-      const calculated = calculateMcpDirections(input);
+      const origin = originFromInput(input);
+      if (!origin.ok) {
+        return "selection" in origin
+          ? text(origin.selection)
+          : fail(origin.error);
+      }
+      const calculated = calculateMcpDirections({ ...input, lon: origin.lon });
       return calculated.ok ? text(calculated.payload) : fail(calculated.error);
     },
   );
@@ -347,7 +418,16 @@ export function createMcpBaseServer(options?: {
         "期間内で、八方位それぞれに動ける日（三盤吉・吉日）を集計します。purpose 省略時は画面の「引っ越し時期を探す」と同じ関数（三盤吉）です。purpose を指定すると用事の盤がすべて吉の日を拾います。天中殺は既定で禁止せず弱めるだけです。日数が多いほど計算に時間がかかります。",
       inputSchema: {
         birthDate: z.string().describe("生年月日。YYYY-MM-DD"),
-        lon: z.number().min(122).max(154).describe("出発地の経度（日本国内）"),
+        lon: z
+          .number()
+          .min(122)
+          .max(154)
+          .optional()
+          .describe(
+            "出発地の経度（日本国内）。municipalityCode / municipalityName の代わり",
+          ),
+        municipalityCode: municipalityCodeField,
+        municipalityName: municipalityNameField,
         from: z
           .string()
           .optional()
@@ -373,7 +453,13 @@ export function createMcpBaseServer(options?: {
       },
     },
     async (input) => {
-      const built = buildBase(input);
+      const origin = originFromInput(input);
+      if (!origin.ok) {
+        return "selection" in origin
+          ? text(origin.selection)
+          : fail(origin.error);
+      }
+      const built = buildBase({ ...input, lon: origin.lon });
       if (!built.ok) return fail(built.error);
       const from = input.from ? parseJstDate(input.from) : new Date();
       if (!from) return fail("from は YYYY-MM-DD で指定してください。");
@@ -532,12 +618,24 @@ export function createMcpBaseServer(options?: {
       },
       title: "市区町村から見た方位別の一覧",
       description:
-        "出発地の市区町村コードから、八方位それぞれに 5〜150km の範囲でどの市区町村があるか（近い順）と、候補の無い方位の理由を返します。画面の市区町村ページと同じ計算（伝統区分＝四正 30 度・四隅 60 度、真北基準）です。",
+        "出発地の市区町村コードまたは名前から、八方位それぞれに 5〜150km の範囲でどの市区町村があるか（近い順）と、候補の無い方位の理由を返します。画面の市区町村ページと同じ計算（伝統区分＝四正 30 度・四隅 60 度、真北基準）です。同名が複数なら候補を返します。",
       inputSchema: {
         code: z
           .string()
           .regex(/^\d{5}$/)
-          .describe("市区町村コード（5 桁）。search_municipality で引ける"),
+          .optional()
+          .describe(
+            "市区町村コード（5 桁）。search_municipality で引ける。name の代わり",
+          ),
+        name: z
+          .string()
+          .min(1)
+          .max(80)
+          .optional()
+          .describe(
+            "市区町村名。一意ならその街を使う。同名が複数なら候補を返す。code の代わりに使える",
+          ),
+
         perDirection: z
           .number()
           .int()
@@ -547,11 +645,26 @@ export function createMcpBaseServer(options?: {
           .describe("方位ごとの件数上限。既定 8"),
       },
     },
-    async ({ code, perDirection }) => {
-      const origin = findArea(code);
+    async ({ code, name, perDirection }) => {
+      const resolved = resolveMcpOrigin({
+        municipalityCode: code,
+        municipalityName: name,
+      });
+      if (!resolved.ok) {
+        return isOriginSelection(resolved)
+          ? text({
+              needsMunicipalitySelection: true,
+              message: resolved.message,
+              candidates: resolved.candidates,
+            })
+          : fail(resolved.error);
+      }
+      const origin = resolved.origin
+        ? findArea(resolved.origin.code)
+        : undefined;
       if (!origin)
         return fail(
-          `コード ${code} の市区町村は掲載の集計がありません。search_municipality で確かめてください。`,
+          "出発地の市区町村を特定できませんでした。search_municipality で確かめてください。",
         );
       const cap = perDirection ?? 8;
       const groups = neighboursByDirection(origin);
@@ -674,7 +787,10 @@ export function createMcpBaseServer(options?: {
 }
 
 export function createMcpServer(deps?: { rentals?: RentalReader }): McpServer {
-  const server = createMcpBaseServer({ municipalityReadings: true });
+  const server = createMcpBaseServer({
+    municipalityReadings: true,
+    instructions: MCP_PUBLIC_INSTRUCTIONS,
+  });
   server.registerTool(
     MCP_PUBLIC_TOOLS.find_relocation_windows,
     {
@@ -690,7 +806,16 @@ export function createMcpServer(deps?: { rentals?: RentalReader }): McpServer {
       inputSchema: {
         birthDate: z.string().describe("生年月日 YYYY-MM-DD"),
         birthTime: z.string().optional().describe("出生時刻 HH:MM（JST）"),
-        lon: z.number().min(122).max(154),
+        lon: z
+          .number()
+          .min(122)
+          .max(154)
+          .optional()
+          .describe(
+            "出発地の経度。municipalityCode / municipalityName の代わり",
+          ),
+        municipalityCode: municipalityCodeField,
+        municipalityName: municipalityNameField,
         from: z
           .string()
           .optional()
@@ -708,7 +833,13 @@ export function createMcpServer(deps?: { rentals?: RentalReader }): McpServer {
       },
     },
     async (input) => {
-      const result = findRelocationWindows(input);
+      const origin = originFromInput(input);
+      if (!origin.ok) {
+        return "selection" in origin
+          ? text(origin.selection)
+          : fail(origin.error);
+      }
+      const result = findRelocationWindows({ ...input, lon: origin.lon });
       return result.ok ? text(result.payload) : fail(result.error);
     },
   );
@@ -833,7 +964,11 @@ export function createMcpServer(deps?: { rentals?: RentalReader }): McpServer {
           .min(122)
           .max(154)
           .optional()
-          .describe("出発地の経度。無ければ九星の方位は未確認"),
+          .describe(
+            "出発地の経度。無ければ九星の方位は未確認。municipalityCode / municipalityName でも可",
+          ),
+        municipalityCode: municipalityCodeField,
+        municipalityName: municipalityNameField,
         candidates: z
           .array(
             z.object({
@@ -849,10 +984,26 @@ export function createMcpServer(deps?: { rentals?: RentalReader }): McpServer {
       },
     },
     async (input) => {
+      let lon = input.lon;
+      if (
+        lon === undefined &&
+        (input.municipalityCode || input.municipalityName)
+      ) {
+        const origin = originFromInput({
+          municipalityCode: input.municipalityCode,
+          municipalityName: input.municipalityName,
+        });
+        if (!origin.ok) {
+          return "selection" in origin
+            ? text(origin.selection)
+            : fail(origin.error);
+        }
+        lon = origin.lon;
+      }
       const compared = compareFortunePerspectives({
         birthDate: input.birthDate,
         birthTime: input.birthTime,
-        lon: input.lon,
+        lon,
         candidates: input.candidates.map((candidate) => ({
           date: candidate.date,
           direction: candidate.direction,

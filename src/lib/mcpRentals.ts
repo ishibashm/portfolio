@@ -1183,11 +1183,10 @@ export function createFixtureRentalReader(
   };
 }
 
+/** 字下げなし。中身は structuredContent と同じ。 */
 function text(payload: unknown) {
   return {
-    content: [
-      { type: "text" as const, text: JSON.stringify(payload, null, 2) },
-    ],
+    content: [{ type: "text" as const, text: JSON.stringify(payload) }],
     structuredContent: payload as Record<string, unknown>,
   };
 }

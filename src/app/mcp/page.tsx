@@ -13,6 +13,7 @@ import {
   MCP_PUBLIC_TOOL_BURST,
   MCP_PUBLIC_TOOL_HOURLY_LIMIT,
 } from "@/lib/mcpPublicLimit";
+import { MCP_FIRST_PROMPTS } from "@/lib/mcpFirstPrompts";
 import { loadMcpToolCatalog } from "@/lib/mcpToolCatalog";
 import { pageOpenGraph } from "@/lib/siteUrl";
 
@@ -289,6 +290,33 @@ export default async function McpGuidePage() {
               <code>{CURL_LIST_TOOLS_EXAMPLE}</code>
             </pre>
           </div>
+        </section>
+
+        {/* つないだら最初に聞く文 */}
+        <section
+          aria-labelledby="mcp-first-prompts-heading"
+          className="rounded-2xl border border-slate-300 bg-white p-6 shadow-sm space-y-4"
+        >
+          <div>
+            <h2
+              id="mcp-first-prompts-heading"
+              className="text-lg font-bold font-serif text-slate-900"
+            >
+              つないだら最初に聞く文
+            </h2>
+            <p className="mt-1 text-sm text-slate-600">
+              つながったら、次のような文から始められます。生年月日が必要な計算では、ご自身の分を会話で伝えてください。
+            </p>
+          </div>
+          <ol className="list-decimal space-y-2 pl-6 text-sm leading-relaxed text-slate-800">
+            {MCP_FIRST_PROMPTS.map((prompt) => (
+              <li key={prompt}>
+                <p className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2">
+                  {prompt}
+                </p>
+              </li>
+            ))}
+          </ol>
         </section>
 
         {/* 回数の上限 */}
