@@ -74,6 +74,8 @@ const GROUP_TAG_HINTS: Record<RouteGroup, readonly string[]> = {
     "建物比率",
     "予算",
   ],
+  // 占いや言い伝えそのものを確かめる記事。「統計」は方位の記事にも付くので入れない
+  verify: ["検証", "迷信", "言い伝え", "丙午"],
 };
 
 /**
@@ -88,6 +90,7 @@ const GROUP_REPRESENTATIVES: Record<RouteGroup, readonly string[]> = {
   timing: ["/calendar", "/relocation/timing"],
   direction: ["/relocation/arbitrage", "/houi"],
   market: ["/relocation/market", "/houi/area"],
+  verify: ["/kensho", "/annai"],
 };
 
 /** 何にも当たらない記事の既定。サイトの主題は方位なので方位の群。 */

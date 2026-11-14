@@ -37,7 +37,7 @@ import type { Metadata } from "next";
  * 「優れたユーザーエクスペリエンス」要件にも響いていた（2026-08-28 の
  * 棚卸し）。群はここが唯一の定義元で、サイドバー・ホームが参照する。
  */
-export type RouteGroup = "direction" | "timing" | "market";
+export type RouteGroup = "direction" | "timing" | "market" | "verify";
 
 export const ROUTE_GROUPS: {
   key: RouteGroup;
@@ -66,6 +66,11 @@ export const ROUTE_GROUPS: {
     key: "market",
     label: "いくら — 相場を知る",
     note: "賃貸・購入の実データで、価格の妥当性を確かめる",
+  },
+  {
+    key: "verify",
+    label: "たしかめる — 検証する",
+    note: "占いや言い伝えを公的データで確かめる。案内役とMCPもここ",
   },
 ];
 
@@ -218,6 +223,28 @@ export const CORE_ROUTES: CoreRoute[] = [
     summary:
       "検討中のマンションの場所・専有面積・築年・売出価格を入力すると、近所の成約価格の分布のどこに位置するかを出す。分母は売り出し価格ではなく実際に成立した額。使った成約の件数と、どこまで条件を緩めたかも併せて示す。",
     group: "market",
+  },
+  // ── たしかめる（検証する）────────────────────────────
+  {
+    href: "/kensho",
+    label: "たしかめる：占いを統計で検証する",
+    summary:
+      "占いや言い伝えの主張を、人口動態統計や交通事故統計などの公開データで検証する計画の一覧（現在はすべて計画中）。",
+    group: "verify",
+  },
+  {
+    href: "/annai",
+    label: "案内役に聞く",
+    summary:
+      "質問を選ぶと、このサイトの計算道具（MCP）を呼び、その出力と照合した文と表だけで本命星・吉方位・日取り・記事を案内する。",
+    group: "verify",
+  },
+  {
+    href: "/mcp",
+    label: "MCPで使う",
+    summary:
+      "このサイトの方位・暦・市区町村・記事の計算を、Claude・ChatGPT・CursorなどのAIアシスタントから認証なし・読み取り専用で呼び出す方法を案内する。",
+    group: "verify",
   },
 ];
 

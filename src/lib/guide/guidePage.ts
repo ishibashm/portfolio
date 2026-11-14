@@ -28,10 +28,15 @@ import { buildGuideSummary } from "./guideSummary";
 import { connectGuideClient, type GuideClientConnection } from "./guideTools";
 import { collectEvidence } from "./guideVerify";
 
-export type GuideFollowUpLink = {
-  label: string;
-  href: string;
-};
+export type GuideFollowUpLink =
+  | {
+      label: string;
+      href: string;
+    }
+  | {
+      label: string;
+      post: Record<string, string>;
+    };
 
 export type GuideAnswerStatus =
   | "ok"
@@ -123,43 +128,37 @@ export function buildGuideFollowUps(
       });
     }
   } else if (query.kind === "move") {
+    const originCode = facts.origin?.code ?? query.c;
     if (query.p === 30) {
-      const params = new URLSearchParams({
-        kind: "move",
-        b: query.b,
+      const post: Record<string, string> = {
         m: query.m,
         p: "90",
-      });
-      if (facts.origin?.code) params.set("c", facts.origin.code);
+      };
+      if (originCode) post.c = originCode;
       links.push({
         label: "90日先まで日取りを見る",
-        href: `/annai?${params.toString()}`,
+        post,
       });
     } else {
-      const params = new URLSearchParams({
-        kind: "move",
-        b: query.b,
+      const post: Record<string, string> = {
         m: query.m,
         p: "30",
-      });
-      if (facts.origin?.code) params.set("c", facts.origin.code);
+      };
+      if (originCode) post.c = originCode;
       links.push({
         label: "30日間の日取りに戻す",
-        href: `/annai?${params.toString()}`,
+        post,
       });
     }
     const nearTown = facts.towns[0];
     if (nearTown) {
-      const params = new URLSearchParams({
-        kind: "move",
-        b: query.b,
-        m: nearTown.name,
-        c: nearTown.code,
-        p: String(query.p),
-      });
       links.push({
         label: `近くの街（${nearTown.name}）を出発地にして見る`,
-        href: `/annai?${params.toString()}`,
+        post: {
+          m: nearTown.name,
+          c: nearTown.code,
+          p: String(query.p),
+        },
       });
     }
     links.push({
@@ -205,6 +204,7 @@ export function buildGuideFollowUps(
 export async function loadGuideAnswer(input: {
   query: GuideQueryStep3 | GuideQuery | RawSearchParams;
   headers: Headers;
+  moveCookie?: unknown;
   deps?: LoadGuideAnswerDeps;
 }): Promise<GuideAnswerData> {
   const deps = input.deps ?? {};
@@ -215,7 +215,11 @@ export async function loadGuideAnswer(input: {
   if (isStep3Query(input.query)) {
     step3Query = input.query;
   } else {
-    const parsed = parseGuideQuery(input.query as RawSearchParams, now);
+    const parsed = parseGuideQuery(
+      input.query as RawSearchParams,
+      now,
+      input.moveCookie,
+    );
     if (parsed.step !== 3) {
       throw new Error("3段目のクエリが揃っていません。");
     }
