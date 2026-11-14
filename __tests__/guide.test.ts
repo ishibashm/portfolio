@@ -946,7 +946,7 @@ describe("/kensho と /mcp のページ検証", () => {
     expect(html).not.toMatch(/p\s*[<>=]\s*0\.\d+/i);
   });
 
-  it("/mcp は createMcpServer() から listTools() で公開17道具の一覧を生成し、上限とセキュリティ方針を表示する", async () => {
+  it("/mcp は createMcpServer() から listTools() で公開18道具の一覧を生成し、上限とセキュリティ方針を表示する", async () => {
     expect(mcpMetadata.title).toBe(
       "MCPで使う｜AIアシスタントから方位と暦の計算を呼ぶ",
     );
@@ -955,7 +955,7 @@ describe("/kensho と /mcp のページ検証", () => {
 
     const catalog = await loadMcpToolCatalog();
     expect(catalog.fromFallback).toBe(false);
-    expect(catalog.tools).toHaveLength(17);
+    expect(catalog.tools).toHaveLength(18);
     expect(catalog.tools.map((t) => t.name)).toContain("get_honmei_star");
     expect(catalog.tools.map((t) => t.name)).toContain("judge_directions");
 
