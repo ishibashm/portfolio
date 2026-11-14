@@ -531,7 +531,6 @@ module.exports = {
   blogLastmod: BLOG_LASTMOD,
   exclude: [
     "/ask",
-    "/annai",
     "/houi/3d",
     "/houi/mcp-explorer",
     "/relocation/candidates",
@@ -580,6 +579,7 @@ module.exports = {
         /* クエリ無しは索引する。クエリ付きは頁側で noindex。
            force-dynamic なので事前生成の一覧には出ない。 */
         "/houi/fortune-compare",
+        "/annai",
       ].map((loc) => config.transform(config, loc)),
     ),
 };

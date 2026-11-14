@@ -12,12 +12,35 @@ import { CORE_ROUTES, ROUTE_GROUPS } from "@/lib/siteStructure";
  * **戻したときに気付けるように**ここで固定する。
  */
 describe("群の並び", () => {
-  it("いつ → どこへ → いくら の順", () => {
+  it("いつ → どこへ → いくら → たしかめる の順で、最後が verify であること", () => {
     expect(ROUTE_GROUPS.map((g) => g.key)).toEqual([
       "timing",
       "direction",
       "market",
+      "verify",
     ]);
+    expect(ROUTE_GROUPS.at(-1)).toEqual({
+      key: "verify",
+      label: "たしかめる — 検証する",
+      note: "占いや言い伝えを公的データで確かめる。案内役とMCPもここ",
+    });
+  });
+
+  it("CORE_ROUTES に /kensho・/annai・/mcp の3つが group: verify で入っている", () => {
+    const verifyRoutes = CORE_ROUTES.filter((r) => r.group === "verify");
+    expect(verifyRoutes.map((r) => r.href)).toEqual([
+      "/kensho",
+      "/annai",
+      "/mcp",
+    ]);
+    expect(verifyRoutes.map((r) => r.label)).toEqual([
+      "たしかめる：占いを統計で検証する",
+      "案内役に聞く",
+      "MCPで使う",
+    ]);
+    for (const route of verifyRoutes) {
+      expect(route.summary.length).toBeGreaterThan(10);
+    }
   });
 
   it("すべての中核ルートが、どれかの群に入っている", () => {

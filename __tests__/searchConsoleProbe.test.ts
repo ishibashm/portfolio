@@ -241,7 +241,9 @@ describe("検査する URL の選び方", () => {
 
   it("1 日の枠（2,000 件）に対して十分小さい", () => {
     // 全ページを舐めるための仕組みではない。増やしすぎると枠を焼く。
-    expect(inspectionTargets().length).toBeLessThan(100);
+    // 2026-11-14 に「たしかめる」の3ページを中核に足して101件になったので、
+    // 枠（2,000件）の1割に満たない150件までを許す。
+    expect(inspectionTargets().length).toBeLessThan(150);
   });
 
   it("同じ URL を二重に検査しない", () => {

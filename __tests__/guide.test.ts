@@ -1,17 +1,27 @@
 // @vitest-environment node
+import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it, vi } from "vitest";
-import { metadata } from "@/app/annai/page";
+import { POST as postAnnaiGo } from "@/app/annai/go/route";
+import { generateMetadata } from "@/app/annai/page";
+import KenshoPage, { metadata as kenshoMetadata } from "@/app/kensho/page";
+import McpGuidePage, { metadata as mcpMetadata } from "@/app/mcp/page";
+import { KENSHO_PLANNED_THEMES, KENSHO_PRINCIPLES } from "@/lib/kenshoPlan";
+import { loadMcpToolCatalog } from "@/lib/mcpToolCatalog";
 import {
   GUIDE_AI_PAUSED_TEXT,
   summarizeWithGuideAi,
 } from "@/lib/guide/guideAi";
 import {
+  ANNAI_MOVE_COOKIE,
+  encodeMoveCookie,
   GUIDE_TOPICS,
   parseGuideQuery,
+  parseMoveCookie,
+  readCookieFromHeader,
   type GuideQueryStep3,
 } from "@/lib/guide/guideForm";
-import { loadGuideAnswer } from "@/lib/guide/guidePage";
-import { planGuide, runGuide } from "@/lib/guide/guideRun";
+import { buildGuideFollowUps, loadGuideAnswer } from "@/lib/guide/guidePage";
+import { emptyGuideFacts, planGuide, runGuide } from "@/lib/guide/guideRun";
 import { buildGuideSummary } from "@/lib/guide/guideSummary";
 import {
   GUIDE_TOOLS,
@@ -103,34 +113,71 @@ describe("parseGuideQuery", () => {
       parseGuideQuery({ kind: "honmei", y: "1990", s: "invalid" }, now).step,
     ).toBe(2);
 
-    // move: 実在しない日付、範囲外の日付、短すぎる/長すぎる市区町村、禁止文字
-    expect(
-      parseGuideQuery({ kind: "move", b: "2026-02-30", m: "東京都新宿区" }, now)
-        .step,
-    ).toBe(2);
-    expect(
-      parseGuideQuery({ kind: "move", b: "1899-12-31", m: "東京都新宿区" }, now)
-        .step,
-    ).toBe(2);
-    expect(
-      parseGuideQuery({ kind: "move", b: "1990-05-15", m: "あ" }, now).step,
-    ).toBe(2);
+    // move: クエリに b/m を入れても無視し step 2 に戻す。壊れた cookie も step 2 に戻す
     expect(
       parseGuideQuery(
-        { kind: "move", b: "1990-05-15", m: "あ".repeat(41) },
+        {
+          kind: "move",
+          view: "answer",
+          b: "1990-05-15",
+          m: "東京都新宿区",
+        },
         now,
-      ).step,
-    ).toBe(2);
+      ),
+    ).toEqual({
+      step: 2,
+      kind: "move",
+      p: 30,
+    });
     expect(
-      parseGuideQuery(
-        { kind: "move", b: "1990-05-15", m: "新宿区<script>" },
-        now,
-      ).step,
-    ).toBe(2);
+      parseMoveCookie(
+        Buffer.from(
+          JSON.stringify({ b: "2026-02-30", m: "東京都新宿区", p: 30 }),
+          "utf8",
+        ).toString("base64url"),
+      ),
+    ).toBeUndefined();
     expect(
-      parseGuideQuery({ kind: "move", b: "1990-05-15", m: "新宿区\u0000" }, now)
-        .step,
-    ).toBe(2);
+      parseMoveCookie(
+        Buffer.from(
+          JSON.stringify({ b: "1899-12-31", m: "東京都新宿区", p: 30 }),
+          "utf8",
+        ).toString("base64url"),
+      ),
+    ).toBeUndefined();
+    expect(
+      parseMoveCookie(
+        Buffer.from(
+          JSON.stringify({ b: "1990-05-15", m: "あ", p: 30 }),
+          "utf8",
+        ).toString("base64url"),
+      ),
+    ).toBeUndefined();
+    expect(
+      parseMoveCookie(
+        Buffer.from(
+          JSON.stringify({ b: "1990-05-15", m: "あ".repeat(41), p: 30 }),
+          "utf8",
+        ).toString("base64url"),
+      ),
+    ).toBeUndefined();
+    expect(
+      parseMoveCookie(
+        Buffer.from(
+          JSON.stringify({ b: "1990-05-15", m: "新宿区<script>", p: 30 }),
+          "utf8",
+        ).toString("base64url"),
+      ),
+    ).toBeUndefined();
+    expect(
+      parseMoveCookie(
+        Buffer.from(
+          JSON.stringify({ b: "1990-05-15", m: "新宿区\u0000", p: 30 }),
+          "utf8",
+        ).toString("base64url"),
+      ),
+    ).toBeUndefined();
+    expect(parseMoveCookie("not-valid-base64-json!!!")).toBeUndefined();
 
     // read: 未知の話題
     expect(
@@ -138,7 +185,7 @@ describe("parseGuideQuery", () => {
     ).toBe(2);
   });
 
-  it("正しいパラメータが揃えば step 3 を返す", () => {
+  it("kind=move はクエリの b を無視し、view=answer かつ有効な cookie があるときだけ step 3 を返す", () => {
     expect(
       parseGuideQuery({ kind: "honmei", y: "1990", s: "before" }, now),
     ).toEqual({
@@ -148,16 +195,47 @@ describe("parseGuideQuery", () => {
       s: "before",
     });
 
+    const moveCookie = encodeMoveCookie({
+      b: "1990-05-15",
+      m: "長崎県長崎市",
+      c: "42201",
+      p: 90,
+    });
+
+    // view=answer が無ければ cookie があっても step 2（初期値入り）
+    expect(parseGuideQuery({ kind: "move" }, now, moveCookie)).toEqual({
+      step: 2,
+      kind: "move",
+      b: "1990-05-15",
+      m: "長崎県長崎市",
+      c: "42201",
+      p: 90,
+    });
+
+    // error=1 のときは step 2 に error: true が付く
+    expect(
+      parseGuideQuery({ kind: "move", error: "1" }, now, moveCookie),
+    ).toEqual({
+      step: 2,
+      kind: "move",
+      b: "1990-05-15",
+      m: "長崎県長崎市",
+      c: "42201",
+      p: 90,
+      error: true,
+    });
+
+    // クエリに別の b が入っていても無視し、cookie の値を使う
     expect(
       parseGuideQuery(
         {
           kind: "move",
-          b: "1990-05-15",
-          m: " 長崎県長崎市 ",
-          c: "42201",
-          p: "90",
+          view: "answer",
+          b: "1980-01-01",
+          m: "東京都千代田区",
         },
         now,
+        moveCookie,
       ),
     ).toEqual({
       step: 3,
@@ -173,6 +251,159 @@ describe("parseGuideQuery", () => {
       kind: "read",
       t: "rokuyo",
     });
+  });
+});
+
+describe("POST /annai/go と buildGuideFollowUps（生年月日を URL に載せない）", () => {
+  it("正しい入力で 303・Location が /annai?kind=move&view=answer・Set-Cookie に HttpOnly と Path=/annai があり Location に生年月日が入らない", async () => {
+    const body = new URLSearchParams({
+      b: "1990-05-15",
+      m: "東京都新宿区",
+      c: "13104",
+      p: "90",
+    });
+    const req = new Request("https://cloud-palette.com/annai/go", {
+      method: "POST",
+      headers: {
+        "content-type": "application/x-www-form-urlencoded",
+      },
+      body: body.toString(),
+    });
+
+    const res = await postAnnaiGo(req);
+    expect(res.status).toBe(303);
+    const location = res.headers.get("Location");
+    expect(location).toBe("/annai?kind=move&view=answer");
+    expect(location).not.toContain("1990-05-15");
+    expect(res.headers.get("Cache-Control")).toBe("no-store");
+
+    const setCookie = res.headers.get("Set-Cookie") ?? "";
+    expect(setCookie).toContain(`${ANNAI_MOVE_COOKIE}=`);
+    expect(setCookie).toContain("HttpOnly");
+    expect(setCookie).toContain("Path=/annai");
+    expect(setCookie).toContain("SameSite=Lax");
+    expect(setCookie).toContain("Max-Age=1800");
+
+    const rawVal = readCookieFromHeader(setCookie, ANNAI_MOVE_COOKIE);
+    expect(parseMoveCookie(rawVal)).toEqual({
+      b: "1990-05-15",
+      m: "東京都新宿区",
+      c: "13104",
+      p: 90,
+    });
+  });
+
+  it("不正入力や4KB超過のときは 303 で /annai?kind=move&error=1 へリダイレクトする", async () => {
+    const badReq = new Request("https://cloud-palette.com/annai/go", {
+      method: "POST",
+      headers: { "content-type": "application/x-www-form-urlencoded" },
+      body: new URLSearchParams({
+        b: "2026-02-30",
+        m: "東京都新宿区",
+      }).toString(),
+    });
+    const badRes = await postAnnaiGo(badReq);
+    expect(badRes.status).toBe(303);
+    expect(badRes.headers.get("Location")).toBe("/annai?kind=move&error=1");
+    expect(badRes.headers.get("Cache-Control")).toBe("no-store");
+    expect(badRes.headers.get("Set-Cookie")).toBeNull();
+
+    // 4KB超過
+    const hugeReq = new Request("https://cloud-palette.com/annai/go", {
+      method: "POST",
+      headers: { "content-type": "application/x-www-form-urlencoded" },
+      body: `b=1990-05-15&m=${"あ".repeat(2000)}`,
+    });
+    const hugeRes = await postAnnaiGo(hugeReq);
+    expect(hugeRes.status).toBe(303);
+    expect(hugeRes.headers.get("Location")).toBe("/annai?kind=move&error=1");
+  });
+
+  it("action=clear で cookie を削除して 303 で /annai へリダイレクトする", async () => {
+    const req = new Request("https://cloud-palette.com/annai/go", {
+      method: "POST",
+      headers: { "content-type": "application/x-www-form-urlencoded" },
+      body: new URLSearchParams({ action: "clear" }).toString(),
+    });
+    const res = await postAnnaiGo(req);
+    expect(res.status).toBe(303);
+    expect(res.headers.get("Location")).toBe("/annai");
+    expect(res.headers.get("Cache-Control")).toBe("no-store");
+    const setCookie = res.headers.get("Set-Cookie") ?? "";
+    expect(setCookie).toContain(`${ANNAI_MOVE_COOKIE}=;`);
+    expect(setCookie).toContain("Max-Age=0");
+    expect(setCookie).toContain("Path=/annai");
+    expect(setCookie).toContain("HttpOnly");
+  });
+
+  it("フォームに b が無い・空のときは既存 cookie の b を使う", async () => {
+    const existing = encodeMoveCookie({
+      b: "1988-11-23",
+      m: "東京都新宿区",
+      c: "13104",
+      p: 30,
+    });
+    const req = new Request("https://cloud-palette.com/annai/go", {
+      method: "POST",
+      headers: {
+        "content-type": "application/x-www-form-urlencoded",
+        cookie: `${ANNAI_MOVE_COOKIE}=${existing}`,
+      },
+      body: new URLSearchParams({
+        m: "神奈川県横浜市中区",
+        c: "14104",
+        p: "90",
+      }).toString(),
+    });
+
+    const res = await postAnnaiGo(req);
+    expect(res.status).toBe(303);
+    expect(res.headers.get("Location")).toBe("/annai?kind=move&view=answer");
+    const rawVal = readCookieFromHeader(
+      res.headers.get("Set-Cookie"),
+      ANNAI_MOVE_COOKIE,
+    );
+    expect(parseMoveCookie(rawVal)).toEqual({
+      b: "1988-11-23",
+      m: "神奈川県横浜市中区",
+      c: "14104",
+      p: 90,
+    });
+  });
+
+  it("buildGuideFollowUps の戻り値の href にも post にも生年月日が入らない", () => {
+    const facts = emptyGuideFacts();
+    facts.origin = { code: "13104", name: "東京都新宿区", lon: 139.7 };
+    facts.towns = [
+      {
+        code: "13103",
+        name: "東京都港区",
+        direction: "S",
+        directionLabel: "南",
+      },
+    ];
+    const followUps = buildGuideFollowUps(
+      {
+        step: 3,
+        kind: "move",
+        b: "1990-05-15",
+        m: "東京都新宿区",
+        c: "13104",
+        p: 30,
+      },
+      facts,
+    );
+
+    expect(followUps.length).toBeGreaterThanOrEqual(3);
+    for (const item of followUps) {
+      if ("href" in item) {
+        expect(item.href).not.toContain("1990-05-15");
+        expect(item.href).not.toContain("b=");
+      } else {
+        expect(item.post).not.toHaveProperty("b");
+        expect(JSON.stringify(item.post)).not.toContain("1990-05-15");
+      }
+    }
   });
 });
 
@@ -638,9 +869,23 @@ describe("loadGuideAnswer（停止スイッチ・上限・AI停止）", () => {
 });
 
 describe("/annai metadata", () => {
-  it("入口も答えも検索に載せない（/ask と同じ）", () => {
-    expect(metadata.alternates?.canonical).toBe("/annai");
-    expect(metadata.robots).toEqual({ index: false, follow: false });
+  it("searchParams が空の入口は robots を指定せず（既定の index）、パラメータ付きは noindex,nofollow にする", async () => {
+    const entryMeta = await generateMetadata({
+      searchParams: Promise.resolve({}),
+    });
+    expect(entryMeta.alternates?.canonical).toBe("/annai");
+    expect(entryMeta.robots).toBeUndefined();
+
+    const step2Meta = await generateMetadata({
+      searchParams: Promise.resolve({ kind: "move" }),
+    });
+    expect(step2Meta.alternates?.canonical).toBe("/annai");
+    expect(step2Meta.robots).toEqual({ index: false, follow: false });
+
+    const answerMeta = await generateMetadata({
+      searchParams: Promise.resolve({ kind: "move", view: "answer" }),
+    });
+    expect(answerMeta.robots).toEqual({ index: false, follow: false });
   });
 
   it("planGuide は種類ごとに固定の道具列を返す", () => {
@@ -669,5 +914,58 @@ describe("/annai metadata", () => {
     expect(
       planGuide({ step: 3, kind: "read", t: "honmei" }, now).map((p) => p.tool),
     ).toEqual(["search_articles"]);
+  });
+});
+
+describe("/kensho と /mcp のページ検証", () => {
+  it("/kensho は結論や数値の結果を出しておらず、13テーマすべてが計画中である", () => {
+    expect(kenshoMetadata.title).toBe(
+      "たしかめる｜占いや言い伝えを公的データで検証する",
+    );
+    expect(kenshoMetadata.alternates?.canonical).toBe("/kensho");
+    expect(kenshoMetadata.robots).toBeUndefined();
+
+    expect(KENSHO_PRINCIPLES.length).toBe(6);
+    expect(KENSHO_PLANNED_THEMES).toHaveLength(13);
+    for (const theme of KENSHO_PLANNED_THEMES) {
+      expect(theme.status).toBe("計画中");
+    }
+
+    const html = renderToStaticMarkup(KenshoPage());
+    expect(html).toContain("計画中");
+    expect(html).toContain("丙午");
+    expect(html).toContain("六曜");
+    expect(html).toContain("厄年");
+    expect(html).toContain("九星気学");
+    expect(html).toContain("奇門遁甲");
+    expect(html).toContain("姓名判断");
+    expect(html).toContain("手相");
+    expect(html).toContain('href="/annai"');
+    expect(html).toContain('href="/mcp"');
+    // 架空の統計結果（p値の実測値や有意差の結論など）が含まれないこと
+    expect(html).not.toMatch(/p\s*[<>=]\s*0\.\d+/i);
+  });
+
+  it("/mcp は createMcpServer() から listTools() で公開17道具の一覧を生成し、上限とセキュリティ方針を表示する", async () => {
+    expect(mcpMetadata.title).toBe(
+      "MCPで使う｜AIアシスタントから方位と暦の計算を呼ぶ",
+    );
+    expect(mcpMetadata.alternates?.canonical).toBe("/mcp");
+    expect(mcpMetadata.robots).toBeUndefined();
+
+    const catalog = await loadMcpToolCatalog();
+    expect(catalog.fromFallback).toBe(false);
+    expect(catalog.tools).toHaveLength(17);
+    expect(catalog.tools.map((t) => t.name)).toContain("get_honmei_star");
+    expect(catalog.tools.map((t) => t.name)).toContain("judge_directions");
+
+    const element = await McpGuidePage();
+    const html = renderToStaticMarkup(element);
+    expect(html).toContain("https://cloud-palette.com/api/mcp");
+    expect(html).toContain('href="/annai"');
+    expect(html).toContain("256KB");
+    expect(html).toContain("占いの計算結果は参考情報です");
+    expect(html).toContain("/.well-known/security.txt");
+    expect(html).toContain("/contact");
   });
 });

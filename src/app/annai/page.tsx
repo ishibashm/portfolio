@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { headers } from "next/headers";
+import { cookies, headers } from "next/headers";
 import Link from "next/link";
 import { currentYearInJapan, STAR_NAMES } from "@/lib/kigakuContent";
 import {
@@ -8,11 +8,14 @@ import {
 } from "@/lib/directionLabels";
 import { pageOpenGraph } from "@/lib/siteUrl";
 import {
+  ANNAI_MOVE_COOKIE,
   GUIDE_KINDS,
   GUIDE_KIND_INFO,
+  GUIDE_RESULT_ROBOTS,
   GUIDE_SETSUBUN_LABELS,
   GUIDE_TOPIC_KEYS,
   GUIDE_TOPICS,
+  hasGuideSearchParams,
   parseGuideQuery,
   type GuideQueryStep2,
   type GuideQueryStep3,
@@ -30,16 +33,20 @@ type PageProps = {
 };
 
 /*
-  入口も含めて検索に載せない（/ask と同じ扱い）。答えの段は入力ごとに
-  道具を呼ぶので、巡回で上限を減らさないよう、入口からも辿らせない。
+  パラメータ無しの入口（/annai）は中核ページとして索引を許可し、
+  クエリパラメータがある入力・結果の段は検索対象から外す。
 */
-export const metadata: Metadata = {
-  title: PAGE_TITLE,
-  description: PAGE_DESCRIPTION,
-  alternates: { canonical: "/annai" },
-  robots: { index: false, follow: false },
-  openGraph: pageOpenGraph("/annai", PAGE_TITLE, PAGE_DESCRIPTION),
-};
+export async function generateMetadata(props: PageProps): Promise<Metadata> {
+  const sp = (await props.searchParams) ?? {};
+  const hasParams = hasGuideSearchParams(sp);
+  return {
+    title: PAGE_TITLE,
+    description: PAGE_DESCRIPTION,
+    alternates: { canonical: "/annai" },
+    ...(hasParams ? { robots: GUIDE_RESULT_ROBOTS } : {}),
+    openGraph: pageOpenGraph("/annai", PAGE_TITLE, PAGE_DESCRIPTION),
+  };
+}
 
 /** 道具の状態コード（NOISE_ANKEN など）を画面と同じ呼び名にする。 */
 function statusText(status: string): string {
@@ -132,8 +139,23 @@ function Step2View({ query }: { query: GuideQueryStep2 }) {
         <p className="mt-1 text-sm text-slate-600">{info.description}</p>
       </div>
 
-      <form method="get" action="/annai" className="space-y-6">
-        <input type="hidden" name="kind" value={query.kind} />
+      {query.kind === "move" && query.error && (
+        <p
+          role="alert"
+          className="rounded-xl border border-rose-300 bg-rose-50 px-4 py-3 text-sm font-semibold text-rose-800"
+        >
+          入力を確かめてください。生年月日と出発地の市区町村（2〜40文字）を正しく入力してください。
+        </p>
+      )}
+
+      <form
+        method={query.kind === "move" ? "post" : "get"}
+        action={query.kind === "move" ? "/annai/go" : "/annai"}
+        className="space-y-6"
+      >
+        {query.kind !== "move" && (
+          <input type="hidden" name="kind" value={query.kind} />
+        )}
 
         {(query.kind === "honmei" || query.kind === "today") && (
           <>
@@ -415,25 +437,21 @@ function Step3View({ answer }: { answer: GuideAnswerData }) {
               件見つかりました。どれを出発地にするか選んでください。
             </p>
             <ul className="grid gap-2 sm:grid-cols-2">
-              {facts.municipalityCandidates.map((cand) => {
-                const params = new URLSearchParams({
-                  kind: "move",
-                  b: query.b,
-                  m: cand.name,
-                  c: cand.code,
-                  p: String(query.p),
-                });
-                return (
-                  <li key={cand.code}>
-                    <Link
-                      href={`/annai?${params.toString()}`}
-                      className="block rounded-xl border border-slate-300 bg-slate-50 px-4 py-3 text-sm font-semibold text-slate-900 hover:border-rose-500 hover:bg-white"
+              {facts.municipalityCandidates.map((cand) => (
+                <li key={cand.code}>
+                  <form method="post" action="/annai/go">
+                    <input type="hidden" name="m" value={cand.name} />
+                    <input type="hidden" name="c" value={cand.code} />
+                    <input type="hidden" name="p" value={String(query.p)} />
+                    <button
+                      type="submit"
+                      className="w-full rounded-xl border border-slate-300 bg-slate-50 px-4 py-3 text-left text-sm font-semibold text-slate-900 hover:border-rose-500 hover:bg-white"
                     >
                       {cand.name}（コード: {cand.code}）
-                    </Link>
-                  </li>
-                );
-              })}
+                    </button>
+                  </form>
+                </li>
+              ))}
             </ul>
           </section>
         )}
@@ -778,22 +796,50 @@ function Step3View({ answer }: { answer: GuideAnswerData }) {
         </>
       )}
 
-      {/* ⑦ 続けて押すボタン（2〜4個） */}
+      {/* ⑦ 続けて押すボタン（2〜4個）と入力消去 */}
       <nav
         aria-label="次の操作"
         className="rounded-2xl border border-slate-300 bg-white p-5 shadow-sm space-y-3"
       >
         <h2 className="text-sm font-bold text-slate-700">⑦ 続けて調べる</h2>
-        <div className="flex flex-wrap gap-3">
-          {answer.followUps.map((link) => (
-            <Link
-              key={link.href + link.label}
-              href={link.href}
-              className="rounded-xl border border-slate-300 bg-slate-50 px-4 py-2.5 text-sm font-semibold text-slate-900 hover:border-rose-500 hover:bg-white"
+        <div className="flex flex-wrap items-center gap-3">
+          {answer.followUps.map((item) =>
+            "post" in item ? (
+              <form
+                key={`post-${item.label}`}
+                method="post"
+                action="/annai/go"
+                className="inline"
+              >
+                {Object.entries(item.post).map(([k, v]) => (
+                  <input key={k} type="hidden" name={k} value={v} />
+                ))}
+                <button
+                  type="submit"
+                  className="rounded-xl border border-slate-300 bg-slate-50 px-4 py-2.5 text-sm font-semibold text-slate-900 hover:border-rose-500 hover:bg-white"
+                >
+                  {item.label}
+                </button>
+              </form>
+            ) : (
+              <Link
+                key={item.href + item.label}
+                href={item.href}
+                className="rounded-xl border border-slate-300 bg-slate-50 px-4 py-2.5 text-sm font-semibold text-slate-900 hover:border-rose-500 hover:bg-white"
+              >
+                {item.label}
+              </Link>
+            ),
+          )}
+          <form method="post" action="/annai/go" className="inline">
+            <input type="hidden" name="action" value="clear" />
+            <button
+              type="submit"
+              className="rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 hover:border-rose-500 hover:text-rose-700"
             >
-              {link.label}
-            </Link>
-          ))}
+              入力を消す
+            </button>
+          </form>
         </div>
       </nav>
     </div>
@@ -802,7 +848,9 @@ function Step3View({ answer }: { answer: GuideAnswerData }) {
 
 export default async function AnnaiPage(props: PageProps) {
   const sp = (await props.searchParams) ?? {};
-  const query = parseGuideQuery(sp);
+  const cookieStore = await cookies();
+  const moveCookieRaw = cookieStore.get(ANNAI_MOVE_COOKIE)?.value;
+  const query = parseGuideQuery(sp, new Date(), moveCookieRaw);
 
   let answer: GuideAnswerData | null = null;
   if (query.step === 3) {
@@ -810,6 +858,7 @@ export default async function AnnaiPage(props: PageProps) {
     answer = await loadGuideAnswer({
       query,
       headers: reqHeaders,
+      moveCookie: moveCookieRaw,
     });
   }
 
