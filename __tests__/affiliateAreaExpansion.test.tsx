@@ -6,6 +6,7 @@ import { describe, expect, it } from "vitest";
 import { AffiliatePlacement } from "@/components/ads/AffiliateLink";
 import {
   AFFILIATE_AREA_LABEL,
+  AFFILIATE_OFFERS,
   HAKOBU_PREF_CODES,
   HAKOBU_TARGET_PREFS,
   hakobuOfferForPref,
@@ -16,6 +17,21 @@ import { areaAffiliateOffer, isIndexedArea } from "@/lib/areaAffiliate";
 import { AREAS } from "@/lib/areaContent";
 import { AREA_EDITORIAL } from "@/lib/areaEditorial";
 import AreaPage from "@/app/houi/area/[code]/page";
+import PrefPage from "@/app/houi/pref/[code]/page";
+
+const FORBIDDEN_HAKOBU_TERMS = [
+  "s00000020949005008000",
+  "s00000020949005005000",
+  "TTDZ5",
+  "TSQTT",
+  "ランキング",
+  "二冠",
+  "三冠",
+  "コスパ最高",
+  "最安値",
+  "No.1",
+  "1位",
+] as const;
 
 describe("ハコブ引っ越しサービスの1都3県判定", () => {
   it("対象都道府県とJISコードの定数が4都県のみを持つ", () => {
@@ -117,12 +133,48 @@ describe("都道府県ページと非対象パスの判定", () => {
     expect(offersForPath("/blog")).toEqual([]);
     expect(offersForPath("/blog/which-day-counts-as-moving-day")).toEqual([]);
   });
+
+  it("/houi/pref/13 と新宿ブログ経路は compact・sidebar 双方でテキスト素材 002 を出す", async () => {
+    for (const path of [
+      "/houi/pref/13",
+      "/blog/shinjuku-2027-directions-and-rent",
+    ]) {
+      const offer = offersForPath(path)[0]!;
+      expect(offer?.id).toBe("hakobu-moving");
+      for (const variant of ["compact", "sidebar"] as const) {
+        const html = renderToStaticMarkup(
+          createElement(AffiliatePlacement, { offer, variant }),
+        );
+        expect(html).toContain("a8mat=4BGDZD+CU0E7M+4HN6+TS3OI");
+        expect(html).toContain("【ハコブ引っ越しサービス】");
+      }
+    }
+
+    const tokyoPrefHtml = renderToStaticMarkup(
+      await PrefPage({ params: Promise.resolve({ code: "13" }) }),
+    );
+    expect(tokyoPrefHtml).toContain("a8mat=4BGDZD+CU0E7M+4HN6+TS3OI");
+    expect(tokyoPrefHtml).toContain("【ハコブ引っ越しサービス】");
+    expect(tokyoPrefHtml).toContain(AFFILIATE_AREA_LABEL);
+
+    const osakaPrefHtml = renderToStaticMarkup(
+      await PrefPage({ params: Promise.resolve({ code: "27" }) }),
+    );
+    expect(osakaPrefHtml).not.toContain("4BGDZD+CU0E7M+4HN6");
+    expect(osakaPrefHtml).not.toContain("【ハコブ引っ越しサービス】");
+  });
 });
 
 describe("ハコブ広告枠の表記と禁止語句の検査", () => {
-  it("「広告」ラベル・対象地域注記・rel属性を含み、誇大表現を含まない", () => {
+  it("「広告」ラベル・対象地域注記・rel属性を含み、テキスト素材 002 のみを出し禁止語句を含まない", () => {
     const offer = hakobuOfferForPref("東京都")!;
     expect(offer).toBeDefined();
+    const hakobuEntry = AFFILIATE_OFFERS.find((o) => o.id === "hakobu-moving")!;
+    const serializedHakobu = JSON.stringify(hakobuEntry);
+    for (const term of FORBIDDEN_HAKOBU_TERMS) {
+      expect(serializedHakobu).not.toContain(term);
+    }
+
     for (const variant of ["sidebar", "compact"] as const) {
       const html = renderToStaticMarkup(
         createElement(AffiliatePlacement, { offer, variant }),
@@ -132,10 +184,18 @@ describe("ハコブ広告枠の表記と禁止語句の検査", () => {
       expect(html).toContain(
         "首都圏（東京・千葉・埼玉・神奈川）の引っ越し向け",
       );
+      expect(html).toContain("a8mat=4BGDZD+CU0E7M+4HN6+TS3OI");
+      expect(html).toContain("【ハコブ引っ越しサービス】");
+      expect(html).toContain(
+        "https://www11.a8.net/0.gif?a8mat=4BGDZD+CU0E7M+4HN6+TS3OI",
+      );
       expect(html).toContain('rel="sponsored nofollow noopener"');
       expect(html).toContain('target="_blank"');
       expect(html).not.toContain("最安値級");
       expect(html).not.toContain("ランキング1位");
+      for (const term of FORBIDDEN_HAKOBU_TERMS) {
+        expect(html).not.toContain(term);
+      }
     }
   });
 
@@ -165,12 +225,14 @@ describe("ハコブ広告枠の表記と禁止語句の検査", () => {
     expect(timingPage).toContain("<AffiliatePlacement");
   });
 
-  it("市区町村ページ（/houi/area/[code]）の描画が1都3県かつindex対象のみ広告枠と2カラムを出す", async () => {
+  it("市区町村ページ（/houi/area/[code]）の描画が1都3県かつindex対象のみテキスト素材 002 の広告枠と2カラムを出す", async () => {
     const shinjukuHtml = renderToStaticMarkup(
       await AreaPage({ params: Promise.resolve({ code: "13104" }) }),
     );
-    expect(shinjukuHtml).toContain("s00000020949005005000");
-    expect(shinjukuHtml).toContain("s00000020949005008000");
+    expect(shinjukuHtml).toContain("a8mat=4BGDZD+CU0E7M+4HN6+TS3OI");
+    expect(shinjukuHtml).toContain("【ハコブ引っ越しサービス】");
+    expect(shinjukuHtml).not.toContain("s00000020949005005000");
+    expect(shinjukuHtml).not.toContain("s00000020949005008000");
     expect(shinjukuHtml).toContain(AFFILIATE_AREA_LABEL);
     expect(shinjukuHtml).toContain("lg:grid-cols-[minmax(0,1fr)_300px]");
 
@@ -179,6 +241,8 @@ describe("ハコブ広告枠の表記と禁止語句の検査", () => {
       await AreaPage({ params: Promise.resolve({ code: aichiCode }) }),
     );
     expect(aichiHtml).not.toContain("s00000020949005");
+    expect(aichiHtml).not.toContain("4BGDZD+CU0E7M+4HN6");
+    expect(aichiHtml).not.toContain("【ハコブ引っ越しサービス】");
     expect(aichiHtml).not.toContain("lg:grid-cols-[minmax(0,1fr)_300px]");
 
     const noindexTargetCode = AREAS.find(
@@ -188,6 +252,8 @@ describe("ハコブ広告枠の表記と禁止語句の検査", () => {
       await AreaPage({ params: Promise.resolve({ code: noindexTargetCode }) }),
     );
     expect(noindexHtml).not.toContain("s00000020949005");
+    expect(noindexHtml).not.toContain("4BGDZD+CU0E7M+4HN6");
+    expect(noindexHtml).not.toContain("【ハコブ引っ越しサービス】");
     expect(noindexHtml).not.toContain("lg:grid-cols-[minmax(0,1fr)_300px]");
   });
 });

@@ -25,9 +25,15 @@ export interface AffiliateOffer {
    * アンカーには rel="sponsored nofollow noopener" と target="_blank" を付ける。
    */
   html?: string;
-  /** サイド欄向けのバナー HTML（ハコブは 300×250 の素材 008）。 */
+  /**
+   * サイド欄向けのバナー HTML。無いときは html を使う
+   * （ハコブはバナーにランキング・最上級表現があるためテキスト素材 002 のみを使う）。
+   */
   bannerHtml?: string;
-  /** 狭い画面向けのバナー HTML（ハコブは 320×50 の素材 005）。 */
+  /**
+   * 狭い画面向けのバナー HTML。無いときは html を使う
+   * （ハコブはバナーにランキング・最上級表現があるためテキスト素材 002 のみを使う）。
+   */
   compactBannerHtml?: string;
   /** 枠の下に置く短い注記。無いときは出さない（ハコブの対象地域など）。 */
   note?: string;
@@ -35,19 +41,12 @@ export interface AffiliateOffer {
   placements?: readonly AffiliateOfferPlacement[];
 }
 
-/** ハコブ テキスト素材 002。A8 管理画面の掲載用タグ（画素は www11）。 */
+/**
+ * ハコブ テキスト素材 002。A8 管理画面の掲載用タグ（画素は www11）。
+ * バナー素材はランキング・最上級表現を含むため使わず、すべての枠でこのテキスト素材 002 のみを使う。
+ */
 export const HAKOBU_TEXT_002_HTML = `<a href="https://px.a8.net/svt/ejp?a8mat=4BGDZD+CU0E7M+4HN6+TS3OI" rel="nofollow">【ハコブ引っ越しサービス】</a>
 <img border="0" width="1" height="1" src="https://www11.a8.net/0.gif?a8mat=4BGDZD+CU0E7M+4HN6+TS3OI" alt="">`;
-
-/** ハコブ バナー素材 008（300×250）。デスクトップのサイド欄で使う。 */
-export const HAKOBU_BANNER_008_HTML = `<a href="https://px.a8.net/svt/ejp?a8mat=4BGDZD+CU0E7M+4HN6+TTDZ5" rel="nofollow">
-<img border="0" width="300" height="250" alt="" src="https://www28.a8.net/svt/bgt?aid=261105097776&wid=001&eno=01&mid=s00000020949005008000&mc=1"></a>
-<img border="0" width="1" height="1" src="https://www14.a8.net/0.gif?a8mat=4BGDZD+CU0E7M+4HN6+TTDZ5" alt="">`;
-
-/** ハコブ バナー素材 005（320×50）。狭い画面の本文途中で使う。 */
-export const HAKOBU_BANNER_005_HTML = `<a href="https://px.a8.net/svt/ejp?a8mat=4BGDZD+CU0E7M+4HN6+TSQTT" rel="nofollow">
-<img border="0" width="320" height="50" alt="" src="https://www27.a8.net/svt/bgt?aid=261105097776&wid=001&eno=01&mid=s00000020949005005000&mc=1"></a>
-<img border="0" width="1" height="1" src="https://www15.a8.net/0.gif?a8mat=4BGDZD+CU0E7M+4HN6+TSQTT" alt="">`;
 
 /** 素材 001（「最安値級」）は使わない。 */
 export const HAKOBU_TEXT_001_MAT = "4BGDZD+CU0E7M+4HN6+TRVYQ";
@@ -104,8 +103,6 @@ export const AFFILIATE_OFFERS: readonly AffiliateOffer[] = [
   {
     id: "hakobu-moving",
     html: HAKOBU_TEXT_002_HTML,
-    bannerHtml: HAKOBU_BANNER_008_HTML,
-    compactBannerHtml: HAKOBU_BANNER_005_HTML,
     note: AFFILIATE_AREA_LABEL,
     placements: [
       {
