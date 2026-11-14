@@ -85,3 +85,43 @@ export function formatBlogPostDiff(diff: BlogPostDiff, max = 20): string[] {
   for (const l of diff.onlyInFile.slice(0, max)) out.push(`      + ${clip(l)}`);
   return out;
 }
+
+/** frontmatter の日付（YYYY-MM-DD）。JST の 0 時として読む。 */
+export function frontmatterInstant(date: string): Date {
+  // UTC で解釈すると、日本時間の朝に公開した記事が前日付で並ぶ。
+  return new Date(`${date}T00:00:00+09:00`);
+}
+
+/**
+ * 取り込みで DB に書く更新日。**frontmatter の値をそのまま入れる。**
+ *
+ * `BlogPost.updatedAt` は Prisma の `@updatedAt` なので、値を渡さないと
+ * **書き込んだ時刻**が入る。取り込みはこれを渡していなかったため、
+ * 上書きで流すたびに、その日が全記事の更新日になっていた（2026-11-10 の
+ * 棚卸しで、公開 78 本の dateModified がすべて 2026-11-09）。
+ *
+ * 記事ページの「更新」と JSON-LD の dateModified は DB のこの列から、
+ * サイトマップの lastmod は frontmatter から出る。同じ記事の更新日が
+ * 2 通りになり、しかも片方は「取り込みを流した日」で、本文が変わった日
+ * ではなかった。lastmod を実際の更新日に直した理由（backlog 36 節。
+ * 実際と合わない日付は読まれない）が、こちらには残っていた。
+ *
+ * updatedAt を省いた記事は公開日を入れる。表示側（blogStore）は
+ * 公開日と同じ日なら「更新」を出さないので、Markdown から直に読んだ
+ * ときと同じ見え方になる。
+ */
+export function importUpdatedAt(post: {
+  publishedAt: string;
+  updatedAt?: string;
+}): Date {
+  return frontmatterInstant(post.updatedAt ?? post.publishedAt);
+}
+
+/** 本文も項目も、DB とファイルで同じか。 */
+export function isSameAsFile(diff: BlogPostDiff): boolean {
+  return (
+    diff.changedFields.length === 0 &&
+    diff.onlyInDb.length === 0 &&
+    diff.onlyInFile.length === 0
+  );
+}
