@@ -150,6 +150,13 @@ export const CORE_ROUTES: CoreRoute[] = [
     group: "direction",
   },
   {
+    href: "/houi/relocation-calendar",
+    label: "引越しできる日の一覧",
+    summary:
+      "年盤・月盤の方位と強さが同じ期間と、3盤そろう日を一覧で確認する。",
+    group: "timing",
+  },
+  {
     href: "/houi/tenchusatsu",
     label: "天中殺と引越しの時期を調べる",
     summary:

@@ -152,7 +152,7 @@ ${AREAS.length.toLocaleString("en-US")}。${AREA_GENERATED_AT.slice(0, 10)} 時�
 ## 道具として呼ぶ（MCP）
 
 ${baseUrl}/api/mcp で MCP（Model Context Protocol）のサーバーを公開しています。
-Streamable HTTP・stateless・POST のみ。匿名で使えます。計算は画面と同じ関数、記事と賃貸掲載は読み取りだけです。道具は17個です。賃貸掲載は最終確認から30日を過ぎたものと掲載期限切れを除き、連絡先・取込メール・お気に入りは返しません。スクレイピングと有料APIは呼びません。
+Streamable HTTP・stateless・POST のみ。匿名で使えます。計算は画面と同じ関数、記事と賃貸掲載は読み取りだけです。道具は18個です。賃貸掲載は最終確認から30日を過ぎたものと掲載期限切れを除き、連絡先・取込メール・お気に入りは返しません。スクレイピングと有料APIは呼びません。
 
 - get_honmei_star: 生年月日から本命星（九星）と天中殺の干支を返す。追加項目 kanshi（年月日）、solarTerms（出生年の24節気）、boundaryAlternatives（時刻不明の境界候補）、calendarBasis
 - get_kanshi: 生年月日から年月日の六十干支、日柱由来の空亡（kanshi.voidBranches）、各柱の干支併臨年（kanshiHeirin）、二十四節気の計算時刻（solarTerms）を返す。1900〜2100年の YYYY-MM-DD または日時を受け付け、時差省略はJST。日付だけは正午の代表値で、節入り当日は前後両候補とそれぞれの併臨年も返す
@@ -160,6 +160,7 @@ Streamable HTTP・stateless・POST のみ。匿名で使えます。計算は画
 - compare_fortune_perspectives: 日付と方位の組を最大10件、九星・干支・五行・陰陽・納音・暦注・十二直・数秘の個人年と個人日について、値・判定・確かさ・説明で返す。九星は judge_directions と同じで、天中殺は弱めるだけで禁止しない。足りない入力は未確認。入力は保存しない。言い伝えは目安で効果の保証はない
 - judge_time_slots: 明示した生年月日・緯度・経度から、1日12刻の可否（動いてよい／ふつう。刻単位の天中殺は使わず isVoid は常に false）と刻の九星を返す。includeBoard=true なら九星配置も返す
 - judge_hourly_directions: 日付必須、location（lat/lon）省略時は名古屋。本命星honmeiStarか生年月日birthDateは任意（同時指定不可）。judge_time_slotsと同じ真太陽時の12刻について時盤の八方位を返す。五黄殺・暗剣殺は全員に凶。未指定時の他方位はneutral（未判定）。色は既存KYUSEI.colorの時盤中宮の九星色で個人別ではない。年・月・日盤、時破、空亡は合成しない
+- find_relocation_windows: 年盤・月盤の使える方位と強さが同じ連続期間、天中殺の年・月、3盤そろう日を返す。既定600日、30〜730日。天中殺は既定weaken。入力: birthDate（必須YYYY-MM-DD）、birthTime（任意HH:MM・JST）、lon（必須122〜154）、from（既定今日JST）、days、tenchusatsuMode、involuntaryMove、directionFilterMode。出力: windows（from/to/days/directions/bestTier/allDirectionsBad/tenchusatsu）、tripleDays（最大200日）とtripleDaysTotal、summary。ページ: /houi/relocation-calendar。
 - find_auspicious_days: 期間内で、八方位それぞれに動ける日（三盤吉・吉日）を集計する。bestDays[].kanshi に各候補日の年月日干支（JST正午）、solarTerms に走査期間の二十四節気を追加
 - search_articles: キーワード・話題で公開記事のtitle・slug・description・URL・publishedAt・tagsを最大5件返す。
 - get_article: slugで公開記事の見出し別の節を最大4000文字まで返す。DBのBlogPostを読み取り、空・接続失敗時はMarkdownへ落ちる。draftは返さず、書き込み・個人データへのアクセスはしない。

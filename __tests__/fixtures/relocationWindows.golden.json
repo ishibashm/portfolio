@@ -1,0 +1,403 @@
+{
+  "input": {
+    "birthDate": "1979-11-17",
+    "lon": 135.5,
+    "from": "2026-11-14",
+    "days": 600,
+    "tenchusatsuMode": "weaken"
+  },
+  "note": "架空の生年月日（本命星 三碧木星・天中殺 午未）。実在の人物のデータではない。",
+  "windows": [
+    {
+      "from": "2026-11-14",
+      "to": "2026-12-06",
+      "directions": {
+        "北西": "B"
+      },
+      "allDirectionsBad": false,
+      "tenchusatsuScopes": [
+        "year"
+      ]
+    },
+    {
+      "from": "2026-12-07",
+      "to": "2027-01-05",
+      "directions": {
+        "北東": "B",
+        "南東": "B",
+        "北西": "C",
+        "南西": "D"
+      },
+      "allDirectionsBad": false,
+      "tenchusatsuScopes": [
+        "year"
+      ]
+    },
+    {
+      "from": "2027-01-06",
+      "to": "2027-02-03",
+      "directions": {},
+      "allDirectionsBad": true,
+      "tenchusatsuScopes": [
+        "year"
+      ]
+    },
+    {
+      "from": "2027-02-04",
+      "to": "2027-03-05",
+      "directions": {
+        "北西": "B",
+        "南東": "C"
+      },
+      "allDirectionsBad": false,
+      "tenchusatsuScopes": [
+        "year"
+      ]
+    },
+    {
+      "from": "2027-03-06",
+      "to": "2027-04-04",
+      "directions": {
+        "東": "C"
+      },
+      "allDirectionsBad": false,
+      "tenchusatsuScopes": [
+        "year"
+      ]
+    },
+    {
+      "from": "2027-04-05",
+      "to": "2027-04-16",
+      "directions": {
+        "南東": "C"
+      },
+      "allDirectionsBad": false,
+      "tenchusatsuScopes": [
+        "year"
+      ]
+    },
+    {
+      "from": "2027-04-17",
+      "to": "2027-04-19",
+      "directions": {
+        "南東": "D"
+      },
+      "allDirectionsBad": false,
+      "tenchusatsuScopes": [
+        "year"
+      ]
+    },
+    {
+      "from": "2027-04-20",
+      "to": "2027-04-21",
+      "directions": {
+        "南東": "C"
+      },
+      "allDirectionsBad": false,
+      "tenchusatsuScopes": [
+        "year"
+      ]
+    },
+    {
+      "from": "2027-04-22",
+      "to": "2027-04-23",
+      "directions": {
+        "南東": "D"
+      },
+      "allDirectionsBad": false,
+      "tenchusatsuScopes": [
+        "year"
+      ]
+    },
+    {
+      "from": "2027-04-24",
+      "to": "2027-04-24",
+      "directions": {
+        "南東": "C"
+      },
+      "allDirectionsBad": false,
+      "tenchusatsuScopes": [
+        "year"
+      ]
+    },
+    {
+      "from": "2027-04-25",
+      "to": "2027-05-01",
+      "directions": {
+        "南東": "D"
+      },
+      "allDirectionsBad": false,
+      "tenchusatsuScopes": [
+        "year"
+      ]
+    },
+    {
+      "from": "2027-05-02",
+      "to": "2027-05-03",
+      "directions": {
+        "南東": "C"
+      },
+      "allDirectionsBad": false,
+      "tenchusatsuScopes": [
+        "year"
+      ]
+    },
+    {
+      "from": "2027-05-04",
+      "to": "2027-05-05",
+      "directions": {
+        "南東": "D"
+      },
+      "allDirectionsBad": false,
+      "tenchusatsuScopes": [
+        "year"
+      ]
+    },
+    {
+      "from": "2027-05-06",
+      "to": "2027-06-05",
+      "directions": {
+        "東": "B",
+        "西": "C"
+      },
+      "allDirectionsBad": false,
+      "tenchusatsuScopes": [
+        "year"
+      ]
+    },
+    {
+      "from": "2027-06-06",
+      "to": "2027-07-07",
+      "directions": {
+        "南東": "B",
+        "北西": "B"
+      },
+      "allDirectionsBad": false,
+      "tenchusatsuScopes": [
+        "year",
+        "month"
+      ]
+    },
+    {
+      "from": "2027-07-08",
+      "to": "2027-08-07",
+      "directions": {
+        "北西": "S",
+        "東": "C",
+        "南東": "C",
+        "西": "C"
+      },
+      "allDirectionsBad": false,
+      "tenchusatsuScopes": [
+        "year",
+        "month"
+      ]
+    },
+    {
+      "from": "2027-08-08",
+      "to": "2027-09-07",
+      "directions": {
+        "北西": "S",
+        "西": "B",
+        "東": "C",
+        "南東": "C"
+      },
+      "allDirectionsBad": false,
+      "tenchusatsuScopes": [
+        "year"
+      ]
+    },
+    {
+      "from": "2027-09-08",
+      "to": "2027-10-08",
+      "directions": {
+        "北西": "B",
+        "南東": "C"
+      },
+      "allDirectionsBad": false,
+      "tenchusatsuScopes": [
+        "year"
+      ]
+    },
+    {
+      "from": "2027-10-09",
+      "to": "2027-11-07",
+      "directions": {
+        "東": "C",
+        "西": "C"
+      },
+      "allDirectionsBad": false,
+      "tenchusatsuScopes": [
+        "year"
+      ]
+    },
+    {
+      "from": "2027-11-08",
+      "to": "2027-12-07",
+      "directions": {
+        "北西": "B"
+      },
+      "allDirectionsBad": false,
+      "tenchusatsuScopes": [
+        "year"
+      ]
+    },
+    {
+      "from": "2027-12-08",
+      "to": "2028-01-05",
+      "directions": {
+        "東": "C",
+        "西": "C"
+      },
+      "allDirectionsBad": false,
+      "tenchusatsuScopes": [
+        "year"
+      ]
+    },
+    {
+      "from": "2028-01-06",
+      "to": "2028-02-04",
+      "directions": {
+        "北西": "B",
+        "南東": "C"
+      },
+      "allDirectionsBad": false,
+      "tenchusatsuScopes": [
+        "year"
+      ]
+    },
+    {
+      "from": "2028-02-05",
+      "to": "2028-03-04",
+      "directions": {
+        "東": "B",
+        "西": "B"
+      },
+      "allDirectionsBad": false,
+      "tenchusatsuScopes": []
+    },
+    {
+      "from": "2028-03-05",
+      "to": "2028-04-04",
+      "directions": {
+        "南東": "B",
+        "北西": "B"
+      },
+      "allDirectionsBad": false,
+      "tenchusatsuScopes": []
+    },
+    {
+      "from": "2028-04-05",
+      "to": "2028-04-15",
+      "directions": {
+        "西": "B",
+        "東": "C",
+        "南東": "C"
+      },
+      "allDirectionsBad": false,
+      "tenchusatsuScopes": []
+    },
+    {
+      "from": "2028-04-16",
+      "to": "2028-04-17",
+      "directions": {
+        "西": "B",
+        "東": "C",
+        "南東": "D"
+      },
+      "allDirectionsBad": false,
+      "tenchusatsuScopes": []
+    },
+    {
+      "from": "2028-04-18",
+      "to": "2028-04-18",
+      "directions": {
+        "西": "B",
+        "東": "C",
+        "南東": "C"
+      },
+      "allDirectionsBad": false,
+      "tenchusatsuScopes": []
+    },
+    {
+      "from": "2028-04-19",
+      "to": "2028-04-25",
+      "directions": {
+        "西": "B",
+        "東": "C",
+        "南東": "D"
+      },
+      "allDirectionsBad": false,
+      "tenchusatsuScopes": []
+    },
+    {
+      "from": "2028-04-26",
+      "to": "2028-04-27",
+      "directions": {
+        "西": "B",
+        "東": "C",
+        "南東": "C"
+      },
+      "allDirectionsBad": false,
+      "tenchusatsuScopes": []
+    },
+    {
+      "from": "2028-04-28",
+      "to": "2028-04-29",
+      "directions": {
+        "西": "B",
+        "東": "C",
+        "南東": "D"
+      },
+      "allDirectionsBad": false,
+      "tenchusatsuScopes": []
+    },
+    {
+      "from": "2028-04-30",
+      "to": "2028-04-30",
+      "directions": {
+        "西": "B",
+        "東": "C",
+        "南東": "C"
+      },
+      "allDirectionsBad": false,
+      "tenchusatsuScopes": []
+    },
+    {
+      "from": "2028-05-01",
+      "to": "2028-05-04",
+      "directions": {
+        "西": "B",
+        "東": "C",
+        "南東": "D"
+      },
+      "allDirectionsBad": false,
+      "tenchusatsuScopes": []
+    },
+    {
+      "from": "2028-05-05",
+      "to": "2028-06-05",
+      "directions": {
+        "西": "S",
+        "東": "C",
+        "南東": "C"
+      },
+      "allDirectionsBad": false,
+      "tenchusatsuScopes": []
+    },
+    {
+      "from": "2028-06-06",
+      "to": "2028-07-05",
+      "directions": {
+        "北西": "B",
+        "南東": "C"
+      },
+      "allDirectionsBad": false,
+      "tenchusatsuScopes": [
+        "month"
+      ]
+    }
+  ],
+  "tripleDaysTotal": 15,
+  "allDirectionsBadDays": 29
+}

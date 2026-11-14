@@ -151,6 +151,7 @@ const toolLabels: Record<string, string> = {
   get_honmei_star: "本命星を確認",
   judge_directions: "方位の吉凶を確認",
   find_auspicious_days: "日取りの候補を確認",
+  find_relocation_windows: "引越しできる日の一覧",
   search_municipality: "市区町村を検索",
   area_directions: "方位ごとの街を確認",
   prefecture_summary: "地域情報を確認",
