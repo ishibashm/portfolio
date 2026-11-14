@@ -11,7 +11,8 @@ vi.mock("@/utils/supabase/server", () => {
 });
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { InMemoryTransport } from "@modelcontextprotocol/sdk/inMemory.js";
-import { createMcpServer } from "@/lib/mcpServer";
+import { createMcpServer, MCP_PUBLIC_INSTRUCTIONS } from "@/lib/mcpServer";
+import { resolveMcpOrigin } from "@/lib/mcpOrigin";
 import { GET, POST } from "@/app/api/mcp/route";
 import {
   judgeDayAllDirections,
@@ -95,18 +96,26 @@ describe("MCP サーバー", () => {
     await c.close();
   });
 
-  it.each([29, 731, 30.5])("find_relocation_windows rejects invalid days %s at the MCP boundary", async (days) => {
-    const c = await connect();
-    try {
-      const result = await c.callTool({
-        name: "find_relocation_windows",
-        arguments: { birthDate: "1979-11-17", lon: 135.5, from: "2026-11-14", days },
-      });
-      expect(result.isError).toBe(true);
-    } finally {
-      await c.close();
-    }
-  });
+  it.each([29, 731, 30.5])(
+    "find_relocation_windows rejects invalid days %s at the MCP boundary",
+    async (days) => {
+      const c = await connect();
+      try {
+        const result = await c.callTool({
+          name: "find_relocation_windows",
+          arguments: {
+            birthDate: "1979-11-17",
+            lon: 135.5,
+            from: "2026-11-14",
+            days,
+          },
+        });
+        expect(result.isError).toBe(true);
+      } finally {
+        await c.close();
+      }
+    },
+  );
 
   it("compare_fortune_perspectives は観点を返し、足りない入力を未確認にする", async () => {
     const c = await connect();
@@ -568,5 +577,101 @@ describe("公開の刻ツール", () => {
     expect((await call({ ...args, profile: { id: "private" } })).isError).toBe(
       true,
     );
+  });
+
+  it("公開サーバーの説明に、よくある呼び順がある", () => {
+    expect(MCP_PUBLIC_INSTRUCTIONS).toContain("よくある呼び順");
+    expect(MCP_PUBLIC_INSTRUCTIONS).toContain("judge_directions");
+    expect(MCP_PUBLIC_INSTRUCTIONS).toContain("search_municipality");
+    expect(MCP_PUBLIC_INSTRUCTIONS).toContain("find_relocation_windows");
+    expect(MCP_PUBLIC_INSTRUCTIONS).not.toContain("Cloud Paletteでは");
+  });
+
+  it("content の JSON は字下げせず、structuredContent と同じ", async () => {
+    const c = await connect();
+    const result = await c.callTool({
+      name: "judge_directions",
+      arguments: {
+        birthDate: "1990-05-15",
+        lon: 136.9066,
+        date: "2026-11-14",
+      },
+    });
+    expect(result.isError).not.toBe(true);
+    const raw = (result.content as { text: string }[])[0].text;
+    const parsed = JSON.parse(raw);
+    expect(raw).toBe(JSON.stringify(parsed));
+    expect(raw).not.toMatch(/\n  "/);
+    expect(result.structuredContent).toEqual(parsed);
+    await c.close();
+  });
+
+  it("judge_directions は市区町村名（新宿区）と経度で同じ判定になる", async () => {
+    const byName = resolveMcpOrigin({ municipalityName: "新宿区" });
+    expect(byName.ok).toBe(true);
+    if (!byName.ok) return;
+    const c = await connect();
+    const named = await c.callTool({
+      name: "judge_directions",
+      arguments: {
+        birthDate: "1990-05-15",
+        municipalityName: "新宿区",
+        date: "2026-11-14",
+      },
+    });
+    const withLon = await c.callTool({
+      name: "judge_directions",
+      arguments: {
+        birthDate: "1990-05-15",
+        lon: byName.lon,
+        date: "2026-11-14",
+      },
+    });
+    expect(named.isError).not.toBe(true);
+    expect(withLon.isError).not.toBe(true);
+    expect(parse(named)).toEqual(parse(withLon));
+    expect(JSON.stringify(parse(named))).not.toContain("1990-05-15");
+    await c.close();
+  });
+
+  it("市区町村名が複数に当たるときは候補を返し、判定しない", async () => {
+    const c = await connect();
+    const result = await c.callTool({
+      name: "judge_directions",
+      arguments: {
+        birthDate: "1990-05-15",
+        municipalityName: "名古屋",
+        date: "2026-11-14",
+      },
+    });
+    expect(result.isError).not.toBe(true);
+    const body = parse(result);
+    expect(body.needsMunicipalitySelection).toBe(true);
+    expect(body.candidates.length).toBeGreaterThan(1);
+    expect(body).not.toHaveProperty("directions");
+    expect(JSON.stringify(body)).not.toContain("1990-05-15");
+    await c.close();
+  });
+
+  it("area_directions は名前（新宿区）でもコードでも同じ一覧になる", async () => {
+    const byName = resolveMcpOrigin({ municipalityName: "新宿区" });
+    expect(byName.ok).toBe(true);
+    if (!byName.ok || !byName.origin) return;
+    const c = await connect();
+    const named = parse(
+      await c.callTool({
+        name: "area_directions",
+        arguments: { name: "新宿区", perDirection: 3 },
+      }),
+    );
+    const coded = parse(
+      await c.callTool({
+        name: "area_directions",
+        arguments: { code: byName.origin.code, perDirection: 3 },
+      }),
+    );
+    expect(named.origin.code).toBe(coded.origin.code);
+    expect(named.directions).toEqual(coded.directions);
+    await c.close();
   });
 });
