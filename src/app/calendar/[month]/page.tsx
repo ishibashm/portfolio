@@ -420,6 +420,19 @@ export default async function Page({
               );
             })}
           </div>
+          {/* 年の一覧へ。対象外の年（頁が無い）にはリンクしない。 */}
+          {parseYear(String(year)) !== null && (
+            <p className="mt-4 text-xs text-slate-600">
+              1年ぶんの天赦日・一粒万倍日・土用は
+              <Link
+                href={`/calendar/${year}`}
+                className="text-rose-600 hover:underline"
+              >
+                {year}年の年間一覧
+              </Link>
+              にまとめています。
+            </p>
+          )}
           <div className="mt-5 flex justify-between text-xs">
             {prev ? (
               <Link
