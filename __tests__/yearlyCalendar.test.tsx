@@ -1,3 +1,5 @@
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 import { renderToStaticMarkup } from "react-dom/server";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import CalendarPage, {
@@ -231,5 +233,24 @@ describe("llms-full.txt の年ごとの日取り", () => {
       `一粒万倍日 60 日、大安 ${totals.taian} 日。仏滅・赤口と土用（間日を除く）を外した「引越しに向く日」は ${totals.recommended} 日。`,
     );
     expect(text).toContain("北（五黄殺）・南（暗剣殺）・北東（歳破）");
+  });
+
+  it("route がこの関数で年ぶんを載せている", () => {
+    const route = readFileSync(
+      join(process.cwd(), "src/app/llms-full.txt/route.ts"),
+      "utf8",
+    );
+    expect(route).toContain(
+      "yearlyCalendarLlmsLines(buildYearlyCalendar(year)",
+    );
+    expect(route).toContain("${yearlyDays}");
+  });
+
+  it("年の早見表（/houi/{年}）から年の一覧へ導線がある", () => {
+    const page = readFileSync(
+      join(process.cwd(), "src/app/houi/[year]/page.tsx"),
+      "utf8",
+    );
+    expect(page).toContain("href={`/calendar/${year}`}");
   });
 });

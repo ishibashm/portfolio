@@ -167,6 +167,13 @@ export default async function Page({
             <Link href="/calendar" className="underline hover:text-slate-600">
               引越しの日取り
             </Link>
+            、この年の天赦日・一粒万倍日・土用は
+            <Link
+              href={`/calendar/${year}`}
+              className="underline hover:text-slate-600"
+            >
+              {year}年の年間一覧
+            </Link>
             、天中殺の期間は
             <Link
               href="/houi/tenchusatsu"
