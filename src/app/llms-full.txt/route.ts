@@ -11,6 +11,11 @@ import { PREF_REGION, prefNameByCode } from "@/lib/prefContent";
 import { PREF_EDITORIAL } from "@/lib/prefEditorial";
 import { AREA_EDITORIAL } from "@/lib/areaEditorial";
 import { AREAS, AREA_GENERATED_AT } from "@/lib/areaContent";
+import { contentYears } from "@/lib/kigakuContent";
+import {
+  buildYearlyCalendar,
+  yearlyCalendarLlmsLines,
+} from "@/lib/yearlyCalendar";
 
 export const runtime = "nodejs";
 export const revalidate = 86400; // 24 hours cache
@@ -46,6 +51,13 @@ export async function GET() {
       return description ? `${line}: ${description}` : line;
     })
     .join("\n");
+
+  // 年ごとの日取り。頁（/calendar/{年}）と同じ集計から、日付そのものを
+  // 載せる。「2027 年の天赦日はいつか」は年末年始にいちばん聞かれる問いで、
+  // 頁を開かずに答えられる形にしておく。
+  const yearlyDays = contentYears()
+    .map((year) => yearlyCalendarLlmsLines(buildYearlyCalendar(year), baseUrl))
+    .join("\n\n");
 
   /* 都道府県ページは 47 県ぶん手で文章を書いてある。Search Console の
      実測では表示の付くクエリのほぼ全部が「地名 家賃相場」なのに、
@@ -89,6 +101,12 @@ ${services}
 
 - [引越しの読みもの](${baseUrl}/blog): 計算規則と流派による解釈を区別して解説します。
 ${blogPosts}
+
+## 年ごとの日取り（天赦日・一粒万倍日・土用）
+
+暦だけで決まり、誰にとっても同じ日です。日付は日本時間、計算値です。方位の吉凶は本命星と出発地で変わるので、別に確かめる必要があります。
+
+${yearlyDays}
 
 ---
 
