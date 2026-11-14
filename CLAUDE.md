@@ -437,6 +437,19 @@ grep -rn "Math.floor(jd" src/   # 日の指標。日本時間の正午を通し�
 grep -rn "new Date(birthDate" src/     # 0 件を保つ。見張りは birthInstantJst / clientBirthParseJst
 ```
 
+**旧暦の月日も同じ罠の仲間**（#1838・#1839。2026-11-14）。lunar-javascript の
+`getLunar().getMonth()` / `getDay()` は**中国の暦**で、朔を北京時間で日に丸める。
+朔が日本時間の 0 時台に来る月は中国で前日が 1 日になり、**その月の六曜と
+不成就日が全部 1 日ずれていた**（2026-10・2027-02・2028-01。2027-02-28 の
+天赦日が大安と出ていたが日本の暦では仏滅）。日本時間で引いても直らない
+（年月日の読み方ではなく、暦そのものの違い）。旧暦は `utils/lunar` の
+**`getLunarDate` ただ 1 つ**から引く。干支・九星・節気は日中で同じなので
+lunar-javascript のままでよい。
+
+```bash
+grep -rn "getLunar()\.getMonth()\|lunar\.getMonth()\|lunar\.getDay()" src/   # utils/lunar 以外に出たら直す
+```
+
 **サーバで描く頁の `toLocaleDateString("ja-JP")` は `timeZone` 必須**（#1107）。
 省くと実行環境の日付になる。`/relocation/purchase` の「最終更新」は集計が
 23:49 UTC（翌 08:49 JST）に走るため**常に 1 日前**だった。`"use client"` で
