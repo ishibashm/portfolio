@@ -90,6 +90,28 @@ describe("占いの観点", () => {
     expect(row(day("2026-04-06"), "fuseiju").value).toBe("当たらない");
   });
 
+  it("不成就日は日本の旧暦で数える（2027年2月は7日が旧正月）", () => {
+    // 朔が 2027-02-07 00:56 JST なので、日本の旧正月は 2/7、中国は 2/6。
+    // 正月の不成就日は 3・11・19・27 日 → 日本では 2/9・2/17・2/25・3/5。
+    // 中国の暦で数えていたころは 2/8・2/16・2/24・3/4 を当てていた。
+    for (const date of [
+      "2027-02-09",
+      "2027-02-17",
+      "2027-02-25",
+      "2027-03-05",
+    ]) {
+      expect(row(day(date), "fuseiju").value, date).toBe("当たる");
+    }
+    for (const date of [
+      "2027-02-08",
+      "2027-02-16",
+      "2027-02-24",
+      "2027-03-04",
+    ]) {
+      expect(row(day(date), "fuseiju").value, date).toBe("当たらない");
+    }
+  });
+
   it("節月が替わる正午どうしは、十二直が前日と同じ名になる", () => {
     const term = solarTermsForYear(2026).find((item) => item.name === "立春");
     expect(term).toBeTruthy();

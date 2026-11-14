@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from "react";
 import { Solar } from "lunar-javascript";
 import { getZonedDateTimeFields } from "@/utils/solarTime";
-import { getRokuyo } from "@/utils/lunar";
+import { getLunarDate, getRokuyo } from "@/utils/lunar";
 
 interface ClockDisplayProps {
   kimon: {
@@ -86,8 +86,13 @@ export function ClockDisplay({
     評価日に 2028-06-23〜26 などを選ぶと時期タブごと落ちる。
     getRokuyo は絶対値を取ってこれを避けている（写しには入っていなかった）。
   */
-  const lunarMonth = lunarDate.getMonth();
-  const lunarDay = lunarDate.getDay();
+  /*
+    旧暦の月日も utils/lunar から引く（日本時間の朔で月を始める）。
+    lunar-javascript の getMonth / getDay は中国の暦で、朔が日本時間の
+    0 時台に来る月は 1 日ずれ、すぐ隣に出す六曜と食い違っていた。
+    月相の名前（getYueXiang）は表示の飾りなので lunar-javascript のまま。
+  */
+  const { month: lunarMonth, day: lunarDay } = getLunarDate(targetDate);
   const rokuyoName = getRokuyo(targetDate);
   const yueXiang = lunarDate.getYueXiang(); // Phase name
   // 閏月は「閏5月」と出す。負の数をそのまま出すと「-5月」になる。
