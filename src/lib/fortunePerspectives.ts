@@ -1,4 +1,3 @@
-import { Solar } from "lunar-javascript";
 import { STAR_NAMES } from "@/lib/kigakuContent";
 import { calculateMcpDirections, parseJstDate } from "@/lib/mcpDirections";
 import { kanshiAt } from "@/lib/kanshi";
@@ -11,7 +10,7 @@ import {
 } from "@/utils/directionGeo";
 import { getHonmeiStar } from "@/utils/ephemerisEngine";
 import { toJapanDateString } from "@/utils/japanDate";
-import { getLuckyDays, getRokuyo } from "@/utils/lunar";
+import { getLuckyDays, getLunarDate, getRokuyo } from "@/utils/lunar";
 import { getZonedDateTimeFields } from "@/utils/solarTime";
 import { JUNISHI, tenchusatsuForCivilDate } from "@/utils/tenchusatsuCore";
 import { TENCHUSATSU_WEAK_NOTE } from "@/utils/tenchusatsuPolicy";
@@ -452,18 +451,15 @@ function hit(
   );
 }
 
+/*
+  旧暦の月日は utils/lunar の getLunarDate（日本時間の朔で月を始める）から
+  引く。ここで lunar-javascript を直に読むと中国の暦になり、朔が日本時間の
+  0 時台に来る月（2026-10・2027-02・2028-01 など）は 1 日ずれる。不成就日は
+  旧暦の日で決まるので、同じ月の判定が六曜と食い違っていた。
+*/
 function lunarMonthDay(date: Date): { month: number; day: number } {
-  const fields = getZonedDateTimeFields(date, 9);
-  const solar = Solar.fromYmdHms(
-    fields.year,
-    fields.month,
-    fields.day,
-    fields.hours,
-    fields.minutes,
-    fields.seconds,
-  );
-  const lunar = solar.getLunar();
-  return { month: Math.abs(lunar.getMonth()), day: lunar.getDay() };
+  const { month, day } = getLunarDate(date);
+  return { month: Math.abs(month), day };
 }
 
 type BirthResolution =
