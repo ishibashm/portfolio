@@ -59,6 +59,14 @@ const SPECIFIC_BEFORE: Record<string, number> = {
   "2028-04": 905,
 };
 
+/**
+ * 説明とは別に、2026-11-14 に全頁へ足した「{年}年の年間一覧」への一文
+ * （/calendar/{年}）。文は全頁で同じで、年の数字だけが頁ごとに数えられる
+ * （測り直すと 18 頁とも +5 で揃った）。上の表は説明を足す前の値のまま
+ * 残し、ここで差を足す。
+ */
+const YEAR_LINK_SPECIFIC = 5;
+
 const WEEK = ["日", "月", "火", "水", "木", "金", "土"];
 const SLUGS = Object.keys(CALENDAR_MONTH_NOTES);
 
@@ -299,9 +307,10 @@ describe("月別カレンダーの月固有の説明", () => {
     }
     const after = specificCounts(pages);
     for (const slug of SLUGS) {
-      expect(after.get(slug)! - SPECIFIC_BEFORE[slug], slug).toBe(
-        countChars(CALENDAR_MONTH_NOTES[slug]),
-      );
+      expect(
+        after.get(slug)! - SPECIFIC_BEFORE[slug] - YEAR_LINK_SPECIFIC,
+        slug,
+      ).toBe(countChars(CALENDAR_MONTH_NOTES[slug]));
     }
   });
 

@@ -168,6 +168,24 @@ export default function CalendarPage() {
               </Link>
             ))}
           </div>
+          {/* 年の一覧。年は月の一覧から引く（kigakuContent の contentYears は
+              暦エンジンを引くので、client のこの頁では import しない）。
+              月の一覧に出る年は必ず年の頁の対象（今年から 3 年）に入る。 */}
+          <p className="mt-4 text-xs leading-relaxed text-slate-600">
+            1年ぶんの天赦日・一粒万倍日・土用をまとめて見るときは、年間一覧をご覧ください。
+          </p>
+          <div className="mt-2 flex flex-wrap gap-2">
+            {[...new Set(calendarMonths().map((c) => c.year))].map((year) => (
+              <Link
+                prefetch={false}
+                key={year}
+                href={`/calendar/${year}`}
+                className="px-3 py-1.5 rounded-full border border-slate-300 bg-white text-xs font-bold text-slate-700 hover:border-rose-400 transition-colors"
+              >
+                {year}年の年間一覧
+              </Link>
+            ))}
+          </div>
         </section>
 
         {/* Calendar Widget
