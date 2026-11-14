@@ -67,6 +67,13 @@ describe("buildTimingReport", () => {
     expect(md).toContain(MCP_URL);
   });
 
+  it("判定方針・続けて聞ける問い・本命星の公開ページを添える", () => {
+    expect(md).toContain("## 判定の方針");
+    expect(md).toContain("## 続けて聞ける問い");
+    expect(md).toContain("/houi/2026/7");
+    expect(md).not.toContain("Cloud Paletteでは");
+  });
+
   it("表を壊す記号はセルの中で置き換える", () => {
     const broken = buildTimingReport({
       ...INPUT,

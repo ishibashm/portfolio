@@ -1,7 +1,9 @@
 import { CurrentDirections } from "@/components/houi/CurrentDirections";
 import { LineFriendLink } from "@/components/LineFriendLink";
+import { AiExportBox } from "@/components/AiExportBox";
 import type { Metadata } from "next";
 import Link from "next/link";
+import { buildTodayAiExport } from "@/lib/aiExportPages";
 import { buildTodayDirections } from "@/lib/todayDirections";
 import { HOUI_BREADCRUMB_LABEL, getMonthlySummary } from "@/lib/kigakuContent";
 import { pageOpenGraph, SITE_URL } from "@/lib/siteUrl";
@@ -22,6 +24,12 @@ const list = (items: string[]) => items.join("・") || "なし";
 export default function TodayPage() {
   const data = buildTodayDirections();
   const year = Number(data.date.slice(0, 4));
+  const markdown = buildTodayAiExport({
+    date: data.date,
+    tomorrow: data.tomorrow,
+    stars: data.stars,
+    generatedAt: new Date(),
+  });
   const shareUrl = `https://twitter.com/intent/tweet?url=${encodeURIComponent(`${SITE_URL}/houi/today`)}&text=${encodeURIComponent("今日の吉方位と時間｜本命星別の早見表")}`;
   return (
     <main className="wg-page px-4 py-10 text-slate-900">
@@ -187,6 +195,7 @@ export default function TodayPage() {
         <p className="text-sm text-slate-600">
           本命星だけの早見表です。月命星・個人の天中殺は含みません。引越しは年盤・月盤も確認してください。方位の吉凶は伝統的な見方で、効果を保証するものではありません。
         </p>
+        <AiExportBox markdown={markdown} />
         <nav
           aria-label="日取りと共有"
           className="wg-card flex flex-wrap gap-4 p-5 text-sm text-rose-700 underline"

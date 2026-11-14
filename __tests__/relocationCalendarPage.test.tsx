@@ -6,16 +6,28 @@ import Page, { generateMetadata } from "@/app/houi/relocation-calendar/page";
 
 describe("relocation calendar server page", () => {
   it("keeps the page a server component and noindexes arbitrary query keys", async () => {
-    const source = readFileSync("src/app/houi/relocation-calendar/page.tsx", "utf8");
+    const source = readFileSync(
+      "src/app/houi/relocation-calendar/page.tsx",
+      "utf8",
+    );
     expect(source).not.toMatch(/["']use client["']/);
-    expect((await generateMetadata({ searchParams: Promise.resolve({ unknown: "1" }) })).robots)
-      .toMatchObject({ index: false, follow: false });
-    const html = renderToStaticMarkup(await Page({ searchParams: Promise.resolve({}) }));
+    expect(
+      (
+        await generateMetadata({
+          searchParams: Promise.resolve({ unknown: "1" }),
+        })
+      ).robots,
+    ).toMatchObject({ index: false, follow: false });
+    const html = renderToStaticMarkup(
+      await Page({ searchParams: Promise.resolve({}) }),
+    );
     expect(html).toContain('method="get"');
     expect(html).not.toContain("<script");
   });
   it("renders validation errors without echoing invalid personal input", async () => {
-    const html = renderToStaticMarkup(await Page({ searchParams: Promise.resolve({ birthDate: "invalid" }) }));
+    const html = renderToStaticMarkup(
+      await Page({ searchParams: Promise.resolve({ birthDate: "invalid" }) }),
+    );
     expect(html).toContain('role="alert"');
     expect(html).not.toContain('value="invalid"');
   });
@@ -44,8 +56,23 @@ describe("relocation calendar server page", () => {
     expect(html).toContain('method="get"');
     expect(html).toContain("3盤そろう日");
     expect(html).toContain("2026-01-01");
+    expect(html).toContain("AI に渡す");
+    expect(html).toContain("<textarea");
     expect(html).not.toContain("1990-05-15");
     expect(html).not.toContain('value="03:20"');
     expect(html).not.toContain("<script");
+    const area = html.match(/<textarea[^>]*>([^<]*)<\/textarea>/);
+    expect(area).not.toBeNull();
+    const md = area![1]
+      .replaceAll("&amp;", "&")
+      .replaceAll("&lt;", "<")
+      .replaceAll("&gt;", ">")
+      .replaceAll("&#x27;", "'")
+      .replaceAll("&quot;", '"');
+    expect(md).toContain("判定の方針");
+    expect(md).toContain("/houi/2026/");
+    expect(md).not.toContain("1990-05-15");
+    expect(md).not.toContain("139.69");
+    expect(md).not.toContain("Cloud Paletteでは");
   });
 });
