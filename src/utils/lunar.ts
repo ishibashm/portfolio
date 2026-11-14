@@ -1,3 +1,4 @@
+import { SearchMoonPhase } from "astronomy-engine";
 import { Solar } from "lunar-javascript";
 import { getZonedDateTimeFields } from "./solarTime";
 
@@ -79,23 +80,83 @@ export function getRokuyo(date: Date): string {
   return ROKUYO[rem];
 }
 
+/*
+  旧暦の月日。**月の始まり（朔の日）は日本時間で決める。**
+
+  lunar-javascript は中国の暦で、朔の時刻に北京時間（UTC+8）を足して
+  日に丸める。日本の暦（天保暦の規則。国立天文台の暦要項）は日本時間で
+  丸めるので、**朔が日本時間の 0〜1 時に来る月は、月の始まりが 1 日
+  ずれる。**中国では前日が 1 日、日本では当日が 1 日になる。
+
+  六曜は (旧暦の月 + 日) % 6 なので、ずれた月は**月の終わりまで全部の日の
+  六曜が 1 つずれる。**2026〜2028 年では次の 3 か月が該当していた。
+
+      朔 2026-10-11 00:50 JST   2026-10-10 から 11-08 まで
+      朔 2027-02-07 00:56 JST   2027-02-06 から 03-07 まで
+      朔 2028-01-27 00:13 JST   2028-01-26 から 02-24 まで
+
+  2027-02-28（天赦日）はこのサイトでは「大安」と出て「引越しに向く日」に
+  入っていたが、日本の暦では仏滅（2026-11-14 に外部の暦と照合）。
+
+  直し方: 朔の日は astronomy-engine で日本時間に丸めて求め、日はそこから
+  数える。月の番号は lunar-javascript の値を借りる。日本の朔の日には、
+  中国の暦でも必ずその月に入っている（北京は東京より 1 時間遅いので、
+  中国の朔の日は日本と同じ日か 1 日前）。
+
+  **直していないこと:** 閏月をどの月に置くか（中気の扱い）が日中で割れる
+  年は、月の番号そのものが違いうる（いわゆる 2033 年問題）。2026〜2032 年
+  には無いので、ここでは扱っていない。
+*/
+
+const DAY_MS = 86_400_000;
+const JST_OFFSET_MS = 9 * 3_600_000;
+
+/** 日本時間の暦日の通し番号（1970-01-01 を 0 とする）。 */
+function jstDayIndex(instant: Date): number {
+  return Math.floor((instant.getTime() + JST_OFFSET_MS) / DAY_MS);
+}
+
+/** その日（日本時間）以前で、いちばん近い朔の日の通し番号。 */
+function jstNewMoonDayOnOrBefore(dayIndex: number): number {
+  // その日の終わり（翌日の日本時間 0 時）より前に起きた朔のうち、最後のもの。
+  const endOfDay = (dayIndex + 1) * DAY_MS - JST_OFFSET_MS;
+  let from = new Date(endOfDay - 31 * DAY_MS);
+  let last: Date | null = null;
+  for (;;) {
+    const found = SearchMoonPhase(0, from, 32);
+    if (!found || found.date.getTime() >= endOfDay) break;
+    last = found.date;
+    from = new Date(found.date.getTime() + DAY_MS);
+  }
+  if (!last) throw new Error("朔が見つからない");
+  return jstDayIndex(last);
+}
+
+function lunarAtNoonOfDay(dayIndex: number) {
+  const d = new Date(dayIndex * DAY_MS);
+  return Solar.fromYmdHms(
+    d.getUTCFullYear(),
+    d.getUTCMonth() + 1,
+    d.getUTCDate(),
+    12,
+    0,
+    0,
+  ).getLunar();
+}
+
 /**
- * Gets the actual Lunar Month and Day from lunar-javascript, JST-aligned.
+ * 旧暦の月と日（日本の暦）。閏月は lunar-javascript と同じく負の月番号。
  */
-function getLunarDate(date: Date): { month: number; day: number } {
-  const fields = getZonedDateTimeFields(date, 9);
-  const solar = Solar.fromYmdHms(
-    fields.year,
-    fields.month,
-    fields.day,
-    fields.hours,
-    fields.minutes,
-    fields.seconds,
-  );
-  const lunar = solar.getLunar();
+export function getLunarDate(date: Date): { month: number; day: number } {
+  const today = jstDayIndex(date);
+  const newMoon = jstNewMoonDayOnOrBefore(today);
+  let monthLunar = lunarAtNoonOfDay(newMoon);
+  // 中国の暦で朔の日がまだ前の月の終わりに見える場合の守り（朔が北京の
+  // 0 時ちょうど付近で、両者の計算が秒単位で割れたとき）。
+  if (monthLunar.getDay() > 15) monthLunar = lunarAtNoonOfDay(newMoon + 1);
   return {
-    month: lunar.getMonth(),
-    day: lunar.getDay(),
+    month: monthLunar.getMonth(),
+    day: today - newMoon + 1,
   };
 }
 

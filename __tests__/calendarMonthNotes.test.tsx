@@ -31,13 +31,19 @@ function countChars(text: string): number {
   return text.match(COUNTABLE)?.length ?? 0;
 }
 
-/** 説明を足す前に、同じ分け方で測った月固有文字数。 */
+/**
+ * 説明を足す前に、同じ分け方で測った月固有文字数。
+ *
+ * 2026-11・2027-02・2027-03・2028-01・2028-02 は 2026-11-14 に測り直した。
+ * 六曜の旧暦を日本時間の朔で数えるように直し（utils/lunar）、向く日の
+ * カードの数が変わったため。ほかの 13 か月は測り直しても同じ値だった。
+ */
 const SPECIFIC_BEFORE: Record<string, number> = {
-  "2026-11": 943,
+  "2026-11": 894,
   "2026-12": 818,
   "2027-01": 876,
-  "2027-02": 788,
-  "2027-03": 823,
+  "2027-02": 813,
+  "2027-03": 836,
   "2027-04": 920,
   "2027-05": 927,
   "2027-06": 817,
@@ -47,8 +53,8 @@ const SPECIFIC_BEFORE: Record<string, number> = {
   "2027-10": 874,
   "2027-11": 902,
   "2027-12": 786,
-  "2028-01": 940,
-  "2028-02": 842,
+  "2028-01": 945,
+  "2028-02": 864,
   "2028-03": 827,
   "2028-04": 905,
 };
@@ -338,7 +344,13 @@ function checkMonth(
 
   switch (slug) {
     case "2026-11": {
-      expect(cal.recommended).toHaveLength(9);
+      expect(cal.recommended).toHaveLength(7);
+      expect(cal.recommended.every((day) => day.date >= cal.termStart)).toBe(
+        true,
+      );
+      expect(cal.recommended[0].day).toBe(8);
+      expect(WEEK[dayAt(cal, 8).weekday]).toBe("日");
+      expect(dayAt(cal, 8).luckyLabels).toEqual(["一粒万倍日"]);
       expect(goods(prev, 1)).toEqual(["北東", "東", "南西"]);
       expect(goods(cal, 1)).toEqual(["北", "南"]);
       expect(goods(cal, 6)).toEqual([]);
@@ -350,13 +362,11 @@ function checkMonth(
       const ritto = solar(cal, "立冬");
       expect(ritto.atJst.startsWith("2026-11-07")).toBe(true);
       expect(hourOf(ritto.atJst)).toBeGreaterThanOrEqual(12);
-      expect(dayAt(cal, 5).rokuyo).toBe("大安");
-      expect(dayAt(cal, 5).isMabi).toBe(true);
-      expect(WEEK[dayAt(cal, 5).weekday]).toBe("木");
+      expect(dayAt(cal, 6).rokuyo).toBe("大安");
+      expect(dayAt(cal, 6).inDoyou && !dayAt(cal, 6).isMabi).toBe(true);
       expect(dayAt(cal, 7).luckyLabels).toEqual(["一粒万倍日"]);
+      expect(dayAt(cal, 7).rokuyo).toBe("赤口");
       expect(WEEK[dayAt(cal, 7).weekday]).toBe("土");
-      expect(dayAt(cal, 4).rokuyo).toBe("仏滅");
-      expect(dayAt(cal, 4).inDoyou && !dayAt(cal, 4).isMabi).toBe(true);
       expect(cal.doyou).toEqual({ start: "2026-10-20", end: "2026-11-06" });
       expect(text).toContain("正午より後");
       break;
@@ -422,9 +432,10 @@ function checkMonth(
       expect(cal.termStart).toBe("2027-02-04");
       expect(dayAt(cal, 2).inDoyou && !dayAt(cal, 2).isMabi).toBe(true);
       expect(dayAt(cal, 2).rokuyo).toBe("先勝");
-      expect(cal.recommended.every((day) => day.day >= 8)).toBe(true);
-      expect(cal.recommended).toHaveLength(6);
-      expect(dayAt(cal, 28).rokuyo).toBe("大安");
+      expect(cal.recommended.every((day) => day.day >= 6)).toBe(true);
+      expect(cal.recommended).toHaveLength(8);
+      expect(dayAt(cal, 28).rokuyo).toBe("仏滅");
+      expect(cal.recommended.some((day) => day.day === 28)).toBe(false);
       expect(dayAt(cal, 28).luckyLabels).toEqual(["天赦日"]);
       expect(WEEK[dayAt(cal, 28).weekday]).toBe("日");
       const counts = cal.starDirections.map((row) => row.good.length);
@@ -436,15 +447,16 @@ function checkMonth(
     case "2027-03": {
       expect(cal.doyou).toBeNull();
       const taian = cal.days.filter((day) => day.rokuyo === "大安");
-      expect(taian.map((day) => day.day)).toEqual([6, 11, 17, 23, 29]);
+      expect(taian.map((day) => day.day)).toEqual([1, 7, 11, 17, 23, 29]);
       expect(taian.every((day) => !day.inDoyou)).toBe(true);
-      expect(cal.recommended).toHaveLength(8);
+      expect(cal.recommended).toHaveLength(9);
       expect(weekend).toHaveLength(1);
-      expect(weekend[0].day).toBe(6);
+      expect(weekend[0].day).toBe(7);
+      expect(dayAt(cal, 7).luckyLabels).toEqual(["一粒万倍日"]);
+      expect(dayAt(cal, 4).rokuyo).toBe("友引");
       expect(goods(prev, 1)).toHaveLength(4);
       expect(goods(cal, 1)).toEqual([]);
-      for (const day of [7, 12, 24])
-        expect(dayAt(cal, day).rokuyo).toBe("赤口");
+      for (const day of [12, 24]) expect(dayAt(cal, day).rokuyo).toBe("赤口");
       expect(hourOf(solar(cal, "啓蟄").atJst)).toBeLessThan(12);
       expect(universal(cal)).toEqual(
         ["北西/五黄殺", "南東/暗剣殺", "西/月破"].sort(),
@@ -551,7 +563,7 @@ function checkMonth(
         const [y, m] = key.split("-").map(Number);
         return buildMonthlyCalendar(y, m).recommended.length === 9;
       });
-      expect(nines).toEqual(["2026-11", "2027-06", "2027-09", "2027-11"]);
+      expect(nines).toEqual(["2027-03", "2027-06", "2027-09", "2027-11"]);
       const december = buildMonthlyCalendar(2026, 12);
       expect(december.centerStar).toBe(cal.centerStar);
       expect(goods(december, 4)).toEqual([]);
@@ -634,20 +646,17 @@ function checkMonth(
       break;
     }
     case "2028-01": {
-      expect(weekend.map((day) => day.day)).toEqual([2, 8, 16, 30]);
-      const weekends = SLUGS.map((key) => {
-        const [y, m] = key.split("-").map(Number);
-        return buildMonthlyCalendar(y, m).recommended.filter(
-          (day) => day.weekday === 0 || day.weekday === 6,
-        ).length;
-      });
-      expect(Math.max(...weekends)).toBe(4);
-      expect(weekends.filter((n) => n === 4)).toHaveLength(2);
-      expect(dayAt(cal, 20).rokuyo).toBe("大安");
-      expect(dayAt(cal, 20).inDoyou && !dayAt(cal, 20).isMabi).toBe(true);
-      expect(dayAt(cal, 30).rokuyo).toBe("大安");
-      expect(dayAt(cal, 30).isMabi).toBe(true);
-      expect(WEEK[dayAt(cal, 30).weekday]).toBe("日");
+      expect(weekend.map((day) => day.day)).toEqual([2, 8, 16]);
+      expect(cal.recommended).toHaveLength(6);
+      for (const day of [20, 26]) {
+        expect(dayAt(cal, day).rokuyo).toBe("大安");
+        expect(dayAt(cal, day).inDoyou && !dayAt(cal, day).isMabi).toBe(true);
+      }
+      expect(dayAt(cal, 31).rokuyo).toBe("大安");
+      expect(dayAt(cal, 31).luckyLabels).toEqual(["一粒万倍日"]);
+      expect(dayAt(cal, 31).isMabi).toBe(true);
+      expect(WEEK[dayAt(cal, 31).weekday]).toBe("月");
+      expect(cal.recommended.some((day) => day.day === 31)).toBe(true);
       const january2027 = buildMonthlyCalendar(2027, 1);
       expect(
         january2027.days
@@ -670,13 +679,14 @@ function checkMonth(
       expect(cal.termStart).toBe("2028-02-05");
       expect(risshun.atJst.startsWith("2028-02-04")).toBe(true);
       expect(dayAt(cal, 2).isMabi).toBe(true);
-      expect(dayAt(cal, 2).rokuyo).toBe("友引");
+      expect(dayAt(cal, 2).rokuyo).toBe("先勝");
       expect(dayAt(cal, 2).luckyLabels).toEqual([]);
       expect(cal.recommended.some((day) => day.day === 2)).toBe(false);
-      expect(cal.recommended[0].day).toBe(5);
-      expect(dayAt(cal, 5).rokuyo).toBe("大安");
-      expect(WEEK[dayAt(cal, 5).weekday]).toBe("土");
-      expect(dayAt(cal, 23).rokuyo).toBe("大安");
+      expect(cal.recommended[0].day).toBe(6);
+      expect(dayAt(cal, 6).rokuyo).toBe("大安");
+      expect(WEEK[dayAt(cal, 6).weekday]).toBe("日");
+      expect(dayAt(cal, 23).rokuyo).toBe("仏滅");
+      expect(cal.recommended.some((day) => day.day === 23)).toBe(false);
       expect(dayAt(cal, 23).luckyLabels).toEqual(["天赦日"]);
       expect(WEEK[dayAt(cal, 23).weekday]).toBe("水");
       expect(goods(prev, 9)).toEqual(["北", "南東", "北西"]);
