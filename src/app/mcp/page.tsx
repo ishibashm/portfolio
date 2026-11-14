@@ -142,7 +142,7 @@ export default async function McpGuidePage() {
             </p>
           </div>
 
-          <div className="overflow-x-auto">
+          <div className="hidden md:block overflow-x-auto">
             <table className="w-full border-collapse text-left text-sm">
               <thead>
                 <tr className="border-b border-slate-300 text-slate-700">
@@ -177,6 +177,25 @@ export default async function McpGuidePage() {
               </tbody>
             </table>
           </div>
+
+          <ul className="space-y-3 md:hidden">
+            {catalog.tools.map((tool) => (
+              <li
+                key={tool.name}
+                className="rounded-xl border border-slate-200 bg-slate-50 p-4 space-y-1.5"
+              >
+                <h3 className="font-mono text-sm font-bold text-slate-900 break-all">
+                  {tool.name}
+                </h3>
+                <p className="text-xs font-semibold text-slate-800">
+                  {tool.title || "-"}
+                </p>
+                <p className="text-sm text-slate-700 leading-relaxed">
+                  {tool.description || "-"}
+                </p>
+              </li>
+            ))}
+          </ul>
         </section>
 
         {/* つなぎ方 */}
