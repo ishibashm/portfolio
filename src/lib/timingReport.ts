@@ -27,11 +27,13 @@
  * 呼ぶ側が渡す。
  */
 
+import { buildAiExportDocument } from "@/lib/aiExport";
+
+export { MCP_URL } from "@/lib/aiExport";
+
 export const SAVED_ANALYSES_KEY = "saved_analyses_v1";
 /** 端末に残す件数の上限。古いものから落とす。 */
 export const SAVED_ANALYSES_MAX = 20;
-export const MCP_URL = "https://cloud-palette.com/api/mcp";
-
 export interface ReportDirectionRow {
   /** 方位の表示名（北・北東…） */
   label: string;
@@ -50,6 +52,8 @@ export interface TimingReportInput {
   title: string;
   /** 作った時刻 */
   generatedAt: Date;
+  /** 本命星の番号（1〜9）。分からなければ省く */
+  honmeiStar?: number;
   /** 本命星の名前（「七赤金星」）。分からなければ省く */
   honmeiStarName?: string;
   /** 空亡の十二支（["辰", "巳"]） */
@@ -63,60 +67,44 @@ export interface TimingReportInput {
   sourcePath: string;
 }
 
-function jstDate(d: Date): string {
-  return d.toLocaleDateString("sv-SE", { timeZone: "Asia/Tokyo" });
-}
-
 /** 表の 1 セルに入れる文字列から、表を壊す記号を除く。 */
 function cell(v: string): string {
   return v.replace(/\|/g, "／").replace(/\n/g, " ");
 }
 
-/** 分析を Markdown にする。 */
+/** 分析を Markdown にする。共通の書き出しに、時期分析の表を載せる。 */
 export function buildTimingReport(input: TimingReportInput): string {
-  const lines: string[] = [];
-  lines.push(`# ${input.title}（Cloud Palette）`);
-  lines.push("");
-  lines.push(`- 作成日: ${jstDate(input.generatedAt)}（日本時間）`);
-  if (input.honmeiStarName) lines.push(`- 本命星: ${input.honmeiStarName}`);
-  if (input.voidZodiacs && input.voidZodiacs.length > 0)
-    lines.push(`- 空亡（天中殺）: ${input.voidZodiacs.join("")}`);
-  lines.push(`- 範囲: ${input.range.from} 〜 ${input.range.to}`);
-  for (const c of input.conditions) lines.push(`- ${c}`);
-  lines.push("");
-  lines.push("## 方位ごとの最良の段階と、次に動ける日");
-  lines.push("");
-  lines.push(
+  const table = [
     "| 方位 | 最良の段階 | 次に動ける日 | その段階の日数 | まとまり（回数・平均日数・間隔） |",
-  );
-  lines.push("| --- | --- | --- | --- | --- |");
-  for (const r of input.directions) {
-    const w = r.windows
-      ? `${r.windows.count} 回・${r.windows.avgLen} 日・${
-          r.windows.avgGapDays === null ? "—" : `${r.windows.avgGapDays} 日`
-        }`
-      : "—";
-    lines.push(
-      `| ${cell(r.label)} | ${cell(r.bestTier ?? "動ける日なし")} | ${
+    "| --- | --- | --- | --- | --- |",
+    ...input.directions.map((r) => {
+      const w = r.windows
+        ? `${r.windows.count} 回・${r.windows.avgLen} 日・${
+            r.windows.avgGapDays === null ? "—" : `${r.windows.avgGapDays} 日`
+          }`
+        : "—";
+      return `| ${cell(r.label)} | ${cell(r.bestTier ?? "動ける日なし")} | ${
         r.firstDate ?? "—"
-      } | ${r.totalOpen} | ${w} |`,
-    );
-  }
-  lines.push("");
-  lines.push("## 読み方");
-  lines.push("");
-  lines.push(
-    "段階は九星気学の年盤・月盤・日盤を重ねたもので、S（三盤吉）が最もよく、X（五大凶殺）は避ける日です。効果を保証するものではなく、流派によって扱いが異なります。",
-  );
-  lines.push("");
-  lines.push("## AI で続きを調べるとき");
-  lines.push("");
-  lines.push(
-    `この文書には生年月日と住所（座標）を入れていません。AI に日付や方位を計算し直させるときは、Cloud Palette の MCP（${MCP_URL}）を AI 側に登録し、生年月日と出発地はご自身で伝えてください。本命星・日取り・方位の吉凶を同じ計算で返します。`,
-  );
-  lines.push("");
-  lines.push(`出典: ${input.sourcePath}`);
-  return lines.join("\n");
+      } | ${r.totalOpen} | ${w} |`;
+    }),
+  ].join("\n");
+  return buildAiExportDocument({
+    title: input.title,
+    generatedAt: input.generatedAt,
+    honmeiStar: input.honmeiStar,
+    honmeiStarName: input.honmeiStarName,
+    voidZodiacs: input.voidZodiacs,
+    range: input.range,
+    conditions: input.conditions,
+    sections: [
+      { heading: "方位ごとの最良の段階と、次に動ける日", body: table },
+      {
+        heading: "読み方",
+        body: "段階は九星気学の年盤・月盤・日盤を重ねたもので、S（三盤吉）が最もよく、X（五大凶殺）は避ける日です。効果を保証するものではなく、流派によって扱いが異なります。",
+      },
+    ],
+    sourcePath: input.sourcePath,
+  });
 }
 
 export interface SavedAnalysis {
