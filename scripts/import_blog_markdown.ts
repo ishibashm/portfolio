@@ -5,7 +5,13 @@ import * as dotenv from "dotenv";
 import * as fs from "fs";
 import * as path from "path";
 import { getBlogPost, getBlogPosts } from "../src/lib/blog";
-import { diffBlogPost, formatBlogPostDiff } from "../src/lib/blogImportDiff";
+import {
+  diffBlogPost,
+  formatBlogPostDiff,
+  frontmatterInstant,
+  importUpdatedAt,
+  isSameAsFile,
+} from "../src/lib/blogImportDiff";
 
 /**
  * content/blog/*.md を BlogPost へ取り込む。
@@ -33,6 +39,12 @@ import { diffBlogPost, formatBlogPostDiff } from "../src/lib/blogImportDiff";
  *   IMPORT_OVERWRITE=true npx -y tsx scripts/import_blog_markdown.ts
  *   IMPORT_ONLY=my-slug IMPORT_OVERWRITE=true npx -y tsx scripts/import_blog_markdown.ts
  *   IMPORT_DRY_RUN=true npx -y tsx scripts/import_blog_markdown.ts   # 何もしない
+ *
+ * **更新日は frontmatter の値を入れる**（src/lib/blogImportDiff の
+ * importUpdatedAt）。渡さないと Prisma が書き込んだ時刻を入れるので、
+ * 上書きを流した日が全記事の更新日になる。上書きしない既定のモードでも、
+ * **中身がファイルと同じ記事は更新日だけ揃える。**本文に手を入れないので
+ * 管理画面の手直しは消えない（中身が違う記事には触らない）。
  *
  * dry-run で上書きの対象になる記事は、DB の中身とファイルの差を出す
  * （src/lib/blogImportDiff）。「DB にだけある行」が上書きで消える行で、
@@ -102,6 +114,7 @@ async function main() {
   let created = 0;
   let updated = 0;
   let skipped = 0;
+  let dated = 0;
 
   for (const summary of summaries) {
     // 本文は一覧の型（BlogPostSummary）に入っていないので取り直す。
@@ -122,26 +135,46 @@ async function main() {
         tags: true,
         published: true,
         publishedAt: true,
+        updatedAt: true,
       },
     });
-
-    if (existing && !OVERWRITE) {
-      console.log(`  = ${post.slug}: 既にある。飛ばす`);
-      skipped++;
-      continue;
-    }
 
     const data = {
       title: post.title,
       content: post.body,
       excerpt: post.description,
       category: post.category,
-      // frontmatter は日付だけ。JST の 0 時として入れる。UTC で解釈すると
-      // 日本時間の朝に公開した記事が前日付で並ぶ。
-      publishedAt: new Date(`${post.publishedAt}T00:00:00+09:00`),
+      // frontmatter は日付だけ。JST の 0 時として入れる。
+      publishedAt: frontmatterInstant(post.publishedAt),
+      updatedAt: importUpdatedAt(post),
       tags: post.tags.join(","),
       published: !post.draft,
     };
+
+    if (existing && !OVERWRITE) {
+      // 中身がファイルと同じなら、更新日だけ frontmatter に揃える。
+      // 本文には書き込まない。中身が違う記事（管理画面で直したもの）は
+      // 従来どおり飛ばす。
+      const dateOnly =
+        isSameAsFile(diffBlogPost(existing, data)) &&
+        existing.updatedAt.getTime() !== data.updatedAt.getTime();
+      if (!dateOnly) {
+        console.log(`  = ${post.slug}: 既にある。飛ばす`);
+        skipped++;
+        continue;
+      }
+      const from = existing.updatedAt.toISOString();
+      const to = data.updatedAt.toISOString();
+      console.log(`  ^ ${post.slug}: 更新日だけ揃える（${from} → ${to}）`);
+      if (!DRY_RUN) {
+        await prisma.blogPost.update({
+          where: { slug: post.slug },
+          data: { updatedAt: data.updatedAt },
+        });
+      }
+      dated++;
+      continue;
+    }
 
     if (DRY_RUN) {
       console.log(`  ${existing ? "~" : "+"} ${post.slug}: ${post.title}`);
@@ -166,7 +199,9 @@ async function main() {
     }
   }
 
-  console.log(`\n追加 ${created} / 上書き ${updated} / 飛ばした ${skipped}`);
+  console.log(
+    `\n追加 ${created} / 上書き ${updated} / 更新日だけ ${dated} / 飛ばした ${skipped}`,
+  );
 
   const total = await prisma.blogPost.count();
   const publishedCount = await prisma.blogPost.count({
