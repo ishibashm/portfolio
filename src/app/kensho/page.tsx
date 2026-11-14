@@ -83,7 +83,7 @@ export default function KenshoPage() {
             </p>
           </div>
 
-          <div className="overflow-x-auto">
+          <div className="hidden md:block overflow-x-auto">
             <table className="w-full border-collapse text-left text-sm">
               <thead>
                 <tr className="border-b border-slate-300 text-slate-700">
@@ -144,6 +144,57 @@ export default function KenshoPage() {
               </tbody>
             </table>
           </div>
+
+          <ol className="space-y-3 md:hidden">
+            {KENSHO_PLANNED_THEMES.map((row) => (
+              <li
+                key={row.id}
+                className="rounded-xl border border-slate-200 bg-slate-50 p-4 space-y-3"
+              >
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <div className="flex items-baseline gap-2">
+                    <span className="text-xs font-semibold text-slate-600">
+                      #{row.id}
+                    </span>
+                    <h3 className="text-base font-bold text-slate-900">
+                      {row.theme}
+                    </h3>
+                  </div>
+                  <span className="inline-block rounded-full border border-slate-300 bg-slate-100 px-2.5 py-0.5 text-xs font-semibold text-slate-700">
+                    {row.status}
+                  </span>
+                </div>
+                <dl className="space-y-2 text-sm">
+                  <div>
+                    <dt className="text-xs font-bold text-slate-600">主張</dt>
+                    <dd className="mt-0.5 text-slate-800 leading-relaxed">
+                      {row.claim}
+                    </dd>
+                  </div>
+                  <div>
+                    <dt className="text-xs font-bold text-slate-600">
+                      使う公開データ
+                    </dt>
+                    <dd className="mt-0.5 text-slate-700 leading-relaxed">
+                      {row.publicData}
+                    </dd>
+                  </div>
+                  <div>
+                    <dt className="text-xs font-bold text-slate-600">方法</dt>
+                    <dd className="mt-0.5 text-slate-700 leading-relaxed">
+                      {row.method}
+                    </dd>
+                  </div>
+                  <div>
+                    <dt className="text-xs font-bold text-slate-600">実現性</dt>
+                    <dd className="mt-0.5 font-semibold text-slate-800">
+                      {row.feasibility}
+                    </dd>
+                  </div>
+                </dl>
+              </li>
+            ))}
+          </ol>
         </section>
 
         {/* 関連する道具への案内 */}
