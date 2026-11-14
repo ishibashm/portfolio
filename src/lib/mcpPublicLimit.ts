@@ -34,8 +34,8 @@ export const MCP_PUBLIC_ALLOWED_TOOLS: ReadonlySet<string> = new Set<string>(
 export { MCP_PUBLIC_TOOL_NAMES };
 
 export const MCP_PUBLIC_TX_MAX_WAIT_MS = 800;
-export const MCP_PUBLIC_TX_TIMEOUT_MS = 1400;
-export const MCP_PUBLIC_DB_TIMEOUT_MS = 1500;
+export const MCP_PUBLIC_TX_TIMEOUT_MS = 2000;
+export const MCP_PUBLIC_DB_TIMEOUT_MS = 2200;
 export const MCP_PUBLIC_COLD_TX_MAX_WAIT_MS = 2500;
 export const MCP_PUBLIC_COLD_TX_TIMEOUT_MS = 3000;
 export const MCP_PUBLIC_COLD_DB_TIMEOUT_MS = 3500;
@@ -155,20 +155,23 @@ export type McpBucketSpec = {
 
 type BucketRow = { ipHash: string; tokens: number; updatedAt: Date };
 
-type RateTx = {
+type RawBucketRow = {
+  ip_hash?: string;
+  ipHash?: string;
+  tokens: number | string;
+  updated_at?: Date | string;
+  updatedAt?: Date | string;
+};
+
+export type RateTx = {
   $queryRaw: (
     query: TemplateStringsArray,
     ...values: unknown[]
   ) => Promise<unknown>;
-  mcpPublicRate: {
-    findUnique(args: { where: { ipHash: string } }): Promise<BucketRow | null>;
-    upsert(args: {
-      where: { ipHash: string };
-      create: BucketRow;
-      update: { tokens: number; updatedAt: Date };
-    }): Promise<unknown>;
-    deleteMany(args: { where: { updatedAt: { lt: Date } } }): Promise<unknown>;
-  };
+  $executeRaw: (
+    query: TemplateStringsArray,
+    ...values: unknown[]
+  ) => Promise<unknown>;
 };
 
 export type McpRateTxOptions = {
@@ -337,20 +340,36 @@ export async function consumeMcpPublicBuckets(
   const isolationLevel = options?.isolationLevel ?? "ReadCommitted";
   const result = await db.$transaction(
     async (tx) => {
-      // デッドロックを防ぐため、鍵の昇順でロックを取る。
+      // デッドロックを防ぐため、鍵の昇順で一括ロックを取る。
       const sortedKeys = [...new Set(buckets.map((b) => b.key))].sort();
-      for (const key of sortedKeys) {
-        await tx.$queryRaw`SELECT 1 AS locked FROM pg_advisory_xact_lock(hashtextextended(${`mcp-public:${key}`}, 0))`;
+      const sortedKeysPrefixed = sortedKeys.map((key) => `mcp-public:${key}`);
+      await tx.$queryRaw`SELECT count(*)::int AS locked FROM (SELECT pg_advisory_xact_lock(hashtextextended(k, 0)) FROM unnest(${sortedKeysPrefixed}::text[]) AS t(k) ORDER BY k) s`;
+
+      const rawRows =
+        await tx.$queryRaw`SELECT ip_hash, tokens, updated_at FROM mcp_public_rate WHERE ip_hash = ANY(${sortedKeys}::text[])`;
+      const rowMap = new Map<string, BucketRow>();
+      if (Array.isArray(rawRows)) {
+        for (const raw of rawRows as RawBucketRow[]) {
+          const ipHash = String(raw.ip_hash ?? raw.ipHash ?? "").trim();
+          const tokens = Number(raw.tokens);
+          const rawUpdated = raw.updated_at ?? raw.updatedAt;
+          const updatedAt =
+            rawUpdated instanceof Date
+              ? rawUpdated
+              : new Date(String(rawUpdated));
+          if (ipHash) {
+            rowMap.set(ipHash, { ipHash, tokens, updatedAt });
+          }
+        }
       }
+
       const states: {
         spec: McpBucketSpec;
         row: BucketRow | null;
         available: number;
       }[] = [];
       for (const spec of buckets) {
-        const row = await tx.mcpPublicRate.findUnique({
-          where: { ipHash: spec.key },
-        });
+        const row = rowMap.get(spec.key.trim()) ?? null;
         const perMs = spec.limits.hourly / WINDOW_MS;
         const elapsed = row
           ? Math.max(0, now.getTime() - row.updatedAt.getTime())
@@ -371,20 +390,20 @@ export async function consumeMcpPublicBuckets(
       }
       const ipState = states.find((s) => s.spec.isIp);
       if (ipState && !ipState.row) {
-        await tx.mcpPublicRate.deleteMany({
-          where: { updatedAt: { lt: new Date(now.getTime() - STALE_MS) } },
-        });
+        const staleBefore = new Date(now.getTime() - STALE_MS);
+        await tx.$executeRaw`DELETE FROM mcp_public_rate WHERE updated_at < ${staleBefore.toISOString()}::timestamptz`;
       }
+      const upsertByKey = new Map<string, number>();
       let mostRestrictive:
         | (McpLimitDecision & { scope: McpLimitScope })
         | null = null;
       for (const state of states) {
         const tokens = state.available - 1;
-        await tx.mcpPublicRate.upsert({
-          where: { ipHash: state.spec.key },
-          create: { ipHash: state.spec.key, tokens, updatedAt: now },
-          update: { tokens, updatedAt: now },
-        });
+        const prev = upsertByKey.get(state.spec.key);
+        upsertByKey.set(
+          state.spec.key,
+          prev === undefined ? tokens : Math.min(prev, tokens),
+        );
         const current = {
           ...decision(true, state.spec.limits, tokens),
           scope: state.spec.scope,
@@ -398,6 +417,11 @@ export async function consumeMcpPublicBuckets(
           mostRestrictive = current;
         }
       }
+      const keys = [...upsertByKey.keys()];
+      const tokensList = [...upsertByKey.values()];
+      // Date の配列はドライバが時差なしで送ることがあるため、Z 付きの ISO 文字列で渡す。
+      const times = keys.map(() => now.toISOString());
+      await tx.$executeRaw`INSERT INTO mcp_public_rate (ip_hash, tokens, updated_at) SELECT * FROM unnest(${keys}::text[], ${tokensList}::float8[], ${times}::text[]::timestamptz[]) ON CONFLICT (ip_hash) DO UPDATE SET tokens = EXCLUDED.tokens, updated_at = EXCLUDED.updated_at`;
       return mostRestrictive!;
     },
     { maxWait, timeout, isolationLevel },
@@ -533,7 +557,6 @@ export function warmMcpRateDb(db?: McpRateDb): Promise<boolean> {
       if (typeof client.$queryRaw === "function") {
         await client.$queryRaw`SELECT 1 AS ok`;
       }
-      state.warmed = true;
       return true;
     } catch (error) {
       if (state.warmPromise === promise) {

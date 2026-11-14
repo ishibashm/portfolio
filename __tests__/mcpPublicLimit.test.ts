@@ -3,31 +3,70 @@ import { afterEach, beforeEach, expect, it, vi } from "vitest";
 type Bucket = { ipHash: string; tokens: number; updatedAt: Date };
 const buckets = new Map<string, Bucket>();
 const db = {
-  $queryRaw: vi.fn(async () => []),
-  mcpPublicRate: {
-    findUnique: vi.fn(async ({ where }: { where: { ipHash: string } }) => {
-      return buckets.get(where.ipHash) ?? null;
-    }),
-    upsert: vi.fn(
-      async ({
-        where,
-        create,
-        update,
-      }: {
-        where: { ipHash: string };
-        create: Bucket;
-        update: { tokens: number; updatedAt: Date };
-      }) => {
-        const prev = buckets.get(where.ipHash);
-        const row = prev
-          ? { ...prev, ...update, ipHash: where.ipHash }
-          : create;
-        buckets.set(where.ipHash, row);
-        return row;
-      },
-    ),
-    deleteMany: vi.fn(async () => ({ count: 0 })),
-  },
+  $queryRaw: vi.fn(
+    async (query: TemplateStringsArray, ...values: unknown[]) => {
+      const sql = query.join("?");
+      if (/pg_advisory_xact_lock/i.test(sql)) {
+        const list = Array.isArray(values[0]) ? values[0] : [];
+        return [{ locked: list.length }];
+      }
+      if (
+        /SELECT\s+ip_hash,\s*tokens,\s*updated_at\s+FROM\s+mcp_public_rate/i.test(
+          sql,
+        )
+      ) {
+        const keys = Array.isArray(values[0]) ? (values[0] as string[]) : [];
+        const rows: { ip_hash: string; tokens: number; updated_at: Date }[] =
+          [];
+        for (const k of keys) {
+          const found = buckets.get(k.trim());
+          if (found) {
+            rows.push({
+              ip_hash: found.ipHash.padEnd(64, " "),
+              tokens: found.tokens,
+              updated_at: found.updatedAt,
+            });
+          }
+        }
+        return rows;
+      }
+      return [];
+    },
+  ),
+  $executeRaw: vi.fn(
+    async (query: TemplateStringsArray, ...values: unknown[]) => {
+      const sql = query.join("?");
+      if (/DELETE\s+FROM\s+mcp_public_rate/i.test(sql)) {
+        const cutoff =
+          values[0] instanceof Date ? values[0] : new Date(String(values[0]));
+        let count = 0;
+        for (const [key, row] of buckets) {
+          if (row.updatedAt < cutoff) {
+            buckets.delete(key);
+            count++;
+          }
+        }
+        return count;
+      }
+      if (/INSERT\s+INTO\s+mcp_public_rate/i.test(sql)) {
+        const keys = (values[0] as string[]) ?? [];
+        const tokens = (values[1] as number[]) ?? [];
+        const times = (values[2] as Date[]) ?? [];
+        for (let i = 0; i < keys.length; i++) {
+          const ipHash = keys[i].trim();
+          const t = times[i];
+          const updatedAt = t instanceof Date ? t : new Date(String(t));
+          buckets.set(ipHash, {
+            ipHash,
+            tokens: Number(tokens[i]),
+            updatedAt,
+          });
+        }
+        return keys.length;
+      }
+      return 0;
+    },
+  ),
 };
 const prismaMock = {
   ...db,
@@ -96,8 +135,9 @@ it("allows a burst, then asks the caller to wait", async () => {
   const lockSql = (
     db.$queryRaw.mock.calls[0] as unknown as [TemplateStringsArray]
   )[0].join("?");
-  expect(lockSql).toContain("1 AS locked");
-  expect(lockSql).not.toMatch(/SELECT\s+pg_advisory_xact_lock\s*\(/i);
+  expect(lockSql).toContain("AS locked");
+  expect(lockSql).toContain("unnest(");
+  expect(lockSql).not.toMatch(/^\s*SELECT\s+pg_advisory_xact_lock\s*\(/i);
   const later = await checkMcpPublicLimit(
     headers,
     new Date(now.getTime() + 1000),
@@ -165,7 +205,7 @@ it("fails open when the limiter does not answer in time", async () => {
     new Headers({ "x-real-ip": "198.51.100.9" }),
     now,
   );
-  await vi.advanceTimersByTimeAsync(1500);
+  await vi.advanceTimersByTimeAsync(2200);
   const gate = await pending;
   expect(gate.denied).toBeNull();
   expect(gate.headers.get("RateLimit-Policy")).toBe("fallback");
