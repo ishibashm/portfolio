@@ -15,6 +15,13 @@ import { STAR_NAMES, houiMonthHref } from "@/lib/kigakuContent";
 import { STAR_MEANINGS } from "@/lib/kigakuMeanings";
 import { BreadcrumbJsonLd } from "@/components/JsonLd";
 import { pageOpenGraph } from "@/lib/siteUrl";
+import { YearCalendarView } from "@/components/calendar/YearCalendarView";
+import { contentYears } from "@/lib/kigakuContent";
+import {
+  buildYearlyCalendar,
+  eraYearLabel,
+  yearDayLabel,
+} from "@/lib/yearlyCalendar";
 
 /**
  * 「その月に引越すなら何日か」を月ごとにまとめた記事ページ。
@@ -36,10 +43,41 @@ function parseMonth(slug: string): { year: number; month: number } | null {
   return { year, month };
 }
 
+/**
+ * 年の一覧（/calendar/2027）。同じ段に月（/calendar/2027-03）と年の
+ * 2 通りの綴りが来る。App Router は同じ段に動的な区間を 2 つ置けないので、
+ * ここで綴りを見て分ける。対象の年は /houi/{年} と同じ（今年から 3 年）。
+ */
+function parseYear(slug: string): number | null {
+  if (!/^\d{4}$/.test(slug)) return null;
+  const year = Number(slug);
+  return contentYears().includes(year) ? year : null;
+}
+
+function yearMetadata(year: number): Metadata {
+  const cal = buildYearlyCalendar(year);
+  const tensha = cal.tensha.map((t) => yearDayLabel(t.day, false)).join("・");
+  const usable = cal.tensha.filter((t) => t.usable).length;
+  const title = `${year}年の天赦日・一粒万倍日と引越しに向く日｜年間カレンダー`;
+  const description = `${eraYearLabel(year)}の天赦日は${tensha}の${cal.tensha.length}日。仏滅・赤口と土用を避けて引越しに使えるのはこのうち${usable}日です。一粒万倍日${cal.totals.ichiryumanbai}日・大安${cal.totals.taian}日と土用の期間、月ごとの引越しに向く日を一覧にしています。`;
+  const canonical = `/calendar/${year}`;
+  return {
+    title,
+    description,
+    alternates: { canonical },
+    openGraph: pageOpenGraph(canonical, title, description, {
+      type: "article",
+    }),
+  };
+}
+
 export function generateStaticParams() {
-  return calendarMonths().map((c) => ({
-    month: `${c.year}-${String(c.month).padStart(2, "0")}`,
-  }));
+  return [
+    ...calendarMonths().map((c) => ({
+      month: `${c.year}-${String(c.month).padStart(2, "0")}`,
+    })),
+    ...contentYears().map((year) => ({ month: String(year) })),
+  ];
 }
 
 export async function generateMetadata({
@@ -47,7 +85,10 @@ export async function generateMetadata({
 }: {
   params: Promise<{ month: string }>;
 }): Promise<Metadata> {
-  const parsed = parseMonth((await params).month);
+  const slug = (await params).month;
+  const yearOnly = parseYear(slug);
+  if (yearOnly !== null) return yearMetadata(yearOnly);
+  const parsed = parseMonth(slug);
   if (!parsed) return {};
   const { year, month } = parsed;
   const cal = buildMonthlyCalendar(year, month);
@@ -75,7 +116,12 @@ export default async function Page({
 }: {
   params: Promise<{ month: string }>;
 }) {
-  const parsed = parseMonth((await params).month);
+  const param = (await params).month;
+  const yearOnly = parseYear(param);
+  if (yearOnly !== null) {
+    return <YearCalendarView cal={buildYearlyCalendar(yearOnly)} />;
+  }
+  const parsed = parseMonth(param);
   if (!parsed) notFound();
   const { year, month } = parsed;
   const cal = buildMonthlyCalendar(year, month);
