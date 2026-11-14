@@ -45,6 +45,12 @@ export default function Page() {
             ? "AIが必要な道具を選び、結果を使って次の計算へ進みます。最大8ステップ・20回、1回8秒・全体60秒で打ち切ります。"
             : "計算の連鎖は深さ3・最大4、20回までです。1回8秒・全体30秒で打ち切ります。街から先の展開は地理の参考です。"}
         </p>
+        <p className="mt-3 text-sm leading-relaxed text-slate-700">
+          フォームで聞く（JSなし）:{" "}
+          <Link href="/annai" className="font-semibold text-rose-700 underline">
+            案内役に聞く
+          </Link>
+        </p>
         <McpExplorer
           voiceEnabled={voiceState().enabled}
           agentEnabled={state.enabled}
