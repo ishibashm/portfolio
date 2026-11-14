@@ -112,7 +112,7 @@ export function AffiliatePlacement({
       <p className="mb-1 text-xs leading-4 text-slate-500">広告</p>
       {html ? (
         <div
-          className="text-sm leading-6 [&_a]:inline-block [&_a]:text-slate-700 [&_a]:underline [&_a]:decoration-slate-300 [&_a]:underline-offset-2 hover:[&_a]:text-slate-900 [&_img]:max-w-full"
+          className="[&_a]:inline-block [&_img]:max-w-full"
           dangerouslySetInnerHTML={{ __html: sponsorizeAnchors(html) }}
         />
       ) : (
