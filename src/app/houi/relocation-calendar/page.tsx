@@ -1,5 +1,9 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { AiExportBox } from "@/components/AiExportBox";
+import { buildRelocationCalendarAiExport } from "@/lib/aiExportPages";
+import { STAR_NAMES } from "@/lib/kigakuContent";
+import { buildBase } from "@/lib/mcpDirections";
 import { findRelocationWindows } from "@/lib/relocationWindows";
 import { coreRouteLabel } from "@/lib/siteStructure";
 import { pageOpenGraph } from "@/lib/siteUrl";
@@ -43,6 +47,24 @@ export default async function RelocationCalendarPage({ searchParams }: Props) {
         days: read("days") ? Number(read("days")) : undefined,
       })
     : null;
+  const built = result?.ok
+    ? buildBase({
+        birthDate: read("birthDate"),
+        birthTime: read("birthTime") || undefined,
+        lon: Number(read("lon")),
+      })
+    : null;
+  const honmeiStar = built?.ok ? built.honmei.classical : undefined;
+  const markdown = result?.ok
+    ? buildRelocationCalendarAiExport({
+        payload: result.payload,
+        generatedAt: new Date(),
+        honmeiStar,
+        honmeiStarName: honmeiStar ? STAR_NAMES[honmeiStar] : undefined,
+        voidZodiacs: built?.ok ? built.voidZodiacs : undefined,
+      })
+    : null;
+
   return (
     <main className="wg-page min-h-screen px-4 py-10">
       <div className="mx-auto max-w-5xl space-y-8">
@@ -211,6 +233,7 @@ export default async function RelocationCalendarPage({ searchParams }: Props) {
                 <p>この期間に該当する日はありません。</p>
               )}
             </section>
+            {markdown ? <AiExportBox markdown={markdown} /> : null}
           </>
         )}
       </div>

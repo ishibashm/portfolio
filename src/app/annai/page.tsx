@@ -1,7 +1,9 @@
 import type { Metadata } from "next";
 import { cookies, headers } from "next/headers";
 import Link from "next/link";
+import { AiExportBox } from "@/components/AiExportBox";
 import { currentYearInJapan, STAR_NAMES } from "@/lib/kigakuContent";
+import { buildAnnaiAiExport } from "@/lib/aiExportPages";
 import {
   directionLabelName,
   isKnownDirectionStatus,
@@ -795,6 +797,16 @@ function Step3View({ answer }: { answer: GuideAnswerData }) {
           </details>
         </>
       )}
+
+      {answer.status === "ok" ? (
+        <AiExportBox
+          markdown={buildAnnaiAiExport({
+            answer,
+            generatedAt: new Date(),
+          })}
+          className="rounded-2xl border border-slate-300 bg-white p-5 shadow-sm space-y-3"
+        />
+      ) : null}
 
       {/* ⑦ 続けて押すボタン（2〜4個）と入力消去 */}
       <nav
