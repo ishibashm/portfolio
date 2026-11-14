@@ -87,6 +87,7 @@ export const MCP_PUBLIC_TOOLS = {
   area_directions: "area_directions",
   compare_fortune_perspectives: "compare_fortune_perspectives",
   find_auspicious_days: "find_auspicious_days",
+  find_relocation_windows: "find_relocation_windows",
   get_article: "get_article",
   get_honmei_star: "get_honmei_star",
   get_kanshi: "get_kanshi",
@@ -107,6 +108,7 @@ export const MCP_PUBLIC_TOOL_NAMES = [
   MCP_PUBLIC_TOOLS.area_directions,
   MCP_PUBLIC_TOOLS.compare_fortune_perspectives,
   MCP_PUBLIC_TOOLS.find_auspicious_days,
+  MCP_PUBLIC_TOOLS.find_relocation_windows,
   MCP_PUBLIC_TOOLS.get_article,
   MCP_PUBLIC_TOOLS.get_honmei_star,
   MCP_PUBLIC_TOOLS.get_kanshi,
@@ -674,7 +676,7 @@ export function createMcpBaseServer(options?: {
 export function createMcpServer(deps?: { rentals?: RentalReader }): McpServer {
   const server = createMcpBaseServer({ municipalityReadings: true });
   server.registerTool(
-    "find_relocation_windows",
+    MCP_PUBLIC_TOOLS.find_relocation_windows,
     {
       title: "引越しできる日の一覧",
       description:
