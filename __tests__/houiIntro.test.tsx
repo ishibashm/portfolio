@@ -36,6 +36,16 @@ describe("/houi 冒頭の説明と調べ方手順", () => {
     );
     expect(html).not.toContain("北が暗剣殺と歳破");
 
+    // 1b) 追記された2文と現在年の本命星別ページへのリンクが冒頭にある
+    expect(html).toContain("無料・入力なしで早見表を見られます");
+    expect(html).toContain("端末内の計算だけで本命星がわかります");
+    expect(html).toContain(
+      "今年と今月の吉方位は、本命星別ページで確認できます",
+    );
+    for (let s = 1; s <= 9; s++) {
+      expect(html).toContain(`href="/houi/2026/${s}"`);
+    }
+
     // 2) 既存導線（/relocation/timing, /calendar, /guide/honmei）
     expect(html).toContain('href="/relocation/timing"');
     expect(html).toContain('href="/calendar"');
@@ -43,10 +53,22 @@ describe("/houi 冒頭の説明と調べ方手順", () => {
 
     // 3) 冒頭説明と手順が生まれ年の早見表・HonmeiLookup より前に置かれている
     const introIdx = html.indexOf("吉方位の調べ方（先に結論）");
+    const freeIdx = html.indexOf("無料・入力なしで早見表を見られます");
+    const yearMonthIdx = html.indexOf(
+      "今年と今月の吉方位は、本命星別ページで確認できます",
+    );
+    const starLinkIdx = html.indexOf('href="/houi/2026/1"');
+    const stepIdx = html.indexOf(
+      "このサイトでの調べ方の手順（入力なしで確認できます）",
+    );
     const tableIdx = html.indexOf("1950 / ");
     const lookupIdx = html.indexOf("honmei-lookup-mock");
     expect(introIdx).toBeGreaterThan(-1);
-    expect(introIdx).toBeLessThan(tableIdx);
+    expect(introIdx).toBeLessThan(freeIdx);
+    expect(freeIdx).toBeLessThan(yearMonthIdx);
+    expect(yearMonthIdx).toBeLessThan(starLinkIdx);
+    expect(starLinkIdx).toBeLessThan(stepIdx);
+    expect(stepIdx).toBeLessThan(tableIdx);
     expect(tableIdx).toBeLessThan(lookupIdx);
 
     // 4) 禁止表現を含まない

@@ -158,6 +158,22 @@ export default function Page() {
               と表示されます。
             </p>
           )}
+          <p className="mt-3 max-w-[70ch] text-xs leading-relaxed text-slate-700">
+            無料・入力なしで早見表を見られます。生年月日を入れると、端末内の計算だけで本命星がわかります。今年と今月の吉方位は、本命星別ページで確認できます（
+            {STARS.map((s, idx) => (
+              <span key={s}>
+                {idx > 0 && " / "}
+                <Link
+                  prefetch={false}
+                  href={`/houi/${year}/${s}`}
+                  className="font-bold text-rose-600 underline hover:text-rose-700"
+                >
+                  {STAR_NAMES[s]}
+                </Link>
+              </span>
+            ))}
+            ）。
+          </p>
 
           <h3 className="mt-5 text-sm font-bold font-serif text-slate-800">
             このサイトでの調べ方の手順（入力なしで確認できます）
