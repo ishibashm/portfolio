@@ -34,7 +34,8 @@ describe("/relocation/arbitrage 冒頭のサーバー出力", () => {
     expect(beforeUi).toContain("地図");
     expect(beforeUi).toContain("家賃水準");
     expect(beforeUi).toContain("空き家率");
-    expect(beforeUi).toContain("無料");
+    expect(beforeUi).toContain("ログインなしで使えます");
+    expect(beforeUi).not.toContain("無料");
 
     // 使い方の手順（順序付きリスト）
     expect(beforeUi).toContain("使い方の手順");

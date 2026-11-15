@@ -43,7 +43,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
               {coreRouteLabel("/relocation/arbitrage")}で分かること（結論）
             </h2>
             <p className="max-w-[70ch] text-sm leading-relaxed text-slate-700">
-              いま住んでいる場所（出発地）から見た八方位の吉凶を、選んだ日付について地図の塗り分けで確認できる無料ツールです（ログインしなくても使えます）。あわせて、その方位にある市区町村の家賃水準と空き家率を並べて比較できます。
+              いま住んでいる場所（出発地）から見た八方位の吉凶を、選んだ日付について地図の塗り分けで確認できるツールです（ログインなしで使えます）。あわせて、その方位にある市区町村の家賃水準と空き家率を並べて比較できます。
             </p>
             <p className="max-w-[70ch] text-xs leading-relaxed text-slate-600">
               九星気学にもとづく方位の吉凶は占い上の目安であり、科学的な効果を保証するものではありません。引越し先は契約条件や費用、通勤・生活環境とあわせて判断してください。
