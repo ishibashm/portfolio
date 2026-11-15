@@ -530,8 +530,13 @@ describe("本物の記事に題を渡す", () => {
       なっている。題は問いだが「先に結論」の冒頭が箇条書きで題の組は
       取れないので、題の有無にかかわらず +1
     */
-    expect(count(false)).toBe(35);
-    expect(count(true)).toBe(38);
+    /*
+      2026-11-15: 新しい記事（todays-lucky-direction-by-hour）を足した。
+      問いの見出しが 5 つあり、直下の段落がそれぞれ答えになっているので、
+      題の有無にかかわらず +1
+    */
+    expect(count(false)).toBe(36);
+    expect(count(true)).toBe(39);
   });
 
   it("題から作った問いは、記事の題そのもの（言い換えない）", () => {
