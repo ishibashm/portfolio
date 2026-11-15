@@ -2367,6 +2367,14 @@ export default function TimingAnalyticsPage() {
                 </li>
               </ul>
             </Section>
+
+            <aside
+              aria-label="スポンサー広告枠"
+              data-ad-reservation="timing-after-results"
+              className="rounded-3xl border border-dashed border-stone-200 bg-white/60 p-4"
+            >
+              <p className="text-xs leading-4 text-stone-400">広告</p>
+            </aside>
           </>
         )}
 
