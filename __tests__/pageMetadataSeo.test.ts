@@ -2,7 +2,9 @@ import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
 import { join, relative } from "node:path";
 import ts from "typescript";
 import { describe, expect, it } from "vitest";
-import { CORE_ROUTES } from "@/lib/siteStructure";
+import { metadata as calendarMetadata } from "@/app/calendar/layout";
+import { contentYears } from "@/lib/kigakuContent";
+import { CORE_ROUTES, SITE_NAME } from "@/lib/siteStructure";
 
 /**
  * 頁の metadata が、ルートの layout から**黙って継承したもの**で
@@ -285,5 +287,36 @@ describe("calendar の月ページにサイト名が付く", () => {
     };
     visit(sf);
     expect(template).toContain("SITE_NAME");
+  });
+
+  it("calendar/layout の default title と description・OG が検索用タイトルと年リストを持ち、二重接尾辞にならない", () => {
+    const titleObj = calendarMetadata.title as {
+      default: string;
+      template: string;
+    };
+    expect(titleObj.default).toBe("引越し吉日カレンダー｜引越しの日取りを選ぶ");
+    expect(titleObj.default).not.toContain(SITE_NAME);
+    expect(titleObj.template).toBe(`%s | ${SITE_NAME}`);
+
+    const years = contentYears();
+    const expectedYearList = years.map((y) => `${y}年`).join("・");
+    expect(calendarMetadata.description).toContain(
+      `${expectedYearList}の吉日一覧は入力なしで見られます。`,
+    );
+    for (const year of years) {
+      expect(calendarMetadata.description).toContain(`${year}年`);
+    }
+    expect(calendarMetadata.description).not.toContain(`${years[0] - 1}年`);
+    expect(calendarMetadata.description).not.toContain(
+      `${years[years.length - 1] + 1}年`,
+    );
+
+    const ogTitle = String(calendarMetadata.openGraph?.title ?? "");
+    expect(ogTitle).toBe(
+      `引越し吉日カレンダー｜引越しの日取りを選ぶ | ${SITE_NAME}`,
+    );
+    expect(ogTitle).not.toMatch(
+      new RegExp(`\\|\\s*${SITE_NAME}\\s*\\|\\s*${SITE_NAME}`),
+    );
   });
 });
