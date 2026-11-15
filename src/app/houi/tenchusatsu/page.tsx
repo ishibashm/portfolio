@@ -116,8 +116,8 @@ export default function TenchusatsuPage() {
             <Link href="/practitioners" className="wg-btn-accent">
               鑑定士に相談する
             </Link>
-            <Link href="/ask" className="wg-btn-primary">
-              AIに相談する
+            <Link href="/annai" className="wg-btn-primary">
+              案内役に聞く
             </Link>
           </div>
         </section>
