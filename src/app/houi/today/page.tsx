@@ -195,6 +195,16 @@ export default function TodayPage() {
         <p className="text-sm text-slate-600">
           本命星だけの早見表です。月命星・個人の天中殺は含みません。引越しは年盤・月盤も確認してください。方位の吉凶は伝統的な見方で、効果を保証するものではありません。
         </p>
+        <p className="text-sm">
+          日盤と時間帯の表の関係、刻の境目が地域でずれる理由は
+          <Link
+            href="/blog/todays-lucky-direction-by-hour"
+            className="text-rose-600 underline"
+          >
+            今日の吉方位と時間帯はどう読むか
+          </Link>
+          にまとめています。
+        </p>
         <AiExportBox markdown={markdown} />
         <nav
           aria-label="日取りと共有"
