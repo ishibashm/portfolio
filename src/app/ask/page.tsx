@@ -8,49 +8,84 @@ import { chainLlmState } from "@/lib/mcpAgentConfig";
 import { paidApisDisabled } from "@/lib/paidApis";
 
 export const dynamic = "force-dynamic";
+/*
+  2026-11-15: トップとサイドバーの「しるべに案内してもらう」は /annai へ移した。
+  ここはAIと会話する入口なので名前を分け、AIが止まっているときは会話を約束しない。
+*/
+const PAGE_NAME = "しるべと会話で相談する";
 export const metadata: Metadata = {
-  title: "エージェントに案内してもらう｜方位と引越しの相談",
+  title: `${PAGE_NAME}｜方位と引越しの相談`,
   description:
     "初代案内役しるべと会話しながら、方位・日取り・街の候補と計算の過程を確かめる補助ツールです。",
   alternates: { canonical: "/ask" },
   robots: { index: false, follow: true },
   openGraph: pageOpenGraph(
     "/ask",
-    "エージェントに案内してもらう",
+    PAGE_NAME,
     "初代案内役しるべと、方位・日取り・街の候補と計算の過程を確かめます。",
   ),
 };
 export default function Page() {
   const state = chainLlmState();
   const paidPaused = paidApisDisabled();
+  const aiOn = state.enabled && !paidPaused;
   return (
     <main className="min-h-screen bg-gradient-to-br from-[#faf7f5] via-[#f5efe9] to-[#f0e9e1] text-slate-900">
       <article className="mx-auto max-w-[1700px] px-5 py-12">
         <nav aria-label="パンくず" className="mb-4 text-sm text-slate-600">
           <Link href="/">ホーム</Link>
           <span aria-hidden="true"> / </span>
-          <span aria-current="page">エージェントに案内してもらう</span>
+          <span aria-current="page">{PAGE_NAME}</span>
         </nav>
         <Link href="/houi" className="text-sm underline text-slate-600">
           本命星と吉方位の早見表へ
         </Link>
         <h1 className="mt-5 text-2xl font-bold font-serif sm:text-3xl">
-          エージェントに案内してもらう
+          {PAGE_NAME}
         </h1>
-        <p className="mt-4 text-sm leading-relaxed">
-          初代案内役「しるべ」が、相談する人の登録から方位・日取り・街の候補まで会話でご案内します。回答ごとに、根拠になった道具の入力・結果も確かめられます。
-        </p>
+        {aiOn ? (
+          <p className="mt-4 text-sm leading-relaxed">
+            初代案内役「しるべ」が、相談する人の登録から方位・日取り・街の候補まで会話でご案内します。回答ごとに、根拠になった道具の入力・結果も確かめられます。
+          </p>
+        ) : (
+          /* サーバーで描くので、JSが動かない環境でもこの案内と /annai への道は出る。 */
+          <section
+            aria-label="AI回答の停止"
+            className="mt-4 rounded-2xl border border-rose-200 bg-white p-4 text-sm leading-relaxed"
+          >
+            <p>
+              AIとの会話は、いまは停止しています。質問を選ぶと、しるべが計算道具の結果をもとにご案内する「案内役に聞く」をご利用ください（JavaScriptなしでも動きます）。
+            </p>
+            <Link
+              href="/annai"
+              className="mt-3 inline-block rounded-xl border border-rose-300 px-4 py-2 font-semibold text-rose-700 hover:bg-rose-50"
+            >
+              案内役に聞く
+            </Link>
+            <p className="mt-3 text-slate-600">
+              結果は、ご自分のAIに渡して続きを相談できます。
+              <Link href="/mcp" className="ml-1 underline">
+                自分のAIからつなぐ
+              </Link>
+            </p>
+          </section>
+        )}
         <p className="mt-3 text-sm leading-relaxed">
-          {state.enabled
+          {aiOn
             ? "AIが必要な道具を選び、結果を使って次の計算へ進みます。最大8ステップ・20回、1回8秒・全体60秒で打ち切ります。"
             : "計算の連鎖は深さ3・最大4、20回までです。1回8秒・全体30秒で打ち切ります。街から先の展開は地理の参考です。"}
         </p>
-        <p className="mt-3 text-sm leading-relaxed text-slate-700">
-          フォームで聞く（JSなし）:{" "}
-          <Link href="/annai" className="font-semibold text-rose-700 underline">
-            案内役に聞く
-          </Link>
-        </p>
+        {aiOn && (
+          <p className="mt-3 text-sm leading-relaxed text-slate-700">
+            フォームで聞く（JSなし）:{" "}
+            <Link
+              href="/annai"
+              className="font-semibold text-rose-700 underline"
+            >
+              案内役に聞く
+            </Link>
+          </p>
+        )}
         <McpExplorer
           voiceEnabled={voiceState().enabled}
           agentEnabled={state.enabled}

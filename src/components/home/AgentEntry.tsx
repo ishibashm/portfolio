@@ -54,11 +54,16 @@ export function AgentEntry() {
       window.removeEventListener("focus", check);
     };
   }, []);
+  /*
+    自由な質問の行き先。AIが実際に使えるときだけ /ask（会話）へ、
+    それ以外（JSなしの初回描画・停止中・確認失敗）はJSなしで動く /annai へ。
+  */
+  const questionHref = available ? "/ask" : "/annai";
   return (
     <section className="w-full max-w-[1700px] rounded-3xl border border-rose-200 bg-white p-6">
-      <h2 className="text-xl font-serif font-bold">
-        エージェントに案内してもらう
-      </h2>
+      {/* 2026-11-15: 有料AIを止めているので「エージェント」をやめ、案内役の名前にする。
+          しるべの指さしは常に出す（JSなしの初回描画でも出る）。 */}
+      <h2 className="text-xl font-serif font-bold">しるべに案内してもらう</h2>
       <GuideCharacter
         pose="pointing"
         size="md"
@@ -120,15 +125,25 @@ export function AgentEntry() {
         </div>
       )}
       {faq && (
-        <FaqPanel onQuestion={() => window.location.assign("/ask")} />
+        <FaqPanel onQuestion={() => window.location.assign(questionHref)} />
       )}
       <Link
-        href="/ask"
+        href={questionHref}
         prefetch={false}
         className="mt-4 inline-block text-sm underline"
       >
-        自由に質問する
+        {available ? "自由に質問する" : "案内役に聞く"}
       </Link>
+      <p className="mt-3 text-sm text-slate-600">
+        結果は、ご自分のAIに渡して続きを相談できます。
+        <Link
+          href="/mcp"
+          prefetch={false}
+          className="ml-1 font-semibold text-rose-700 underline"
+        >
+          自分のAIからつなぐ
+        </Link>
+      </p>
     </section>
   );
 }

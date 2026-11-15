@@ -60,7 +60,12 @@ import {
 // 「引越しを決める」の並びには入れず、ホームと同じ上段に置く。
 const PUBLIC_ITEMS = [
   { href: "/", icon: Clock, label: "ホーム" },
-  { href: "/ask", icon: BookOpen, label: "エージェントに案内してもらう" },
+  /*
+    2026-11-15: 有料AIは本番で止めているので、行き先はJSなしでも動く
+    /annai（案内役に聞く）。サイドバーはAIの稼働を知らないため固定。
+    /ask へはAIが動いているときにトップの案内から進める。
+  */
+  { href: "/annai", icon: BookOpen, label: "しるべに案内してもらう" },
   /*
     生年月日と場所の登録。**道具より先に来る。**どの道具も出発地と
     生年月日が入っていないと何も出ないのに、入れる場所がホームの
@@ -120,7 +125,10 @@ interface NavItem {
 const GROUPED_ITEMS: { heading: string; items: NavItem[] }[] = ROUTE_GROUPS.map(
   (g) => ({
     heading: g.label,
-    items: CORE_ROUTES.filter((r) => r.group === g.key).map((r) => ({
+    // 上段（PUBLIC_ITEMS）に出した行き先は群の側で重ねて出さない（/annai）。
+    items: CORE_ROUTES.filter(
+      (r) => r.group === g.key && !PUBLIC_ITEMS.some((i) => i.href === r.href),
+    ).map((r) => ({
       href: r.href,
       icon: CORE_ICONS[r.href] ?? Compass,
       label: r.label,

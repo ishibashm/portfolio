@@ -97,3 +97,14 @@ describe("GlobalSidebar の開閉ボタン", () => {
     expect(unnamed).toEqual([]);
   });
 });
+
+describe("サイドバーの「しるべに案内してもらう」（2026-11-15）", () => {
+  it("JSなしでも動く /annai へ進み、/annai を群の側で重ねて出さない", () => {
+    const { container } = render(<GlobalSidebar />);
+    const link = screen.getByRole("link", { name: /しるべに案内してもらう/ });
+    expect(link).toHaveAttribute("href", "/annai");
+    expect(container.querySelectorAll('a[href="/annai"]')).toHaveLength(1);
+    expect(container.querySelector('a[href="/ask"]')).toBeNull();
+    expect(container.textContent).not.toContain("エージェント");
+  });
+});
