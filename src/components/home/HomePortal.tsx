@@ -498,6 +498,20 @@ export default function HomePortal({
               hPa 下がっています。体調が出やすい人は無理をしないでください。
             </p>
           )}
+          {pressure && (
+            <p className="text-xs text-stone-600 mt-2 leading-relaxed">
+              気圧の出典：
+              <a
+                href="https://www.jma.go.jp/bosai/map.html#contents=amedas"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="underline"
+              >
+                気象庁
+              </a>
+              の地上気象観測（現地気圧）をもとに算出
+            </p>
+          )}
         </Card>
 
         <Card
