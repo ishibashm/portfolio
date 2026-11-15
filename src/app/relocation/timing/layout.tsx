@@ -37,17 +37,64 @@ export default function TimingLayout({
               引っ越し料金が抑えやすい時期の一般的な傾向
             </h2>
             <p className="mt-1.5 text-xs leading-relaxed text-stone-600">
-              一般的な傾向として、3月下旬から4月上旬の繁忙期は料金が上がりやすく、希望日に予約が取りにくいことがあります。また、土日や月末も混みやすいとされ、それらを外した平日や通常期のほうが費用を抑えやすい傾向にあります。
+              SUUMO引越しの解説では、2〜4月を依頼が集中し料金が上がりやすい繁忙期、5月〜翌1月を比較的安く抑えられる傾向がある通常期としています（出典:{" "}
+              <a
+                href="https://hikkoshi.suumo.jp/oyakudachi/788.html"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="font-semibold text-indigo-600 underline hover:text-indigo-800"
+              >
+                SUUMO引越し（時期の解説）
+              </a>
+              、
+              <a
+                href="https://hikkoshi.suumo.jp/soba/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="font-semibold text-indigo-600 underline hover:text-indigo-800"
+              >
+                SUUMO引越し（費用相場）
+              </a>
+              ）。繁忙期の中でも3月下旬〜4月上旬に依頼が特に集中し料金も高くなりやすいとされ、国土交通省の発表資料でも3月中旬〜4月上旬が例年の最繁忙期として案内されています（出典:{" "}
+              <a
+                href="https://www.mlit.go.jp/report/press/content/001863859.pdf"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="font-semibold text-indigo-600 underline hover:text-indigo-800"
+              >
+                国土交通省（引越時期の分散協力に関する発表資料PDF）
+              </a>
+              ）。また、同じ月の中では下旬にかけて需要が高まりやすく、上旬のほうが抑えやすいとされています（出典:
+              上記SUUMO引越し、
+              <a
+                href="https://hikkoshi-pedia.com/yen/536/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="font-semibold text-indigo-600 underline hover:text-indigo-800"
+              >
+                引越しペディア
+              </a>
+              ）。
             </p>
             <p className="mt-1.5 text-xs leading-relaxed text-stone-500">
-              実際の引っ越し料金は、地域・日程・荷物量・移動距離などの条件によって変わります（このページに料金の実測データはありません）。暦と生活の都合の兼ね合いは
+              実際の引っ越し料金は、地域・日程・荷物量・移動距離・業者などの条件によって変わります（出典:
+              上記SUUMO引越し、
+              <a
+                href="https://hikkoshizamurai.jp/prices/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="font-semibold text-indigo-600 underline hover:text-indigo-800"
+              >
+                引越し侍
+              </a>
+              。このページに料金の実測データはありません）。関連するサイト内の説明として、暦と生活の都合の兼ね合いは
               <Link
                 href="/blog/what-is-hidori-for-moving"
                 className="mx-1 font-semibold text-indigo-600 underline hover:text-indigo-800"
               >
                 引越しの日取りとは。何を見て、どの順に決めるのか
               </Link>
-              でも説明しています。
+              でも扱っています。
             </p>
           </section>
 
