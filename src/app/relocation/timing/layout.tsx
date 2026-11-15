@@ -112,7 +112,7 @@ export default function TimingLayout({
                   href="/relocation/arbitrage"
                   className="mx-1 font-semibold text-indigo-600 underline hover:text-indigo-800"
                 >
-                  {coreRouteLabel("/relocation/arbitrage") ?? "方位で街を探す"}
+                  {coreRouteLabel("/relocation/arbitrage")}
                 </Link>
                 の設定と共有しています（未設定の場合は先に設定します）。
               </li>
