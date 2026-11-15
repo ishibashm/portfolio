@@ -16,7 +16,7 @@ import { parsePrefParam } from "@/lib/todayWeather/prefectures";
 import { parseBirthYearParam } from "@/lib/todayWeather/birthYear";
 
 // 都道府県・生まれ年を ?pref= と ?birthYear= で受け取る（searchParams を読むので
-// 訪問ごとに描画される）。天気と空気は fetch の next.revalidate（30〜60分）で
+// 訪問ごとに描画される）。天気は fetch の next.revalidate（30分）で
 // データキャッシュから読み、外部へは毎回取りに行かない。force-dynamic にすると
 // fetch が no-store 扱いになり得るので付けない。
 const title = "今日の吉方位と時間｜本命星別の日盤・十二支の早見表";
@@ -65,7 +65,6 @@ export default async function TodayPage({ searchParams }: Props = {}) {
         <TodayWeatherPanel
           pref={pref}
           forecast={weather.forecast}
-          air={weather.air}
           birthYear={birthYear}
           invalidBirthYear={invalidBirthYear}
           today={data.date}

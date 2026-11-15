@@ -12,11 +12,6 @@ import {
   parseJmaForecast,
 } from "@/lib/todayWeather/jma";
 import {
-  getAirQuality,
-  parseAirQuality,
-  pm25Note,
-} from "@/lib/todayWeather/air";
-import {
   honmeiForBirthYear,
   parseBirthYearParam,
 } from "@/lib/todayWeather/birthYear";
@@ -79,14 +74,6 @@ const JMA = [
   },
 ];
 
-const AIR = {
-  current: { time: "2026-11-15T22:00", pm2_5: 6.14 },
-  hourly: {
-    time: ["2026-11-15T21:00", "2026-11-15T22:00", "2026-11-16T00:00"],
-    pm2_5: [5, 7, 40],
-  },
-};
-
 const aichi = PREFECTURES.find((p) => p.code === 23)!;
 const okResponse = (body: unknown) =>
   ({ ok: true, json: async () => body }) as Response;
@@ -101,8 +88,6 @@ describe("都道府県の表", () => {
       expect(p.office).toMatch(/^\d{6}$/);
       expect(p.area).toMatch(/^\d{6}$/);
       expect(p.amedas).toMatch(/^\d{5}$/);
-      expect(p.lat).toBeGreaterThan(24);
-      expect(p.lon).toBeGreaterThan(122);
     }
   });
   it("初期値は未選択で、?pref= は 1〜47 の整数だけ受け付ける", () => {
@@ -165,31 +150,6 @@ describe("気象庁の予報を読む", () => {
   });
 });
 
-describe("空気（PM2.5）を読む", () => {
-  it("今の値と、今日の平均・最大を出す", () => {
-    expect(parseAirQuality(AIR)).toEqual({
-      time: "2026-11-15T22:00",
-      current: 6.1,
-      todayMean: 6,
-      todayMax: 7,
-    });
-  });
-  it("基準との比較は文字で、安全とは言い切らない", () => {
-    expect(pm25Note(10)).toContain("WHO指針");
-    expect(pm25Note(20)).toContain("国の環境基準");
-    expect(pm25Note(40)).toContain("上回る");
-    for (const n of [10, 20, 40]) expect(pm25Note(n)).not.toContain("安全");
-  });
-  it("値がないときと通信の失敗は null", async () => {
-    expect(parseAirQuality({})).toBeNull();
-    expect(parseAirQuality({ current: { time: "x", pm2_5: null } })).toBeNull();
-    const failing = vi.fn(async () => {
-      throw new Error("down");
-    });
-    expect(await getAirQuality(aichi, failing as never)).toBeNull();
-  });
-});
-
 describe("生まれ年", () => {
   it("西暦4桁だけ受け付け、全角数字も読む", () => {
     expect(parseBirthYearParam("1985")).toBe(1985);
@@ -210,7 +170,7 @@ describe("生まれ年", () => {
   });
 });
 
-describe("今日の天気と空気の枠", () => {
+describe("今日の天気の枠", () => {
   const stars = [1, 2, 3, 4, 5, 6, 7, 8, 9].map((star) => ({
     star,
     today: { lucky: [`吉${star}`], unlucky: [`凶${star}`] },
@@ -220,7 +180,6 @@ describe("今日の天気と空気の枠", () => {
       <TodayWeatherPanel
         pref={null}
         forecast={null}
-        air={null}
         birthYear={null}
         invalidBirthYear={false}
         today="2026-11-15"
@@ -232,10 +191,10 @@ describe("今日の天気と空気の枠", () => {
   it("都道府県を選ぶまでは案内だけ出し、外部へ取りに行かない", async () => {
     const fetchSpy = vi.fn();
     vi.stubGlobal("fetch", fetchSpy);
-    expect(await loadTodayWeather(null)).toEqual({ forecast: null, air: null });
+    expect(await loadTodayWeather(null)).toEqual({ forecast: null });
     expect(fetchSpy).not.toHaveBeenCalled();
     const html = render({});
-    expect(html).toContain("都道府県を選ぶと、今日の天気と空気が出ます。");
+    expect(html).toContain("都道府県を選ぶと、今日の天気が出ます。");
     expect(html).toContain('method="get"');
     expect(html).toContain('name="pref"');
     expect(html).toContain('name="birthYear"');
@@ -245,11 +204,10 @@ describe("今日の天気と空気の枠", () => {
       '<option value="" selected="">選んでください</option>',
     );
   });
-  it("選んだ都道府県の天気と空気、出典を出す", () => {
+  it("選んだ都道府県の天気と出典を出す", () => {
     const html = render({
       pref: aichi,
       forecast: parseJmaForecast(JMA, aichi),
-      air: parseAirQuality(AIR),
     });
     expect(html).toContain("天気（愛知県・西部）");
     expect(html).toContain("雨 夜 くもり 後 晴れ");
@@ -257,12 +215,14 @@ describe("今日の天気と空気の枠", () => {
     expect(html).toContain("18–24時");
     expect(html).toContain("出典：");
     expect(html).toContain("気象庁");
-    expect(html).toContain("いま 6.1µg/m³");
-    expect(html).toContain("参考値");
+    expect(html).not.toContain("空気");
+    expect(html).not.toMatch(/open-meteo/i);
+    expect(html).not.toContain("PM2.5");
   });
   it("取れなかった枠は「いま取得できません」", () => {
     const html = render({ pref: aichi });
-    expect(html.match(/いま取得できません/g)).toHaveLength(2);
+    expect(html.match(/いま取得できません/g)).toHaveLength(1);
+    expect(html).not.toContain("空気");
   });
   it("生まれ年から本命星の今日の方位を出し、不正な値は案内に戻す", () => {
     const html = render({ birthYear: 1990 });
@@ -271,7 +231,7 @@ describe("今日の天気と空気の枠", () => {
     expect(html).toContain("前年の二黒土星");
     expect(render({ invalidBirthYear: true })).toContain("西暦4桁");
   });
-  it("天気・空気に緑や赤の色を使わず、禁止表現を含めない", () => {
+  it("天気に緑や赤の色を使わず、禁止表現を含めない", () => {
     const src = readFileSync(
       "src/components/houi/TodayWeatherPanel.tsx",
       "utf8",
@@ -284,33 +244,36 @@ describe("今日の天気と空気の枠", () => {
     expect(html).toContain("/today/banner-960.avif 960w");
     expect(html).toContain("手を振るしるべ");
     expect(html).toMatch(/width="960" height="435"/);
-    for (const n of ["weather", "air", "fortune"]) {
+    for (const n of ["weather", "fortune"]) {
       expect(html).toContain(`/today/icon-${n}-192.avif 2x`);
       expect(existsSync(`public/today/icon-${n}-96.webp`)).toBe(true);
     }
-    expect(html.match(/width="48" height="48"/g)).toHaveLength(3);
+    expect(html).not.toContain("/today/icon-air-");
+    expect(html.match(/width="48" height="48"/g)).toHaveLength(2);
   });
 });
 
 describe("/houi/today のページ", () => {
   it("?pref= と ?birthYear= を受け取り、枠をページの先頭に出す", async () => {
-    vi.stubGlobal(
-      "fetch",
-      vi.fn(async (url: string) =>
-        okResponse(String(url).includes("jma.go.jp") ? JMA : AIR),
-      ),
-    );
+    const fetchImpl = vi.fn(async (url: string) => {
+      expect(String(url)).toContain("jma.go.jp");
+      return okResponse(JMA);
+    });
+    vi.stubGlobal("fetch", fetchImpl);
     const { default: TodayPage } = await import("@/app/houi/today/page");
     const html = renderToStaticMarkup(
       await TodayPage({
         searchParams: Promise.resolve({ pref: "23", birthYear: "1990" }),
       }),
     );
-    expect(html.indexOf("今日の天気と空気")).toBeLessThan(
+    expect(html.indexOf("今日の天気")).toBeLessThan(
       html.indexOf("今日の吉方位と時間</h1>"),
     );
     expect(html).toContain("天気（愛知県・西部）");
     expect(html).toContain("1990年生まれ");
+    expect(html).not.toContain("空気");
+    expect(html).not.toMatch(/open-meteo/i);
+    expect(fetchImpl).toHaveBeenCalled();
     // 生まれ年は「AI に渡す」の文書に入れない
     const area = html.match(/<textarea[^>]*>([^<]*)<\/textarea>/)![1];
     expect(area).not.toContain("1990");
