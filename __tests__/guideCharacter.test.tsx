@@ -9,6 +9,7 @@ import GuideCharacter, {
 import NotFound from "@/app/not-found";
 import { ArticleToolCta } from "@/components/blog/ArticleToolCta";
 import { AgentEntry } from "@/components/home/AgentEntry";
+import { ContentDisclaimer } from "@/components/houi/ContentDisclaimer";
 
 /**
  * 初代 案内役「しるべ」（docs/guide-character.md）。
@@ -99,6 +100,33 @@ describe("置き場所", () => {
     expect(screen.getByText(/引越しの予定はありますか/)).toBeTruthy();
     expect(screen.getByText(/参考情報です/)).toBeTruthy();
   });
+
+  it("/houi 配下の末尾の注記に、本文より下なので lazy・装飾のしるべ", () => {
+    const { container } = render(<ContentDisclaimer />);
+    const img = container.querySelector("img")!;
+    expect(img.getAttribute("src")).toBe("/guide/shirube-magnifier-240.webp");
+    expect(img.getAttribute("loading")).toBe("lazy");
+    expect(img.getAttribute("width")).toBe("240");
+    expect(img.getAttribute("aria-hidden")).toBe("true");
+    expect(screen.getByText(/参考情報/)).toBeTruthy();
+  });
+
+  it.each([
+    ["src/app/annai/page.tsx", '<GuideCharacter pose="compass"'],
+    ["src/app/mcp/page.tsx", '<GuideCharacter pose="thumbsup"'],
+    ["src/app/houi/tenchusatsu/page.tsx", '<GuideCharacter pose="magnifier"'],
+    ["src/app/houi/fortune-compare/page.tsx", '<GuideCharacter pose="compass"'],
+    ["src/components/blog/BlogIndex.tsx", '<GuideCharacter pose="pointing"'],
+    ["src/app/ask/page.tsx", '<GuideAvatar pose="magnifier"'],
+  ])(
+    "%s に案内役がいる（最初の画面の主役より先に読ませない＝priority 指定なし）",
+    (file, tag) => {
+      const src = readFileSync(file, "utf8");
+      expect(src).toContain(tag);
+      const at = src.indexOf(tag);
+      expect(src.slice(at, at + 120)).not.toContain("priority");
+    },
+  );
 
   it("記事の著者・構造化データは組織のまま（キャラクターを著者にしない）", () => {
     const src = readFileSync("src/components/JsonLd.tsx", "utf8");
