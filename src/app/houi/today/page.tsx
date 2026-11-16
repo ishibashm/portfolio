@@ -8,8 +8,17 @@ import { buildTodayDirections } from "@/lib/todayDirections";
 import { HOUI_BREADCRUMB_LABEL, getMonthlySummary } from "@/lib/kigakuContent";
 import { pageOpenGraph, SITE_URL } from "@/lib/siteUrl";
 import { BreadcrumbJsonLd } from "@/components/JsonLd";
+import {
+  TodayWeatherPanel,
+  loadTodayWeather,
+} from "@/components/houi/TodayWeatherPanel";
+import { parsePrefParam } from "@/lib/todayWeather/prefectures";
+import { parseBirthYearParam } from "@/lib/todayWeather/birthYear";
 
-export const revalidate = 3600;
+// 都道府県・生まれ年を ?pref= と ?birthYear= で受け取る（searchParams を読むので
+// 訪問ごとに描画される）。天気は fetch の next.revalidate（30分）で
+// データキャッシュから読み、外部へは毎回取りに行かない。force-dynamic にすると
+// fetch が no-store 扱いになり得るので付けない。
 const title = "今日の吉方位と時間｜本命星別の日盤・十二支の早見表";
 const description =
   "今日と明日の吉方位・凶方位を本命星別に確認。五黄殺・暗剣殺・日破は全員に凶として表示し、十二支ごとの時間帯も一覧で見られます。日本時間の日付で更新。";
@@ -21,7 +30,20 @@ export const metadata: Metadata = {
 };
 const list = (items: string[]) => items.join("・") || "なし";
 
-export default function TodayPage() {
+type Props = {
+  searchParams?: Promise<Record<string, string | string[] | undefined>>;
+};
+
+export default async function TodayPage({ searchParams }: Props = {}) {
+  const query = (await searchParams) ?? {};
+  const pref = parsePrefParam(query.pref);
+  const birthYear = parseBirthYearParam(query.birthYear);
+  const rawBirthYear = query.birthYear;
+  const invalidBirthYear =
+    birthYear === null &&
+    typeof rawBirthYear === "string" &&
+    rawBirthYear.trim() !== "";
+  const weather = await loadTodayWeather(pref);
   const data = buildTodayDirections();
   const year = Number(data.date.slice(0, 4));
   const markdown = buildTodayAiExport({
@@ -40,6 +62,14 @@ export default function TodayPage() {
         ]}
       />
       <article className="mx-auto max-w-5xl space-y-6">
+        <TodayWeatherPanel
+          pref={pref}
+          forecast={weather.forecast}
+          birthYear={birthYear}
+          invalidBirthYear={invalidBirthYear}
+          today={data.date}
+          stars={data.stars}
+        />
         <CurrentDirections />
         <header className="space-y-3">
           <h1 className="font-serif text-3xl font-bold">今日の吉方位と時間</h1>
@@ -51,7 +81,7 @@ export default function TodayPage() {
           </p>
           <p className="text-sm text-slate-600">
             表示対象：<time dateTime={data.date}>{data.date}</time>
-            （日本時間・Asia/Tokyo）。約1時間ごとに更新され、日付変更後は前日の表示が残る場合があります。
+            （日本時間・Asia/Tokyo）。開くたびに日本時間の日付で計算します。
           </p>
           <Link href="/houi" className="inline-block text-rose-600 underline">
             本命星が分からない方はこちら

@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { pageOpenGraph } from "@/lib/siteUrl";
 import { McpExplorer } from "./McpExplorer";
+import { GuideAvatar } from "@/components/guide/GuideCharacter";
 
 import { voiceState } from "@/lib/mcpVoiceConfig";
 import { chainLlmState } from "@/lib/mcpAgentConfig";
@@ -51,23 +52,27 @@ export default function Page() {
           /* サーバーで描くので、JSが動かない環境でもこの案内と /annai への道は出る。 */
           <section
             aria-label="AI回答の停止"
-            className="mt-4 rounded-2xl border border-rose-200 bg-white p-4 text-sm leading-relaxed"
+            className="mt-4 flex items-start gap-3 rounded-2xl border border-rose-200 bg-white p-4 text-sm leading-relaxed sm:gap-4"
           >
-            <p>
-              AIとの会話は、いまは停止しています。質問を選ぶと、しるべが計算道具の結果をもとにご案内する「案内役に聞く」をご利用ください（JavaScriptなしでも動きます）。
-            </p>
-            <Link
-              href="/annai"
-              className="mt-3 inline-block rounded-xl border border-rose-300 px-4 py-2 font-semibold text-rose-700 hover:bg-rose-50"
-            >
-              案内役に聞く
-            </Link>
-            <p className="mt-3 text-slate-600">
-              結果は、ご自分のAIに渡して続きを相談できます。
-              <Link href="/mcp" className="ml-1 underline">
-                自分のAIからつなぐ
+            {/* 文で状態を伝えるので、イラストは読み上げない（装飾）。 */}
+            <GuideAvatar pose="magnifier" size="sm" decorative />
+            <div className="min-w-0 flex-1">
+              <p>
+                AIとの会話は、いまは停止しています。質問を選ぶと、しるべが計算道具の結果をもとにご案内する「案内役に聞く」をご利用ください（JavaScriptなしでも動きます）。
+              </p>
+              <Link
+                href="/annai"
+                className="mt-3 inline-block rounded-xl border border-rose-300 px-4 py-2 font-semibold text-rose-700 hover:bg-rose-50"
+              >
+                案内役に聞く
               </Link>
-            </p>
+              <p className="mt-3 text-slate-600">
+                結果は、ご自分のAIに渡して続きを相談できます。
+                <Link href="/mcp" className="ml-1 underline">
+                  自分のAIからつなぐ
+                </Link>
+              </p>
+            </div>
           </section>
         )}
         <p className="mt-3 text-sm leading-relaxed">
