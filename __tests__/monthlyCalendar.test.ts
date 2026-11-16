@@ -1,6 +1,10 @@
 import { describe, expect, it } from "vitest";
 import { buildMonthlyCalendar } from "@/lib/monthlyCalendar";
-import { calendarMonths, calendarMonthSlug } from "@/lib/calendarMonths";
+import {
+  calendarMonths,
+  calendarMonthSlug,
+  publishedCalendarMonths,
+} from "@/lib/calendarMonths";
 
 describe("月別の引越しカレンダー", () => {
   it("その月の日数ぶんの行を作る", () => {
@@ -179,5 +183,25 @@ describe("年月日の干支と節気時刻", () => {
     expect(cal.days[3].kanshi.year).toBe("丙午");
     expect(cal.days[3].kanshi.month).toBe("庚寅");
     expect(cal.days[18].kanshi.month).toBe("庚寅");
+  });
+});
+
+describe("公開する月別カレンダーの範囲", () => {
+  it("入口の 18 か月窓から外れた過去月も頁として残す", () => {
+    const now = new Date("2026-11-16T12:00:00+09:00");
+    expect(calendarMonths(now).map(calendarMonthSlug)[0]).toBe("2026-11");
+    const published = publishedCalendarMonths(now).map(calendarMonthSlug);
+    expect(published[0]).toBe("2026-01");
+    expect(published).toContain("2026-09");
+    expect(published).toContain("2026-10");
+    expect(published).toContain("2026-11");
+    expect(published.at(-1)).toBe("2028-04");
+  });
+
+  it("18 か月窓の末尾より先は出さない", () => {
+    const now = new Date("2026-11-16T12:00:00+09:00");
+    const published = publishedCalendarMonths(now).map(calendarMonthSlug);
+    expect(published).not.toContain("2025-12");
+    expect(published).not.toContain("2028-05");
   });
 });

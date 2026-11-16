@@ -7,6 +7,7 @@ import { ContentDisclaimer } from "@/components/houi/ContentDisclaimer";
 import {
   buildMonthlyCalendar,
   calendarMonths,
+  publishedCalendarMonths,
   weekdayLabel,
   directionListLabel,
 } from "@/lib/monthlyCalendar";
@@ -37,7 +38,9 @@ function parseMonth(slug: string): { year: number; month: number } | null {
   const year = Number(m[1]);
   const month = Number(m[2]);
   if (month < 1 || month > 12) return null;
-  if (!calendarMonths().some((c) => c.year === year && c.month === month)) {
+  if (
+    !publishedCalendarMonths().some((c) => c.year === year && c.month === month)
+  ) {
     return null;
   }
   return { year, month };
@@ -73,7 +76,7 @@ function yearMetadata(year: number): Metadata {
 
 export function generateStaticParams() {
   return [
-    ...calendarMonths().map((c) => ({
+    ...publishedCalendarMonths().map((c) => ({
       month: `${c.year}-${String(c.month).padStart(2, "0")}`,
     })),
     ...contentYears().map((year) => ({ month: String(year) })),
@@ -128,10 +131,15 @@ export default async function Page({
   const slug = `${year}-${String(month).padStart(2, "0")}`;
   const note = calendarMonthNote(year, month);
 
-  const all = calendarMonths();
-  const idx = all.findIndex((c) => c.year === year && c.month === month);
-  const prev = idx > 0 ? all[idx - 1] : null;
-  const next = idx >= 0 && idx < all.length - 1 ? all[idx + 1] : null;
+  const upcoming = calendarMonths();
+  const published = publishedCalendarMonths();
+  const inUpcoming = upcoming.some((c) => c.year === year && c.month === month);
+  // 入口と同じ 18 か月のチップ。窓の中の頁の文言は変えない。
+  const all = upcoming;
+  const seq = inUpcoming ? upcoming : published;
+  const idx = seq.findIndex((c) => c.year === year && c.month === month);
+  const prev = idx > 0 ? seq[idx - 1] : null;
+  const next = idx >= 0 && idx < seq.length - 1 ? seq[idx + 1] : null;
   const slugOf = (c: { year: number; month: number }) =>
     `${c.year}-${String(c.month).padStart(2, "0")}`;
 

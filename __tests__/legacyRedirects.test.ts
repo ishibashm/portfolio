@@ -45,7 +45,6 @@ describe("消した頁の転送", () => {
       "/blog/when-you-cannot-avoid-a-bad-direction",
       "/blog/does-bad-direction-last-60-years",
     ],
-    ["/calendar/2026-09", "/calendar"],
     ["/news", "/blog"],
   ])("%s を %s へ 301 で送る", async (source, destination) => {
     const redirect = find(await redirects(), source);
@@ -72,6 +71,15 @@ describe("消した頁の転送", () => {
       destination: "/contact",
       permanent: true,
     });
+  });
+
+  it("窓から外れた月別カレンダーは転送せず頁として残す", async () => {
+    const sources = (await redirects()).map((r) => r.source);
+    // 月が変わると 18 か月窓の先頭が外れる。2026-09 は以前 /calendar へ
+    // 送っていたが、頁を残す方針に変えたので転送しない。
+    for (const path of ["/calendar/2026-09", "/calendar/2026-10"]) {
+      expect(sources, `${path} を送っている`).not.toContain(path);
+    }
   });
 
   it("後継の無い頁は送らない（soft 404 を作らない）", async () => {
