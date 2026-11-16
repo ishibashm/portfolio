@@ -36,7 +36,8 @@ describe("改稿後の検索結果と本文", () => {
     expect(md).toContain(
       "description: 天中殺の引っ越しは大丈夫なのか、考えられている影響と避けられない時の対処法を解説。不運になると確かめた資料はなく、避ける期間や転勤・引っ越し後の扱いを具体的にまとめます。\n",
     );
-    expect(md).toContain("updatedAt: 2026-10-26\n");
+    // 2026-11-15: 停止中の /ask への導線を /houi/tenchusatsu と /annai に替えて更新日を進めた。
+    expect(md).toContain("updatedAt: 2026-11-15\n");
     expect(md).toContain("publishedAt: 2026-09-24\n");
   });
 });
