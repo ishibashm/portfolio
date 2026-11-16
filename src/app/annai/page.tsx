@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { cookies, headers } from "next/headers";
 import Link from "next/link";
 import { AiExportBox } from "@/components/AiExportBox";
+import GuideCharacter from "@/components/guide/GuideCharacter";
 import { currentYearInJapan, STAR_NAMES } from "@/lib/kigakuContent";
 import { buildAnnaiAiExport } from "@/lib/aiExportPages";
 import {
@@ -891,6 +892,9 @@ export default async function AnnaiPage(props: PageProps) {
         <p className="mt-3 text-sm leading-relaxed text-slate-700">
           質問を選ぶと、案内役がこのサイトの計算道具（MCP）を呼び、その結果だけで答えます。呼んだ道具と結果も下に出します。
         </p>
+        <GuideCharacter pose="compass" size="sm" className="mt-4 max-w-xl">
+          迷ったら、いちばん近い質問を1つ選んでください。道具で計算した結果だけをもとにご案内します。吉凶は参考情報です。
+        </GuideCharacter>
 
         <StepIndicator current={query.step} />
 

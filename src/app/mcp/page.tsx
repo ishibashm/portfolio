@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import GuideCharacter from "@/components/guide/GuideCharacter";
 import Link from "next/link";
 import {
   MCP_PUBLIC_FALLBACK_LIMIT,
@@ -122,6 +123,9 @@ export default async function McpGuidePage() {
               フォームで試す（案内役 /annai）
             </Link>
           </div>
+          <GuideCharacter pose="thumbsup" size="sm" className="max-w-xl pt-2">
+            お使いのAIに上のURLを登録すると、方位や暦をこのサイトの計算で確かめながら相談できます。何を聞けばよいか迷ったら、下の「つないだら最初に聞く文」から始めてみてください。
+          </GuideCharacter>
         </header>
 
         {/* 道具の一覧 */}
