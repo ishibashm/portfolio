@@ -249,8 +249,8 @@ describe("buildTodayAiExport", () => {
 });
 
 describe("/houi/today の画面", () => {
-  it("読み取り専用の textarea に書き出しを出し、座標例を文書へは入れない", () => {
-    const html = renderToStaticMarkup(TodayPage());
+  it("読み取り専用の textarea に書き出しを出し、座標例を文書へは入れない", async () => {
+    const html = renderToStaticMarkup(await TodayPage());
     expect(html).toContain("AI に渡す");
     expect(html).toContain("<textarea");
     expect(html).toContain("readOnly");
