@@ -16,7 +16,8 @@ import nextConfig from "../next.config";
  *    1 件  /portfolio    旧サイトの頁。後継が無い
  *
  * **後継が無いものは送らない。**送り先の中身が元の頁と無関係だと、
- * Google は soft 404 として扱う。404 のままが正しい。
+ * Google は soft 404 として扱う。転送は付けない。削除が確定した頁
+ * （/extract）は middleware の 410 に任せる。
  *
  * next.config は型検査に掛かるが、**どこへ送るかは型では守れない。**
  * 行き先の頁を消したり移したりしたときに気付けるよう、ここで見る。
@@ -44,6 +45,10 @@ describe("消した頁の転送", () => {
     [
       "/blog/when-you-cannot-avoid-a-bad-direction",
       "/blog/does-bad-direction-last-60-years",
+    ],
+    [
+      "/blog/taikyoku-where-to-measure-from",
+      "/blog/direction-seen-from-the-original-home",
     ],
     ["/news", "/blog"],
   ])("%s を %s へ 301 で送る", async (source, destination) => {
@@ -85,7 +90,7 @@ describe("消した頁の転送", () => {
   it("後継の無い頁は送らない（soft 404 を作らない）", async () => {
     const list = await redirects();
     // /portfolio は旧サイトの頁で、いまのサイトに対応するものが無い。
-    // 消した 9 頁も同じ（Search Console の 404 一覧には出ていない）。
+    // 消した 9 頁も同じ。/extract は転送せず 410 にする（gonePaths）。
     const noSuccessor = [
       "/portfolio",
       "/trends",
@@ -107,6 +112,8 @@ describe("消した頁の転送", () => {
     const list = await redirects();
     expect(find(list, "/about")).toBeUndefined();
     expect(find(list, "/blog")).toBeUndefined();
+    // Search Console が 404 と報告したことがあるが、#969 以降は実在する。
+    expect(find(list, "/houi/area/47348")).toBeUndefined();
   });
 
   it("www から正規のホストへ送る設定を消していない", async () => {
