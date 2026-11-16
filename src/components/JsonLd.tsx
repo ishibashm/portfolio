@@ -1,4 +1,4 @@
-import { isValidYouTubeId } from "@/lib/blogVideo";
+import { isValidYouTubeId, normalizeVideoUploadDate } from "@/lib/blogVideo";
 import type { BlogVideoProps } from "@/components/blog/BlogVideo";
 import { SITE_NAME } from "@/lib/siteStructure";
 import { SITE_URL } from "@/lib/siteUrl";
@@ -232,6 +232,7 @@ export function VideoJsonLd({
   duration,
 }: BlogVideoProps) {
   if (!isValidYouTubeId(youtubeId)) return null;
+  const normalizedUploadDate = normalizeVideoUploadDate(uploadDate);
   return (
     <Script
       data={{
@@ -240,7 +241,7 @@ export function VideoJsonLd({
         name: title,
         description,
         thumbnailUrl: new URL(cover, SITE_URL).href,
-        uploadDate,
+        uploadDate: normalizedUploadDate,
         embedUrl: `https://www.youtube.com/embed/${youtubeId}`,
         duration,
         inLanguage: "ja",

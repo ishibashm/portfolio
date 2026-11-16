@@ -80,11 +80,6 @@ const nextConfig: NextConfig = {
         statusCode: 301,
       },
       {
-        source: "/calendar/2026-09",
-        destination: "/calendar",
-        statusCode: 301,
-      },
-      {
         // RSS 集約の直接の後継はない。不動産関連記事も読める記事一覧が最も近い。
         source: "/news",
         destination: "/blog",
