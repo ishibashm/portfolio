@@ -139,9 +139,15 @@ describe("ホームの手動保存", () => {
 
   it("見張りが空回りしていない（保存する項目を読めている）", () => {
     const names = literal.properties
-      .filter(ts.isPropertyAssignment)
+      .filter(
+        (p) =>
+          ts.isPropertyAssignment(p) || ts.isShorthandPropertyAssignment(p),
+      )
       .map((p) => p.name.getText());
-    expect(names).toContain("baseline_hrv_mean");
+    // 入力欄のない基準値を保存し直さない。見張りは残る設定で確認する。
+    expect(names).not.toContain("baseline_hrv_mean");
+    expect(names).not.toContain("hrv");
+    expect(names).not.toContain("gsr");
     expect(names).toContain("void_zodiac_override");
   });
 

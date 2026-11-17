@@ -1,5 +1,9 @@
 "use client";
 
+import { readLocalSettings } from "@/lib/userSettings";
+
+import { gatePersonalData } from "@/lib/personalDataPolicy";
+
 import { useEffect, useRef, useState } from "react";
 import { toUserMessage } from "@/lib/errorMessage";
 import {
@@ -218,7 +222,12 @@ export default function RegionalWealthPage() {
       await fetch("/api/user-config", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(updatedFields),
+        body: JSON.stringify(
+          gatePersonalData(
+            updatedFields,
+            readLocalSettings().personal_cloud_opt_in === true,
+          ).data,
+        ),
       });
 
       // Dispatch global config update event for instant sync
@@ -363,7 +372,12 @@ export default function RegionalWealthPage() {
       fetch("/api/user-config", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(partialConfig),
+        body: JSON.stringify(
+          gatePersonalData(
+            partialConfig,
+            readLocalSettings().personal_cloud_opt_in === true,
+          ).data,
+        ),
       }).catch((e) => console.error("Sync config failed on wealth page:", e));
 
       if (shouldDispatchEvent) {

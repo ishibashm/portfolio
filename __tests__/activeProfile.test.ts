@@ -57,7 +57,11 @@ function fakeApi(cloud: ProfilePreset[]) {
         }
         return { ok: true, status: 200, json: async () => ({ success: true }) };
       }
-      return { ok: true, status: 200, json: async () => ({ presets: cloud }) };
+      return {
+        ok: true,
+        status: 200,
+        json: async () => ({ personal_cloud_opt_in: true, presets: cloud }),
+      };
     },
   ) as unknown as typeof fetch;
   return { fetcher, posted, current: () => cloud };
@@ -65,6 +69,10 @@ function fakeApi(cloud: ProfilePreset[]) {
 
 beforeEach(() => {
   localStorage.clear();
+  localStorage.setItem(
+    "tactical_config_v1",
+    JSON.stringify({ personal_cloud_opt_in: true }),
+  );
 });
 afterEach(() => {
   vi.unstubAllGlobals();

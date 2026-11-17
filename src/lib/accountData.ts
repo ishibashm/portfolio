@@ -1,4 +1,8 @@
-import { ASK_DATA_STORAGE_KEY, LEGACY_ASK_STORAGE_KEY } from "@/lib/askData";
+import {
+  ASK_DATA_STORAGE_KEY,
+  ASK_PERSISTENCE_KEY,
+  LEGACY_ASK_STORAGE_KEY,
+} from "@/lib/askData";
 
 /**
  * 「登録した内容をすべて消す」の中身。
@@ -81,6 +85,7 @@ export const ACCOUNT_LOCAL_KEYS = [
   "relocation_simulator_draft",
   /* AI相談の会話・下書き・相談プロフィール */
   ASK_DATA_STORAGE_KEY,
+  ASK_PERSISTENCE_KEY,
   ASK_CONVERSATION_STORAGE_KEY,
   /*
     物件検索の設定。**同行者の生年月日と出発地が入る**（partyMembers）。
@@ -128,8 +133,14 @@ export function clearLocalAccountData(storage: AccountStorage): void {
       /* プライベートモードなどで消せないことがある。残りを続ける */
     }
   }
-  if (typeof window !== "undefined")
+  if (typeof window !== "undefined") {
+    try {
+      window.sessionStorage.removeItem(ASK_DATA_STORAGE_KEY);
+    } catch {
+      /* 保存無効でも他の削除を続ける */
+    }
     window.dispatchEvent(new Event("account-data-cleared"));
+  }
 }
 
 export interface DeleteResult {

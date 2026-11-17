@@ -72,7 +72,11 @@ describe("CosmicCalendar の生年月日の読み書き", () => {
     expect(readBirthConfig().birthDate).toBe("1990-05-15T12:00");
   });
 
-  it("直した生年月日は設定（端末とクラウド）に書かれる", () => {
+  it("同意済みなら直した生年月日は設定（端末とクラウド）に書かれる", () => {
+    localStorage.setItem(
+      SETTINGS_KEY,
+      JSON.stringify({ personal_cloud_opt_in: true }),
+    );
     persistBirthConfig("birth_date", "1990-05-15T12:00");
     const saved = JSON.parse(localStorage.getItem(SETTINGS_KEY) ?? "{}");
     expect(saved.birth_date).toBe("1990-05-15T12:00");

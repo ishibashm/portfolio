@@ -26,7 +26,10 @@ export async function POST(request: Request) {
   if (!input.ok) return input.response;
   const parsed = contactSchema.safeParse(input.value);
   if (!parsed.success) {
-    return NextResponse.json({ error: "入力の形式が正しくありません。" }, { status: 400 });
+    return NextResponse.json(
+      { error: "入力の形式が正しくありません。" },
+      { status: 400 },
+    );
   }
   if (parsed.data.website) return NextResponse.json({ ok: true });
   const { name, email, body } = parsed.data;
@@ -37,7 +40,6 @@ export async function POST(request: Request) {
         name,
         email,
         body,
-        user_agent: request.headers.get("user-agent")?.slice(0, 500) ?? null,
       },
     });
     return NextResponse.json({ ok: true });

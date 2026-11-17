@@ -3,7 +3,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import type { Prisma } from "@prisma/client";
 import prisma from "@/lib/prisma";
-import { findUserConfig, getAuthUser, toUserId } from "@/lib/userConfig";
+import { findUserConfig, getAuthUser } from "@/lib/userConfig";
 
 /*
   項目の定義は検査（refine）を付けずに置く。zod は refine 付きの
@@ -52,9 +52,17 @@ const birthPlacePaired = (v: { birthLat?: number; birthLon?: number }) =>
 const BIRTH_PLACE_PAIR_MESSAGE =
   "birthLat と birthLon は両方指定するか、両方省くこと";
 
-const profilePresetSchema = profilePresetFields.refine(birthPlacePaired, {
-  message: BIRTH_PLACE_PAIR_MESSAGE,
-});
+// 過去の控えは読み続けるが、入力欄のない健康基準値は新しく受け付けない。
+const profilePresetSchema = profilePresetFields
+  .omit({
+    baselineHrvMean: true,
+    baselineHrvStd: true,
+    baselineGsrMean: true,
+    baselineGsrStd: true,
+  })
+  .refine(birthPlacePaired, {
+    message: BIRTH_PLACE_PAIR_MESSAGE,
+  });
 
 /*
   保存側の形。以前は Gemini API キーを暗号化した encryptedGeminiKey を
@@ -72,8 +80,24 @@ const requestSchema = z.object({
 
 function encodePreset(
   preset: z.infer<typeof profilePresetSchema>,
+  previous?: z.infer<typeof storedProfilePresetSchema>,
 ): Prisma.InputJsonObject {
-  return { ...preset };
+  // 書き換えを止めるだけで、所有者がまだ消していない既存値は保持する。
+  return {
+    ...preset,
+    ...(previous?.baselineHrvMean !== undefined
+      ? { baselineHrvMean: previous.baselineHrvMean }
+      : {}),
+    ...(previous?.baselineHrvStd !== undefined
+      ? { baselineHrvStd: previous.baselineHrvStd }
+      : {}),
+    ...(previous?.baselineGsrMean !== undefined
+      ? { baselineGsrMean: previous.baselineGsrMean }
+      : {}),
+    ...(previous?.baselineGsrStd !== undefined
+      ? { baselineGsrStd: previous.baselineGsrStd }
+      : {}),
+  };
 }
 
 function decodePresets(value: Prisma.JsonValue | null) {
@@ -97,6 +121,7 @@ export async function GET() {
 
     return NextResponse.json({
       presets: decodePresets(config?.presets ?? null),
+      personal_cloud_opt_in: config?.personal_cloud_opt_in === true,
       presets_initialized: config?.presets !== null && config !== null,
     });
   } catch (error) {
@@ -125,26 +150,31 @@ export async function POST(req: Request) {
       );
     }
 
-    const presets = parsed.data.presets.map(encodePreset);
     // upsert は一意キー1本しか見られないが、移行前の行は user_id が NULL で
     // user_id 指定の upsert が新しい行を作ってしまう。既存行を先に解決する。
     const existing = await findUserConfig(user);
-    if (existing) {
-      await prisma.user_configs.update({
-        where: { id: existing.id },
-        data: { presets, updated_at: new Date() },
-      });
-    } else {
-      await prisma.user_configs.create({
-        data: {
-          user_id: toUserId(user),
-          user_email: user.email,
-          presets,
-          // 行の作成＝はじめての保存。登録日として管理ページが数える。
-          created_at: new Date(),
+    if (existing?.personal_cloud_opt_in !== true) {
+      return NextResponse.json(
+        {
+          error: "生年月日・場所・同行者のサーバー保存に同意してください。",
+          code: "PERSONAL_CLOUD_OPT_IN_REQUIRED",
         },
-      });
+        { status: 403 },
+      );
     }
+    const previous = new Map(
+      decodePresets(existing.presets ?? null).map((preset) => [
+        preset.id,
+        preset,
+      ]),
+    );
+    const presets = parsed.data.presets.map((preset) =>
+      encodePreset(preset, previous.get(preset.id)),
+    );
+    await prisma.user_configs.update({
+      where: { id: existing.id },
+      data: { presets, updated_at: new Date() },
+    });
 
     return NextResponse.json({ success: true });
   } catch (error) {

@@ -457,13 +457,13 @@ export function PersonalProfileConfig({
             >
               {isSaving
                 ? "保存中..."
-                : needsLogin
+                : !presetCloudSynced
                   ? "この端末に保存"
                   : "設定を保存（クラウド同期）"}
             </button>
             <span className="text-[11px] text-slate-500">
-              {needsLogin
-                ? "この端末にのみ保存されます"
+              {!presetCloudSynced
+                ? "この端末に保存します。サーバー保存の選択は /profile で変更できます"
                 : "他の端末でも同じ設定が使えます"}
             </span>
           </div>
