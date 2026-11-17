@@ -1,5 +1,7 @@
+import { PassThrough } from "node:stream";
+import { __resetFetchJsonCacheForTest } from "@/lib/todayWeather/fetchJson";
 import { existsSync, readFileSync } from "node:fs";
-import { renderToStaticMarkup } from "react-dom/server";
+import { renderToPipeableStream, renderToStaticMarkup } from "react-dom/server";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   DEFAULT_PREFECTURE_CODE,
@@ -78,7 +80,10 @@ const aichi = PREFECTURES.find((p) => p.code === 23)!;
 const okResponse = (body: unknown) =>
   ({ ok: true, json: async () => body }) as Response;
 
-afterEach(() => vi.unstubAllGlobals());
+afterEach(() => {
+  vi.unstubAllGlobals();
+  __resetFetchJsonCacheForTest();
+});
 
 describe("都道府県の表", () => {
   it("47都道府県がそろい、コードが重ならない", () => {
@@ -141,6 +146,7 @@ describe("気象庁の予報を読む", () => {
       jmaForecastUrl("230000"),
       expect.objectContaining({ next: { revalidate: 1800 } }),
     );
+    __resetFetchJsonCacheForTest();
     const failing = vi.fn(async () => {
       throw new Error("timeout");
     });
@@ -261,11 +267,23 @@ describe("/houi/today のページ", () => {
     });
     vi.stubGlobal("fetch", fetchImpl);
     const { default: TodayPage } = await import("@/app/houi/today/page");
-    const html = renderToStaticMarkup(
-      await TodayPage({
-        searchParams: Promise.resolve({ pref: "23", birthYear: "1990" }),
-      }),
-    );
+    const page = await TodayPage({
+      searchParams: Promise.resolve({ pref: "23", birthYear: "1990" }),
+    });
+    const html = await new Promise<string>((resolve, reject) => {
+      const output = new PassThrough();
+      let html = "";
+      output.on("data", (chunk) => {
+        html += chunk.toString();
+      });
+      output.on("end", () => resolve(html.replace(/<!--.*?-->/g, "")));
+      const stream = renderToPipeableStream(page, {
+        onAllReady() {
+          stream.pipe(output);
+        },
+        onError: reject,
+      });
+    });
     expect(html.indexOf("今日の天気")).toBeLessThan(
       html.indexOf("今日の吉方位と時間</h1>"),
     );

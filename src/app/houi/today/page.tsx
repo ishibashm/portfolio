@@ -8,10 +8,7 @@ import { buildTodayDirections } from "@/lib/todayDirections";
 import { HOUI_BREADCRUMB_LABEL, getMonthlySummary } from "@/lib/kigakuContent";
 import { pageOpenGraph, SITE_URL } from "@/lib/siteUrl";
 import { BreadcrumbJsonLd } from "@/components/JsonLd";
-import {
-  TodayWeatherPanel,
-  loadTodayWeather,
-} from "@/components/houi/TodayWeatherPanel";
+import { TodayWeatherPanel } from "@/components/houi/TodayWeatherPanel";
 import { parsePrefParam } from "@/lib/todayWeather/prefectures";
 import { parseBirthYearParam } from "@/lib/todayWeather/birthYear";
 
@@ -43,7 +40,6 @@ export default async function TodayPage({ searchParams }: Props = {}) {
     birthYear === null &&
     typeof rawBirthYear === "string" &&
     rawBirthYear.trim() !== "";
-  const weather = await loadTodayWeather(pref);
   const data = buildTodayDirections();
   const year = Number(data.date.slice(0, 4));
   const markdown = buildTodayAiExport({
@@ -64,7 +60,6 @@ export default async function TodayPage({ searchParams }: Props = {}) {
       <article className="mx-auto max-w-5xl space-y-6">
         <TodayWeatherPanel
           pref={pref}
-          forecast={weather.forecast}
           birthYear={birthYear}
           invalidBirthYear={invalidBirthYear}
           today={data.date}
