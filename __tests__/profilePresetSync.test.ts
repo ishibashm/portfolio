@@ -29,7 +29,10 @@ describe("profile preset cloud sync", () => {
     const fetcher = vi
       .fn()
       .mockResolvedValueOnce(
-        new Response(JSON.stringify({ presets: [] }), { status: 200 }),
+        new Response(
+          JSON.stringify({ personal_cloud_opt_in: true, presets: [] }),
+          { status: 200 },
+        ),
       )
       .mockResolvedValueOnce(
         new Response(JSON.stringify({ success: true }), { status: 200 }),
@@ -57,9 +60,15 @@ describe("profile preset cloud sync", () => {
     const fetcher = vi
       .fn()
       .mockResolvedValueOnce(
-        new Response(JSON.stringify({ presets: [cloudPreset] }), {
-          status: 200,
-        }),
+        new Response(
+          JSON.stringify({
+            personal_cloud_opt_in: true,
+            presets: [cloudPreset],
+          }),
+          {
+            status: 200,
+          },
+        ),
       )
       .mockResolvedValueOnce(
         new Response(JSON.stringify({ success: true }), { status: 200 }),
@@ -118,9 +127,12 @@ describe("profile preset cloud sync", () => {
       JSON.stringify(["preset_local", "preset_other"]),
     );
     const fetcher = vi.fn().mockResolvedValueOnce(
-      new Response(JSON.stringify({ presets: [localPreset] }), {
-        status: 200,
-      }),
+      new Response(
+        JSON.stringify({ personal_cloud_opt_in: true, presets: [localPreset] }),
+        {
+          status: 200,
+        },
+      ),
     );
 
     const result = await loadProfilePresets(fetcher, localStorage);
@@ -149,9 +161,15 @@ describe("profile preset cloud sync", () => {
     const fetcher = vi
       .fn()
       .mockResolvedValueOnce(
-        new Response(JSON.stringify({ presets: [localPreset] }), {
-          status: 200,
-        }),
+        new Response(
+          JSON.stringify({
+            personal_cloud_opt_in: true,
+            presets: [localPreset],
+          }),
+          {
+            status: 200,
+          },
+        ),
       )
       .mockResolvedValueOnce(
         new Response(JSON.stringify({ success: true }), { status: 200 }),
@@ -172,14 +190,16 @@ describe("profile preset cloud sync", () => {
 
   it("honors an explicitly empty cloud list instead of restoring stale local presets", async () => {
     localStorage.setItem("profile_presets_v1", JSON.stringify([localPreset]));
-    const fetcher = vi
-      .fn()
-      .mockResolvedValue(
-        new Response(
-          JSON.stringify({ presets: [], presets_initialized: true }),
-          { status: 200 },
-        ),
-      );
+    const fetcher = vi.fn().mockResolvedValue(
+      new Response(
+        JSON.stringify({
+          personal_cloud_opt_in: true,
+          presets: [],
+          presets_initialized: true,
+        }),
+        { status: 200 },
+      ),
+    );
 
     const result = await loadProfilePresets(fetcher, localStorage);
 
@@ -205,9 +225,15 @@ describe("saving never drops presets added elsewhere", () => {
     const fetcher = vi
       .fn()
       .mockResolvedValueOnce(
-        new Response(JSON.stringify({ presets: [localPreset, other] }), {
-          status: 200,
-        }),
+        new Response(
+          JSON.stringify({
+            personal_cloud_opt_in: true,
+            presets: [localPreset, other],
+          }),
+          {
+            status: 200,
+          },
+        ),
       )
       .mockResolvedValueOnce(ok());
 
@@ -238,9 +264,15 @@ describe("saving never drops presets added elsewhere", () => {
     const fetcher = vi
       .fn()
       .mockResolvedValueOnce(
-        new Response(JSON.stringify({ presets: [localPreset] }), {
-          status: 200,
-        }),
+        new Response(
+          JSON.stringify({
+            personal_cloud_opt_in: true,
+            presets: [localPreset],
+          }),
+          {
+            status: 200,
+          },
+        ),
       )
       .mockResolvedValueOnce(ok());
     const renamed = { ...localPreset, name: "改名" };
@@ -253,9 +285,15 @@ describe("saving never drops presets added elsewhere", () => {
     const fetcher = vi
       .fn()
       .mockResolvedValueOnce(
-        new Response(JSON.stringify({ presets: [localPreset, other, mine] }), {
-          status: 200,
-        }),
+        new Response(
+          JSON.stringify({
+            personal_cloud_opt_in: true,
+            presets: [localPreset, other, mine],
+          }),
+          {
+            status: 200,
+          },
+        ),
       )
       .mockResolvedValueOnce(ok());
     const result = await deleteProfilePreset(
@@ -309,9 +347,15 @@ describe("renameProfilePreset", () => {
     const fetcher = vi
       .fn()
       .mockResolvedValueOnce(
-        new Response(JSON.stringify({ presets: [localPreset, other] }), {
-          status: 200,
-        }),
+        new Response(
+          JSON.stringify({
+            personal_cloud_opt_in: true,
+            presets: [localPreset, other],
+          }),
+          {
+            status: 200,
+          },
+        ),
       )
       .mockResolvedValueOnce(ok());
 
@@ -339,9 +383,15 @@ describe("renameProfilePreset", () => {
     const fetcher = vi
       .fn()
       .mockResolvedValueOnce(
-        new Response(JSON.stringify({ presets: [localPreset, other] }), {
-          status: 200,
-        }),
+        new Response(
+          JSON.stringify({
+            personal_cloud_opt_in: true,
+            presets: [localPreset, other],
+          }),
+          {
+            status: 200,
+          },
+        ),
       )
       .mockResolvedValueOnce(ok());
 
@@ -439,4 +489,36 @@ describe("applyPresetEdits", () => {
     expect(next.birthLat).toBe(rich.birthLat);
     expect(next.baseLat).toBe(rich.baseLat);
   });
+});
+
+it("同意前は端末だけに保存し、既存のクラウド控えは読める", async () => {
+  const cloud = { ...localPreset, id: "preset_cloud" };
+  const fetcher = vi.fn<typeof fetch>(async () =>
+    Response.json({
+      presets: [cloud],
+      personal_cloud_opt_in: false,
+      presets_initialized: true,
+    }),
+  );
+  localStorage.setItem("profile_presets_v1", JSON.stringify([localPreset]));
+  const loaded = await loadProfilePresets(fetcher, localStorage);
+  expect(loaded.presets).toEqual([cloud, localPreset]);
+  const saved = await saveProfilePresets([localPreset], fetcher, localStorage);
+  expect(saved.cloudSynced).toBe(false);
+  expect(saved.reason).toBe("browser-only");
+  expect(fetcher.mock.calls.every((call) => call.length === 1)).toBe(true);
+});
+
+it("撤回をサーバーへ届けられなくても端末から再アップロードしない", async () => {
+  localStorage.setItem(
+    "tactical_config_v1",
+    JSON.stringify({ personal_cloud_opt_in: false }),
+  );
+  const fetcher = vi.fn<typeof fetch>(async () =>
+    Response.json({ presets: [], personal_cloud_opt_in: true }),
+  );
+  const result = await saveProfilePresets([localPreset], fetcher, localStorage);
+  expect(result.cloudSynced).toBe(false);
+  expect(fetcher).toHaveBeenCalledTimes(1);
+  expect(fetcher).toHaveBeenCalledWith("/api/profile-presets");
 });

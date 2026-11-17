@@ -1,3 +1,4 @@
+import { askDataExpiry } from "@/lib/retention/askDataExpiry";
 import type { Prisma } from "@prisma/client";
 import { NextRequest, NextResponse } from "next/server";
 import {
@@ -48,7 +49,7 @@ function encodeWorkspace(workspace: AskWorkspace): Prisma.InputJsonObject {
   };
 }
 
-export async function GET() {
+export async function GET(request: Request) {
   const user = await getAuthUser();
   if (!user)
     return NextResponse.json(
@@ -57,8 +58,22 @@ export async function GET() {
     );
   try {
     const config = await findUserConfig(user);
+    // 読むだけでは期限を延ばさない。開くたびに延びると期限前の知らせが
+    // 一度も出ず、書き出しを促す機会が無くなる。延長は保存（POST）で行う。
+    const expiry = askDataExpiry(config?.ask_data_last_used_at ?? null);
+    if (new URL(request.url).searchParams.get("format") === "export") {
+      return NextResponse.json(
+        { data: config?.ask_data ?? null, expiry },
+        {
+          headers: {
+            ...privateHeaders,
+            "Content-Disposition": 'attachment; filename="ask-data.json"',
+          },
+        },
+      );
+    }
     return NextResponse.json(
-      { data: parseAskWorkspace(config?.ask_data ?? null) },
+      { data: parseAskWorkspace(config?.ask_data ?? null), expiry },
       { headers: privateHeaders },
     );
   } catch {
@@ -110,10 +125,21 @@ export async function POST(request: NextRequest) {
       { status: 400, headers: privateHeaders },
     );
   }
-  const candidate =
-    body && typeof body === "object" && !Array.isArray(body)
-      ? (body as Record<string, unknown>).data
-      : null;
+  if (
+    !body ||
+    typeof body !== "object" ||
+    !("persist" in body) ||
+    body.persist !== true
+  ) {
+    return NextResponse.json(
+      {
+        error: "会話の保存を選んでください。",
+        code: "ASK_DATA_PERSIST_REQUIRED",
+      },
+      { status: 400, headers: privateHeaders },
+    );
+  }
+  const candidate = "data" in body ? body.data : null;
   const workspace = parseAskWorkspace(candidate);
   if (!workspace)
     return NextResponse.json(
@@ -128,7 +154,7 @@ export async function POST(request: NextRequest) {
         where: { id: existing.id },
         // user_configs.updated_at は生年月日・場所の競合解決用。AI相談の
         // 下書き保存で進めると、別端末の古い設定を新しいと誤認するため触らない。
-        data: { ask_data: askData },
+        data: { ask_data: askData, ask_data_last_used_at: new Date() },
       });
     } else {
       const now = new Date();
@@ -137,6 +163,7 @@ export async function POST(request: NextRequest) {
           user_id: toUserId(user),
           user_email: user.email,
           ask_data: askData,
+          ask_data_last_used_at: now,
           created_at: now,
           updated_at: now,
         },

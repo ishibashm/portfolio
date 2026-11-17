@@ -1,5 +1,7 @@
 "use client";
 
+import { gatePersonalData } from "@/lib/personalDataPolicy";
+
 import type { DirectionFilterMode } from "@/utils/directionFilterMode";
 import React, { useState, useEffect, useMemo, useRef } from "react";
 import dynamic from "next/dynamic";
@@ -1612,7 +1614,12 @@ export default function RelocationSimulatorPage() {
       await fetch("/api/user-config", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(updatedFields),
+        body: JSON.stringify(
+          gatePersonalData(
+            updatedFields,
+            readLocalSettings().personal_cloud_opt_in === true,
+          ).data,
+        ),
       });
 
       // Dispatch global config update event for instant sync

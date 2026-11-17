@@ -74,6 +74,8 @@ type Status = "idle" | "loading" | "saving" | "saved" | "error";
  * 端末に保存できたことは変わらないので、そこは必ず先に言う。
  */
 export function saveMessage(result: SaveResult): string {
+  if (result.settings.personal_cloud_opt_in === false)
+    return "この端末（ブラウザ）に保存しました。サーバーの既存値は残ります。";
   if (result.synced) {
     return "保存しました。ログイン中なので、ほかの端末でも同じ設定になります。";
   }
@@ -95,6 +97,7 @@ export function saveMessage(result: SaveResult): string {
 export function ProfileForm() {
   const [status, setStatus] = React.useState<Status>("loading");
   const [message, setMessage] = React.useState<string>("");
+  const [personalCloudOptIn, setPersonalCloudOptIn] = React.useState(false);
   const [synced, setSynced] = React.useState(false);
   /**
    * 知らせを出した時刻（端末の時計）。
@@ -160,6 +163,7 @@ export function ProfileForm() {
       try {
         const { settings, synced: didSync } = await loadSettings();
         if (!alive) return;
+        setPersonalCloudOptIn(settings.personal_cloud_opt_in === true);
 
         /* 待ってから読む。効果の本体で setState すると
            set-state-in-effect に当たる（CLAUDE.md 4 節） */
@@ -263,6 +267,7 @@ export function ProfileForm() {
     */
     if (editingPreset) {
       try {
+        await saveSettings({ personal_cloud_opt_in: personalCloudOptIn });
         const result = await saveProfilePresets(
           [
             applyPresetEdits(editingPreset, {
@@ -301,6 +306,7 @@ export function ProfileForm() {
 
     try {
       const result = await saveSettings({
+        personal_cloud_opt_in: personalCloudOptIn,
         birth_date: birthDate || undefined,
         birth_lat: birthLat ?? undefined,
         birth_lon: birthLon ?? undefined,
@@ -423,7 +429,7 @@ export function ProfileForm() {
           <b className="text-sm">ログインできました。</b>
           <br />
           {
-            "あとは生年月日といま住んでいる場所を入れると、方位の判定が動きます。入れた内容はアカウントに保存されるので、ほかの端末でも同じ設定で使えます。"
+            "あとは生年月日といま住んでいる場所を入れると、方位の判定が動きます。サーバーにも保存する場合は、下のチェックを選んでください。"
           }
         </p>
       )}
@@ -632,6 +638,19 @@ export function ProfileForm() {
         </p>
       )}
 
+      <div className="space-y-2 text-xs text-stone-600">
+        <label className="flex items-start gap-2">
+          <input
+            type="checkbox"
+            checked={personalCloudOptIn}
+            onChange={(event) => setPersonalCloudOptIn(event.target.checked)}
+          />
+          生年月日・場所・同行者をサーバーにも保存する（別の端末でも使う）
+        </label>
+        <p>
+          オフのときはこの端末（ブラウザ）の中だけで計算・保存します。サーバーの既存値は削除されません。
+        </p>
+      </div>
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
         <button
           type="submit"
@@ -645,12 +664,12 @@ export function ProfileForm() {
         </button>
         <span className="text-[11px] text-stone-500">
           {editingPreset
-            ? synced
+            ? synced && personalCloudOptIn
               ? "ログイン中です。この控えはクラウドにも保存されます。"
-              : "未ログインです。この控えはこの端末にだけ残ります。"
-            : synced
+              : "この控えはこの端末に保存します。"
+            : synced && personalCloudOptIn
               ? "ログイン中です。生年月日と場所はクラウドにも保存されます。"
-              : "未ログインです。入力はこの端末にだけ残ります。"}
+              : "入力はこの端末に保存します。"}
         </span>
       </div>
 

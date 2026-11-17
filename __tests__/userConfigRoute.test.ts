@@ -48,7 +48,11 @@ describe("/api/user-config", () => {
    * すべて null になっていた。
    */
   it("does not wipe fields that were not sent", async () => {
-    findFirst.mockResolvedValue({ id: "row-1", user_id: user.id });
+    findFirst.mockResolvedValue({
+      id: "row-1",
+      user_id: user.id,
+      personal_cloud_opt_in: true,
+    });
     update.mockResolvedValue({});
 
     const res = await POST(post({ base_lat: 35.1, base_lon: 136.9 }));
@@ -61,7 +65,11 @@ describe("/api/user-config", () => {
   });
 
   it("clears a field only when it is explicitly sent as empty", async () => {
-    findFirst.mockResolvedValue({ id: "row-1", user_id: user.id });
+    findFirst.mockResolvedValue({
+      id: "row-1",
+      user_id: user.id,
+      personal_cloud_opt_in: true,
+    });
     update.mockResolvedValue({});
 
     await POST(post({ birth_date: "" }));
@@ -70,7 +78,11 @@ describe("/api/user-config", () => {
   });
 
   it("ignores values that are not numbers", async () => {
-    findFirst.mockResolvedValue({ id: "row-1", user_id: user.id });
+    findFirst.mockResolvedValue({
+      id: "row-1",
+      user_id: user.id,
+      personal_cloud_opt_in: true,
+    });
     update.mockResolvedValue({});
 
     // 座標が片方だけ入力された途中の状態で "NaN" が飛んできたことがある。
@@ -85,7 +97,9 @@ describe("/api/user-config", () => {
     findFirst.mockResolvedValue(null);
     create.mockResolvedValue({});
 
-    const res = await POST(post({ base_lat: 35.1 }));
+    const res = await POST(
+      post({ base_lat: 35.1, personal_cloud_opt_in: true }),
+    );
 
     expect(res.status).toBe(200);
     expect(create.mock.calls[0][0].data).toMatchObject({
@@ -102,9 +116,103 @@ describe("/api/user-config", () => {
     findFirst.mockResolvedValue({ id: "cfg-1" });
     update.mockResolvedValue({});
 
-    const res = await POST(post({ base_lat: 35.1 }));
+    const res = await POST(
+      post({ base_lat: 35.1, personal_cloud_opt_in: true }),
+    );
 
     expect(res.status).toBe(200);
     expect(update.mock.calls[0][0].data).not.toHaveProperty("created_at");
+  });
+});
+
+describe("個人情報のサーバー保存", () => {
+  beforeEach(() => {
+    vi.resetAllMocks();
+    getUser.mockResolvedValue({ data: { user }, error: null });
+    update.mockResolvedValue({});
+    create.mockResolvedValue({});
+  });
+  it.each([
+    null,
+    { id: "owned", user_id: user.id, personal_cloud_opt_in: false },
+  ])("既定では無視した全項目を応答する: %j", async (row) => {
+    findFirst.mockResolvedValue(row);
+    const response = await POST(
+      post({
+        birth_date: "1990-04-01",
+        birth_time: "12:00",
+        birth_lat: 35.68,
+        birth_lon: 139.76,
+        base_lat: 35.68,
+        base_lon: 139.76,
+        presets: [],
+        baseline_hrv_mean: 38,
+        hrv: 40,
+        gsr: 4,
+      }),
+    );
+    const result = await response.json();
+    expect(response.status).toBe(200);
+    expect(result.ignored_personal_fields).toEqual(
+      expect.arrayContaining([
+        "birth_date",
+        "birth_time",
+        "birth_lat",
+        "birth_lon",
+        "base_lat",
+        "base_lon",
+        "presets",
+        "baseline_hrv_mean",
+        "hrv",
+        "gsr",
+      ]),
+    );
+    const data = (row ? update : create).mock.calls[0][0].data;
+    for (const key of result.ignored_personal_fields)
+      expect(data).not.toHaveProperty(key);
+  });
+  it("同じリクエストの明示的な同意で新規行も保存できる", async () => {
+    findFirst.mockResolvedValue(null);
+    expect(
+      (
+        await POST(
+          post({ personal_cloud_opt_in: true, birth_date: "1990-04-01" }),
+        )
+      ).status,
+    ).toBe(200);
+    expect(create.mock.calls[0][0].data).toMatchObject({
+      personal_cloud_opt_in: true,
+      birth_date: "1990-04-01",
+    });
+  });
+  it("同意撤回は過去の値を消さず、新規値を止める", async () => {
+    findFirst.mockResolvedValue({
+      id: "owned",
+      user_id: user.id,
+      personal_cloud_opt_in: true,
+      birth_date: "1990-04-01",
+    });
+    await POST(
+      post({ personal_cloud_opt_in: false, birth_date: "", base_lat: null }),
+    );
+    expect(update.mock.calls[0][0].data).toMatchObject({
+      personal_cloud_opt_in: false,
+    });
+    expect(update.mock.calls[0][0].data).not.toHaveProperty("birth_date");
+    expect(update.mock.calls[0][0].data).not.toHaveProperty("base_lat");
+  });
+  it("同意なしでも所有者には過去の値と基準値を返す", async () => {
+    findFirst.mockResolvedValue({
+      id: "owned",
+      user_id: user.id,
+      personal_cloud_opt_in: false,
+      birth_date: "1990-04-01",
+      baseline_hrv_mean: 38,
+    });
+    expect(await (await GET()).json()).toMatchObject({
+      personal_cloud_opt_in: false,
+      birth_date: "1990-04-01",
+      baseline_hrv_mean: 38,
+    });
   });
 });

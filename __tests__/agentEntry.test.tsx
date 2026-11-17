@@ -23,6 +23,7 @@ vi.mock("next/dynamic", () => ({
 afterEach(() => {
   cleanup();
   localStorage.clear();
+  sessionStorage.clear();
   vi.unstubAllGlobals();
 });
 it("ホームは入力欄やチャットJSを持たず、固定選択肢で会話を始める", async () => {

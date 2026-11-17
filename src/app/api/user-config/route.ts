@@ -1,3 +1,4 @@
+import { gatePersonalData } from "@/lib/personalDataPolicy";
 import { z } from "zod";
 import { readBoundedJson } from "@/lib/requestSecurity";
 import { revokeMcpOnRegistrationDeletion } from "@/lib/mcpDeletion";
@@ -33,10 +34,6 @@ const NUMERIC_FIELDS = [
   "birth_lon",
   "base_lat",
   "base_lon",
-  "baseline_hrv_mean",
-  "baseline_hrv_std",
-  "baseline_gsr_mean",
-  "baseline_gsr_std",
 ] as const;
 
 /**
@@ -148,9 +145,10 @@ export async function GET() {
 
   try {
     const row = await findUserConfig(user);
-    if (!row) return NextResponse.json({});
+    if (!row) return NextResponse.json({ personal_cloud_opt_in: false });
 
     return NextResponse.json({
+      personal_cloud_opt_in: row.personal_cloud_opt_in === true,
       birth_date: row.birth_date,
       birth_lat: row.birth_lat,
       birth_lon: row.birth_lon,
@@ -191,19 +189,29 @@ export async function POST(req: Request) {
     const input = await readBoundedJson(req, 16 * 1024);
     if (!input.ok) return input.response;
     const parsed = z
-      .object({ birth_date: z.string().max(64).nullable().optional() })
+      .object({
+        birth_date: z.string().max(64).nullable().optional(),
+        personal_cloud_opt_in: z.boolean().optional(),
+      })
       .passthrough()
       .safeParse(input.value);
     if (!parsed.success) {
       return NextResponse.json({ error: "Invalid body" }, { status: 400 });
     }
 
-    const body = parsed.data;
-    const data = buildPatch(body as Record<string, unknown>);
-    const incoming = pickMetaphysical(body as Record<string, unknown>);
+    const existing = await findUserConfig(user);
+    const policy = gatePersonalData(
+      parsed.data,
+      existing?.personal_cloud_opt_in === true,
+    );
+    const body = policy.data;
+    const data = buildPatch(body);
+    if (typeof body.personal_cloud_opt_in === "boolean") {
+      data.personal_cloud_opt_in = body.personal_cloud_opt_in;
+    }
+    const incoming = pickMetaphysical(body);
     const updatedAt = new Date();
 
-    const existing = await findUserConfig(user);
     if (existing) {
       /*
         **丸ごと置き換えない。**送られてきたキーだけを上書きする。
@@ -243,6 +251,8 @@ export async function POST(req: Request) {
 
     return NextResponse.json({
       success: true,
+      personal_cloud_opt_in: policy.allowed,
+      ignored_personal_fields: policy.ignoredPersonalFields,
       updated_at: updatedAt.toISOString(),
     });
   } catch (error) {
@@ -254,6 +264,9 @@ export async function POST(req: Request) {
     );
   }
 }
+
+export const PUT = POST;
+export const PATCH = POST;
 
 /**
  * 登録した内容を消す（利用者本人の操作）。

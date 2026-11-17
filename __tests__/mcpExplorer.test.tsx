@@ -25,6 +25,7 @@ vi.mock("@/components/home/AgentBirthYear", () => ({
 afterEach(() => {
   cleanup();
   localStorage.clear();
+  sessionStorage.clear();
   window.history.replaceState(null, "", "/ask");
   document.cookie = "sb-test-auth-token=; Max-Age=0; path=/";
   vi.unstubAllGlobals();
@@ -454,9 +455,10 @@ it("複数会話・人物・相談メモを端末に復元し、新しい会話�
   fireEvent.click(screen.getByRole("button", { name: "送信" }));
   await screen.findByText("保存される回答");
   await waitFor(() =>
-    expect(localStorage.getItem(ASK_DATA_STORAGE_KEY)).toContain(
-      "保存される回答",
-    ),
+    expect(
+      localStorage.getItem(ASK_DATA_STORAGE_KEY) ??
+        sessionStorage.getItem(ASK_DATA_STORAGE_KEY),
+    ).toContain("保存される回答"),
   );
   expect(localStorage.getItem(ASK_CONVERSATION_STORAGE_KEY)).toBeNull();
   first.unmount();
@@ -482,7 +484,9 @@ it("複数会話・人物・相談メモを端末に復元し、新しい会話�
   });
   await waitFor(() => {
     const stored = JSON.parse(
-      localStorage.getItem(ASK_DATA_STORAGE_KEY) ?? "{}",
+      localStorage.getItem(ASK_DATA_STORAGE_KEY) ??
+        sessionStorage.getItem(ASK_DATA_STORAGE_KEY) ??
+        "{}",
     );
     expect(stored.version).toBe(2);
     expect(stored.conversations).toHaveLength(2);
@@ -544,7 +548,9 @@ it("複数人を同じ質問へ添え、相談メモを画面から削除でき�
   expect(screen.queryByText(/相談内容：家族で引越す/)).toBeNull();
   await waitFor(() => {
     const stored = JSON.parse(
-      localStorage.getItem(ASK_DATA_STORAGE_KEY) ?? "{}",
+      localStorage.getItem(ASK_DATA_STORAGE_KEY) ??
+        sessionStorage.getItem(ASK_DATA_STORAGE_KEY) ??
+        "{}",
     );
     expect(stored.memories).toEqual([]);
   });
@@ -627,7 +633,9 @@ it("保存した会話を開き、名前変更と削除ができる", async () =
   expect(await screen.findByText("最初の回答")).toBeTruthy();
   await waitFor(() => {
     const stored = JSON.parse(
-      localStorage.getItem(ASK_DATA_STORAGE_KEY) ?? "{}",
+      localStorage.getItem(ASK_DATA_STORAGE_KEY) ??
+        sessionStorage.getItem(ASK_DATA_STORAGE_KEY) ??
+        "{}",
     );
     expect(stored.conversations).toHaveLength(1);
     expect(stored.conversations[0].title).toBe("最初の相談");
@@ -719,7 +727,9 @@ it.each([false, undefined])(
     await screen.findByText("一部の結果だけ表示しています。");
     await waitFor(() => {
       const workspace = JSON.parse(
-        localStorage.getItem(ASK_DATA_STORAGE_KEY) ?? "{}",
+        localStorage.getItem(ASK_DATA_STORAGE_KEY) ??
+          sessionStorage.getItem(ASK_DATA_STORAGE_KEY) ??
+          "{}",
       );
       expect(workspace.conversations?.[0].messages).toHaveLength(2);
       expect(workspace.memories).toEqual([]);
@@ -766,7 +776,10 @@ it("不足項目カードを優先し、閉じた会話では再読込しても�
   }
   fireEvent.click(screen.getByRole("button", { name: "今はしない" }));
   await waitFor(() => {
-    const stored = localStorage.getItem(ASK_DATA_STORAGE_KEY) ?? "";
+    const stored =
+      localStorage.getItem(ASK_DATA_STORAGE_KEY) ??
+      sessionStorage.getItem(ASK_DATA_STORAGE_KEY) ??
+      "";
     expect(stored).toContain('"guidancePrompted":true');
     expect(stored).not.toContain("1990-05-05");
   });
@@ -824,7 +837,9 @@ it("ホームの固定IDから新しい会話を一度だけ開始し、既存�
   ).toBeGreaterThan(0);
   await waitFor(() => {
     const stored = JSON.parse(
-      localStorage.getItem(ASK_DATA_STORAGE_KEY) ?? "{}",
+      localStorage.getItem(ASK_DATA_STORAGE_KEY) ??
+        sessionStorage.getItem(ASK_DATA_STORAGE_KEY) ??
+        "{}",
     );
     expect(
       stored.conversations.find((c: { id: string }) => c.id === "prior").draft,
@@ -1006,3 +1021,100 @@ it.each([
     else expect(requests[0].people[0].origin).toBeUndefined();
   },
 );
+
+it("新規会話はセッションだけに保存し、チェック後だけ永続化する", async () => {
+  const fetcher = vi.fn(async (url: string) => {
+    if (url.includes("status"))
+      return Response.json({ remaining: { requests: 20 } });
+    return Response.json({}, { status: 401 });
+  });
+  vi.stubGlobal("fetch", fetcher);
+  render(<McpExplorer agentEnabled persistConversation />);
+  const toggle = await screen.findByRole("checkbox", {
+    name: "この会話を保存する（90日使わないと期限切れ）",
+  });
+  expect(toggle).not.toBeChecked();
+  fireEvent.change(await screen.findByLabelText("メッセージ"), {
+    target: { value: "架空の会話の下書き" },
+  });
+  await waitFor(() =>
+    expect(sessionStorage.getItem(ASK_DATA_STORAGE_KEY)).toContain(
+      "架空の会話の下書き",
+    ),
+  );
+  expect(localStorage.getItem(ASK_DATA_STORAGE_KEY)).toBeNull();
+  expect(fetcher.mock.calls.some(([url]) => url === "/api/ask-data")).toBe(
+    false,
+  );
+  fireEvent.click(toggle);
+  await waitFor(() =>
+    expect(localStorage.getItem(ASK_DATA_STORAGE_KEY)).toContain(
+      "架空の会話の下書き",
+    ),
+  );
+  fireEvent.click(toggle);
+  fireEvent.change(screen.getByLabelText("メッセージ"), {
+    target: { value: "保存しない続き" },
+  });
+  await waitFor(() =>
+    expect(sessionStorage.getItem(ASK_DATA_STORAGE_KEY)).toContain(
+      "保存しない続き",
+    ),
+  );
+  expect(localStorage.getItem(ASK_DATA_STORAGE_KEY)).not.toContain(
+    "保存しない続き",
+  );
+});
+
+it("保存済み会話の期限案内に書き出しリンクを表示する", async () => {
+  document.cookie = "sb-test-auth-token=fixture; path=/";
+  const fetcher = vi.fn(async (url: string, init?: RequestInit) => {
+    if (url === "/api/ask-data" && init?.method !== "POST")
+      return Response.json({
+        data: null,
+        expiry: { status: "notice", expiresAt: "2026-12-01T00:00:00.000Z" },
+      });
+    if (url.includes("status"))
+      return Response.json({ remaining: { requests: 20 } });
+    return Response.json({}, { status: 401 });
+  });
+  vi.stubGlobal("fetch", fetcher);
+  render(<McpExplorer agentEnabled persistConversation />);
+  const link = await screen.findByRole("link", { name: "書き出してください" });
+  expect(link).toHaveAttribute("href", "/api/ask-data?format=export");
+  expect(
+    screen.getByText(/保存した会話は2026\/12\/1に期限切れになります/),
+  ).toBeTruthy();
+});
+
+it("別タブの保存オフを反映して、新しい会話内容を永続化しない", async () => {
+  vi.stubGlobal(
+    "fetch",
+    vi.fn(async () => Response.json({}, { status: 401 })),
+  );
+  localStorage.setItem("cloud_palette_ask_persist_v1", "true");
+  render(<McpExplorer agentEnabled persistConversation />);
+  const toggle = await screen.findByRole("checkbox", {
+    name: "この会話を保存する（90日使わないと期限切れ）",
+  });
+  expect(toggle).toBeChecked();
+  localStorage.setItem("cloud_palette_ask_persist_v1", "false");
+  act(() =>
+    window.dispatchEvent(
+      new StorageEvent("storage", {
+        key: "cloud_palette_ask_persist_v1",
+        newValue: "false",
+      }),
+    ),
+  );
+  expect(toggle).not.toBeChecked();
+  fireEvent.change(screen.getByLabelText("メッセージ"), {
+    target: { value: "別タブからオフにした後の下書き" },
+  });
+  await waitFor(() =>
+    expect(sessionStorage.getItem(ASK_DATA_STORAGE_KEY)).toContain(
+      "別タブからオフにした後の下書き",
+    ),
+  );
+  expect(localStorage.getItem(ASK_DATA_STORAGE_KEY)).toBeNull();
+});
