@@ -199,7 +199,11 @@ it("全国の表示とGETフォームをサーバーで描画し、ホームのI
   expect(overview).toContain("/houi/today?pref=23");
   expect(overview).toContain("明日：雨");
   expect(overview).toContain("最高23℃");
-  const section = renderToStaticMarkup(<NationalWeatherSection />);
+  const section = renderToStaticMarkup(await NationalWeatherSection());
+  // JavaScript なしでも出るよう、天気は後から流し込まずに本文へ直接入れる。
+  expect(section).toContain("/houi/today?pref=13");
+  expect(section).not.toContain("読み込み中");
+  expect(section).not.toContain("hidden");
   expect(section).toContain('action="/houi/today"');
   expect(section).toContain('method="get"');
   expect(section).toContain("都道府県を選ぶ");

@@ -6,7 +6,6 @@
  * 色で天気の良し悪しを付けない（緑と赤は方位の判定にだけ使う）。
  */
 import Link from "next/link";
-import { Suspense } from "react";
 import { STAR_NAMES } from "@/lib/kigakuContent";
 import { honmeiForBirthYear } from "@/lib/todayWeather/birthYear";
 import {
@@ -240,17 +239,6 @@ export async function loadTodayWeather(pref: Prefecture | null): Promise<{
   return { forecast: await getJmaForecast(pref) };
 }
 
-export async function StreamingWeatherBlock({
-  pref,
-  today,
-}: {
-  pref: Prefecture;
-  today: string;
-}) {
-  const { forecast } = await loadTodayWeather(pref);
-  return <WeatherBlock pref={pref} forecast={forecast} today={today} />;
-}
-
 export function TodayWeatherPanel({
   pref,
   forecast,
@@ -260,7 +248,7 @@ export function TodayWeatherPanel({
   stars,
 }: {
   pref: Prefecture | null;
-  forecast?: JmaForecast | null;
+  forecast: JmaForecast | null;
   birthYear: number | null;
   invalidBirthYear: boolean;
   /** 表示対象日（YYYY-MM-DD、日本時間） */
@@ -315,13 +303,7 @@ export function TodayWeatherPanel({
         </button>
       </form>
       {pref ? (
-        <Suspense fallback={<p className="text-sm">天気を読み込み中…</p>}>
-          {forecast === undefined ? (
-            <StreamingWeatherBlock pref={pref} today={today} />
-          ) : (
-            <WeatherBlock pref={pref} forecast={forecast} today={today} />
-          )}
-        </Suspense>
+        <WeatherBlock pref={pref} forecast={forecast} today={today} />
       ) : (
         <p className="text-sm">都道府県を選ぶと、今日の天気が出ます。</p>
       )}
