@@ -1,4 +1,5 @@
 import { existsSync, readFileSync } from "node:fs";
+import { __resetFetchJsonCacheForTest } from "@/lib/todayWeather/fetchJson";
 import { renderToStaticMarkup } from "react-dom/server";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import {
@@ -78,7 +79,11 @@ const aichi = PREFECTURES.find((p) => p.code === 23)!;
 const okResponse = (body: unknown) =>
   ({ ok: true, json: async () => body }) as Response;
 
-afterEach(() => vi.unstubAllGlobals());
+// fetchJson はインスタンス内に予報を持つので、テストごとに空にする。
+afterEach(() => {
+  vi.unstubAllGlobals();
+  __resetFetchJsonCacheForTest();
+});
 
 describe("都道府県の表", () => {
   it("47都道府県がそろい、コードが重ならない", () => {
@@ -141,6 +146,8 @@ describe("気象庁の予報を読む", () => {
       jmaForecastUrl("230000"),
       expect.objectContaining({ next: { revalidate: 1800 } }),
     );
+    // 直前の値がメモリーにあると失敗時にそれを返すので、空にしてから試す。
+    __resetFetchJsonCacheForTest();
     const failing = vi.fn(async () => {
       throw new Error("timeout");
     });
