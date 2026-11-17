@@ -41,7 +41,9 @@ import {
   memoryFromConversation,
   parseAskWorkspace,
   parseAskWorkspaceJson,
-  readLocalAskWorkspace,
+  readBrowserAskWorkspace,
+  writeBrowserAskWorkspace,
+  ASK_PERSISTENCE_KEY,
   titleFromMessages,
   type AskConversation,
   type AskMemoryItem,
@@ -718,6 +720,8 @@ export function McpExplorer({
     "local" | "saving" | "saved" | "error"
   >("local");
   const [cloudEnabled, setCloudEnabled] = useState(false);
+  const [saveConversations, setSaveConversations] = useState(false);
+  const [expiryNotice, setExpiryNotice] = useState<string | null>(null);
   // トップのチャットは会話 id が固定なので、提案を会話ごとに数える鍵を別に持つ。
   const [homeConversationKey] = useState(() => nextEntityId("home"));
   const [resumedConversationId, setResumedConversationId] = useState<
@@ -865,11 +869,17 @@ export function McpExplorer({
     if (!persistConversation) return;
     const now = new Date().toISOString();
     let local: AskWorkspace | null = null;
+    let savedChoice: string | null = null;
+    let localPersist = false;
     try {
-      local = readLocalAskWorkspace(localStorage, now);
+      const loaded = readBrowserAskWorkspace(localStorage, sessionStorage, now);
+      local = loaded.workspace;
+      localPersist = loaded.persist;
+      savedChoice = localStorage.getItem(ASK_PERSISTENCE_KEY);
     } catch {
       // localStorage can be unavailable when browser storage is disabled.
     }
+    setSaveConversations(localPersist);
     const blank = newConversation(now, initialQuestion);
     const fallback: AskWorkspace = local ?? {
       version: 2,
@@ -915,9 +925,27 @@ export function McpExplorer({
             ? (body as Record<string, unknown>).data
             : null;
         const remote = parseAskWorkspace(candidate, now);
+        // 保存済みデータは継続して読むが、明示したオフを自動でオンにしない。
+        setSaveConversations(
+          savedChoice === "false" ? false : localPersist || Boolean(remote),
+        );
+        if (body && typeof body === "object" && "expiry" in body) {
+          const expiry = body.expiry;
+          if (
+            expiry &&
+            typeof expiry === "object" &&
+            "status" in expiry &&
+            expiry.status === "notice" &&
+            "expiresAt" in expiry &&
+            typeof expiry.expiresAt === "string"
+          )
+            setExpiryNotice(expiry.expiresAt);
+        }
         cloudWorkspacePresent.current = Boolean(remote);
         const chosen =
-          remote && (!local || remote.updatedAt > fallback.updatedAt)
+          remote &&
+          (!local ||
+            (savedChoice !== "false" && remote.updatedAt > fallback.updatedAt))
             ? remote
             : fallback;
         applyWorkspace(chosen);
@@ -1008,6 +1036,19 @@ export function McpExplorer({
       memories,
       updatedAt: workspaceUpdatedAt,
     };
+    if (!saveConversations) {
+      try {
+        writeBrowserAskWorkspace(
+          localStorage,
+          sessionStorage,
+          workspace,
+          false,
+        );
+      } catch {
+        // ブラウザが保存を拒む場合も、その画面での計算は続けられる。
+      }
+      return;
+    }
     if (isAskWorkspaceEmpty(workspace)) {
       try {
         localStorage.removeItem(ASK_DATA_STORAGE_KEY);
@@ -1021,7 +1062,7 @@ export function McpExplorer({
       if (!cloudEnabled || !cloudWorkspacePresent.current) return;
     } else {
       try {
-        localStorage.setItem(ASK_DATA_STORAGE_KEY, JSON.stringify(workspace));
+        writeBrowserAskWorkspace(localStorage, sessionStorage, workspace, true);
         localStorage.removeItem(LEGACY_ASK_STORAGE_KEY);
       } catch {
         // Private browsing and storage quotas can make localStorage unavailable.
@@ -1037,7 +1078,7 @@ export function McpExplorer({
       void fetch("/api/ask-data", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ data: workspace }),
+        body: JSON.stringify({ data: workspace, persist: true }),
         signal: controller.signal,
       })
         .then((response) => {
@@ -1060,6 +1101,7 @@ export function McpExplorer({
   }, [
     activeConversationId,
     cloudEnabled,
+    saveConversations,
     conversations,
     memories,
     people,
@@ -1132,9 +1174,13 @@ export function McpExplorer({
       try {
         localStorage.removeItem(ASK_DATA_STORAGE_KEY);
         localStorage.removeItem(LEGACY_ASK_STORAGE_KEY);
+        localStorage.removeItem(ASK_PERSISTENCE_KEY);
+        sessionStorage.removeItem(ASK_DATA_STORAGE_KEY);
       } catch {
         // localStorage can be unavailable when browser storage is disabled.
       }
+      setSaveConversations(false);
+      setExpiryNotice(null);
       const now = new Date().toISOString();
       const blank = newConversation(now);
       setPrivacyRevision((revision) => revision + 1);
@@ -1161,7 +1207,15 @@ export function McpExplorer({
       setRegisteredPeopleReady(true);
     };
     const onStorage = (event: StorageEvent) => {
-      if (event.key === ASK_DATA_STORAGE_KEY && event.newValue) {
+      if (event.key === ASK_PERSISTENCE_KEY) {
+        setSaveConversations(event.newValue === "true");
+        return;
+      }
+      if (
+        event.key === ASK_DATA_STORAGE_KEY &&
+        event.newValue &&
+        localStorage.getItem(ASK_PERSISTENCE_KEY) !== "false"
+      ) {
         const workspace = parseAskWorkspaceJson(event.newValue);
         if (!workspace) return;
         conversationRevision.current += 1;
@@ -1456,15 +1510,32 @@ export function McpExplorer({
     // ここでは何もアップロードしない。会話を端末の相談に置いてから
     // ログインへ進み、戻った先の /ask で既存の同期が保存する。
     let resumeId: string | null = activeConversationId;
-    if (!persistConversation) {
-      try {
+    try {
+      if (persistConversation) {
+        writeBrowserAskWorkspace(
+          localStorage,
+          sessionStorage,
+          {
+            version: 2,
+            activeConversationId,
+            conversations: conversations.map((conversation) => ({
+              ...conversation,
+              messages: storedMessages(conversation.messages),
+            })),
+            people,
+            memories,
+            updatedAt: workspaceUpdatedAt,
+          },
+          true,
+        );
+      } else {
         resumeId = stashConversationForResume(localStorage, {
           id: nextEntityId("conversation"),
           messages: storedMessages(messages),
         });
-      } catch {
-        resumeId = null;
       }
+    } catch {
+      resumeId = null;
     }
     window.location.assign(
       resumeId ? saveOfferLoginPath(resumeId) : "/login?next=%2Fask",
@@ -2092,6 +2163,7 @@ export function McpExplorer({
             </p>
           )}
           {persistConversation &&
+            saveConversations &&
             (cloudEnabled || cloudStorage === "error") && (
               <p className="mt-1 text-xs text-slate-500">
                 {cloudStorage === "saving"
@@ -2113,15 +2185,51 @@ export function McpExplorer({
         )}
       </div>
 
+      {persistConversation && (
+        <div className="space-y-2 text-sm text-slate-600">
+          <label className="flex items-start gap-2">
+            <input
+              type="checkbox"
+              checked={saveConversations}
+              onChange={(event) => {
+                const persist = event.target.checked;
+                try {
+                  localStorage.setItem(ASK_PERSISTENCE_KEY, String(persist));
+                } catch {
+                  /* 保存できなくても画面上の選択は反映する */
+                }
+                setSaveConversations(persist);
+              }}
+            />
+            この会話を保存する（90日使わないと期限切れ）
+          </label>
+          <p>
+            オフの会話はこのタブのセッション内だけに保存します。過去に保存した端末・サーバーの写しは削除されません。
+          </p>
+          {expiryNotice && (
+            <p role="status">
+              保存した会話は
+              {new Date(expiryNotice).toLocaleDateString("ja-JP", {
+                timeZone: "Asia/Tokyo",
+              })}
+              に期限切れになります。必要なら
+              <a href="/api/ask-data?format=export" className="underline">
+                書き出してください
+              </a>
+              。
+            </p>
+          )}
+        </div>
+      )}
       {agentEnabled && (
         <p className="text-sm leading-relaxed text-slate-600">
           {mock
             ? "開発用モックです。質問にかかわらず、1990年5月5日生まれ・深谷市・2026年11月の固定例を計算します。外部AIには送信しません。"
             : "送信した質問・会話履歴・過去の相談メモ・必要な人物プロフィールと道具の結果をGoogleの生成AIに送ります。本名・連絡先・詳しい住所は入力しないでください。"}
           {persistConversation
-            ? cloudEnabled
+            ? saveConversations && cloudEnabled
               ? " 会話・相談メモ・人物プロフィールはこの端末とログイン中のアカウントに保存されます。"
-              : " 会話・相談メモ・人物プロフィールはこの端末のブラウザに保存されます。ログイン中はアカウントにも同期します。"
+              : " 保存を選ぶと、この端末とログイン中のアカウントに保存します。選ばない場合は、このタブのセッション内だけに保存します。"
             : " 会話はこの画面を開いている間だけ保持し、サーバーには保存されません。"}
         </p>
       )}

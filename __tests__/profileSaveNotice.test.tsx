@@ -114,3 +114,32 @@ describe("/profile の保存の知らせ（作り）", () => {
     expect(src.match(/role="status"/g) ?? []).toHaveLength(1);
   });
 });
+
+it("サーバー保存は未選択から始まり、明示した選択を保存する", async () => {
+  withSavableSettings();
+  const fetcher = vi.fn<typeof fetch>(async () =>
+    Response.json({ personal_cloud_opt_in: false }),
+  );
+  vi.stubGlobal("fetch", fetcher);
+  render(<ProfileForm />);
+  const toggle = await screen.findByRole("checkbox", {
+    name: "生年月日・場所・同行者をサーバーにも保存する（別の端末でも使う）",
+  });
+  expect(toggle).not.toBeChecked();
+  fireEvent.click(toggle);
+  fireEvent.click(saveButton());
+  await screen.findByRole("status");
+  const post = fetcher.mock.calls.find((call) => {
+    const options = call[1];
+    return (
+      options &&
+      typeof options === "object" &&
+      "method" in options &&
+      options.method === "POST"
+    );
+  });
+  expect(post).toBeDefined();
+  expect(localStorage.getItem(SETTINGS_KEY)).toContain(
+    '"personal_cloud_opt_in":true',
+  );
+});

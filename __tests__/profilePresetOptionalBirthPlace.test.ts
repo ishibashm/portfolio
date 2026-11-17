@@ -154,11 +154,14 @@ describe("控えの出生地は任意（API）", () => {
     );
 
   it("出生地の無い控えを受け、出生地を埋めずに保存する", async () => {
-    findFirst.mockResolvedValue(null);
-    create.mockResolvedValue({});
+    findFirst.mockResolvedValue({
+      id: "config-1",
+      personal_cloud_opt_in: true,
+    });
+    update.mockResolvedValue({});
     const response = await post({ ...withoutBirth });
     expect(response.status).toBe(200);
-    const stored = create.mock.calls[0][0].data.presets[0];
+    const stored = update.mock.calls[0][0].data.presets[0];
     expect(stored.id).toBe(withoutBirth.id);
     expect(stored).not.toHaveProperty("birthLat");
     expect(stored).not.toHaveProperty("birthLon");

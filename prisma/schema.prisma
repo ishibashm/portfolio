@@ -65,6 +65,8 @@ model user_configs {
   // Supabase の user.id。メールアドレスは変更できるため、こちらが安定キー。
   // 既存行のために NULL 許容にしてあり、user_email はフォールバックとして残す。
   user_id              String?   @unique @db.Uuid
+  /// 既存値を消さず、明示した同意のある間だけ新規書き込みを許す。
+  personal_cloud_opt_in Boolean @default(false)
   birth_date           String?
   birth_lat            Float?
   birth_lon            Float?
@@ -78,8 +80,9 @@ model user_configs {
   encrypted_gemini_key String?
   presets              Json?
   /// 「AIに聞く」の会話・相談メモ・相談対象。匿名時と同じ version 付きJSONを
-  /// ログイン時だけ同期する。集計・ログには使わず、アカウント削除では行ごと消す。
+  /// 明示した保存時だけ同期する。集計・ログには使わず、アカウント削除では行ごと消す。
   ask_data             Json?
+  ask_data_last_used_at DateTime? @db.Timestamptz(6)
   /// 設定バーの表示・判定の好み（盤の種類・月盤の方式・方位の絞り込み・
   /// 行動意図・時支の時刻基準）をまとめて入れる。
   ///
@@ -692,10 +695,11 @@ model contact_messages {
   name       String
   email      String
   body       String
-  /// 受信時の User-Agent。いたずら投稿の切り分け用。
+  /// 過去の値を保持するために残す。新規収集はしない。
   user_agent String?
   created_at DateTime @default(now()) @db.Timestamptz(6)
   handled    Boolean  @default(false)
+  resolved_at DateTime? @db.Timestamptz(6)
 }
 
 /// 方位・日取りについての利用者の投稿。

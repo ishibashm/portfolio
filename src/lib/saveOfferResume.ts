@@ -1,6 +1,7 @@
 import {
   ASK_DATA_LIMITS,
   ASK_DATA_STORAGE_KEY,
+  ASK_PERSISTENCE_KEY,
   readLocalAskWorkspace,
   titleFromMessages,
   type AskConversation,
@@ -57,6 +58,7 @@ export function stashConversationForResume(
   };
   try {
     storage.setItem(ASK_DATA_STORAGE_KEY, JSON.stringify(workspace));
+    storage.setItem(ASK_PERSISTENCE_KEY, "true");
     return conversation.id;
   } catch {
     return null;

@@ -1297,18 +1297,6 @@ export const SolarTimeClock = () => {
   const handleSaveConfig = async () => {
     setIsSaving(true);
     try {
-      let currentPresets = [];
-      if (typeof window !== "undefined") {
-        const savedPresetsStr =
-          localStorage.getItem("profile_presets_v1") ||
-          localStorage.getItem("wealth_presets");
-        if (savedPresetsStr) {
-          try {
-            currentPresets = JSON.parse(savedPresetsStr);
-          } catch {}
-        }
-      }
-
       const configToSave = {
         /* 利用者の値だけ書く。初期値（2000-01-01・東京）を書くと、他の
            画面がそれを登録内容として読む。autoSave は #1100 で同じ守りを
@@ -1321,16 +1309,10 @@ export const SolarTimeClock = () => {
           : {}),
         ...(basePlaceOwned ? { base_lat: lat, base_lon: lon } : {}),
         void_zodiac_override: voidZodiacOverride,
-        baseline_hrv_mean: baselineHrvMean,
-        baseline_hrv_std: baselineHrvStd,
-        baseline_gsr_mean: baselineGsrMean,
-        baseline_gsr_std: baselineGsrStd,
         base_sync_timestamp: baseSyncTimestamp,
         use_psychology_scorer: usePsychologyScorer,
         use_kigaku_scorer: useKigakuScorer,
         use_astrology_scorer: useAstrologyScorer,
-        hrv,
-        gsr,
         ansLoad,
         shieldCapacity,
         // Persist unified configurations
@@ -1340,7 +1322,6 @@ export const SolarTimeClock = () => {
         lunar_phase_modifier: lunarPhaseModifier,
         layer_mode: activeLayerMode,
         direction_filter_mode: directionFilterMode,
-        presets: currentPresets,
       };
 
       // 端末に保存し、ログイン中ならクラウドにも同期する。

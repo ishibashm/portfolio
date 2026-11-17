@@ -1,3 +1,6 @@
+import { gatePersonalData } from "@/lib/personalDataPolicy";
+import { SETTINGS_KEY } from "@/lib/userSettings";
+
 export interface ProfilePreset {
   id: string;
   name: string;
@@ -234,11 +237,55 @@ function mergePresets(
   return [...merged.values()];
 }
 
-async function uploadPresets(fetcher: Fetcher, presets: ProfilePreset[]) {
+/** 保存同意の撤回が通信できなくても、この端末から再送しない。 */
+function locallyDisabled(storage: Storage): boolean {
+  try {
+    const settings: unknown = JSON.parse(storage.getItem(SETTINGS_KEY) ?? "{}");
+    return Boolean(
+      settings &&
+      typeof settings === "object" &&
+      "personal_cloud_opt_in" in settings &&
+      settings.personal_cloud_opt_in === false,
+    );
+  } catch {
+    return false;
+  }
+}
+
+async function uploadPresets(
+  fetcher: Fetcher,
+  presets: ProfilePreset[],
+  optedIn?: boolean,
+): Promise<{ ok: boolean; reason?: SyncFailureReason }> {
+  if (optedIn === undefined) {
+    const config = await fetcher("/api/profile-presets");
+    if (!config.ok)
+      return {
+        ok: false,
+        reason: config.status === 401 ? "unauthenticated" : "offline",
+      } satisfies { ok: boolean; reason: SyncFailureReason };
+    const body: unknown = await config.json();
+    optedIn = Boolean(
+      body &&
+      typeof body === "object" &&
+      "personal_cloud_opt_in" in body &&
+      body.personal_cloud_opt_in === true,
+    );
+  }
+  // 同意を読み込むまでは、同行者の一覧をリクエストに載せない。
+  if (!optedIn)
+    return { ok: false, reason: "browser-only" } satisfies {
+      ok: boolean;
+      reason: SyncFailureReason;
+    };
   const response = await fetcher("/api/profile-presets", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ presets }),
+    body: JSON.stringify({
+      presets: presets.map(
+        (preset) => gatePersonalData({ ...preset }, true).data,
+      ),
+    }),
   });
 
   const reason: SyncFailureReason | undefined = response.ok
@@ -251,11 +298,12 @@ async function uploadPresets(fetcher: Fetcher, presets: ProfilePreset[]) {
 }
 
 /**
- * 未同期の理由は 2 つあり、利用者への案内が変わる:
+ * 未同期の理由は 3 つあり、利用者への案内が変わる:
  *   "unauthenticated" — ログインすれば直る（プリセットが空に見える主因）
  *   "offline"         — 通信の問題。待てば直る
+ *   "browser-only"    — 同意なし。端末だけで使う
  */
-export type SyncFailureReason = "unauthenticated" | "offline";
+export type SyncFailureReason = "unauthenticated" | "offline" | "browser-only";
 
 export interface LoadResult {
   presets: ProfilePreset[];
@@ -280,6 +328,13 @@ export async function loadProfilePresets(
     }
 
     const data: unknown = await response.json();
+    const optedIn = Boolean(
+      data &&
+      typeof data === "object" &&
+      "personal_cloud_opt_in" in data &&
+      data.personal_cloud_opt_in === true &&
+      !locallyDisabled(storage),
+    );
     const maybePresets =
       data && typeof data === "object"
         ? (data as Record<string, unknown>).presets
@@ -294,14 +349,22 @@ export async function loadProfilePresets(
         : [];
 
     if (cloudPresets.length > 0) {
-      const mergedPresets = mergePresets(
-        cloudPresets,
-        dropDeletedElsewhere(localPresets, cloudPresets, storage),
-      );
+      const mergedPresets = optedIn
+        ? mergePresets(
+            cloudPresets,
+            dropDeletedElsewhere(localPresets, cloudPresets, storage),
+          )
+        : mergePresets(localPresets, cloudPresets);
       const hasLocalOnlyPresets = mergedPresets.length > cloudPresets.length;
-      const upload = hasLocalOnlyPresets
-        ? await uploadPresets(fetcher, mergedPresets)
-        : { ok: true, reason: undefined };
+      const upload: { ok: boolean; reason?: SyncFailureReason } =
+        hasLocalOnlyPresets
+          ? await uploadPresets(fetcher, mergedPresets, optedIn)
+          : {
+              ok: optedIn,
+              reason: optedIn
+                ? undefined
+                : ("browser-only" satisfies SyncFailureReason),
+            };
       cachePresets(storage, mergedPresets);
       if (upload.ok) writeCloudIds(storage, mergedPresets);
       return {
@@ -311,14 +374,14 @@ export async function loadProfilePresets(
       };
     }
 
-    if (presetsInitialized) {
+    if (presetsInitialized && optedIn) {
       cachePresets(storage, []);
       writeCloudIds(storage, []);
-      return { presets: [], cloudSynced: true };
+      return { presets: [], cloudSynced: optedIn };
     }
 
     if (localPresets.length > 0) {
-      const upload = await uploadPresets(fetcher, localPresets);
+      const upload = await uploadPresets(fetcher, localPresets, optedIn);
       if (upload.ok) writeCloudIds(storage, localPresets);
       return {
         presets: localPresets,
@@ -358,11 +421,11 @@ export interface SaveResult {
 async function latestPresets(
   fetcher: Fetcher,
   storage: Storage,
-): Promise<ProfilePreset[]> {
+): Promise<{ presets: ProfilePreset[]; optedIn?: boolean }> {
   const localPresets = readLocalPresets(storage);
   try {
     const response = await fetcher("/api/profile-presets");
-    if (!response.ok) return localPresets;
+    if (!response.ok) return { presets: localPresets };
     const data: unknown = await response.json();
     const record =
       data && typeof data === "object" ? (data as Record<string, unknown>) : {};
@@ -371,15 +434,23 @@ async function latestPresets(
       Array.isArray(maybePresets) && maybePresets.every(isProfilePreset)
         ? maybePresets
         : [];
+    const optedIn =
+      record.personal_cloud_opt_in === true && !locallyDisabled(storage);
     if (cloudPresets.length > 0)
-      return mergePresets(
-        cloudPresets,
-        dropDeletedElsewhere(localPresets, cloudPresets, storage),
-      );
-    if (record.presets_initialized === true) return [];
-    return localPresets;
+      return {
+        optedIn,
+        presets: optedIn
+          ? mergePresets(
+              cloudPresets,
+              dropDeletedElsewhere(localPresets, cloudPresets, storage),
+            )
+          : mergePresets(localPresets, cloudPresets),
+      };
+    if (record.presets_initialized === true && optedIn)
+      return { presets: [], optedIn };
+    return { presets: localPresets, optedIn };
   } catch {
-    return localPresets;
+    return { presets: localPresets };
   }
 }
 
@@ -387,10 +458,11 @@ async function persist(
   presets: ProfilePreset[],
   fetcher: Fetcher,
   storage: Storage,
+  optedIn: boolean | undefined,
 ): Promise<SaveResult> {
   cachePresets(storage, presets);
   try {
-    const upload = await uploadPresets(fetcher, presets);
+    const upload = await uploadPresets(fetcher, presets, optedIn);
     if (upload.ok) writeCloudIds(storage, presets);
     return { cloudSynced: upload.ok, reason: upload.reason, presets };
   } catch {
@@ -410,10 +482,10 @@ export async function saveProfilePresets(
   fetcher: Fetcher,
   storage: Storage,
 ): Promise<SaveResult> {
-  const base = await latestPresets(fetcher, storage);
+  const { presets: base, optedIn } = await latestPresets(fetcher, storage);
   const merged = new Map(base.map((preset) => [preset.id, preset]));
   for (const preset of presets) merged.set(preset.id, preset);
-  return persist([...merged.values()], fetcher, storage);
+  return persist([...merged.values()], fetcher, storage, optedIn);
 }
 
 /** 1 件消す。最新の一覧から id を外して保存する。 */
@@ -422,11 +494,12 @@ export async function deleteProfilePreset(
   fetcher: Fetcher,
   storage: Storage,
 ): Promise<SaveResult> {
-  const base = await latestPresets(fetcher, storage);
+  const { presets: base, optedIn } = await latestPresets(fetcher, storage);
   return persist(
     base.filter((preset) => preset.id !== id),
     fetcher,
     storage,
+    optedIn,
   );
 }
 
@@ -447,11 +520,12 @@ export async function renameProfilePreset(
   fetcher: Fetcher,
   storage: Storage,
 ): Promise<SaveResult> {
-  const base = await latestPresets(fetcher, storage);
+  const { presets: base, optedIn } = await latestPresets(fetcher, storage);
   return persist(
     base.map((preset) => (preset.id === id ? { ...preset, name } : preset)),
     fetcher,
     storage,
+    optedIn,
   );
 }
 

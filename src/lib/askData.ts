@@ -2,6 +2,7 @@ import type { AskOrigin } from "./askAnswerFields";
 import { AGENT_PAUSED_REASON, AGENT_PAUSED_TEXT } from "./agentPausedText";
 
 export const ASK_DATA_STORAGE_KEY = "cloud_palette_ask_data_v2";
+export const ASK_PERSISTENCE_KEY = "cloud_palette_ask_persist_v1";
 export const LEGACY_ASK_STORAGE_KEY = "cloud_palette_ask_chat_v1";
 
 export const ASK_DATA_LIMITS = {
@@ -616,4 +617,35 @@ export function dedupeAskMemories(items: AskMemoryItem[]): AskMemoryItem[] {
     seen.add(key);
     return true;
   });
+}
+
+/** 既存の保存は同意済みとして読み、新しい会話だけをセッション保存にする。 */
+export function readBrowserAskWorkspace(
+  persistent: AskStorage,
+  session: AskStorage,
+  now = new Date().toISOString(),
+) {
+  const saved = readLocalAskWorkspace(persistent, now);
+  const choice = persistent.getItem(ASK_PERSISTENCE_KEY);
+  const persist = choice === "true" || (choice !== "false" && saved !== null);
+  const temporary = parseAskWorkspaceJson(
+    session.getItem(ASK_DATA_STORAGE_KEY),
+    now,
+  );
+  return {
+    workspace: persist ? (saved ?? temporary) : (temporary ?? saved),
+    persist,
+  };
+}
+
+export function writeBrowserAskWorkspace(
+  persistent: AskStorage,
+  session: AskStorage,
+  workspace: AskWorkspace,
+  persist: boolean,
+) {
+  // オフにしても過去の保存は消さない。削除は所有者の別操作に任せる。
+  const storage = persist ? persistent : session;
+  storage.setItem(ASK_DATA_STORAGE_KEY, JSON.stringify(workspace));
+  if (persist) persistent.setItem(ASK_PERSISTENCE_KEY, "true");
 }
