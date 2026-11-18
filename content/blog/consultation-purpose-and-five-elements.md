@@ -4,7 +4,7 @@ description: 五行で相談相手を選ぶ動画を手がかりに、話を聞�
 publishedAt: 2026-10-16
 category: 引越しの考え方
 tags: 四柱推命,五行,相談,数字の評価
-draft: false
+draft: true
 ---
 
 ## 相談相手を探す前に、求める応答を言葉にする

@@ -4,7 +4,7 @@ description: 五行別に友人を表示するアプリの紹介動画を読み�
 publishedAt: 2026-10-16
 category: 引越しの考え方
 tags: 陰陽五行,数字の評価,記録
-draft: false
+draft: true
 ---
 
 ## 画面に載った友人は、交友関係の全員とは限らない
