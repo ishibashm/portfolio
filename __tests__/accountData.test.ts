@@ -155,6 +155,8 @@ const KEPT: Record<string, string> = {
   favorite_properties_v1: "お気に入り物件。同上",
   /* **消してはいけない側。**消すと黙って計測が再開する */
   "cp:metrics-opt-out": "「集めないでほしい」という意思表示",
+  /* 広告の選択。生年月日や座標は入っていない。サーバーへ送らない */
+  cp_ad_consent: "広告をパーソナライズしてよいか。登録内容ではない",
   /* 画面の状態。個人の値ではない */
   arb_layerMode: "盤の見せ方",
   arb_prefecture: "絞り込みの都道府県",

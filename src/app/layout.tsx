@@ -1,4 +1,6 @@
 import type { Metadata, Viewport } from "next";
+import { AdConsentBar } from "@/components/ads/AdConsentBar";
+import { AD_CONSENT_BOOTSTRAP } from "@/lib/adConsent";
 import { getAdsenseIds } from "@/lib/adsense";
 import { SITE_SAME_AS } from "@/lib/siteChannels";
 import { Geist, Geist_Mono } from "next/font/google";
@@ -268,6 +270,12 @@ export default async function RootLayout({
         {adsense && (
           <>
             <meta name="google-adsense-account" content={adsense.client} />
+            {/*
+              スクリプトより前に、同意が無いときは非パーソナライズにする。
+              スクリプト自体は残す（所有確認が head のタグを見る）。
+              選択は localStorage だけで、生年月日や座標は含めない。
+            */}
+            <script dangerouslySetInnerHTML={{ __html: AD_CONSENT_BOOTSTRAP }} />
             <script
               async
               src={`https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${adsense.client}`}
@@ -406,6 +414,7 @@ export default async function RootLayout({
             <SiteFooter />
           </div>
         </div>
+        {adsense ? <AdConsentBar /> : null}
       </body>
     </html>
   );
