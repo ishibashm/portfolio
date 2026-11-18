@@ -8,6 +8,9 @@ import {
   cardSize,
   insetBox,
   mapCities,
+  narrowCities,
+  narrowCardSize,
+  narrowFontSize,
   project,
 } from "@/lib/todayWeather/mapProjection";
 
@@ -35,81 +38,151 @@ export function NationalWeatherCards({
     );
   return (
     <div className="space-y-3">
-      <svg
-        role="img"
-        aria-labelledby="weather-map-title weather-map-desc"
-        viewBox="0 0 640 620"
-        className="block h-auto w-full max-w-[800px]"
-      >
-        <title id="weather-map-title">今日の全国の天気の地図</title>
-        <desc id="weather-map-desc">
-          全国の代表10都市の今日の天気、最高・最低気温と降水確率。詳しい内容は続く表に記載しています。
-        </desc>
-        <rect width="640" height="620" fill="#e0f2fe" />
-        <path d={paths.main} fill="#e2e8f0" stroke="#94a3b8" strokeWidth="1" />
-        <rect {...insetBox} fill="#e0f2fe" stroke="#94a3b8" strokeWidth="1" />
-        <path d={paths.inset} fill="#e2e8f0" stroke="#94a3b8" strokeWidth="1" />
-        <text x="12" y="26" fontSize="16" fill="#334155">
-          南西諸島
-        </text>
-        {data.cities.map((city) => {
-          const position = mapCities[city.prefectureCode];
-          if (!position) return null;
-          const point = project(position.lon, position.lat);
-          return (
-            <g key={city.prefectureCode}>
-              <line
-                x1={Math.round(point.x)}
-                y1={Math.round(point.y)}
-                x2={position.x + cardSize.width / 2}
-                y2={position.y + cardSize.height / 2}
-                stroke="#475569"
+      {(["wide", "narrow"] as const).map((variant) => {
+        const narrow = variant === "narrow";
+        const size = narrow ? narrowCardSize : cardSize;
+        return (
+          <svg
+            key={variant}
+            role="img"
+            aria-labelledby={`weather-map-${variant}-title weather-map-${variant}-desc`}
+            viewBox={narrow ? "0 0 400 360" : "0 0 640 620"}
+            className={
+              narrow
+                ? "block h-auto w-full md:hidden"
+                : "hidden h-auto w-full max-w-[800px] md:block"
+            }
+          >
+            <title id={`weather-map-${variant}-title`}>
+              今日の全国の天気の地図
+            </title>
+            <desc id={`weather-map-${variant}-desc`}>
+              全国の代表10都市の今日の天気と最高気温。詳しい内容は続く表に記載しています。
+            </desc>
+            <rect width="100%" height="100%" rx="12" fill="#eaf4f5" />
+            <g transform={narrow ? "translate(101 74) scale(0.31)" : undefined}>
+              <defs>
+                <filter
+                  id={`land-shadow-${variant}`}
+                  x="-10%"
+                  y="-10%"
+                  width="120%"
+                  height="120%"
+                >
+                  <feDropShadow
+                    dx="0"
+                    dy="3"
+                    stdDeviation="2"
+                    floodColor="#8ca99d"
+                    floodOpacity="0.35"
+                  />
+                </filter>
+              </defs>
+              <path
+                d={paths.main}
+                fill="#e3ede5"
+                stroke="#8ca99d"
+                strokeWidth="1"
+                filter={`url(#land-shadow-${variant})`}
+              />
+              <rect
+                {...insetBox}
+                rx="8"
+                fill="#eaf4f5"
+                stroke="#8ca99d"
                 strokeWidth="1"
               />
-              <circle
-                cx={Math.round(point.x)}
-                cy={Math.round(point.y)}
-                r="3"
-                fill="#334155"
+              <path
+                d={paths.inset}
+                fill="#e3ede5"
+                stroke="#8ca99d"
+                strokeWidth="1"
               />
             </g>
-          );
-        })}
-        {data.cities.map((city) => {
-          const position = mapCities[city.prefectureCode];
-          if (!position) return null;
-          return (
-            <g key={city.prefectureCode}>
-              <rect
-                x={position.x}
-                y={position.y}
-                {...cardSize}
-                rx="7"
-                fill="white"
-                stroke="#94a3b8"
-              />
-              <text
-                x={position.x + 8}
-                y={position.y + 25}
-                fontSize="21"
-                fontWeight="bold"
-                fill="#0f172a"
-              >
-                {city.city} {weatherEmoji(city.today.weather)}
-              </text>
-              <text
-                x={position.x + 8}
-                y={position.y + 50}
-                fontSize="18"
-                fill="#334155"
-              >
-                {temp(city.today.max)} / {temp(city.today.min)}
-                {city.pop !== undefined ? ` ☂${city.pop}%` : ""}
-              </text>
-            </g>
-          );
-        })}
-      </svg>
+            <text
+              x={narrow ? 101 : 12}
+              y={narrow ? 68 : 26}
+              fontSize={narrow ? 14 : 16}
+              fill="#243f39"
+            >
+              南西諸島
+            </text>
+            {data.cities.map((city) => {
+              const position = mapCities[city.prefectureCode];
+              const label = narrow
+                ? narrowCities[city.prefectureCode]
+                : position;
+              if (!position || !label) return null;
+              const point = project(position.lon, position.lat);
+              const x = narrow ? 101 + point.x * 0.31 : point.x;
+              const y = narrow ? 74 + point.y * 0.31 : point.y;
+              return (
+                <g key={city.prefectureCode}>
+                  <line
+                    x1={x}
+                    y1={y}
+                    x2={label.x + size.width / 2}
+                    y2={label.y + size.height / 2}
+                    stroke="#49635d"
+                    strokeWidth="1"
+                  />
+                  <circle cx={x} cy={y} r={narrow ? 2.5 : 3} fill="#243f39" />
+                </g>
+              );
+            })}
+            {data.cities.map((city) => {
+              const position = narrow
+                ? narrowCities[city.prefectureCode]
+                : mapCities[city.prefectureCode];
+              if (!position) return null;
+              const weather = city.today.weather.trim();
+              const fill = weather.startsWith("晴")
+                ? "#fff3d6"
+                : weather.startsWith("雨")
+                  ? "#e2efff"
+                  : weather.startsWith("雪")
+                    ? "#e8f4f7"
+                    : "#f0f1ed";
+              const heavyRain = city.pop !== undefined && city.pop >= 50;
+              return (
+                <g key={city.prefectureCode}>
+                  <rect
+                    x={position.x}
+                    y={position.y}
+                    {...size}
+                    rx="8"
+                    fill={fill}
+                    stroke={heavyRain ? "#245b94" : "#a0b4aa"}
+                    strokeWidth={heavyRain ? 3 : 1}
+                  />
+                  <text
+                    x={position.x + 8}
+                    y={position.y + (narrow ? 21 : 25)}
+                    fontSize={narrow ? narrowFontSize : 21}
+                    fontWeight="bold"
+                    fill="#172f2a"
+                  >
+                    {city.city} {narrow ? "" : weatherEmoji(city.today.weather)}
+                  </text>
+                  <text
+                    x={position.x + 8}
+                    y={position.y + (narrow ? 44 : 50)}
+                    fontSize={narrow ? narrowFontSize : 18}
+                    fill="#243f39"
+                  >
+                    {narrow
+                      ? `${weatherEmoji(city.today.weather)} ${temp(city.today.max)}`
+                      : `${temp(city.today.max)} / ${temp(city.today.min)}${city.pop !== undefined ? ` ☂${city.pop}%` : ""}`}
+                  </text>
+                </g>
+              );
+            })}
+          </svg>
+        );
+      })}
+      <p className="text-xs text-slate-700">
+        札の色：薄黄は晴れ、薄青は雨、水色は雪、灰色はくもり・その他。太い青枠は残りの降水確率50%以上
+      </p>
       <div className="overflow-x-auto">
         <table className="text-left text-xs">
           <caption>10都市の今日の天気（表）</caption>

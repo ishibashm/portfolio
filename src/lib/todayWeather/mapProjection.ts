@@ -18,10 +18,10 @@ export const mapCities: Record<
   15: { lon: 139.02, lat: 37.9, x: 186, y: 200 },
   13: { lon: 139.69, lat: 35.69, x: 452, y: 392 },
   23: { lon: 136.91, lat: 35.18, x: 280, y: 496 },
-  27: { lon: 135.5, lat: 34.69, x: 160, y: 270 },
+  27: { lon: 135.5, lat: 34.69, x: 6, y: 250 },
   34: { lon: 132.46, lat: 34.4, x: 6, y: 338 },
   39: { lon: 133.53, lat: 33.56, x: 96, y: 552 },
-  40: { lon: 130.4, lat: 33.59, x: 6, y: 414 },
+  40: { lon: 130.4, lat: 33.59, x: 6, y: 480 },
   47: { lon: 127.68, lat: 26.21, x: 172, y: 106 },
 };
 
@@ -35,3 +35,19 @@ export function project(lon: number, lat: number) {
     y: (frame.lat - lat) * scale + frame.offset,
   };
 }
+
+// 狭い画面では地図の両側に札を並べ、都市の点を隠さない。
+export const narrowCardSize = { width: 96, height: 54 };
+export const narrowFontSize = 18;
+export const narrowCities: Record<number, { x: number; y: number }> = {
+  1: { x: 304, y: 8 },
+  4: { x: 304, y: 80 },
+  15: { x: 0, y: 80 },
+  13: { x: 304, y: 152 },
+  23: { x: 304, y: 224 },
+  27: { x: 0, y: 152 },
+  34: { x: 0, y: 224 },
+  39: { x: 304, y: 296 },
+  40: { x: 0, y: 296 },
+  47: { x: 0, y: 8 },
+};
