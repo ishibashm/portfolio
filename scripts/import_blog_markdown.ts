@@ -91,11 +91,27 @@ async function main() {
   const all = getBlogPosts();
   console.log(`Markdown の公開記事: ${all.length} 本`);
 
+  // 下書き（draft: true）に戻した記事。getBlogPosts は下書きを返さないので、
+  // ファイルの frontmatter を直接見る。**IMPORT_ONLY で名指ししたときだけ**
+  // 扱う（全記事の取り込みで黙って非公開にしない）。
+  const drafts: string[] = [];
+  if (ONLY.length > 0) {
+    const known = new Set(all.map((s) => s.slug));
+    for (const slug of ONLY) {
+      if (!known.has(slug) && isDraftFile(slug)) drafts.push(slug);
+    }
+  }
+  if (drafts.length > 0 && !OVERWRITE) {
+    throw new Error(
+      `下書きの記事を非公開にするのは上書き（IMPORT_OVERWRITE=true）のときだけ: ${drafts.join(", ")}`,
+    );
+  }
+
   if (ONLY.length > 0) {
     // 指定した slug が 1 つでも無ければ止める。存在しない slug を
     // 黙って読み飛ばすと「対象 0 本、成功」で終わり、直したつもりの
     // 記事が本番に出ないまま気付けない。
-    const known = new Set(all.map((s) => s.slug));
+    const known = new Set([...all.map((s) => s.slug), ...drafts]);
     const missing = ONLY.filter((slug) => !known.has(slug));
     if (missing.length > 0) {
       throw new Error(
@@ -115,6 +131,36 @@ async function main() {
   let updated = 0;
   let skipped = 0;
   let dated = 0;
+  let unpublished = 0;
+
+  // 下書きに戻した記事は、DB の行を消さずに published=false にする。
+  // 本文は触らない（戻すときは draft: false にして取り込み直す）。
+  for (const slug of drafts) {
+    const existing = await prisma.blogPost.findUnique({
+      where: { slug },
+      select: { published: true },
+    });
+    if (!existing) {
+      console.log(`  = ${slug}: 下書き。DB に行が無いので何もしない`);
+      skipped++;
+      continue;
+    }
+    if (!existing.published) {
+      console.log(`  = ${slug}: 下書き。既に非公開`);
+      skipped++;
+      continue;
+    }
+    if (!DRY_RUN) {
+      await prisma.blogPost.update({
+        where: { slug },
+        data: { published: false },
+      });
+    }
+    console.log(
+      `  - ${slug}: 非公開にする（下書き）${DRY_RUN ? "（DRY RUN）" : ""}`,
+    );
+    unpublished++;
+  }
 
   for (const summary of summaries) {
     // 本文は一覧の型（BlogPostSummary）に入っていないので取り直す。
@@ -200,7 +246,7 @@ async function main() {
   }
 
   console.log(
-    `\n追加 ${created} / 上書き ${updated} / 更新日だけ ${dated} / 飛ばした ${skipped}`,
+    `\n追加 ${created} / 上書き ${updated} / 更新日だけ ${dated} / 非公開 ${unpublished} / 飛ばした ${skipped}`,
   );
 
   const total = await prisma.blogPost.count();
@@ -208,6 +254,16 @@ async function main() {
     where: { published: true },
   });
   console.log(`DB の記事: ${total} 本（うち公開 ${publishedCount} 本）`);
+}
+
+/** content/blog/<slug>.md があり、frontmatter が draft: true か。 */
+function isDraftFile(slug: string): boolean {
+  if (!/^[a-z0-9-]+$/.test(slug)) return false;
+  const file = path.resolve(process.cwd(), "content/blog", `${slug}.md`);
+  if (!fs.existsSync(file)) return false;
+  const source = fs.readFileSync(file, "utf8");
+  const match = source.match(/^---\n([\s\S]*?)\n---/);
+  return !!match && /^draft:\s*true\s*$/m.test(match[1]);
 }
 
 main()
