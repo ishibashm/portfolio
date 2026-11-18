@@ -614,23 +614,23 @@
   resolved "https://registry.npmjs.org/@next/env/-/env-13.5.11.tgz"
   integrity sha512-fbb2C7HChgM7CemdCY+y3N1n8pcTKdqtQLbC7/EQtPdLvlMUT9JX/dBYl8MMZAtYG4uVMyPFHXckb68q/NRwqg==
 
-"@next/env@16.4.3":
-  version "16.4.3"
-  resolved "https://registry.npmjs.org/@next/env/-/env-16.4.3.tgz"
-  integrity sha512-a7tz1QCcWWkwC/rPJcPMJk/UNRu9CFhDd3OHYE5hddbJrs8BqRTalxI6GlKCWEGzRLHN+S/B7a4PAHCtm25aBQ==
+"@next/env@16.4.5":
+  version "16.4.5"
+  resolved "https://registry.npmjs.org/@next/env/-/env-16.4.5.tgz"
+  integrity sha512-JwSPwpdkZL5VMl2jA/q+JI8MZdweAL3xmw5/tb9y/TLtmS0YXZnmYDzSihwk8xTj1OL+WM53gTqaj96yuLp6Xw==
 
-"@next/eslint-plugin-next@16.4.3":
-  version "16.4.3"
-  resolved "https://registry.npmjs.org/@next/eslint-plugin-next/-/eslint-plugin-next-16.4.3.tgz"
-  integrity sha512-oxuC06wt/71h6ACYCV9GbKOfnf5a7VlRe/p80YHTut15TNgDEmynDnaq8t/xhy5rlvk7dhItIPs6H3rvIM4kyw==
+"@next/eslint-plugin-next@16.4.5":
+  version "16.4.5"
+  resolved "https://registry.npmjs.org/@next/eslint-plugin-next/-/eslint-plugin-next-16.4.5.tgz"
+  integrity sha512-dNmc4y4En/34tWxaBFF2tG/R9GeiRwVPf7v8Az/Pqk8FcT4Uv0ePmrZKvWBL2nFy1QprPgJW+6XjfyV6jbRV3Q==
   dependencies:
     "@eslint-community/eslint-utils" "4.9.1"
     fast-glob "3.3.1"
 
-"@next/swc-linux-x64-gnu@16.4.3":
-  version "16.4.3"
-  resolved "https://registry.npmjs.org/@next/swc-linux-x64-gnu/-/swc-linux-x64-gnu-16.4.3.tgz"
-  integrity sha512-QymWvfUwDEC5/lpJOsxX5VAbyoR2D13+2Jsjz4be7gT4LPqEgdpkeLIR/HFfCLgKzoMhpJbp6I/JnogyNZHcaA==
+"@next/swc-linux-x64-gnu@16.4.5":
+  version "16.4.5"
+  resolved "https://registry.npmjs.org/@next/swc-linux-x64-gnu/-/swc-linux-x64-gnu-16.4.5.tgz"
+  integrity sha512-hPc+Fl+N22DAvqZHq559NmamXboOX5Lu8I5Wl0DezfrhTk1Zz21NQeYoZDmNI/NjTcrdsVxM72Fzn2lI+Q+vAw==
 
 "@nodelib/fs.scandir@2.1.5":
   version "2.1.5"
@@ -3404,12 +3404,12 @@ escape-string-regexp@^5.0.0:
   resolved "https://registry.npmjs.org/escape-string-regexp/-/escape-string-regexp-5.0.0.tgz"
   integrity sha512-/veY75JbMK4j1yjvuUxuVsiS/hr/4iHs9FTT6cgTexxdE0Ly/glccBAkloH/DofkjRbZU3bnoj38mOmhkZ0lHw==
 
-eslint-config-next@16.4.3:
-  version "16.4.3"
-  resolved "https://registry.npmjs.org/eslint-config-next/-/eslint-config-next-16.4.3.tgz"
-  integrity sha512-j9IqBma6abp800frdUURaizYMgXOK+jNGyq6CsYcM9AxpSJs5D/TgMNGeAmRUilZvA7g9V1Tr71gNg9/SVTuMQ==
+eslint-config-next@16.4.5:
+  version "16.4.5"
+  resolved "https://registry.npmjs.org/eslint-config-next/-/eslint-config-next-16.4.5.tgz"
+  integrity sha512-mvh39zYLoNjpT5tVmf8xZu7i5lEOb5jN5cW6qD9OpeCp4GEEOeYta0Z2XyKiD0pYdlvm5/Td6Bi890maPRlIjg==
   dependencies:
-    "@next/eslint-plugin-next" "16.4.3"
+    "@next/eslint-plugin-next" "16.4.5"
     eslint-import-resolver-node "^0.3.6"
     eslint-import-resolver-typescript "^3.5.2"
     eslint-plugin-import "^2.32.0"
@@ -5667,26 +5667,26 @@ next-sitemap@^4.2.3:
     fast-glob "^3.2.12"
     minimist "^1.2.8"
 
-next@*, next@16.4.3:
-  version "16.4.3"
-  resolved "https://registry.npmjs.org/next/-/next-16.4.3.tgz"
-  integrity sha512-OqxKTGi9u80FydydsMNYNjnuje9Au+kvHlt2GZ//ftdpDHm1dxKqAaENoOOTX5wKzn+9vaKUNIfZeyZUuLhCnA==
+next@*, next@16.4.5:
+  version "16.4.5"
+  resolved "https://registry.npmjs.org/next/-/next-16.4.5.tgz"
+  integrity sha512-rmdfsWosjTUO+6R0S3KokoIk6Kj0sWDRTe86tZHdqaWH/oXq/udX3/4xb+YQi7aWbyEFoglDU54kaifLCdXbBw==
   dependencies:
-    "@next/env" "16.4.3"
+    "@next/env" "16.4.5"
     "@swc/helpers" "0.5.23"
     baseline-browser-mapping "^2.9.19"
     caniuse-lite "^1.0.30001579"
     postcss "8.5.23"
     styled-jsx "5.1.6"
   optionalDependencies:
-    "@next/swc-darwin-arm64" "16.4.3"
-    "@next/swc-darwin-x64" "16.4.3"
-    "@next/swc-linux-arm64-gnu" "16.4.3"
-    "@next/swc-linux-arm64-musl" "16.4.3"
-    "@next/swc-linux-x64-gnu" "16.4.3"
-    "@next/swc-linux-x64-musl" "16.4.3"
-    "@next/swc-win32-arm64-msvc" "16.4.3"
-    "@next/swc-win32-x64-msvc" "16.4.3"
+    "@next/swc-darwin-arm64" "16.4.5"
+    "@next/swc-darwin-x64" "16.4.5"
+    "@next/swc-linux-arm64-gnu" "16.4.5"
+    "@next/swc-linux-arm64-musl" "16.4.5"
+    "@next/swc-linux-x64-gnu" "16.4.5"
+    "@next/swc-linux-x64-musl" "16.4.5"
+    "@next/swc-win32-arm64-msvc" "16.4.5"
+    "@next/swc-win32-x64-msvc" "16.4.5"
     sharp "^0.35.5"
 
 node-domexception@^1.0.0:
