@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { getAdsenseIds } from "@/lib/adsense";
+import { consentDefaultScript, getAdsenseIds } from "@/lib/adsense";
 import { SITE_SAME_AS } from "@/lib/siteChannels";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
@@ -268,6 +268,15 @@ export default async function RootLayout({
         {adsense && (
           <>
             <meta name="google-adsense-account" content={adsense.client} />
+            {/*
+              同意モードの既定値。広告タグより前に置く（lib/adsense）。
+              同意の画面は自作しない。Google 認定の CMP（AdSense の
+              「プライバシーとメッセージ」）が出し、この既定値を上書きする。
+              広告スクリプト自体は同意の前から head に残す（所有確認が見る）。
+            */}
+            <script
+              dangerouslySetInnerHTML={{ __html: consentDefaultScript() }}
+            />
             <script
               async
               src={`https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${adsense.client}`}
