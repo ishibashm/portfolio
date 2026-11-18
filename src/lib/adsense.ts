@@ -63,3 +63,14 @@ export function getAdsenseSlot(name: "article" | "list"): string | null {
   if (!slot) return null;
   return /^\d{6,}$/.test(slot.trim()) ? slot.trim() : null;
 }
+
+/** 広告スクリプトが読むキュー。`any` で窓を広げない。 */
+export type AdsByGoogleQueue = unknown[] & {
+  requestNonPersonalizedAds?: number;
+};
+
+declare global {
+  interface Window {
+    adsbygoogle?: AdsByGoogleQueue;
+  }
+}

@@ -14,15 +14,14 @@ interface AdBannerProps {
 }
 
 /**
- * 広告枠。
+ * 手動広告枠。
  *
- * 以前は AdSense が未設定のとき「[ 広告スペース ]」という破線の空箱を描いており、
- * 公開中の全ページ（トップ・記事465ページ・使い方）に出ていた。審査担当者からは
- * 「作りかけのサイト」に見えるうえ、利用者にとっても意味がない。何も描かない。
+ * ID かスロットが無いときは何も描かない。空の破線枠は審査でも利用者でも
+ * 「作りかけ」に見えるため出さない。自動広告だけにする場合は、この部品は使わない。
  *
- * スロットIDが無いときも描かない。data-ad-slot="0000000000" のような
- * 見本値を入れると AdSense 側でエラーになる。スロット無しで運用したい場合は
- * 管理画面で「自動広告」を有効にする（このコンポーネントは使わない）。
+ * 描くときは高さを先に確保する（中くらいのレクタングル 250px）。
+ * 広告が後から入っても、本文が下へ飛ばない。
+ * push は枠が画面の近くに来てから行う。折り目の下の枠が初期表示を止めない。
  */
 export const AdBanner: React.FC<AdBannerProps> = ({
   unit = "article",
@@ -34,28 +33,51 @@ export const AdBanner: React.FC<AdBannerProps> = ({
   const ids = getAdsenseIds();
   const resolvedSlot = slot ?? getAdsenseSlot(unit);
   const pushed = useRef(false);
+  const rootRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    if (!ids || !resolvedSlot || pushed.current) return;
-    pushed.current = true;
-    try {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      ((window as any).adsbygoogle = (window as any).adsbygoogle || []).push({});
-    } catch (err) {
-      console.warn("AdSense push error:", err);
+    const el = rootRef.current;
+    if (!ids || !resolvedSlot || !el) return;
+    const push = () => {
+      if (pushed.current) return;
+      pushed.current = true;
+      try {
+        const queue = window.adsbygoogle ?? [];
+        window.adsbygoogle = queue;
+        queue.push({});
+      } catch (err) {
+        console.warn("AdSense push error:", err);
+      }
+    };
+    if (typeof IntersectionObserver === "undefined") {
+      push();
+      return;
     }
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries.some((entry) => entry.isIntersecting)) {
+          push();
+          observer.disconnect();
+        }
+      },
+      { rootMargin: "200px 0px" },
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
   }, [ids, resolvedSlot]);
 
   if (!ids || !resolvedSlot) return null;
 
   return (
     <div
-      className={`w-full overflow-hidden my-4 ${className}`}
+      ref={rootRef}
+      className={`my-4 w-full overflow-hidden ${className}`}
+      style={{ minHeight: 250 }}
       aria-label="スポンサー広告"
     >
       <ins
         className="adsbygoogle"
-        style={{ display: "block" }}
+        style={{ display: "block", minHeight: 250 }}
         data-ad-client={ids.client}
         data-ad-slot={resolvedSlot}
         data-ad-format={format}
