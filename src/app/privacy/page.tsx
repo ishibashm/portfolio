@@ -104,6 +104,9 @@ export default function PrivacyPolicyPage() {
             <p className="mt-2">
               当サイトは、A8.netのアフィリエイトプログラム（成果報酬型の広告）に参加しています。掲載ページのリンクから商品やサービスを申し込むと、当サイトが紹介料を受け取ることがあります。アフィリエイトの広告枠には「広告」と表示します。紹介料の有無によって、方位の判定や記事の結論を変えることはありません。成果の確認のため、A8.netなどの提供元がCookie（クッキー）を使用することがあります。
             </p>
+            <p className="mt-2">
+              日本の電気通信事業法が定める外部送信について、広告配信のためにCookieをGoogle（AdSense）へ、成果の確認のためにCookieをアフィリエイトの提供元へ送ることがあります。送るのは広告と成果の確認に必要な識別子です。生年月日や出発地の座標は、広告のCookieには載せません。
+            </p>
           </section>
 
           <section>
@@ -176,7 +179,10 @@ export default function PrivacyPolicyPage() {
             </h2>
             <p>
               プライバシーポリシーに関するお問い合わせは、
-              <Link href="/contact" className="text-rose-600 underline mx-1">
+              <Link
+                href="/contact"
+                className="text-rose-600 underline font-semibold mx-1"
+              >
                 お問い合わせページ
               </Link>
               からお願いいたします。

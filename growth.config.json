@@ -1,0 +1,34 @@
+{
+  "siteUrl": "https://cloud-palette.com",
+  "provider": "heuristic",
+  "liveFetch": false,
+  "maxLiveRequests": 6,
+  "requestIntervalMs": 300,
+  "outputDir": "docs/growth/runs",
+  "adsenseReview": "not-passed",
+  "providers": {
+    "heuristic": { "kind": "heuristic" },
+    "openai": {
+      "kind": "openai-compatible",
+      "model": "gpt-4.1-mini",
+      "apiKeyEnv": "OPENAI_API_KEY",
+      "baseUrl": "https://api.openai.com/v1"
+    },
+    "anthropic": {
+      "kind": "anthropic",
+      "model": "claude-sonnet-4-5",
+      "apiKeyEnv": "ANTHROPIC_API_KEY"
+    },
+    "google": {
+      "kind": "google",
+      "model": "gemini-2.5-flash",
+      "apiKeyEnv": "GEMINI_API_KEY"
+    },
+    "xai": {
+      "kind": "openai-compatible",
+      "model": "grok-4",
+      "apiKeyEnv": "XAI_API_KEY",
+      "baseUrl": "https://api.x.ai/v1"
+    }
+  }
+}

@@ -38,13 +38,10 @@ export const AD_MIN_HEIGHT: Record<
 export const AD_LAZY_ROOT_MARGIN = "400px 0px";
 
 /**
- * 広告枠。
+ * 手動広告枠。
  *
- * 以前は AdSense が未設定のとき「[ 広告スペース ]」という破線の空箱を描いており、
- * 公開中の全ページ（トップ・記事465ページ・使い方）に出ていた。審査担当者からは
- * 「作りかけのサイト」に見えるうえ、利用者にとっても意味がない。何も描かない。
- *
- * スロットIDが無いときも描かない。data-ad-slot="0000000000" のような
+ * ID かスロットが無いときは何も描かない。空の破線枠は審査でも利用者でも
+ * 「作りかけ」に見えるため出さない。data-ad-slot="0000000000" のような
  * 見本値を入れると AdSense 側でエラーになる。スロット無しで運用したい場合は
  * 管理画面で「自動広告」を有効にする（このコンポーネントは使わない）。
  *
@@ -73,8 +70,9 @@ export const AdBanner: React.FC<AdBannerProps> = ({
       if (pushed.current) return;
       pushed.current = true;
       try {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        ((window as any).adsbygoogle = (window as any).adsbygoogle || []).push({});
+        const queue = window.adsbygoogle ?? [];
+        window.adsbygoogle = queue;
+        queue.push({});
       } catch (err) {
         console.warn("AdSense push error:", err);
       }

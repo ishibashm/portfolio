@@ -133,3 +133,18 @@ export function consentDefaultScript(): string {
     `gtag('consent','default',${JSON.stringify(consent)});`
   );
 }
+
+/**
+ * 広告スクリプトが読むキュー。`any` で窓を広げない。
+ *
+ * #1869 ではここに `requestNonPersonalizedAds` を持たせ、自作の同意バーで
+ * 立て下ろししていた。同意は同意モード（上の `consentDefaultScript`）と
+ * Google 認定の CMP に一本化したので、その旗は持たない。
+ */
+export type AdsByGoogleQueue = unknown[];
+
+declare global {
+  interface Window {
+    adsbygoogle?: AdsByGoogleQueue;
+  }
+}
