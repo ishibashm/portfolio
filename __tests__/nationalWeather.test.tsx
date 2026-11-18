@@ -20,6 +20,9 @@ import {
   project,
   insetBox,
   cardSize,
+  narrowCities,
+  narrowCardSize,
+  narrowFontSize,
 } from "@/lib/todayWeather/mapProjection";
 import { getMonthlySummary, getMonthDirections } from "@/lib/kigakuContent";
 
@@ -213,7 +216,14 @@ it("地図と表を描画し、ホームのISRを保つ", async () => {
   const all = offices.map((code) => office(code, "17", ["12", "23"]));
   const data = parseNationalWeather(all, now)!;
   const html = renderToStaticMarkup(<NationalWeatherCards data={data} />);
-  const svg = html.match(/<svg[\s\S]*?<\/svg>/)![0];
+  const svgs = html.match(/<svg[\s\S]*?<\/svg>/g)!;
+  expect(svgs).toHaveLength(2);
+  const [svg, narrow] = svgs;
+  expect(narrow).toContain("md:hidden");
+  expect(svg).toContain("md:block");
+  expect(narrow).not.toContain("☂");
+  expect((narrowFontSize * (390 - 48)) / 400).toBeGreaterThanOrEqual(14);
+  expect(Buffer.byteLength(html)).toBeLessThan(40000);
   expect(svg).toContain("今日の全国の天気の地図");
   expect(svg.match(/<circle /g)).toHaveLength(10);
   expect(Buffer.byteLength(svg)).toBeLessThan(60000);
@@ -262,4 +272,49 @@ it("天気の先頭と座標、カード配置", () => {
           b.y + cardSize.height <= a.y,
       ).toBe(true);
   }
+});
+
+it("狭い地図の札は重ならず、文字色は背景と十分に区別できる", () => {
+  for (const city of Object.values(mapCities)) {
+    const point = project(city.lon, city.lat);
+    for (const box of Object.values(mapCities))
+      expect(
+        point.x < box.x ||
+          point.x > box.x + cardSize.width ||
+          point.y < box.y ||
+          point.y > box.y + cardSize.height,
+      ).toBe(true);
+    const x = 101 + point.x * 0.31;
+    const y = 74 + point.y * 0.31;
+    for (const box of Object.values(narrowCities))
+      expect(
+        x < box.x ||
+          x > box.x + narrowCardSize.width ||
+          y < box.y ||
+          y > box.y + narrowCardSize.height,
+      ).toBe(true);
+  }
+  const cards = Object.values(narrowCities);
+  for (const [i, a] of cards.entries()) {
+    expect(a.x + narrowCardSize.width).toBeLessThanOrEqual(400);
+    for (const b of cards.slice(i + 1))
+      expect(
+        a.x + narrowCardSize.width <= b.x ||
+          b.x + narrowCardSize.width <= a.x ||
+          a.y + narrowCardSize.height <= b.y ||
+          b.y + narrowCardSize.height <= a.y,
+      ).toBe(true);
+  }
+  const luminance = (hex: string) => {
+    const channels = hex.match(/[0-9a-f]{2}/g)!.map((value) => {
+      const c = parseInt(value, 16) / 255;
+      return c <= 0.04045 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4;
+    });
+    return 0.2126 * channels[0] + 0.7152 * channels[1] + 0.0722 * channels[2];
+  };
+  for (const foreground of ["#172f2a", "#243f39"])
+    for (const background of ["#fff3d6", "#e2efff", "#e8f4f7", "#f0f1ed"])
+      expect(
+        (luminance(background) + 0.05) / (luminance(foreground) + 0.05),
+      ).toBeGreaterThanOrEqual(4.5);
 });
