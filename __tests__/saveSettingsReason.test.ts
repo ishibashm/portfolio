@@ -29,14 +29,20 @@ afterEach(() => {
 describe("saveSettings の理由", () => {
   it("200 なら synced で理由は付かない", async () => {
     mockFetch({ ok: true, status: 200 });
-    const r = await saveSettings({ birth_date: "1990-01-02" });
+    const r = await saveSettings({
+      personal_cloud_opt_in: true,
+      birth_date: "1990-01-02",
+    });
     expect(r.synced).toBe(true);
     expect(r.reason).toBeUndefined();
   });
 
   it("401 は unauthenticated", async () => {
     mockFetch({ ok: false, status: 401 });
-    const r = await saveSettings({ birth_date: "1990-01-02" });
+    const r = await saveSettings({
+      personal_cloud_opt_in: true,
+      birth_date: "1990-01-02",
+    });
     expect(r).toMatchObject({
       synced: false,
       reason: "unauthenticated",
@@ -46,13 +52,19 @@ describe("saveSettings の理由", () => {
 
   it("401 以外は rejected で、コードを持ち帰る", async () => {
     mockFetch({ ok: false, status: 404 });
-    const r = await saveSettings({ birth_date: "1990-01-02" });
+    const r = await saveSettings({
+      personal_cloud_opt_in: true,
+      birth_date: "1990-01-02",
+    });
     expect(r).toMatchObject({ synced: false, reason: "rejected", status: 404 });
   });
 
   it("応答が返らなければ offline", async () => {
     mockFetch(new Error("network"));
-    const r = await saveSettings({ birth_date: "1990-01-02" });
+    const r = await saveSettings({
+      personal_cloud_opt_in: true,
+      birth_date: "1990-01-02",
+    });
     expect(r).toMatchObject({ synced: false, reason: "offline" });
   });
 

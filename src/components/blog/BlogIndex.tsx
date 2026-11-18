@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { BlogCardVideo } from "@/components/blog/BlogCardVideo";
+import GuideCharacter from "@/components/guide/GuideCharacter";
 import type { Metadata } from "next";
 import { BookOpenText, Clock3, Rss } from "lucide-react";
 import { formatBlogDate } from "@/lib/blog";
@@ -131,6 +132,9 @@ export function BlogIndex({
             <p className="mt-4 max-w-[70ch] text-sm leading-7 text-slate-700">
               {DESCRIPTION}
             </p>
+            <GuideCharacter pose="pointing" size="sm" className="mt-5 max-w-xl">
+              読みたいテーマは、下のカテゴリから選べます。記事によっては、終わりからご自分の生年月日で確かめる道具へ進めます。
+            </GuideCharacter>
           </div>
           <a
             href="/blog/feed.xml"

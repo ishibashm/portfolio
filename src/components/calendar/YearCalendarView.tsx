@@ -2,7 +2,10 @@ import Link from "next/link";
 import { AdBanner } from "@/components/ads/AdBanner";
 import { ContentDisclaimer } from "@/components/houi/ContentDisclaimer";
 import { BreadcrumbJsonLd, FaqJsonLd } from "@/components/JsonLd";
-import { calendarMonths, calendarMonthSlug } from "@/lib/calendarMonths";
+import {
+  calendarMonthSlug,
+  publishedCalendarMonths,
+} from "@/lib/calendarMonths";
 import { STAR_NAMES, contentYears } from "@/lib/kigakuContent";
 import type { CalendarDay } from "@/lib/monthlyCalendar";
 import { coreRouteLabel } from "@/lib/siteStructure";
@@ -33,8 +36,8 @@ export function YearCalendarView({ cal }: { cal: YearlyCalendar }) {
   const { year } = cal;
   const faq = yearlyCalendarFaq(cal);
   const usableTensha = cal.tensha.filter((t) => t.usable);
-  // 月別の頁は今月から 18 か月ぶんしか無い。無い月へはリンクしない。
-  const monthPages = new Set(calendarMonths().map(calendarMonthSlug));
+  // 月別の頁は開始月（2026-01）から 18 か月窓の末尾まで残す。無い月へはリンクしない。
+  const monthPages = new Set(publishedCalendarMonths().map(calendarMonthSlug));
   const monthSlug = (month: number) =>
     `${year}-${String(month).padStart(2, "0")}`;
 

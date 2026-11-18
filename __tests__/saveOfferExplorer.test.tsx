@@ -20,6 +20,7 @@ const originalLocation = window.location;
 afterEach(() => {
   cleanup();
   localStorage.clear();
+  sessionStorage.clear();
   document.cookie = "sb-test-auth-token=; Max-Age=0; path=/";
   vi.unstubAllGlobals();
   Object.defineProperty(window, "location", {

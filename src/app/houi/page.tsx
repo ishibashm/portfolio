@@ -12,6 +12,7 @@ import {
   birthYearsThrough,
   contentYears,
   currentYearInJapan,
+  getYearDirections,
   starForBirthYear,
 } from "@/lib/kigakuContent";
 import { AdBanner } from "@/components/ads/AdBanner";
@@ -23,6 +24,8 @@ import { pageOpenGraph } from "@/lib/siteUrl";
 import { BreadcrumbJsonLd, FaqJsonLd } from "@/components/JsonLd";
 
 // 頁に出ている文言（リード文・用語について）だけで組む。
+const SHARED_BAD_LABELS = ["五黄殺", "暗剣殺", "歳破"];
+
 const HOUI_FAQ = [
   {
     question: "本命星はどうやって調べますか？",
@@ -89,13 +92,32 @@ export default function Page() {
     (y) => starForBirthYear(y, "classical") !== starForBirthYear(y, "physical"),
   );
 
+  // 年盤の表示ラベルに出る共通の凶（五黄殺・暗剣殺・歳破）を組み立てる。
+  const sharedBadMap = new Map<string, { jp: string; label: string }>();
+  for (const star of STARS) {
+    const { verdicts } = getYearDirections(year, star, "classical");
+    for (const v of verdicts) {
+      if (!SHARED_BAD_LABELS.includes(v.label)) continue;
+      sharedBadMap.set(`${v.label}:${v.jp}`, { jp: v.jp, label: v.label });
+    }
+  }
+  const sharedBad = [...sharedBadMap.values()].sort(
+    (a, b) =>
+      SHARED_BAD_LABELS.indexOf(a.label) - SHARED_BAD_LABELS.indexOf(b.label),
+  );
+  const sharedBadText = sharedBad
+    .map((b) => `${b.jp}が「${b.label}」`)
+    .join("、");
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#faf7f5] via-[#f5efe9] to-[#f0e9e1] text-slate-900 font-sans">
       {/* 早見表であって読み物ではない。長い本文はリード文だけで、あとは
           9 つの星の札と年ごとの一覧なので、記事の読み幅で止める理由が無い。
           /guide の索引と同じ 1700px。記事側（/houi/[year]/[star]）は本文が
           長いので 820px のまま。行長は段落の max-w-[70ch] で守る。 */}
-      <BreadcrumbJsonLd items={[{ name: HOUI_BREADCRUMB_LABEL, path: "/houi" }]} />
+      <BreadcrumbJsonLd
+        items={[{ name: HOUI_BREADCRUMB_LABEL, path: "/houi" }]}
+      />
       <FaqJsonLd items={HOUI_FAQ} />
       <article className="relative max-w-[1700px] mx-auto px-5 py-12">
         {/* 金の羅盤の線画（飾り）。広い画面だけ、見出しと重ならない右上に。 */}
@@ -111,6 +133,114 @@ export default function Page() {
           で決まります。まず生まれ年から本命星を確認し、その年の方位一覧に進んでください。
         </p>
 
+        <section
+          aria-labelledby="houi-intro-heading"
+          className="mt-6 rounded-2xl border border-slate-300 bg-white/90 p-5"
+        >
+          <h2
+            id="houi-intro-heading"
+            className="text-lg font-bold font-serif border-b border-slate-300 pb-2"
+          >
+            吉方位の調べ方（先に結論）
+          </h2>
+          <p className="mt-3 max-w-[70ch] text-sm leading-relaxed text-slate-700">
+            吉方位の調べ方は、生まれ年から<b>本命星</b>を出し、その年の
+            <b>年盤</b>（引越しでは動く月の<b>月盤</b>
+            も）で相性のよい星がいる方位を候補にし、五黄殺・暗剣殺・歳破や本命殺などの凶方位を除く順です。九星気学の一年は1月1日ではなく
+            <b>立春</b>
+            で切り替わるため、立春前の生まれは前年の星で見ます。ここに書いた吉凶は
+            <b>占い上の目安であり、科学的な効果を保証するものではない</b>
+            ため、引越しの費用や契約、通勤といった事実とは分けて考えます。
+          </p>
+          {sharedBadText && (
+            <p className="mt-2 max-w-[70ch] text-xs leading-relaxed text-slate-600">
+              {year}年の年盤では、本命星に関係なく{sharedBadText}
+              と表示されます。
+            </p>
+          )}
+          <p className="mt-3 max-w-[70ch] text-xs leading-relaxed text-slate-700">
+            無料・入力なしで早見表を見られます。生年月日を入れると、端末内の計算だけで本命星がわかります。今年と今月の吉方位は、本命星別ページで確認できます（
+            {STARS.map((s, idx) => (
+              <span key={s}>
+                {idx > 0 && " / "}
+                <Link
+                  prefetch={false}
+                  href={`/houi/${year}/${s}`}
+                  className="font-bold text-rose-600 underline hover:text-rose-700"
+                >
+                  {STAR_NAMES[s]}
+                </Link>
+              </span>
+            ))}
+            ）。
+          </p>
+
+          <h3 className="mt-5 text-sm font-bold font-serif text-slate-800">
+            このサイトでの調べ方の手順（入力なしで確認できます）
+          </h3>
+          <ol className="mt-2 max-w-[70ch] list-decimal pl-5 space-y-2 text-xs leading-relaxed text-slate-700">
+            <li>
+              <b>下の早見表で生まれ年の本命星を出す：</b>
+              九星気学の一年は立春（2月3日から4日ごろ）で切り替わります。1月1日から立春の前日までの生まれは前年の星となり、立春当日は出生時刻で分かれます。
+            </li>
+            <li>
+              <b>その年の8方位の判定を見る：</b>星の名前の横にある「{years[0]}
+              年の吉方位を見る」（または本命星のリンク）から年別のページへ進み、8方位それぞれの判定（吉方位・平・五黄殺など）を確認します。
+            </li>
+            <li>
+              <b>実際に動く月の月盤も見る：</b>
+              長く住む移動では、年ページで年盤を見たあと、同じページの「月ごとの吉方位」の一覧で実際に動く月の月盤も確認します。月の区切りは暦の1日ではなく節入りです。年で吉でも月で避けるべき方位になることがあります。
+            </li>
+            <li>
+              <b>凶方位を候補から外す：</b>
+              だれにも共通の凶方位（五黄殺・暗剣殺・歳破。月盤では歳破の代わりに月破）と、自分の本命殺・本命的殺に当たる方位は、占い上は候補から外します。
+            </li>
+            <li>
+              <b>今住んでいる場所から真北で向きを見る：</b>
+              方位は今住んでいる場所（出発地）から見ます。このサイトの判定は地図と同じ真北が基準です。方位磁針（磁北）で測ると境目の近くでは隣の方位に見えることがあります。
+            </li>
+            <li>
+              <b>その方位の街や動ける日を既存の道具で確かめる：</b>
+              費用や契約の事実は方位の判定とは別に見ます。候補の方位にある街と家賃相場は{" "}
+              <Link
+                href="/houi/area"
+                className="font-bold text-rose-600 underline hover:text-rose-700"
+              >
+                エリア別の方位と相場
+              </Link>{" "}
+              や{" "}
+              <Link
+                href="/relocation/arbitrage"
+                className="font-bold text-rose-600 underline hover:text-rose-700"
+              >
+                {coreRouteLabel("/relocation/arbitrage")}
+              </Link>
+              、動く時期の絞り込み（一般的な繁忙期や料金の傾向の案内を含む）は{" "}
+              <Link
+                href="/relocation/timing"
+                className="font-bold text-rose-600 underline hover:text-rose-700"
+              >
+                {coreRouteLabel("/relocation/timing")}
+              </Link>
+              、六曜・天赦日・一粒万倍日・土用などの日取りは{" "}
+              <Link
+                href="/calendar"
+                className="font-bold text-rose-600 underline hover:text-rose-700"
+              >
+                {coreRouteLabel("/calendar")}
+              </Link>{" "}
+              で確認できます。詳しい見方は{" "}
+              <Link
+                href="/guide/honmei"
+                className="underline hover:text-rose-600"
+              >
+                使い方ガイド（本命星と吉方位）
+              </Link>{" "}
+              にまとめています。
+            </li>
+          </ol>
+        </section>
+
         <p className="mt-4">
           <Link href="/houi/today" className="text-rose-600 underline">
             今の時間・今日の吉方位を見る
@@ -122,30 +252,8 @@ export default function Page() {
           <h2 className="text-xl font-bold font-serif border-b border-slate-300 pb-2">
             生まれ年から本命星を調べる
           </h2>
-          {/* 生年月日で引く早見。立春前の生まれの繰り下げを自動で行うので、
-              注釈を読み飛ばしても 1 年ずれない。星の名前と行き先の年は
-              props で渡す（client 側に kigakuContent → ephemerisEngine を
-              値として乗せないため）。 */}
-          {/* どのプロフィールで引くかを先に 1 行（利用者の指摘、2026-09-12） */}
-          <ActiveProfileBadge purpose="本命星と吉方位" className="mt-3 mb-3" />
-          <HonmeiLookup starNames={STAR_NAMES} linkYear={years[0]} />
           <p className="mt-3 text-xs leading-relaxed text-slate-600">
-            ※年の切り替わりは立春の瞬間（2月3〜4日ごろ）です。立春前は前年の本命星となり、当日生まれは出生時刻で分かれます。
-          </p>
-          <p className="mt-5 text-sm">
-            <Link href="/ask" className="underline text-slate-600">
-              エージェントに案内してもらう
-            </Link>
-          </p>
-
-          <p className="mt-3 text-sm">
-            <Link href="/houi/3d" className="underline text-slate-600">
-              住所から街の立体と方位を見る
-            </Link>
-          </p>
-
-          <p className="mt-8 text-xs font-bold text-slate-700">
-            生まれ年から表で引く場合
+            ※年の切り替わりは立春の瞬間（2月3〜4日ごろ）です。1月1日から立春の前日までに生まれた方は前年の本命星となり、立春当日生まれは出生時刻で分かれます。
           </p>
           {/* 9 枚。1 列のままだと器を広げても札が伸びるだけなので、
               広い画面では折り返す。 */}
@@ -173,6 +281,28 @@ export default function Page() {
               </div>
             ))}
           </div>
+
+          <p className="mt-8 text-xs font-bold text-slate-700">
+            生年月日から立春の境目を自動で見たいとき（任意・送信しません）
+          </p>
+          {/* 生年月日で引く早見。立春前の生まれの繰り下げを自動で行うので、
+              注釈を読み飛ばしても 1 年ずれない。星の名前と行き先の年は
+              props で渡す（client 側に kigakuContent → ephemerisEngine を
+              値として乗せないため）。 */}
+          {/* どのプロフィールで引くかを先に 1 行（利用者の指摘、2026-09-12） */}
+          <ActiveProfileBadge purpose="本命星と吉方位" className="mt-3 mb-3" />
+          <HonmeiLookup starNames={STAR_NAMES} linkYear={years[0]} />
+          <p className="mt-5 text-sm">
+            <Link href="/annai" className="underline text-slate-600">
+              しるべに案内してもらう
+            </Link>
+          </p>
+
+          <p className="mt-3 text-sm">
+            <Link href="/houi/3d" className="underline text-slate-600">
+              住所から街の立体と方位を見る
+            </Link>
+          </p>
         </section>
 
         {/* 本命星の表のすぐ後ろに置く。**以前は算出方法の註と広告の

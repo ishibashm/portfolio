@@ -80,4 +80,5 @@ it("contact rejects coercible objects and accepts bounded text", async () => {
     ).status,
   ).toBe(200);
   expect(mocks.create).toHaveBeenCalledTimes(1);
+  expect(mocks.create.mock.calls[0][0].data).not.toHaveProperty("user_agent");
 });

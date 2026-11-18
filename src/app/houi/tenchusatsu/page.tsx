@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import GuideCharacter from "@/components/guide/GuideCharacter";
 import { FaqJsonLd } from "@/components/JsonLd";
 import { TenchusatsuChecker } from "@/components/houi/TenchusatsuChecker";
 import { tenchusatsuTimeline } from "@/lib/tenchusatsuTimeline";
@@ -52,6 +53,9 @@ export default function TenchusatsuPage() {
             {timeline.today}
             （JST）時点。伝統的な暦の見方であり、出来事を予測・保証するものではありません。
           </p>
+          <GuideCharacter pose="magnifier" size="sm" className="mt-4 max-w-xl">
+            天中殺は「いつ」を見る時期の物差しで、方位の吉凶とは別のものです。生年月日を入れると、天中殺に当たる年と月を確かめられます。
+          </GuideCharacter>
         </header>
         <TenchusatsuChecker timeline={timeline} />
         <section className="wg-card p-6">
@@ -116,8 +120,8 @@ export default function TenchusatsuPage() {
             <Link href="/practitioners" className="wg-btn-accent">
               鑑定士に相談する
             </Link>
-            <Link href="/ask" className="wg-btn-primary">
-              AIに相談する
+            <Link href="/annai" className="wg-btn-primary">
+              案内役に聞く
             </Link>
           </div>
         </section>

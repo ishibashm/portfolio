@@ -1,5 +1,3 @@
-"use client";
-
 import React from "react";
 import { ActiveProfileBadge } from "@/components/profile/ActiveProfileBadge";
 import Link from "next/link";
@@ -8,6 +6,7 @@ import { Calendar } from "lucide-react";
 import { AuspiciousDayFinder } from "@/components/relocation/AuspiciousDayFinder";
 import { FavoriteDaysPanel } from "@/components/relocation/FavoriteDaysPanel";
 import { calendarMonths, calendarMonthSlug } from "@/lib/calendarMonths";
+import { contentYears } from "@/lib/kigakuContent";
 import { coreRouteLabel } from "@/lib/siteStructure";
 import { TwinkleStars } from "@/components/motion/TwinkleStars";
 
@@ -59,7 +58,8 @@ export default function CalendarPage() {
                   className="text-xs font-mono tracking-widest uppercase font-semibold flex items-center gap-1.5"
                   style={{ color: "var(--color-accent, #10b981)" }}
                 >
-                  <Calendar className="w-3.5 h-3.5" /> 六曜・天赦日・一粒万倍日・月相
+                  <Calendar className="w-3.5 h-3.5" />{" "}
+                  六曜・天赦日・一粒万倍日・月相
                 </span>
               </div>
               {/* グラデーションを bg-clip-text + text-transparent で流し込むと、
@@ -90,6 +90,85 @@ export default function CalendarPage() {
           </div>
         </header>
 
+        {/* 入力なしで読める結論と年・月別一覧。
+            三盤ツール（生年月日・出発地が必要）より前に置き、
+            検索や初見の人がすぐ暦の基準と各年・各月の一覧へ進めるようにする。 */}
+        <section className="mb-10 rounded-3xl border border-slate-300 bg-white/95 p-6 md:p-8 shadow-lg shadow-slate-200/50">
+          <h2 className="text-lg font-bold font-serif">
+            引越しに向く日の基準と年・月別一覧
+          </h2>
+          <p className="mt-3 text-sm text-slate-700 leading-relaxed">
+            このサイトの「引越しに向く日」は、
+            <b>
+              仏滅・赤口を外し、土用は間日以外を外したうえで、大安か天赦日・一粒万倍日が重なる日
+            </b>
+            です。暦だけで決まる年間一覧・月別一覧は、生年月日や出発地を入れずにそのまま読めます。
+          </p>
+          <p className="mt-3 text-sm text-slate-700 leading-relaxed">
+            六曜や天赦日・一粒万倍日・九星気学は<b>占い上の目安</b>
+            であり、出来事や効果を保証するものではありません。日の吉は誰にとっても同じですが、五黄殺・暗剣殺・歳破などの凶方位は天赦日でも変わりません。また、引越しの費用や予約の都合は、暦の話とは分けて考えてください。
+          </p>
+          <p className="mt-3 text-xs text-slate-600 leading-relaxed">
+            方位ごとの段階評価で先に動ける期間を絞るときは
+            <Link
+              href="/relocation/timing"
+              className="mx-1 font-semibold text-indigo-600 underline hover:text-indigo-700"
+            >
+              引越し時期の分析
+            </Link>
+            、生まれ年から本命星と年の吉方位を引くときは
+            <Link
+              href="/houi"
+              className="mx-1 font-semibold text-rose-600 underline hover:text-rose-700"
+            >
+              本命星と吉方位の早見表
+            </Link>
+            をご覧ください。生年月日と出発地を入れて年盤・月盤・日盤を重ねるツールは、この一覧の下にあります。
+          </p>
+
+          <div className="mt-6">
+            <h3 className="text-sm font-bold font-serif text-slate-800">
+              年間の引越し吉日・天赦日一覧
+            </h3>
+            <p className="mt-1 text-xs leading-relaxed text-slate-600">
+              1年ぶんの天赦日・一粒万倍日・大安・土用をまとめて見るときは、年間一覧をご覧ください。
+            </p>
+            <div className="mt-3 flex flex-wrap gap-2">
+              {contentYears().map((year) => (
+                <Link
+                  prefetch={false}
+                  key={year}
+                  href={`/calendar/${year}`}
+                  className="px-3 py-1.5 rounded-full border border-slate-300 bg-white text-xs font-bold text-slate-700 hover:border-rose-400 transition-colors"
+                >
+                  {year}年の年間一覧
+                </Link>
+              ))}
+            </div>
+          </div>
+
+          <div className="mt-6">
+            <h3 className="text-sm font-bold font-serif text-slate-800">
+              月ごとの引越しに向く日
+            </h3>
+            <p className="mt-1 text-xs leading-relaxed text-slate-600">
+              生年月日を入れずに読める、月ごとのまとめです。六曜・天赦日・一粒万倍日と土用を突き合わせた候補日と、本命星9つそれぞれの吉方位を載せています。
+            </p>
+            <div className="mt-3 flex flex-wrap gap-2">
+              {calendarMonths().map((c) => (
+                <Link
+                  prefetch={false}
+                  key={calendarMonthSlug(c)}
+                  href={`/calendar/${calendarMonthSlug(c)}`}
+                  className="px-3 py-1.5 rounded-full border border-slate-300 bg-white text-xs font-bold text-slate-700 hover:border-rose-400 transition-colors"
+                >
+                  {c.year}年{c.month}月
+                </Link>
+              ))}
+            </div>
+          </div>
+        </section>
+
         <ActiveProfileBadge purpose="吉日と暦" className="mb-6" />
 
         {/* 手順の説明だけでは日付が決まらない。実際に三盤を重ねて
@@ -101,7 +180,9 @@ export default function CalendarPage() {
         <FavoriteDaysPanel />
 
         <section className="mb-10 rounded-3xl border border-slate-300 bg-white/95 p-6 md:p-8 shadow-lg shadow-slate-200/50">
-          <h2 className="text-lg font-bold font-serif">引越しの日取りの決め方</h2>
+          <h2 className="text-lg font-bold font-serif">
+            引越しの日取りの決め方
+          </h2>
           <p className="mt-3 text-sm text-slate-700 leading-relaxed">
             日取りは、暦の吉凶だけでは決まりません。方位と組み合わせて絞り込みます。一般的には次の順で見ていきます。
           </p>
@@ -114,16 +195,20 @@ export default function CalendarPage() {
               ）。
             </li>
             <li>
-              <b>年盤</b>でその年の吉方位を確認する。五黄殺・暗剣殺・歳破・本命殺に当たる方位は避けます。
+              <b>年盤</b>
+              でその年の吉方位を確認する。五黄殺・暗剣殺・歳破・本命殺に当たる方位は避けます。
             </li>
             <li>
-              <b>月盤</b>で、動く月の吉方位を確認する。年盤で吉でも月盤で凶になることがあります。
+              <b>月盤</b>
+              で、動く月の吉方位を確認する。年盤で吉でも月盤で凶になることがあります。
             </li>
             <li>
-              <b>天中殺</b>の期間に当たっていないか確認する。生年月日ごとに決まり、本命星では分かりません。この期間は方位に関係なく移転を避けるという考え方があります。
+              <b>天中殺</b>
+              の期間に当たっていないか確認する。生年月日ごとに決まり、本命星では分かりません。この期間は方位に関係なく移転を避けるという考え方があります。
             </li>
             <li>
-              そのうえで、このカレンダーで<b>日の吉凶</b>を見て候補日を絞ります。
+              そのうえで、このカレンダーで<b>日の吉凶</b>
+              を見て候補日を絞ります。
             </li>
           </ol>
           <div className="mt-5 flex flex-wrap gap-2">
@@ -141,59 +226,19 @@ export default function CalendarPage() {
             </Link>
           </div>
           <p className="mt-4 text-xs text-slate-500 leading-relaxed">
-            六曜や天赦日は暦の考え方であり、科学的に効果が確認されたものではありません。引越し業者の料金は大安や土日に上がる傾向があるため、費用を優先するか暦を優先するかは分けて考えてください。
+            六曜や天赦日は占い上の目安であり、科学的に効果が確認されたものではありません。費用や予約の都合は暦の話とは分けて考え、方位ごとの段階評価で期間から絞るときは
+            <Link
+              href="/relocation/timing"
+              className="mx-1 underline hover:text-rose-600"
+            >
+              引越し時期の分析
+            </Link>
+            もあわせてお使いください。
           </p>
-        </section>
-
-        {/* 月ごとのまとめ。
-            上のツールは生年月日を入れないと自分の結果が出ないが、
-            「9月に引越すなら何日か」を先に知りたい人もいる。
-            暦だけで決まる情報を月別ページに置いてあるので、そこへ渡す。 */}
-        {/* #227 では読み物として max-w-4xl で残したが、全画面を幅いっぱいに
-            する方針になったのでここも外す。 */}
-        <section className="w-full mt-10 rounded-3xl border border-slate-200 bg-white/80 p-6">
-          <h2 className="text-lg font-bold font-serif">月ごとの引越しに向く日</h2>
-          <p className="mt-2 text-xs leading-relaxed text-slate-600">
-            生年月日を入れずに読める、月ごとのまとめです。六曜・天赦日・一粒万倍日と土用を突き合わせた候補日と、本命星9つそれぞれの吉方位を載せています。
-          </p>
-          <div className="mt-4 flex flex-wrap gap-2">
-            {calendarMonths().map((c) => (
-              <Link
-                prefetch={false}
-                key={calendarMonthSlug(c)}
-                href={`/calendar/${calendarMonthSlug(c)}`}
-                className="px-3 py-1.5 rounded-full border border-slate-300 bg-white text-xs font-bold text-slate-700 hover:border-rose-400 transition-colors"
-              >
-                {c.year}年{c.month}月
-              </Link>
-            ))}
-          </div>
-          {/* 年の一覧。年は月の一覧から引く（kigakuContent の contentYears は
-              暦エンジンを引くので、client のこの頁では import しない）。
-              月の一覧に出る年は必ず年の頁の対象（今年から 3 年）に入る。 */}
-          <p className="mt-4 text-xs leading-relaxed text-slate-600">
-            1年ぶんの天赦日・一粒万倍日・土用をまとめて見るときは、年間一覧をご覧ください。
-          </p>
-          <div className="mt-2 flex flex-wrap gap-2">
-            {[...new Set(calendarMonths().map((c) => c.year))].map((year) => (
-              <Link
-                prefetch={false}
-                key={year}
-                href={`/calendar/${year}`}
-                className="px-3 py-1.5 rounded-full border border-slate-300 bg-white text-xs font-bold text-slate-700 hover:border-rose-400 transition-colors"
-              >
-                {year}年の年間一覧
-              </Link>
-            ))}
-          </div>
         </section>
 
         {/* Calendar Widget
-            上の「月ごとのまとめ」との間に余白が無く、カードの下端と
-            暦の上端が同じ位置に来ていた（実測でどちらも y=1591）。
-            暦のほうが横に広いので、上端の線がカードの左右にはみ出して
-            重なって見える。この頁の他のブロックは mb-12 / mb-10 / mt-10
-            で離してあるので、同じ間隔を与える。 */}
+            他のブロックと同じ余白（mt-10）を与えてカードと重ならないようにする。 */}
         <div className="mt-10">
           <CosmicCalendar />
         </div>

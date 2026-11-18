@@ -90,8 +90,12 @@ describe("/api/profile-presets", () => {
   });
 
   it("persists presets for the signed-in user and drops a posted geminiKey", async () => {
-    findFirst.mockResolvedValue(null);
-    create.mockResolvedValue({});
+    findFirst.mockResolvedValue({
+      id: "row-1",
+      user_id: authenticatedUser.id,
+      personal_cloud_opt_in: true,
+    });
+    update.mockResolvedValue({});
     const request = new Request("http://localhost/api/profile-presets", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -115,24 +119,26 @@ describe("/api/profile-presets", () => {
     const response = await POST(request);
 
     expect(response.status).toBe(200);
-    expect(create).toHaveBeenCalledWith(
+    expect(update).toHaveBeenCalledWith(
       expect.objectContaining({
         data: expect.objectContaining({
-          user_id: authenticatedUser.id,
-          user_email: authenticatedUser.email,
           presets: [expect.objectContaining({ id: "preset_1" })],
         }),
       }),
     );
     // キーは平文でも暗号化でも保存しない（受け口が無い）
-    const stored = create.mock.calls[0][0].data.presets[0];
+    const stored = update.mock.calls[0][0].data.presets[0];
     expect(stored).not.toHaveProperty("geminiKey");
     expect(stored).not.toHaveProperty("encryptedGeminiKey");
   });
 
   it("reports a cloud persistence failure instead of claiming success", async () => {
-    findFirst.mockResolvedValue(null);
-    create.mockRejectedValue(new Error("database unavailable"));
+    findFirst.mockResolvedValue({
+      id: "row-1",
+      user_id: authenticatedUser.id,
+      personal_cloud_opt_in: true,
+    });
+    update.mockRejectedValue(new Error("database unavailable"));
     const request = new Request("http://localhost/api/profile-presets", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -154,5 +160,63 @@ describe("/api/profile-presets", () => {
 
     expect(response.status).toBe(503);
     expect(findFirst).not.toHaveBeenCalled();
+  });
+});
+
+it.each([
+  null,
+  { id: "owned", user_id: authenticatedUser.id, personal_cloud_opt_in: false },
+])("同意前は控えを書かない: %j", async (row) => {
+  vi.resetAllMocks();
+  getUser.mockResolvedValue({ data: { user: authenticatedUser }, error: null });
+  findFirst.mockResolvedValue(row);
+  const response = await POST(
+    new Request("http://localhost/api/profile-presets", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ presets: [] }),
+    }),
+  );
+  expect(response.status).toBe(403);
+  expect(await response.json()).toMatchObject({
+    code: "PERSONAL_CLOUD_OPT_IN_REQUIRED",
+  });
+  expect(update).not.toHaveBeenCalled();
+  expect(create).not.toHaveBeenCalled();
+});
+
+it("控えに残る基準値は読み続け、新規値では上書きしない", async () => {
+  vi.resetAllMocks();
+  getUser.mockResolvedValue({ data: { user: authenticatedUser }, error: null });
+  const preset = {
+    id: "fixture-profile",
+    name: "架空の本人",
+    birthDate: "1990-04-01",
+    baseLat: 35.68,
+    baseLon: 139.76,
+    createdAt: "2026-11-17T00:00:00.000Z",
+  };
+  findFirst.mockResolvedValue({
+    id: "owned",
+    user_id: authenticatedUser.id,
+    personal_cloud_opt_in: true,
+    presets: [{ ...preset, baselineHrvMean: 38 }],
+  });
+  const response = await POST(
+    new Request("http://localhost/api/profile-presets", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        presets: [{ ...preset, baselineHrvMean: 99, baselineGsrMean: 99 }],
+      }),
+    }),
+  );
+  expect(response.status).toBe(200);
+  expect(update.mock.calls[0][0].data.presets[0].baselineHrvMean).toBe(38);
+  expect(update.mock.calls[0][0].data.presets[0]).not.toHaveProperty(
+    "baselineGsrMean",
+  );
+  expect(await (await GET()).json()).toMatchObject({
+    presets: [expect.objectContaining({ baselineHrvMean: 38 })],
   });
 });

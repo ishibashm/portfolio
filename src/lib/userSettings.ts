@@ -1,3 +1,4 @@
+import { gatePersonalData, PERSONAL_FIELDS } from "@/lib/personalDataPolicy";
 /**
  * 利用者設定（生年月日・出発地・基準値）の読み書きを 1 か所にまとめる。
  *
@@ -8,7 +9,7 @@
  * 「設定してください」と出る。実際にその問い合わせを受けた。
  *
  * 方針は匿名優先。ログインしなくても全機能が使え、設定は端末に残る。
- * ログインしている場合だけクラウドにも同期し、別の端末から引き継げるようにする。
+ * ログイン中に明示的に同意した場合だけクラウドにも同期し、別の端末から引き継げるようにする。
  * トップページにログイン画面を置く案は採らない。中核ページを匿名で
  * 見せられなくなると、検索の索引にも広告の審査にも通らなくなる。
  */
@@ -23,15 +24,12 @@ export const SETTINGS_KEY = "tactical_config_v1";
 
 /** クラウドにも保存する項目。これ以外は端末だけに残る画面の状態。 */
 export const SYNCED_FIELDS = [
+  "personal_cloud_opt_in",
   "birth_date",
   "birth_lat",
   "birth_lon",
   "base_lat",
   "base_lon",
-  "baseline_hrv_mean",
-  "baseline_hrv_std",
-  "baseline_gsr_mean",
-  "baseline_gsr_std",
   "base_sync_timestamp",
 ] as const;
 
@@ -251,6 +249,10 @@ export async function loadSettings(): Promise<LoadResult> {
     const res = await fetch("/api/user-config");
     if (!res.ok) return { settings: withoutTombstones(local), synced: false }; // 401 = 未ログイン
     const remote = await res.json();
+    // 同意は時刻による競合解決から外し、サーバーの最新の設定を採る。
+    const optIn = remote.personal_cloud_opt_in === true;
+    writeLocalSettings({ personal_cloud_opt_in: optIn }, false);
+    local.personal_cloud_opt_in = optIn;
 
     const savedAt = settingString(local, SAVED_AT);
     const localAt = savedAt ? Date.parse(savedAt) : 0;
@@ -261,9 +263,17 @@ export async function loadSettings(): Promise<LoadResult> {
        null を読み飛ばすと古い値が端末に残り、次の保存で復活していた。
        クラウドが新しいときだけ、消えた項目を端末からも外す。 */
     const remoteCleared: string[] = [];
-    for (const key of SYNCED_FIELDS) {
+    for (const key of [
+      ...SYNCED_FIELDS,
+      "baseline_hrv_mean",
+      "baseline_hrv_std",
+      "baseline_gsr_mean",
+      "baseline_gsr_std",
+    ]) {
+      if (!optIn && PERSONAL_FIELDS.includes(key) && local[key] != null)
+        continue;
       if (remote[key] === null) {
-        remoteCleared.push(key);
+        if (optIn) remoteCleared.push(key);
       } else if (remote[key] !== undefined) {
         remoteFields[key] = remote[key];
       }
@@ -335,10 +345,13 @@ export type SaveResult = {
   status?: number;
 };
 
-/** 端末には必ず保存し、ログイン中ならクラウドにも送る。 */
+/** 端末には必ず保存し、個人情報は明示した同意があるときだけ送る。 */
 export async function saveSettings(patch: Settings): Promise<SaveResult> {
   const settings = writeLocalSettings(patch);
-  const payload = pickSynced(patch);
+  const payload = gatePersonalData(
+    pickSynced(patch),
+    settings.personal_cloud_opt_in === true,
+  ).data;
 
   if (Object.keys(payload).length === 0) {
     return { settings, synced: false, reason: "nothing-to-sync" };

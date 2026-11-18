@@ -11,7 +11,7 @@ vi.mock("@/utils/supabase/middleware", () => ({
 
 import { middleware } from "@/middleware";
 
-describe("個人情報で削除した記事", () => {
+describe("削除して後継の無い経路は 410 を返す", () => {
   it.each(GONE_PATHS)("%s と末尾スラッシュを 410 対象にする", (path) => {
     expect(isGonePath(path)).toBe(true);
     expect(isGonePath(`${path}/`)).toBe(true);
@@ -19,10 +19,13 @@ describe("個人情報で削除した記事", () => {
     expect(isGonePath(`${path}-other`)).toBe(false);
   });
 
-  it.each(["/blog", "/", "/blog/does-bad-direction-last-60-years"])(
-    "%s は削除対象にしない",
-    (path) => expect(isGonePath(path)).toBe(false),
-  );
+  it.each([
+    "/blog",
+    "/",
+    "/blog/does-bad-direction-last-60-years",
+    "/blog/direction-seen-from-the-original-home",
+    "/houi/area/47348",
+  ])("%s は削除対象にしない", (path) => expect(isGonePath(path)).toBe(false));
 
   it.each(GONE_PATHS)("%s は本文取得前に転送せず 410 を返す", async (path) => {
     for (const suffix of ["", "/?from=search"]) {

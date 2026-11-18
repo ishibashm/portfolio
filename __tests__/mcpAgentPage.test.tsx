@@ -1,5 +1,6 @@
 import { afterEach, expect, it, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
+import { renderToStaticMarkup } from "react-dom/server";
 import Page from "@/app/ask/page";
 import { PAID_APIS_PAUSED_TEXT } from "@/lib/paidApis";
 afterEach(() => vi.unstubAllEnvs());
@@ -46,4 +47,24 @@ it("有料API停止時は鍵があっても計算のみにし、音声入口を�
   expect(screen.queryByLabelText("メッセージ")).toBeNull();
   expect(screen.queryByRole("button", { name: "押して話す" })).toBeNull();
   expect(screen.queryByLabelText("AIを使わず計算のみ")).toBeNull();
+});
+
+it("AIが無効・停止中は会話を約束せず、JSなしでも /annai と /mcp への案内をサーバーで描く", () => {
+  vi.stubEnv("PAID_APIS_DISABLED", "true");
+  vi.stubEnv("MCP_AGENT_ENABLED", "true");
+  vi.stubEnv("GOOGLE_GENERATIVE_AI_API_KEY", "secret-only-on-server");
+  const html = renderToStaticMarkup(Page());
+  expect(html).toContain("AIとの会話は、いまは停止しています。");
+  expect(html).toContain('href="/annai"');
+  expect(html).toContain('href="/mcp"');
+  expect(html).not.toContain("会話でご案内します");
+  expect(html).not.toContain("エージェント");
+});
+it("AIが使えるときは会話の導入文を出し、停止の案内は出さない", () => {
+  vi.stubEnv("MCP_AGENT_ENABLED", "true");
+  vi.stubEnv("GOOGLE_GENERATIVE_AI_API_KEY", "secret-only-on-server");
+  const html = renderToStaticMarkup(Page());
+  expect(html).toContain("会話でご案内します");
+  expect(html).not.toContain("AIとの会話は、いまは停止しています。");
+  expect(html).not.toContain("secret-only-on-server");
 });

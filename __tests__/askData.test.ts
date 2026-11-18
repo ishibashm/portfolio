@@ -1,3 +1,8 @@
+import {
+  ASK_PERSISTENCE_KEY,
+  readBrowserAskWorkspace,
+  writeBrowserAskWorkspace,
+} from "@/lib/askData";
 import { AGENT_PAUSED_REASON, AGENT_PAUSED_TEXT } from "@/lib/agentPausedText";
 import { describe, expect, it } from "vitest";
 import {
@@ -217,5 +222,61 @@ describe("停止・失敗した相談を記憶しない", () => {
         "本命星は三碧木星です。",
       ),
     ).not.toBe("");
+  });
+});
+
+describe("会話のブラウザ保存先", () => {
+  it("未保存の会話は sessionStorage だけへ書く", () => {
+    localStorage.clear();
+    sessionStorage.clear();
+    const workspace = readLocalAskWorkspace({
+      getItem: () =>
+        JSON.stringify({
+          version: 2,
+          activeConversationId: "chat",
+          updatedAt: "2026-11-17T00:00:00Z",
+          conversations: [
+            {
+              id: "chat",
+              title: "架空の相談",
+              messages: [],
+              personIds: [],
+              createdAt: "2026-11-17T00:00:00Z",
+              updatedAt: "2026-11-17T00:00:00Z",
+            },
+          ],
+          people: [],
+          memories: [],
+        }),
+      setItem: () => {},
+      removeItem: () => {},
+    });
+    if (!workspace) throw new Error("fixture invalid");
+    expect(readBrowserAskWorkspace(localStorage, sessionStorage).persist).toBe(
+      false,
+    );
+    writeBrowserAskWorkspace(localStorage, sessionStorage, workspace, false);
+    expect(localStorage.getItem(ASK_DATA_STORAGE_KEY)).toBeNull();
+    expect(sessionStorage.getItem(ASK_DATA_STORAGE_KEY)).toContain(
+      "架空の相談",
+    );
+    expect(
+      readBrowserAskWorkspace(localStorage, sessionStorage).workspace,
+    ).toEqual(workspace);
+    writeBrowserAskWorkspace(localStorage, sessionStorage, workspace, true);
+    expect(readBrowserAskWorkspace(localStorage, sessionStorage).persist).toBe(
+      true,
+    );
+    localStorage.removeItem(ASK_PERSISTENCE_KEY);
+    expect(readBrowserAskWorkspace(localStorage, sessionStorage).persist).toBe(
+      true,
+    );
+    localStorage.setItem(ASK_PERSISTENCE_KEY, "false");
+    expect(readBrowserAskWorkspace(localStorage, sessionStorage).persist).toBe(
+      false,
+    );
+    expect(localStorage.getItem(ASK_DATA_STORAGE_KEY)).toContain("架空の相談");
+    localStorage.clear();
+    sessionStorage.clear();
   });
 });

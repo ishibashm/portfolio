@@ -1,14 +1,21 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { AiExportBox } from "@/components/AiExportBox";
+import { RelocationFormEnhancer } from "@/components/houi/RelocationFormEnhancer";
+import { AREAS } from "@/lib/areaContent";
 import { buildRelocationCalendarAiExport } from "@/lib/aiExportPages";
 import { STAR_NAMES } from "@/lib/kigakuContent";
 import { buildBase } from "@/lib/mcpDirections";
+import { resolveRelocationOrigin } from "@/lib/relocationCalendarOrigin";
 import { findRelocationWindows } from "@/lib/relocationWindows";
 import { coreRouteLabel } from "@/lib/siteStructure";
 import { pageOpenGraph } from "@/lib/siteUrl";
 
 const PATH = "/houi/relocation-calendar";
+const FORM_ID = "relocation-calendar-form";
+const PLACE_LIST_ID = "relocation-calendar-places";
+/** 入力候補。コード順（＝おおむね北から）に並べる。 */
+const PLACE_OPTIONS = [...AREAS].sort((a, b) => a.code.localeCompare(b.code));
 const TITLE = coreRouteLabel(PATH)!;
 const DESCRIPTION =
   "年盤・月盤から引越しできる期間と方位の強さ、3盤そろう日を一覧で確認できます。";
@@ -37,23 +44,36 @@ export default async function RelocationCalendarPage({ searchParams }: Props) {
   const read = (key: string) =>
     typeof query[key] === "string" ? (query[key] as string) : undefined;
   // Personal query values are used only for this response, never echoed into form,
-  // metadata, JSON-LD, links, logs, or persistent storage.
-  const result = Object.keys(query).length
-    ? findRelocationWindows({
-        birthDate: read("birthDate"),
-        birthTime: read("birthTime") || undefined,
-        lon: Number(read("lon")),
-        from: read("from") || undefined,
-        days: read("days") ? Number(read("days")) : undefined,
+  // metadata, JSON-LD, links, logs, or persistent storage. 市区町村は、どこで
+  // 計算したかを確かめられるよう正式名だけを表示する（座標は出さない）。
+  const hasQuery = Object.keys(query).length > 0;
+  const origin = hasQuery
+    ? resolveRelocationOrigin({
+        code: read("code"),
+        place: read("place"),
+        lon: read("lon"),
       })
     : null;
-  const built = result?.ok
-    ? buildBase({
-        birthDate: read("birthDate"),
-        birthTime: read("birthTime") || undefined,
-        lon: Number(read("lon")),
-      })
-    : null;
+  const originLon = origin?.kind === "ok" ? origin.lon : undefined;
+  const result =
+    hasQuery && origin?.kind === "ok"
+      ? findRelocationWindows({
+          birthDate: read("birthDate"),
+          birthTime: read("birthTime") || undefined,
+          lon: origin.lon,
+          from: read("from") || undefined,
+          days: read("days") ? Number(read("days")) : undefined,
+        })
+      : null;
+  const built =
+    result?.ok && originLon !== undefined
+      ? buildBase({
+          birthDate: read("birthDate"),
+          birthTime: read("birthTime") || undefined,
+          lon: originLon,
+        })
+      : null;
+  const resolvedPlace = origin?.kind === "ok" ? origin.place?.name : undefined;
   const honmeiStar = built?.ok ? built.honmei.classical : undefined;
   const markdown = result?.ok
     ? buildRelocationCalendarAiExport({
@@ -79,6 +99,7 @@ export default async function RelocationCalendarPage({ searchParams }: Props) {
           </p>
         </header>
         <form
+          id={FORM_ID}
           method="get"
           action={PATH}
           className="wg-card flex flex-wrap gap-4 p-6"
@@ -97,17 +118,27 @@ export default async function RelocationCalendarPage({ searchParams }: Props) {
             <input className="block border p-2" name="birthTime" type="time" />
           </label>
           <label>
-            出発地の経度（必須）
+            今住んでいる市区町村
             <input
               className="block border p-2"
-              name="lon"
-              type="number"
-              min="122"
-              max="154"
-              step="any"
-              required
+              name="place"
+              type="text"
+              list={PLACE_LIST_ID}
+              autoComplete="off"
+              maxLength={80}
+              placeholder="例：名古屋市中川区"
             />
           </label>
+          <datalist id={PLACE_LIST_ID}>
+            {PLACE_OPTIONS.map((a) => (
+              <option
+                key={a.code}
+                value={a.full}
+                data-lat={a.lat.toFixed(2)}
+                data-lon={a.lon.toFixed(2)}
+              />
+            ))}
+          </datalist>
           <label>
             開始日（省略時は今日JST）
             <input className="block border p-2" name="from" type="date" />
@@ -124,9 +155,30 @@ export default async function RelocationCalendarPage({ searchParams }: Props) {
             />
           </label>
           <p className="w-full text-sm">
-            経度の例：東京139.69 / 名古屋136.91 /
-            大阪135.50。入力内容はURLに含まれるため、結果URLの共有にご注意ください。
+            市区町村名は「中川区」「なごや」のように一部や読みでも探せます。同じ名前がいくつかあるときは候補を出します。入力内容はURLに含まれるため、結果URLの共有にご注意ください。
           </p>
+          <details className="w-full text-sm">
+            <summary>経度で詳しく指定（任意）</summary>
+            <label className="mt-2 block">
+              出発地の経度（122〜154。市区町村名が空のときに使います）
+              <input
+                className="block border p-2"
+                name="lon"
+                type="number"
+                min="122"
+                max="154"
+                step="any"
+              />
+            </label>
+            <p className="mt-1">
+              経度の例：東京139.69 / 名古屋136.91 / 大阪135.50
+            </p>
+          </details>
+          <RelocationFormEnhancer
+            formId={FORM_ID}
+            listId={PLACE_LIST_ID}
+            resolvedPlace={resolvedPlace}
+          />
           <button className="wg-btn-primary" type="submit">
             一覧を表示
           </button>
@@ -143,7 +195,40 @@ export default async function RelocationCalendarPage({ searchParams }: Props) {
             伝統的な暦の見方であり、出来事を予測・保証するものではありません。生活上の条件と合わせて判断してください。
           </p>
         </section>
+        {origin?.kind === "error" && <p role="alert">{origin.message}</p>}
+        {origin?.kind === "ambiguous" && (
+          <section className="wg-card p-6" aria-labelledby="place-candidates">
+            <h2 id="place-candidates" className="text-xl font-bold">
+              市区町村を選んでください
+            </h2>
+            <p role="alert">
+              「{origin.query}
+              」に当てはまる市区町村がいくつかあります。今住んでいるところを選ぶと、その場所で計算し直します。
+            </p>
+            <ul className="mt-3 flex flex-wrap gap-2">
+              {origin.candidates.map((c) => (
+                <li key={c.code}>
+                  <button
+                    type="submit"
+                    form={FORM_ID}
+                    name="code"
+                    value={c.code}
+                    className="rounded-full border px-3 py-1.5 text-sm font-semibold"
+                  >
+                    {c.name}
+                  </button>
+                </li>
+              ))}
+            </ul>
+            <p className="mt-2 text-sm">
+              生年月日の欄が空のときは、入れ直してから選んでください。
+            </p>
+          </section>
+        )}
         {result && !result.ok && <p role="alert">{result.error}</p>}
+        {result?.ok && resolvedPlace && (
+          <p>出発地：{resolvedPlace}で計算しました。</p>
+        )}
         {result?.ok && (
           <>
             <section className="wg-card p-6">

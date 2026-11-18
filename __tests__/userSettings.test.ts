@@ -49,6 +49,7 @@ describe("userSettings", () => {
         json: async () => ({
           base_lat: 43.06,
           base_lon: 141.35,
+          personal_cloud_opt_in: true,
           updated_at: new Date(Date.now() + 60_000).toISOString(),
         }),
       }),
@@ -75,6 +76,7 @@ describe("userSettings", () => {
           base_lat: null,
           base_lon: null,
           birth_date: "1990-05-15",
+          personal_cloud_opt_in: true,
           updated_at: new Date(Date.now() + 60_000).toISOString(),
         }),
       }),
@@ -111,6 +113,7 @@ describe("userSettings", () => {
                 birth_date: null,
                 // クラウドで消したのは「少し前」。端末がこのあと保存すれば
                 // _savedAt は必ずこれを追い越す。
+                personal_cloud_opt_in: true,
                 updated_at: new Date(Date.now() - 1_000).toISOString(),
               }),
             },
@@ -146,6 +149,7 @@ describe("userSettings", () => {
         ok: true,
         json: async () => ({
           birth_date: null,
+          personal_cloud_opt_in: true,
           updated_at: new Date(Date.now() - 1_000).toISOString(),
         }),
       }),
@@ -208,6 +212,7 @@ describe("userSettings", () => {
         ok: true,
         json: async () => ({
           base_lat: 43.06,
+          personal_cloud_opt_in: true,
           updated_at: new Date(Date.now() - 60_000).toISOString(),
         }),
       }),
@@ -222,6 +227,7 @@ describe("userSettings", () => {
     const fetchMock = vi.fn().mockResolvedValue({ ok: true });
     vi.stubGlobal("fetch", fetchMock);
 
+    writeLocalSettings({ personal_cloud_opt_in: true });
     await saveSettings({ base_lat: 35.1, layer_mode: "year" });
 
     const body = JSON.parse(fetchMock.mock.calls[0][1].body);
@@ -234,4 +240,53 @@ describe("userSettings", () => {
     localStorage.setItem(SETTINGS_KEY, "{ not json");
     expect(readLocalSettings()).toEqual({});
   });
+});
+
+it("同意が無いときは個人情報と基準値を送らず端末に残す", async () => {
+  localStorage.clear();
+  const fetcher = vi.fn();
+  vi.stubGlobal("fetch", fetcher);
+  try {
+    await saveSettings({
+      birth_date: "1990-04-01",
+      base_lat: 35.68,
+      baseline_hrv_mean: 38,
+    });
+    expect(fetcher).not.toHaveBeenCalled();
+    expect(readLocalSettings()).toMatchObject({
+      birth_date: "1990-04-01",
+      base_lat: 35.68,
+      baseline_hrv_mean: 38,
+    });
+  } finally {
+    vi.unstubAllGlobals();
+    localStorage.clear();
+  }
+});
+
+it("同意オフの端末の新しい編集は、クラウドの古い個人情報で上書きしない", async () => {
+  localStorage.clear();
+  writeLocalSettings({ birth_date: "1990-04-01", base_lat: 35.68 });
+  vi.stubGlobal(
+    "fetch",
+    vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        personal_cloud_opt_in: false,
+        birth_date: "2000-04-01",
+        base_lat: null,
+        updated_at: new Date(Date.now() + 60_000).toISOString(),
+      }),
+    }),
+  );
+  try {
+    expect((await loadSettings()).settings).toMatchObject({
+      birth_date: "1990-04-01",
+      base_lat: 35.68,
+      personal_cloud_opt_in: false,
+    });
+  } finally {
+    vi.unstubAllGlobals();
+    localStorage.clear();
+  }
 });

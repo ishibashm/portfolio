@@ -6,8 +6,8 @@ import { fetchSurfacePressure } from "@/utils/surfacePressure";
  *
  * /api/space-weather と同じ理由でサーバを挟む。`utils/surfacePressure` の
  * fetch に付けた `{ next: { revalidate: 900 } }` はサーバの fetch でしか
- * 効かないため、ブラウザから Open-Meteo を直接叩くと利用者ごとに毎回
- * 外へ出ていく。ホームは公開ページなので、そこは共有したい。
+ * 効かないため、ブラウザから気象庁を直接叩くと利用者ごとに毎回
+ * 外へ出ていく。公開ページなので、そこは共有したい。
  *
  * 座標は 0.05 度（およそ 5km）に丸めてから渡す。気圧の水平勾配は
  * その程度の距離ではほぼ変わらないうえ、丸めないと利用者ごとに違う URL に

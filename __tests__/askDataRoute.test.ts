@@ -57,7 +57,7 @@ function request(data: unknown, origin = "https://cloud-palette.com") {
   return new NextRequest("https://cloud-palette.com/api/ask-data", {
     method: "POST",
     headers: { Origin: origin, "Content-Type": "application/json" },
-    body: JSON.stringify({ data }),
+    body: JSON.stringify({ data, persist: true }),
   });
 }
 
@@ -71,16 +71,20 @@ describe("/api/ask-data", () => {
 
   it("未ログインの読み書きを拒否する", async () => {
     getAuthUser.mockResolvedValue(null);
-    expect((await GET()).status).toBe(401);
+    expect(
+      (await GET(new Request("https://example.invalid/api/ask-data"))).status,
+    ).toBe(401);
     expect((await POST(request(workspace))).status).toBe(401);
     expect(update).not.toHaveBeenCalled();
   });
 
   it("本人のversion付きデータだけを返す", async () => {
     findUserConfig.mockResolvedValue({ ask_data: workspace });
-    const response = await GET();
+    const response = await GET(
+      new Request("https://example.invalid/api/ask-data"),
+    );
     expect(response.status).toBe(200);
-    expect(await response.json()).toEqual({ data: workspace });
+    expect(await response.json()).toEqual({ data: workspace, expiry: null });
     expect(response.headers.get("Cache-Control")).toContain("no-store");
   });
 
@@ -90,7 +94,10 @@ describe("/api/ask-data", () => {
     expect(response.status).toBe(200);
     expect(update).toHaveBeenCalledWith({
       where: { id: "config_1" },
-      data: { ask_data: expect.objectContaining({ version: 2 }) },
+      data: {
+        ask_data: expect.objectContaining({ version: 2 }),
+        ask_data_last_used_at: expect.any(Date),
+      },
     });
     expect(update.mock.calls[0][0].data).not.toHaveProperty("updated_at");
   });
@@ -117,4 +124,68 @@ describe("/api/ask-data", () => {
     expect(update).not.toHaveBeenCalled();
     expect(create).not.toHaveBeenCalled();
   });
+});
+
+it("persist の明示なしでは保存しない", async () => {
+  vi.clearAllMocks();
+  getAuthUser.mockResolvedValue(user);
+  const response = await POST(
+    new NextRequest("https://cloud-palette.com/api/ask-data", {
+      method: "POST",
+      headers: {
+        Origin: "https://cloud-palette.com",
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ data: workspace }),
+    }),
+  );
+  expect(response.status).toBe(400);
+  expect(await response.json()).toMatchObject({
+    code: "ASK_DATA_PERSIST_REQUIRED",
+  });
+  expect(findUserConfig).not.toHaveBeenCalled();
+  expect(update).not.toHaveBeenCalled();
+});
+
+it("読込だけでは利用日を進めず、期限前の案内を返す", async () => {
+  vi.clearAllMocks();
+  vi.useFakeTimers();
+  vi.setSystemTime(new Date("2026-11-10T00:00:00Z"));
+  try {
+    getAuthUser.mockResolvedValue(user);
+    findUserConfig.mockResolvedValue({
+      id: "owner-row",
+      ask_data: workspace,
+      ask_data_last_used_at: new Date("2026-08-19T00:00:00Z"),
+    });
+    const response = await GET(
+      new Request("https://example.invalid/api/ask-data"),
+    );
+    expect(await response.json()).toMatchObject({
+      expiry: { status: "notice", expiresAt: "2026-11-17T00:00:00.000Z" },
+    });
+    expect(update).not.toHaveBeenCalled();
+  } finally {
+    vi.useRealTimers();
+  }
+});
+
+it("書き出しは同じ所有者確認と private なダウンロードを使う", async () => {
+  vi.clearAllMocks();
+  getAuthUser.mockResolvedValue(user);
+  findUserConfig.mockResolvedValue({ id: "owner-row", ask_data: workspace });
+  const exportRequest = new Request(
+    "https://example.invalid/api/ask-data?format=export",
+  );
+  const response = await GET(exportRequest);
+  expect(response.headers.get("Content-Disposition")).toContain(
+    'attachment; filename="ask-data.json"',
+  );
+  expect(response.headers.get("Cache-Control")).toContain("no-store");
+  expect(await response.json()).toMatchObject({ data: workspace });
+  expect(findUserConfig).toHaveBeenCalledWith(user);
+  vi.clearAllMocks();
+  getAuthUser.mockResolvedValue(null);
+  expect((await GET(exportRequest)).status).toBe(401);
+  expect(findUserConfig).not.toHaveBeenCalled();
 });

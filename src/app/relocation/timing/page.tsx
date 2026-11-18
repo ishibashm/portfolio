@@ -104,6 +104,7 @@ import {
   writeTimingView,
 } from "@/lib/timingViewState";
 import { AffiliatePlacement } from "@/components/ads/AffiliateLink";
+import { AdBanner } from "@/components/ads/AdBanner";
 import { hakobuOfferForPref } from "@/lib/affiliateOffers";
 
 interface TimelineDay {
@@ -2367,6 +2368,16 @@ export default function TimingAnalyticsPage() {
                 </li>
               </ul>
             </Section>
+
+            {/*
+              広告枠。以前は中身の無い破線の箱に「広告」とだけ書いて
+              審査前から出していた（AdBanner の注記にある「作りかけに
+              見える」状態）。AdBanner は ID とスロットが揃うまで何も描かず、
+              揃えば高さを先に確保してから読み込む。
+            */}
+            <div data-ad-reservation="timing-after-results">
+              <AdBanner unit="list" />
+            </div>
           </>
         )}
 

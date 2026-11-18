@@ -3,7 +3,15 @@ import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
-import { fetchSurfacePressure } from "@/utils/surfacePressure";
+import {
+  JMA_LATEST_TIME_URL,
+  fetchSurfacePressure,
+  jmaPointUrl,
+  nearestPressureStation,
+  parseAmedasTime,
+  pointFileParts,
+  readPressure,
+} from "@/utils/surfacePressure";
 import { BioMagneticDashboard } from "@/components/BioMagneticDashboard";
 
 /**
@@ -15,45 +23,77 @@ import { BioMagneticDashboard } from "@/components/BioMagneticDashboard";
  * `useState(0)` のまま setter を一度も呼んでいなかった。常に
  * 「気圧変化なし」で走っていたことになる。
  *
- * ここで固定するのは 3 つ。
+ * 値は気象庁の地上気象観測（現地気圧）から取る。ここで固定するのは 3 つ。
  *
  *   1. 符号（負が降下）。エンジンが `pressureDrop < 0` で判定している
- *   2. 予報ぶんを混ぜないこと（Open-Meteo は未来も返す）
+ *   2. 最新の観測時刻より後の値を現在値にしない
  *   3. 取れないときは 0 ではなく null（0 は「変化なし」であって
  *      「分からない」ではない）
  */
 
 const ORIGINAL_FETCH = globalThis.fetch;
+const TOKYO = { lat: 35.6917, lon: 139.75 };
 
-/** 03:00Z を「いま」とし、00:00Z から 06:00Z までを 1 時間刻みで返す。 */
-function payload(values: (number | null)[]) {
+function pointEntry(pressure: number | null, quality: number | null = 0) {
   return {
-    hourly: {
-      time: [
-        "2026-08-13T00:00",
-        "2026-08-13T01:00",
-        "2026-08-13T02:00",
-        "2026-08-13T03:00",
-        "2026-08-13T04:00",
-        "2026-08-13T05:00",
-        "2026-08-13T06:00",
-      ],
-      surface_pressure: values,
-    },
+    pressure: pressure === null ? [null, 5] : [pressure, quality],
   };
 }
 
-function mockOk(body: unknown) {
-  globalThis.fetch = vi.fn().mockResolvedValue({
-    ok: true,
-    json: async () => body,
+function mockJma(options: {
+  latest?: string;
+  current?: Record<string, { pressure: unknown }>;
+  past?: Record<string, { pressure: unknown }>;
+  failLatest?: boolean;
+  failAll?: boolean;
+}) {
+  const latest = options.latest ?? "2026-11-16T07:20:00+09:00";
+  const latestDate = new Date(latest);
+  const currentParts = pointFileParts(latestDate);
+  const pastParts = pointFileParts(
+    new Date(latestDate.getTime() - 3 * 60 * 60 * 1000),
+  );
+  const currentUrl = jmaPointUrl(
+    "44132",
+    currentParts.day,
+    currentParts.hourBlock,
+  );
+  const pastUrl = jmaPointUrl("44132", pastParts.day, pastParts.hourBlock);
+  globalThis.fetch = vi.fn(async (input: RequestInfo | URL) => {
+    const url = String(input);
+    if (options.failAll) throw new Error("network");
+    if (url === JMA_LATEST_TIME_URL) {
+      if (options.failLatest) return { ok: false } as Response;
+      return {
+        ok: true,
+        text: async () => latest,
+        json: async () => latest,
+      } as Response;
+    }
+    if (url.includes("open-meteo")) {
+      throw new Error("Open-Meteo を呼んではいけない");
+    }
+    if (url === currentUrl) {
+      return {
+        ok: true,
+        json: async () => options.current ?? {},
+      } as Response;
+    }
+    if (url === pastUrl) {
+      return {
+        ok: true,
+        json: async () => options.past ?? {},
+      } as Response;
+    }
+    return { ok: false } as Response;
   }) as unknown as typeof fetch;
+  return { currentUrl, pastUrl };
 }
 
-describe("地上気圧の取得", () => {
+describe("地上気圧の取得（気象庁）", () => {
   beforeEach(() => {
     vi.useFakeTimers();
-    vi.setSystemTime(new Date("2026-08-13T03:30:00Z"));
+    vi.setSystemTime(new Date("2026-11-16T07:30:00+09:00"));
   });
 
   afterEach(() => {
@@ -61,50 +101,68 @@ describe("地上気圧の取得", () => {
     globalThis.fetch = ORIGINAL_FETCH;
   });
 
-  it("3 時間で下がったぶんを負の値で返す", () => {
-    // 00:00Z が 1010、03:00Z が 1004。6hPa の降下。
-    mockOk(payload([1010, 1008, 1006, 1004, 999, 998, 997]));
-
-    return fetchSurfacePressure(35.68, 139.76).then((d) => {
-      expect(d.current).toBe(1004);
-      expect(d.threeHoursAgo).toBe(1010);
-      expect(d.drop).toBe(-6);
-      expect(d.timestamp).toBe("2026-08-13T03:00Z");
+  it("東京付近なら東京の観測点を選び、3 時間で下がったぶんを負の値で返す", async () => {
+    expect(nearestPressureStation(TOKYO.lat, TOKYO.lon)?.id).toBe("44132");
+    mockJma({
+      current: {
+        "20261116071000": pointEntry(1005),
+        "20261116072000": pointEntry(1004),
+        "20261116073000": pointEntry(990),
+      },
+      past: {
+        "20261116041000": pointEntry(1009),
+        "20261116042000": pointEntry(1010),
+      },
     });
+
+    const d = await fetchSurfacePressure(TOKYO.lat, TOKYO.lon);
+    expect(d.current).toBe(1004);
+    expect(d.threeHoursAgo).toBe(1010);
+    expect(d.drop).toBe(-6);
+    expect(d.timestamp).toBe("2026-11-15T22:20:00.000Z");
+    const urls = (
+      globalThis.fetch as unknown as ReturnType<typeof vi.fn>
+    ).mock.calls.map((c) => String(c[0]));
+    expect(urls.every((u) => u.includes("jma.go.jp"))).toBe(true);
+    expect(urls.some((u) => /open-meteo/i.test(u))).toBe(false);
   });
 
   it("上がったときは正の値（ペナルティは付かない側）", async () => {
-    mockOk(payload([1000, 1001, 1002, 1006, 1007, 1008, 1009]));
-
-    const d = await fetchSurfacePressure(35.68, 139.76);
+    mockJma({
+      current: { "20261116072000": pointEntry(1006) },
+      past: { "20261116042000": pointEntry(1000) },
+    });
+    const d = await fetchSurfacePressure(TOKYO.lat, TOKYO.lon);
     expect(d.drop).toBe(6);
   });
 
-  it("予報ぶん（いまより後の時刻）を現在値にしない", async () => {
-    // 04:00Z 以降が急落しているが、いまは 03:30Z。混ぜたら -7 になる。
-    mockOk(payload([1010, 1008, 1006, 1004, 990, 985, 980]));
-
-    const d = await fetchSurfacePressure(35.68, 139.76);
+  it("最新の観測時刻より後の値を現在値にしない", async () => {
+    mockJma({
+      current: {
+        "20261116072000": pointEntry(1004),
+        "20261116073000": pointEntry(990),
+      },
+      past: { "20261116042000": pointEntry(1010) },
+    });
+    const d = await fetchSurfacePressure(TOKYO.lat, TOKYO.lon);
     expect(d.current).toBe(1004);
     expect(d.drop).toBe(-6);
   });
 
   it("取れなければ 0 ではなく null", async () => {
+    mockJma({ failLatest: true, current: {}, past: {} });
+    // latest が失敗すると「いま」の 07:30 枠を見に行くが、current が空なら null
     globalThis.fetch = vi
       .fn()
       .mockResolvedValue({ ok: false }) as unknown as typeof fetch;
-
-    const d = await fetchSurfacePressure(35.68, 139.76);
+    const d = await fetchSurfacePressure(TOKYO.lat, TOKYO.lon);
     expect(d.current).toBeNull();
     expect(d.drop).toBeNull();
   });
 
   it("外部が落ちても投げない", async () => {
-    globalThis.fetch = vi
-      .fn()
-      .mockRejectedValue(new Error("network")) as unknown as typeof fetch;
-
-    await expect(fetchSurfacePressure(35.68, 139.76)).resolves.toEqual({
+    mockJma({ failAll: true });
+    await expect(fetchSurfacePressure(TOKYO.lat, TOKYO.lon)).resolves.toEqual({
       current: null,
       threeHoursAgo: null,
       drop: null,
@@ -115,28 +173,36 @@ describe("地上気圧の取得", () => {
   it("座標が数値でなければ外に出ない", async () => {
     const spy = vi.fn();
     globalThis.fetch = spy as unknown as typeof fetch;
-
     const d = await fetchSurfacePressure(NaN, 139.76);
     expect(spy).not.toHaveBeenCalled();
     expect(d.drop).toBeNull();
   });
 
   it("3 時間ぶん遡れなければ、現在値だけ返して変化量は null", async () => {
-    // 01:00Z 始まりで、いま 03:00Z は取れるが 3 本前が無い。
-    globalThis.fetch = vi.fn().mockResolvedValue({
-      ok: true,
-      json: async () => ({
-        hourly: {
-          time: ["2026-08-13T01:00", "2026-08-13T02:00", "2026-08-13T03:00"],
-          surface_pressure: [1008, 1006, 1004],
-        },
-      }),
-    }) as unknown as typeof fetch;
-
-    const d = await fetchSurfacePressure(35.68, 139.76);
+    mockJma({
+      current: { "20261116072000": pointEntry(1004) },
+      past: {},
+    });
+    const d = await fetchSurfacePressure(TOKYO.lat, TOKYO.lon);
     expect(d.current).toBe(1004);
     expect(d.threeHoursAgo).toBeNull();
     expect(d.drop).toBeNull();
+  });
+
+  it("観測値の読み取りとファイル名の枠を間違えない", () => {
+    expect(readPressure({ pressure: [1009.3, 0] })).toBe(1009.3);
+    expect(readPressure({ pressure: [1009.3, 5] })).toBeNull();
+    expect(parseAmedasTime("20261116072000")).toBe(
+      Date.parse("2026-11-16T07:20:00+09:00"),
+    );
+    expect(pointFileParts(new Date("2026-11-16T07:20:00+09:00"))).toEqual({
+      day: "20261116",
+      hourBlock: "06",
+    });
+    expect(pointFileParts(new Date("2026-11-16T04:20:00+09:00"))).toEqual({
+      day: "20261116",
+      hourBlock: "03",
+    });
   });
 });
 
@@ -185,6 +251,10 @@ describe("画面への配線", () => {
     // 確かめている（#332 以降）。呼んでいることだけを見る。
     expect(src).toMatch(/setPressureDrop\((data\.drop|drop)\);/);
     expect(src).toContain("pressure={pressureData}");
+    expect(src).not.toMatch(/open-meteo/i);
+    const util = read("src", "utils", "surfacePressure.ts");
+    expect(util).toContain("www.jma.go.jp/bosai/amedas");
+    expect(util).not.toMatch(/api\.open-meteo\.com/);
   });
 
   it("取れていないときに 0 を「変化なし」として見せない", () => {
@@ -210,5 +280,27 @@ describe("画面への配線", () => {
     const text = html.replace(/<[^>]*>/g, "");
     expect(text).toContain("地上気圧");
     expect(text).toContain("負荷の計算に入っていません");
+  });
+
+  it("気圧が取れたときは気象庁の出典を出し、Open-Meteo は出さない", () => {
+    const html = renderToStaticMarkup(
+      createElement(BioMagneticDashboard, {
+        kpIndex: 3.1,
+        xrayFlux: "B5.0",
+        magneticF: 46890,
+        magneticD: -7.94,
+        magneticI: 49.56,
+        eot: 0,
+        pressure: { current: 1009.3, drop: -1.2 },
+      }),
+    );
+    const text = html.replace(/<[^>]*>/g, "");
+    expect(text).toContain("出典：");
+    expect(text).toContain("気象庁");
+    expect(text).toContain("現地気圧");
+    expect(html).toContain(
+      "https://www.jma.go.jp/bosai/map.html#contents=amedas",
+    );
+    expect(html).not.toMatch(/open-meteo/i);
   });
 });

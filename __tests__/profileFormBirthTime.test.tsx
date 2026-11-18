@@ -35,7 +35,10 @@ function withStoredBirth(value: string) {
   );
 }
 
-const birthInput = () => screen.getByLabelText(/生年月日/) as HTMLInputElement;
+const birthInput = () =>
+  screen.getByLabelText(/生年月日/, {
+    selector: "input[type=date]",
+  }) as HTMLInputElement;
 
 describe("/profile の生年月日欄", () => {
   it("時刻つきで保存されていても、日付が欄に出る", async () => {
