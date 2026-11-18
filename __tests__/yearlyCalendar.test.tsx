@@ -6,7 +6,10 @@ import CalendarPage, {
   generateMetadata,
   generateStaticParams,
 } from "@/app/calendar/[month]/page";
-import { calendarMonthSlug, calendarMonths } from "@/lib/calendarMonths";
+import {
+  calendarMonthSlug,
+  publishedCalendarMonths,
+} from "@/lib/calendarMonths";
 import { buildMonthlyCalendar } from "@/lib/monthlyCalendar";
 import {
   buildYearlyCalendar,
@@ -180,19 +183,32 @@ describe("/calendar/{年} の頁", () => {
     }
   });
 
-  it("月の頁へのリンクは、実在する月（今月から 18 か月）にだけ張る", async () => {
+  it("月の頁へのリンクは、公開している月（2026-01 から 18 か月窓の末尾）にだけ張る", async () => {
     vi.useFakeTimers({ now: NOW });
-    const exists = new Set(calendarMonths().map(calendarMonthSlug));
+    const exists = new Set(publishedCalendarMonths().map(calendarMonthSlug));
     for (const year of [2026, 2027, 2028]) {
       const html = await render(String(year));
       const linked = [
         ...html.matchAll(/href="\/calendar\/(\d{4}-\d{2})"/g),
       ].map((m) => m[1]);
       for (const slug of linked) expect(exists.has(slug)).toBe(true);
-      // 張れる月には張っている（2026 は 11・12 月、2027 は全部、2028 は 1〜4 月）。
+      // 張れる月には張っている（2026 は 1〜12 月、2027 は全部、2028 は 1〜4 月）。
       const expected = [...exists].filter((s) => s.startsWith(`${year}-`));
       expect(new Set(linked)).toEqual(new Set(expected));
     }
+  });
+
+  it("18 か月窓から外れた過去月（2026-10）も頁として出せる", async () => {
+    vi.useFakeTimers({ now: NOW });
+    const params = generateStaticParams().map((p) => p.month);
+    expect(params).toContain("2026-10");
+    expect(params).toContain("2026-09");
+    const html = await render("2026-10");
+    expect(html).toContain("2026年10月の引越しに向く日");
+    const meta = await generateMetadata({
+      params: Promise.resolve({ month: "2026-10" }),
+    });
+    expect(meta.alternates?.canonical).toBe("/calendar/2026-10");
   });
 
   it("対象外の年は 404、対象の年は事前生成と canonical を持つ", async () => {

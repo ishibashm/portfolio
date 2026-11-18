@@ -1,7 +1,7 @@
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import fs from "node:fs";
-import { isValidYouTubeId } from "@/lib/blogVideo";
+import { isValidYouTubeId, normalizeVideoUploadDate } from "@/lib/blogVideo";
 import { YouTubeFacade } from "@/components/blog/YouTubeFacade";
 import { BlogVideo } from "@/components/blog/BlogVideo";
 import { BlogArticleBody } from "@/components/blog/BlogArticleBody";
@@ -110,6 +110,18 @@ describe("blog YouTube video", () => {
     });
   });
 
+  it("date-only uploadDate gets a Japan timezone in VideoObject", () => {
+    const { container } = render(
+      <VideoJsonLd {...video} uploadDate="2026-10-24" />,
+    );
+    const script = container.querySelector(
+      'script[type="application/ld+json"]',
+    )!;
+    expect(JSON.parse(script.textContent!).uploadDate).toBe(
+      "2026-10-24T00:00:00+09:00",
+    );
+  });
+
   it("parses published frontmatter and places the directive after the conclusion", () => {
     const post = getBlogPost("moving-during-tenchusatsu")!;
     expect(post.youtubeId).toBe("PUq1v9mPVXM");
@@ -173,4 +185,22 @@ describe("blog YouTube video", () => {
     );
     expect(container.querySelector("iframe, button, script")).toBeNull();
   });
+});
+
+describe("normalizeVideoUploadDate", () => {
+  it.each([
+    ["2026-10-24", "2026-10-24T00:00:00+09:00"],
+    ["2026-10-24T12:00:00", "2026-10-24T12:00:00+09:00"],
+    ["2026-10-17T12:00:00+09:00", "2026-10-17T12:00:00+09:00"],
+    ["2026-10-24T00:00:00Z", "2026-10-24T00:00:00Z"],
+  ])("normalizes %s", (input, expected) => {
+    expect(normalizeVideoUploadDate(input)).toBe(expected);
+  });
+
+  it.each([undefined, null, "", "24 October 2026", "2026/10/24"])(
+    "rejects invalid value %s",
+    (input) => {
+      expect(normalizeVideoUploadDate(input)).toBeUndefined();
+    },
+  );
 });

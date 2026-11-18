@@ -293,8 +293,8 @@ export default function Page() {
           <ActiveProfileBadge purpose="本命星と吉方位" className="mt-3 mb-3" />
           <HonmeiLookup starNames={STAR_NAMES} linkYear={years[0]} />
           <p className="mt-5 text-sm">
-            <Link href="/ask" className="underline text-slate-600">
-              エージェントに案内してもらう
+            <Link href="/annai" className="underline text-slate-600">
+              しるべに案内してもらう
             </Link>
           </p>
 

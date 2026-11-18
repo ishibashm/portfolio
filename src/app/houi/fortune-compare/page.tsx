@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import GuideCharacter from "@/components/guide/GuideCharacter";
 import { COMPASS_DIRECTIONS, DIRECTION_LABELS } from "@/utils/directionGeo";
 import {
   FORTUNE_COMPARE_DISCLAIMER,
@@ -68,6 +69,9 @@ export default async function FortuneComparePage({
             {FORTUNE_COMPARE_DISCLAIMER}
             出生時刻が要る時柱、性別が要る八宅、四柱推命、算命学、宿、奇門遁甲、西洋占星術、タロット、易は出しません。
           </p>
+          <GuideCharacter pose="compass" size="sm">
+            同じ日でも、物差しが違えば答えが分かれることがあります。どれか1つに決めてもらう表ではなく、違いを並べて見るための表です。
+          </GuideCharacter>
         </header>
         <form method="get" className="wg-card space-y-4 p-5">
           <input type="hidden" name="compare" value="1" />

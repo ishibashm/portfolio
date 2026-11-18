@@ -8,8 +8,10 @@ import { buildTodayDirections } from "@/lib/todayDirections";
 import { HOUI_BREADCRUMB_LABEL, getMonthlySummary } from "@/lib/kigakuContent";
 import { pageOpenGraph, SITE_URL } from "@/lib/siteUrl";
 import { BreadcrumbJsonLd } from "@/components/JsonLd";
+import { TodayFortunePanel } from "@/components/houi/TodayFortunePanel";
+import { parseBirthYearParam } from "@/lib/todayWeather/birthYear";
 
-export const revalidate = 3600;
+// 生まれ年を searchParams から読むため、訪問ごとに描画される。
 const title = "今日の吉方位と時間｜本命星別の日盤・十二支の早見表";
 const description =
   "今日と明日の吉方位・凶方位を本命星別に確認。五黄殺・暗剣殺・日破は全員に凶として表示し、十二支ごとの時間帯も一覧で見られます。日本時間の日付で更新。";
@@ -21,7 +23,18 @@ export const metadata: Metadata = {
 };
 const list = (items: string[]) => items.join("・") || "なし";
 
-export default function TodayPage() {
+type Props = {
+  searchParams?: Promise<Record<string, string | string[] | undefined>>;
+};
+
+export default async function TodayPage({ searchParams }: Props = {}) {
+  const query = (await searchParams) ?? {};
+  const birthYear = parseBirthYearParam(query.birthYear);
+  const rawBirthYear = query.birthYear;
+  const invalidBirthYear =
+    birthYear === null &&
+    typeof rawBirthYear === "string" &&
+    rawBirthYear.trim() !== "";
   const data = buildTodayDirections();
   const year = Number(data.date.slice(0, 4));
   const markdown = buildTodayAiExport({
@@ -40,6 +53,11 @@ export default function TodayPage() {
         ]}
       />
       <article className="mx-auto max-w-5xl space-y-6">
+        <TodayFortunePanel
+          birthYear={birthYear}
+          invalidBirthYear={invalidBirthYear}
+          stars={data.stars}
+        />
         <CurrentDirections />
         <header className="space-y-3">
           <h1 className="font-serif text-3xl font-bold">今日の吉方位と時間</h1>
@@ -51,7 +69,7 @@ export default function TodayPage() {
           </p>
           <p className="text-sm text-slate-600">
             表示対象：<time dateTime={data.date}>{data.date}</time>
-            （日本時間・Asia/Tokyo）。約1時間ごとに更新され、日付変更後は前日の表示が残る場合があります。
+            （日本時間・Asia/Tokyo）。開くたびに日本時間の日付で計算します。
           </p>
           <Link href="/houi" className="inline-block text-rose-600 underline">
             本命星が分からない方はこちら
@@ -194,6 +212,16 @@ export default function TodayPage() {
         </section>
         <p className="text-sm text-slate-600">
           本命星だけの早見表です。月命星・個人の天中殺は含みません。引越しは年盤・月盤も確認してください。方位の吉凶は伝統的な見方で、効果を保証するものではありません。
+        </p>
+        <p className="text-sm">
+          日盤と時間帯の表の関係、刻の境目が地域でずれる理由は
+          <Link
+            href="/blog/todays-lucky-direction-by-hour"
+            className="text-rose-600 underline"
+          >
+            今日の吉方位と時間帯はどう読むか
+          </Link>
+          にまとめています。
         </p>
         <AiExportBox markdown={markdown} />
         <nav

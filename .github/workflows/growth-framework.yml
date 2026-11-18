@@ -1,0 +1,31 @@
+name: Site growth framework (disabled)
+
+# 定時実行はしない。所有者がスケジュールを足すまで cron は置かない。
+# workflow_dispatch も、リポジトリ変数 GROWTH_FRAMEWORK_ENABLED が
+# true でない限りジョブを開始しない。開始してもレポートを作るだけで、
+# master へは push しない。本番への反映は、このファイルでは行わない。
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  report:
+    if: vars.GROWTH_FRAMEWORK_ENABLED == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npx tsx scripts/growth-framework.ts --no-live
+      - uses: actions/upload-artifact@v4
+        with:
+          name: growth-report
+          path: docs/growth/runs
+          if-no-files-found: error

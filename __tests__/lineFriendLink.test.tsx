@@ -21,8 +21,9 @@ describe("公式LINEの友だち追加導線", () => {
     ["共通リンク", LineFriendLink],
     ["全ページ共通フッター", SiteFooter],
     ["今日の方位の結果ページ", TodayPage],
-  ])("%sに目的の分かる安全な外部リンクを表示する", (_, Component) => {
-    render(<Component />);
+  ])("%sに目的の分かる安全な外部リンクを表示する", async (_, Component) => {
+    // /houi/today は ?pref= を読むため async のページ。描画結果を待ってから入れる。
+    render(Component === TodayPage ? await TodayPage() : <Component />);
     const link = screen.getByRole("link", {
       name: "更新のお知らせをLINEで受け取る",
     });

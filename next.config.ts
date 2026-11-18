@@ -80,8 +80,11 @@ const nextConfig: NextConfig = {
         statusCode: 301,
       },
       {
-        source: "/calendar/2026-09",
-        destination: "/calendar",
+        // #353 で取り下げた「方位はどこから測るか（太極・起点）」の旧記事。
+        // 同じテーマを残している公開記事へ送る。易経の太極を扱う別記事
+        // （mukyoku-taikyoku-inyo-hakke）には送らない。
+        source: "/blog/taikyoku-where-to-measure-from",
+        destination: "/blog/direction-seen-from-the-original-home",
         statusCode: 301,
       },
       {
@@ -106,7 +109,9 @@ const nextConfig: NextConfig = {
         /portfolio は旧サイトの頁で後継が無い。
 
         後継が無いものを送らないのは、送り先の中身が元の頁と無関係だと
-        Google が soft 404 として扱うため。**404 のままが正しい。**
+        Google が soft 404 として扱うため。転送は付けない。
+        後継が無く削除が確定している頁（/extract）は、middleware で
+        410 を返す（gonePaths）。404 より「もう戻さない」が伝わる。
       */
       {
         // 問い合わせ。日本語の URL から英語の経路へ移した。

@@ -392,6 +392,12 @@ export function formatDate(d: Date): string {
   return `${d.getUTCFullYear()}年${d.getUTCMonth() + 1}月${d.getUTCDate()}日`;
 }
 
+// 年・本命星・方式だけで決まる計算を、動的ページの訪問ごとに繰り返さない。
+const monthlySummaryCache = new Map<
+  string,
+  { month: number; good: string[]; bad: string[] }[]
+>();
+
 /**
  * 1 年ぶんの月盤の吉方位・凶方位の要約（/houi/today の 12 か月早見表用）。
  * 五黄殺・暗剣殺は本命星に関係なく全員の凶方位として bad に入る。
@@ -401,7 +407,15 @@ export function getMonthlySummary(
   star: number,
   system: KigakuSystem = "classical",
 ): { month: number; good: string[]; bad: string[] }[] {
-  return MONTHS.map((month) => {
+  const key = `${year}:${star}:${system}`;
+  const cached = monthlySummaryCache.get(key);
+  if (cached)
+    return cached.map((row) => ({
+      ...row,
+      good: [...row.good],
+      bad: [...row.bad],
+    }));
+  const rows = MONTHS.map((month) => {
     const { verdicts } = getMonthDirections(year, month, star, system);
     return {
       month,
@@ -409,4 +423,13 @@ export function getMonthlySummary(
       bad: verdicts.filter((v) => v.kind === "bad").map((v) => v.jp),
     };
   });
+  monthlySummaryCache.set(key, rows);
+  if (monthlySummaryCache.size > 64)
+    monthlySummaryCache.delete(monthlySummaryCache.keys().next().value!);
+  // 呼び出し元の変更が次の訪問の表示へ混ざらないよう、配列も複製する。
+  return rows.map((row) => ({
+    ...row,
+    good: [...row.good],
+    bad: [...row.bad],
+  }));
 }

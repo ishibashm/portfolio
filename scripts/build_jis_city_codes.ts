@@ -64,7 +64,9 @@ async function main() {
     const code = r.code.slice(0, 5);
     // 区は「名古屋市」＋「千種区」で住所の表記になる。
     const plain =
-      r.type === "ward" ? `${r.city_name ?? ""}${r.ward_name ?? ""}` : r.city_name;
+      r.type === "ward"
+        ? `${r.city_name ?? ""}${r.ward_name ?? ""}`
+        : r.city_name;
     if (!plain) continue;
     if (!codesByPref.has(r.pref_name)) codesByPref.set(r.pref_name, new Map());
     codesByPref.get(r.pref_name)!.set(plain, code);
@@ -78,7 +80,9 @@ async function main() {
     const codes = codesByPref.get(pref);
     const addressNames = names[pref];
     if (!codes || !addressNames) {
-      problems.push(`${pref}: 出典に無い（codes=${!!codes} names=${!!addressNames}）`);
+      problems.push(
+        `${pref}: 出典に無い（codes=${!!codes} names=${!!addressNames}）`,
+      );
       continue;
     }
 
@@ -95,7 +99,10 @@ async function main() {
       // 「越前町」が「南条郡南越前町」に当たる。足してよいのは郡だけなので、
       // 前に付く部分が「郡」で終わることを条件にする。
       const withDistrict = addressNames.filter(
-        (a) => a !== plain && a.endsWith(plain) && a.slice(0, -plain.length).endsWith("郡"),
+        (a) =>
+          a !== plain &&
+          a.endsWith(plain) &&
+          a.slice(0, -plain.length).endsWith("郡"),
       );
       if (withDistrict.length > 1) {
         problems.push(
@@ -111,10 +118,15 @@ async function main() {
   }
 
   // 受け入れ条件: 既存の 441 件を 1 件も違えず再現すること。
-  const existingPath = path.join(process.cwd(), "scripts", "jis_city_codes.json");
-  const existing = JSON.parse(
-    fs.readFileSync(existingPath, "utf-8"),
-  ) as Record<string, Entry[]>;
+  const existingPath = path.join(
+    process.cwd(),
+    "scripts",
+    "jis_city_codes.json",
+  );
+  const existing = JSON.parse(fs.readFileSync(existingPath, "utf-8")) as Record<
+    string,
+    Entry[]
+  >;
 
   let checked = 0;
   const regressions: string[] = [];
@@ -124,12 +136,16 @@ async function main() {
       checked++;
       const got = now.get(e.code);
       if (got !== e.name) {
-        regressions.push(`${slug} ${e.code}: 既存="${e.name}" 生成="${got ?? "無し"}"`);
+        regressions.push(
+          `${slug} ${e.code}: 既存="${e.name}" 生成="${got ?? "無し"}"`,
+        );
       }
     }
   }
 
-  console.log(`既存との照合: ${checked} 件中 ${checked - regressions.length} 件一致`);
+  console.log(
+    `既存との照合: ${checked} 件中 ${checked - regressions.length} 件一致`,
+  );
   if (regressions.length > 0) {
     console.error("既存を再現できなかった:");
     for (const r of regressions.slice(0, 20)) console.error("  " + r);

@@ -11,6 +11,8 @@ import {
   Info,
   RefreshCw,
 } from "lucide-react";
+import { readLocalSettings } from "@/lib/userSettings";
+import { gatePersonalData } from "@/lib/personalDataPolicy";
 import { todayInJapan } from "@/utils/japanDate";
 import type { ZodiacTimeBasis } from "@/utils/ephemerisEngine";
 /* 絞り込みの見方は葉から取る。ephemerisEngine から値で取ると、
@@ -388,7 +390,12 @@ export const MetaphysicalConfigBar: React.FC<MetaphysicalConfigBarProps> = ({
       await fetch("/api/user-config", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(apiBody),
+        body: JSON.stringify(
+          gatePersonalData(
+            apiBody,
+            readLocalSettings().personal_cloud_opt_in === true,
+          ).data,
+        ),
       });
     } catch (e) {
       console.error("Failed to save config to API:", e);

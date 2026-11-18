@@ -15,6 +15,7 @@ vi.mock("@/components/home/AgentBirthYear", () => ({
 afterEach(() => {
   cleanup();
   localStorage.clear();
+  sessionStorage.clear();
   vi.unstubAllGlobals();
 });
 const now = "2026-10-18T00:00:00.000Z";
@@ -120,7 +121,10 @@ it("登録人物が非同期で届いてから選択し、×解除は再読込�
     await screen.findByRole("button", { name: "本人を相談対象から外す" }),
   );
   await waitFor(() => {
-    const saved = JSON.parse(localStorage.getItem(ASK_DATA_STORAGE_KEY)!);
+    const saved = JSON.parse(
+      (localStorage.getItem(ASK_DATA_STORAGE_KEY) ??
+        sessionStorage.getItem(ASK_DATA_STORAGE_KEY))!,
+    );
     expect(saved.conversations[0]).toMatchObject({
       personIds: [],
       personSelectionChanged: true,
@@ -159,7 +163,10 @@ it("空の会話で解除しても、新しいチャットでは再び自動選�
   );
   await screen.findByRole("button", { name: "見本0を相談対象から外す" });
   await waitFor(() => {
-    const saved = JSON.parse(localStorage.getItem(ASK_DATA_STORAGE_KEY)!);
+    const saved = JSON.parse(
+      (localStorage.getItem(ASK_DATA_STORAGE_KEY) ??
+        sessionStorage.getItem(ASK_DATA_STORAGE_KEY))!,
+    );
     expect(saved.conversations).toHaveLength(2);
     expect(
       saved.conversations.find((c: { id: string }) => c.id === "chat"),

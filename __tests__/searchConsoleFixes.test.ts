@@ -21,7 +21,9 @@ import nextConfig from "../next.config";
  *   robots.txt で塞ぐ手はあるが、**描画に使う資材を塞ぐのは Google が
  *   避けるよう案内している**ので、報告が賑やかになるのを受け入れる
  * - **`/extract` と `/portfolio`**。削除済みで**後継が無い。**無関係な頁へ
- *   送ると soft 404 として扱われるので、404 のままが正しい
+ *   送ると soft 404 として扱われるので、転送は付けない。/extract は
+ *   Search Console の 404 報告を受け、middleware で 410 にする。
+ *   /portfolio はこの一覧の対象外なので、当面 404 のままにする
  * - **www と http のリダイレクト**。「ページにリダイレクトがあります」は
  *   next.config.ts の 301 が効いている証拠。直すものではない
  */
@@ -76,5 +78,13 @@ describe("旧サイトの経路のリダイレクト", () => {
     );
     expect(canonical, "www の寄せが無い").toBeDefined();
     expect(canonical!.destination).toContain("https://cloud-palette.com");
+  });
+});
+
+describe("Search Console が 404 と報告した実在頁", () => {
+  it("/houi/area/47348（与那原町）はサイトマップに残す", () => {
+    // #969 で索引へ戻した頁。転送も 410 も付けない。
+    const paths: string[] = sitemapConfig.additionalPathsSource ?? [];
+    expect(paths).toContain("/houi/area/47348");
   });
 });

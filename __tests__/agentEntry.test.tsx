@@ -23,6 +23,7 @@ vi.mock("next/dynamic", () => ({
 afterEach(() => {
   cleanup();
   localStorage.clear();
+  sessionStorage.clear();
   vi.unstubAllGlobals();
 });
 it("ホームは入力欄やチャットJSを持たず、固定選択肢で会話を始める", async () => {
@@ -42,6 +43,10 @@ it("ホームは入力欄やチャットJSを持たず、固定選択肢で会�
   expect(
     screen.getByRole("link", { name: "いまの街から方位ごとの街を探す" }),
   ).toHaveAttribute("href", "/ask?start=towns");
+  expect(screen.getByRole("link", { name: "自由に質問する" })).toHaveAttribute(
+    "href",
+    "/ask",
+  );
   expect(localStorage.getItem(SETTINGS_KEY)).toBeNull();
   fireEvent.click(
     screen.getByRole("button", { name: "よくある質問（AI不要）" }),
@@ -67,6 +72,11 @@ it.each(["billing", true])(
     expect(
       screen.getByRole("link", { name: /いまの街から方位ごとの街を探す/ }),
     ).toHaveAttribute("href", "/houi/area");
+    expect(screen.getByRole("link", { name: "案内役に聞く" })).toHaveAttribute(
+      "href",
+      "/annai",
+    );
+    expect(screen.queryByRole("link", { name: "自由に質問する" })).toBeNull();
     if (paused === true) {
       expect(screen.getByText(PAID_APIS_PAUSED_TEXT)).toBeTruthy();
     } else {
@@ -74,6 +84,18 @@ it.each(["billing", true])(
     }
   },
 );
+it("JSなしの初回描画でも、しるべの指さし・/annai・/mcp への道が出る", () => {
+  const html = renderToString(<AgentEntry />);
+  expect(html).toContain("しるべに案内してもらう");
+  expect(html).not.toContain("エージェント");
+  expect(html).toContain('href="/annai"');
+  expect(html).toContain("案内役に聞く");
+  expect(html).toContain('href="/mcp"');
+  expect(html).toContain("自分のAIからつなぐ");
+  expect(html).toContain("結果は、ご自分のAIに渡して続きを相談できます。");
+  expect(html).not.toContain('href="/ask');
+  expect(html).toMatch(/alt="[^"]*しるべ/);
+});
 it("保存済みの拠点名はマウント後だけ案内に使い、設定を書き換えない", async () => {
   const saved = JSON.stringify({ base_label: "名古屋駅" });
   localStorage.setItem(SETTINGS_KEY, saved);

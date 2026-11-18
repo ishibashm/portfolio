@@ -15,7 +15,11 @@ import {
   type DirectionVerdict,
 } from "./kigakuContent";
 import { toJapanDateString } from "@/utils/japanDate";
-import { calendarMonths, calendarMonthSlug } from "./calendarMonths";
+import {
+  calendarMonths,
+  calendarMonthSlug,
+  publishedCalendarMonths,
+} from "./calendarMonths";
 
 /**
  * 「その月に引越しへ向く日」を月単位でまとめる。
@@ -203,4 +207,9 @@ export function directionListLabel(list: string[]): string {
   return list.length > 0 ? list.join("・") : "なし";
 }
 
-export { DIRECTION_LABELS, calendarMonths, calendarMonthSlug };
+export {
+  DIRECTION_LABELS,
+  calendarMonths,
+  calendarMonthSlug,
+  publishedCalendarMonths,
+};
