@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { Shield, ArrowLeft } from "lucide-react";
 import { pageOpenGraph } from "@/lib/siteUrl";
+import { EXTERNAL_TRANSMISSIONS } from "@/lib/externalTransmissions";
 
 const TITLE = "プライバシーポリシー";
 const DESCRIPTION =
@@ -36,7 +37,7 @@ export default function PrivacyPolicyPage() {
               プライバシーポリシー
             </h1>
             <p className="text-xs text-slate-600 mt-1">
-              最終更新日: 2026年11月15日
+              最終更新日: 2026年11月18日
             </p>
           </div>
         </div>
@@ -86,10 +87,25 @@ export default function PrivacyPolicyPage() {
               >
                 Googleの広告設定
               </a>
-              から行えます。
+              から行えます。Googleによる情報の使い方は
+              <a
+                href="https://policies.google.com/technologies/partner-sites"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-rose-600 underline font-semibold mx-1"
+              >
+                Googleのサービスを使用するサイトやアプリから収集した情報のGoogleによる使用
+              </a>
+              に説明があります。
+            </p>
+            <p className="mt-2">
+              欧州経済領域（EEA）・英国・スイスからのアクセスでは、同意をいただくまで広告のためのCookieを使わない設定にしています。同意の確認は、Googleが認定した同意管理の仕組みで行います。
             </p>
             <p className="mt-2">
               当サイトは、A8.netのアフィリエイトプログラム（成果報酬型の広告）に参加しています。掲載ページのリンクから商品やサービスを申し込むと、当サイトが紹介料を受け取ることがあります。アフィリエイトの広告枠には「広告」と表示します。紹介料の有無によって、方位の判定や記事の結論を変えることはありません。成果の確認のため、A8.netなどの提供元がCookie（クッキー）を使用することがあります。
+            </p>
+            <p className="mt-2">
+              日本の電気通信事業法が定める外部送信について、広告配信のためにCookieをGoogle（AdSense）へ、成果の確認のためにCookieをアフィリエイトの提供元へ送ることがあります。送るのは広告と成果の確認に必要な識別子です。生年月日や出発地の座標は、広告のCookieには載せません。
             </p>
           </section>
 
@@ -104,7 +120,53 @@ export default function PrivacyPolicyPage() {
 
           <section>
             <h2 className="text-lg font-bold text-slate-900 font-serif mb-2">
-              4. 免責事項
+              4. 外部への送信について（利用者情報の外部送信）
+            </h2>
+            <p>
+              当サイトのページを表示すると、次の事業者へ、お使いのブラウザから情報が送信されることがあります（電気通信事業法の外部送信規律に基づく公表）。送信される情報は、どの事業者でも共通して、IPアドレス、ブラウザの種類などの端末の情報、表示したページのURL、参照元のURL、日時です。事業者によっては、これに加えてCookieなどの識別子が送信されます。
+            </p>
+            <div className="mt-3 overflow-x-auto">
+              <table className="w-full min-w-[640px] border-collapse text-xs">
+                <thead>
+                  <tr className="border-b border-slate-300 text-left">
+                    <th className="py-2 pr-3 font-semibold">送信先</th>
+                    <th className="py-2 pr-3 font-semibold">
+                      送信されるページ・場面
+                    </th>
+                    <th className="py-2 font-semibold">目的</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {EXTERNAL_TRANSMISSIONS.map((t) => (
+                    <tr
+                      key={t.recipient}
+                      className="border-b border-slate-200 align-top"
+                    >
+                      <td className="py-2 pr-3">
+                        <a
+                          href={t.policy}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-rose-600 underline"
+                        >
+                          {t.recipient}
+                        </a>
+                      </td>
+                      <td className="py-2 pr-3">{t.where}</td>
+                      <td className="py-2">{t.purpose}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            <p className="mt-2">
+              生年月日・出生地・出発地の座標・相談の内容は、上の事業者へ送りません。広告とアフィリエイトのCookieは、ブラウザの設定で削除・拒否できます（拒否しても、方位と日取りの計算はすべてご利用いただけます）。
+            </p>
+          </section>
+
+          <section>
+            <h2 className="text-lg font-bold text-slate-900 font-serif mb-2">
+              5. 免責事項
             </h2>
             <p>
               当サイトで提供する太陽時計算、方位・暦情報、不動産データ、株式・トレンド分析情報等のコンテンツについて、正確性・安全性を保証するものではありません。当サイトの情報を利用したことによって生じたトラブルや損害等について、当サイトは一切の責任を負いかねます。
@@ -113,10 +175,17 @@ export default function PrivacyPolicyPage() {
 
           <section>
             <h2 className="text-lg font-bold text-slate-900 font-serif mb-2">
-              5. お問い合わせ
+              6. お問い合わせ
             </h2>
             <p>
-              プライバシーポリシーに関するお問い合わせは、当サイトの問い合わせ窓口までお願いいたします。
+              プライバシーポリシーに関するお問い合わせは、
+              <Link
+                href="/contact"
+                className="text-rose-600 underline font-semibold mx-1"
+              >
+                お問い合わせページ
+              </Link>
+              からお願いいたします。
             </p>
           </section>
         </div>

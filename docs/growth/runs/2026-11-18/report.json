@@ -1,0 +1,682 @@
+{
+  "version": 1,
+  "generatedAt": "2026-11-18T13:39:37.433Z",
+  "siteUrl": "https://cloud-palette.com",
+  "provider": "heuristic",
+  "merge": false,
+  "deploy": false,
+  "facts": {
+    "coreRouteCount": 18,
+    "coreRoutes": [
+      {
+        "href": "/relocation/arbitrage",
+        "label": "方位で街を探す"
+      },
+      {
+        "href": "/relocation/simulator",
+        "label": "引越し先を試算する"
+      },
+      {
+        "href": "/relocation/wealth",
+        "label": "移住先の地域を比べる"
+      },
+      {
+        "href": "/houi/today",
+        "label": "今日の吉方位と時間"
+      },
+      {
+        "href": "/houi",
+        "label": "本命星と吉方位を調べる"
+      },
+      {
+        "href": "/houi/fengshui",
+        "label": "風水（八宅）で吉方位を調べる"
+      },
+      {
+        "href": "/houi/relocation-calendar",
+        "label": "引越しできる日の一覧"
+      },
+      {
+        "href": "/houi/tenchusatsu",
+        "label": "天中殺と引越しの時期を調べる"
+      },
+      {
+        "href": "/houi/area",
+        "label": "吉方位にある街を調べる"
+      },
+      {
+        "href": "/calendar",
+        "label": "引越しの日取りを選ぶ"
+      },
+      {
+        "href": "/relocation/timing",
+        "label": "引越し時期を分析する"
+      },
+      {
+        "href": "/relocation/dashboard",
+        "label": "今日の方位と時刻を確かめる"
+      },
+      {
+        "href": "/relocation/market",
+        "label": "家賃相場を分析する"
+      },
+      {
+        "href": "/relocation/purchase",
+        "label": "購入の相場を分析する"
+      },
+      {
+        "href": "/relocation/appraisal",
+        "label": "検討中の物件を査定する"
+      },
+      {
+        "href": "/kensho",
+        "label": "たしかめる：占いを統計で検証する"
+      },
+      {
+        "href": "/annai",
+        "label": "案内役に聞く"
+      },
+      {
+        "href": "/mcp",
+        "label": "MCPで使う"
+      }
+    ],
+    "blogCount": 79,
+    "draftCount": 0,
+    "shortPosts": [
+      {
+        "id": "does-a-lucky-move-cancel-an-unlucky-move",
+        "chars": 1577
+      },
+      {
+        "id": "houi-and-tenchusatsu",
+        "chars": 1750
+      },
+      {
+        "id": "what-is-hinoeuma",
+        "chars": 1750
+      },
+      {
+        "id": "kuubou-schools-and-directions",
+        "chars": 1813
+      },
+      {
+        "id": "how-many-schools-are-there",
+        "chars": 1847
+      },
+      {
+        "id": "consultation-purpose-and-five-elements",
+        "chars": 1886
+      },
+      {
+        "id": "doyou-and-doyousatsu",
+        "chars": 1888
+      },
+      {
+        "id": "turning-point-three-people",
+        "chars": 1897
+      },
+      {
+        "id": "numbers-in-kanshi-heirin",
+        "chars": 1910
+      },
+      {
+        "id": "same-birth-year-personality",
+        "chars": 1933
+      },
+      {
+        "id": "friend-app-counts-and-selection",
+        "chars": 1970
+      },
+      {
+        "id": "tenchusatsu-and-lucky-directions",
+        "chars": 1989
+      },
+      {
+        "id": "money-and-time-units",
+        "chars": 1996
+      }
+    ],
+    "blogTitles": [
+      "実行力の「速さ」をどう測るか。着手・完成・手戻りを分ける仕事の記録",
+      "参謀の相性ランキングは何を比べているか。「90%おすすめ」の読み方",
+      "鑑定がしっくりこないとき。生年月日・出生時刻と解釈を分けて確認する",
+      "事業承継で何を引き継ぐのか。五行の相性と決定権を分ける",
+      "凶方位への移動を、吉が上回ることはできるのか",
+      "本命的殺へ引っ越してしまった。次の移動で挽回できるのか",
+      "命式で転職回数は決まるのか。「5つの職業」という例の読み方",
+      "中庸は仕事を半分ずつにすることか。陰陽の図と負担の測定を分ける",
+      "創業年数で会社の成長は測れるか。経営の「季節」と規模の数字を分ける",
+      "五行の相性で伝え方は決まるのか。親子・夫婦の会話を分けて考える",
+      "苦情は誰の問題として数えるか。件数・人数・対応先を分ける",
+      "悩みを聞いてほしいのか、助言がほしいのか。五行で相談相手を決める前の確認",
+      "大運は何歳で切り替わる？ 節入りまでの日数から立運を計算する",
+      "三盤吉の日でなくても、凶の無い日なら引越しに使えるのか",
+      "予定説・風水・奇門遁甲と並べると、引越しは方位と日取りのどちらが重いのか",
+      "「元の家から見ると、今も同じ凶方位のまま」をどう解釈するか",
+      "75日後の吉方位への移動で、最初の凶方位は相殺される？",
+      "凶方位の影響は60年続くのか？　周期を計算して確かめる",
+      "土用と土用殺は何が違う？ 期間の注意と方位の凶を分けて考える",
+      "風水（八宅）と九星気学は何が違うのか。同じ方位で答えが割れる理由",
+      "風水は、引越しの方角ではなく住まいの中の向きを見るものなのか",
+      "風水（八宅）では、部屋の中のどこに何を置くとされるのか",
+      "50年後も会社はあるか。長期の問いと予測の的中を分ける",
+      "五行で語られる仕事の役割。木火土金水を適職の判定にしない読み方",
+      "五黄殺と暗剣殺とはどの方位で、なぜ引越しで避けるとされるのか",
+      "占いの土台は4つ。陰陽・五行・干支・暦で、方位と四柱推命の話を見分ける",
+      "友人の五行が偏るのはなぜか。アプリの登録人数と交友関係を分ける",
+      "地磁気が動いたら、方位盤は作り直すべきなのか。本命星と地磁気の関係を確かめる",
+      "採用した人に違和感があるとき。五行の相性より先に期待と評価を照合する",
+      "本命殺・本命的殺の逸話は、どこまで確かめられるのか",
+      "年盤で本命殺へ引っ越したあと、次にどう動くか",
+      "方位判定に天中殺は必要？ 九星気学では「別物」として扱うのが正解",
+      "流派はどれくらいあるのか。日本の気学と、世界の方位術を数えてみる",
+      "引越しの距離は方位の吉凶にどれくらい関係するのか",
+      "土地の選び方 — 値段の「理由」を公的データで読む",
+      "家賃相場をどう出しているか — 91万件のデータと3つの分析",
+      "物件サイトへのリンクをどこまで置いているか — 読んだ規約と、その理由",
+      "方位や九星に統計的な裏づけはあるのか。「占いは統計学」が成り立たない理由",
+      "仕事が合っていれば収益も出るのか。命式の適性と事業の結果を分ける",
+      "空亡（天中殺）は流派で扱いが違う。方位凶殺と混同しないために",
+      "命式の五行が欠けるとは。数える欄と能力の評価を分ける",
+      "お金は時間に換算できるのか。「10万円から1億円」の単位を確かめる",
+      "天中殺の引っ越しは大丈夫？影響と避けられない時の対処法",
+      "無極・太極・陰陽・八卦はどうつながるのか。易経から九星の定位まで",
+      "干支併臨の「60年」と「30年」。暦で決まる数字と解釈の数字を分ける",
+      "九星気学以外の評価基準。四柱推命・風水・奇門遁甲は何を見ているのか",
+      "子どもが何歳なら手放すのか。10年刻みの例と親の関わり方を分ける",
+      "運勢の記録はいつ書くのか。予測と結果を別欄に残す読み方",
+      "「量子力学で方位が効く」という説明は、このサイトの判定と何が違うのか。さとうみつろう氏の現実創造論を読む",
+      "同じ生年なら性格も同じなのか。年干支の一致で分かる範囲",
+      "2027 年に新宿区から引越すなら。年盤で開く 5 方位の街と家賃相場を並べる",
+      "干支は60種類。十干×十二支と戊辰・壬申・辛亥・甲子園のつながり",
+      "2027 年春の引越し、本命星ごとに年盤と月盤がそろう方位と日。3 月はどの星にも無い",
+      "命式は60の4乗通りなのか。天干・地支の組み合わせを検算する",
+      "失敗は10日ごとに繰り返すのか。日干の周期と失敗率を分けて記録する",
+      "十干の陰陽は優劣なのか。甲乙・丙丁・戊己の比喩を読む",
+      "天中殺と吉方位は何が違う？ 方角と時期を分けて考える",
+      "天中殺と大殺界の違いは何か。空亡・天冲殺との対応を流派ごとに整理する",
+      "天中殺という言葉の来歴と、期間中にしてはいけないと言われること",
+      "天赦日・一粒万倍日は引越しの日取りにどう関係するのか。決まり方と、方位とは別に見る理由",
+      "今日の吉方位と時間帯はどう読むか。日盤と時盤（刻）の表の使い方",
+      "転機の前に「3人」が現れる？ 出会いの予兆を記録で確かめる",
+      "天職なら疲れないのか。「200%」の確信と仕事への納得を分ける",
+      "引越しの日取りとは。何を見て、どの順に決めるのか",
+      "丙午（ひのえうま）とは何か。1966年の出生数と迷信を分けて読む",
+      "本命的殺とはどの方位か。引っ越すと何が起きると言われているのか",
+      "この道具で決められること、決められないこと。365日×8方位を数えてみた",
+      "風水はどこから来たのか。羅盤の針が3本ある理由と、このサイトが真北で判定する理由",
+      "九星気学と方位はどこから来たのか。国の役所から民間の占いになるまで",
+      "土地と建物にバランスよく予算を配れる街はどこか。成約データで測る",
+      "引越しの方位は、契約日・鍵の受け取り・荷物の搬入・初めて泊まる日・住民票の異動のどれで決まるのか",
+      "「してはいけない」は誰が決めたのか。禁止が広まる仕組みを歴史から見る",
+      "凶方位が怖いのはなぜか。凶の理由を「誰にでも同じ」と「自分だけ」に分けて数えた",
+      "なぜ方位によって吉凶が決まると昔の人は考えたのか",
+      "なぜ星は9つで、なぜあの並びなのか。洛書の魔方陣から盤の回り方まで",
+      "なぜ「時」に吉凶が決まると考えたのか。天中殺・六曜・暦注の理屈",
+      "願いの強さは確率なのか。「100%の引き寄せ」を数字として読む",
+      "引き渡しは選べない。年盤が1年塞ぐとき、日取りをどう考えるか",
+      "事業を始める年は干支で決まるのか。2028年と「5年待つ」の読み分け"
+    ],
+    "areaEditorialCount": 349,
+    "indexedAreaCount": 331,
+    "shortAreaLeads": [],
+    "canonicalGaps": [
+      {
+        "file": "src/app/admin/blog/page.tsx",
+        "indexable": false
+      },
+      {
+        "file": "src/app/admin/metrics/page.tsx",
+        "indexable": false
+      },
+      {
+        "file": "src/app/admin/practitioners/page.tsx",
+        "indexable": false
+      },
+      {
+        "file": "src/app/login/page.tsx",
+        "indexable": false
+      },
+      {
+        "file": "src/app/profile/connections/page.tsx",
+        "indexable": false
+      },
+      {
+        "file": "src/app/profile/mcp/page.tsx",
+        "indexable": false
+      },
+      {
+        "file": "src/app/profile/memory/page.tsx",
+        "indexable": false
+      },
+      {
+        "file": "src/app/relocation/candidates/page.tsx",
+        "indexable": false
+      }
+    ],
+    "openGraphBypass": [],
+    "trust": {
+      "privacy": true,
+      "about": true,
+      "contact": true,
+      "editorial": true,
+      "privacyMentionsAdsense": true,
+      "privacyMentionsAffiliate": true,
+      "privacyLinksContact": true,
+      "privacyMentionsEea": true,
+      "privacyMentionsExternalSend": true
+    },
+    "ads": {
+      "adsTxtRejectsPlaceholder": true,
+      "bannerReservesSpace": true,
+      "bannerLazy": true,
+      "consentUi": true,
+      "consentDefaultsNonPersonalized": true,
+      "scriptStaysForReview": true
+    },
+    "mcpToolNames": [
+      "area_directions",
+      "compare_fortune_perspectives",
+      "find_auspicious_days",
+      "find_relocation_windows",
+      "get_article",
+      "get_honmei_star",
+      "get_kanshi",
+      "get_month_directions",
+      "get_rental",
+      "get_today_directions",
+      "judge_directions",
+      "judge_hourly_directions",
+      "judge_time_slots",
+      "prefecture_summary",
+      "rental_market_stats",
+      "search_articles",
+      "search_municipality",
+      "search_rentals"
+    ],
+    "llmsMentionsMcp": true,
+    "indexedRobotsLargePreview": true,
+    "sameAs": [
+      "https://www.youtube.com/@houi-sumai-techo",
+      "https://www.youtube.com/@penthouse-focus",
+      "https://www.youtube.com/@AIの数式",
+      "https://x.com/cloud8wq"
+    ],
+    "affiliate": {
+      "ids": ["hakobu-moving", "rakuten-market"],
+      "hakobuPlacements": 6,
+      "hakobuHasAreaNote": true,
+      "rakutenPlacements": 2,
+      "includesDmm": false
+    },
+    "homeLinksCore": true
+  },
+  "live": {
+    "attempted": true,
+    "probes": [
+      {
+        "path": "/robots.txt",
+        "ok": true,
+        "status": 200,
+        "note": "Sitemap を宣言している"
+      },
+      {
+        "path": "/llms.txt",
+        "ok": true,
+        "status": 200,
+        "note": "MCP の入口に触れている"
+      },
+      {
+        "path": "/llms-full.txt",
+        "ok": true,
+        "status": 200,
+        "note": "MCP の入口に触れている"
+      },
+      {
+        "path": "/ads.txt",
+        "ok": true,
+        "status": 200,
+        "note": "google.com の DIRECT 行がある。ID は記録しない"
+      },
+      {
+        "path": "/privacy",
+        "ok": true,
+        "status": 200,
+        "note": "プライバシーの文言がある"
+      },
+      {
+        "path": "/sitemap.xml",
+        "ok": true,
+        "status": 200,
+        "note": "loc 1 件（索引か子サイトマップ）"
+      }
+    ]
+  },
+  "diff": {
+    "hasPrevious": false,
+    "added": [],
+    "removed": [],
+    "unchanged": 0
+  },
+  "narrative": "流入は検索・AI の引用・共有・戻ってくる動線、収益は審査通過後の広告と、通過前の誤解のない紹介で増やす。阻害は AdSense 審査は未通過。次に効くのは「AdSense の再申請は所有者が出す」（得点 49）。枠の自動適用はしない。",
+  "llmNote": "heuristic。外部の言語モデルは呼んでいない",
+  "findings": [
+    {
+      "evidence": ["src/lib/siteStructure.ts", "src/app/llms.txt/route.ts"],
+      "id": "auditor.core-routes",
+      "role": "auditor",
+      "severity": "ok",
+      "title": "中核ルートを1か所から数えた",
+      "detail": "公開の中核は 18 本。llms.txt は同じ定義から出る。"
+    },
+    {
+      "evidence": ["src/lib/mcpServer.ts"],
+      "id": "auditor.mcp-surface",
+      "role": "auditor",
+      "severity": "ok",
+      "title": "MCP の公開道具が案内と揃っている",
+      "detail": "公開道具 18 個。llms.txt は /api/mcp に触れている。"
+    },
+    {
+      "evidence": [
+        "src/app/admin/blog/page.tsx",
+        "src/app/admin/metrics/page.tsx",
+        "src/app/admin/practitioners/page.tsx",
+        "src/app/login/page.tsx",
+        "src/app/profile/connections/page.tsx",
+        "src/app/profile/mcp/page.tsx",
+        "src/app/profile/memory/page.tsx",
+        "src/app/relocation/candidates/page.tsx"
+      ],
+      "id": "auditor.canonical-noindex",
+      "role": "auditor",
+      "severity": "low",
+      "title": "noindex の頁は自分の canonical を書いていない",
+      "detail": "8 頁。索引には出さないので、ホームの canonical を継承しても検索結果の重複にはなりにくい。"
+    },
+    {
+      "evidence": ["src/app"],
+      "id": "auditor.canonical",
+      "role": "auditor",
+      "severity": "ok",
+      "title": "同じディレクトリに canonical が無い索引頁は見当たらない",
+      "detail": "ルート layout の / を、子が黙って継承している頁は、この見方では残っていない。"
+    },
+    {
+      "evidence": ["src/lib/siteUrl.ts"],
+      "id": "auditor.open-graph",
+      "role": "auditor",
+      "severity": "ok",
+      "title": "子ページの openGraph は pageOpenGraph 経由",
+      "detail": "共有カードがホームの題と URL のままになる書き方は見当たらない。画像は共通の /ogp.png が多い。"
+    },
+    {
+      "evidence": ["src/lib/siteStructure.ts"],
+      "id": "auditor.image-preview",
+      "role": "auditor",
+      "severity": "ok",
+      "title": "索引頁は大きい画像プレビューを許している",
+      "detail": "Discover は大きい画像プレビューを使う。頁側の robots で上書きすると落ちる。"
+    },
+    {
+      "evidence": ["src/lib/siteChannels.ts"],
+      "id": "auditor.same-as",
+      "role": "auditor",
+      "severity": "ok",
+      "title": "運営チャンネルの sameAs",
+      "detail": "4 件を Organization に出している。作っていないチャンネルは足さない。"
+    },
+    {
+      "evidence": [
+        "content/blog/does-a-lucky-move-cancel-an-unlucky-move.md (1577)",
+        "content/blog/houi-and-tenchusatsu.md (1750)",
+        "content/blog/what-is-hinoeuma.md (1750)",
+        "content/blog/kuubou-schools-and-directions.md (1813)",
+        "content/blog/how-many-schools-are-there.md (1847)",
+        "content/blog/consultation-purpose-and-five-elements.md (1886)",
+        "content/blog/doyou-and-doyousatsu.md (1888)",
+        "content/blog/turning-point-three-people.md (1897)"
+      ],
+      "id": "auditor.short-posts",
+      "role": "auditor",
+      "severity": "medium",
+      "title": "本文の短い公開記事がある",
+      "detail": "下書きを除き、可算文字 2000 未満が 13 本。審査で「有用性が低い」とされたあとの残件。"
+    },
+    {
+      "evidence": ["src/lib/areaEditorial.ts", "src/lib/areaAffiliate.ts"],
+      "id": "auditor.area-depth",
+      "role": "auditor",
+      "severity": "ok",
+      "title": "市区町村のリードは 200 字以上",
+      "detail": "固有文 349 件、そのうち索引条件を満たすのは 331 頁。雛形のままの頁は索引に載せない。"
+    },
+    {
+      "evidence": [
+        "src/app/about/page.tsx",
+        "src/app/contact/page.tsx",
+        "src/app/privacy/page.tsx",
+        "src/app/editorial/page.tsx"
+      ],
+      "id": "monetization.trust-pages",
+      "role": "monetization",
+      "severity": "ok",
+      "title": "信頼頁と広告の開示が揃っている",
+      "detail": "about / contact / privacy / editorial があり、プライバシーは AdSense・アフィリエイト・外部送信・欧州経済領域と、問い合わせへのリンクを持つ。"
+    },
+    {
+      "evidence": ["growth.config.json", "docs/adsense-rereview-plan.md"],
+      "id": "monetization.adsense-review",
+      "role": "monetization",
+      "severity": "blocker",
+      "title": "AdSense 審査は未通過",
+      "detail": "不承認理由は「有用性の低いコンテンツ」（2026-11-12 の記録）。再申請は所有者が管理画面で出す。この実行は申請しない。"
+    },
+    {
+      "evidence": ["src/app/ads.txt/route.ts", "src/lib/adsense.ts"],
+      "id": "monetization.ads-txt",
+      "role": "monetization",
+      "severity": "ok",
+      "title": "ads.txt は実 ID が無いとき 404",
+      "detail": "ゼロ埋めの見本 ID は配信しない。本番の ID はこのレポートに書かない。"
+    },
+    {
+      "evidence": [
+        "src/lib/adConsent.ts",
+        "src/components/ads/AdConsentBar.tsx",
+        "src/app/layout.tsx"
+      ],
+      "id": "monetization.consent",
+      "role": "monetization",
+      "severity": "medium",
+      "title": "同意バーはある。認定 CMP ではない",
+      "detail": "同意までは非パーソナライズ。選択は端末の localStorage だけで、審査用スクリプトは head に残す。欧州でパーソナライズ広告を出すには、Funding Choices などの認定 CMP がまだ要る。"
+    },
+    {
+      "evidence": ["src/components/ads/AdBanner.tsx"],
+      "id": "monetization.slots",
+      "role": "monetization",
+      "severity": "low",
+      "title": "手動枠は空のままにしない",
+      "detail": "スロットが有効なときだけ描き、高さ 250px を先に確保し、画面の近くに来てから push する。自動広告のアンカーとビネットは、通過後に管理画面で切る（CLS と誤タップ）。"
+    },
+    {
+      "evidence": ["src/lib/affiliateOffers.ts", "src/lib/areaAffiliate.ts"],
+      "id": "monetization.affiliate",
+      "role": "monetization",
+      "severity": "low",
+      "title": "審査前の代替は引越し案件に寄せている",
+      "detail": "掲載 ID は hakobu-moving、rakuten-market。ハコブは 6 箇所で、対象地域の注記はある。楽天は 2 箇所。DMM FX はリストに無い。楽天は風水の記事にあり、買い物が主題ではないので増やさない。"
+    }
+  ],
+  "backlog": [
+    {
+      "id": "adsense-rereview-owner",
+      "title": "AdSense の再申請は所有者が出す",
+      "area": "monetization",
+      "impact": 5,
+      "effort": 1,
+      "safeToAutoApply": false,
+      "why": "有用性の指摘が残っているあいだに同じ内容で何度も出さない。マージやこの実行では申請しない。",
+      "score": 49
+    },
+    {
+      "id": "manual-slots-after-approval",
+      "title": "通過後は手動枠を記事末と地域頁に限る",
+      "area": "monetization",
+      "impact": 4,
+      "effort": 2,
+      "safeToAutoApply": false,
+      "why": "自動広告のアンカーは CLS と誤タップを増やす。記事・使い方・市区町村の末尾だけに 250px の枠を置き、トップの最初の画面には置かない。スロット ID が無いあいだは空枠を出さない。",
+      "score": 38
+    },
+    {
+      "id": "shorts-back-to-tool",
+      "title": "短い動画の概要欄から道具の URL へ戻す",
+      "area": "video",
+      "impact": 4,
+      "effort": 2,
+      "safeToAutoApply": false,
+      "why": "方位と住まいの手帖は sameAs にある。動画単体で終わらせず、今日の吉方位・日取り・地域頁のどれか 1 本へ戻す。",
+      "score": 38
+    },
+    {
+      "id": "thicken-short-posts",
+      "title": "短い記事を一次情報の範囲で厚くする",
+      "area": "content",
+      "impact": 4,
+      "effort": 3,
+      "safeToAutoApply": false,
+      "why": "2000 字未満が 13 本。相場の額や健康の断定は足さない。審査の「有用性」に直接効く。",
+      "score": 37
+    },
+    {
+      "id": "topic-moving-cost",
+      "title": "引越し費用の見積もりと方位を同じ頁で説明する",
+      "area": "traffic",
+      "impact": 4,
+      "effort": 3,
+      "safeToAutoApply": false,
+      "why": "検索の意図「引越し 費用 相場」に、題名が直接応える記事が無い。既存の道具（/calendar・/houi・/relocation/purchase）へ戻す内部リンクを先に置く。",
+      "score": 37
+    },
+    {
+      "id": "keep-llms-current",
+      "title": "llms.txt と MCP の道具一覧をずらさない",
+      "area": "traffic",
+      "impact": 3,
+      "effort": 1,
+      "safeToAutoApply": false,
+      "why": "AI 検索の引用は /llms.txt と /api/mcp が入口。道具を足したときは案内文も同じ PR で更新する。",
+      "score": 29
+    },
+    {
+      "id": "certified-cmp",
+      "title": "欧州向けは認定 CMP に切り替える",
+      "area": "monetization",
+      "impact": 3,
+      "effort": 3,
+      "safeToAutoApply": false,
+      "why": "自前バーは非パーソナライズの既定まで。パーソナライズ広告の収益を欧州で取るなら Funding Choices など認定済みの同意が要る。",
+      "score": 27
+    },
+    {
+      "id": "per-page-og",
+      "title": "共有用の画像を頁の題入りにする",
+      "area": "illustration",
+      "impact": 3,
+      "effort": 3,
+      "safeToAutoApply": false,
+      "why": "多くの頁が同じ /ogp.png を使う。/houi と /calendar と記事だけでも題の入った 1200×630 にすると、チャットと SNS からの戻りが増える。",
+      "score": 27
+    }
+  ],
+  "briefs": [
+    {
+      "backlogId": "per-page-og",
+      "kind": "illustration",
+      "title": "共有画像の指示（/houi と /calendar）",
+      "body": "1200×630。地色は #faf7f3、文字は #292524、アクセントは赤みのある #9f1239。写真は使わない。方位は八方位の円、日取りは月の升目を 1 つ。題は頁の title のまま。効果や金運の約束は書かない。「Cloud Palette」を小さく添える。"
+    },
+    {
+      "backlogId": "shorts-back-to-tool",
+      "kind": "video",
+      "title": "30 秒の構成（今日の吉方位）",
+      "body": "0–3 秒: 今日の日付と「八方位は人によって違う」。4–20 秒: 本命星を 1 つだけ例にし、吉と凶が同時にあることを画面の /houi/today で示す。21–30 秒: 出発地を入れる場所を指し、概要欄の URL は https://cloud-palette.com/houi/today 。健康・金運の断定はしない。"
+    },
+    {
+      "backlogId": "shorts-back-to-tool",
+      "kind": "video",
+      "title": "30 秒の構成（引越しの日取り）",
+      "body": "暦注は誰でも同じ、方位は生年月日と出発地で変わる、という順で /calendar を映す。終わりに「日の吉は方位の凶を消さない、とされる」とサイトの注記を読み、URL は https://cloud-palette.com/calendar 。"
+    },
+    {
+      "backlogId": "topic-moving-cost",
+      "kind": "page",
+      "title": "記事の骨子: 費用と方位は別の問い",
+      "body": "結論を先に 1 段落。費用の相場そのものは書かず、/relocation/purchase と /relocation/market が何の統計かを説明し、方位は /houi で別に見る、と分ける。内部リンクは 3 本まで。アフィリエイトは 1 都 3 県の記事だけ、文中に対象地域と PR を書く。"
+    }
+  ],
+  "proposals": [],
+  "verification": [
+    {
+      "name": "merge-disabled",
+      "passed": true,
+      "detail": "レポートの merge と deploy は false 固定"
+    },
+    {
+      "name": "no-auto-apply",
+      "passed": true,
+      "detail": "Builder の適用は 0 件"
+    },
+    {
+      "name": "no-third-party-scan",
+      "passed": true,
+      "detail": "見た URL は自サイトのパスだけ"
+    },
+    {
+      "name": "consent-or-listed",
+      "passed": true,
+      "detail": "同意の状態を findings に出している"
+    }
+  ],
+  "roleNotes": [
+    {
+      "role": "auditor",
+      "note": "頁・MCP・llms.txt・canonical・記事と地域の厚みを、前回との差分が取れる ID で出した。"
+    },
+    {
+      "role": "growth",
+      "note": "題名に無い検索意図と、共通 OGP・動画からの戻りを優先した。新しい数字の相場は作っていない。"
+    },
+    {
+      "role": "monetization",
+      "note": "審査は未通過のまま。再申請はしない。同意の既定、ads.txt、空枠を出さないこと、審査前の案件を分けた。"
+    },
+    {
+      "role": "planner",
+      "note": "得点は影響×10から工数を引いた。自動で適用してよい項目は空のままにする。"
+    },
+    {
+      "role": "content",
+      "note": "骨子だけ。本文の額と健康の断定は書かない。"
+    },
+    {
+      "role": "design",
+      "note": "広告は高さ 250px を先に取り、同意バーは固定で本文を押し下げない。"
+    },
+    {
+      "role": "media",
+      "note": "30 秒の構成と画像の指示だけ。ファイルは生成していない。"
+    },
+    {
+      "role": "builder",
+      "note": "リポジトリは変更しない。低リスクの修正は、別途レビューできる差分として人が出す。"
+    },
+    {
+      "role": "verifier",
+      "note": "マージ禁止・識別子の除去・自サイト以外へ出ないことを、レポート生成時に検査する。"
+    }
+  ]
+}
