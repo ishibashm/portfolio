@@ -89,6 +89,14 @@ jobs:
           MCP_AGENT_DAILY_REQUESTS: ${{ vars.MCP_AGENT_DAILY_REQUESTS }}
           MCP_AGENT_DAILY_TOKENS: ${{ vars.MCP_AGENT_DAILY_TOKENS }}
           GOOGLE_GENERATIVE_AI_API_KEY: ${{ secrets.GOOGLE_GENERATIVE_AI_API_KEY }}
+          # 案内役（/annai）の要約を Cloudflare Workers AI（無料枠）で出す専用経路。
+          # PAID_APIS_DISABLED とは独立。トークンは Workers AI Read だけの権限。
+          # 未設定なら書かない（ENV_FILE の値が残る＝従来どおり AI 要約なし）。
+          GUIDE_AI_PROVIDER: ${{ vars.GUIDE_AI_PROVIDER }}
+          GUIDE_AI_ENABLED: ${{ vars.GUIDE_AI_ENABLED }}
+          GUIDE_AI_DAILY_MAX_CALLS: ${{ vars.GUIDE_AI_DAILY_MAX_CALLS }}
+          CLOUDFLARE_WORKERS_AI_TOKEN: ${{ secrets.CLOUDFLARE_WORKERS_AI_TOKEN }}
+          CLOUDFLARE_WORKERS_AI_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_WORKERS_AI_ACCOUNT_ID }}
           # 物件メールの設定も ENV_FILE を再入力せず個別に渡せるようにする。
           # 未設定なら ENV_FILE の値を残す。公開フラグは vars 優先、secrets も許容。
           # Gmail 用 OAuth はログイン用 GOOGLE_CLIENT_ID と分離する。
@@ -202,6 +210,12 @@ jobs:
           if [ -n "$GOOGLE_GENERATIVE_AI_API_KEY" ]; then
             echo "GOOGLE_GENERATIVE_AI_API_KEY=$GOOGLE_GENERATIVE_AI_API_KEY" >> .env
           fi
+          for name in GUIDE_AI_PROVIDER GUIDE_AI_ENABLED GUIDE_AI_DAILY_MAX_CALLS \
+                      CLOUDFLARE_WORKERS_AI_TOKEN CLOUDFLARE_WORKERS_AI_ACCOUNT_ID; do
+            if [ -n "${!name}" ]; then
+              printf '%s=%s\n' "$name" "${!name}" >> .env
+            fi
+          done
           echo "" >> .env
           echo "NEXT_SERVER_ACTIONS_ENCRYPTION_KEY=$SERVER_ACTIONS_KEY" >> .env
           if [ -n "$ADSENSE_ID" ]; then
