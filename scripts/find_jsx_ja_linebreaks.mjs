@@ -20,8 +20,7 @@ import { join, relative } from "node:path";
 import ts from "typescript";
 
 /** 空白を入れてはいけない文字。ひらがな・カタカナ・漢字と、和文の約物。 */
-const JA =
-  /[぀-ゟ゠-ヿ一-鿿々〆！-｠。、「」『』（）・：；？！]/;
+const JA = /[぀-ゟ゠-ヿ一-鿿々〆！-｠。、「」『』（）・：；？！]/;
 
 // リポジトリの直下から実行する前提（検証コマンドと同じ）。
 const ROOT = process.cwd();
@@ -67,7 +66,9 @@ export function findInSource(fileName, source) {
         hits.push({
           line: line + 1,
           before: text.slice(Math.max(0, m.index - 12), m.index + 1).trim(),
-          after: text.slice(m.index + m[0].length - 1, m.index + m[0].length + 11).trim(),
+          after: text
+            .slice(m.index + m[0].length - 1, m.index + m[0].length + 11)
+            .trim(),
         });
       }
     }
@@ -96,7 +97,9 @@ if (process.argv[1]?.endsWith("find_jsx_ja_linebreaks.mjs")) {
     for (const [path, hits] of perFile) {
       console.log(`\n${path}  (${hits.length})`);
       for (const h of hits) {
-        console.log(`  ${String(h.line).padStart(5)}  ${h.before} ␣ ${h.after}`);
+        console.log(
+          `  ${String(h.line).padStart(5)}  ${h.before} ␣ ${h.after}`,
+        );
       }
     }
   }

@@ -13,7 +13,14 @@ import {
   NationalWeatherCards,
   NationalWeatherSection,
   NationalWeatherOverview,
+  weatherEmoji,
 } from "@/components/home/NationalWeather";
+import {
+  mapCities,
+  project,
+  insetBox,
+  cardSize,
+} from "@/lib/todayWeather/mapProjection";
 import { getMonthlySummary, getMonthDirections } from "@/lib/kigakuContent";
 
 // 全国ファイルの単一区域と、夕方・朝の発表の違いを再現する架空の予報。
@@ -190,40 +197,69 @@ it("月の要約は元の計算と一致し、再利用しても呼び出し側�
   first[0].month = 99;
   expect(getMonthlySummary(2030, 3)).toEqual(expected);
 });
-it("全国の表示とGETフォームをサーバーで描画し、ホームのISRを保つ", async () => {
+it("地図と表を描画し、ホームのISRを保つ", async () => {
+  const offices = [
+    "016000",
+    "040000",
+    "150000",
+    "130000",
+    "230000",
+    "270000",
+    "340000",
+    "390000",
+    "400000",
+    "471000",
+  ];
+  const all = offices.map((code) => office(code, "17", ["12", "23"]));
+  const data = parseNationalWeather(all, now)!;
+  const html = renderToStaticMarkup(<NationalWeatherCards data={data} />);
+  const svg = html.match(/<svg[\s\S]*?<\/svg>/)![0];
+  expect(svg).toContain("今日の全国の天気の地図");
+  expect(svg.match(/<circle /g)).toHaveLength(10);
+  expect(Buffer.byteLength(svg)).toBeLessThan(60000);
+  for (const city of data.cities) expect(html).toContain(city.city);
+  expect(html.match(/scope="row"/g)).toHaveLength(10);
+  expect(html).toContain("10都市の今日の天気（表）");
+  expect(html).not.toContain("/houi/today?pref=");
   vi.stubGlobal(
     "fetch",
-    vi.fn(async () => response(fixture)),
+    vi.fn(async () => response(all)),
   );
-  const overview = renderToStaticMarkup(await NationalWeatherOverview());
-  expect(overview).toContain("/houi/today?pref=23");
-  expect(overview).toContain("明日：雨");
-  expect(overview).toContain("最高23℃");
+  expect(renderToStaticMarkup(await NationalWeatherOverview())).toContain(
+    "<svg",
+  );
   const section = renderToStaticMarkup(await NationalWeatherSection());
-  // JavaScript なしでも出るよう、天気は後から流し込まずに本文へ直接入れる。
-  expect(section).toContain("/houi/today?pref=13");
-  expect(section).not.toContain("読み込み中");
-  expect(section).not.toContain("hidden");
-  expect(section).toContain('action="/houi/today"');
-  expect(section).toContain('method="get"');
-  expect(section).toContain("都道府県を選ぶ");
-  expect(section.match(/<option /g)).toHaveLength(48);
+  expect(section).not.toContain('action="/houi/today"');
+  expect(section).toContain("Natural Earth");
   expect(renderToStaticMarkup(<NationalWeatherCards data={null} />)).toContain(
     "いま取得できません。",
   );
-  const source = readFileSync(
-    "src/components/home/NationalWeather.tsx",
-    "utf8",
-  );
-  expect(source).not.toContain('"use client"');
-  expect(source).not.toMatch(/(green|emerald|red)-\d/);
   const home = readFileSync("src/app/page.tsx", "utf8");
   expect(home).not.toContain("searchParams");
   expect(home).toMatch(/export const revalidate = 60/);
-  expect(home.indexOf("<NationalWeatherSection")).toBeGreaterThan(
-    home.indexOf("</header>"),
-  );
-  expect(home.indexOf("<NationalWeatherSection")).toBeLessThan(
-    home.indexOf("<AgentEntry"),
-  );
+});
+it("天気の先頭と座標、カード配置", () => {
+  expect(
+    ["晴れ 時々 雨", "くもり", "曇り", "雨", "雪", "不明"].map(weatherEmoji),
+  ).toEqual(["☀️", "☁️", "☁️", "🌧️", "❄️", ""]);
+  const naha = project(127.68, 26.21);
+  expect(naha.x).toBeGreaterThan(insetBox.x);
+  expect(naha.x).toBeLessThan(insetBox.x + insetBox.width);
+  expect(naha.y).toBeGreaterThan(insetBox.y);
+  expect(naha.y).toBeLessThan(insetBox.y + insetBox.height);
+  expect(project(139.69, 35.69).x).toBeGreaterThan(project(135.5, 34.69).x);
+  const cards = Object.values(mapCities);
+  for (const [i, a] of cards.entries()) {
+    expect(a.x).toBeGreaterThanOrEqual(0);
+    expect(a.y).toBeGreaterThanOrEqual(0);
+    expect(a.x + cardSize.width).toBeLessThanOrEqual(640);
+    expect(a.y + cardSize.height).toBeLessThanOrEqual(620);
+    for (const b of cards.slice(i + 1))
+      expect(
+        a.x + cardSize.width <= b.x ||
+          b.x + cardSize.width <= a.x ||
+          a.y + cardSize.height <= b.y ||
+          b.y + cardSize.height <= a.y,
+      ).toBe(true);
+  }
 });

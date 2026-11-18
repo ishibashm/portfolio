@@ -3,17 +3,12 @@
  * https://www.jma.go.jp/bosai/forecast/data/forecast/{office}.json
  * 出典の表記は「出典：気象庁」とし、気象庁の天気予報ページへリンクする。
  */
-import { fetchJson } from "./fetchJson";
 import type { Prefecture } from "./prefectures";
 
 export const JMA_REVALIDATE_SECONDS = 1800;
 
 export const jmaForecastUrl = (office: string) =>
   `https://www.jma.go.jp/bosai/forecast/data/forecast/${office}.json`;
-/** 人が見る天気予報のページ（出典リンク） */
-export const jmaForecastPageUrl = (area: string) =>
-  `https://www.jma.go.jp/bosai/forecast/#area_type=class10s&area_code=${area}`;
-
 export type JmaDay = {
   /** YYYY-MM-DD（日本時間） */
   date: string;
@@ -128,16 +123,4 @@ export function parseJmaForecast(
     days,
     pops,
   };
-}
-
-export async function getJmaForecast(
-  pref: Prefecture,
-  fetchImpl?: typeof fetch,
-): Promise<JmaForecast | null> {
-  const json = await fetchJson(
-    jmaForecastUrl(pref.office),
-    JMA_REVALIDATE_SECONDS,
-    fetchImpl,
-  );
-  return json === null ? null : parseJmaForecast(json, pref);
 }

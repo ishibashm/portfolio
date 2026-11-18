@@ -23,10 +23,7 @@ import * as path from "path";
 import * as dotenv from "dotenv";
 
 import { toLogMessage } from "../src/lib/errorMessage";
-import {
-  resumeIndexOutOfRange,
-  writeSweptState,
-} from "./scraperResume";
+import { resumeIndexOutOfRange, writeSweptState } from "./scraperResume";
 
 const envPath = fs.existsSync(path.resolve(process.cwd(), ".env"))
   ? path.resolve(process.cwd(), ".env")
@@ -156,7 +153,10 @@ type City = { code: string; name: string };
 
 function loadCities(pref: string): City[] {
   const file = path.join(process.cwd(), "scripts", "jis_city_codes.json");
-  const all = JSON.parse(fs.readFileSync(file, "utf-8")) as Record<string, City[]>;
+  const all = JSON.parse(fs.readFileSync(file, "utf-8")) as Record<
+    string,
+    City[]
+  >;
   const cities = all[pref] || [];
   // 政令市の親エントリ（末尾 00）は区が別に並ぶので取り込まない
   return cities.filter((c) => !c.code.endsWith("00"));
@@ -192,30 +192,44 @@ async function extractPage(
   return page.evaluate(() => {
     const B = "l2-searchBuilding__item";
     const activeText =
-      document.querySelector(".l2-pager__link.is-active")?.textContent?.trim() ||
-      "";
-    const activePage = /^\d+$/.test(activeText) ? parseInt(activeText, 10) : null;
+      document
+        .querySelector(".l2-pager__link.is-active")
+        ?.textContent?.trim() || "";
+    const activePage = /^\d+$/.test(activeText)
+      ? parseInt(activeText, 10)
+      : null;
 
     const rows: RoomRow[] = [];
     for (const item of Array.from(document.querySelectorAll(`.${B}`))) {
       // 変数に代入した関数を evaluate に持ち込むと、tsx(esbuild) が付ける
       // __name ヘルパーがブラウザ側に無く ReferenceError になる。全て直書きする。
       const buildingName = (
-        item.querySelector(`.${B}__header__info__name__inner`)?.textContent || ""
-      ).replace(/\s+/g, " ").trim();
+        item.querySelector(`.${B}__header__info__name__inner`)?.textContent ||
+        ""
+      )
+        .replace(/\s+/g, " ")
+        .trim();
       const address = (
         item.querySelector(`.${B}__header__info__item.p2-i-bf-place`)
           ?.textContent || ""
-      ).replace(/\s+/g, " ").trim();
+      )
+        .replace(/\s+/g, " ")
+        .trim();
       const transport = (
         item.querySelector(`.${B}__header__info__item.p2-i-bf-train`)
           ?.textContent || ""
-      ).replace(/\s+/g, " ").trim();
+      )
+        .replace(/\s+/g, " ")
+        .trim();
       const built = (
         item.querySelector(`.${B}__header__info__item.p2-i-bf-time`)
           ?.textContent || ""
-      ).replace(/\s+/g, " ").trim();
-      const isNew = !!item.querySelector(`.${B}__header__info__name__tag.is-new`);
+      )
+        .replace(/\s+/g, " ")
+        .trim();
+      const isNew = !!item.querySelector(
+        `.${B}__header__info__name__tag.is-new`,
+      );
 
       for (const room of Array.from(item.querySelectorAll(`.${B}__room`))) {
         const href =
@@ -234,8 +248,8 @@ async function extractPage(
             .querySelector(`.${B}__room__info__price__maintext span`)
             ?.textContent?.trim() || null;
         const feeText = (
-          room.querySelector(`.${B}__room__info__price__subtext`)?.textContent ||
-          ""
+          room.querySelector(`.${B}__room__info__price__subtext`)
+            ?.textContent || ""
         )
           .replace(/\s+/g, " ")
           .trim();
@@ -282,7 +296,7 @@ async function saveToDatabase(prisma: PrismaClient, rows: RoomRow[]) {
         [r.buildingName, r.roomNo].filter(Boolean).join(" ") || "Unknown",
       address: r.address,
       rent,
-      management_fee: feeMatch ? manToYen(feeMatch[1]) ?? 0 : 0,
+      management_fee: feeMatch ? (manToYen(feeMatch[1]) ?? 0) : 0,
       layout: r.layout,
       size_sqm: size,
       building_age: r.isNew ? 0 : parseBuiltAge(r.built),
@@ -326,7 +340,9 @@ async function scrapeCity(
     let current = startPage;
     while (current <= MAX_PAGES) {
       if (checkTimeBudget()) {
-        console.log(`⏱️ Time budget reached at ${pref}/${city.name} page ${current}.`);
+        console.log(
+          `⏱️ Time budget reached at ${pref}/${city.name} page ${current}.`,
+        );
         saveState(pref, cityIndex, current);
         break;
       }
@@ -426,7 +442,9 @@ async function main() {
       for (let i = startCity; i < cities.length; i++) {
         if (budgetExhausted) break;
         const city = cities[i];
-        console.log(`\n=== ${pref} / ${city.name} [${i + 1}/${cities.length}] ===`);
+        console.log(
+          `\n=== ${pref} / ${city.name} [${i + 1}/${cities.length}] ===`,
+        );
         const startPage = resuming && i === state.cityIndex ? state.page : 1;
         try {
           await scrapeCity(browser, prisma, pref, city, i, startPage);

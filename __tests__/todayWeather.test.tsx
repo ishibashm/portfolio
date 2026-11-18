@@ -1,32 +1,20 @@
-import { existsSync, readFileSync } from "node:fs";
 import { __resetFetchJsonCacheForTest } from "@/lib/todayWeather/fetchJson";
 import { renderToStaticMarkup } from "react-dom/server";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import {
-  DEFAULT_PREFECTURE_CODE,
-  PREFECTURES,
-  parsePrefParam,
-} from "@/lib/todayWeather/prefectures";
-import {
-  getJmaForecast,
-  jmaForecastUrl,
-  parseJmaForecast,
-} from "@/lib/todayWeather/jma";
+import { PREFECTURES } from "@/lib/todayWeather/prefectures";
+import { parseJmaForecast } from "@/lib/todayWeather/jma";
 import {
   honmeiForBirthYear,
   parseBirthYearParam,
 } from "@/lib/todayWeather/birthYear";
-import {
-  TodayWeatherPanel,
-  loadTodayWeather,
-} from "@/components/houi/TodayWeatherPanel";
+import { TodayFortunePanel } from "@/components/houi/TodayFortunePanel";
 import { getClassicalYearStar } from "@/utils/ephemerisEngine";
 
 vi.mock("@/components/houi/CurrentDirections", () => ({
   CurrentDirections: () => null,
 }));
 
-// 気象庁 230000.json（2026-11-15 17時発表）を縮めたもの
+// 区域と地点の選択を確認する架空の予報。
 const JMA = [
   {
     publishingOffice: "名古屋地方気象台",
@@ -76,9 +64,6 @@ const JMA = [
 ];
 
 const aichi = PREFECTURES.find((p) => p.code === 23)!;
-const okResponse = (body: unknown) =>
-  ({ ok: true, json: async () => body }) as Response;
-
 // fetchJson はインスタンス内に予報を持つので、テストごとに空にする。
 afterEach(() => {
   vi.unstubAllGlobals();
@@ -94,17 +79,6 @@ describe("都道府県の表", () => {
       expect(p.area).toMatch(/^\d{6}$/);
       expect(p.amedas).toMatch(/^\d{5}$/);
     }
-  });
-  it("初期値は未選択で、?pref= は 1〜47 の整数だけ受け付ける", () => {
-    expect(DEFAULT_PREFECTURE_CODE).toBeNull();
-    expect(parsePrefParam(undefined)).toBeNull();
-    expect(parsePrefParam("")).toBeNull();
-    expect(parsePrefParam("0")).toBeNull();
-    expect(parsePrefParam("48")).toBeNull();
-    expect(parsePrefParam("23abc")).toBeNull();
-    expect(parsePrefParam("2.5")).toBeNull();
-    expect(parsePrefParam("13")?.name).toBe("東京都");
-    expect(parsePrefParam(["27", "13"])?.name).toBe("大阪府");
   });
 });
 
@@ -139,22 +113,6 @@ describe("気象庁の予報を読む", () => {
     expect(parseJmaForecast({}, aichi)).toBeNull();
     expect(parseJmaForecast([{ timeSeries: [] }], aichi)).toBeNull();
   });
-  it("都道府県の予報区の URL を引き、通信の失敗は null にする", async () => {
-    const fetchImpl = vi.fn(async () => okResponse(JMA));
-    expect(await getJmaForecast(aichi, fetchImpl as never)).not.toBeNull();
-    expect(fetchImpl).toHaveBeenCalledWith(
-      jmaForecastUrl("230000"),
-      expect.objectContaining({ next: { revalidate: 1800 } }),
-    );
-    // 直前の値がメモリーにあると失敗時にそれを返すので、空にしてから試す。
-    __resetFetchJsonCacheForTest();
-    const failing = vi.fn(async () => {
-      throw new Error("timeout");
-    });
-    expect(await getJmaForecast(aichi, failing as never)).toBeNull();
-    const notOk = vi.fn(async () => ({ ok: false }) as Response);
-    expect(await getJmaForecast(aichi, notOk as never)).toBeNull();
-  });
 });
 
 describe("生まれ年", () => {
@@ -177,112 +135,36 @@ describe("生まれ年", () => {
   });
 });
 
-describe("今日の天気の枠", () => {
-  const stars = [1, 2, 3, 4, 5, 6, 7, 8, 9].map((star) => ({
-    star,
-    today: { lucky: [`吉${star}`], unlucky: [`凶${star}`] },
-  }));
-  const render = (props: Partial<Parameters<typeof TodayWeatherPanel>[0]>) =>
-    renderToStaticMarkup(
-      <TodayWeatherPanel
-        pref={null}
-        forecast={null}
-        birthYear={null}
+describe("今日の方位", () => {
+  it("生まれ年から本命星を表示する", () => {
+    const stars = [1, 2].map((star) => ({
+      star,
+      today: { lucky: [`吉${star}`], unlucky: [`凶${star}`] },
+    }));
+    const html = renderToStaticMarkup(
+      <TodayFortunePanel
+        birthYear={1990}
         invalidBirthYear={false}
-        today="2026-11-15"
         stars={stars}
-        {...props}
       />,
     );
-
-  it("都道府県を選ぶまでは案内だけ出し、外部へ取りに行かない", async () => {
+    expect(html).toContain("1990年生まれ・一白水星");
+    expect(html).toContain("前年の二黒土星");
+    expect(html).toContain("生まれ年はこの表示にだけ使い、保存しません。");
+  });
+  it("県指定を無視し、天気を取得せず生まれ年を表示する", async () => {
     const fetchSpy = vi.fn();
     vi.stubGlobal("fetch", fetchSpy);
-    expect(await loadTodayWeather(null)).toEqual({ forecast: null });
-    expect(fetchSpy).not.toHaveBeenCalled();
-    const html = render({});
-    expect(html).toContain("都道府県を選ぶと、今日の天気が出ます。");
-    expect(html).toContain('method="get"');
-    expect(html).toContain('name="pref"');
-    expect(html).toContain('name="birthYear"');
-    // 選ばれているのは「選んでください」だけ（特定の都道府県を既定にしない）
-    expect(html.match(/selected=""/g)).toHaveLength(1);
-    expect(html).toContain(
-      '<option value="" selected="">選んでください</option>',
-    );
-  });
-  it("選んだ都道府県の天気と出典を出す", () => {
-    const html = render({
-      pref: aichi,
-      forecast: parseJmaForecast(JMA, aichi),
-    });
-    expect(html).toContain("天気（愛知県・西部）");
-    expect(html).toContain("雨 夜 くもり 後 晴れ");
-    expect(html).toContain("最高20℃");
-    expect(html).toContain("18–24時");
-    expect(html).toContain("出典：");
-    expect(html).toContain("気象庁");
-    expect(html).not.toContain("空気");
-    expect(html).not.toMatch(/open-meteo/i);
-    expect(html).not.toContain("PM2.5");
-  });
-  it("取れなかった枠は「いま取得できません」", () => {
-    const html = render({ pref: aichi });
-    expect(html.match(/いま取得できません/g)).toHaveLength(1);
-    expect(html).not.toContain("空気");
-  });
-  it("生まれ年から本命星の今日の方位を出し、不正な値は案内に戻す", () => {
-    const html = render({ birthYear: 1990 });
-    expect(html).toContain("1990年生まれ・一白水星");
-    expect(html).toContain("吉1");
-    expect(html).toContain("前年の二黒土星");
-    expect(render({ invalidBirthYear: true })).toContain("西暦4桁");
-  });
-  it("天気に緑や赤の色を使わず、禁止表現を含めない", () => {
-    const src = readFileSync(
-      "src/components/houi/TodayWeatherPanel.tsx",
-      "utf8",
-    );
-    expect(src).not.toMatch(/(green|emerald|red)-\d/);
-    expect(src).not.toContain("Cloud Paletteでは");
-  });
-  it("先頭の絵と見出しの絵を、幅・高さ・日本語の代替文つきで出す", () => {
-    const html = render({ pref: aichi, birthYear: 1990 });
-    expect(html).toContain("/today/banner-960.avif 960w");
-    expect(html).toContain("手を振るしるべ");
-    expect(html).toMatch(/width="960" height="435"/);
-    for (const n of ["weather", "fortune"]) {
-      expect(html).toContain(`/today/icon-${n}-192.avif 2x`);
-      expect(existsSync(`public/today/icon-${n}-96.webp`)).toBe(true);
-    }
-    expect(html).not.toContain("/today/icon-air-");
-    expect(html.match(/width="48" height="48"/g)).toHaveLength(2);
-  });
-});
-
-describe("/houi/today のページ", () => {
-  it("?pref= と ?birthYear= を受け取り、枠をページの先頭に出す", async () => {
-    const fetchImpl = vi.fn(async (url: string) => {
-      expect(String(url)).toContain("jma.go.jp");
-      return okResponse(JMA);
-    });
-    vi.stubGlobal("fetch", fetchImpl);
     const { default: TodayPage } = await import("@/app/houi/today/page");
     const html = renderToStaticMarkup(
       await TodayPage({
         searchParams: Promise.resolve({ pref: "23", birthYear: "1990" }),
       }),
     );
-    expect(html.indexOf("今日の天気")).toBeLessThan(
-      html.indexOf("今日の吉方位と時間</h1>"),
-    );
-    expect(html).toContain("天気（愛知県・西部）");
+    expect(fetchSpy).not.toHaveBeenCalled();
+    expect(html).not.toContain("今日の天気");
+    expect(html).not.toContain('name="pref"');
+    expect(html).toContain('name="birthYear"');
     expect(html).toContain("1990年生まれ");
-    expect(html).not.toContain("空気");
-    expect(html).not.toMatch(/open-meteo/i);
-    expect(fetchImpl).toHaveBeenCalled();
-    // 生まれ年は「AI に渡す」の文書に入れない
-    const area = html.match(/<textarea[^>]*>([^<]*)<\/textarea>/)![1];
-    expect(area).not.toContain("1990");
   });
 });
