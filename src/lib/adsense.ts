@@ -64,10 +64,84 @@ export function getAdsenseSlot(name: "article" | "list"): string | null {
   return /^\d{6,}$/.test(slot.trim()) ? slot.trim() : null;
 }
 
-/** 広告スクリプトが読むキュー。`any` で窓を広げない。 */
-export type AdsByGoogleQueue = unknown[] & {
-  requestNonPersonalizedAds?: number;
-};
+/**
+ * 同意が必要な地域（EEA・英国・スイス）。
+ *
+ * Google の EU ユーザーの同意ポリシーは、この地域の訪問者に広告 Cookie を
+ * 使う前の同意を求める。EEA は EU 27 か国にアイスランド・リヒテンシュタイン・
+ * ノルウェーを足したもの。ISO 3166-1 alpha-2。
+ */
+export const CONSENT_REQUIRED_REGIONS = [
+  "AT",
+  "BE",
+  "BG",
+  "HR",
+  "CY",
+  "CZ",
+  "DK",
+  "EE",
+  "FI",
+  "FR",
+  "DE",
+  "GR",
+  "HU",
+  "IE",
+  "IT",
+  "LV",
+  "LT",
+  "LU",
+  "MT",
+  "NL",
+  "PL",
+  "PT",
+  "RO",
+  "SK",
+  "SI",
+  "ES",
+  "SE",
+  "IS",
+  "LI",
+  "NO",
+  "GB",
+  "CH",
+] as const;
+
+/**
+ * 同意モード（v2）の既定値。adsbygoogle.js より**前に**置く。
+ *
+ * 同意の画面そのものは自前で作らない。EEA・英国で広告を出すには Google 認定の
+ * CMP が要り、自作のバナーは認定されない。AdSense の「プライバシーとメッセージ」
+ * （Google 自身の認定 CMP）を管理画面で有効にすると、そこが同意の結果で
+ * この既定値を上書きする（docs/adsense-ad-placement.md）。
+ *
+ * ここで決めるのは「同意を得る前は広告 Cookie を使わない」ことだけ。
+ * 地域を絞ってあるので、日本の訪問者には何も変わらない（日本は Cookie の
+ * 事前同意ではなく、外部送信の公表で足りる。/privacy の外部送信の節）。
+ */
+export function consentDefaultScript(): string {
+  const consent = {
+    ad_storage: "denied",
+    ad_user_data: "denied",
+    ad_personalization: "denied",
+    analytics_storage: "denied",
+    region: CONSENT_REQUIRED_REGIONS,
+    wait_for_update: 500,
+  };
+  return (
+    "window.dataLayer=window.dataLayer||[];" +
+    "function gtag(){dataLayer.push(arguments);}" +
+    `gtag('consent','default',${JSON.stringify(consent)});`
+  );
+}
+
+/**
+ * 広告スクリプトが読むキュー。`any` で窓を広げない。
+ *
+ * #1869 ではここに `requestNonPersonalizedAds` を持たせ、自作の同意バーで
+ * 立て下ろししていた。同意は同意モード（上の `consentDefaultScript`）と
+ * Google 認定の CMP に一本化したので、その旗は持たない。
+ */
+export type AdsByGoogleQueue = unknown[];
 
 declare global {
   interface Window {

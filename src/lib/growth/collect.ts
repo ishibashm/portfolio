@@ -212,8 +212,8 @@ export function collectRepo(root: string): RepoFacts {
   const banner = exists(root, "src/components/ads/AdBanner.tsx")
     ? read(root, "src/components/ads/AdBanner.tsx")
     : "";
-  const consent = exists(root, "src/lib/adConsent.ts")
-    ? read(root, "src/lib/adConsent.ts")
+  const adsense = exists(root, "src/lib/adsense.ts")
+    ? read(root, "src/lib/adsense.ts")
     : "";
   const layout = exists(root, "src/app/layout.tsx")
     ? read(root, "src/app/layout.tsx")
@@ -261,15 +261,17 @@ export function collectRepo(root: string): RepoFacts {
     ads: {
       adsTxtRejectsPlaceholder:
         adsTxt.includes("getAdsenseIds") && adsTxt.includes("404"),
-      bannerReservesSpace: banner.includes("minHeight: 250"),
+      bannerReservesSpace: banner.includes("AD_MIN_HEIGHT"),
       bannerLazy: banner.includes("IntersectionObserver"),
-      consentUi: exists(root, "src/components/ads/AdConsentBar.tsx"),
-      consentDefaultsNonPersonalized: consent.includes(
-        "requestNonPersonalizedAds",
-      ),
+      selfMadeConsentUi: exists(root, "src/components/ads/AdConsentBar.tsx"),
+      consentModeDefault:
+        adsense.includes("gtag('consent','default'") &&
+        adsense.includes('ad_storage: "denied"'),
       scriptStaysForReview:
         layout.includes("adsbygoogle.js") &&
-        layout.includes("AD_CONSENT_BOOTSTRAP"),
+        layout.includes("consentDefaultScript()") &&
+        layout.indexOf("consentDefaultScript()") <
+          layout.indexOf("adsbygoogle.js"),
     },
     mcpToolNames: mcpToolNames(mcp),
     llmsMentionsMcp: llms.includes("/api/mcp"),

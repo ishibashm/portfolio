@@ -84,8 +84,11 @@ export interface RepoFacts {
     adsTxtRejectsPlaceholder: boolean;
     bannerReservesSpace: boolean;
     bannerLazy: boolean;
-    consentUi: boolean;
-    consentDefaultsNonPersonalized: boolean;
+    /** 自作の同意バーがある（認定されないので、あれば指摘する）。 */
+    selfMadeConsentUi: boolean;
+    /** 同意モード v2 の既定値（EEA・英国・スイスで denied）を置いている。 */
+    consentModeDefault: boolean;
+    /** 既定値が adsbygoogle.js より前にあり、スクリプト自体は head に残る。 */
     scriptStaysForReview: boolean;
   };
   mcpToolNames: string[];

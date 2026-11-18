@@ -287,24 +287,28 @@ export function analyzeRepo(
     );
   }
 
-  if (
-    facts.ads.consentUi &&
-    facts.ads.consentDefaultsNonPersonalized &&
-    facts.ads.scriptStaysForReview
-  ) {
+  if (facts.ads.selfMadeConsentUi) {
+    findings.push(
+      finding({
+        id: "monetization.consent",
+        role: "monetization",
+        severity: "high",
+        title: "自作の同意バーがある。認定 CMP ではない",
+        detail:
+          "EEA・英国・スイスで広告を出すには Google 認定の CMP が要り、自作のバナーは認定されない。AdSense の「プライバシーとメッセージ」に任せ、自作のバナーは外す。",
+        evidence: ["src/components/ads/AdConsentBar.tsx", "src/app/layout.tsx"],
+      }),
+    );
+  } else if (facts.ads.consentModeDefault && facts.ads.scriptStaysForReview) {
     findings.push(
       finding({
         id: "monetization.consent",
         role: "monetization",
         severity: "medium",
-        title: "同意バーはある。認定 CMP ではない",
+        title: "同意モードの既定値はある。CMP は管理画面で有効にする",
         detail:
-          "同意までは非パーソナライズ。選択は端末の localStorage だけで、審査用スクリプトは head に残す。欧州でパーソナライズ広告を出すには、Funding Choices などの認定 CMP がまだ要る。",
-        evidence: [
-          "src/lib/adConsent.ts",
-          "src/components/ads/AdConsentBar.tsx",
-          "src/app/layout.tsx",
-        ],
+          "EEA・英国・スイスでは広告タグより前に同意モード v2 を denied で置き、審査用スクリプトは head に残す。同意の画面は Google 認定の CMP（AdSense の「プライバシーとメッセージ」）が出す。これはコードの外の設定なので、管理画面で有効になっているかを人が確かめる。",
+        evidence: ["src/lib/adsense.ts", "src/app/layout.tsx"],
       }),
     );
   } else {
@@ -328,7 +332,7 @@ export function analyzeRepo(
       severity: "low",
       title: "手動枠は空のままにしない",
       detail: facts.ads.bannerReservesSpace
-        ? "スロットが有効なときだけ描き、高さ 250px を先に確保し、画面の近くに来てから push する。自動広告のアンカーとビネットは、通過後に管理画面で切る（CLS と誤タップ）。"
+        ? "スロットが有効なときだけ描き、形式ごとの高さ（250〜280px）を先に確保し、画面の近くに来てから push する。自動広告のアンカーとビネットは、通過後に管理画面で切る（CLS と誤タップ）。"
         : "枠に高さが無く、広告のあとで本文が動く。",
       evidence: ["src/components/ads/AdBanner.tsx"],
     }),

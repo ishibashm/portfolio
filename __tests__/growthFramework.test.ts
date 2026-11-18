@@ -70,7 +70,10 @@ describe("成長フレームワーク", () => {
     ).toBe("blocker");
     expect(report.facts.mcpToolNames).toContain("get_honmei_star");
     expect(report.facts.mcpToolNames).toContain("search_articles");
-    expect(report.facts.ads.consentUi).toBe(true);
+    expect(report.facts.ads.selfMadeConsentUi).toBe(false);
+    expect(report.facts.ads.consentModeDefault).toBe(true);
+    expect(report.facts.ads.scriptStaysForReview).toBe(true);
+    expect(report.facts.ads.bannerReservesSpace).toBe(true);
     expect(report.facts.trust.privacyLinksContact).toBe(true);
     expect(report.facts.affiliate.includesDmm).toBe(false);
     expect(

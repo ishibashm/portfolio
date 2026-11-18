@@ -1,7 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { AdConsentBar } from "@/components/ads/AdConsentBar";
-import { AD_CONSENT_BOOTSTRAP } from "@/lib/adConsent";
-import { getAdsenseIds } from "@/lib/adsense";
+import { consentDefaultScript, getAdsenseIds } from "@/lib/adsense";
 import { SITE_SAME_AS } from "@/lib/siteChannels";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
@@ -271,11 +269,14 @@ export default async function RootLayout({
           <>
             <meta name="google-adsense-account" content={adsense.client} />
             {/*
-              スクリプトより前に、同意が無いときは非パーソナライズにする。
-              スクリプト自体は残す（所有確認が head のタグを見る）。
-              選択は localStorage だけで、生年月日や座標は含めない。
+              同意モードの既定値。広告タグより前に置く（lib/adsense）。
+              同意の画面は自作しない。Google 認定の CMP（AdSense の
+              「プライバシーとメッセージ」）が出し、この既定値を上書きする。
+              広告スクリプト自体は同意の前から head に残す（所有確認が見る）。
             */}
-            <script dangerouslySetInnerHTML={{ __html: AD_CONSENT_BOOTSTRAP }} />
+            <script
+              dangerouslySetInnerHTML={{ __html: consentDefaultScript() }}
+            />
             <script
               async
               src={`https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${adsense.client}`}
@@ -414,7 +415,6 @@ export default async function RootLayout({
             <SiteFooter />
           </div>
         </div>
-        {adsense ? <AdConsentBar /> : null}
       </body>
     </html>
   );
