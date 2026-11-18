@@ -1,5 +1,5 @@
 /**
- * /houi/today の「今日の天気」で選べる都道府県。
+ * 全国予報の代表地点に使う都道府県。
  *
  * 気象庁の area.json（https://www.jma.go.jp/bosai/common/const/area.json）から、
  * 県庁所在地を含む予報区（office）と一次細分区域（class10）、気温の地点（アメダス）を
@@ -83,23 +83,3 @@ export const PREFECTURES: readonly Prefecture[] = ROWS.map(
     amedas,
   }),
 );
-
-/**
- * 都道府県を選んでいないときの扱い。本人の決定で「未選択」（null）。
- * 訪問者が都道府県を選ぶまで、天気は取りに行かない。
- * 初期値を特定の都道府県に替えるときは、ここを JIS コードにするだけでよい。
- */
-export const DEFAULT_PREFECTURE_CODE: number | null = null;
-
-/** `?pref=` の値を都道府県に。1〜47 の整数以外は未選択（既定値）として扱う。 */
-export function parsePrefParam(
-  value: string | string[] | undefined,
-): Prefecture | null {
-  const raw = Array.isArray(value) ? value[0] : value;
-  if (typeof raw === "string" && /^\d{1,2}$/.test(raw.trim())) {
-    const found = PREFECTURES.find((p) => p.code === Number(raw.trim()));
-    if (found) return found;
-  }
-  if (DEFAULT_PREFECTURE_CODE === null) return null;
-  return PREFECTURES.find((p) => p.code === DEFAULT_PREFECTURE_CODE) ?? null;
-}

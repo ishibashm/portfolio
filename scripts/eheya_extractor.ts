@@ -13,10 +13,7 @@
  */
 import { Browser, chromium, Page } from "playwright";
 import { toLogMessage } from "../src/lib/errorMessage";
-import {
-  resumeIndexOutOfRange,
-  writeSweptState,
-} from "./scraperResume";
+import { resumeIndexOutOfRange, writeSweptState } from "./scraperResume";
 import { PrismaClient } from "@prisma/client";
 import { Pool } from "pg";
 import { PrismaPg } from "@prisma/adapter-pg";
@@ -209,15 +206,17 @@ async function fetchCities(page: Page, pref: string): Promise<City[]> {
     const groups =
       (window as CityListWindow).__NEXT_DATA__?.props?.pageProps?.prefecture
         ?.cityGroups || [];
-    return groups
-      .flatMap((g) => g.cities || [])
-      .map((c) => ({
-        code: String(c.code),
-        name: c.name,
-        count: c.propertyCount?.count ?? 0,
-      }))
-      // 政令市の親エントリは件数 0 で、区が別に並ぶので取り込まない
-      .filter((c) => c.count > 0);
+    return (
+      groups
+        .flatMap((g) => g.cities || [])
+        .map((c) => ({
+          code: String(c.code),
+          name: c.name,
+          count: c.propertyCount?.count ?? 0,
+        }))
+        // 政令市の親エントリは件数 0 で、区が別に並ぶので取り込まない
+        .filter((c) => c.count > 0)
+    );
   });
 }
 

@@ -8,17 +8,10 @@ import { buildTodayDirections } from "@/lib/todayDirections";
 import { HOUI_BREADCRUMB_LABEL, getMonthlySummary } from "@/lib/kigakuContent";
 import { pageOpenGraph, SITE_URL } from "@/lib/siteUrl";
 import { BreadcrumbJsonLd } from "@/components/JsonLd";
-import {
-  TodayWeatherPanel,
-  loadTodayWeather,
-} from "@/components/houi/TodayWeatherPanel";
-import { parsePrefParam } from "@/lib/todayWeather/prefectures";
+import { TodayFortunePanel } from "@/components/houi/TodayFortunePanel";
 import { parseBirthYearParam } from "@/lib/todayWeather/birthYear";
 
-// 都道府県・生まれ年を ?pref= と ?birthYear= で受け取る（searchParams を読むので
-// 訪問ごとに描画される）。天気は fetch の next.revalidate（30分）で
-// データキャッシュから読み、外部へは毎回取りに行かない。force-dynamic にすると
-// fetch が no-store 扱いになり得るので付けない。
+// 生まれ年を searchParams から読むため、訪問ごとに描画される。
 const title = "今日の吉方位と時間｜本命星別の日盤・十二支の早見表";
 const description =
   "今日と明日の吉方位・凶方位を本命星別に確認。五黄殺・暗剣殺・日破は全員に凶として表示し、十二支ごとの時間帯も一覧で見られます。日本時間の日付で更新。";
@@ -36,14 +29,12 @@ type Props = {
 
 export default async function TodayPage({ searchParams }: Props = {}) {
   const query = (await searchParams) ?? {};
-  const pref = parsePrefParam(query.pref);
   const birthYear = parseBirthYearParam(query.birthYear);
   const rawBirthYear = query.birthYear;
   const invalidBirthYear =
     birthYear === null &&
     typeof rawBirthYear === "string" &&
     rawBirthYear.trim() !== "";
-  const weather = await loadTodayWeather(pref);
   const data = buildTodayDirections();
   const year = Number(data.date.slice(0, 4));
   const markdown = buildTodayAiExport({
@@ -62,12 +53,9 @@ export default async function TodayPage({ searchParams }: Props = {}) {
         ]}
       />
       <article className="mx-auto max-w-5xl space-y-6">
-        <TodayWeatherPanel
-          pref={pref}
-          forecast={weather.forecast}
+        <TodayFortunePanel
           birthYear={birthYear}
           invalidBirthYear={invalidBirthYear}
-          today={data.date}
           stars={data.stars}
         />
         <CurrentDirections />
