@@ -567,8 +567,15 @@ describe("本物の記事に題を渡す", () => {
       しかなかった）になっている。題は問いで「先に結論」があるので、題を
       含めた側では元から数に入っていた（+0）
     */
-    expect(count(false)).toBe(40);
-    expect(count(true)).toBe(41);
+    /*
+      2026-11-19: AdSense の「有用性の低いコンテンツ」への対応で、2000 字
+      未満だった記事を厚くした。空亡の流派差（kuubou-schools-and-directions）、
+      干支併臨の数字（numbers-in-kanshi-heirin）、同じ生年と性格
+      （same-birth-year-personality）に、計算の手順や具体例を答えにした問いの
+      見出しが入り、0〜1 → 4〜5 組。題の有無にかかわらず +3
+    */
+    expect(count(false)).toBe(43);
+    expect(count(true)).toBe(44);
   });
 
   it("題から作った問いは、記事の題そのもの（言い換えない）", () => {
