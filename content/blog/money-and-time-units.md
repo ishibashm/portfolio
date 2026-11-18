@@ -4,7 +4,7 @@ description: 時間とお金を結び付ける動画の10万円・1億円・1000
 publishedAt: 2026-10-16
 category: 引越しの考え方
 tags: 陰陽五行,数字の評価,記録
-draft: false
+draft: true
 ---
 
 ## 金額にゼロを足しても、時間の単位にはならない

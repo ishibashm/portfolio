@@ -4,7 +4,7 @@ description: 転機の前に3人が現れ、1年半から2年ほどかけて知�
 publishedAt: 2026-10-16
 category: 引越しの考え方
 tags: 転機,四柱推命,記録,数字の評価
-draft: false
+draft: true
 ---
 
 ## 人数が具体的でも、予測が確かとは限らない

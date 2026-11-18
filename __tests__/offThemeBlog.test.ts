@@ -17,8 +17,21 @@ describe("テーマ外の記事", () => {
     );
   });
 
-  it("原稿は残っている（頁は 200 のままにする）", () => {
+  // 2026-11-19: 次の 4 本は下書き（draft: true）に戻し、頁は 404 にした。
+  // 原稿ファイルは残すが getBlogPost では返らないので、この確認から外す。
+  const DRAFTED = new Set([
+    "consultation-purpose-and-five-elements",
+    "friend-app-counts-and-selection",
+    "turning-point-three-people",
+    "money-and-time-units",
+  ]);
+
+  it("原稿は残っている（頁は 200 のままにする。下書きに戻した 4 本を除く）", () => {
     for (const slug of OFF_THEME_BLOG_SLUGS) {
+      if (DRAFTED.has(slug)) {
+        expect(getBlogPost(slug), slug).toBeUndefined();
+        continue;
+      }
       expect(getBlogPost(slug)?.slug, slug).toBe(slug);
     }
   });
