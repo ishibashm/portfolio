@@ -66,14 +66,11 @@ describe("方位で街を探す頁の既定値", () => {
     expect(src).toContain("canJudgeDirections");
   });
 
-  it("生年月日と出発地に既定値を置いていない", () => {
-    /* 2026-09-20 の組み替えで、初期状態は 1 つの object（readInitialState）
-       になった。生年月日・出発地はそこで空にしておく。ここに日付や座標を
-       置くと、入れていない人にも判定が出る。 */
+  it("生年月日は未入力のまま、閲覧用の東京は保存せず使う", () => {
     expect(src).toContain("const state: PageState = {");
-    expect(src).toMatch(
-      /const state: PageState = \{\s*birthDate: "",\s*baseLat: "",\s*baseLon: "",/,
-    );
+    expect(src).toMatch(/const state: PageState = \{\s*birthDate: "",/);
+    expect(src).toContain("state.baseLat = String(TOKYO_ORIGIN.lat)");
+    expect(src).toContain("state.baseLon = String(TOKYO_ORIGIN.lon)");
   });
 
   it("運営者の生年月日が値として残っていない", () => {

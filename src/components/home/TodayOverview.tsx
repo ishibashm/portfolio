@@ -1,5 +1,7 @@
+import { OriginLinks } from "./OriginLinks";
+import { TOKYO_ORIGIN, type Origin } from "@/lib/todayWeather/origin";
 /**
- * ホーム上部の「今日の天気と方位」。全国の天気の地図に、東京基準の日盤と
+ * ホーム上部の「今日の天気と方位」。全国の天気の地図に、全国共通の日盤と
  * 本命星別の今日の吉方位を重ねて 1 枚にする。
  *
  * サーバーで描くだけで、入力・位置情報・ブラウザの JavaScript を使わない。
@@ -16,8 +18,8 @@ import {
 import { STAR_NAMES } from "@/lib/kigakuContent";
 import { buildTodayBoard, type TodayBoard } from "@/lib/todayDirections";
 import {
-  directionFromTokyo,
-  distanceFromTokyo,
+  directionFromOrigin,
+  distanceFromOrigin,
 } from "@/lib/todayWeather/cityDirections";
 import {
   getNationalWeather,
@@ -26,15 +28,21 @@ import {
 } from "@/lib/todayWeather/national";
 import { DIRECTION_LABELS, type CompassDirection } from "@/utils/directionGeo";
 
-/** 都市ごとの東京から見た方位と、その方位が全員共通の凶かどうか。 */
+/** 都市ごとの起点から見た方位と、その方位が全員共通の凶かどうか。 */
 export function cityDirectionsFor(
   data: NationalWeather | null,
   board: TodayBoard,
+  origin: Origin = TOKYO_ORIGIN,
 ): CityDirections {
   const result: CityDirections = {};
   for (const city of data?.cities ?? []) {
-    const direction = directionFromTokyo(city.prefectureCode);
-    if (!direction) continue;
+    const direction = directionFromOrigin(city.prefectureCode, origin);
+    if (!direction) {
+      result[city.prefectureCode] = {
+        label: city.prefectureCode === origin.code ? "起点" : "起点付近",
+      };
+      continue;
+    }
     const common = board.common.find((item) => item.direction === direction);
     result[city.prefectureCode] = {
       label: DIRECTION_LABELS[direction],
@@ -44,19 +52,22 @@ export function cityDirectionsFor(
   return result;
 }
 
-/** 方位ごとの代表都市（東京から近い順）。 */
-export function citiesByDirection(data: NationalWeather | null) {
+/** 方位ごとの代表都市（起点から近い順）。 */
+export function citiesByDirection(
+  data: NationalWeather | null,
+  origin: Origin = TOKYO_ORIGIN,
+) {
   const groups = new Map<CompassDirection, NationalCityWeather[]>();
   for (const city of data?.cities ?? []) {
-    const direction = directionFromTokyo(city.prefectureCode);
+    const direction = directionFromOrigin(city.prefectureCode, origin);
     if (!direction) continue;
     groups.set(direction, [...(groups.get(direction) ?? []), city]);
   }
   for (const list of groups.values())
     list.sort(
       (a, b) =>
-        distanceFromTokyo(a.prefectureCode) -
-        distanceFromTokyo(b.prefectureCode),
+        distanceFromOrigin(a.prefectureCode, origin) -
+        distanceFromOrigin(b.prefectureCode, origin),
     );
   return groups;
 }
@@ -78,7 +89,7 @@ function DayBoard({ board }: { board: TodayBoard }) {
   return (
     <div
       role="img"
-      aria-label={`今日の日盤（東京基準、北が上）。中宮は${STAR_NAMES[board.center]}。${board.common.map((item) => `${item.label}は${item.reason}`).join("、")}。`}
+      aria-label={`今日の日盤（全国共通、北が上）。中宮は${STAR_NAMES[board.center]}。${board.common.map((item) => `${item.label}は${item.reason}`).join("、")}。`}
       className="grid w-full max-w-[13rem] shrink-0 grid-cols-3 gap-1 text-center"
     >
       {GRID.map((cell) => {
@@ -100,7 +111,7 @@ function DayBoard({ board }: { board: TodayBoard }) {
             }`}
           >
             <span className="block text-[10px] text-slate-600">
-              {cell === "CENTER" ? "中宮・東京" : DIRECTION_LABELS[cell]}
+              {cell === "CENTER" ? "中宮" : DIRECTION_LABELS[cell]}
             </span>
             <span className="block text-sm font-bold">
               {STAR_NAMES[star].slice(0, 2)}
@@ -133,12 +144,16 @@ function luckyWeather(
 export function TodayOverviewCard({
   data,
   board,
+  origin = TOKYO_ORIGIN,
+  registered,
 }: {
   data: NationalWeather | null;
   board: TodayBoard;
+  origin?: Origin;
+  registered?: Origin | null;
 }) {
-  const directions = cityDirectionsFor(data, board);
-  const groups = citiesByDirection(data);
+  const directions = cityDirectionsFor(data, board, origin);
+  const groups = citiesByDirection(data, origin);
   const redCities = (data?.cities ?? []).filter(
     (city) => directions[city.prefectureCode]?.unlucky,
   );
@@ -153,9 +168,10 @@ export function TodayOverviewCard({
         </h2>
         <p className="text-xs text-slate-600">
           <time dateTime={board.date}>{board.date}</time>
-          （日本時間）・方位は東京から見たもの
+          （日本時間）・方位は{origin.name}から見たもの
         </p>
       </div>
+      <OriginLinks origin={origin} registered={registered} />
       {/* 日盤を地図の右に置くのは、セクション幅が十分あるときだけ。
           iPad mini 横（1133px）では左サイドバー（lg:w-64）で中身が約 813px
           しかなく、24rem の日盤を横に並べると地図が 350px 程度になる。 */}
@@ -178,7 +194,7 @@ export function TodayOverviewCard({
         >
           <div className="space-y-2">
             <h3 id="today-board-heading" className="text-base font-bold">
-              今日の日盤（東京基準）
+              今日の日盤（全国共通）
             </h3>
             <div className="flex items-start gap-3 sm:block sm:space-y-2">
               <DayBoard board={board} />
@@ -274,6 +290,9 @@ export function TodayOverviewCard({
         <NationalWeatherTable data={data} directions={directions} />
       ) : null}
       <p className="text-xs text-slate-600">
+        今日の最低は5時・11時発表で予報に出ないため、当日0時以降の観測値（アメダス）を表示します。観測の取得時点までの最低で、欠測時は表示しません。
+      </p>
+      <p className="text-xs text-slate-600">
         出典：
         <a
           className="underline"
@@ -283,7 +302,18 @@ export function TodayOverviewCard({
         >
           気象庁
         </a>
-        （府県天気予報）・地図：
+        （府県天気予報）・
+        <a className="underline" href="https://www.jma.go.jp/bosai/amedas/">
+          アメダス（実況）
+        </a>
+        を加工して作成。
+        <a
+          className="underline"
+          href="https://www.jma.go.jp/jma/kishou/info/coment.html"
+        >
+          気象庁データの利用規約（政府標準利用規約を継承する公共データ利用規約）
+        </a>
+        。地図：
         <a
           className="underline"
           href="https://www.naturalearthdata.com/"
@@ -298,7 +328,17 @@ export function TodayOverviewCard({
   );
 }
 
-export async function TodayOverview() {
+export async function TodayOverview({
+  origin = TOKYO_ORIGIN,
+  registered,
+}: { origin?: Origin; registered?: Origin | null } = {}) {
   const data = await getNationalWeather();
-  return <TodayOverviewCard data={data} board={buildTodayBoard()} />;
+  return (
+    <TodayOverviewCard
+      data={data}
+      board={buildTodayBoard()}
+      origin={origin}
+      registered={registered}
+    />
+  );
 }

@@ -65,6 +65,7 @@ vi.mock("@/components/inputs/QuickChoices", () => ({
     </>
   ),
 }));
+import { TOKYO_ORIGIN } from "@/lib/todayWeather/origin";
 import Page from "@/app/relocation/arbitrage/page";
 
 beforeEach(() => {
@@ -79,7 +80,7 @@ afterEach(() => {
   vi.unstubAllGlobals();
 });
 
-it("クラウド読込を待ち、未登録なら質問し、選んだ地点だけ保存する", async () => {
+it("未登録でも東京の街を表示し、明示して選んだ地点だけ保存する", async () => {
   let finish!: (value: { settings: object }) => void;
   loadSettings.mockReturnValue(
     new Promise((resolve) => {
@@ -88,8 +89,14 @@ it("クラウド読込を待ち、未登録なら質問し、選んだ地点だ�
   );
   render(<Page />);
   expect(screen.queryByText("どこから引越しますか？")).toBeNull();
+  await waitFor(() => expect(loadSettings).toHaveBeenCalled());
+  expect(screen.getByTestId("map").textContent).toBe(
+    `${TOKYO_ORIGIN.lat},${TOKYO_ORIGIN.lon}`,
+  );
   await act(async () => finish({ settings: {} }));
-  expect(screen.getByText("どこから引越しますか？")).toBeTruthy();
+  expect(
+    screen.getByText("出発地を詳しく選ぶ（プロフィールに保存）"),
+  ).toBeTruthy();
   expect(savePlacePoint).not.toHaveBeenCalled();
   const opened = vi.fn();
   window.addEventListener("metaphysical-config-open", opened);
@@ -139,7 +146,9 @@ it.each(["radiusKm=100", "tenchusatsuMode=off", "involuntaryMove=false"])(
       `?baseLat=35.1709&baseLon=136.8815&${query}`,
     );
     render(<Page />);
-    expect(screen.getByText("詳しい条件").closest("details")?.open).toBe(true);
+    expect(
+      (await screen.findByText("詳しい条件")).closest("details")?.open,
+    ).toBe(true);
   },
 );
 
@@ -175,11 +184,32 @@ it.each([
   { radius_km: "200" },
   { involuntary_move: true },
   { tenchusatsu_mode: "off" },
-])("保存済みの非既定条件 %j は詳細を開く", (condition) => {
+])("保存済みの非既定条件 %j は詳細を開く", async (condition) => {
   localStorage.setItem(
     "tactical_config_v1",
     JSON.stringify({ base_lat: 35.1709, base_lon: 136.8815, ...condition }),
   );
   render(<Page />);
-  expect(screen.getByText("詳しい条件").closest("details")?.open).toBe(true);
+  expect((await screen.findByText("詳しい条件")).closest("details")?.open).toBe(
+    true,
+  );
+});
+
+it("from都市は保存済み起点より優先し、閲覧では保存しない", async () => {
+  localStorage.setItem(
+    "tactical_config_v1",
+    JSON.stringify({ base_lat: 35, base_lon: 139 }),
+  );
+  window.history.replaceState(null, "", "?from=osaka");
+  render(<Page />);
+  await waitFor(() =>
+    expect(
+      screen.getByRole("link", { name: "大阪", current: "location" }),
+    ).toBeTruthy(),
+  );
+  expect(savePlacePoint).not.toHaveBeenCalled();
+  expect(loadSettings).not.toHaveBeenCalled();
+  expect(JSON.parse(localStorage.getItem("tactical_config_v1")!).base_lat).toBe(
+    35,
+  );
 });

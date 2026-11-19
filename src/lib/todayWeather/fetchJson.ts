@@ -9,7 +9,7 @@
 export const FETCH_TIMEOUT_MS = 3000;
 const cache = new Map<string, { value: unknown; expires: number }>();
 const inFlight = new Map<string, Promise<unknown | null>>();
-const MAX_ENTRIES = 64;
+const MAX_ENTRIES = 128;
 
 export function __resetFetchJsonCacheForTest() {
   cache.clear();

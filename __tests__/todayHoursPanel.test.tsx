@@ -24,12 +24,11 @@ it("今の刻と9星の吉方位を出し、時間帯の表は畳んで置く", 
   expect(html).toContain(`${current.branch}の刻`);
   expect(html).toContain("本命星別の今の刻の吉方位");
   expect(html).toContain("本命星別の今の刻と、十二支の時間帯を見る");
-  expect(html).toContain("/today/banner-960.webp");
-  expect(html).toContain("朝焼けの空の下で手を振るしるべと、方位の絵");
+  expect(html).not.toContain("/today/banner-960.webp");
+
   expect(html).toContain("<details");
-  // 本命星の表は画像の下に畳む。
+  // 横断幕を重複させず、本命星の表を畳む。
   const detailsAt = html.indexOf("<details");
-  expect(detailsAt).toBeGreaterThan(html.indexOf("/today/banner-960.webp"));
   expect(detailsAt).toBeLessThan(html.indexOf("本命星別の今の刻の吉方位"));
   expect(html).toContain('name="home-honmei-hours"');
   expect(html).toContain("詳しい日盤と、現在地での今の刻を見る");
@@ -60,11 +59,11 @@ it("ホームは入力なしのサーバー描画で、天気の直下に置く"
   expect(source).not.toMatch(/^"use client"/m);
   expect(source).not.toContain("geolocation");
   const home = readFileSync("src/app/page.tsx", "utf8");
-  expect(home).toContain("<TodayHoursPanel />");
-  expect(home.indexOf("<TodayOverview />")).toBeLessThan(
-    home.indexOf("<TodayHoursPanel />"),
+  expect(home).toContain("<TodayHoursPanel origin={origin} />");
+  expect(home.indexOf("<TodayOverview origin={origin}")).toBeLessThan(
+    home.indexOf("<TodayHoursPanel origin={origin} />"),
   );
-  expect(home.indexOf("<TodayHoursPanel />")).toBeLessThan(
+  expect(home.indexOf("<TodayHoursPanel origin={origin} />")).toBeLessThan(
     home.indexOf("<AgentEntry"),
   );
   expect(home).toMatch(/export const revalidate = 60/);
@@ -83,5 +82,8 @@ it("しるべの横断幕はホームへ移し、/houi/today の先頭からは�
     "src/components/home/TodayHoursPanel.tsx",
     "utf8",
   );
-  expect(homePanel).toContain("TodayShirubeBanner");
+  expect(homePanel).not.toContain("TodayShirubeBanner");
+  expect(readFileSync("src/app/page.tsx", "utf8")).toContain(
+    "<TodayShirubeBanner",
+  );
 });

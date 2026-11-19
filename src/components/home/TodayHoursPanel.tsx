@@ -1,10 +1,10 @@
 /**
- * ホームの「今日の天気と方位」の下に置く、しるべの横断幕と今の刻。
- * 画像はもともと /houi/today 先頭にあったもの。入力・位置情報・
+ * ホームの「今日の天気と方位」の下に置く今の刻と折りたたみ表。
+ * 選択中の起点の経度を使い、位置情報・
  * ブラウザの JavaScript は使わない。詳しい表は /houi/today へ。
  */
 import Link from "next/link";
-import { TodayShirubeBanner } from "@/components/houi/TodayShirubeBanner";
+import { TOKYO_ORIGIN, type Origin } from "@/lib/todayWeather/origin";
 import {
   buildCurrentDirections,
   buildTodayDirections,
@@ -77,9 +77,11 @@ function HourTable({
 export function TodayHoursCard({
   data,
   current,
+  origin = TOKYO_ORIGIN,
 }: {
   data: Directions;
   current: Current;
+  origin?: Origin;
 }) {
   const currentTime = `${timeFmt.format(new Date(current.start))}〜${timeFmt.format(new Date(current.end))}`;
   return (
@@ -93,15 +95,9 @@ export function TodayHoursCard({
         </h2>
         <p className="text-xs text-slate-600">
           <time dateTime={data.date}>{data.date}</time>
-          （日本時間）・東京基準の真太陽時
+          （日本時間）・{origin.name}基準の真太陽時
         </p>
       </div>
-      <Link
-        href="/houi/today"
-        className="block overflow-hidden rounded-2xl focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-rose-600"
-      >
-        <TodayShirubeBanner sizes="(min-width: 1280px) 1100px, (min-width: 768px) calc(100vw - 8rem), calc(100vw - 2.5rem)" />
-      </Link>
       <div className="space-y-2">
         <h3 className="text-base font-bold">
           今の刻：{current.branch}の刻 {currentTime}
@@ -180,7 +176,7 @@ export function TodayHoursCard({
                 <HourTable
                   hours={star.hours}
                   currentBranch={current.branch}
-                  caption={`${star.name}の時間帯別方位（東京基準）`}
+                  caption={`${star.name}の時間帯別方位（${origin.name}基準）`}
                 />
               </div>
             </details>
@@ -198,18 +194,23 @@ export function TodayHoursCard({
         <span className="text-slate-600">で分かります</span>
       </p>
       <p className="text-xs text-slate-600">
-        時盤の吉でも、今日の日盤が凶なら凶を優先します。時刻は東京（東経139.6917度）の真太陽時で区切り、日本時間で表示しています。方位の吉凶は伝統的な見方で、効果を保証しません。
+        時盤の吉でも、今日の日盤が凶なら凶を優先します。時刻は{origin.name}
+        （東経{origin.lon}
+        度）の真太陽時で区切り、日本時間で表示しています。方位の吉凶は伝統的な見方で、効果を保証しません。
       </p>
     </section>
   );
 }
 
-export async function TodayHoursPanel() {
+export async function TodayHoursPanel({
+  origin = TOKYO_ORIGIN,
+}: { origin?: Origin } = {}) {
   const now = new Date();
   return (
     <TodayHoursCard
-      data={buildTodayDirections(now)}
-      current={buildCurrentDirections(now)}
+      origin={origin}
+      data={buildTodayDirections(now, origin.lon)}
+      current={buildCurrentDirections(now, undefined, origin.lon)}
     />
   );
 }

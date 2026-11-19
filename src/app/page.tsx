@@ -1,3 +1,6 @@
+import { TodayShirubeBanner } from "@/components/houi/TodayShirubeBanner";
+import { resolveOrigin, arbitrageHref } from "@/lib/todayWeather/origin";
+import { getRegisteredOrigin } from "@/lib/todayWeather/registeredOrigin";
 import { TodayOverview } from "@/components/home/TodayOverview";
 import { TodayHoursPanel } from "@/components/home/TodayHoursPanel";
 import { AgentEntry } from "@/components/home/AgentEntry";
@@ -19,9 +22,21 @@ import {
   SITE_DESCRIPTION,
 } from "@/lib/siteStructure";
 
-export default function Home() {
+export default async function Home({
+  searchParams,
+}: {
+  searchParams?: Promise<{ from?: string | string[] }>;
+}) {
+  const [params, registered] = await Promise.all([
+    searchParams,
+    getRegisteredOrigin(),
+  ]);
+  const origin = resolveOrigin(
+    typeof params?.from === "string" ? params.from : undefined,
+    registered,
+  );
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#faf7f5] via-[#f5efe9] to-[#f0e9e1] text-slate-900 relative flex flex-col items-center justify-start overflow-y-auto py-8 px-4 md:px-8 gap-8 font-sans">
+    <div className="min-h-screen bg-gradient-to-br from-[#faf7f5] via-[#f5efe9] to-[#f0e9e1] text-slate-900 relative flex flex-col items-center justify-start overflow-y-auto pt-14 pb-5 lg:pt-5 px-4 md:px-8 gap-4 font-sans">
       <ScrollReset />
       {/* Background Soft Glow Auras */}
       <div className="fixed top-[-10vw] left-[-10vw] w-[40vw] h-[40vw] bg-rose-200/25 rounded-full blur-[100px] pointer-events-none -z-10" />
@@ -34,52 +49,53 @@ export default function Home() {
           （幅 1800px 前後）では左右に 400px ずつ余っていた。中身の主役は
           下のダッシュボードなので、そこが収まる幅まで広げる。
           本文の行長は段落側の max-w-[70ch] が守る。 */}
-      <header className="relative overflow-hidden w-full max-w-[1700px] bg-white/95 backdrop-blur-xl border border-slate-300 p-8 md:p-10 rounded-3xl shadow-lg shadow-slate-200/50">
+      <header className="relative overflow-hidden w-full max-w-[1700px] bg-white/95 backdrop-blur-xl border border-slate-300 p-5 md:p-6 rounded-3xl shadow-lg shadow-slate-200/50">
         {/* 金の羅盤の線画（飾り）。h1 とは重ねず、ラベル行の右上の余白に収まる大きさ。 */}
         <CompassDial className="pointer-events-none absolute -right-5 -top-5 hidden h-28 w-28 opacity-60 sm:block" />
-        <div className="flex items-center gap-3 mb-4">
-          <div className="p-2.5 rounded-2xl bg-rose-600 text-white shadow-md shadow-rose-200">
-            <Compass className="w-5 h-5" />
+        <div className="grid items-center gap-4 sm:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]">
+          <div className="min-w-0">
+            <div className="flex items-center gap-3 mb-3">
+              <div className="p-2.5 rounded-2xl bg-rose-600 text-white shadow-md shadow-rose-200">
+                <Compass className="w-5 h-5" />
+              </div>
+              <span className="text-xs font-bold tracking-widest text-slate-500 uppercase">
+                {SITE_NAME}
+              </span>
+            </div>
+            <h1 className="text-2xl md:text-4xl font-bold tracking-tight text-slate-900 font-serif leading-snug">
+              {SITE_TAGLINE}
+            </h1>
+            <p className="text-sm text-slate-700 mt-4 leading-relaxed max-w-[70ch]">
+              {SITE_DESCRIPTION}
+            </p>
+            <Link
+              href={arbitrageHref(origin)}
+              className="mt-3 inline-flex px-6 py-3 rounded-full bg-slate-900 hover:bg-slate-800 text-white font-bold text-sm items-center gap-2 transition-all shadow-md active:scale-95"
+            >
+              {CORE_ROUTES[0].label}
+              <ArrowRight className="w-4 h-4" />
+            </Link>
+            <Link
+              href="/houi#honmei-lookup"
+              className="mt-3 block text-sm font-semibold text-rose-600 underline underline-offset-4 hover:text-rose-700"
+            >
+              今年の引越しの方位を本命星別に見る
+            </Link>
           </div>
-          <span className="text-xs font-bold tracking-widest text-slate-500 uppercase">
-            {SITE_NAME}
-          </span>
+          <Link
+            href="/houi/today"
+            aria-label="しるべ：今日の吉方位と時間を見る"
+            className="block w-full max-w-lg justify-self-center rounded-2xl focus-visible:outline-2 focus-visible:outline-rose-600"
+          >
+            <TodayShirubeBanner
+              priority
+              sizes="(min-width: 1280px) 480px, (min-width: 640px) 35vw, 90vw"
+            />
+          </Link>
         </div>
-        <h1 className="text-2xl md:text-4xl font-bold tracking-tight text-slate-900 font-serif leading-snug">
-          {SITE_TAGLINE}
-        </h1>
-        <p className="text-sm text-slate-700 mt-4 leading-relaxed max-w-[70ch]">
-          {SITE_DESCRIPTION} 出発地から見た街の並びと家賃は
-          <Link href="/houi/area" className="underline hover:text-rose-600">
-            エリア別の方位と家賃相場
-          </Link>
-          で確認できます。初めて使うときは
-          <Link href="/guide" className="underline hover:text-rose-600">
-            使い方ガイド
-          </Link>
-          をご覧ください。
-        </p>
-        <Link
-          href={CORE_ROUTES[0].href}
-          className="mt-6 inline-flex px-6 py-3 rounded-full bg-slate-900 hover:bg-slate-800 text-white font-bold text-sm items-center gap-2 transition-all shadow-md active:scale-95"
-        >
-          {CORE_ROUTES[0].label}
-          <ArrowRight className="w-4 h-4" />
-        </Link>
-        <Link
-          href="/houi#honmei-lookup"
-          className="mt-4 sm:ml-5 inline-block text-sm font-semibold text-rose-600 underline underline-offset-4 hover:text-rose-700"
-        >
-          今年の引越しの方位を本命星別に見る
-        </Link>
-        <p className="mt-4 text-sm">
-          <Link href="/houi/today" className="text-rose-600 underline">
-            今日の吉方位と時間を本命星別に見る
-          </Link>
-        </p>
       </header>
-      <TodayOverview />
-      <TodayHoursPanel />
+      <TodayOverview origin={origin} registered={registered} />
+      <TodayHoursPanel origin={origin} />
 
       {/* 生年月日・現在地・生まれたところ。**このサイトの答えはこの 3 つで
           決まる**ので、頁の一番上に置く。以前は下のダッシュボードの
