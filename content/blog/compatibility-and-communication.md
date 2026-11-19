@@ -4,7 +4,7 @@ description: 相生・相剋・同じ五行という相性の分類を、親子�
 publishedAt: 2026-10-16
 category: 引越しの考え方
 tags: 四柱推命,五行,相性,数字の評価
-draft: false
+draft: true
 ---
 
 ## 相性表を、相手への言い方の命令にしない

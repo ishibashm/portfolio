@@ -4,7 +4,7 @@ description: 引き寄せを語る動画の100%・1〜3%・20%・40%を検討し
 publishedAt: 2026-10-16
 category: 引越しの考え方
 tags: 四柱推命,引き寄せ,確率,数字の評価
-draft: false
+draft: true
 ---
 
 ## 願いがかなった割合と、願っていた強さは別の数字

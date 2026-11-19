@@ -4,7 +4,7 @@ description: 組織の多様性を語る動画の1か月・2か月・1億円と�
 publishedAt: 2026-10-16
 category: 引越しの考え方
 tags: 四柱推命,五行,仕事,数字の評価
-draft: false
+draft: true
 ---
 
 ## 求めた違いを、採用後に嫌っていないか

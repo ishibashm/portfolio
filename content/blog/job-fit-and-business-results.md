@@ -4,7 +4,7 @@ description: 命式から仕事への適合を読む動画を手がかりに、�
 publishedAt: 2026-10-16
 category: 引越しの考え方
 tags: 四柱推命,適性,収益,数字の評価
-draft: false
+draft: true
 ---
 
 ## 「合っている」は、どの結果を指しているのか

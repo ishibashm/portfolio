@@ -4,7 +4,7 @@ description: 10日・10か月・10年ごとに失敗の傾向が巡るという�
 publishedAt: 2026-10-16
 category: 引越しの考え方
 tags: 四柱推命,十干,周期,数字の評価
-draft: false
+draft: true
 ---
 
 ## 同じ日干が巡っても、同じ失敗が起きるとは限らない

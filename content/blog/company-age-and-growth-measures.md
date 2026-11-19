@@ -4,7 +4,7 @@ description: 経営を季節や会社の年齢にたとえる動画の3000年・
 publishedAt: 2026-10-16
 category: 引越しの考え方
 tags: 陰陽五行,経営,成長率,数字の評価
-draft: false
+draft: true
 ---
 
 ## 会社が何年続いたかと、どこまで育ったかを分ける
