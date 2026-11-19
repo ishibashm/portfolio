@@ -144,3 +144,53 @@ export function buildCurrentDirections(
     ...summarize(hourly),
   };
 }
+
+const COMMON_UNLUCKY = ["NOISE_GOU", "NOISE_ANKEN", "NOISE_HA"] as const;
+
+/**
+ * ホームの「今日の天気と方位」用の東京基準の日盤。
+ *
+ * 全員に共通の凶（五黄殺・暗剣殺・日破）は、九つの本命星すべてで凶になり、
+ * そのうちどれかの星で共通の凶として出る方位とする。本命星によっては同じ
+ * 方位が本命殺などの名前で出るため、1 つの星だけを見て決めない。
+ */
+export function buildTodayBoard(now: Date = new Date()) {
+  const date = jstNoonOf(now);
+  const center = getClassicalDayStar(date);
+  const layers = STARS.map((value) => {
+    const star = value as StarFrequency;
+    return { star, layer: verdicts(center, star, date) };
+  });
+  const common = DIRECTIONS.flatMap((direction) => {
+    const statuses = layers.map(({ layer }) => layer[direction] ?? "SAFE");
+    if (!statuses.every((status) => status.startsWith("NOISE_"))) return [];
+    const shared = statuses.find((status) =>
+      (COMMON_UNLUCKY as readonly string[]).includes(status),
+    );
+    if (!shared) return [];
+    return [
+      {
+        direction,
+        label: DIRECTION_LABELS[direction],
+        reason:
+          shared === "NOISE_HA"
+            ? haLabelForLayer("day")
+            : directionLabelName(shared),
+      },
+    ];
+  });
+  return {
+    date: todayInJapan(date),
+    center,
+    board: generateBoard(center),
+    common,
+    stars: layers.map(({ star, layer }) => ({
+      star,
+      name: STAR_NAMES[star],
+      lucky: DIRECTIONS.filter((direction) =>
+        (layer[direction] ?? "SAFE").startsWith("OPTIMAL"),
+      ),
+    })),
+  };
+}
+export type TodayBoard = ReturnType<typeof buildTodayBoard>;

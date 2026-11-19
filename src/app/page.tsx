@@ -1,4 +1,4 @@
-import { NationalWeatherSection } from "@/components/home/NationalWeather";
+import { TodayOverview } from "@/components/home/TodayOverview";
 import { AgentEntry } from "@/components/home/AgentEntry";
 import { PurposeLinks } from "@/components/home/PurposeLinks";
 import { HonmeiStarLinks } from "@/components/houi/HonmeiStarLinks";
@@ -77,7 +77,7 @@ export default function Home() {
           </Link>
         </p>
       </header>
-      <NationalWeatherSection />
+      <TodayOverview />
 
       {/* 生年月日・現在地・生まれたところ。**このサイトの答えはこの 3 つで
           決まる**ので、頁の一番上に置く。以前は下のダッシュボードの
