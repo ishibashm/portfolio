@@ -1,4 +1,5 @@
 import { TodayOverview } from "@/components/home/TodayOverview";
+import { TodayHoursPanel } from "@/components/home/TodayHoursPanel";
 import { AgentEntry } from "@/components/home/AgentEntry";
 import { PurposeLinks } from "@/components/home/PurposeLinks";
 import { HonmeiStarLinks } from "@/components/houi/HonmeiStarLinks";
@@ -78,6 +79,7 @@ export default function Home() {
         </p>
       </header>
       <TodayOverview />
+      <TodayHoursPanel />
 
       {/* 生年月日・現在地・生まれたところ。**このサイトの答えはこの 3 つで
           決まる**ので、頁の一番上に置く。以前は下のダッシュボードの
