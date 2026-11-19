@@ -98,7 +98,15 @@ export function parseJmaForecast(
     });
   }
 
-  // 気温（00時の値はその日の最低、09時の値はその日の最高）
+  // 気温（00時の値はその日の朝の最低、09時の値はその日の日中の最高）。
+  //
+  // 5 時・11 時の発表では、今日の欄が「09時・00時」の 2 つになるが、
+  // 今日の朝の最低はもう過ぎているので発表されず、00時の欄にも最高気温の
+  // 側の値が入る（多くは 09時と同じ値。前線の通過などで日付が変わった頃が
+  // 一番暖かい日は、09時より高い値になる。2026-11-19 11時の札幌は 7・10）。
+  // これを最低として読むと「最高 7℃ / 最低 10℃」のように逆に見えるので、
+  // 発表時刻より前の 00時の値は最低として使わない。
+  const reportTime = Date.parse(report.reportDatetime ?? "");
   const tempSeries = series[2];
   const tempArea = pickArea(tempSeries, pref.amedas);
   const temps = tempArea?.temps;
@@ -109,11 +117,13 @@ export function parseJmaForecast(
       const day = days.find((d) => d.date === datePart(iso));
       if (!day) return;
       if (hourPart(iso) >= 9) day.max = value;
-      else day.min = value;
+      else if (!(Number.isFinite(reportTime) && Date.parse(iso) <= reportTime))
+        day.min = value;
     });
-    // 朝の発表では「今日の最低」の欄に日中の最高が入ることがある。同じ値なら最低は出さない。
+    // 念のため、最低が最高と同じか上回るときは最低を出さない（逆に見せない）。
     for (const day of days)
-      if (day.min !== undefined && day.min === day.max) delete day.min;
+      if (day.min !== undefined && day.max !== undefined && day.min >= day.max)
+        delete day.min;
   }
 
   return {

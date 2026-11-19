@@ -108,6 +108,43 @@ describe("気象庁の予報を読む", () => {
     expect(f.days[0]).toMatchObject({ date: "2026-11-16", max: 20 });
     expect(f.days[0].min).toBeUndefined();
   });
+  it("朝・昼の発表では、今日の00時の値を最低にしない（札幌 7・10 が逆に見えた件）", () => {
+    // 2026-11-19 11時発表の札幌と同じ並び。今日は 09時・00時、明日は 00時・09時。
+    const noon = structuredClone(JMA);
+    noon[0].reportDatetime = "2026-11-16T11:00:00+09:00";
+    noon[0].timeSeries[0].timeDefines[0] = "2026-11-16T11:00:00+09:00";
+    noon[0].timeSeries[0].timeDefines[1] = "2026-11-17T00:00:00+09:00";
+    noon[0].timeSeries[2] = {
+      timeDefines: [
+        "2026-11-16T09:00:00+09:00",
+        "2026-11-16T00:00:00+09:00",
+        "2026-11-17T00:00:00+09:00",
+        "2026-11-17T09:00:00+09:00",
+      ],
+      areas: [
+        {
+          area: { name: "名古屋", code: "51106" },
+          temps: ["7", "10", "-1", "2"],
+        },
+        { area: { name: "豊橋", code: "51331" }, temps: ["8", "8", "1", "9"] },
+      ],
+    };
+    const f = parseJmaForecast(noon, aichi)!;
+    expect(f.days[0]).toEqual({
+      date: "2026-11-16",
+      weather: "雨 夜 くもり 後 晴れ",
+      max: 7,
+    });
+    // 明日の最低（これからの 00時）は発表どおり読む。
+    expect(f.days[1]).toMatchObject({ date: "2026-11-17", min: -1, max: 2 });
+  });
+  it("最低が最高以上になる値は出さない", () => {
+    const odd = structuredClone(JMA);
+    (odd[0].timeSeries[2].areas[0] as { temps: string[] }).temps = ["21", "20"];
+    const f = parseJmaForecast(odd, aichi)!;
+    expect(f.days[1]).toMatchObject({ date: "2026-11-16", max: 20 });
+    expect(f.days[1].min).toBeUndefined();
+  });
   it("形が違う JSON は null", () => {
     expect(parseJmaForecast(null, aichi)).toBeNull();
     expect(parseJmaForecast({}, aichi)).toBeNull();
