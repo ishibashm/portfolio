@@ -11,6 +11,7 @@ import {
 } from "@/lib/todayWeather/national";
 import {
   NationalWeatherCards,
+  formatTemps,
   shortWeather,
   weatherEmoji,
 } from "@/components/home/NationalWeather";
@@ -23,15 +24,20 @@ import {
 import { buildTodayBoard } from "@/lib/todayDirections";
 import { directionFromTokyo } from "@/lib/todayWeather/cityDirections";
 import {
+  applyTransform,
   mapCities,
-  mapViewBox,
   project,
   insetBox,
-  cardSize,
   narrowCities,
   narrowCardSize,
   narrowFontSize,
+  narrowMap,
   narrowViewBox,
+  wideCities,
+  wideCardSize,
+  wideFontSize,
+  wideMap,
+  wideViewBox,
 } from "@/lib/todayWeather/mapProjection";
 import { getMonthlySummary, getMonthDirections } from "@/lib/kigakuContent";
 
@@ -230,8 +236,8 @@ it("地図と表を描画し、ホームのISRを保つ", async () => {
   const svgs = html.match(/<svg[\s\S]*?<\/svg>/g)!;
   expect(svgs).toHaveLength(2);
   const [svg, narrow] = svgs;
-  expect(narrow).toContain("md:hidden");
-  expect(svg).toContain("md:block");
+  expect(narrow).toContain("sm:hidden");
+  expect(svg).toContain("sm:block");
   expect(narrow).not.toContain("☂");
   // 狭い画面（390px、カードの内側 p-4）でも札の文字が 14px 以上に見える。
   expect(
@@ -317,7 +323,7 @@ it("東京から見た方位は気学の伝統的な区切りで、共通の凶�
   expect(html).toContain("地図では札幌・新潟を赤くしています。");
   expect(html).toContain("北・五黄殺");
   expect(html).toContain("#ffe4e6");
-  expect(html).toContain("南西 大阪☀️— ほか2");
+  expect(html).toContain("南西 大阪☀️明日23℃ ほか2");
   expect(html).toContain("地図の都市なし");
   const empty = renderToStaticMarkup(
     <TodayOverviewCard data={null} board={board} />,
@@ -347,18 +353,18 @@ it("天気の先頭と座標、カード配置", () => {
   expect(naha.y).toBeGreaterThan(insetBox.y);
   expect(naha.y).toBeLessThan(insetBox.y + insetBox.height);
   expect(project(139.69, 35.69).x).toBeGreaterThan(project(135.5, 34.69).x);
-  const cards = Object.values(mapCities);
+  const cards = Object.values(wideCities);
   for (const [i, a] of cards.entries()) {
     expect(a.x).toBeGreaterThanOrEqual(0);
     expect(a.y).toBeGreaterThanOrEqual(0);
-    expect(a.x + cardSize.width).toBeLessThanOrEqual(mapViewBox.width);
-    expect(a.y + cardSize.height).toBeLessThanOrEqual(mapViewBox.height);
+    expect(a.x + wideCardSize.width).toBeLessThanOrEqual(wideViewBox.width);
+    expect(a.y + wideCardSize.height).toBeLessThanOrEqual(wideViewBox.height);
     for (const b of cards.slice(i + 1))
       expect(
-        a.x + cardSize.width <= b.x ||
-          b.x + cardSize.width <= a.x ||
-          a.y + cardSize.height <= b.y ||
-          b.y + cardSize.height <= a.y,
+        a.x + wideCardSize.width <= b.x ||
+          b.x + wideCardSize.width <= a.x ||
+          a.y + wideCardSize.height <= b.y ||
+          b.y + wideCardSize.height <= a.y,
       ).toBe(true);
   }
 });
@@ -366,21 +372,21 @@ it("天気の先頭と座標、カード配置", () => {
 it("狭い地図の札は重ならず、文字色は背景と十分に区別できる", () => {
   for (const city of Object.values(mapCities)) {
     const point = project(city.lon, city.lat);
-    for (const box of Object.values(mapCities))
+    const widePoint = applyTransform(point, wideMap);
+    for (const box of Object.values(wideCities))
       expect(
-        point.x < box.x ||
-          point.x > box.x + cardSize.width ||
-          point.y < box.y ||
-          point.y > box.y + cardSize.height,
+        widePoint.x < box.x ||
+          widePoint.x > box.x + wideCardSize.width ||
+          widePoint.y < box.y ||
+          widePoint.y > box.y + wideCardSize.height,
       ).toBe(true);
-    const x = 101 + point.x * 0.31;
-    const y = 74 + point.y * 0.31;
+    const narrowPoint = applyTransform(point, narrowMap);
     for (const box of Object.values(narrowCities))
       expect(
-        x < box.x ||
-          x > box.x + narrowCardSize.width ||
-          y < box.y ||
-          y > box.y + narrowCardSize.height,
+        narrowPoint.x < box.x ||
+          narrowPoint.x > box.x + narrowCardSize.width ||
+          narrowPoint.y < box.y ||
+          narrowPoint.y > box.y + narrowCardSize.height,
       ).toBe(true);
   }
   const cards = Object.values(narrowCities);
@@ -415,4 +421,28 @@ it("狭い地図の札は重ならず、文字色は背景と十分に区別で�
       expect(
         (luminance(background) + 0.05) / (luminance(foreground) + 0.05),
       ).toBeGreaterThanOrEqual(4.5);
+});
+
+it("夕方に今日の気温が無いときは、明日の気温を明日と付けて出す", () => {
+  expect(formatTemps({}, { max: 23, min: 12 })).toBe("明日23℃");
+  expect(formatTemps({}, { max: 23, min: 12 }, "range", 20)).toBe(
+    "明日23/12℃ ☂20%",
+  );
+  expect(formatTemps({ max: 18, min: 7 }, { max: 23, min: 12 })).toBe("18℃");
+  expect(
+    formatTemps({ max: 18, min: 7 }, { max: 23, min: 12 }, "range", 10),
+  ).toBe("18℃/7℃ ☂10%");
+  expect(formatTemps({})).toBe("—");
+  expect(formatTemps({}, undefined, "range")).toBe("— / —");
+});
+
+it("iPad mini（744px）では広い地図の文字が 14px 以上に見える", () => {
+  // 縦向きは md（768px）未満なので、ブレークポイントを sm にしないと狭い地図になる。
+  // 頁 px-4 とカード p-4 を引いた幅で、viewBox に対する文字サイズを見る。
+  expect(
+    (wideFontSize * (744 - 32 - 32)) / wideViewBox.width,
+  ).toBeGreaterThanOrEqual(14);
+  expect(
+    (wideFontSize * (640 - 32 - 32)) / wideViewBox.width,
+  ).toBeGreaterThanOrEqual(14);
 });
