@@ -4,7 +4,7 @@ description: 事業承継を五行の関係で説明する動画を読み、3分
 publishedAt: 2026-10-16
 category: 引越しの考え方
 tags: 四柱推命,事業承継,五行,数字の評価
-draft: false
+draft: true
 ---
 
 ## 肩書が変わったあと、誰が決めるのか

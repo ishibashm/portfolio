@@ -4,7 +4,7 @@ description: 自分の時計と天の時計を語る動画の3日・2〜3か月�
 publishedAt: 2026-10-16
 category: 引越しの考え方
 tags: 四柱推命,記録,予測,数字の評価
-draft: false
+draft: true
 ---
 
 ## 結果を知る前の言葉を残す

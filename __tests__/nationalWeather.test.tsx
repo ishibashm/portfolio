@@ -11,18 +11,27 @@ import {
 } from "@/lib/todayWeather/national";
 import {
   NationalWeatherCards,
-  NationalWeatherSection,
-  NationalWeatherOverview,
+  shortWeather,
   weatherEmoji,
 } from "@/components/home/NationalWeather";
 import {
+  TodayOverview,
+  TodayOverviewCard,
+  citiesByDirection,
+  cityDirectionsFor,
+} from "@/components/home/TodayOverview";
+import { buildTodayBoard } from "@/lib/todayDirections";
+import { directionFromTokyo } from "@/lib/todayWeather/cityDirections";
+import {
   mapCities,
+  mapViewBox,
   project,
   insetBox,
   cardSize,
   narrowCities,
   narrowCardSize,
   narrowFontSize,
+  narrowViewBox,
 } from "@/lib/todayWeather/mapProjection";
 import { getMonthlySummary, getMonthDirections } from "@/lib/kigakuContent";
 
@@ -200,20 +209,22 @@ it("月の要約は元の計算と一致し、再利用しても呼び出し側�
   first[0].month = 99;
   expect(getMonthlySummary(2030, 3)).toEqual(expected);
 });
+const allOffices = [
+  "016000",
+  "040000",
+  "150000",
+  "130000",
+  "230000",
+  "270000",
+  "340000",
+  "390000",
+  "400000",
+  "471000",
+];
+// 2026-11-19 は中宮九紫。北＝五黄殺、東＝日破、南＝暗剣殺。
+const boardDay = new Date("2026-11-19T12:00:00+09:00");
 it("地図と表を描画し、ホームのISRを保つ", async () => {
-  const offices = [
-    "016000",
-    "040000",
-    "150000",
-    "130000",
-    "230000",
-    "270000",
-    "340000",
-    "390000",
-    "400000",
-    "471000",
-  ];
-  const all = offices.map((code) => office(code, "17", ["12", "23"]));
+  const all = allOffices.map((code) => office(code, "17", ["12", "23"]));
   const data = parseNationalWeather(all, now)!;
   const html = renderToStaticMarkup(<NationalWeatherCards data={data} />);
   const svgs = html.match(/<svg[\s\S]*?<\/svg>/g)!;
@@ -222,31 +233,109 @@ it("地図と表を描画し、ホームのISRを保つ", async () => {
   expect(narrow).toContain("md:hidden");
   expect(svg).toContain("md:block");
   expect(narrow).not.toContain("☂");
-  expect((narrowFontSize * (390 - 48)) / 400).toBeGreaterThanOrEqual(14);
+  // 狭い画面（390px、カードの内側 p-4）でも札の文字が 14px 以上に見える。
+  expect(
+    (narrowFontSize * (390 - 32)) / narrowViewBox.width,
+  ).toBeGreaterThanOrEqual(14);
   expect(Buffer.byteLength(html)).toBeLessThan(40000);
   expect(svg).toContain("今日の全国の天気の地図");
   expect(svg.match(/<circle /g)).toHaveLength(10);
   expect(Buffer.byteLength(svg)).toBeLessThan(60000);
   for (const city of data.cities) expect(html).toContain(city.city);
-  expect(html.match(/scope="row"/g)).toHaveLength(10);
+  expect(html.match(/scope="row"/g)).toHaveLength(20);
+  expect(html).toContain("<details");
   expect(html).toContain("10都市の今日の天気（表）");
   expect(html).not.toContain("/houi/today?pref=");
+  // 地図とあわせて 2 つの表を持っても、HTML が重くなりすぎない。
+  expect(renderToStaticMarkup(<NationalWeatherCards data={null} />)).toContain(
+    "いま天気を取得できません。",
+  );
   vi.stubGlobal(
     "fetch",
     vi.fn(async () => response(all)),
   );
-  expect(renderToStaticMarkup(await NationalWeatherOverview())).toContain(
-    "<svg",
-  );
-  const section = renderToStaticMarkup(await NationalWeatherSection());
-  expect(section).not.toContain('action="/houi/today"');
+  const section = renderToStaticMarkup(await TodayOverview());
+  expect(section).toContain("今日の天気と方位");
+  expect(section).not.toContain("<form");
+  expect(section).not.toContain("<input");
+  expect(section).not.toContain("<script");
   expect(section).toContain("Natural Earth");
-  expect(renderToStaticMarkup(<NationalWeatherCards data={null} />)).toContain(
-    "いま取得できません。",
-  );
   const home = readFileSync("src/app/page.tsx", "utf8");
   expect(home).not.toContain("searchParams");
+  expect(home).toContain("<TodayOverview />");
   expect(home).toMatch(/export const revalidate = 60/);
+  const source = readFileSync("src/components/home/TodayOverview.tsx", "utf8");
+  expect(source).not.toMatch(/^"use client"/m);
+});
+it("東京から見た方位は気学の伝統的な区切りで、共通の凶の都市を赤くする", () => {
+  expect(
+    Object.fromEntries(
+      Object.keys(mapCities).map((code) => [code, directionFromTokyo(+code)]),
+    ),
+  ).toEqual({
+    1: "N",
+    4: "NE",
+    13: null,
+    15: "N",
+    23: "W",
+    27: "SW",
+    34: "W",
+    39: "SW",
+    40: "W",
+    47: "SW",
+  });
+  const board = buildTodayBoard(boardDay);
+  expect(board.center).toBe(9);
+  expect(board.common).toEqual([
+    { direction: "N", label: "北", reason: "五黄殺" },
+    { direction: "E", label: "東", reason: "日破" },
+    { direction: "S", label: "南", reason: "暗剣殺" },
+  ]);
+  expect(board.stars).toHaveLength(9);
+  expect(board.stars[0]).toMatchObject({
+    name: "一白水星",
+    lucky: ["NE", "SW"],
+  });
+  const all = allOffices.map((code) => office(code, "17", ["12", "23"]));
+  const data = parseNationalWeather(all, now)!;
+  const directions = cityDirectionsFor(data, board);
+  expect(directions[1]).toEqual({ label: "北", unlucky: "五黄殺" });
+  expect(directions[15]).toEqual({ label: "北", unlucky: "五黄殺" });
+  expect(directions[4]).toEqual({ label: "北東" });
+  expect(directions[13]).toBeUndefined();
+  // 南西の代表は東京に近い順（大阪・高知・那覇）。
+  expect(
+    citiesByDirection(data)
+      .get("SW")!
+      .map((city) => city.city),
+  ).toEqual(["大阪", "高知", "那覇"]);
+  const html = renderToStaticMarkup(
+    <TodayOverviewCard data={data} board={board} />,
+  );
+  // 本命星の表 9 行と都市の表 10 行（畳んだ短い表と lg 以上の全文の表）。
+  expect(html.match(/scope="row"/g)).toHaveLength(29);
+  expect(html).toContain("地図では札幌・新潟を赤くしています。");
+  expect(html).toContain("北・五黄殺");
+  expect(html).toContain("#ffe4e6");
+  expect(html).toContain("南西 大阪☀️— ほか2");
+  expect(html).toContain("地図の都市なし");
+  const empty = renderToStaticMarkup(
+    <TodayOverviewCard data={null} board={board} />,
+  );
+  expect(empty).toContain("いま天気を取得できません。");
+  expect(empty).toContain("今日の日盤（東京基準）");
+});
+it("狭い画面の短い天気", () => {
+  expect(
+    [
+      "くもり 時々 雪か雨",
+      "雨 所により 雷を伴う",
+      "晴れ 朝晩 くもり",
+      "くもり のち 晴れ",
+      "雪",
+      "大雨",
+    ].map(shortWeather),
+  ).toEqual(["くもり時々雪", "雨", "晴れ", "くもりのち晴れ", "雪", "大雨"]);
 });
 it("天気の先頭と座標、カード配置", () => {
   expect(
@@ -262,8 +351,8 @@ it("天気の先頭と座標、カード配置", () => {
   for (const [i, a] of cards.entries()) {
     expect(a.x).toBeGreaterThanOrEqual(0);
     expect(a.y).toBeGreaterThanOrEqual(0);
-    expect(a.x + cardSize.width).toBeLessThanOrEqual(640);
-    expect(a.y + cardSize.height).toBeLessThanOrEqual(620);
+    expect(a.x + cardSize.width).toBeLessThanOrEqual(mapViewBox.width);
+    expect(a.y + cardSize.height).toBeLessThanOrEqual(mapViewBox.height);
     for (const b of cards.slice(i + 1))
       expect(
         a.x + cardSize.width <= b.x ||
@@ -296,7 +385,10 @@ it("狭い地図の札は重ならず、文字色は背景と十分に区別で�
   }
   const cards = Object.values(narrowCities);
   for (const [i, a] of cards.entries()) {
-    expect(a.x + narrowCardSize.width).toBeLessThanOrEqual(400);
+    expect(a.x + narrowCardSize.width).toBeLessThanOrEqual(narrowViewBox.width);
+    expect(a.y + narrowCardSize.height).toBeLessThanOrEqual(
+      narrowViewBox.height,
+    );
     for (const b of cards.slice(i + 1))
       expect(
         a.x + narrowCardSize.width <= b.x ||
@@ -312,8 +404,14 @@ it("狭い地図の札は重ならず、文字色は背景と十分に区別で�
     });
     return 0.2126 * channels[0] + 0.7152 * channels[1] + 0.0722 * channels[2];
   };
-  for (const foreground of ["#172f2a", "#243f39"])
-    for (const background of ["#fff3d6", "#e2efff", "#e8f4f7", "#f0f1ed"])
+  for (const foreground of ["#172f2a", "#243f39", "#9f1239"])
+    for (const background of [
+      "#fff3d6",
+      "#e2efff",
+      "#e8f4f7",
+      "#f0f1ed",
+      "#ffe4e6",
+    ])
       expect(
         (luminance(background) + 0.05) / (luminance(foreground) + 0.05),
       ).toBeGreaterThanOrEqual(4.5);

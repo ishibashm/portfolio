@@ -5,7 +5,7 @@ publishedAt: 2026-10-16
 updatedAt: 2026-11-15
 category: 引越しの考え方
 tags: 四柱推命,干支,暦,数字の評価
-draft: false
+draft: true
 ---
 
 ## 年の名前と、事業の開始条件は別に確かめる

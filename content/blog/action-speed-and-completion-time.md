@@ -4,7 +4,7 @@ description: 陰陽で実行速度を説明する動画の3段階・10歩など�
 publishedAt: 2026-10-16
 category: 引越しの考え方
 tags: 四柱推命,陰陽,仕事,数字の評価
-draft: false
+draft: true
 ---
 
 ## 速いという感想には、終点が必要になる
