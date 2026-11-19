@@ -8,8 +8,8 @@ import Link from "next/link";
 import {
   NationalWeatherMap,
   NationalWeatherTable,
+  formatTemps,
   shortWeather,
-  temp,
   weatherEmoji,
   type CityDirections,
 } from "@/components/home/NationalWeather";
@@ -124,7 +124,7 @@ function luckyWeather(
     if (!cities?.length) return [];
     const [city] = cities;
     return [
-      `${DIRECTION_LABELS[direction]} ${city.city}${weatherEmoji(city.today.weather) || shortWeather(city.today.weather)}${temp(city.today.max)}${cities.length > 1 ? ` ほか${cities.length - 1}` : ""}`,
+      `${DIRECTION_LABELS[direction]} ${city.city}${weatherEmoji(city.today.weather) || shortWeather(city.today.weather)}${formatTemps(city.today, city.tomorrow, "compact")}${cities.length > 1 ? ` ほか${cities.length - 1}` : ""}`,
     ];
   });
   return parts;
@@ -145,7 +145,7 @@ export function TodayOverviewCard({
   return (
     <section
       aria-labelledby="today-overview-heading"
-      className="w-full max-w-[1700px] space-y-3 rounded-3xl border border-slate-300 bg-white/95 p-4 text-slate-900 shadow-lg shadow-slate-200/50 md:space-y-4 md:p-8"
+      className="@container w-full max-w-[1700px] space-y-3 rounded-3xl border border-slate-300 bg-white/95 p-4 text-slate-900 shadow-lg shadow-slate-200/50 md:space-y-4 md:p-8"
     >
       <div>
         <h2 id="today-overview-heading" className="text-xl font-bold">
@@ -156,7 +156,10 @@ export function TodayOverviewCard({
           （日本時間）・方位は東京から見たもの
         </p>
       </div>
-      <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,24rem)]">
+      {/* 日盤を地図の右に置くのは、セクション幅が十分あるときだけ。
+          iPad mini 横（1133px）では左サイドバー（lg:w-64）で中身が約 813px
+          しかなく、24rem の日盤を横に並べると地図が 350px 程度になる。 */}
+      <div className="grid gap-4 @min-[1100px]:grid-cols-[minmax(0,1fr)_minmax(0,24rem)]">
         <div className="space-y-2">
           {data ? (
             <NationalWeatherMap data={data} directions={directions} />
@@ -171,13 +174,13 @@ export function TodayOverviewCard({
         </div>
         <aside
           aria-labelledby="today-board-heading"
-          className="space-y-3 md:grid md:grid-cols-[13rem_minmax(0,1fr)] md:gap-4 md:space-y-0 lg:block lg:space-y-3"
+          className="space-y-3 sm:grid sm:grid-cols-[13rem_minmax(0,1fr)] sm:gap-4 sm:space-y-0 @min-[1100px]:block @min-[1100px]:space-y-3"
         >
           <div className="space-y-2">
             <h3 id="today-board-heading" className="text-base font-bold">
               今日の日盤（東京基準）
             </h3>
-            <div className="flex items-start gap-3 md:block md:space-y-2">
+            <div className="flex items-start gap-3 sm:block sm:space-y-2">
               <DayBoard board={board} />
               <div className="space-y-1 text-xs">
                 <p className="font-semibold">全員に共通の避けたい方位</p>

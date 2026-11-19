@@ -1,17 +1,24 @@
 /** ホームの静的生成に含める全国予報。位置情報や入力を使わない。 */
 import paths from "@/data/japanMapPaths.json";
 import type { NationalWeather } from "@/lib/todayWeather/national";
+import type { JmaDay } from "@/lib/todayWeather/jma";
 import {
-  cardSize,
+  applyTransform,
   insetBox,
   mapCities,
-  mapViewBox,
   narrowCities,
   narrowCardSize,
   narrowFontSize,
+  narrowMap,
   narrowViewBox,
   nearestOnCard,
   project,
+  wideCardSize,
+  wideCities,
+  wideFontSize,
+  wideMap,
+  wideTempFontSize,
+  wideViewBox,
 } from "@/lib/todayWeather/mapProjection";
 
 export function weatherEmoji(text: string): string {
@@ -40,6 +47,32 @@ export function shortWeather(text: string): string {
 export const temp = (value: number | undefined) =>
   value === undefined ? "—" : `${value}℃`;
 
+const hasTemps = (day?: Pick<JmaDay, "max" | "min">) =>
+  day != null && (day.max !== undefined || day.min !== undefined);
+
+/**
+ * 夕方の発表では今日の気温が予報から落ち、札が「—」だけになる。
+ * 明日の値があるときは「明日」と付けて出す。
+ */
+export function formatTemps(
+  today: Pick<JmaDay, "max" | "min">,
+  tomorrow?: Pick<JmaDay, "max" | "min">,
+  kind: "compact" | "range" = "compact",
+  pop?: number,
+) {
+  const usesTomorrow = !hasTemps(today) && hasTemps(tomorrow);
+  const day = usesTomorrow ? tomorrow : hasTemps(today) ? today : undefined;
+  if (!day) return kind === "compact" ? "—" : "— / —";
+  const prefix = usesTomorrow ? "明日" : "";
+  if (kind === "compact") return `${prefix}${temp(day.max)}`;
+  const rain = pop !== undefined ? ` ☂${pop}%` : "";
+  // 「明日」付きは札の幅に収めるため、度数記号は末尾だけにする。
+  const range = prefix
+    ? `${prefix}${day.max ?? "—"}/${day.min ?? "—"}℃`
+    : `${temp(day.max)}/${temp(day.min)}`;
+  return `${range}${rain}`;
+}
+
 /** 札・表に添える、東京から見た方位。unlucky は全員共通の凶の名前。 */
 export type CityDirection = { label: string; unlucky?: string };
 export type CityDirections = Record<number, CityDirection>;
@@ -64,6 +97,39 @@ function directionText(direction: CityDirection | undefined, code: number) {
     : direction.label;
 }
 
+const LAYOUTS = {
+  wide: {
+    size: wideCardSize,
+    box: wideViewBox,
+    cities: wideCities,
+    fontSize: wideFontSize,
+    tempFontSize: wideTempFontSize,
+    dirFontSize: 14,
+    className: "hidden h-auto w-full sm:block",
+    map: wideMap,
+    nameY: 22,
+    tempY: 41,
+    dirY: 58,
+    compactTemp: false,
+    circle: 3,
+  },
+  narrow: {
+    size: narrowCardSize,
+    box: narrowViewBox,
+    cities: narrowCities,
+    fontSize: narrowFontSize,
+    tempFontSize: narrowFontSize,
+    dirFontSize: 13,
+    className: "block h-auto w-full sm:hidden",
+    map: narrowMap,
+    nameY: 20,
+    tempY: 40,
+    dirY: 56,
+    compactTemp: true,
+    circle: 2.5,
+  },
+} as const;
+
 export function NationalWeatherMap({
   data,
   directions = {},
@@ -74,29 +140,24 @@ export function NationalWeatherMap({
   return (
     <>
       {(["wide", "narrow"] as const).map((variant) => {
-        const narrow = variant === "narrow";
-        const size = narrow ? narrowCardSize : cardSize;
-        const box = narrow ? narrowViewBox : mapViewBox;
+        const layout = LAYOUTS[variant];
+        const { size, box, map } = layout;
         return (
           <svg
             key={variant}
             role="img"
             aria-labelledby={`weather-map-${variant}-title weather-map-${variant}-desc`}
             viewBox={`0 0 ${box.width} ${box.height}`}
-            className={
-              narrow
-                ? "block h-auto w-full md:hidden"
-                : "hidden h-auto w-full max-w-[720px] md:block"
-            }
+            className={layout.className}
           >
             <title id={`weather-map-${variant}-title`}>
               今日の全国の天気の地図
             </title>
             <desc id={`weather-map-${variant}-desc`}>
-              全国の代表10都市の今日の天気と最高気温、東京から見た方位。詳しい内容は続く表に記載しています。
+              全国の代表10都市の今日の天気と気温、東京から見た方位。夕方の発表で今日の気温が無いときは明日の気温を記載します。詳しい内容は続く表に記載しています。
             </desc>
             <rect width="100%" height="100%" rx="12" fill="#eaf4f5" />
-            <g transform={narrow ? "translate(101 74) scale(0.31)" : undefined}>
+            <g transform={`translate(${map.x} ${map.y}) scale(${map.scale})`}>
               <defs>
                 <filter
                   id={`land-shadow-${variant}`}
@@ -136,46 +197,47 @@ export function NationalWeatherMap({
               />
             </g>
             <text
-              x={narrow ? 101 : 12}
-              y={narrow ? 68 : 26}
-              fontSize={narrow ? 14 : 16}
+              x={map.x + insetBox.x * map.scale}
+              y={map.y + insetBox.y * map.scale - 4}
+              fontSize={variant === "narrow" ? 14 : 16}
               fill="#243f39"
             >
               南西諸島
             </text>
             {data.cities.map((city) => {
-              const position = mapCities[city.prefectureCode];
-              const card = narrow
-                ? narrowCities[city.prefectureCode]
-                : position;
-              if (!position || !card) return null;
-              const point = project(position.lon, position.lat);
-              const x = narrow ? 101 + point.x * 0.31 : point.x;
-              const y = narrow ? 74 + point.y * 0.31 : point.y;
-              const end = nearestOnCard({ x, y }, card, size);
+              const geo = mapCities[city.prefectureCode];
+              const card = layout.cities[city.prefectureCode];
+              if (!geo || !card) return null;
+              const point = applyTransform(project(geo.lon, geo.lat), map);
+              const end = nearestOnCard(point, card, size);
               return (
                 <g key={city.prefectureCode}>
                   <line
-                    x1={x}
-                    y1={y}
+                    x1={point.x}
+                    y1={point.y}
                     x2={end.x}
                     y2={end.y}
                     stroke="#49635d"
                     strokeWidth="1"
                   />
-                  <circle cx={x} cy={y} r={narrow ? 2.5 : 3} fill="#243f39" />
+                  <circle
+                    cx={point.x}
+                    cy={point.y}
+                    r={layout.circle}
+                    fill="#243f39"
+                  />
                 </g>
               );
             })}
             {data.cities.map((city) => {
-              const position = narrow
-                ? narrowCities[city.prefectureCode]
-                : mapCities[city.prefectureCode];
+              const position = layout.cities[city.prefectureCode];
               if (!position) return null;
               const direction = directions[city.prefectureCode];
               const unlucky = Boolean(direction?.unlucky);
               const heavyRain = city.pop !== undefined && city.pop >= 50;
               const emoji = weatherEmoji(city.today.weather);
+              const usesTomorrow =
+                !hasTemps(city.today) && hasTemps(city.tomorrow);
               return (
                 <g key={city.prefectureCode}>
                   <rect
@@ -191,31 +253,38 @@ export function NationalWeatherMap({
                   />
                   <text
                     x={position.x + 8}
-                    y={position.y + (narrow ? 20 : 22)}
-                    fontSize={narrow ? narrowFontSize : 18}
+                    y={position.y + layout.nameY}
+                    fontSize={layout.fontSize}
                     fontWeight="bold"
                     fill="#172f2a"
                   >
-                    {city.city} {narrow ? "" : emoji}
+                    {city.city} {layout.compactTemp ? "" : emoji}
                   </text>
                   <text
                     x={position.x + 8}
-                    y={position.y + (narrow ? 40 : 41)}
-                    fontSize={narrow ? narrowFontSize : 15}
+                    y={position.y + layout.tempY}
+                    fontSize={layout.tempFontSize}
                     fill="#243f39"
                   >
-                    {narrow
-                      ? `${emoji} ${temp(city.today.max)}`
-                      : `${temp(city.today.max)} / ${temp(city.today.min)}${city.pop !== undefined ? ` ☂${city.pop}%` : ""}`}
+                    {layout.compactTemp
+                      ? `${emoji} ${temp((usesTomorrow ? city.tomorrow : city.today)?.max)}`
+                      : formatTemps(
+                          city.today,
+                          city.tomorrow,
+                          "range",
+                          city.pop,
+                        )}
                   </text>
                   <text
                     x={position.x + 8}
-                    y={position.y + (narrow ? 56 : 58)}
-                    fontSize={narrow ? 13 : 14}
+                    y={position.y + layout.dirY}
+                    fontSize={layout.dirFontSize}
                     fontWeight={unlucky ? "bold" : undefined}
                     fill={unlucky ? UNLUCKY_TEXT : "#334155"}
                   >
-                    {directionText(direction, city.prefectureCode)}
+                    {usesTomorrow && layout.compactTemp
+                      ? `明日 ${directionText(direction, city.prefectureCode)}`.trim()
+                      : directionText(direction, city.prefectureCode)}
                   </text>
                 </g>
               );
