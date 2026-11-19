@@ -4,7 +4,7 @@ description: 五行を経営者の役割にたとえる動画を手がかりに�
 publishedAt: 2026-10-16
 category: 引越しの考え方
 tags: 五行,四柱推命,仕事,評価基準
-draft: false
+draft: true
 ---
 
 ## 五つの役割は、能力を測った結果ではない

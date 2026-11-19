@@ -4,7 +4,7 @@ description: 親の責任感と執着を語る動画の10歳・20歳・30歳・1
 publishedAt: 2026-10-16
 category: 引越しの考え方
 tags: 四柱推命,年齢,親子,数字の評価
-draft: false
+draft: true
 ---
 
 ## 年齢の節目は、一律の終了日ではない

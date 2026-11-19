@@ -4,7 +4,7 @@ description: 命式に合う仕事なら疲れないという動画の見解を�
 publishedAt: 2026-10-16
 category: 引越しの考え方
 tags: 四柱推命,天職,仕事,数字の評価
-draft: false
+draft: true
 ---
 
 ## 疲れたという感想だけで、天職から外れたと決めない

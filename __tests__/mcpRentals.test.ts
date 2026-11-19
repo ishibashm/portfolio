@@ -641,7 +641,11 @@ describe("公開MCPの道具", () => {
 
   it("読み取り専用として登録し、個人用としるべには出さない", async () => {
     const client = await connect(
-      createMcpServer({ rentals: createFixtureRentalReader([listing(1)]) }),
+      createMcpServer({
+        rentals: createFixtureRentalReader([
+          listing(1, { lastSeenAt: new Date() }),
+        ]),
+      }),
     );
     const tools = (await client.listTools()).tools;
     for (const name of [

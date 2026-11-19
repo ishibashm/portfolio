@@ -4,7 +4,7 @@ description: 経営の問題を陰陽で語る動画を手がかりに、苦情�
 publishedAt: 2026-10-16
 category: 引越しの考え方
 tags: 陰陽五行,経営,苦情,数字の評価
-draft: false
+draft: true
 ---
 
 ## 「誰のために起きたか」を、誰が困っているかへ置き換える

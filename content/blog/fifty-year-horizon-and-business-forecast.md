@@ -4,7 +4,7 @@ description: 経営を陰陽や変化で語る動画の50年後・2025年・1日
 publishedAt: 2026-10-16
 category: 引越しの考え方
 tags: 陰陽五行,数字の評価,記録
-draft: false
+draft: true
 ---
 
 ## 「50年後」は考える期限にも、予測の期限にもなる

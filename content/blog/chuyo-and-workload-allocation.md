@@ -4,7 +4,7 @@ description: 中庸を会社の運営にたとえる動画の1日・3つの時�
 publishedAt: 2026-10-16
 category: 引越しの考え方
 tags: 陰陽,中庸,仕事,数字の評価
-draft: false
+draft: true
 ---
 
 ## 白黒の図は人員配置の比率表なのか

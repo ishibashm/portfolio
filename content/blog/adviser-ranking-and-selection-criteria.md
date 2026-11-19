@@ -4,7 +4,7 @@ description: 十干で参謀を選ぶ動画の順位と90%という推薦表現�
 publishedAt: 2026-10-16
 category: 引越しの考え方
 tags: 四柱推命,相性,参謀,数字の評価
-draft: false
+draft: true
 ---
 
 ## 「一番よい相手」は、何を頼むかで意味が変わる
