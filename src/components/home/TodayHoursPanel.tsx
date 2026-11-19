@@ -1,9 +1,10 @@
 /**
- * ホームの「今日の天気と方位」の下に置く、東京基準の今の刻と
- * 本命星別の時間帯。入力・位置情報・ブラウザの JavaScript を使わない。
- * 詳しい日盤と、現在地での今の刻は /houi/today へ。
+ * ホームの「今日の天気と方位」の下に置く、しるべの横断幕と今の刻。
+ * 画像はもともと /houi/today 先頭にあったもの。入力・位置情報・
+ * ブラウザの JavaScript は使わない。詳しい表は /houi/today へ。
  */
 import Link from "next/link";
+import { TodayShirubeBanner } from "@/components/houi/TodayShirubeBanner";
 import {
   buildCurrentDirections,
   buildTodayDirections,
@@ -95,6 +96,12 @@ export function TodayHoursCard({
           （日本時間）・東京基準の真太陽時
         </p>
       </div>
+      <Link
+        href="/houi/today"
+        className="block overflow-hidden rounded-2xl focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-rose-600"
+      >
+        <TodayShirubeBanner sizes="(min-width: 1280px) 1100px, (min-width: 768px) calc(100vw - 8rem), calc(100vw - 2.5rem)" />
+      </Link>
       <div className="space-y-2">
         <h3 className="text-base font-bold">
           今の刻：{current.branch}の刻 {currentTime}
@@ -114,52 +121,52 @@ export function TodayHoursCard({
             <li className="text-slate-700">なし</li>
           )}
         </ul>
-        <div className="overflow-x-auto">
-          <table className="w-full text-left text-xs">
-            <caption className="text-left font-semibold">
-              本命星別の今の刻の吉方位
-            </caption>
-            <thead>
-              <tr>
-                {["本命星", "今の吉", "今の避けたい"].map((label) => (
-                  <th
-                    key={label}
-                    scope="col"
-                    className="whitespace-nowrap px-1.5 py-1"
-                  >
-                    {label}
-                  </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {data.stars.map((star) => {
-                const hour = star.hours.find(
-                  (item) => item.branch === current.branch,
-                );
-                return (
-                  <tr key={star.star} className="border-t border-slate-200">
-                    <th scope="row" className="whitespace-nowrap px-1.5 py-1">
-                      {star.name}
-                    </th>
-                    <td className="px-1.5 py-1">
-                      {hour ? list(hour.lucky) : "—"}
-                    </td>
-                    <td className="px-1.5 py-1">
-                      {hour ? list(hour.unlucky) : "—"}
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
       </div>
       <details className="text-xs">
         <summary className="cursor-pointer font-semibold text-slate-800 underline underline-offset-4">
-          十二支の時間帯を本命星別に見る
+          本命星別の今の刻と、十二支の時間帯を見る
         </summary>
-        <div className="mt-3 space-y-2">
+        <div className="mt-3 space-y-3">
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-xs">
+              <caption className="text-left font-semibold">
+                本命星別の今の刻の吉方位
+              </caption>
+              <thead>
+                <tr>
+                  {["本命星", "今の吉", "今の避けたい"].map((label) => (
+                    <th
+                      key={label}
+                      scope="col"
+                      className="whitespace-nowrap px-1.5 py-1"
+                    >
+                      {label}
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {data.stars.map((star) => {
+                  const hour = star.hours.find(
+                    (item) => item.branch === current.branch,
+                  );
+                  return (
+                    <tr key={star.star} className="border-t border-slate-200">
+                      <th scope="row" className="whitespace-nowrap px-1.5 py-1">
+                        {star.name}
+                      </th>
+                      <td className="px-1.5 py-1">
+                        {hour ? list(hour.lucky) : "—"}
+                      </td>
+                      <td className="px-1.5 py-1">
+                        {hour ? list(hour.unlucky) : "—"}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
           {data.stars.map((star) => (
             <details
               key={star.star}

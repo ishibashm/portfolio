@@ -27,31 +27,6 @@ function SectionIcon({ name, alt }: { name: "fortune"; alt: string }) {
   );
 }
 
-/** 枠の先頭の絵。しるべが手を振る朝の空。1280×580 を 960 幅・480 幅に縮めたもの。 */
-function PanelBanner() {
-  const sizes = "(min-width: 1024px) 984px, calc(100vw - 4.5rem)";
-  return (
-    <picture>
-      <source
-        type="image/avif"
-        srcSet="/today/banner-480.avif 480w, /today/banner-960.avif 960w"
-        sizes={sizes}
-      />
-      <img
-        src="/today/banner-960.webp"
-        srcSet="/today/banner-480.webp 480w, /today/banner-960.webp 960w"
-        sizes={sizes}
-        alt="朝焼けの空の下で手を振るしるべと、方位の絵"
-        width={960}
-        height={435}
-        fetchPriority="high"
-        decoding="async"
-        className="h-auto w-full rounded-lg"
-      />
-    </picture>
-  );
-}
-
 const list = (items: string[]) => items.join("・") || "なし";
 function FortuneBlock({
   birthYear,
@@ -123,7 +98,6 @@ export function TodayFortunePanel({
       aria-labelledby="today-fortune-heading"
       className="wg-card space-y-4 p-5"
     >
-      <PanelBanner />
       <h2 id="today-fortune-heading" className="text-xl font-bold">
         生まれ年で見る今日の方位
       </h2>
