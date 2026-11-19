@@ -5,7 +5,9 @@ import { createAgentModel, withinSignal } from "@/lib/mcpAgent";
 import { chainLlmState } from "@/lib/mcpAgentConfig";
 import { paidApisDisabled } from "@/lib/paidApis";
 import { wrapUntrusted } from "@/lib/untrustedData";
-import { verifySentences } from "./guideVerify";
+import { checkGuideAiSentences, narrowGuideOutputs } from "./guideAiCheck";
+import type { GuideFacts } from "./guideRun";
+import { collectEvidence, verifySentences } from "./guideVerify";
 import {
   WORKERS_AI_FALLBACK_MODEL,
   WORKERS_AI_MAX_PROMPT_CHARS,
@@ -61,6 +63,70 @@ export type GuideAiDeps = {
   now?: () => number;
 };
 
+export type GuideAiInput = {
+  outputs: unknown[];
+  evidence: ReadonlySet<string>;
+  headers: Headers;
+  toolCalls?: number;
+  /**
+   * 本人の本命星の行から作った facts。渡すと、AI に渡す道具結果を本人の行に
+   * 絞り、照合も本人の行（方位と状態の組）に対して行う。
+   */
+  facts?: GuideFacts;
+  /** 利用者の入力（照合の根拠に加える）。 */
+  query?: unknown;
+};
+
+/** AI に渡す道具結果と、AI の文を照合する根拠を決める。 */
+export function guideAiMaterial(input: GuideAiInput): {
+  outputs: unknown[];
+  evidence: ReadonlySet<string>;
+} {
+  if (!input.facts) {
+    return { outputs: input.outputs, evidence: input.evidence };
+  }
+  const outputs = narrowGuideOutputs(input.outputs, input.facts);
+  return { outputs, evidence: collectEvidence(outputs, input.query) };
+}
+
+/**
+ * AI の文を照合する。値の照合（verifySentences）に加えて、方位と状態の組・
+ * 星の名前を本人の行と照合し、定型文だけの出力は失敗にする。
+ */
+export function verifyGuideAiText(
+  text: string,
+  evidence: ReadonlySet<string>,
+  facts: GuideFacts | undefined,
+): Pick<GuideAiResult, "sentences" | "dropped" | "matchedValues"> & {
+  ok: boolean;
+} {
+  const candidates = splitJapaneseSentences(text);
+  const verified = verifySentences(candidates, evidence);
+  if (verified.kept.length === 0) {
+    return {
+      ok: false,
+      sentences: [],
+      dropped: verified.dropped,
+      matchedValues: [],
+    };
+  }
+  const checked = checkGuideAiSentences(verified.kept, facts);
+  if (checked.failure) {
+    return {
+      ok: false,
+      sentences: [],
+      dropped: [...verified.dropped, ...checked.dropped],
+      matchedValues: [],
+    };
+  }
+  return {
+    ok: true,
+    sentences: checked.kept,
+    dropped: [...verified.dropped, ...checked.dropped],
+    matchedValues: verified.matchedValues,
+  };
+}
+
 function splitJapaneseSentences(text: string): string[] {
   return text
     .split(/(?<=。)\s*|\r?\n+/)
@@ -75,12 +141,7 @@ function splitJapaneseSentences(text: string): string[] {
  * chainLlmState().enabled が false なら "disabled" を返し、AI を一切呼ばない。
  */
 export async function summarizeWithGuideAi(
-  input: {
-    outputs: unknown[];
-    evidence: ReadonlySet<string>;
-    headers: Headers;
-    toolCalls?: number;
-  },
+  input: GuideAiInput,
   deps: GuideAiDeps = {},
 ): Promise<GuideAiResult> {
   const env = deps.env ?? process.env;
@@ -151,8 +212,9 @@ export async function summarizeWithGuideAi(
     const model = await withinSignal(createModel(), signal);
     modelStarts++;
 
-    // 道具の出力ごとに乱数つきの wrapUntrusted で囲む
-    const wrappedBlocks = input.outputs
+    // 道具の出力ごとに乱数つきの wrapUntrusted で囲む（本人の行に絞った後）
+    const material = guideAiMaterial(input);
+    const wrappedBlocks = material.outputs
       .map(
         (out, idx) =>
           `道具結果${idx + 1}:\n${wrapUntrusted(JSON.stringify(out))}`,
@@ -182,9 +244,12 @@ export async function summarizeWithGuideAi(
       invalidUsage = true;
     }
 
-    const candidates = splitJapaneseSentences(response.text ?? "");
-    const verified = verifySentences(candidates, input.evidence);
-    if (verified.kept.length === 0) {
+    const verified = verifyGuideAiText(
+      response.text ?? "",
+      material.evidence,
+      input.facts,
+    );
+    if (!verified.ok) {
       return {
         status: "failed",
         note: GUIDE_AI_FAILED_TEXT,
@@ -197,7 +262,7 @@ export async function summarizeWithGuideAi(
     return {
       status: "ok",
       note: GUIDE_AI_OK_TEXT,
-      sentences: verified.kept,
+      sentences: verified.sentences,
       dropped: verified.dropped,
       matchedValues: verified.matchedValues,
     };
@@ -276,11 +341,7 @@ export function buildGuidePrompt(
 }
 
 async function summarizeWithWorkersAi(
-  input: {
-    outputs: unknown[];
-    evidence: ReadonlySet<string>;
-    headers: Headers;
-  },
+  input: GuideAiInput,
   env: Record<string, string | undefined>,
   deps: GuideAiDeps,
 ): Promise<GuideAiResult> {
@@ -305,7 +366,8 @@ async function summarizeWithWorkersAi(
     });
     if (!reserved) return guideAiResult("failed");
 
-    const prompt = buildGuidePrompt(redactBirthData(input.outputs));
+    const material = guideAiMaterial(input);
+    const prompt = buildGuidePrompt(redactBirthData(material.outputs));
     const call = (model: string) =>
       callWorkersAiChat({
         accountId: state.accountId,
@@ -325,13 +387,12 @@ async function summarizeWithWorkersAi(
       text = (await withinSignal(call(WORKERS_AI_FALLBACK_MODEL), signal)).text;
     }
 
-    const candidates = splitJapaneseSentences(text);
-    const verified = verifySentences(candidates, input.evidence);
-    if (verified.kept.length === 0) {
+    const verified = verifyGuideAiText(text, material.evidence, input.facts);
+    if (!verified.ok) {
       return guideAiResult("failed", { dropped: verified.dropped });
     }
     return guideAiResult("ok", {
-      sentences: verified.kept,
+      sentences: verified.sentences,
       dropped: verified.dropped,
       matchedValues: verified.matchedValues,
     });

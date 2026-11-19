@@ -297,6 +297,8 @@ export async function loadGuideAnswer(input: {
         evidence,
         headers: input.headers,
         toolCalls: runResult.trace.length,
+        facts: runResult.facts,
+        query: step3Query,
       },
       { env },
     );
