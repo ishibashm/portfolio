@@ -640,8 +640,14 @@ describe("公開MCPの道具", () => {
   }
 
   it("読み取り専用として登録し、個人用としるべには出さない", async () => {
+    // MCP の道具は実時刻で鮮度を判定するので、固定日付（FRESH_SEEN）だと
+    // 30 日後（2026-11-19）から古い掲載扱いになって落ちる。実時刻基準にする。
     const client = await connect(
-      createMcpServer({ rentals: createFixtureRentalReader([listing(1)]) }),
+      createMcpServer({
+        rentals: createFixtureRentalReader([
+          listing(1, { lastSeenAt: new Date(Date.now() - DAY) }),
+        ]),
+      }),
     );
     const tools = (await client.listTools()).tools;
     for (const name of [
