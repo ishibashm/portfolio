@@ -108,3 +108,18 @@ describe("サイドバーの「しるべに案内してもらう」（2026-11-15
     expect(container.textContent).not.toContain("エージェント");
   });
 });
+
+describe("今日の吉方位のナビ（2026-11-20）", () => {
+  it("「今日の吉方位と時間」だけを出し、「今日の方位と時刻を確かめる」は出さない", () => {
+    const { container } = render(<GlobalSidebar />);
+    const today = screen.getByRole("link", { name: "今日の吉方位と時間" });
+    expect(today).toHaveAttribute("href", "/houi/today");
+    expect(
+      screen.queryByRole("link", { name: "今日の方位と時刻を確かめる" }),
+    ).toBeNull();
+    expect(
+      container.querySelectorAll('a[href="/relocation/dashboard"]'),
+    ).toHaveLength(0);
+    expect(container.querySelectorAll('a[href="/houi/today"]')).toHaveLength(1);
+  });
+});

@@ -48,7 +48,12 @@ import {
   X,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
-import { activeNavHref, CORE_ROUTES, ROUTE_GROUPS } from "@/lib/siteStructure";
+import {
+  activeNavHref,
+  CORE_ROUTES,
+  isListedInNav,
+  ROUTE_GROUPS,
+} from "@/lib/siteStructure";
 import {
   MENU_SERVER_SNAPSHOT,
   closeMenu,
@@ -107,6 +112,9 @@ const CORE_ICONS: Record<string, LucideIcon> = {
   "/houi": Compass,
   "/houi/fengshui": Home,
   "/houi/area": MapPin,
+  "/houi/today": Clock,
+  "/houi/relocation-calendar": CalendarRange,
+  "/houi/tenchusatsu": Compass,
   "/calendar": Calendar,
 };
 
@@ -127,7 +135,10 @@ const GROUPED_ITEMS: { heading: string; items: NavItem[] }[] = ROUTE_GROUPS.map(
     heading: g.label,
     // 上段（PUBLIC_ITEMS）に出した行き先は群の側で重ねて出さない（/annai）。
     items: CORE_ROUTES.filter(
-      (r) => r.group === g.key && !PUBLIC_ITEMS.some((i) => i.href === r.href),
+      (r) =>
+        r.group === g.key &&
+        isListedInNav(r) &&
+        !PUBLIC_ITEMS.some((i) => i.href === r.href),
     ).map((r) => ({
       href: r.href,
       icon: CORE_ICONS[r.href] ?? Compass,

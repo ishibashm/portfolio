@@ -82,6 +82,18 @@ export interface CoreRoute {
   summary: string;
   /** どの問いに答える道具か。ナビ・ホームの群分けに使う */
   group: RouteGroup;
+  /**
+   * サイドバーに出すか。省略時は出す。
+   * false でも中核のまま（サイトマップ・コメント・about・llms.txt に残る）。
+   * 「今日の方位と時刻を確かめる」は「今日の吉方位と時間」と名前が重なるため
+   * ナビからは外し、/houi/today から辿る（2026-11-20）。
+   */
+  inNav?: boolean;
+}
+
+/** サイドバーに出す中核ルート。inNav が false のものは除く。 */
+export function isListedInNav(route: CoreRoute): boolean {
+  return route.inNav !== false;
 }
 
 /**
@@ -119,13 +131,6 @@ export const CORE_ROUTES: CoreRoute[] = [
     group: "direction",
   },
   {
-    href: "/houi/today",
-    label: "今日の吉方位と時間",
-    summary:
-      "本命星別に今日・明日の日盤と、十二支ごとの時間帯の吉方位・凶方位を確認する。",
-    group: "direction",
-  },
-  {
     href: "/houi",
     label: "本命星と吉方位を調べる",
     summary:
@@ -144,23 +149,9 @@ export const CORE_ROUTES: CoreRoute[] = [
       URL とナビの行を与えないと、検索から来た人にしか届かない。**
     */
     href: "/houi/fengshui",
-    label: "風水（八宅）で吉方位を調べる",
+    label: "八宅風水で吉方位を調べる",
     summary:
       "生まれ年と性別から本命卦を引き、八宅風水の四吉方（生気・天医・延年・伏位）と四凶方（絶命・五鬼・六殺・禍害）がどの方位に当たるかを一覧で確認する。九星気学とは別の流派で、当サイトの判定には使っていない。",
-    group: "direction",
-  },
-  {
-    href: "/houi/relocation-calendar",
-    label: "引越しできる日の一覧",
-    summary:
-      "年盤・月盤の方位と強さが同じ期間と、3盤そろう日を一覧で確認する。",
-    group: "timing",
-  },
-  {
-    href: "/houi/tenchusatsu",
-    label: "天中殺と引越しの時期を調べる",
-    summary:
-      "生年月日から天中殺のグループと3年間の月別周期を確認し、方位・日取り・仮住まいを検討する。",
     group: "direction",
   },
   {
@@ -179,15 +170,30 @@ export const CORE_ROUTES: CoreRoute[] = [
   },
   // ── いつ（時期を選ぶ）───────────────────────────────
   /*
-    日取り（/calendar）を先に置く（利用者の判断、2026-09-26「引越しの
-    日取りを選ぶの方がサイドバーだと上の方になると思う」）。まず候補の日を
-    出し、全期間の分析（/relocation/timing）はその次に詰める順
+    2026-11-20：ナビの「今日の吉方位と時間」と「今日の方位と時刻を
+    確かめる」がほぼ同じ名前で別群に並んでいた。まとめた 1 本を
+    「いつ」の先頭に置く。日取り（/calendar）は、できる日の一覧と
+    全期間の分析より上、という 2026-09-26 の判断は維持する。
   */
+  {
+    href: "/houi/today",
+    label: "今日の吉方位と時間",
+    summary:
+      "本命星別に今日・明日の日盤と、十二支ごとの時間帯の吉方位・凶方位を確認する。",
+    group: "timing",
+  },
   {
     href: "/calendar",
     label: "引越しの日取りを選ぶ",
     summary:
       "移転や契約に適した日を導出するカレンダー。九星気学の方位盤、六曜、天赦日・一粒万倍日、天中殺の期間を突き合わせる。",
+    group: "timing",
+  },
+  {
+    href: "/houi/relocation-calendar",
+    label: "引越しできる日の一覧",
+    summary:
+      "年盤・月盤の方位と強さが同じ期間と、3盤そろう日を一覧で確認する。",
     group: "timing",
   },
   {
@@ -198,11 +204,19 @@ export const CORE_ROUTES: CoreRoute[] = [
     group: "timing",
   },
   {
+    href: "/houi/tenchusatsu",
+    label: "天中殺と引越しの時期を調べる",
+    summary:
+      "生年月日から天中殺のグループと3年間の月別周期を確認し、方位・日取り・仮住まいを検討する。",
+    group: "timing",
+  },
+  {
     href: "/relocation/dashboard",
     label: "今日の方位と時刻を確かめる",
     summary:
       "生年月日と出発地から、今日の 8 方位の吉凶・時間帯の吉凶・真太陽時を 1 画面で確かめる。目的地を地名で指定して、その方位が今日使えるかを見る。",
     group: "timing",
+    inNav: false,
   },
   // ── いくら（相場を知る）─────────────────────────────
   {
@@ -234,7 +248,7 @@ export const CORE_ROUTES: CoreRoute[] = [
   // ── たしかめる（検証する）────────────────────────────
   {
     href: "/kensho",
-    label: "たしかめる：占いを統計で検証する",
+    label: "占いを統計で検証する",
     summary:
       "占いや言い伝えの主張を、人口動態統計や交通事故統計などの公開データで検証する計画の一覧（現在はすべて計画中）。",
     group: "verify",
