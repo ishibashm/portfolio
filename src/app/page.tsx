@@ -37,7 +37,7 @@ export default async function Home({
     registered,
   );
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#faf7f5] via-[#f5efe9] to-[#f0e9e1] text-slate-900 relative flex flex-col items-center justify-start overflow-y-auto pt-14 pb-5 lg:pt-5 px-4 md:px-8 gap-4 font-sans">
+    <div className="min-h-screen bg-gradient-to-br from-[#faf7f5] via-[#f5efe9] to-[#f0e9e1] text-slate-900 relative flex flex-col items-center justify-start overflow-y-auto pb-5 lg:pt-5 px-4 md:px-8 gap-4 font-sans">
       <ScrollReset />
       {/* Background Soft Glow Auras */}
       <div className="fixed top-[-10vw] left-[-10vw] w-[40vw] h-[40vw] bg-rose-200/25 rounded-full blur-[100px] pointer-events-none -z-10" />

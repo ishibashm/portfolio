@@ -411,7 +411,7 @@ export default async function RootLayout({
               （利用者の指示）。以前は PageComments を置いて中核 9 頁
               すべてに出していた。 */}
           <div className="flex min-w-0 w-full flex-1 flex-col">
-            <main className="flex-1 w-full min-w-0">{children}</main>
+            <main className="flex-1 w-full min-w-0 pt-14 lg:pt-0">{children}</main>
             <SiteFooter />
           </div>
         </div>

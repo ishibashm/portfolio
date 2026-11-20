@@ -80,7 +80,7 @@ export default function DashboardPage() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-rose-50/80 via-stone-50 to-amber-50/50 p-4 font-sans text-stone-800 md:p-8">
       <div className="mx-auto max-w-[1700px] space-y-5">
-        <header className="pt-14 md:pt-0">
+        <header>
           <h1 className="text-xl font-bold">今日の方位と時刻を確かめる</h1>
           <p className="mt-2 text-sm leading-relaxed text-stone-600">
             出発地から見た8方位の吉凶と、動き出す時間帯を確かめます。

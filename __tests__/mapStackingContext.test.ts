@@ -48,7 +48,7 @@ function layer(pattern: RegExp): number {
 
 const OVERLAY = layer(/fixed inset-0 bg-stone-900\/30 z-\[(\d+)\]/);
 const PANEL = layer(/fixed top-0 left-0 h-full z-\[(\d+)\]/);
-const TOGGLE = layer(/lg:hidden fixed top-4 left-4 z-\[(\d+)\]/);
+const TOGGLE = layer(/lg:hidden fixed top-0 inset-x-0 z-\[(\d+)\]/);
 
 /** 頁の中の帯（sticky）が使っている層。ここより上にメニューを置く。 */
 const STICKY_CHROME = 40;
@@ -107,6 +107,13 @@ describe("メニューの層", () => {
     // パネルが覆いに沈むと灰色越しに見える。開閉ボタンが沈むと閉じられない
     expect(OVERLAY).toBeLessThan(PANEL);
     expect(PANEL).toBeLessThan(TOGGLE);
+  });
+
+  it("狭い幅では左上に浮かず、画面幅の帯にする", () => {
+    // 本文の見出しに重なっていた fixed top-4 left-4 をやめる
+    expect(SIDEBAR).toContain("lg:hidden fixed top-0 inset-x-0 z-[47]");
+    expect(SIDEBAR).toContain("h-14");
+    expect(SIDEBAR).not.toContain("fixed top-4 left-4");
   });
 });
 
