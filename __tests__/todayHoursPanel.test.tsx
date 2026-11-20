@@ -22,14 +22,14 @@ it("今の刻と9星の吉方位を出し、時間帯の表は畳んで置く", 
   expect(html).toContain("今日の吉方位と時間");
   expect(html).toContain("今の刻：");
   expect(html).toContain(`${current.branch}の刻`);
-  expect(html).toContain("本命星別の今の刻の吉方位");
+  expect(html).toContain("今の刻に吉がある星");
   expect(html).toContain("本命星別の今の刻と、十二支の時間帯を見る");
   expect(html).not.toContain("/today/banner-960.webp");
 
   expect(html).toContain("<details");
   // 横断幕を重複させず、本命星の表を畳む。
   const detailsAt = html.indexOf("<details");
-  expect(detailsAt).toBeLessThan(html.indexOf("本命星別の今の刻の吉方位"));
+  expect(detailsAt).toBeLessThan(html.indexOf('name="home-honmei-hours"'));
   expect(html).toContain('name="home-honmei-hours"');
   expect(html).toContain("詳しい日盤と、現在地での今の刻を見る");
   expect(html).toContain('href="/houi/today"');
@@ -59,13 +59,19 @@ it("ホームは入力なしのサーバー描画で、天気の直下に置く"
   expect(source).not.toMatch(/^"use client"/m);
   expect(source).not.toContain("geolocation");
   const home = readFileSync("src/app/page.tsx", "utf8");
-  expect(home).toContain("<TodayHoursPanel origin={origin} />");
+  expect(home).toContain(
+    "<TodayHoursPanel origin={origin} birthDate={profile?.birthDate} />",
+  );
   expect(home.indexOf("<TodayOverview origin={origin}")).toBeLessThan(
-    home.indexOf("<TodayHoursPanel origin={origin} />"),
+    home.indexOf(
+      "<TodayHoursPanel origin={origin} birthDate={profile?.birthDate} />",
+    ),
   );
-  expect(home.indexOf("<TodayHoursPanel origin={origin} />")).toBeLessThan(
-    home.indexOf("<AgentEntry"),
-  );
+  expect(
+    home.indexOf(
+      "<TodayHoursPanel origin={origin} birthDate={profile?.birthDate} />",
+    ),
+  ).toBeLessThan(home.indexOf("<AgentEntry"));
   expect(home).toMatch(/export const revalidate = 60/);
 });
 
@@ -86,4 +92,26 @@ it("しるべの横断幕はホームへ移し、/houi/today の先頭からは�
   expect(readFileSync("src/app/page.tsx", "utf8")).toContain(
     "<TodayShirubeBanner",
   );
+});
+
+it("自分の星を先頭に置き、閉じた状態でも吉と方位盤を見せる", () => {
+  const current = buildCurrentDirections(now);
+  const personal = buildCurrentDirections(now, "1990-01-01");
+  const html = renderToStaticMarkup(
+    <TodayHoursCard
+      data={buildTodayDirections(now)}
+      current={current}
+      personal={personal}
+    />,
+  );
+  expect(html).toContain(`あなたの今の刻（${personal.starName}）`);
+  expect(html).toContain(`${personal.starName}（あなた）`);
+  const first = html
+    .slice(html.indexOf('name="home-honmei-hours"'))
+    .split("</summary>")[0];
+  expect(first).toContain(personal.starName);
+  expect(html.match(/role="img"/g)).toHaveLength(1);
+  expect(html).toContain("北が上");
+  expect(html.indexOf("あなたの今の刻")).toBeLessThan(html.indexOf("<details"));
+  expect(html.match(/<table/g)).toHaveLength(9);
 });

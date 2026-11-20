@@ -271,8 +271,11 @@ export function TodayOverviewCard({
               </tbody>
             </table>
             <p className="mt-1 text-xs">
-              <Link href="/houi/today" className="text-rose-600 underline">
-                時間帯ごとの吉方位を見る
+              <Link
+                href="#today-hours-heading"
+                className="text-rose-600 underline"
+              >
+                下の今の刻と時間帯を見る
               </Link>
               <span className="text-slate-600">・本命星は</span>
               <Link
