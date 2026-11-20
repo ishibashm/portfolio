@@ -310,7 +310,7 @@ export function GlobalSidebar() {
       {/*
         重なり順（この 3 つは 45 / 46 / 47 で 1 組）。
         頁の中の帯（arbitrage の「地図 / 一覧・条件」、ホームのタブ）が
-        sticky z-40 で、メニューも z-40 だった。同じ数なら後に書いたほうが
+        sticky z-40 で、以前はメニューも z-40 だった。同じ数なら後に書いたほうが
         前に出るので、頁のほうが勝ってメニューが帯の下に隠れていた
         （Android の実機報告）。帯より上、モーダル（z-50）より下に置く。
         モーダルより下なのは意図で、全画面の覆いが出ているあいだは
@@ -332,21 +332,26 @@ export function GlobalSidebar() {
         アイコンも両方描いて CSS で切り替える。React で出し分けると、
         hydration 前に開いたときに三本線のままになる。
       */}
-      <button
-        type="button"
-        data-menu-toggle
-        aria-label="メニュー"
-        aria-expanded={isOpen}
-        aria-controls="global-sidebar"
-        className="lg:hidden fixed top-4 left-4 z-[47] p-2.5 bg-white border border-rose-100 rounded-xl text-stone-500 hover:text-rose-500 active:bg-rose-50 active:scale-95 transition-transform shadow-md shadow-rose-100/40"
-      >
-        <span data-menu-icon="open" className="block">
-          <Menu size={24} />
+      <header className="lg:hidden fixed top-0 inset-x-0 z-[47] flex h-14 items-center gap-1 border-b border-rose-100 bg-white px-1.5">
+        <button
+          type="button"
+          data-menu-toggle
+          aria-label="メニュー"
+          aria-expanded={isOpen}
+          aria-controls="global-sidebar"
+          className="p-2.5 rounded-xl text-stone-500 hover:text-rose-500 active:bg-rose-50 active:scale-95 transition-transform"
+        >
+          <span data-menu-icon="open" className="block">
+            <Menu size={24} />
+          </span>
+          <span data-menu-icon="close" className="block">
+            <X size={24} />
+          </span>
+        </button>
+        <span className="font-serif font-bold tracking-tight text-stone-900">
+          Cloud Palette
         </span>
-        <span data-menu-icon="close" className="block">
-          <X size={24} />
-        </span>
-      </button>
+      </header>
 
       {/* Mobile Overlay。開いていないときは CSS で消す（React の分岐に
           すると hydration 前に開いても出ない）。 */}

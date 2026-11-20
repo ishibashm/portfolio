@@ -360,6 +360,13 @@ input[type="week"] {
  * 変数のほうを上書きする（`translate:` を直に書くと、同じ要素に付いている
  * `-translate-x-full` と競合して順序で決まってしまう）。
  */
+/* 狭い幅の固定メニュー帯（h-14）に、ページ内リンクが隠れないようにする。 */
+@media (max-width: 1023px) {
+  html {
+    scroll-padding-top: 3.5rem;
+  }
+}
+
 html[data-menu="open"] [data-menu-panel] {
   --tw-translate-x: 0;
 }
