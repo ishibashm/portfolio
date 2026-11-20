@@ -34,7 +34,7 @@ describe("群の並び", () => {
       "/mcp",
     ]);
     expect(verifyRoutes.map((r) => r.label)).toEqual([
-      "たしかめる：占いを統計で検証する",
+      "占いを統計で検証する",
       "案内役に聞く",
       "MCPで使う",
     ]);
@@ -67,5 +67,41 @@ describe("群の並び", () => {
 describe("代表の入口", () => {
   it("先頭は「物件を方位で探す」のまま", () => {
     expect(CORE_ROUTES[0].href).toBe("/relocation/arbitrage");
+  });
+});
+
+describe("サイドバーに出す今日の吉方位（2026-11-20）", () => {
+  it("「今日の吉方位と時間」はいつ群の、ナビに出す先頭である", () => {
+    const today = CORE_ROUTES.find((r) => r.href === "/houi/today");
+    expect(today?.group).toBe("timing");
+    expect(today?.label).toBe("今日の吉方位と時間");
+    const listed = CORE_ROUTES.filter(
+      (r) => r.group === "timing" && r.inNav !== false,
+    );
+    expect(listed[0]?.href).toBe("/houi/today");
+    expect(listed.map((r) => r.href)).toEqual([
+      "/houi/today",
+      "/calendar",
+      "/houi/relocation-calendar",
+      "/relocation/timing",
+      "/houi/tenchusatsu",
+    ]);
+  });
+
+  it("「今日の方位と時刻を確かめる」は中核のままナビからは外す", () => {
+    const dashboard = CORE_ROUTES.find(
+      (r) => r.href === "/relocation/dashboard",
+    );
+    expect(dashboard).toMatchObject({
+      group: "timing",
+      inNav: false,
+      label: "今日の方位と時刻を確かめる",
+    });
+  });
+
+  it("天中殺はいつ群に置く", () => {
+    expect(CORE_ROUTES.find((r) => r.href === "/houi/tenchusatsu")?.group).toBe(
+      "timing",
+    );
   });
 });

@@ -16,8 +16,8 @@ import { ActiveProfileBadge } from "@/components/profile/ActiveProfileBadge";
   タブの中身は他の頁に無い（タイミング・プロフィールは名前が同じだけで
   別物）ので、消さずに 1 つの頁として残す。「履歴」タブは 2026-09-28 に
   外した（全利用者共通の記録で、本人のものではなかった）。
-  ホームからはこの頁への札 1 枚（siteStructure の CORE_ROUTES）で
-  辿り着く。
+  サイドバーの項目は「今日の吉方位と時間」（/houi/today）にまとめ、
+  この頁へはそちらの案内と、ホームの道具カードから辿る。
 
   **部品を直に読むこと。まとめ役の入口を作って、そこから読まないこと。**
   dynamic import の先に再輸出だけの層を挟むと、束ねられた部品が全部
@@ -83,7 +83,14 @@ export default function DashboardPage() {
         <header>
           <h1 className="text-xl font-bold">今日の方位と時刻を確かめる</h1>
           <p className="mt-2 text-sm leading-relaxed text-stone-600">
-            出発地から見た8方位の吉凶と、動き出す時間帯を確かめます。
+            出発地から見た8方位の吉凶と、動き出す時間帯を確かめます。本命星別の早見表は
+            <Link
+              href="/houi/today"
+              className="inline-flex min-h-11 items-center px-1 text-indigo-700 underline"
+            >
+              今日の吉方位と時間
+            </Link>
+            で見られます。
           </p>
           {/* どのプロフィールで判定しているかを頭に 1 行。他の道具の頁と
               同じ帯（利用者の指摘、2026-09-12）。この頁だけ無かった。 */}

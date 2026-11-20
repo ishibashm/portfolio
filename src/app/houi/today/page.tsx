@@ -12,9 +12,9 @@ import { TodayFortunePanel } from "@/components/houi/TodayFortunePanel";
 import { parseBirthYearParam } from "@/lib/todayWeather/birthYear";
 
 // 生まれ年を searchParams から読むため、訪問ごとに描画される。
-const title = "今日の吉方位と時間｜本命星別の日盤・十二支の早見表";
+const title = "今日の吉方位と時間別の方位｜本命星別の日盤と十二支";
 const description =
-  "今日と明日の吉方位・凶方位を本命星別に確認。五黄殺・暗剣殺・日破は全員に凶として表示し、十二支ごとの時間帯も一覧で見られます。日本時間の日付で更新。";
+  "今日と明日の吉方位と、十二支ごとの時間別の方位を本命星別に確認できます。五黄殺・暗剣殺・日破は全員に凶として表示し、日本時間の日付で更新します。";
 export const metadata: Metadata = {
   title,
   description,
@@ -43,7 +43,7 @@ export default async function TodayPage({ searchParams }: Props = {}) {
     stars: data.stars,
     generatedAt: new Date(),
   });
-  const shareUrl = `https://twitter.com/intent/tweet?url=${encodeURIComponent(`${SITE_URL}/houi/today`)}&text=${encodeURIComponent("今日の吉方位と時間｜本命星別の早見表")}`;
+  const shareUrl = `https://twitter.com/intent/tweet?url=${encodeURIComponent(`${SITE_URL}/houi/today`)}&text=${encodeURIComponent("今日の吉方位と時間別の方位｜本命星別の早見表")}`;
   return (
     <main className="wg-page px-4 py-10 text-slate-900">
       <BreadcrumbJsonLd
@@ -60,9 +60,21 @@ export default async function TodayPage({ searchParams }: Props = {}) {
         />
         <CurrentDirections />
         <header className="space-y-3">
-          <h1 className="font-serif text-3xl font-bold">今日の吉方位と時間</h1>
+          <h1 className="font-serif text-3xl font-bold">
+            今日の吉方位と時間別の方位
+          </h1>
           <p className="font-bold">
             本命星を選ぶと、今日の吉方位と避けたい方位が分かります。
+          </p>
+          <p className="text-sm">
+            生年月日と場所で今日の方位を確かめるときは
+            <Link
+              href="/relocation/dashboard"
+              className="text-rose-600 underline"
+            >
+              方位と時刻の画面
+            </Link>
+            を使ってください。
           </p>
           <p className="text-sm">
             五黄殺・暗剣殺・日破は、本命星にかかわらず凶です。
