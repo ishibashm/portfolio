@@ -32,6 +32,10 @@ function verdicts(center: StarFrequency, star: StarFrequency, date?: Date) {
 }
 
 function summarize(layer: ReturnType<typeof verdicts>) {
+  const keyed = DIRECTIONS.map((direction) => ({
+    direction,
+    status: layer[direction] ?? ("SAFE" as VectorStatus),
+  }));
   const lucky: string[] = [];
   const unlucky: string[] = [];
   const neutral: string[] = [];
@@ -47,7 +51,7 @@ function summarize(layer: ReturnType<typeof verdicts>) {
     } else if (status.startsWith("OPTIMAL")) lucky.push(label);
     else neutral.push(label);
   }
-  return { lucky, unlucky, neutral };
+  return { lucky, unlucky, neutral, keyed };
 }
 
 export function buildTodayDirections(now: Date = new Date(), lon = 139.6917) {
@@ -57,6 +61,9 @@ export function buildTodayDirections(now: Date = new Date(), lon = 139.6917) {
   const tomorrowCenter = getClassicalDayStar(tomorrow);
   // Reuse the dashboard's solar-hour schedule at the selected origin.
   const schedule = getDailySolarSchedule(date, lon, 9);
+  const lateSlots = getDailySolarSchedule(tomorrow, lon, 9).filter(
+    (slot) => todayInJapan(slot.startStandard) === todayInJapan(date),
+  );
   const timeFormatter = new Intl.DateTimeFormat("ja-JP", {
     timeZone: "Asia/Tokyo",
     hour: "2-digit",
@@ -72,26 +79,32 @@ export function buildTodayDirections(now: Date = new Date(), lon = 139.6917) {
     stars: STARS.map((value) => {
       const star = value as StarFrequency;
       const daily = verdicts(center, star, date);
+      const hours = [...schedule, ...lateSlots].map((slot) => {
+        const hourly = verdicts(slot.kyusei.number as StarFrequency, star);
+        // Daily unlucky directions remain unlucky even when the hour is favorable.
+        const combined = { ...hourly };
+        for (const direction of DIRECTIONS) {
+          if (daily[direction]?.startsWith("NOISE_"))
+            combined[direction] = daily[direction] as VectorStatus;
+        }
+        return {
+          start: slot.startStandard.toISOString(),
+          common: summarize(
+            commonLayer(center, slot.kyusei.number as StarFrequency, date),
+          ),
+          branch: slot.japanese,
+          center: slot.kyusei.japanese,
+          time: `${timeLabel(slot.startStandard)}〜${timeLabel(slot.endStandard)}`,
+          ...summarize(combined),
+        };
+      });
       return {
         star,
         name: STAR_NAMES[star],
         today: summarize(daily),
         tomorrow: summarize(verdicts(tomorrowCenter, star, tomorrow)),
-        hours: schedule.map((slot) => {
-          const hourly = verdicts(slot.kyusei.number as StarFrequency, star);
-          // Daily unlucky directions remain unlucky even when the hour is favorable.
-          const combined = { ...hourly };
-          for (const direction of DIRECTIONS) {
-            if (daily[direction]?.startsWith("NOISE_"))
-              combined[direction] = daily[direction] as VectorStatus;
-          }
-          return {
-            branch: slot.japanese,
-            center: slot.kyusei.japanese,
-            time: `${timeLabel(slot.startStandard)}〜${timeLabel(slot.endStandard)}`,
-            ...summarize(combined),
-          };
-        }),
+        hours: hours.slice(0, schedule.length),
+        lateHours: hours.slice(schedule.length),
       };
     }),
   };
@@ -136,7 +149,26 @@ export function buildCurrentDirections(
       hourly[direction] = daily[direction];
   }
   return {
+    asOf: now.toISOString(),
     date: todayInJapan(now),
+    star,
+    center: slot.kyusei.japanese,
+    stars: STARS.map((value) => {
+      const personal = verdicts(
+        slot.kyusei.number as StarFrequency,
+        value as StarFrequency,
+      );
+      const day = verdicts(
+        getClassicalDayStar(date),
+        value as StarFrequency,
+        date,
+      );
+      for (const direction of DIRECTIONS) {
+        if (day[direction]?.startsWith("NOISE_"))
+          personal[direction] = day[direction];
+      }
+      return { star: value, name: STAR_NAMES[value], ...summarize(personal) };
+    }),
     starName: star ? STAR_NAMES[star] : null,
     branch: slot.japanese,
     start: slot.startStandard.toISOString(),
@@ -146,6 +178,71 @@ export function buildCurrentDirections(
 }
 
 const COMMON_UNLUCKY = ["NOISE_GOU", "NOISE_ANKEN", "NOISE_HA"] as const;
+
+type KeyedVerdict = ReturnType<typeof summarize>["keyed"][number];
+
+/** 方位キーで共通分を引く。個人固有の理由は同じ方位でも残す。 */
+export function additionalUnlucky(
+  personal: readonly KeyedVerdict[],
+  common: readonly KeyedVerdict[],
+) {
+  return personal
+    .filter(({ direction, status }) => {
+      if (!status.startsWith("NOISE_")) return false;
+      const shared = common.find(
+        (item) =>
+          item.direction === direction && item.status.startsWith("NOISE_"),
+      );
+      return (
+        !shared ||
+        (status !== shared.status &&
+          !(COMMON_UNLUCKY as readonly string[]).includes(status))
+      );
+    })
+    .map(
+      ({ direction, status }) =>
+        `${DIRECTION_LABELS[direction]}（${status === "NOISE_HA" ? haLabelForLayer("day") : directionLabelName(status)}）`,
+    );
+}
+
+function commonLayer(
+  dayCenter: StarFrequency,
+  hourCenter: StarFrequency,
+  date: Date,
+) {
+  const day = verdicts(dayCenter, 5, date);
+  const hour = verdicts(hourCenter, 5);
+  for (const direction of DIRECTIONS) {
+    const daily = day[direction] ?? "SAFE";
+    hour[direction] = (COMMON_UNLUCKY as readonly string[]).includes(daily)
+      ? daily
+      : (COMMON_UNLUCKY as readonly string[]).includes(
+            hour[direction] ?? "SAFE",
+          )
+        ? hour[direction]
+        : "SAFE";
+  }
+  return hour;
+}
+
+/** 当日内で、現在より後に始まる最初の吉の刻。夜の翌日扱いも除く。 */
+export function nextLuckyHour(
+  data: ReturnType<typeof buildTodayDirections>,
+  star: number,
+  now: Date,
+) {
+  return (
+    data.stars
+      .filter((item) => item.star === star)
+      .flatMap((item) => [...item.hours, ...item.lateHours])
+      .find(
+        (hour) =>
+          new Date(hour.start) > now &&
+          todayInJapan(new Date(hour.start)) === todayInJapan(now) &&
+          hour.lucky.length > 0,
+      ) ?? null
+  );
+}
 
 /**
  * ホームの「今日の天気と方位」用の東京基準の日盤。

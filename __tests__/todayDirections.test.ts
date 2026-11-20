@@ -1,5 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { buildTodayDirections } from "@/lib/todayDirections";
+import {
+  buildTodayDirections,
+  buildCurrentDirections,
+  additionalUnlucky,
+  nextLuckyHour,
+} from "@/lib/todayDirections";
 import {
   calculateVectorCollision,
   generateBoard,
@@ -80,4 +85,74 @@ describe("今日の公開方位", () => {
       }
     },
   );
+});
+
+it("共通凶を方位キーで除き、異なる個人の理由は残す", () => {
+  expect(
+    additionalUnlucky(
+      [
+        { direction: "E", status: "NOISE_TEKI" },
+        { direction: "N", status: "NOISE_ANKEN" },
+        { direction: "W", status: "NOISE_HA" },
+      ],
+      [
+        { direction: "E", status: "NOISE_GOU" },
+        { direction: "N", status: "NOISE_GOU" },
+        { direction: "W", status: "NOISE_HA" },
+      ],
+    ),
+  ).toEqual(["東（本命的殺）"]);
+});
+it("12刻それぞれの共通凶を除く（日盤だけで差し引かない）", () => {
+  const data = buildTodayDirections(new Date("2026-11-19T12:00:00+09:00"));
+  const commonSets = new Set<string>();
+  for (const hour of data.stars[0].hours) {
+    const current = buildCurrentDirections(
+      new Date(new Date(hour.start).getTime() + 60000),
+    );
+    // 前日開始の子の刻以外は、日盤も現在の刻も一致する。
+    if (current.date !== data.date) continue;
+    expect(hour.common.unlucky).toEqual(current.unlucky);
+    commonSets.add(hour.common.unlucky.join());
+    expect(additionalUnlucky(hour.common.keyed, hour.common.keyed)).toEqual([]);
+    for (const star of data.stars) {
+      const personal = star.hours.find((item) => item.branch === hour.branch)!;
+      expect(
+        additionalUnlucky(personal.keyed, hour.common.keyed).every(
+          (item) => !/五黄殺|暗剣殺|日破/.test(item),
+        ),
+      ).toBe(true);
+    }
+  }
+  expect(commonSets.size).toBeGreaterThan(1);
+});
+it("次の吉は当日内の未来の刻から選び、夜は翌日に借りない", () => {
+  const now = new Date("2026-11-19T08:00:00+09:00");
+  const data = buildTodayDirections(now);
+  for (const star of data.stars) {
+    const expected =
+      [...star.hours, ...star.lateHours].filter(
+        (h) => new Date(h.start) > now && h.lucky.length,
+      )[0] ?? null;
+    expect(nextLuckyHour(data, star.star, now)).toEqual(expected);
+    expect(
+      nextLuckyHour(data, star.star, new Date("2026-11-19T23:59:00+09:00")),
+    ).toBeNull();
+  }
+  expect(data.stars.some((star) => nextLuckyHour(data, star.star, now))).toBe(
+    true,
+  );
+});
+
+it("夜に始まる子の刻も当日内の次の候補に含める", () => {
+  const now = new Date("2026-11-19T22:00:00+09:00");
+  const data = buildTodayDirections(now);
+  for (const star of data.stars) {
+    expect(star.hours).toHaveLength(12);
+    expect(star.lateHours).toHaveLength(1);
+    const late = star.lateHours[0];
+    expect(nextLuckyHour(data, star.star, now)).toEqual(
+      late.lucky.length ? late : null,
+    );
+  }
 });

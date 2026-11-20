@@ -1,6 +1,6 @@
 import { TodayShirubeBanner } from "@/components/houi/TodayShirubeBanner";
 import { resolveOrigin, arbitrageHref } from "@/lib/todayWeather/origin";
-import { getRegisteredOrigin } from "@/lib/todayWeather/registeredOrigin";
+import { getRegisteredProfile } from "@/lib/todayWeather/registeredOrigin";
 import { TodayOverview } from "@/components/home/TodayOverview";
 import { TodayHoursPanel } from "@/components/home/TodayHoursPanel";
 import { AgentEntry } from "@/components/home/AgentEntry";
@@ -27,10 +27,11 @@ export default async function Home({
 }: {
   searchParams?: Promise<{ from?: string | string[] }>;
 }) {
-  const [params, registered] = await Promise.all([
+  const [params, profile] = await Promise.all([
     searchParams,
-    getRegisteredOrigin(),
+    getRegisteredProfile(),
   ]);
+  const registered = profile?.origin ?? null;
   const origin = resolveOrigin(
     typeof params?.from === "string" ? params.from : undefined,
     registered,
@@ -95,7 +96,7 @@ export default async function Home({
         </div>
       </header>
       <TodayOverview origin={origin} registered={registered} />
-      <TodayHoursPanel origin={origin} />
+      <TodayHoursPanel origin={origin} birthDate={profile?.birthDate} />
 
       {/* 生年月日・現在地・生まれたところ。**このサイトの答えはこの 3 つで
           決まる**ので、頁の一番上に置く。以前は下のダッシュボードの
