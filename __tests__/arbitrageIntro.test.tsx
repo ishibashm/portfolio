@@ -77,13 +77,14 @@ describe("/relocation/arbitrage 冒頭のサーバー出力", () => {
     }
   });
 
-  it("端末内完結の誤った主張や、入力なしで結果が出るという主張を含まない", () => {
+  it("端末内完結の誤った主張を含まず、未設定時は東京の街と家賃を出すと説明する", () => {
     const html = renderLayoutWithMarker();
     expect(html).not.toContain("送信しません");
     expect(html).not.toContain("端末の中だけ");
-    expect(html).toContain(
+    expect(html).not.toContain(
       "未入力の間は地図の塗り分けと街の一覧は表示されません",
     );
+    expect(html).toContain("未設定のときは東京からの街と家賃を表示します");
   });
 
   it("layout.tsx にページ名の固定リテラルを書かず coreRouteLabel 経由で引いている", () => {

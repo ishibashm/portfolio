@@ -1,4 +1,4 @@
-/** 地図の代表都市が、東京から見てどの方位にあるか。 */
+/** 地図の代表都市が、選んだ起点から見てどの方位にあるか。 */
 import {
   bearingBetween,
   directionFromBearing,
@@ -15,18 +15,30 @@ export const TOKYO_CODE = 13;
  * 東京そのものは起点なので方位を持たない。
  */
 export function directionFromTokyo(code: number): CompassDirection | null {
-  const city = mapCities[code];
-  const tokyo = mapCities[TOKYO_CODE];
-  if (!city || code === TOKYO_CODE) return null;
-  return directionFromBearing(
-    bearingBetween(tokyo.lat, tokyo.lon, city.lat, city.lon),
-    "traditional",
-  );
+  return directionFromOrigin(code, mapCities[TOKYO_CODE]);
 }
 
 export function distanceFromTokyo(code: number): number {
+  return distanceFromOrigin(code, mapCities[TOKYO_CODE]);
+}
+
+export function distanceFromOrigin(
+  code: number,
+  origin: { lat: number; lon: number },
+): number {
   const city = mapCities[code];
-  const tokyo = mapCities[TOKYO_CODE];
-  if (!city) return Number.POSITIVE_INFINITY;
-  return distanceKmBetween(tokyo.lat, tokyo.lon, city.lat, city.lon);
+  return city
+    ? distanceKmBetween(origin.lat, origin.lon, city.lat, city.lon)
+    : Infinity;
+}
+export function directionFromOrigin(
+  code: number,
+  origin: { lat: number; lon: number },
+): CompassDirection | null {
+  const city = mapCities[code];
+  if (!city || distanceFromOrigin(code, origin) < 15) return null;
+  return directionFromBearing(
+    bearingBetween(origin.lat, origin.lon, city.lat, city.lon),
+    "traditional",
+  );
 }

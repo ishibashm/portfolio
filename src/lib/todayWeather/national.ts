@@ -1,3 +1,5 @@
+import { getAmedasMinimum } from "./amedas";
+import { todayInJapan } from "@/utils/japanDate";
 import { fetchJson } from "./fetchJson";
 import {
   JMA_REVALIDATE_SECONDS,
@@ -90,5 +92,27 @@ export async function getNationalWeather(
     JMA_REVALIDATE_SECONDS,
     fetchImpl,
   );
-  return parseNationalWeather(json);
+  const now = new Date();
+  const data = parseNationalWeather(json, now);
+  if (!data) return null;
+  const results = await Promise.allSettled(
+    data.cities.map(async (city) => {
+      if (city.today.min !== undefined || city.today.date !== todayInJapan(now))
+        return city;
+      const pref = PREFECTURES.find((p) => p.code === city.prefectureCode)!;
+      const min = await getAmedasMinimum(pref.amedas, now, fetchImpl);
+      if (
+        min === undefined ||
+        (city.today.max !== undefined && min >= city.today.max)
+      )
+        return city;
+      return { ...city, today: { ...city.today, min } };
+    }),
+  );
+  return {
+    ...data,
+    cities: results.map((result, i) =>
+      result.status === "fulfilled" ? result.value : data.cities[i],
+    ),
+  };
 }

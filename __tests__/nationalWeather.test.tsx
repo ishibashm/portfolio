@@ -229,7 +229,7 @@ const allOffices = [
 ];
 // 2026-11-19 は中宮九紫。北＝五黄殺、東＝日破、南＝暗剣殺。
 const boardDay = new Date("2026-11-19T12:00:00+09:00");
-it("地図と表を描画し、ホームのISRを保つ", async () => {
+it("地図と表をサーバー描画し、ホームでクエリ起点を受け取る", async () => {
   const all = allOffices.map((code) => office(code, "17", ["12", "23"]));
   const data = parseNationalWeather(all, now)!;
   const html = renderToStaticMarkup(<NationalWeatherCards data={data} />);
@@ -267,8 +267,8 @@ it("地図と表を描画し、ホームのISRを保つ", async () => {
   expect(section).not.toContain("<script");
   expect(section).toContain("Natural Earth");
   const home = readFileSync("src/app/page.tsx", "utf8");
-  expect(home).not.toContain("searchParams");
-  expect(home).toContain("<TodayOverview />");
+  expect(home).toContain("searchParams");
+  expect(home).toContain("<TodayOverview origin={origin}");
   expect(home).toMatch(/export const revalidate = 60/);
   const source = readFileSync("src/components/home/TodayOverview.tsx", "utf8");
   expect(source).not.toMatch(/^"use client"/m);
@@ -308,7 +308,7 @@ it("東京から見た方位は気学の伝統的な区切りで、共通の凶�
   expect(directions[1]).toEqual({ label: "北", unlucky: "五黄殺" });
   expect(directions[15]).toEqual({ label: "北", unlucky: "五黄殺" });
   expect(directions[4]).toEqual({ label: "北東" });
-  expect(directions[13]).toBeUndefined();
+  expect(directions[13]).toEqual({ label: "起点" });
   // 南西の代表は東京に近い順（大阪・高知・那覇）。
   expect(
     citiesByDirection(data)
@@ -329,7 +329,7 @@ it("東京から見た方位は気学の伝統的な区切りで、共通の凶�
     <TodayOverviewCard data={null} board={board} />,
   );
   expect(empty).toContain("いま天気を取得できません。");
-  expect(empty).toContain("今日の日盤（東京基準）");
+  expect(empty).toContain("今日の日盤（全国共通）");
 });
 it("狭い画面の短い天気", () => {
   expect(
@@ -445,4 +445,29 @@ it("iPad mini（744px）では広い地図の文字が 14px 以上に見える",
   expect(
     (wideFontSize * (640 - 32 - 32)) / wideViewBox.width,
   ).toBeGreaterThanOrEqual(14);
+});
+
+it("予報に今日の最低が無い都市だけ観測で補い、同値・欠測は表示しない", async () => {
+  vi.useFakeTimers();
+  vi.setSystemTime(new Date("2030-06-01T11:00:00+09:00"));
+  const forecast = [
+    office("130000", "05", ["22", "22"], "2030-06-01"),
+    office("230000", "05", ["22", "22"], "2030-06-01"),
+  ];
+  const fetcher = vi.fn(async (url: string) => {
+    if (url.includes("forecast")) return response(forecast);
+    return response({
+      "20300601000000": { temp: [url.includes("44132") ? 11.6 : 22, 0] },
+    });
+  });
+  const data = await getNationalWeather(fetcher as typeof fetch);
+  expect(
+    data?.cities.find((city) => city.prefectureCode === 13)?.today,
+  ).toMatchObject({ max: 22, min: 12 });
+  expect(
+    data?.cities.find((city) => city.prefectureCode === 23)?.today.min,
+  ).toBeUndefined();
+  expect(renderToStaticMarkup(<NationalWeatherCards data={data} />)).toContain(
+    "22℃/12℃",
+  );
 });

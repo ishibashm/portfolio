@@ -50,13 +50,13 @@ function summarize(layer: ReturnType<typeof verdicts>) {
   return { lucky, unlucky, neutral };
 }
 
-export function buildTodayDirections(now: Date = new Date()) {
+export function buildTodayDirections(now: Date = new Date(), lon = 139.6917) {
   const date = jstNoonOf(now);
   const tomorrow = new Date(date.getTime() + 86400000);
   const center = getClassicalDayStar(date);
   const tomorrowCenter = getClassicalDayStar(tomorrow);
-  // Reuse the dashboard's solar-hour schedule, with Tokyo explicitly as reference.
-  const schedule = getDailySolarSchedule(date, 139.6917, 9);
+  // Reuse the dashboard's solar-hour schedule at the selected origin.
+  const schedule = getDailySolarSchedule(date, lon, 9);
   const timeFormatter = new Intl.DateTimeFormat("ja-JP", {
     timeZone: "Asia/Tokyo",
     hour: "2-digit",

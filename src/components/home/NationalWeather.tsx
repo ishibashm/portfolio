@@ -1,4 +1,4 @@
-/** ホームの静的生成に含める全国予報。位置情報や入力を使わない。 */
+/** ホームのサーバー描画に含める全国予報。位置情報や入力を使わない。 */
 import paths from "@/data/japanMapPaths.json";
 import type { NationalWeather } from "@/lib/todayWeather/national";
 import type { JmaDay } from "@/lib/todayWeather/jma";
@@ -64,8 +64,11 @@ export function formatTemps(
   const day = usesTomorrow ? tomorrow : hasTemps(today) ? today : undefined;
   if (!day) return kind === "compact" ? "—" : "— / —";
   const prefix = usesTomorrow ? "明日" : "";
-  if (kind === "compact") return `${prefix}${temp(day.max)}`;
+  if (kind === "compact")
+    return `${prefix}${day.max === undefined ? "最低" : ""}${temp(day.max ?? day.min)}`;
   const rain = pop !== undefined ? ` ☂${pop}%` : "";
+  if (day.min === undefined) return `${prefix}最高${temp(day.max)}${rain}`;
+  if (day.max === undefined) return `${prefix}最低${temp(day.min)}${rain}`;
   // 「明日」付きは札の幅に収めるため、度数記号は末尾だけにする。
   const range = prefix
     ? `${prefix}${day.max ?? "—"}/${day.min ?? "—"}℃`
@@ -73,7 +76,7 @@ export function formatTemps(
   return `${range}${rain}`;
 }
 
-/** 札・表に添える、東京から見た方位。unlucky は全員共通の凶の名前。 */
+/** 札・表に添える、起点から見た方位。unlucky は全員共通の凶の名前。 */
 export type CityDirection = { label: string; unlucky?: string };
 export type CityDirections = Record<number, CityDirection>;
 
@@ -90,7 +93,7 @@ function cardFill(weather: string, unlucky: boolean) {
 }
 
 function directionText(direction: CityDirection | undefined, code: number) {
-  if (code === 13) return "起点";
+  if (!direction && code === 13) return "起点";
   if (!direction) return "";
   return direction.unlucky
     ? `${direction.label}・${direction.unlucky}`
@@ -154,7 +157,7 @@ export function NationalWeatherMap({
               今日の全国の天気の地図
             </title>
             <desc id={`weather-map-${variant}-desc`}>
-              全国の代表10都市の今日の天気と気温、東京から見た方位。夕方の発表で今日の気温が無いときは明日の気温を記載します。詳しい内容は続く表に記載しています。
+              全国の代表10都市の今日の天気と気温、起点から見た方位。夕方の発表で今日の気温が無いときは明日の気温を記載します。詳しい内容は続く表に記載しています。
             </desc>
             <rect width="100%" height="100%" rx="12" fill="#eaf4f5" />
             <g transform={`translate(${map.x} ${map.y}) scale(${map.scale})`}>
@@ -312,7 +315,7 @@ function WeatherRows({
         <tr>
           {[
             "都市",
-            compact ? "方位" : "東京から",
+            compact ? "方位" : "起点から",
             "天気",
             compact ? "最高/低" : "最高/最低",
             "降水",
@@ -337,9 +340,8 @@ function WeatherRows({
                 className={`${cell} whitespace-nowrap ${unlucky ? "font-bold text-rose-800" : ""}`}
               >
                 {compact
-                  ? city.prefectureCode === 13
-                    ? "起点"
-                    : (direction?.label ?? "—")
+                  ? (direction?.label ??
+                    (city.prefectureCode === 13 ? "起点" : "—"))
                   : directionText(direction, city.prefectureCode) || "—"}
               </td>
               <td className={cell}>
@@ -348,9 +350,7 @@ function WeatherRows({
                   : city.today.weather}
               </td>
               <td className={`${cell} whitespace-nowrap`}>
-                {compact
-                  ? `${city.today.max ?? "—"}/${city.today.min ?? "—"}℃`
-                  : `${temp(city.today.max)}/${temp(city.today.min)}`}
+                {formatTemps(city.today, city.tomorrow, "range")}
               </td>
               <td className={`${cell} whitespace-nowrap`}>
                 {city.pop !== undefined ? `${city.pop}%` : "—"}

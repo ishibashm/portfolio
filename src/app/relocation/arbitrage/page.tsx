@@ -3,6 +3,12 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import dynamic from "next/dynamic";
 import Link from "next/link";
+import { OriginLinks } from "@/components/home/OriginLinks";
+import {
+  cityOrigin,
+  coordinateOrigin,
+  TOKYO_ORIGIN,
+} from "@/lib/todayWeather/origin";
 import { Compass } from "lucide-react";
 import { ArbitrageMap } from "@/components/ArbitrageMap";
 import { MetaphysicalConfigBar } from "@/components/layout/MetaphysicalConfigBar";
@@ -142,8 +148,8 @@ function radiusFromText(raw: string | null): number | null | undefined {
 }
 
 /**
- * 保存済みの設定と URL から初期状態を組む。**生年月日・出発地に既定値を
- * 置かない。**空のままなら「入れると塗り分けます」と出す。
+ * 保存済み設定より URL を優先。出発地がなければ閲覧用の東京を使い、保存しない。
+ * 生年月日には既定値を置かず、未入力では街と家賃だけを出す。
  */
 function readInitialState(): PageState {
   const config = readSettingsSync();
@@ -214,11 +220,12 @@ function readInitialState(): PageState {
   */
   try {
     const qs = new URLSearchParams(window.location.search);
-    const qLat = parseFloat(qs.get("baseLat") || "");
-    const qLon = parseFloat(qs.get("baseLon") || "");
-    if (!isNaN(qLat) && !isNaN(qLon)) {
-      state.baseLat = String(qLat);
-      state.baseLon = String(qLon);
+    const origin =
+      coordinateOrigin(qs.get("baseLat"), qs.get("baseLon")) ??
+      cityOrigin(qs.get("from") ?? undefined);
+    if (origin) {
+      state.baseLat = String(origin.lat);
+      state.baseLon = String(origin.lon);
     }
     const qDate = qs.get("targetDate");
     if (qDate && /^\d{4}-\d{2}-\d{2}$/.test(qDate)) {
@@ -249,6 +256,10 @@ function readInitialState(): PageState {
       qs.has(key),
     );
 
+  if (!coordinateOrigin(state.baseLat, state.baseLon)) {
+    state.baseLat = String(TOKYO_ORIGIN.lat);
+    state.baseLon = String(TOKYO_ORIGIN.lon);
+  }
   const lat = parseFloat(state.baseLat);
   const lon = parseFloat(state.baseLon);
   if (state.openOverview) {
@@ -268,46 +279,56 @@ export default function DirectionTownsPage() {
     setState((prev) => (prev ? { ...prev, ...p } : prev));
   }, []);
 
-  /* 端末の保存値と URL は描画のあとでしか読めない（サーバでは無い）。 */
+  /* ブラウザの保存値をマウント後に読み、URLの起点を最優先する。 */
   useEffect(() => {
-    const initial = readInitialState();
-    setState(initial);
-
-    /*
-      端末に出発地が無いとき（別のブラウザ、履歴を消した後など）だけ、
-      クラウドの設定を取りに行く。出発地があるのに取りに行くと、URL で
-      指定された出発地がクラウドの値に上書きされる。
-    */
-    if (initial.baseLat === "" || initial.baseLon === "") {
-      let alive = true;
-      (async () => {
+    let alive = true;
+    const timer = window.setTimeout(async () => {
+      const initial = readInitialState();
+      if (!alive) return;
+      setState(initial);
+      const qs = new URLSearchParams(window.location.search);
+      const explicitOrigin =
+        coordinateOrigin(qs.get("baseLat"), qs.get("baseLon")) ??
+        cityOrigin(qs.get("from") ?? undefined);
+      const saved = readSettingsSync();
+      if (
+        !explicitOrigin &&
+        !coordinateOrigin(
+          coordText(settingNumber(saved, "base_lat")),
+          coordText(settingNumber(saved, "base_lon")),
+        )
+      ) {
         try {
           const { settings: cfg } = await loadSettings();
           const lat = settingNumber(cfg, "base_lat");
           const lon = settingNumber(cfg, "base_lon");
-          if (!alive || lat === undefined || lon === undefined) return;
-          setState((prev) =>
-            prev && (prev.baseLat === "" || prev.baseLon === "")
-              ? {
-                  ...prev,
-                  baseLat: String(lat),
-                  baseLon: String(lon),
-                  mapCenter: prev.openOverview ? prev.mapCenter : [lat, lon],
-                  mapFocusKind: "area",
-                }
-              : prev,
-          );
+          if (alive && coordinateOrigin(coordText(lat), coordText(lon))) {
+            setState((prev) =>
+              prev &&
+              prev.baseLat === initial.baseLat &&
+              prev.baseLon === initial.baseLon
+                ? {
+                    ...prev,
+                    baseLat: String(lat),
+                    baseLon: String(lon),
+                    mapCenter: prev.openOverview
+                      ? prev.mapCenter
+                      : [Number(lat), Number(lon)],
+                    mapFocusKind: "area",
+                  }
+                : prev,
+            );
+          }
         } catch {
-          /* 取得できなくても入力欄から設定できる */
-        } finally {
-          if (alive) setSettingsLoaded(true);
+          /* 取得できなくても閲覧用の起点で街を表示する。 */
         }
-      })();
-      return () => {
-        alive = false;
-      };
-    }
-    setSettingsLoaded(true);
+      }
+      if (alive) setSettingsLoaded(true);
+    }, 0);
+    return () => {
+      alive = false;
+      window.clearTimeout(timer);
+    };
   }, []);
 
   const birthDate = state?.birthDate ?? "";
@@ -598,14 +619,20 @@ export default function DirectionTownsPage() {
     }
     const dest = readDestination();
     if (dest.lat === null || dest.lon === null) return;
-    setSpotRequest({
-      lat: dest.lat,
-      lon: dest.lon,
-      seq: 1,
-      name: dest.label || undefined,
-      source: null,
-      note: "前回調べた地点を戻しました。別の場所は入力欄か地図から。",
-    });
+    const { lat, lon } = dest;
+    const timer = window.setTimeout(
+      () =>
+        setSpotRequest({
+          lat,
+          lon,
+          seq: 1,
+          name: dest.label || undefined,
+          source: null,
+          note: "前回調べた地点を戻しました。別の場所は入力欄か地図から。",
+        }),
+      0,
+    );
+    return () => window.clearTimeout(timer);
   }, []);
 
   const basePlace = useMemo(
@@ -641,6 +668,16 @@ export default function DirectionTownsPage() {
           <p className="text-stone-600 mt-1 text-xs max-w-[70ch] leading-relaxed">
             いま住んでいる場所から見た八方位の吉凶と、それぞれの方位にある市区町村の家賃の水準・空き家率を並べます。物件の掲載は出しません。
           </p>
+          <div className="mt-3 space-y-2">
+            <OriginLinks
+              arbitrage
+              origin={coordinateOrigin(baseLat, baseLon) ?? TOKYO_ORIGIN}
+            />
+            <p className="text-xs text-stone-600">
+              閲覧用の起点を切り替えます。未設定時は東京からの街と家賃を表示します。
+              {!birthDate ? "生年月日を入れると吉凶が付きます。" : ""}
+            </p>
+          </div>
           {/* どのプロフィールで方位を出しているかを頭に 1 行 */}
           <ActiveProfileBadge purpose="方位の吉凶と街の並び" className="mt-3" />
           <p className="mt-3 text-xs leading-relaxed text-stone-600 max-w-[70ch]">
@@ -695,15 +732,14 @@ export default function DirectionTownsPage() {
           />
         </div>
 
-        {/* 出発地が未設定のときは結果を出さずに設定を促す。
-            方位は出発地からの向きで決まるため、ここが無いと判定が成立しない。 */}
-        {settingsLoaded && state !== null && !hasBaseLocation && (
+        {/* 細かな出発地の登録は任意。閲覧用の都市リンクとは分ける。 */}
+        {settingsLoaded && state !== null && (
           <div className="rounded-3xl border border-amber-200 bg-amber-50 p-5 space-y-3">
             <h2 className="text-sm font-bold text-amber-900">
-              どこから引越しますか？
+              出発地を詳しく選ぶ（プロフィールに保存）
             </h2>
             <p className="text-xs text-amber-800 leading-relaxed max-w-[70ch]">
-              方位は「いま住んでいる場所から見てどの向きか」で決まります。出発地が無いと方位が定まらないので、街の一覧も地図の塗り分けも出しません。
+              市区町村を選ぶと、登録済みの出発地も更新します。閲覧だけなら上の都市ボタンを使えます。
             </p>
             <fieldset disabled={originBusy}>
               <OriginChooser onPick={(origin) => void pickOrigin(origin)} />
