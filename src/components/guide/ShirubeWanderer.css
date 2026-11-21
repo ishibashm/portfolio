@@ -1,13 +1,20 @@
 /* ==========================================================================
- * しるべ歩き回り試作（ShirubeWanderer）のスタイル。
+ * しるべ歩き回り試作（ShirubeWanderer / ShirubeWalkRig）のスタイル。
  *
  * 決まり（docs/motion-accents.md に合わせる）:
  * - 動かすのは transform と opacity だけ（CLS を起こさない）。
  * - 既定（JS なし・prefers-reduced-motion: reduce）の見た目が静止の最終形。
- *   歩行の上下揺れは no-preference の中だけ。
+ *   歩く足の振り・体の上下・呼吸は no-preference の中だけ。
+ * - 歩行の keyframes は試作スクリプト（/workspace/shirube-walk/render.py）の
+ *   プレビューと同じ値を 16 分割で書き出したもの。
  * ======================================================================== */
 
 .shirube-wander-stage {
+  /* 表示の高さ。幅は素材の縦横比（517 / 1063）で決まる。 */
+  --shirube-h: 60px;
+  /* 1 歩きサイクルの長さ。歩く速さ（shirubeWanderLogic）と足の運びを合わせ、
+     足が地面を滑って見えないようにしてある。 */
+  --shirube-cycle: 1s;
   position: fixed;
   inset-inline: 0;
   bottom: 0;
@@ -16,6 +23,19 @@
   overflow-x: clip;
   overflow-y: visible;
   height: 0;
+  /* iPhone のホームバーと、画面下の固定ボタン帯（--shirube-lift）を避ける */
+  transform: translate3d(
+    0,
+    calc(-1 * (var(--shirube-lift, 0px) + env(safe-area-inset-bottom, 0px))),
+    0
+  );
+}
+
+@media (min-width: 640px) {
+  .shirube-wander-stage {
+    --shirube-h: 120px;
+    --shirube-cycle: 1.08s;
+  }
 }
 
 .shirube-wander-actor {
@@ -56,18 +76,59 @@
 .shirube-wander-shadow {
   position: absolute;
   bottom: 0;
-  left: 50%;
-  width: 72%;
+  left: 42%;
+  width: 92%;
   height: 6px;
-  transform: translateX(-50%);
+  transform: translate(-50%, 35%);
   border-radius: 9999px;
   background: radial-gradient(
     ellipse at center,
-    rgba(30, 42, 90, 0.24) 0%,
-    rgba(30, 42, 90, 0.08) 55%,
+    rgba(30, 42, 90, 0.22) 0%,
+    rgba(30, 42, 90, 0.07) 55%,
     transparent 100%
   );
   pointer-events: none;
+}
+
+/* ---- 部品分けのちびしるべ ---------------------------------------------- */
+
+.shirube-rig {
+  position: relative;
+  display: block;
+  height: var(--shirube-h);
+  aspect-ratio: 517 / 1063;
+  /* 素材の下端に 1% ほど余白があるので、足裏を床にそろえる */
+  margin-bottom: calc(var(--shirube-h) * -0.009);
+}
+
+.shirube-rig-bob,
+.shirube-rig-part {
+  position: absolute;
+  inset: 0;
+  display: block;
+}
+
+.shirube-rig-part img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  user-select: none;
+  -webkit-user-drag: none;
+}
+
+/* 付け根（袴の裾に隠れた位置）と腰の軸。素材キャンバスに対する割合。 */
+.shirube-rig-leg-near {
+  transform-origin: 35.98% 84.76%;
+}
+
+.shirube-rig-leg-far {
+  transform-origin: 39.07% 83.44%;
+  /* 立ち姿では奥の足を少しだけ前に出して、両足が見えるようにする */
+  transform: rotate(-6deg);
+}
+
+.shirube-rig-body {
+  transform-origin: 39.85% 88.05%;
 }
 
 .shirube-wander-hit {
@@ -86,34 +147,270 @@
 }
 
 @media (prefers-reduced-motion: no-preference) {
+  .shirube-wander-stage {
+    transition: transform 320ms ease-out;
+  }
+
   .shirube-wander-stage[data-motion="active"] .shirube-wander-flip {
     transition: transform 280ms ease-in-out;
   }
 
-  /* 歩いている間だけ、足元を軸に小さく上下に揺れる（浮遊しすぎない 2.5px 程度） */
+  /* 歩いている間: 足を交互に振り、体は 1 サイクルに 2 回はずむ */
   .shirube-wander-stage[data-motion="active"][data-state="walking"]
-    .shirube-wander-gait {
-    animation: shirube-wander-step 0.96s ease-in-out infinite;
+    .shirube-rig-leg-near {
+    animation: shirube-walk-leg-near var(--shirube-cycle) linear infinite;
+  }
+
+  .shirube-wander-stage[data-motion="active"][data-state="walking"]
+    .shirube-rig-leg-far {
+    animation: shirube-walk-leg-far var(--shirube-cycle) linear infinite;
+  }
+
+  .shirube-wander-stage[data-motion="active"][data-state="walking"]
+    .shirube-rig-bob {
+    animation: shirube-walk-bob var(--shirube-cycle) linear infinite;
+  }
+
+  .shirube-wander-stage[data-motion="active"][data-state="walking"]
+    .shirube-rig-body {
+    animation: shirube-walk-body var(--shirube-cycle) linear infinite;
   }
 
   .shirube-wander-stage[data-motion="active"][data-state="walking"]
     .shirube-wander-shadow {
-    animation: shirube-wander-shadow 0.96s ease-in-out infinite;
+    animation: shirube-wander-shadow calc(var(--shirube-cycle) / 2) ease-in-out
+      infinite;
   }
 
-  @keyframes shirube-wander-step {
-    0%,
-    100% {
-      transform: translateY(0) rotate(0deg);
+  /* 立ち止まり・振り返り中: 足をそろえて、ゆっくり呼吸する */
+  .shirube-wander-stage[data-motion="active"]:not([data-state="walking"])
+    .shirube-rig-body {
+    animation: shirube-idle-breath 3.2s ease-in-out infinite;
+  }
+
+  @keyframes shirube-walk-leg-near {
+    0% {
+      transform: translateY(0%) rotate(-24deg);
+    }
+    6.25% {
+      transform: translateY(0%) rotate(-22.2deg);
+    }
+    12.5% {
+      transform: translateY(0%) rotate(-17deg);
+    }
+    18.75% {
+      transform: translateY(0%) rotate(-9.2deg);
     }
     25% {
-      transform: translateY(-2.5px) rotate(-1.1deg);
+      transform: translateY(0%) rotate(-0deg);
+    }
+    31.25% {
+      transform: translateY(0%) rotate(9.2deg);
+    }
+    37.5% {
+      transform: translateY(0%) rotate(17deg);
+    }
+    43.75% {
+      transform: translateY(0%) rotate(22.2deg);
     }
     50% {
-      transform: translateY(0) rotate(0deg);
+      transform: translateY(0%) rotate(24deg);
+    }
+    56.25% {
+      transform: translateY(-0.23%) rotate(22.2deg);
+    }
+    62.5% {
+      transform: translateY(-0.8%) rotate(17deg);
+    }
+    68.75% {
+      transform: translateY(-1.37%) rotate(9.2deg);
     }
     75% {
-      transform: translateY(-2px) rotate(1.1deg);
+      transform: translateY(-1.6%) rotate(0deg);
+    }
+    81.25% {
+      transform: translateY(-1.37%) rotate(-9.2deg);
+    }
+    87.5% {
+      transform: translateY(-0.8%) rotate(-17deg);
+    }
+    93.75% {
+      transform: translateY(-0.23%) rotate(-22.2deg);
+    }
+    100% {
+      transform: translateY(0%) rotate(-24deg);
+    }
+  }
+
+  @keyframes shirube-walk-leg-far {
+    0% {
+      transform: translateY(0%) rotate(24deg);
+    }
+    6.25% {
+      transform: translateY(-0.23%) rotate(22.2deg);
+    }
+    12.5% {
+      transform: translateY(-0.8%) rotate(17deg);
+    }
+    18.75% {
+      transform: translateY(-1.37%) rotate(9.2deg);
+    }
+    25% {
+      transform: translateY(-1.6%) rotate(0deg);
+    }
+    31.25% {
+      transform: translateY(-1.37%) rotate(-9.2deg);
+    }
+    37.5% {
+      transform: translateY(-0.8%) rotate(-17deg);
+    }
+    43.75% {
+      transform: translateY(-0.23%) rotate(-22.2deg);
+    }
+    50% {
+      transform: translateY(0%) rotate(-24deg);
+    }
+    56.25% {
+      transform: translateY(0%) rotate(-22.2deg);
+    }
+    62.5% {
+      transform: translateY(0%) rotate(-17deg);
+    }
+    68.75% {
+      transform: translateY(0%) rotate(-9.2deg);
+    }
+    75% {
+      transform: translateY(0%) rotate(-0deg);
+    }
+    81.25% {
+      transform: translateY(0%) rotate(9.2deg);
+    }
+    87.5% {
+      transform: translateY(0%) rotate(17deg);
+    }
+    93.75% {
+      transform: translateY(0%) rotate(22.2deg);
+    }
+    100% {
+      transform: translateY(0%) rotate(24deg);
+    }
+  }
+
+  @keyframes shirube-walk-bob {
+    0% {
+      transform: translateY(1.2%);
+    }
+    6.25% {
+      transform: translateY(0.88%);
+    }
+    12.5% {
+      transform: translateY(0.1%);
+    }
+    18.75% {
+      transform: translateY(-0.68%);
+    }
+    25% {
+      transform: translateY(-1%);
+    }
+    31.25% {
+      transform: translateY(-0.68%);
+    }
+    37.5% {
+      transform: translateY(0.1%);
+    }
+    43.75% {
+      transform: translateY(0.88%);
+    }
+    50% {
+      transform: translateY(1.2%);
+    }
+    56.25% {
+      transform: translateY(0.88%);
+    }
+    62.5% {
+      transform: translateY(0.1%);
+    }
+    68.75% {
+      transform: translateY(-0.68%);
+    }
+    75% {
+      transform: translateY(-1%);
+    }
+    81.25% {
+      transform: translateY(-0.68%);
+    }
+    87.5% {
+      transform: translateY(0.1%);
+    }
+    93.75% {
+      transform: translateY(0.88%);
+    }
+    100% {
+      transform: translateY(1.2%);
+    }
+  }
+
+  @keyframes shirube-walk-body {
+    0% {
+      transform: rotate(1.2deg);
+    }
+    6.25% {
+      transform: rotate(1.35deg);
+    }
+    12.5% {
+      transform: rotate(1.7deg);
+    }
+    18.75% {
+      transform: rotate(2.05deg);
+    }
+    25% {
+      transform: rotate(2.2deg);
+    }
+    31.25% {
+      transform: rotate(2.05deg);
+    }
+    37.5% {
+      transform: rotate(1.7deg);
+    }
+    43.75% {
+      transform: rotate(1.35deg);
+    }
+    50% {
+      transform: rotate(1.2deg);
+    }
+    56.25% {
+      transform: rotate(1.35deg);
+    }
+    62.5% {
+      transform: rotate(1.7deg);
+    }
+    68.75% {
+      transform: rotate(2.05deg);
+    }
+    75% {
+      transform: rotate(2.2deg);
+    }
+    81.25% {
+      transform: rotate(2.05deg);
+    }
+    87.5% {
+      transform: rotate(1.7deg);
+    }
+    93.75% {
+      transform: rotate(1.35deg);
+    }
+    100% {
+      transform: rotate(1.2deg);
+    }
+  }
+
+  @keyframes shirube-idle-breath {
+    0%,
+    100% {
+      transform: scale(1, 1);
+    }
+    50% {
+      transform: scale(1.006, 1.014);
     }
   }
 
@@ -121,16 +418,11 @@
     0%,
     100% {
       opacity: 1;
-      transform: translateX(-50%) scaleX(1);
-    }
-    25%,
-    75% {
-      opacity: 0.72;
-      transform: translateX(-50%) scaleX(0.92);
+      transform: translate(-50%, 35%) scaleX(1);
     }
     50% {
-      opacity: 1;
-      transform: translateX(-50%) scaleX(1);
+      opacity: 0.78;
+      transform: translate(-50%, 35%) scaleX(0.93);
     }
   }
 }

@@ -25,7 +25,11 @@ export interface WanderState {
 }
 
 export interface WanderConfig {
-  /** 歩行速度（px / 秒）。スマホ幅ではさらに穏やかにする。 */
+  /**
+   * 歩行速度（px / 秒）。CSS の 1 歩きサイクル（--shirube-cycle）で足が進む距離
+   * （表示の高さ × 約 0.234）に合わせ、足が地面を滑って見えないようにする。
+   * PC: 120px × 0.234 ÷ 1.08s ≒ 26 / スマホ: 60px × 0.234 ÷ 1s ≒ 14
+   */
   speedPxPerSec: number;
   /** 1 回の移動距離の下限（px） */
   minStridePx: number;
@@ -55,9 +59,9 @@ export function getWanderConfig(viewportWidth: number): WanderConfig {
   const isCompact = viewportWidth < 640;
   return isCompact
     ? {
-        speedPxPerSec: 20,
-        minStridePx: 64,
-        maxStridePx: 160,
+        speedPxPerSec: 14,
+        minStridePx: 56,
+        maxStridePx: 140,
         minPauseMs: 2600,
         maxPauseMs: 4800,
         turnBeatMs: 260,
@@ -238,4 +242,42 @@ export function stepWanderState(
     targetX: clampedTarget,
     facing: distance > 0 ? "right" : "left",
   };
+}
+
+/* --------------------------------------------------------------------------
+ * 画面下に固定されたボタン帯（固定 CTA・下部ナビ）を避けるための持ち上げ量
+ * ------------------------------------------------------------------------ */
+
+export interface BottomObstacleRect {
+  top: number;
+  bottom: number;
+  width: number;
+  height: number;
+}
+
+/** 持ち上げの上限（画面の高さに対する割合）。大きな固定パネルでは持ち上げすぎない。 */
+export const MAX_LIFT_RATIO = 0.35;
+
+/**
+ * 画面下端に接している固定要素の上端までの距離（px）を返す。
+ * しるべはその分だけ上を歩き、下部の主要ボタンに重ならないようにする。
+ *
+ * - 下端から 24px 以内に接していない要素は無視する。
+ * - 画面の上半分から始まる大きな要素（全画面のモーダルなど）は無視する。
+ * - 上限は画面の高さ × MAX_LIFT_RATIO。
+ */
+export function computeBottomLift(
+  rects: readonly BottomObstacleRect[],
+  viewportHeight: number,
+  gapPx = 4,
+): number {
+  if (viewportHeight <= 0) return 0;
+  let lift = 0;
+  for (const r of rects) {
+    if (r.width <= 0 || r.height <= 0) continue;
+    if (r.bottom < viewportHeight - 24) continue;
+    if (r.top < viewportHeight * 0.5) continue;
+    lift = Math.max(lift, viewportHeight - r.top + gapPx);
+  }
+  return Math.round(Math.min(lift, viewportHeight * MAX_LIFT_RATIO));
 }

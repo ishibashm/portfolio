@@ -24,18 +24,20 @@ const DUMMY_CARDS = [
   {
     eyebrow: "時期の整理",
     title: "動く候補日を静かに見比べる",
-    body: "移動は CSS transform（水平移動・左右反転・足元を軸にした小さな揺れ）だけで行い、画像の差し替えや重いアニメーションライブラリは使いません。",
+    body: "足の振り・体の上下・左右反転はすべて CSS transform だけで動かし、重いアニメーションライブラリは使いません。画像は 3 枚合わせて 100KB 未満です。",
   },
   {
     eyebrow: "相場の確認",
     title: "家賃と暮らしやすさを並べて考える",
-    body: "スマホ幅では 56px 程度に小さく収め、ラッパーには pointer-events: none を当てています。画面下端や四隅のボタンもそのまま押せます。",
+    body: "スマホ幅では高さ 60px に小さく収め、ラッパーには pointer-events: none を当てています。画面下に固定のボタン帯があるときは、その上を歩きます。",
   },
 ] as const;
 
 export function ShirubeDemoClient() {
   // デモ限定の「動きを止める」トグル。既定は false（OS の prefers-reduced-motion に従う）。
   const [stopMotionToggle, setStopMotionToggle] = useState(false);
+  // デモ限定: スマホでよくある「画面下に固定された CTA 帯」を出して、よけ方を確かめる
+  const [showFixedCta, setShowFixedCta] = useState(false);
   const osReduced = usePrefersReducedMotion();
   const [snapshot, setSnapshot] = useState<ShirubeWanderSnapshot>({
     motion: "reduced",
@@ -67,7 +69,7 @@ export function ShirubeDemoClient() {
                 しるべ 画面下端歩き回りプロトタイプ
               </h1>
               <p className="max-w-2xl text-sm leading-relaxed text-slate-700">
-                公式イラスト（指さしポーズ）のしるべが、画面の一番下のふちを舞台の床のようにゆっくり歩いたり立ち止まったりする試作です。
+                部品分け（頭と体・手前の足・奥の足）にしたちびしるべが、画面の一番下のふちを舞台の床のように歩いたり立ち止まったりする試作です。歩くあいだは足を交互に振って体が小さくはずみ、止まると足をそろえて静かに呼吸します。
               </p>
             </div>
 
@@ -90,7 +92,17 @@ export function ShirubeDemoClient() {
                     : "動きを止める（reduced-motion 確認）"}
                 </span>
               </button>
-              <p className="text-[11px] text-slate-600">
+              <button
+                type="button"
+                onClick={() => setShowFixedCta((v) => !v)}
+                aria-pressed={showFixedCta}
+                className="rounded-full border border-[#1e2a5a]/40 bg-white px-4 py-2 text-xs font-semibold text-[#1e2a5a] hover:bg-[#faf7f3]"
+              >
+                {showFixedCta
+                  ? "下部の固定ボタン帯を消す"
+                  : "下部の固定ボタン帯を出す（よけ方の確認）"}
+              </button>
+              <p className="text-xs text-slate-600">
                 状態:{" "}
                 <strong className="text-[#1e2a5a]">
                   {STATE_LABELS[snapshot.state]}
@@ -236,6 +248,21 @@ export function ShirubeDemoClient() {
           右角テストボタン
         </button>
       </div>
+
+      {showFixedCta ? (
+        <div
+          data-shirube-avoid
+          className="fixed inset-x-0 bottom-0 z-40 border-t border-[#c9a54a]/50 bg-white/95 px-4 pb-[calc(env(safe-area-inset-bottom)+12px)] pt-3 shadow-[0_-8px_24px_rgba(15,23,42,0.08)] backdrop-blur"
+        >
+          <button
+            type="button"
+            onClick={() => recordTap("固定 CTA 帯のボタン")}
+            className="mx-auto block w-full max-w-md rounded-full bg-[#1e2a5a] px-5 py-3 text-sm font-semibold text-[#f3d98b]"
+          >
+            固定 CTA（例: 今日の吉方位を見る）
+          </button>
+        </div>
+      ) : null}
 
       <ShirubeWanderer
         forceReducedMotion={stopMotionToggle ? true : undefined}

@@ -3,8 +3,10 @@
 /**
  * 画面最下端をゆっくり歩き回る案内役「しるべ」（試作コンポーネント）。
  *
- * - 公式イラスト（`GuideAvatar` の `pose="pointing"`）のみを使う。
- *   `float`（motion-float）は歩き回りと競合するため付けない。
+ * - 見た目は部品分けしたちびしるべ（`ShirubeWalkRig`）。歩くあいだは足を交互に
+ *   振り、体を小さく上下させる。止まっているときは足をそろえて静かに呼吸する。
+ * - 画面下に固定されたボタン帯（固定 CTA・下部ナビ・`data-shirube-avoid`）が
+ *   あれば、その上端より上を歩く（スマホで主要ボタンに重ならないように）。
  * - ラッパーは `pointer-events: none` で固定配置し、本文や CTA を塞がない。
  * - `prefers-reduced-motion: reduce`（および SSR / JS 実行前）では動かさず、
  *   画面下端の端に静かに立つ（docs/motion-accents.md の方針）。
@@ -12,14 +14,17 @@
  */
 
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
-import { GuideAvatar, GUIDE_NAME } from "@/components/guide/GuideCharacter";
+import { GUIDE_NAME } from "@/components/guide/GuideCharacter";
+import { ShirubeWalkRig } from "@/components/guide/ShirubeWalkRig";
 import { prefersReducedMotion } from "@/components/motion/reducedMotion";
 import {
   clampX,
+  computeBottomLift,
   createInitialWanderState,
   getWanderBounds,
   getWanderConfig,
   stepWanderState,
+  type BottomObstacleRect,
   type WanderFacing,
   type WanderPhase,
   type WanderState,
@@ -50,12 +55,79 @@ export interface ShirubeWandererProps {
    * 下にあるボタン・リンクのタップを一切妨げない。
    */
   onInteract?: () => void;
+  /**
+   * 画面下に固定されたボタン帯を自動で避ける（既定 true）。
+   * `[data-shirube-avoid]` を付けた要素と、画面下端にある position: fixed / sticky の
+   * 操作要素を見つけたら、その上端より上を歩く。
+   */
+  avoidBottomObstacles?: boolean;
   /** デモ確認用: 状態変化の通知（高頻度な座標更新では呼ばない）。 */
   onStatusChange?: (snapshot: ShirubeWanderSnapshot) => void;
 }
 
-const DEFAULT_ACTOR_WIDTH_DESKTOP = 80;
-const DEFAULT_ACTOR_WIDTH_MOBILE = 56;
+// 表示の高さ 120px / 60px × 素材の縦横比
+const DEFAULT_ACTOR_WIDTH_DESKTOP = 59;
+const DEFAULT_ACTOR_WIDTH_MOBILE = 30;
+
+const AVOID_SELECTOR = "[data-shirube-avoid]";
+const INTERACTIVE_SELECTOR =
+  "a[href], button, input, select, textarea, [role='button']";
+
+/**
+ * 画面下端の固定ボタン帯を集める。DOM を読むだけで、何も書き換えない。
+ * elementsFromPoint は pointer-events: none の要素（しるべの舞台自身など）を返さない。
+ */
+export function collectBottomObstacles(
+  doc: Document = document,
+  win: Window = window,
+): BottomObstacleRect[] {
+  const vh = win.innerHeight;
+  const vw = win.innerWidth;
+  const found = new Set<Element>();
+  doc.querySelectorAll(AVOID_SELECTOR).forEach((el) => found.add(el));
+
+  if (typeof doc.elementsFromPoint === "function") {
+    const ys = [vh - 4, vh - 18];
+    const xs = [
+      0.03, 0.12, 0.22, 0.32, 0.42, 0.5, 0.58, 0.68, 0.78, 0.88, 0.97,
+    ].map((r) => Math.round(vw * r));
+    for (const y of ys) {
+      for (const x of xs) {
+        for (const hit of doc.elementsFromPoint(x, y)) {
+          // 操作できる要素を含む固定・粘着の帯だけを対象にする
+          let el: Element | null = hit;
+          for (let depth = 0; el && depth < 6; depth += 1) {
+            if (el === doc.body || el === doc.documentElement) break;
+            const pos = win.getComputedStyle(el).position;
+            if (pos === "fixed" || pos === "sticky") {
+              if (
+                el.matches(INTERACTIVE_SELECTOR) ||
+                el.querySelector(INTERACTIVE_SELECTOR)
+              ) {
+                found.add(el);
+              }
+              break;
+            }
+            el = el.parentElement;
+          }
+        }
+      }
+    }
+  }
+
+  const rects: BottomObstacleRect[] = [];
+  found.forEach((el) => {
+    if (el.closest(".shirube-wander-stage")) return;
+    const r = el.getBoundingClientRect();
+    rects.push({
+      top: r.top,
+      bottom: r.bottom,
+      width: r.width,
+      height: r.height,
+    });
+  });
+  return rects;
+}
 
 function subscribeReducedMotion(onStoreChange: () => void) {
   if (
@@ -88,10 +160,12 @@ export function ShirubeWanderer({
   forceReducedMotion,
   restSide = "right",
   edgeMarginPx = 16,
+  avoidBottomObstacles = true,
   onInteract,
   onStatusChange,
 }: ShirubeWandererProps) {
   const actorRef = useRef<HTMLDivElement | null>(null);
+  const stageRef = useRef<HTMLDivElement | null>(null);
   const stateRef = useRef<WanderState | null>(null);
   const lastReportedRef = useRef<string>("");
   const onStatusChangeRef = useRef(onStatusChange);
@@ -103,6 +177,46 @@ export function ShirubeWanderer({
   const osReduced = usePrefersReducedMotion();
   const isReduced = forceReducedMotion ?? osReduced;
   const restFacing: WanderFacing = restSide === "left" ? "right" : "left";
+
+  // 画面下の固定ボタン帯を避ける持ち上げ量（CSS 変数 --shirube-lift）
+  useEffect(() => {
+    const stage = stageRef.current;
+    if (!stage || !avoidBottomObstacles || typeof window === "undefined") {
+      stage?.style.removeProperty("--shirube-lift");
+      return;
+    }
+    let raf = 0;
+    let last = -1;
+    const measure = () => {
+      raf = 0;
+      const lift = computeBottomLift(
+        collectBottomObstacles(document, window),
+        window.innerHeight,
+      );
+      if (lift !== last) {
+        last = lift;
+        stage.style.setProperty("--shirube-lift", `${lift}px`);
+        stage.setAttribute("data-lifted", lift > 0 ? "true" : "false");
+      }
+    };
+    const schedule = () => {
+      if (raf || typeof window.requestAnimationFrame !== "function") return;
+      raf = window.requestAnimationFrame(measure);
+    };
+    measure();
+    window.addEventListener("resize", schedule);
+    window.addEventListener("scroll", schedule, { passive: true });
+    // 後から出る固定 CTA（スクロールで現れる帯など）にも追従する
+    const interval = window.setInterval(schedule, 2000);
+    return () => {
+      window.removeEventListener("resize", schedule);
+      window.removeEventListener("scroll", schedule);
+      window.clearInterval(interval);
+      if (raf && typeof window.cancelAnimationFrame === "function") {
+        window.cancelAnimationFrame(raf);
+      }
+    };
+  }, [avoidBottomObstacles]);
 
   const [activeVisual, setActiveVisual] = useState<{
     state: WanderPhase;
@@ -236,25 +350,19 @@ export function ShirubeWanderer({
     : activeVisual.state;
   const facing: WanderFacing = isReduced ? restFacing : activeVisual.facing;
 
-  // pointing ポーズは元絵が左向きなので、右向きに歩くときだけ左右反転する
-  const flipTransform = facing === "right" ? "scaleX(-1)" : "scaleX(1)";
+  // 歩く素材は元絵が右向きなので、左へ歩くときだけ左右反転する
+  const flipTransform = facing === "left" ? "scaleX(-1)" : "scaleX(1)";
 
   const avatar = (
     <span className="shirube-wander-gait">
       <span className="shirube-wander-shadow" aria-hidden="true" />
-      <GuideAvatar
-        pose="pointing"
-        size="sm"
-        priority="lazy"
-        decorative={!onInteract}
-        float={false}
-        className="max-w-14 sm:max-w-20"
-      />
+      <ShirubeWalkRig />
     </span>
   );
 
   return (
     <div
+      ref={stageRef}
       className="shirube-wander-stage"
       data-testid="shirube-wanderer"
       data-motion={isReduced ? "reduced" : "active"}

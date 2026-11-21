@@ -1,4 +1,4 @@
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   act,
@@ -9,6 +9,7 @@ import {
 } from "@testing-library/react";
 import { ShirubeWanderer } from "@/components/guide/ShirubeWanderer";
 import {
+  computeBottomLift,
   createInitialWanderState,
   getWanderBounds,
   getWanderConfig,
@@ -36,29 +37,93 @@ function stubMatchMedia(reduce: boolean) {
 }
 
 describe("ShirubeWanderer", () => {
-  it("公式 pointing イラストを GuideAvatar 経由で表示し、float やちび版を使わない", () => {
+  it("部品分けのちびしるべ（奥の足・手前の足・胴体）を重ね、ポインタは塞がない", () => {
     stubMatchMedia(true);
     const { container } = render(<ShirubeWanderer />);
 
-    const picture = container.querySelector("picture")!;
-    expect(picture).toBeTruthy();
-    expect(picture.className).not.toContain("motion-float");
-
-    const sources = [...container.querySelectorAll("source")];
-    expect(sources.map((s) => s.getAttribute("type"))).toEqual([
-      "image/avif",
-      "image/webp",
-    ]);
-    expect(sources[0].getAttribute("srcset")).toContain(
-      "/guide/shirube-pointing-96.avif 96w",
+    const rig = screen.getByTestId("shirube-walk-rig");
+    const parts = [...rig.querySelectorAll("picture")].map((p) =>
+      p.getAttribute("data-part"),
     );
+    // 描く順: 奥の足 → 手前の足 → 胴体（袴が足の付け根を隠す）
+    expect(parts).toEqual(["leg-far", "leg-near", "body"]);
 
-    const img = container.querySelector("img")!;
-    expect(img.getAttribute("src")).toBe("/guide/shirube-pointing-240.webp");
-    expect(img.getAttribute("src")).not.toContain("chibi");
-    expect(img.getAttribute("loading")).toBe("lazy");
-    expect(img.getAttribute("width")).toBe("240");
-    expect(img.getAttribute("height")).toBe("296");
+    for (const part of parts) {
+      const pic = rig.querySelector(`picture[data-part="${part}"]`)!;
+      const source = pic.querySelector("source")!;
+      expect(source.getAttribute("type")).toBe("image/webp");
+      expect(source.getAttribute("srcset")).toContain(
+        `/guide/walk/shirube-walk-${part}-128.webp 62w`,
+      );
+      const img = pic.querySelector("img")!;
+      expect(img.getAttribute("src")).toBe(
+        `/guide/walk/shirube-walk-${part}-240.png`,
+      );
+      expect(img.getAttribute("alt")).toBe("");
+      expect(img.getAttribute("loading")).toBe("lazy");
+    }
+
+    // 素材ファイルが public に揃っている
+    for (const part of parts) {
+      for (const size of ["128", "240"]) {
+        for (const ext of ["webp", "png"]) {
+          expect(
+            existsSync(`public/guide/walk/shirube-walk-${part}-${size}.${ext}`),
+          ).toBe(true);
+        }
+      }
+    }
+    expect(container.querySelector(".motion-float")).toBeNull();
+  });
+
+  it("素材は右向きなので、左向きのときだけ scaleX(-1) で反転する", () => {
+    stubMatchMedia(true);
+    const { rerender } = render(<ShirubeWanderer restSide="right" />);
+    // 右下で休む → ページの内側（左）を向く
+    expect(
+      screen.getByTestId("shirube-wanderer").getAttribute("data-facing"),
+    ).toBe("left");
+    expect(screen.getByTestId("shirube-wanderer-flip").style.transform).toBe(
+      "scaleX(-1)",
+    );
+    rerender(<ShirubeWanderer restSide="left" />);
+    expect(screen.getByTestId("shirube-wanderer-flip").style.transform).toBe(
+      "scaleX(1)",
+    );
+  });
+
+  it("data-shirube-avoid の固定ボタン帯があると、その上端より上へ持ち上がる", () => {
+    stubMatchMedia(true);
+    Object.defineProperty(window, "innerHeight", {
+      configurable: true,
+      value: 800,
+    });
+    const bar = document.createElement("div");
+    bar.setAttribute("data-shirube-avoid", "");
+    bar.getBoundingClientRect = () =>
+      ({
+        top: 728,
+        bottom: 800,
+        left: 0,
+        right: 375,
+        width: 375,
+        height: 72,
+      }) as DOMRect;
+    document.body.appendChild(bar);
+
+    render(<ShirubeWanderer />);
+    const stage = screen.getByTestId("shirube-wanderer");
+    expect(stage.style.getPropertyValue("--shirube-lift")).toBe("76px");
+    expect(stage.getAttribute("data-lifted")).toBe("true");
+    bar.remove();
+
+    cleanup();
+    render(<ShirubeWanderer avoidBottomObstacles={false} />);
+    expect(
+      screen
+        .getByTestId("shirube-wanderer")
+        .style.getPropertyValue("--shirube-lift"),
+    ).toBe("");
   });
 
   it("prefers-reduced-motion: reduce のときは rAF を回さず transform 移動しない", () => {
@@ -167,6 +232,45 @@ describe("shirubeWanderLogic", () => {
   });
 });
 
+describe("computeBottomLift", () => {
+  it("下端に接した帯の上端まで持ち上げ、遠い要素や大きなパネルは無視・上限あり", () => {
+    const vh = 800;
+    expect(computeBottomLift([], vh)).toBe(0);
+    // 下端に接した 64px の帯 → 64 + 余白 4
+    expect(
+      computeBottomLift(
+        [{ top: 736, bottom: 800, width: 375, height: 64 }],
+        vh,
+      ),
+    ).toBe(68);
+    // 下端から離れた要素は無視
+    expect(
+      computeBottomLift(
+        [{ top: 600, bottom: 700, width: 375, height: 100 }],
+        vh,
+      ),
+    ).toBe(0);
+    // 画面の上半分から始まる大きなパネルは無視
+    expect(
+      computeBottomLift(
+        [{ top: 100, bottom: 800, width: 375, height: 700 }],
+        vh,
+      ),
+    ).toBe(0);
+    // 上限は画面の高さの 35%
+    expect(
+      computeBottomLift(
+        [{ top: 420, bottom: 800, width: 375, height: 380 }],
+        vh,
+      ),
+    ).toBe(280);
+    // 幅 0（非表示）は無視
+    expect(
+      computeBottomLift([{ top: 736, bottom: 800, width: 0, height: 64 }], vh),
+    ).toBe(0);
+  });
+});
+
 describe("CSS と SEO 方針", () => {
   it("アニメーションは no-preference の中だけ、keyframes は transform / opacity のみ", () => {
     const css = readFileSync(
@@ -184,7 +288,16 @@ describe("CSS と SEO 方針", () => {
     );
 
     const frames = [...css.matchAll(/@keyframes [\w-]+\s*{([\s\S]*?)\n  }/g)];
-    expect(frames.length).toBeGreaterThanOrEqual(2);
+    expect(frames.length).toBeGreaterThanOrEqual(6);
+    const names = [...css.matchAll(/@keyframes ([\w-]+)/g)].map((m) => m[1]);
+    expect(names).toEqual(
+      expect.arrayContaining([
+        "shirube-walk-leg-near",
+        "shirube-walk-leg-far",
+        "shirube-walk-bob",
+        "shirube-idle-breath",
+      ]),
+    );
     for (const [, body] of frames) {
       const props = [...body.matchAll(/([a-z-]+)\s*:/g)].map((m) => m[1]);
       for (const p of props) expect(["transform", "opacity"]).toContain(p);
