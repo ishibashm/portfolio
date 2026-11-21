@@ -210,7 +210,7 @@ describe("自由移動の状態遷移（ホップ・着地・床消失・指さ�
     expect(next.y).toBe(800);
   });
 
-  it("要素の床に 8 秒以上留まり続けると別床へ移る", () => {
+  it("要素の床に上限（maxPerchStayMs）を超えて留まり続けると別床へ移る", () => {
     const bounds = getWanderBounds(1000, 59, 16);
     const config = getWanderConfig(1000);
     const roam: RoamContext = {
@@ -225,7 +225,7 @@ describe("自由移動の状態遷移（ホップ・着地・床消失・指さ�
       x: 140,
       y: 420,
       perchId: "card-1",
-      perchElapsedMs: 8100,
+      perchElapsedMs: config.maxPerchStayMs + 100,
       phase: "paused" as const,
       remainingMs: 2000,
     };
@@ -554,5 +554,108 @@ describe("結果への反応は頻度の制限より優先", () => {
       canShowAutoTip(s, 11_000, undefined, { tipId: "r", priority: true }),
     ).toBe(true);
     expect(canShowAutoTip(s, 11_000, undefined, { tipId: "r" })).toBe(false);
+  });
+});
+
+describe("ムーンウォークしない・基本はその場で足踏み", () => {
+  const perches = [
+    { id: "bottom", left: 16, right: 1264, top: 800, kind: "bottom" as const },
+    { id: "card-a", left: 300, right: 700, top: 420, kind: "element" as const },
+    {
+      id: "card-b",
+      left: 640,
+      right: 1000,
+      top: 560,
+      kind: "element" as const,
+    },
+  ];
+  const roam = {
+    perches,
+    actorWidth: 59,
+    actorHeight: 120,
+    viewportHeight: 800,
+  };
+
+  async function simulate(seed: number, seconds: number, dtMs: number) {
+    const L = await import("@/components/guide/shirubeWanderLogic");
+    const random = L.createSeededRandom(seed);
+    const bounds = L.getWanderBounds(1280, 59, 16);
+    const config = L.getWanderConfig(1280);
+    let s = L.startStepping(
+      L.createInitialWanderState(bounds, config, random, 800),
+      bounds,
+      config,
+      random,
+    );
+    const frames: { x: number; facing: string; phase: string }[] = [
+      { x: s.x, facing: s.facing, phase: s.phase },
+    ];
+    for (let t = 0; t < seconds * 1000; t += dtMs) {
+      s = L.stepWanderState(s, dtMs, bounds, config, random, roam);
+      frames.push({ x: s.x, facing: s.facing, phase: s.phase });
+    }
+    return frames;
+  }
+
+  it("動いているコマでは、向きが必ず進む向きと一致する（歩き・足踏み・飛び移り）", async () => {
+    for (const seed of [1, 7, 42, 99, 2026]) {
+      for (const dt of [16, 50, 100]) {
+        const f = await simulate(seed, 180, dt);
+        for (let i = 1; i < f.length; i += 1) {
+          const dx = f[i].x - f[i - 1].x;
+          if (Math.abs(dx) < 0.01) continue;
+          if (!["walking", "stepping", "hopping"].includes(f[i].phase))
+            continue;
+          const dir = dx > 0 ? "right" : "left";
+          expect({
+            seed,
+            dt,
+            i,
+            phase: f[i].phase,
+            facing: f[i].facing,
+          }).toEqual({
+            seed,
+            dt,
+            i,
+            phase: f[i].phase,
+            facing: dir,
+          });
+        }
+      }
+    }
+  });
+
+  it("ほとんどの時間はその場（足踏み・立ち止まり・正面）で、移動はときどき", async () => {
+    for (const seed of [3, 11, 77]) {
+      const f = await simulate(seed, 300, 50);
+      const moving = f.filter(
+        (x) => x.phase === "walking" || x.phase === "hopping",
+      ).length;
+      const stepping = f.filter((x) => x.phase === "stepping").length;
+      expect(moving / f.length).toBeLessThan(0.3);
+      expect(stepping / f.length).toBeGreaterThan(0.25);
+      // 移動（歩き出し・飛び移り）の回数は 5 分で数回〜20 回程度
+      let starts = 0;
+      for (let i = 1; i < f.length; i += 1) {
+        const m = (p: string) => p === "walking" || p === "hopping";
+        if (m(f[i].phase) && !m(f[i - 1].phase)) starts += 1;
+      }
+      expect(starts).toBeGreaterThanOrEqual(3);
+      expect(starts).toBeLessThanOrEqual(24);
+    }
+  });
+
+  it("足踏み中のにじり寄りは数 px だけで、向いている側へだけ", async () => {
+    const L = await import("@/components/guide/shirubeWanderLogic");
+    const bounds = { minX: 16, maxX: 1200 };
+    const config = L.getWanderConfig(1280);
+    for (let k = 0; k < 50; k += 1) {
+      const r = L.createSeededRandom(k);
+      const base = L.createInitialWanderState(bounds, config, r, 800);
+      const s = L.startStepping(base, bounds, config, r);
+      const dx = s.targetX - s.x;
+      expect(Math.abs(dx)).toBeLessThanOrEqual(config.maxStepDriftPx);
+      if (dx !== 0) expect(dx > 0 ? "right" : "left").toBe(s.facing);
+    }
   });
 });

@@ -63,6 +63,7 @@ import {
   reconcilePerch,
   startPointingToward,
   stepWanderState,
+  startStepping,
   type BottomObstacleRect,
   type RoamContext,
   type WanderFacing,
@@ -155,6 +156,7 @@ const SIDE_FACING_PHASES = new Set<WanderPhase>([
   "paused",
   "turning",
   "walking",
+  "stepping",
 ]);
 
 /* --------------------------------------------------------------------------
@@ -950,11 +952,17 @@ export function ShirubeWanderer({
       edgeMarginPx,
     );
     const initialConfig = getWanderConfig(window.innerWidth, { gait, greet });
-    const initialState = createInitialWanderState(
+    // 基本はその場の足踏みから始める（移動はときどき）
+    const initialState = startStepping(
+      createInitialWanderState(
+        initialBounds,
+        initialConfig,
+        randomRef.current,
+        initialBottomY,
+      ),
       initialBounds,
       initialConfig,
       randomRef.current,
-      initialBottomY,
     );
     stateRef.current = initialState;
 
@@ -979,6 +987,17 @@ export function ShirubeWanderer({
     };
 
     applyTransform(initialState, dims.height);
+    // 見た目（data-state / data-facing）を最初の状態にそろえる。
+    // これが無いと、初期表示の向きと内部の向きが食い違ったまま歩き出し、
+    // 後ろ向きに進む（ムーンウォーク）ことがあった。
+    setActiveVisual({
+      state: initialState.phase,
+      prevState: null,
+      facing: initialState.facing,
+      perchId: initialState.perchId,
+      isLanding: false,
+      isTurningBack: false,
+    });
     reportStatus(
       "active",
       initialState.phase,
@@ -1124,7 +1143,10 @@ export function ShirubeWanderer({
 
     const scheduleNext = (state: WanderState) => {
       if (disposed || document.visibilityState === "hidden") return;
-      const needsRaf = state.phase === "walking" || state.phase === "hopping";
+      const needsRaf =
+        state.phase === "walking" ||
+        state.phase === "hopping" ||
+        state.phase === "stepping";
       if (needsRaf) {
         if (!rafId) {
           lastTs = performance.now();

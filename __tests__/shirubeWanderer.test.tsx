@@ -159,7 +159,7 @@ describe("ShirubeWanderer", () => {
     expect(rafSpy).not.toHaveBeenCalled();
   });
 
-  it("no-preference のときは画面内を translate3d(x, y, 0) でゆっくり移動する", () => {
+  it("no-preference のときはその場の足踏みから始め、translate3d(x, y, 0) で向いている側へ少しずつ動く", () => {
     stubMatchMedia(false);
     Object.defineProperty(window, "innerWidth", {
       configurable: true,
@@ -178,13 +178,14 @@ describe("ShirubeWanderer", () => {
     });
     vi.stubGlobal("cancelAnimationFrame", vi.fn());
     vi.spyOn(performance, "now").mockImplementation(() => now);
-    vi.spyOn(Math, "random").mockReturnValue(0.2);
+    vi.spyOn(Math, "random").mockReturnValue(0.5);
 
     render(<ShirubeWanderer />);
 
     const stage = screen.getByTestId("shirube-wanderer");
     const actor = screen.getByTestId("shirube-wanderer-actor");
     expect(stage.getAttribute("data-motion")).toBe("active");
+    expect(stage.getAttribute("data-state")).toBe("stepping");
     const initialTransform = actor.style.transform;
     expect(initialTransform).toMatch(
       /^translate3d\([\d.-]+px, [\d.-]+px, 0\)$/,
