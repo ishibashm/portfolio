@@ -222,6 +222,33 @@ function subscribeReducedMotion(onStoreChange: () => void) {
   return () => {};
 }
 
+/**
+ * 本文（main）が始まる x。PC で左に固定のサイドバーがあるとき、その上には立たない。
+ * 本文が狭すぎる・main が無いときは 0（画面の左端から使う）。
+ */
+export function getContentLeft(
+  doc: Document = document,
+  win: Window = window,
+): number {
+  const main = doc.querySelector("main");
+  if (!main) return 0;
+  const left = main.getBoundingClientRect().left;
+  if (!Number.isFinite(left) || left <= 0) return 0;
+  return left > win.innerWidth - 240 ? 0 : Math.round(left);
+}
+
+function withContentLeft<T extends { minX: number; maxX: number }>(
+  bounds: T,
+  contentLeft: number,
+  edgeMarginPx: number,
+): T {
+  const minX = Math.min(
+    bounds.maxX,
+    Math.max(bounds.minX, contentLeft + edgeMarginPx),
+  );
+  return { ...bounds, minX };
+}
+
 export function usePrefersReducedMotion(): boolean {
   return useSyncExternalStore(
     subscribeReducedMotion,
@@ -401,6 +428,7 @@ export function ShirubeWanderer({
     actorWidth: number;
     actorHeight: number;
     viewportWidth: number;
+    minLeft?: number;
     viewportHeight: number;
   } | null>(null);
 
@@ -526,6 +554,7 @@ export function ShirubeWanderer({
             actorWidth: dims.width,
             actorHeight: dims.height,
             viewportWidth: window.innerWidth,
+            minLeft: getContentLeft(document, window),
             viewportHeight: window.innerHeight,
           });
           resumeEngineRef.current?.();
@@ -536,6 +565,7 @@ export function ShirubeWanderer({
             actorWidth: dims.width,
             actorHeight: dims.height,
             viewportWidth: window.innerWidth,
+            minLeft: getContentLeft(document, window),
             viewportHeight: window.innerHeight,
           });
         }
@@ -618,8 +648,30 @@ export function ShirubeWanderer({
 
   /** タップ時: 今のページに合った案内・次の一歩を表示（移動操作はしない） */
   const handleTapForTip = useCallback(() => {
+    // 未入力の必須欄が見えていれば、それが「次の一歩」
+    const emptyField = findEmptyRequiredInput(document, window);
+    if (emptyField) {
+      presentTip(FORM_NEXT_INPUT_TIP, emptyField);
+      return;
+    }
     const tips = getTipsForRoute(pathname, { is404: isPage404() });
-    const { tip, nextIndex } = chooseTipForTap(tips, tapCursorRef.current);
+    // 画面の上の方〜中ほどにはっきり見えている所の案内を、まだ出していないものから優先する
+    const clearlyVisible = (t: ShirubeTip) => {
+      if (!t.target) return false;
+      const el = resolveTipTarget(t.target, document, t.id);
+      if (!el) return false;
+      const r = el.getBoundingClientRect();
+      return r.top >= 0 && r.top < window.innerHeight * 0.85;
+    };
+    const shown = rateLimitRef.current.shownIds;
+    const fresh = chooseTipForTap(
+      tips,
+      tapCursorRef.current,
+      (t) => !shown.includes(t.id) && clearlyVisible(t),
+    );
+    const { tip, nextIndex } = clearlyVisible(fresh.tip)
+      ? fresh
+      : chooseTipForTap(tips, tapCursorRef.current, clearlyVisible);
     tapCursorRef.current = nextIndex;
     presentTip(tip);
   }, [pathname, presentTip]);
@@ -693,6 +745,7 @@ export function ShirubeWanderer({
           actorWidth: dims.width,
           actorHeight: dims.height,
           edgeMarginPx,
+          contentLeftPx: getContentLeft(document, window),
           bottomLiftPx: lift,
           avoidRects,
         },
@@ -801,9 +854,9 @@ export function ShirubeWanderer({
       dims.height,
       window.innerHeight - bottomLiftRef.current,
     );
-    const initialBounds = getWanderBounds(
-      window.innerWidth,
-      dims.width,
+    const initialBounds = withContentLeft(
+      getWanderBounds(window.innerWidth, dims.width, edgeMarginPx),
+      getContentLeft(document, window),
       edgeMarginPx,
     );
     const initialConfig = getWanderConfig(window.innerWidth, { gait, greet });
@@ -823,6 +876,7 @@ export function ShirubeWanderer({
           actorWidth: dims.width,
           actorHeight: dims.height,
           edgeMarginPx,
+          contentLeftPx: getContentLeft(document, window),
           bottomLiftPx: bottomLiftRef.current,
         },
       );
@@ -916,6 +970,7 @@ export function ShirubeWanderer({
           actorWidth: d.width,
           actorHeight: d.height,
           viewportWidth: window.innerWidth,
+          minLeft: getContentLeft(document, window),
           viewportHeight: window.innerHeight,
         });
       }
@@ -944,12 +999,17 @@ export function ShirubeWanderer({
                 actorWidth: d.width,
                 actorHeight: d.height,
                 edgeMarginPx,
+                contentLeftPx: getContentLeft(document, window),
                 bottomLiftPx: bottomLiftRef.current,
               },
             );
       return {
         dims: d,
-        bounds: getWanderBounds(vw, d.width, edgeMarginPx),
+        bounds: withContentLeft(
+          getWanderBounds(vw, d.width, edgeMarginPx),
+          getContentLeft(document, window),
+          edgeMarginPx,
+        ),
         config: getWanderConfig(vw, { gait, greet }),
         roam: {
           perches,
@@ -1128,6 +1188,24 @@ export function ShirubeWanderer({
           );
           triggerAutoTip("empty", routeEmpty ?? GENERIC_EMPTY_TIP, emptyEl);
           return;
+        }
+        // 見えてきた所に対応する案内（まだ出していないもの）があれば、それを優先して指さす
+        const routeTips = getTipsForRoute(pathname, { is404: isPage404() });
+        for (const t of routeTips) {
+          if (!t.target || rateLimitRef.current.shownIds.includes(t.id)) {
+            continue;
+          }
+          const el = resolveTipTarget(t.target, document, t.id);
+          if (!el || seenSections.has(el)) continue;
+          const r = el.getBoundingClientRect();
+          if (
+            r.top > window.innerHeight * 0.1 &&
+            r.bottom < window.innerHeight
+          ) {
+            seenSections.add(el);
+            triggerAutoTip("scroll", t, el);
+            return;
+          }
         }
         const sections = document.querySelectorAll(
           "main section, main article, main h2, [data-shirube-tip]",

@@ -614,12 +614,25 @@ export function chooseTipForTrigger(
   return null;
 }
 
+/**
+ * タップ時の案内を選ぶ。押すたびに順番に回し、`isRelevant` を渡すと
+ * 「今まさに画面に見えている所の案内」を優先する（見つからなければ順番どおり）。
+ */
 export function chooseTipForTap(
   tips: readonly ShirubeTip[],
   cursorIndex: number,
+  isRelevant?: (tip: ShirubeTip) => boolean,
 ): { tip: ShirubeTip; nextIndex: number } {
   const pool = tips.length > 0 ? tips : DEFAULT_TIPS;
   const idx = ((cursorIndex % pool.length) + pool.length) % pool.length;
+  if (isRelevant) {
+    for (let k = 0; k < pool.length; k += 1) {
+      const j = (idx + k) % pool.length;
+      if (isRelevant(pool[j])) {
+        return { tip: pool[j], nextIndex: (j + 1) % pool.length };
+      }
+    }
+  }
   return {
     tip: pool[idx],
     nextIndex: (idx + 1) % pool.length,

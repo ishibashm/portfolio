@@ -43,6 +43,8 @@ export interface FindPerchesOptions {
   actorHeight?: number;
   actorWidth?: number;
   edgeMarginPx?: number;
+  /** 左に固定のサイドバーなどがあるとき、本文が始まる x（その左には立たない） */
+  contentLeftPx?: number;
   /** 画面最下端の持ち上げ量（固定 CTA・safe-area 分） */
   bottomLiftPx?: number;
   maxDesktopPerches?: number;
@@ -96,6 +98,7 @@ export function findPerches(
   const actorHeight = opts.actorHeight ?? (isMobile ? 60 : 120);
   const actorWidth = opts.actorWidth ?? (isMobile ? 30 : 59);
   const edgeMarginPx = opts.edgeMarginPx ?? 16;
+  const contentLeftPx = Math.max(0, opts.contentLeftPx ?? 0);
   const bottomLiftPx = Math.max(0, opts.bottomLiftPx ?? 0);
   const maxPerches = isMobile
     ? (opts.maxMobilePerches ?? 4)
@@ -106,7 +109,10 @@ export function findPerches(
   const avoidRects = opts.avoidRects ?? [];
 
   const bottomTop = Math.max(0, vh - bottomLiftPx);
-  const bottomLeft = Math.min(edgeMarginPx, Math.max(0, vw - actorWidth));
+  const bottomLeft = Math.min(
+    contentLeftPx + edgeMarginPx,
+    Math.max(0, vw - actorWidth),
+  );
   const bottomRight = Math.max(bottomLeft, vw - edgeMarginPx);
 
   const bottomPerch: Perch = {
@@ -135,7 +141,7 @@ export function findPerches(
     if (c.top < minTop || c.top > maxTop) continue;
     if (c.bottom <= 0 || c.top >= vh) continue;
 
-    const left = Math.max(edgeMarginPx, c.left);
+    const left = Math.max(contentLeftPx + edgeMarginPx, c.left);
     const right = Math.min(vw - edgeMarginPx, c.right);
     const usableWidth = right - left;
     if (usableWidth < minWidth) continue;

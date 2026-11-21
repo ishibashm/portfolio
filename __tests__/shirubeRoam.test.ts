@@ -398,3 +398,32 @@ describe("気ままな飛び移りは近くの床だけ", () => {
     ).toBeNull();
   });
 });
+
+describe("タップの案内は見えている所を優先", () => {
+  it("isRelevant に合う案内を順番の中から選び、無ければ順番どおり", async () => {
+    const { chooseTipForTap } = await import("@/components/guide/shirubeTips");
+    const tips = [
+      { id: "a", text: "A" },
+      { id: "b", text: "B", target: "#b" },
+      { id: "c", text: "C", target: "#c" },
+    ];
+    const r1 = chooseTipForTap(tips, 0, (t) => t.id === "c");
+    expect(r1.tip.id).toBe("c");
+    expect(r1.nextIndex).toBe(0);
+    const r2 = chooseTipForTap(tips, 1, () => false);
+    expect(r2.tip.id).toBe("b");
+    expect(r2.nextIndex).toBe(2);
+  });
+});
+
+describe("固定サイドバーの上には立たない", () => {
+  it("contentLeftPx より左を床にしない", async () => {
+    const { findPerches } = await import("@/components/guide/shirubePerch");
+    const perches = findPerches(
+      [{ id: "card", left: 100, right: 700, top: 400, bottom: 600 }],
+      { width: 1280, height: 800 },
+      { contentLeftPx: 256 },
+    );
+    for (const p of perches) expect(p.left).toBeGreaterThanOrEqual(256 + 16);
+  });
+});

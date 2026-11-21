@@ -27,6 +27,8 @@ export interface ShirubeBubbleProps {
     actorWidth: number;
     actorHeight: number;
     viewportWidth: number;
+    /** 本文が始まる x（固定サイドバーの右端）。吹き出しをその左へ出さない */
+    minLeft?: number;
     viewportHeight: number;
   } | null;
   restSide: "right" | "left";
@@ -54,11 +56,12 @@ export function ShirubeBubble({
     const isMobile = anchor.viewportWidth < 640;
     const bubbleWidth = isMobile ? 180 : 220;
     const margin = 8;
+    const minLeft = (anchor.minLeft ?? 0) + margin;
     const centerX = anchor.x + anchor.actorWidth * 0.5;
     const rawLeft = centerX - bubbleWidth * 0.5;
     const clampedLeft = Math.min(
-      Math.max(margin, anchor.viewportWidth - bubbleWidth - margin),
-      Math.max(margin, rawLeft),
+      Math.max(minLeft, anchor.viewportWidth - bubbleWidth - margin),
+      Math.max(minLeft, rawLeft),
     );
 
     const actorTop = anchor.y - anchor.actorHeight;
