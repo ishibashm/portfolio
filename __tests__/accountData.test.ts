@@ -181,6 +181,7 @@ const KEPT: Record<string, string> = {
   timing_view_v1: "時期ツールの範囲と絞り込み",
   "threeBoard.orientation": "三盤の方位盤の向き（北を上／南を上）",
   "cloud-palette:chunk-reload-at": "読み込み失敗の再試行時刻",
+  "shirube:hidden": "案内役しるべを休ませたか（表示の好み）",
 };
 
 function walk(dir: string): string[] {
