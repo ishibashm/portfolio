@@ -1,0 +1,136 @@
+/* ==========================================================================
+ * しるべ歩き回り試作（ShirubeWanderer）のスタイル。
+ *
+ * 決まり（docs/motion-accents.md に合わせる）:
+ * - 動かすのは transform と opacity だけ（CLS を起こさない）。
+ * - 既定（JS なし・prefers-reduced-motion: reduce）の見た目が静止の最終形。
+ *   歩行の上下揺れは no-preference の中だけ。
+ * ======================================================================== */
+
+.shirube-wander-stage {
+  position: fixed;
+  inset-inline: 0;
+  bottom: 0;
+  z-index: 30;
+  pointer-events: none;
+  overflow-x: clip;
+  overflow-y: visible;
+  height: 0;
+}
+
+.shirube-wander-actor {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  pointer-events: none;
+  will-change: transform;
+}
+
+/* 動きを減らす設定（reduce）や JS 無効時は、下端の右寄りに静かに立つ。 */
+.shirube-wander-stage[data-motion="reduced"] .shirube-wander-actor {
+  left: auto;
+  right: 16px;
+  will-change: auto;
+}
+
+.shirube-wander-stage[data-motion="reduced"][data-rest-side="left"]
+  .shirube-wander-actor {
+  left: 16px;
+  right: auto;
+}
+
+.shirube-wander-flip {
+  display: inline-block;
+  transform-origin: 50% 100%;
+}
+
+.shirube-wander-gait {
+  position: relative;
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  transform-origin: 50% 100%;
+}
+
+/* 舞台の床に接している接地感だけを出す控えめな影 */
+.shirube-wander-shadow {
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  width: 72%;
+  height: 6px;
+  transform: translateX(-50%);
+  border-radius: 9999px;
+  background: radial-gradient(
+    ellipse at center,
+    rgba(30, 42, 90, 0.24) 0%,
+    rgba(30, 42, 90, 0.08) 55%,
+    transparent 100%
+  );
+  pointer-events: none;
+}
+
+.shirube-wander-hit {
+  pointer-events: auto;
+  display: inline-block;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+}
+
+.shirube-wander-hit:focus-visible {
+  outline: 2px solid #c9a54a;
+  outline-offset: 2px;
+  border-radius: 8px;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .shirube-wander-stage[data-motion="active"] .shirube-wander-flip {
+    transition: transform 280ms ease-in-out;
+  }
+
+  /* 歩いている間だけ、足元を軸に小さく上下に揺れる（浮遊しすぎない 2.5px 程度） */
+  .shirube-wander-stage[data-motion="active"][data-state="walking"]
+    .shirube-wander-gait {
+    animation: shirube-wander-step 0.96s ease-in-out infinite;
+  }
+
+  .shirube-wander-stage[data-motion="active"][data-state="walking"]
+    .shirube-wander-shadow {
+    animation: shirube-wander-shadow 0.96s ease-in-out infinite;
+  }
+
+  @keyframes shirube-wander-step {
+    0%,
+    100% {
+      transform: translateY(0) rotate(0deg);
+    }
+    25% {
+      transform: translateY(-2.5px) rotate(-1.1deg);
+    }
+    50% {
+      transform: translateY(0) rotate(0deg);
+    }
+    75% {
+      transform: translateY(-2px) rotate(1.1deg);
+    }
+  }
+
+  @keyframes shirube-wander-shadow {
+    0%,
+    100% {
+      opacity: 1;
+      transform: translateX(-50%) scaleX(1);
+    }
+    25%,
+    75% {
+      opacity: 0.72;
+      transform: translateX(-50%) scaleX(0.92);
+    }
+    50% {
+      opacity: 1;
+      transform: translateX(-50%) scaleX(1);
+    }
+  }
+}
