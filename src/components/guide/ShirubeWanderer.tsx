@@ -1,36 +1,72 @@
 "use client";
 
 /**
- * 画面最下端をゆっくり歩き回る案内役「しるべ」（試作コンポーネント）。
+ * 画面全体を自由に歩き回り、状況に合わせて自動で案内する「しるべ」。
  *
- * - 見た目は部品分けしたちびしるべ（`ShirubeWalkRig`）。歩くあいだは足を交互に
- *   振り、体を小さく上下させる。止まっているときは足をそろえて静かに呼吸する。
- * - 画面下に固定されたボタン帯（固定 CTA・下部ナビ・`data-shirube-avoid`）が
- *   あれば、その上端より上を歩く（スマホで主要ボタンに重ならないように）。
- * - 立ち止まったとき、ときどき正面を向いて手を振る（data-state="greeting"）。
- *   reduced-motion では正面の静止ポーズで右下に立つ。
- * - `gait="shuffle"` で 4 コマのすり足（スプライト）に切り替えられる。
- * - ラッパーは `pointer-events: none` で固定配置し、本文や CTA を塞がない。
- * - `prefers-reduced-motion: reduce`（および SSR / JS 実行前）では動かさず、
- *   画面下端の端に静かに立つ（docs/motion-accents.md の方針）。
- * - 本番サイトへの組み込み手順は`docs/guide-shirube-wander.md` を参照。
+ * - 移動は完全に自律＆ランダム。利用者による移動操作は持たない。
+ * - 画面最下端と、本文中の見出し・カード・ボタンなどの上端（床 / perch）を
+ *   歩いたり放物線ジャンプで飛び移ったりしながら巡回する。
+ * - ページ内容・スクロール・結果表示・待機・空状態に応じて短い案内吹き出しを
+ *   自動表示し、対象が画面内にあれば近くへ移動して指さし＋金の縁取りを行う。
+ * - キャラをタップすると今のページに合った案内や次の一歩を表示する。
+ *   吹き出しの × で右下の小さなタブへ隠れ、localStorage（shirube:hidden）に保存する。
+ * - `prefers-reduced-motion: reduce` では移動・ジャンプを行わず右下に静止し、
+ *   吹き出しと対象の縁取りだけで案内する。
  */
 
-import { useEffect, useRef, useState, useSyncExternalStore } from "react";
-import { GUIDE_NAME } from "@/components/guide/GuideCharacter";
+import {
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+  useSyncExternalStore,
+} from "react";
+import { usePathname } from "next/navigation";
 import { ShirubeWalkRig } from "@/components/guide/ShirubeWalkRig";
 import { ShirubeShuffleSprite } from "@/components/guide/ShirubeShuffle";
+import {
+  SHIRUBE_HIDDEN_STORAGE_KEY,
+  ShirubeBubble,
+  ShirubeHiddenTab,
+} from "@/components/guide/ShirubeBubble";
 import { prefersReducedMotion } from "@/components/motion/reducedMotion";
 import {
-  clampX,
+  collectAvoidRects,
+  collectPerchCandidates,
+  findPerches,
+  type Perch,
+} from "@/components/guide/shirubePerch";
+import {
+  canShowAutoTip,
+  chooseTipForTap,
+  chooseTipForTrigger,
+  createTipRateLimitState,
+  DEFAULT_TIP_RATE_LIMIT,
+  findEmptyRequiredInput,
+  FORM_NEXT_INPUT_TIP,
+  GENERIC_EMPTY_TIP,
+  GENERIC_RESULT_TIP,
+  getTipsForRoute,
+  isElementInViewport,
+  recordAutoTipShown,
+  resolveTipTarget,
+  type ShirubeTip,
+  type ShirubeTipTrigger,
+  type TipRateLimitState,
+} from "@/components/guide/shirubeTips";
+import {
   computeBottomLift,
   createInitialWanderState,
+  createSeededRandom,
   getWanderBounds,
   getWanderConfig,
+  reconcilePerch,
+  startPointingToward,
   stepWanderState,
   type BottomObstacleRect,
-  type WanderGait,
+  type RoamContext,
   type WanderFacing,
+  type WanderGait,
   type WanderPhase,
   type WanderState,
 } from "@/components/guide/shirubeWanderLogic";
@@ -42,6 +78,9 @@ export interface ShirubeWanderSnapshot {
   motion: "active" | "reduced";
   state: ShirubeWanderVisualState;
   facing: WanderFacing;
+  perchId?: string;
+  tipId?: string | null;
+  hidden?: boolean;
 }
 
 export interface ShirubeWandererProps {
@@ -55,40 +94,64 @@ export interface ShirubeWandererProps {
   /** 左右端からの余白（px）。 */
   edgeMarginPx?: number;
   /**
-   * 任意: しるべ本人を押したときのハンドラ。
-   * 指定しない既定ではしるべ自体も pointer-events: none になり、
-   * 下にあるボタン・リンクのタップを一切妨げない。
+   * 任意: しるべ本人を押したときのハンドラを上書きする。
+   * 省略時の既定動作は「今のページの案内・次の一歩を表示する」。
    */
   onInteract?: () => void;
   /**
    * 画面下に固定されたボタン帯を自動で避ける（既定 true）。
-   * `[data-shirube-avoid]` を付けた要素と、画面下端にある position: fixed / sticky の
-   * 操作要素を見つけたら、その上端より上を歩く。
+   * `[data-shirube-avoid]` と画面下端の固定操作要素を避けて最下端床を持ち上げる。
    */
   avoidBottomObstacles?: boolean;
   /**
    * 歩き方。"rig"（既定）は部品分けで足を振る歩き、"shuffle" は 4 コマのすり足。
-   * すり足は歩く速さも遅くなる。
    */
   gait?: WanderGait;
   /** 立ち止まったときにときどき正面を向いて手を振るか（既定: rig のとき true）。 */
   greet?: boolean;
+  /** デモ・テスト用: ランダムの種を固定する（省略時は Math.random）。 */
+  seed?: number;
+  /** デモ・テスト用: pathname を明示上書きする。 */
+  pathnameOverride?: string;
+  /** 自動案内の最小間隔（ms）。既定 45000。 */
+  autoTipMinIntervalMs?: number;
+  /** 入室後の初回案内までの待機時間（ms）。既定は 6000〜10000ms のランダム。 */
+  enterTipDelayMs?: number;
+  /** 無操作案内の待機時間（ms）。既定 45000。 */
+  idleTipDelayMs?: number;
   /** デモ確認用: 状態変化の通知（高頻度な座標更新では呼ばない）。 */
   onStatusChange?: (snapshot: ShirubeWanderSnapshot) => void;
 }
 
-// 表示の高さ 120px / 60px × 素材の縦横比
 const DEFAULT_ACTOR_WIDTH_DESKTOP = 59;
+const DEFAULT_ACTOR_HEIGHT_DESKTOP = 120;
 const DEFAULT_ACTOR_WIDTH_MOBILE = 30;
+const DEFAULT_ACTOR_HEIGHT_MOBILE = 60;
 
 const AVOID_SELECTOR = "[data-shirube-avoid]";
 const INTERACTIVE_SELECTOR =
   "a[href], button, input, select, textarea, [role='button']";
+const FORM_INPUT_SELECTOR = "input, textarea, select, [contenteditable='true']";
 
-/**
- * 画面下端の固定ボタン帯を集める。DOM を読むだけで、何も書き換えない。
- * elementsFromPoint は pointer-events: none の要素（しるべの舞台自身など）を返さない。
- */
+const BUBBLE_AUTO_HIDE_MS = 7000;
+const TARGET_HIGHLIGHT_MS = 2500;
+const TARGET_HIGHLIGHT_CLASS = "shirube-tip-target-highlight";
+
+const FRONT_FACING_PHASES = new Set<WanderPhase>([
+  "greeting",
+  "sitting",
+  "pointing",
+]);
+const SIDE_FACING_PHASES = new Set<WanderPhase>([
+  "paused",
+  "turning",
+  "walking",
+]);
+
+/* --------------------------------------------------------------------------
+ * 画面下端の固定ボタン帯の収集（既存 API 互換）
+ * ------------------------------------------------------------------------ */
+
 export function collectBottomObstacles(
   doc: Document = document,
   win: Window = window,
@@ -106,7 +169,6 @@ export function collectBottomObstacles(
     for (const y of ys) {
       for (const x of xs) {
         for (const hit of doc.elementsFromPoint(x, y)) {
-          // 操作できる要素を含む固定・粘着の帯だけを対象にする
           let el: Element | null = hit;
           for (let depth = 0; el && depth < 6; depth += 1) {
             if (el === doc.body || el === doc.documentElement) break;
@@ -141,6 +203,10 @@ export function collectBottomObstacles(
   return rects;
 }
 
+/* --------------------------------------------------------------------------
+ * prefers-reduced-motion 購読（既存 API 互換）
+ * ------------------------------------------------------------------------ */
+
 function subscribeReducedMotion(onStoreChange: () => void) {
   if (
     typeof window === "undefined" ||
@@ -156,10 +222,6 @@ function subscribeReducedMotion(onStoreChange: () => void) {
   return () => {};
 }
 
-/**
- * OS の prefers-reduced-motion を購読する。
- * SSR / hydration 前の既定は true（静止＝最終の絵）に倒す。
- */
 export function usePrefersReducedMotion(): boolean {
   return useSyncExternalStore(
     subscribeReducedMotion,
@@ -168,6 +230,103 @@ export function usePrefersReducedMotion(): boolean {
   );
 }
 
+/* --------------------------------------------------------------------------
+ * localStorage（shirube:hidden）購読（SSR 安全・即座同期）
+ * ------------------------------------------------------------------------ */
+
+const hiddenListeners = new Set<() => void>();
+
+function readHiddenStorage(): boolean {
+  if (typeof window === "undefined") return false;
+  try {
+    return window.localStorage.getItem(SHIRUBE_HIDDEN_STORAGE_KEY) === "1";
+  } catch {
+    return false;
+  }
+}
+
+function writeHiddenStorage(nextHidden: boolean) {
+  if (typeof window === "undefined") return;
+  try {
+    if (nextHidden) {
+      window.localStorage.setItem(SHIRUBE_HIDDEN_STORAGE_KEY, "1");
+    } else {
+      window.localStorage.removeItem(SHIRUBE_HIDDEN_STORAGE_KEY);
+    }
+  } catch {
+    // プライベートモード等で保存できない場合は無視
+  }
+  hiddenListeners.forEach((fn) => fn());
+}
+
+function subscribeHiddenStorage(onChange: () => void) {
+  hiddenListeners.add(onChange);
+  const onStorage = (e: StorageEvent) => {
+    if (e.key === null || e.key === SHIRUBE_HIDDEN_STORAGE_KEY) onChange();
+  };
+  if (typeof window !== "undefined") {
+    window.addEventListener("storage", onStorage);
+  }
+  return () => {
+    hiddenListeners.delete(onChange);
+    if (typeof window !== "undefined") {
+      window.removeEventListener("storage", onStorage);
+    }
+  };
+}
+
+function useShirubeHidden(): [boolean, (next: boolean) => void] {
+  const hidden = useSyncExternalStore(
+    subscribeHiddenStorage,
+    readHiddenStorage,
+    () => false,
+  );
+  const setHidden = useCallback((next: boolean) => {
+    writeHiddenStorage(next);
+  }, []);
+  return [hidden, setHidden];
+}
+
+function isInputCurrentlyFocused(): boolean {
+  if (typeof document === "undefined") return false;
+  const active = document.activeElement;
+  if (!active || active === document.body) return false;
+  return active.matches(FORM_INPUT_SELECTOR);
+}
+
+function isPage404(): boolean {
+  if (typeof document === "undefined") return false;
+  const h1 = document.querySelector("h1")?.textContent ?? "";
+  return h1.includes("ページが見つかりません");
+}
+
+function getActorDimensions(actorEl: HTMLDivElement | null): {
+  width: number;
+  height: number;
+} {
+  const isMobile =
+    typeof window !== "undefined" ? window.innerWidth < 640 : false;
+  const rect = actorEl?.getBoundingClientRect();
+  return {
+    width:
+      rect && rect.width > 0
+        ? rect.width
+        : isMobile
+          ? DEFAULT_ACTOR_WIDTH_MOBILE
+          : DEFAULT_ACTOR_WIDTH_DESKTOP,
+    height:
+      rect && rect.height > 0
+        ? rect.height
+        : isMobile
+          ? DEFAULT_ACTOR_HEIGHT_MOBILE
+          : DEFAULT_ACTOR_HEIGHT_DESKTOP,
+  };
+}
+
+/* --------------------------------------------------------------------------
+ * 本体コンポーネント
+ * ------------------------------------------------------------------------ */
+
 export function ShirubeWanderer({
   forceReducedMotion,
   restSide = "right",
@@ -175,95 +334,458 @@ export function ShirubeWanderer({
   avoidBottomObstacles = true,
   gait = "rig",
   greet,
+  seed,
+  pathnameOverride,
+  autoTipMinIntervalMs = DEFAULT_TIP_RATE_LIMIT.minIntervalMs,
+  enterTipDelayMs,
+  idleTipDelayMs = 45_000,
   onInteract,
   onStatusChange,
 }: ShirubeWandererProps) {
+  const nextPathname = usePathname();
+  const pathname =
+    pathnameOverride ??
+    nextPathname ??
+    (typeof window !== "undefined" ? window.location.pathname : "/");
+
+  const [isHidden, setIsHidden] = useShirubeHidden();
+  const osReduced = usePrefersReducedMotion();
+  const isReduced = forceReducedMotion ?? osReduced;
+  const restFacing: WanderFacing = restSide === "left" ? "right" : "left";
+
   const actorRef = useRef<HTMLDivElement | null>(null);
   const stageRef = useRef<HTMLDivElement | null>(null);
   const stateRef = useRef<WanderState | null>(null);
+  const perchesRef = useRef<Perch[]>([]);
+  const bottomLiftRef = useRef<number>(0);
+  const randomRef = useRef<() => number>(Math.random);
+  const rateLimitRef = useRef<TipRateLimitState>(createTipRateLimitState());
+  const tapCursorRef = useRef<number>(0);
   const lastReportedRef = useRef<string>("");
   const onStatusChangeRef = useRef(onStatusChange);
+  const bubbleTimerRef = useRef<number>(0);
+  const highlightCleanupRef = useRef<(() => void) | null>(null);
+  const resumeEngineRef = useRef<(() => void) | null>(null);
 
   useEffect(() => {
     onStatusChangeRef.current = onStatusChange;
   }, [onStatusChange]);
 
-  const osReduced = usePrefersReducedMotion();
-  const isReduced = forceReducedMotion ?? osReduced;
-  const restFacing: WanderFacing = restSide === "left" ? "right" : "left";
-
-  // 画面下の固定ボタン帯を避ける持ち上げ量（CSS 変数 --shirube-lift）
   useEffect(() => {
-    const stage = stageRef.current;
-    if (!stage || !avoidBottomObstacles || typeof window === "undefined") {
-      stage?.style.removeProperty("--shirube-lift");
-      return;
-    }
-    let raf = 0;
-    let last = -1;
-    const measure = () => {
-      raf = 0;
-      const lift = computeBottomLift(
-        collectBottomObstacles(document, window),
-        window.innerHeight,
-      );
-      if (lift !== last) {
-        last = lift;
-        stage.style.setProperty("--shirube-lift", `${lift}px`);
-        stage.setAttribute("data-lifted", lift > 0 ? "true" : "false");
-      }
-    };
-    const schedule = () => {
-      if (raf || typeof window.requestAnimationFrame !== "function") return;
-      raf = window.requestAnimationFrame(measure);
-    };
-    measure();
-    window.addEventListener("resize", schedule);
-    window.addEventListener("scroll", schedule, { passive: true });
-    // 後から出る固定 CTA（スクロールで現れる帯など）にも追従する
-    const interval = window.setInterval(schedule, 2000);
-    return () => {
-      window.removeEventListener("resize", schedule);
-      window.removeEventListener("scroll", schedule);
-      window.clearInterval(interval);
-      if (raf && typeof window.cancelAnimationFrame === "function") {
-        window.cancelAnimationFrame(raf);
-      }
-    };
-  }, [avoidBottomObstacles]);
+    randomRef.current =
+      typeof seed === "number" && Number.isFinite(seed)
+        ? createSeededRandom(seed)
+        : Math.random;
+  }, [seed]);
 
   const [activeVisual, setActiveVisual] = useState<{
     state: WanderPhase;
+    prevState: WanderPhase | null;
     facing: WanderFacing;
+    perchId: string;
+    isLanding: boolean;
+    isTurningBack: boolean;
   }>({
     state: "walking",
+    prevState: null,
     facing: restFacing,
+    perchId: "bottom",
+    isLanding: false,
+    isTurningBack: false,
   });
 
-  useEffect(() => {
-    const actor = actorRef.current;
+  const [activeTip, setActiveTip] = useState<ShirubeTip | null>(null);
+  const [bubbleAnchor, setBubbleAnchor] = useState<{
+    x: number;
+    y: number;
+    actorWidth: number;
+    actorHeight: number;
+    viewportWidth: number;
+    viewportHeight: number;
+  } | null>(null);
 
-    const reportStatus = (
+  const reportStatus = useCallback(
+    (
       motion: "active" | "reduced",
       nextState: ShirubeWanderVisualState,
       nextFacing: WanderFacing,
+      perchId: string,
+      tipId: string | null,
+      hidden: boolean,
     ) => {
-      const key = `${motion}:${nextState}:${nextFacing}`;
+      const key = `${motion}:${nextState}:${nextFacing}:${perchId}:${tipId ?? ""}:${hidden}`;
       if (lastReportedRef.current === key) return;
       lastReportedRef.current = key;
       onStatusChangeRef.current?.({
         motion,
         state: nextState,
         facing: nextFacing,
+        perchId,
+        tipId,
+        hidden,
       });
+    },
+    [],
+  );
+
+  const clearHighlight = useCallback(() => {
+    highlightCleanupRef.current?.();
+    highlightCleanupRef.current = null;
+  }, []);
+
+  const highlightTargetElement = useCallback(
+    (el: Element | null) => {
+      clearHighlight();
+      if (!el || typeof window === "undefined") return;
+      el.classList.add(TARGET_HIGHLIGHT_CLASS);
+      const timer = window.setTimeout(() => {
+        el.classList.remove(TARGET_HIGHLIGHT_CLASS);
+        highlightCleanupRef.current = null;
+      }, TARGET_HIGHLIGHT_MS);
+      highlightCleanupRef.current = () => {
+        window.clearTimeout(timer);
+        el.classList.remove(TARGET_HIGHLIGHT_CLASS);
+      };
+    },
+    [clearHighlight],
+  );
+
+  const dismissBubble = useCallback(() => {
+    if (bubbleTimerRef.current && typeof window !== "undefined") {
+      window.clearTimeout(bubbleTimerRef.current);
+      bubbleTimerRef.current = 0;
+    }
+    clearHighlight();
+    setActiveTip(null);
+    const current = stateRef.current;
+    if (current && current.phase === "pointing") {
+      stateRef.current = {
+        ...current,
+        phase: "paused",
+        remainingMs: 700,
+        glancedDuringPause: true,
+      };
+      resumeEngineRef.current?.();
+    }
+  }, [clearHighlight]);
+
+  const hideShirube = useCallback(() => {
+    dismissBubble();
+    setIsHidden(true);
+  }, [dismissBubble, setIsHidden]);
+
+  const restoreShirube = useCallback(() => {
+    setIsHidden(false);
+  }, [setIsHidden]);
+
+  /** 吹き出しを表示し、画面内に対象があれば指さし＋金の縁取りを行う */
+  const presentTip = useCallback(
+    (tip: ShirubeTip, explicitTarget?: Element | null) => {
+      if (typeof window === "undefined") return;
+      if (bubbleTimerRef.current) {
+        window.clearTimeout(bubbleTimerRef.current);
+      }
+
+      const resolvedTarget =
+        explicitTarget ??
+        (tip.target ? resolveTipTarget(tip.target, document, tip.id) : null);
+      const inViewTarget =
+        resolvedTarget && isElementInViewport(resolvedTarget, window)
+          ? resolvedTarget
+          : null;
+
+      if (inViewTarget) {
+        highlightTargetElement(inViewTarget);
+      } else {
+        clearHighlight();
+      }
+
+      setActiveTip(tip);
+
+      if (!isReduced && stateRef.current) {
+        const dims = getActorDimensions(actorRef.current);
+        const roam: RoamContext = {
+          perches: perchesRef.current,
+          actorWidth: dims.width,
+          actorHeight: dims.height,
+          viewportHeight: window.innerHeight,
+        };
+
+        if (inViewTarget && roam.perches.length > 0) {
+          const r = inViewTarget.getBoundingClientRect();
+          const next = startPointingToward(
+            stateRef.current,
+            { left: r.left, right: r.right, top: r.top, bottom: r.bottom },
+            roam,
+            BUBBLE_AUTO_HIDE_MS,
+          );
+          stateRef.current = next;
+          setBubbleAnchor({
+            x: next.hop ? next.hop.toX : next.x,
+            y: next.hop ? next.hop.toY : next.y,
+            actorWidth: dims.width,
+            actorHeight: dims.height,
+            viewportWidth: window.innerWidth,
+            viewportHeight: window.innerHeight,
+          });
+          resumeEngineRef.current?.();
+        } else {
+          setBubbleAnchor({
+            x: stateRef.current.x,
+            y: stateRef.current.y,
+            actorWidth: dims.width,
+            actorHeight: dims.height,
+            viewportWidth: window.innerWidth,
+            viewportHeight: window.innerHeight,
+          });
+        }
+      } else {
+        setBubbleAnchor(null);
+      }
+
+      bubbleTimerRef.current = window.setTimeout(() => {
+        bubbleTimerRef.current = 0;
+        setActiveTip(null);
+      }, BUBBLE_AUTO_HIDE_MS);
+    },
+    [clearHighlight, highlightTargetElement, isReduced],
+  );
+
+  /** 自動案内トリガー（頻度制限・入力欄フォーカス回避あり） */
+  const triggerAutoTip = useCallback(
+    (
+      trigger: ShirubeTipTrigger,
+      overrideTip?: ShirubeTip,
+      explicitTarget?: Element | null,
+    ) => {
+      if (isHidden) return;
+      if (
+        typeof document !== "undefined" &&
+        document.visibilityState === "hidden"
+      ) {
+        return;
+      }
+
+      const tips = getTipsForRoute(pathname, { is404: isPage404() });
+      const candidate =
+        overrideTip ??
+        chooseTipForTrigger(tips, trigger, rateLimitRef.current.shownIds);
+      if (!candidate) return;
+
+      const now = Date.now();
+      const allowed = canShowAutoTip(
+        rateLimitRef.current,
+        now,
+        {
+          minIntervalMs: autoTipMinIntervalMs,
+          maxPerPageView: DEFAULT_TIP_RATE_LIMIT.maxPerPageView,
+        },
+        {
+          inputFocused: isInputCurrentlyFocused(),
+          tipId: candidate.id,
+        },
+      );
+      if (!allowed) return;
+
+      // target が必須（allowH1Fallback === false）のチップは画面内に見つからなければ出さない
+      let targetEl = explicitTarget ?? null;
+      if (!targetEl && candidate.target) {
+        const resolved = resolveTipTarget(
+          candidate.target,
+          document,
+          candidate.id,
+        );
+        const allowFallback =
+          typeof candidate.target === "object"
+            ? candidate.target.allowH1Fallback !== false
+            : true;
+        if (resolved && isElementInViewport(resolved, window)) {
+          targetEl = resolved;
+        } else if (!allowFallback) {
+          return;
+        }
+      }
+
+      rateLimitRef.current = recordAutoTipShown(
+        rateLimitRef.current,
+        now,
+        candidate.id,
+      );
+      presentTip(candidate, targetEl);
+    },
+    [autoTipMinIntervalMs, isHidden, pathname, presentTip],
+  );
+
+  /** タップ時: 今のページに合った案内・次の一歩を表示（移動操作はしない） */
+  const handleTapForTip = useCallback(() => {
+    const tips = getTipsForRoute(pathname, { is404: isPage404() });
+    const { tip, nextIndex } = chooseTipForTap(tips, tapCursorRef.current);
+    tapCursorRef.current = nextIndex;
+    presentTip(tip);
+  }, [pathname, presentTip]);
+
+  // ルート変更時に自動案内カウンタをリセット
+  useEffect(() => {
+    rateLimitRef.current = createTipRateLimitState();
+    tapCursorRef.current = 0;
+  }, [pathname]);
+
+  // Esc キーで吹き出しを閉じる
+  useEffect(() => {
+    if (!activeTip) return;
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        dismissBubble();
+      }
     };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [activeTip, dismissBubble]);
+
+  // アンマウント時のタイマー・強調解除
+  useEffect(() => {
+    return () => {
+      if (bubbleTimerRef.current && typeof window !== "undefined") {
+        window.clearTimeout(bubbleTimerRef.current);
+      }
+      clearHighlight();
+    };
+  }, [clearHighlight]);
+
+  // 画面下の固定ボタン帯（--shirube-lift）と床（perch）の計測・更新
+  useEffect(() => {
+    if (isHidden || typeof window === "undefined") return;
+    const stage = stageRef.current;
+
+    let raf = 0;
+    let lastLift = -1;
+
+    const measureAll = () => {
+      raf = 0;
+      if (document.visibilityState === "hidden") return;
+
+      // 1. 下部固定 CTA の持ち上げ量
+      let lift = 0;
+      if (avoidBottomObstacles && stage) {
+        lift = computeBottomLift(
+          collectBottomObstacles(document, window),
+          window.innerHeight,
+        );
+        if (lift !== lastLift) {
+          lastLift = lift;
+          stage.style.setProperty("--shirube-lift", `${lift}px`);
+          stage.setAttribute("data-lifted", lift > 0 ? "true" : "false");
+        }
+      } else if (stage) {
+        stage.style.removeProperty("--shirube-lift");
+        stage.removeAttribute("data-lifted");
+      }
+      bottomLiftRef.current = lift;
+
+      // 2. ビューポート内の床（perch）一覧を更新
+      const dims = getActorDimensions(actorRef.current);
+      const candidates = collectPerchCandidates(document, window);
+      const avoidRects = collectAvoidRects(document, window);
+      const perches = findPerches(
+        candidates,
+        { width: window.innerWidth, height: window.innerHeight },
+        {
+          actorWidth: dims.width,
+          actorHeight: dims.height,
+          edgeMarginPx,
+          bottomLiftPx: lift,
+          avoidRects,
+        },
+      );
+      perchesRef.current = perches;
+
+      // 現在乗っている床が動いた／消えた場合の追従
+      if (!isReduced && stateRef.current) {
+        const roam: RoamContext = {
+          perches,
+          actorWidth: dims.width,
+          actorHeight: dims.height,
+          viewportHeight: window.innerHeight,
+        };
+        const reconciled = reconcilePerch(
+          stateRef.current,
+          roam,
+          randomRef.current,
+        );
+        if (reconciled !== stateRef.current) {
+          stateRef.current = reconciled;
+          if (actorRef.current) {
+            actorRef.current.style.transform = `translate3d(${reconciled.x.toFixed(2)}px, ${(reconciled.y - dims.height).toFixed(2)}px, 0)`;
+          }
+          if (reconciled.phase === "hopping") {
+            resumeEngineRef.current?.();
+          }
+        }
+      }
+    };
+
+    const schedule = () => {
+      if (raf || typeof window.requestAnimationFrame !== "function") return;
+      raf = window.requestAnimationFrame(measureAll);
+    };
+
+    measureAll();
+    window.addEventListener("resize", schedule);
+    window.addEventListener("scroll", schedule, { passive: true });
+    document.addEventListener("visibilitychange", schedule);
+
+    let ro: ResizeObserver | null = null;
+    if (typeof ResizeObserver !== "undefined") {
+      const mainEl = document.querySelector("main") ?? document.body;
+      if (mainEl) {
+        ro = new ResizeObserver(schedule);
+        ro.observe(mainEl);
+      }
+    }
+
+    const interval = window.setInterval(schedule, 2500);
+    return () => {
+      window.removeEventListener("resize", schedule);
+      window.removeEventListener("scroll", schedule);
+      document.removeEventListener("visibilitychange", schedule);
+      window.clearInterval(interval);
+      ro?.disconnect();
+      if (raf && typeof window.cancelAnimationFrame === "function") {
+        window.cancelAnimationFrame(raf);
+      }
+    };
+  }, [avoidBottomObstacles, edgeMarginPx, isHidden, isReduced]);
+
+  // 自由移動エンジン（移動・ジャンプ中だけ rAF、停止中はタイマーで省電力化）
+  useEffect(() => {
+    const actor = actorRef.current;
+
+    if (isHidden) {
+      stateRef.current = null;
+      reportStatus(
+        isReduced ? "reduced" : "active",
+        isReduced ? "idle" : "paused",
+        restFacing,
+        "bottom",
+        null,
+        true,
+      );
+      return;
+    }
 
     if (isReduced) {
       stateRef.current = null;
       if (actor) {
         actor.style.transform = "";
       }
-      reportStatus("reduced", "idle", restFacing);
+      reportStatus(
+        "reduced",
+        "idle",
+        restFacing,
+        "bottom",
+        activeTip?.id ?? null,
+        false,
+      );
       return;
     }
 
@@ -274,90 +796,427 @@ export function ShirubeWanderer({
       return;
     }
 
-    const measureActorWidth = () => {
-      const measured = actorRef.current?.getBoundingClientRect().width ?? 0;
-      if (measured > 0) return measured;
-      return window.innerWidth < 640
-        ? DEFAULT_ACTOR_WIDTH_MOBILE
-        : DEFAULT_ACTOR_WIDTH_DESKTOP;
-    };
-
-    const getBoundsAndConfig = () => {
-      const vw = window.innerWidth;
-      const aw = measureActorWidth();
-      return {
-        bounds: getWanderBounds(vw, aw, edgeMarginPx),
-        config: getWanderConfig(vw, { gait, greet }),
-      };
-    };
-
-    const initial = getBoundsAndConfig();
+    const dims = getActorDimensions(actorRef.current);
+    const initialBottomY = Math.max(
+      dims.height,
+      window.innerHeight - bottomLiftRef.current,
+    );
+    const initialBounds = getWanderBounds(
+      window.innerWidth,
+      dims.width,
+      edgeMarginPx,
+    );
+    const initialConfig = getWanderConfig(window.innerWidth, { gait, greet });
     const initialState = createInitialWanderState(
-      initial.bounds,
-      initial.config,
+      initialBounds,
+      initialConfig,
+      randomRef.current,
+      initialBottomY,
     );
     stateRef.current = initialState;
 
-    if (actor) {
-      actor.style.transform = `translate3d(${initialState.x.toFixed(2)}px, 0, 0)`;
+    if (perchesRef.current.length === 0) {
+      perchesRef.current = findPerches(
+        [],
+        { width: window.innerWidth, height: window.innerHeight },
+        {
+          actorWidth: dims.width,
+          actorHeight: dims.height,
+          edgeMarginPx,
+          bottomLiftPx: bottomLiftRef.current,
+        },
+      );
     }
-    reportStatus("active", initialState.phase, initialState.facing);
+
+    const applyTransform = (s: WanderState, height: number) => {
+      if (!actorRef.current) return;
+      const topY = s.y - height;
+      actorRef.current.style.transform = `translate3d(${s.x.toFixed(2)}px, ${topY.toFixed(2)}px, 0)`;
+    };
+
+    applyTransform(initialState, dims.height);
+    reportStatus(
+      "active",
+      initialState.phase,
+      initialState.facing,
+      initialState.perchId,
+      activeTip?.id ?? null,
+      false,
+    );
 
     let rafId = 0;
+    let sleepTimerId = 0;
+    let landClassTimer = 0;
+    let turnBackTimer = 0;
     let lastTs = performance.now();
-    let syncedPhase: WanderPhase | null = null;
-    let syncedFacing: WanderFacing | null = null;
+    let syncedPhase: WanderPhase = initialState.phase;
+    let syncedFacing: WanderFacing = initialState.facing;
+    let syncedPerchId: string = initialState.perchId;
+    let disposed = false;
+
+    const clearTransientTimers = () => {
+      if (landClassTimer) {
+        window.clearTimeout(landClassTimer);
+        landClassTimer = 0;
+      }
+      if (turnBackTimer) {
+        window.clearTimeout(turnBackTimer);
+        turnBackTimer = 0;
+      }
+    };
+
+    const syncVisual = (next: WanderState) => {
+      const phaseChanged = next.phase !== syncedPhase;
+      const facingChanged = next.facing !== syncedFacing;
+      const perchChanged = next.perchId !== syncedPerchId;
+      if (!phaseChanged && !facingChanged && !perchChanged) return;
+
+      const prevPhase = syncedPhase;
+      syncedPhase = next.phase;
+      syncedFacing = next.facing;
+      syncedPerchId = next.perchId;
+
+      const landedNow = prevPhase === "hopping" && next.phase !== "hopping";
+      const turnedBackNow =
+        FRONT_FACING_PHASES.has(prevPhase) &&
+        SIDE_FACING_PHASES.has(next.phase);
+
+      setActiveVisual({
+        state: next.phase,
+        prevState: prevPhase,
+        facing: next.facing,
+        perchId: next.perchId,
+        isLanding: landedNow,
+        isTurningBack: turnedBackNow,
+      });
+
+      if (landedNow) {
+        if (landClassTimer) window.clearTimeout(landClassTimer);
+        landClassTimer = window.setTimeout(() => {
+          setActiveVisual((v) =>
+            v.isLanding ? { ...v, isLanding: false } : v,
+          );
+        }, 260);
+      }
+
+      if (turnedBackNow) {
+        if (turnBackTimer) window.clearTimeout(turnBackTimer);
+        turnBackTimer = window.setTimeout(() => {
+          setActiveVisual((v) =>
+            v.isTurningBack ? { ...v, isTurningBack: false } : v,
+          );
+        }, 320);
+      }
+
+      if (next.phase === "pointing") {
+        const d = getActorDimensions(actorRef.current);
+        setBubbleAnchor({
+          x: next.x,
+          y: next.y,
+          actorWidth: d.width,
+          actorHeight: d.height,
+          viewportWidth: window.innerWidth,
+          viewportHeight: window.innerHeight,
+        });
+      }
+
+      reportStatus(
+        "active",
+        next.phase,
+        next.facing,
+        next.perchId,
+        activeTip?.id ?? null,
+        false,
+      );
+    };
+
+    const buildRoamContext = () => {
+      const d = getActorDimensions(actorRef.current);
+      const vw = window.innerWidth;
+      const vh = window.innerHeight;
+      const perches =
+        perchesRef.current.length > 0
+          ? perchesRef.current
+          : findPerches(
+              [],
+              { width: vw, height: vh },
+              {
+                actorWidth: d.width,
+                actorHeight: d.height,
+                edgeMarginPx,
+                bottomLiftPx: bottomLiftRef.current,
+              },
+            );
+      return {
+        dims: d,
+        bounds: getWanderBounds(vw, d.width, edgeMarginPx),
+        config: getWanderConfig(vw, { gait, greet }),
+        roam: {
+          perches,
+          actorWidth: d.width,
+          actorHeight: d.height,
+          viewportHeight: vh,
+        } satisfies RoamContext,
+      };
+    };
+
+    const stopLoops = () => {
+      if (rafId) {
+        window.cancelAnimationFrame(rafId);
+        rafId = 0;
+      }
+      if (sleepTimerId) {
+        window.clearTimeout(sleepTimerId);
+        sleepTimerId = 0;
+      }
+    };
+
+    const scheduleNext = (state: WanderState) => {
+      if (disposed || document.visibilityState === "hidden") return;
+      const needsRaf = state.phase === "walking" || state.phase === "hopping";
+      if (needsRaf) {
+        if (!rafId) {
+          lastTs = performance.now();
+          rafId = window.requestAnimationFrame(tick);
+        }
+        return;
+      }
+      // 静止フェーズでは rAF を止め、次の遷移時刻までタイマー待機する
+      const waitMs = Math.max(
+        120,
+        Math.min(state.remainingMs > 0 ? state.remainingMs : 400, 1400),
+      );
+      if (sleepTimerId) window.clearTimeout(sleepTimerId);
+      sleepTimerId = window.setTimeout(() => {
+        sleepTimerId = 0;
+        if (disposed || document.visibilityState === "hidden") return;
+        const current = stateRef.current;
+        if (!current) return;
+        const { dims: d, bounds, config, roam } = buildRoamContext();
+        const next = stepWanderState(
+          current,
+          waitMs,
+          bounds,
+          config,
+          randomRef.current,
+          roam,
+        );
+        stateRef.current = next;
+        applyTransform(next, d.height);
+        syncVisual(next);
+        scheduleNext(next);
+      }, waitMs);
+    };
 
     const tick = (now: number) => {
+      rafId = 0;
+      if (disposed || document.visibilityState === "hidden") return;
+
       const elapsed = now - lastTs;
       lastTs = now;
 
-      if (document.visibilityState === "hidden") {
-        rafId = window.requestAnimationFrame(tick);
-        return;
-      }
-
       const current = stateRef.current;
       if (!current) return;
 
-      const { bounds, config } = getBoundsAndConfig();
-      const next = stepWanderState(current, elapsed, bounds, config);
+      const { dims: d, bounds, config, roam } = buildRoamContext();
+      const next = stepWanderState(
+        current,
+        elapsed,
+        bounds,
+        config,
+        randomRef.current,
+        roam,
+      );
       stateRef.current = next;
-
-      if (actorRef.current) {
-        actorRef.current.style.transform = `translate3d(${next.x.toFixed(2)}px, 0, 0)`;
-      }
-
-      if (next.phase !== syncedPhase || next.facing !== syncedFacing) {
-        syncedPhase = next.phase;
-        syncedFacing = next.facing;
-        setActiveVisual({ state: next.phase, facing: next.facing });
-      }
-      reportStatus("active", next.phase, next.facing);
-
-      rafId = window.requestAnimationFrame(tick);
+      applyTransform(next, d.height);
+      syncVisual(next);
+      scheduleNext(next);
     };
 
-    const handleResize = () => {
+    const resumeEngine = () => {
+      if (disposed || document.visibilityState === "hidden") return;
       const current = stateRef.current;
       if (!current) return;
-      const { bounds } = getBoundsAndConfig();
-      const clampedX = clampX(current.x, bounds);
-      const clampedTarget = clampX(current.targetX, bounds);
-      stateRef.current = { ...current, x: clampedX, targetX: clampedTarget };
-      if (actorRef.current) {
-        actorRef.current.style.transform = `translate3d(${clampedX.toFixed(2)}px, 0, 0)`;
+      stopLoops();
+      const d = getActorDimensions(actorRef.current);
+      applyTransform(current, d.height);
+      syncVisual(current);
+      scheduleNext(current);
+    };
+    resumeEngineRef.current = resumeEngine;
+
+    const onVisibility = () => {
+      if (document.visibilityState === "hidden") {
+        stopLoops();
+      } else {
+        resumeEngine();
       }
     };
 
-    window.addEventListener("resize", handleResize);
-    rafId = window.requestAnimationFrame(tick);
+    document.addEventListener("visibilitychange", onVisibility);
+    scheduleNext(initialState);
 
     return () => {
-      window.removeEventListener("resize", handleResize);
-      window.cancelAnimationFrame(rafId);
+      disposed = true;
+      resumeEngineRef.current = null;
+      stopLoops();
+      clearTransientTimers();
+      document.removeEventListener("visibilitychange", onVisibility);
     };
-  }, [isReduced, restFacing, edgeMarginPx, gait, greet]);
+    // activeTip は状態表示専用のためループを再起動しない
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isHidden, isReduced, restFacing, edgeMarginPx, gait, greet, seed]);
+
+  // activeTip 変化をデモ用スナップショットへ反映
+  useEffect(() => {
+    const visualState: ShirubeWanderVisualState = isReduced
+      ? "idle"
+      : activeVisual.state;
+    const facing: WanderFacing = isReduced ? restFacing : activeVisual.facing;
+    reportStatus(
+      isReduced ? "reduced" : "active",
+      visualState,
+      facing,
+      activeVisual.perchId,
+      activeTip?.id ?? null,
+      isHidden,
+    );
+  }, [activeTip, activeVisual, isHidden, isReduced, reportStatus, restFacing]);
+
+  // 自動案内トリガー（入室 / スクロール / 結果表示 / 無操作 / 空状態）
+  useEffect(() => {
+    if (isHidden || typeof window === "undefined") return;
+
+    // 1. 入室トリガー（6〜10 秒後。空状態が見えていれば empty を優先）
+    const delay =
+      enterTipDelayMs ?? Math.round(6000 + randomRef.current() * 4000);
+    const enterTimer = window.setTimeout(() => {
+      const emptyEl = document.querySelector("[data-empty-state]");
+      if (emptyEl && isElementInViewport(emptyEl, window)) {
+        const tips = getTipsForRoute(pathname, { is404: isPage404() });
+        const routeEmpty = chooseTipForTrigger(
+          tips,
+          "empty",
+          rateLimitRef.current.shownIds,
+        );
+        triggerAutoTip("empty", routeEmpty ?? GENERIC_EMPTY_TIP, emptyEl);
+        return;
+      }
+      triggerAutoTip("enter");
+    }, delay);
+
+    // 2. スクロールトリガー（デバウンス 600ms）
+    let scrollTimer = 0;
+    const seenSections = new WeakSet<Element>();
+    const onScroll = () => {
+      if (document.visibilityState === "hidden") return;
+      if (scrollTimer) window.clearTimeout(scrollTimer);
+      scrollTimer = window.setTimeout(() => {
+        scrollTimer = 0;
+        const emptyEl = document.querySelector("[data-empty-state]");
+        if (
+          emptyEl &&
+          !seenSections.has(emptyEl) &&
+          isElementInViewport(emptyEl, window)
+        ) {
+          seenSections.add(emptyEl);
+          const tips = getTipsForRoute(pathname, { is404: isPage404() });
+          const routeEmpty = chooseTipForTrigger(
+            tips,
+            "empty",
+            rateLimitRef.current.shownIds,
+          );
+          triggerAutoTip("empty", routeEmpty ?? GENERIC_EMPTY_TIP, emptyEl);
+          return;
+        }
+        const sections = document.querySelectorAll(
+          "main section, main article, main h2, [data-shirube-tip]",
+        );
+        for (const sec of sections) {
+          if (seenSections.has(sec)) continue;
+          if (isElementInViewport(sec, window)) {
+            seenSections.add(sec);
+            triggerAutoTip("scroll");
+            break;
+          }
+        }
+      }, 600);
+    };
+    window.addEventListener("scroll", onScroll, { passive: true });
+
+    // 3. 無操作トリガー（既定 45 秒。必須入力欄が未入力なら入力案内を優先）
+    let idleTimer = 0;
+    const resetIdle = () => {
+      if (idleTimer) window.clearTimeout(idleTimer);
+      idleTimer = window.setTimeout(() => {
+        const emptyInput = findEmptyRequiredInput(document, window);
+        if (emptyInput) {
+          triggerAutoTip("idle", FORM_NEXT_INPUT_TIP, emptyInput);
+          return;
+        }
+        triggerAutoTip("idle");
+      }, idleTipDelayMs);
+    };
+    resetIdle();
+    window.addEventListener("pointerdown", resetIdle, { passive: true });
+    window.addEventListener("keydown", resetIdle, { passive: true });
+    window.addEventListener("scroll", resetIdle, { passive: true });
+
+    // 4. 結果表示トリガー（MutationObserver: [data-shirube-result] または 吉/凶 を含む [data-verdict]）
+    let mutationTimer = 0;
+    const seenResults = new WeakSet<Element>();
+    // 初期表示からすでに存在する要素は既知として登録しておく
+    document
+      .querySelectorAll("[data-shirube-result], [data-verdict]")
+      .forEach((el) => seenResults.add(el));
+
+    let mo: MutationObserver | null = null;
+    if (typeof MutationObserver !== "undefined" && document.body) {
+      mo = new MutationObserver(() => {
+        if (mutationTimer || document.visibilityState === "hidden") return;
+        mutationTimer = window.setTimeout(() => {
+          mutationTimer = 0;
+          const nodes = document.querySelectorAll(
+            "[data-shirube-result], [data-verdict]",
+          );
+          for (const el of nodes) {
+            if (seenResults.has(el)) continue;
+            const isResultAttr = el.hasAttribute("data-shirube-result");
+            const text = el.textContent ?? "";
+            const hasVerdict = text.includes("吉") || text.includes("凶");
+            if (!isResultAttr && !hasVerdict) continue;
+            if (!isElementInViewport(el, window)) continue;
+            seenResults.add(el);
+            const tips = getTipsForRoute(pathname, { is404: isPage404() });
+            const routeResult = chooseTipForTrigger(
+              tips,
+              "result",
+              rateLimitRef.current.shownIds,
+            );
+            triggerAutoTip("result", routeResult ?? GENERIC_RESULT_TIP, el);
+            break;
+          }
+        }, 250);
+      });
+      mo.observe(document.body, { childList: true, subtree: true });
+    }
+
+    return () => {
+      window.clearTimeout(enterTimer);
+      if (scrollTimer) window.clearTimeout(scrollTimer);
+      if (idleTimer) window.clearTimeout(idleTimer);
+      if (mutationTimer) window.clearTimeout(mutationTimer);
+      window.removeEventListener("scroll", onScroll);
+      window.removeEventListener("pointerdown", resetIdle);
+      window.removeEventListener("keydown", resetIdle);
+      window.removeEventListener("scroll", resetIdle);
+      mo?.disconnect();
+    };
+  }, [enterTipDelayMs, idleTipDelayMs, isHidden, pathname, triggerAutoTip]);
+
+  if (isHidden) {
+    return <ShirubeHiddenTab onRestore={restoreShirube} />;
+  }
 
   const visualState: ShirubeWanderVisualState = isReduced
     ? "idle"
@@ -366,6 +1225,14 @@ export function ShirubeWanderer({
 
   // 歩く素材は元絵が右向きなので、左へ歩くときだけ左右反転する
   const flipTransform = facing === "left" ? "scaleX(-1)" : "scaleX(1)";
+
+  const stageClassName = [
+    "shirube-wander-stage",
+    activeVisual.isLanding && !isReduced ? "is-landing" : "",
+    activeVisual.isTurningBack && !isReduced ? "is-turning-back" : "",
+  ]
+    .filter(Boolean)
+    .join(" ");
 
   const avatar = (
     <span className="shirube-wander-gait">
@@ -383,14 +1250,15 @@ export function ShirubeWanderer({
   return (
     <div
       ref={stageRef}
-      className="shirube-wander-stage"
+      className={stageClassName}
       data-testid="shirube-wanderer"
       data-motion={isReduced ? "reduced" : "active"}
       data-state={visualState}
+      data-prev-state={activeVisual.prevState ?? undefined}
       data-facing={facing}
       data-rest-side={restSide}
       data-gait={gait}
-      aria-hidden={onInteract ? undefined : true}
+      data-perch={activeVisual.perchId}
     >
       <div
         ref={actorRef}
@@ -402,20 +1270,26 @@ export function ShirubeWanderer({
           data-testid="shirube-wanderer-flip"
           style={{ transform: flipTransform }}
         >
-          {onInteract ? (
-            <button
-              type="button"
-              className="shirube-wander-hit"
-              aria-label={`案内役の${GUIDE_NAME}に話しかける`}
-              onClick={onInteract}
-            >
-              {avatar}
-            </button>
-          ) : (
-            avatar
-          )}
+          <button
+            type="button"
+            className="shirube-wander-hit"
+            aria-label="しるべに話しかける"
+            onClick={onInteract ?? handleTapForTip}
+          >
+            {avatar}
+          </button>
         </div>
       </div>
+
+      {activeTip ? (
+        <ShirubeBubble
+          tip={activeTip}
+          anchor={isReduced ? null : bubbleAnchor}
+          restSide={restSide}
+          onHideShirube={hideShirube}
+          onDismissBubble={dismissBubble}
+        />
+      ) : null}
     </div>
   );
 }

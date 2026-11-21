@@ -1,82 +1,104 @@
-# しるべ歩き回り（`ShirubeWanderer`）の本番組み込み手順
+# しるべ自由歩き回り＆自動案内（`ShirubeWanderer`）ガイド
 
-この試作は `feat/shirube-wander` ブランチのデモ（`/demo/shirube`）に閉じ込めてあり、本番のトップページや共通レイアウトにはまだ組み込んでいません。後から本番サイトへ載せる場合は、以下の手順と注意点を確認したうえで進めてください。
+この機能は `feat/shirube-wander` ブランチのデモ（`/demo/shirube`、noindex）で確認できます。本番のトップページや共通レイアウトへ組み込む際は、以下の仕組みと注意点を確認してください。
 
-## 1. インポートするファイル
+## 1. 構成ファイル
+
+| ファイル                                     | 役割                                                                            |
+| -------------------------------------------- | ------------------------------------------------------------------------------- |
+| `src/components/guide/ShirubeWanderer.tsx`   | 画面全体の自由移動と自動案内を統合するメインコンポーネント                      |
+| `src/components/guide/shirubePerch.ts`       | 床（perch）の検出（純粋関数 `findPerches` + DOM 収集 `collectPerchCandidates`） |
+| `src/components/guide/shirubeWanderLogic.ts` | 移動・ジャンプ・休止・指さしの純粋状態マシン（`random` 注入可能）               |
+| `src/components/guide/shirubeTips.ts`        | ルート別の案内辞書・対象探索 `resolveTipTarget`・頻度制御 `canShowAutoTip`      |
+| `src/components/guide/ShirubeBubble.tsx`     | 吹き出し UI（白地・紺文字・金枠）と非表示時の右下タブ                           |
+| `src/components/guide/ShirubeWalkRig.tsx`    | 部品分けちびしるべ（横向き・正面・指さし公式絵）                                |
+| `src/components/guide/ShirubeShuffle.tsx`    | 4 コマすり足スプライト（WebP + PNG フォールバック）                             |
+| `src/components/guide/ShirubeWanderer.css`   | ステージ・歩行・ジャンプ・振り返り・吹き出しのスタイル                          |
+
+## 2. 自由歩き回り（フリーローミング）と床（Perch）
+
+- **自律ランダム移動**: 利用者による移動操作（ドラッグや「ここに来て」メニューなど）は持たず、しるべが自分で歩き回ります。キャラをタップしたときは「今のページの案内・次の一歩」だけを表示します。
+- **フェーズ（`data-state`）**:
+  - `walking`: 現在の床の上を歩く（PC 26px/秒・スマホ 14px/秒、すり足は 16 / 9 px/秒。負の `animation-delay` により静止時の 0° から滑らかに踏み出す）。
+  - `paused`: 立ち止まってときどき周囲を見渡す。
+  - `turning`: 向きを変える短い間。正面から横向きに戻る際は `is-turning-back` クラスで小さく弾む。
+  - `greeting`: 正面を向いて手を振る。
+  - `sitting`: 床の上で正面ポーズのまま静かに呼吸してひと休み。
+  - `hopping`: 床 A から床 B へ放物線（所要 450〜700ms、頂点は高い方の床より 40〜90px 上）で飛び移る。踏み切り・着地（`is-landing`）で伸縮アニメーションを行う。
+  - `pointing`: 対象の近くに立ち、公式の指さしポーズ（`/guide/shirube-pointing-{96,240,480}.{avif,webp}`）を対象側へ向けて案内する。
+- **行動の多様化**: 直近 3 回の行動履歴と直前の床 ID を記憶し、同じ行動・同じ床の連続を避けます。
+- **要素の床に長居しない**: 画面下端以外の要素の床では左右 20% の端を優先して立ち、連続滞在が約 8 秒を超えると自動で別の床へ移ります。スクロール等で床が画面外に出た・消えた場合は最寄りの可視床（最下端フォールバック）へ飛び降ります。
+
+### 床の検出ルール（`shirubePerch.ts`）
+
+- 画面最下端（`id: "bottom"`）は常に床として含みます。画面下の固定 CTA（`[data-shirube-avoid]` や下端の `fixed / sticky` 操作要素）と `safe-area-inset-bottom` を避けて持ち上げます。
+- 追加の床は明示属性 `[data-shirube-perch]` と既定セレクタ（`main h2`, `main h3`, `main article`, `main section > div[class*="rounded"]`, `main button`, `main a[class*="rounded-full"]`）から自動検出します。
+- 以下の要素は床から除外し、上にも重なりません:
+  - 非表示要素、ステージ内要素、`[data-shirube-avoid]` 内要素
+  - `button[type="submit"]`、`[data-primary-cta]`、フォーカス中の入力欄
+  - 画面上端から「キャラの高さ + 16px」より上にある要素（頭が切れるため）
+- **上限**: PC は最大 12 か所（幅 120px 以上）、スマホ（`< 640px`）は最大 4 か所（幅 200px 以上のみ）。
+
+## 3. 自動ガイド（案内辞書とページごとの追加方法）
+
+案内文は `src/components/guide/shirubeTips.ts` にまとめています。すべて 40 文字以内のやさしい日本語で、実在ルートに前方一致で対応します。
+
+### ページ側に目印を足す場合（任意）
+
+既存ページを編集しなくても見出しテキストやセレクタから自動で見つけますが、ピンポイントに指さしたい要素へ `data-shirube-tip="<tipId>"` を付けると最優先で参照されます。
+
+```tsx
+<section data-shirube-tip="today-lucky">...</section>
+<div data-shirube-result data-verdict="good">南東：吉</div>
+<div data-empty-state>まだ候補がありません</div>
+<article data-shirube-perch="featured-card">...</article>
+```
+
+対象の解決順（`resolveTipTarget`）:
+
+1. `[data-shirube-tip="<id>"]`
+2. チップの `target.selector`
+3. チップの `target.headingText` を含む見出し（`main h1/h2/h3`）
+4. 最初の `main h1`（`allowH1Fallback: false` の場合は省略）
+
+### トリガーと頻度制限
+
+| トリガー | 発火タイミング                                                                                                              |
+| -------- | --------------------------------------------------------------------------------------------------------------------------- |
+| `enter`  | ページ表示から約 6〜10 秒後（空状態が見えていれば `empty` を優先）                                                          |
+| `scroll` | 新しいセクションへスクロールして落ち着いた後（600ms デバウンス）                                                            |
+| `result` | `[data-shirube-result]` または「吉」「凶」を含む `[data-verdict]` が新しく現れたとき（`MutationObserver` 250ms デバウンス） |
+| `idle`   | 45 秒無操作（未入力の必須入力欄が見えていれば「次はここを入力してください」を優先）                                         |
+| `empty`  | `[data-empty-state]` が画面内に入ったとき                                                                                   |
+
+- **頻度制限**: 自動表示は最小 45 秒間隔、1 ページ表示あたり最大 6 回まで。同じチップは自動では繰り返しません。
+- **入力中の配慮**: `input` / `textarea` / `select` にフォーカスがある間は自動吹き出しを出しません。
+- **自動スクロール禁止**: 閲覧を邪魔しないようページを自動スクロールせず、現在ビューポート内にある対象だけを指さします。
+- **自動消去と縁取り**: 吹き出しは約 7 秒で自動で閉じます。対象要素にはレイアウトを変えない 2px の金枠（`.shirube-tip-target-highlight`）を約 2.5 秒付けます。
+
+## 4. 吹き出し・休む（非表示）・呼び戻す
+
+- **吹き出し**: 白背景・紺文字（`#1e2a5a`）・金枠（`#c9a54a`）。PC 最大幅 220px、スマホ最大幅 180px。画面外へはみ出さないよう自動で位置を調整します。`role="status"` / `aria-live="polite"` を付与。緑・赤は吉凶判定専用とし、吹き出し UI には使いません。
+- **タップと Esc**: しるべ本体（`<button aria-label="しるべに話しかける">`）を押すと今のページの案内を表示します。`Escape` キーで吹き出しを閉じます。
+- **休ませる／呼び戻す**: 吹き出し右上の `×` を押すと、しるべは画面右下の小さな丸タブ（28×28 紺円・`aria-label="しるべを呼ぶ"`）へ隠れます。状態は `localStorage` の `shirube:hidden`（`"1"` / 未設定）に保存され、タブを押すと復帰します。
+
+## 5. `prefers-reduced-motion`・スマホ・パフォーマンス配慮
+
+- **`prefers-reduced-motion: reduce`**: 移動・ジャンプ・CSS アニメーションをすべて止め、`requestAnimationFrame` も回さず右下（`restSide` で変更可）に正面ポーズで静止します。タップによる案内と自動吹き出し（＋対象の金枠）はそのまま機能します。
+- **スマホ（`< 640px`）**: キャラ高さ 60px、床は最大 4 か所（幅 200px 以上）、吹き出し最大幅 180px、主要ボタンや下部固定 CTA を避けます。
+- **pointer-events**: 外側の `.shirube-wander-stage` は常に `pointer-events: none`。キャラのボタン・吹き出し・復帰タブの最小領域のみ `pointer-events: auto` とし、本文や下層の操作を塞ぎません。
+- **省電力・CLS ゼロ**:
+  - `requestAnimationFrame` は `walking` と `hopping` の間だけ動かし、静止フェーズでは `setTimeout` で待機します。
+  - `document.visibilityState === "hidden"` の間はループ・計測・監視をすべて停止します。
+  - すべての `@keyframes` は `transform` と `opacity` のみを使い、`@media (prefers-reduced-motion: no-preference)` 内に閉じ込めています。
+
+## 6. 組み込み方
 
 ```tsx
 import { ShirubeWanderer } from "@/components/guide/ShirubeWanderer";
+
+// ページ末尾または layout.tsx の <SiteFooter /> の後ろに配置
+<ShirubeWanderer />;
 ```
 
-- 表示は部品分けしたちびしるべ `ShirubeWalkRig`（`src/components/guide/ShirubeWalkRig.tsx`）です。素材は `public/guide/walk/` の 3 枚（`leg-far`・`leg-near`・`body`、各 128px / 240px の WebP と PNG、合計 100KB 未満）。
-- 3 枚は同じキャンバス寸法（原寸 517×1063）なので重ねるだけで位置が合います。足は袴の裾に隠れた付け根を軸に CSS の `rotate` で振り、付け根より上は袴の内側まで足を伸ばしてあるので隙間は出ません。
-- 元絵は右向きです。左へ歩くときだけ `scaleX(-1)` で反転します。
-- 素材の作り直し: `/workspace/shirube-walk/build_rig.py`（横向き。背景抜き＝rembg isnet-anime → 部品分け）、`build_front.py`（正面）、`build_shuffle.py`（すり足 4 コマ）と `render.py`（プレビューと keyframes の値）。共有パソコン上の作業用で、リポジトリには入れていません。
-
-## 1-2. 動きの中身
-
-- 歩行中（`data-state="walking"`）: 手前と奥の足を ±24° で交互に振り、振り出す足を少し持ち上げる。体は 1 サイクルに 2 回はずむ（PC で約 2.6px）。体はわずかに前傾して揺れる。
-- 1 サイクルは PC 1.08 秒・スマホ 1 秒（CSS 変数 `--shirube-cycle`）。歩く速さ（PC 26px/秒・スマホ 14px/秒）と一歩の長さを合わせて、足が地面を滑って見えないようにしてあります。表示の高さを変えるときは `--shirube-h` と速さを一緒に変えてください（速さ ≒ 高さ × 0.234 ÷ サイクル秒）。
-- 立ち止まり・振り返り中: 足をそろえ、胴体だけゆっくり呼吸する。
-- 正面であいさつ（`data-state="greeting"`）: 目的地に着いたとき 45% の確率で、横向きから正面の絵へ 160ms で切り替え（小さく弾む）、2.6〜4.2 秒のあいだ呼吸しながら手を振る。終わると横向きに戻り、0.7 秒おいて歩き出す。
-  - 正面の素材は `front-body`（胴体）と `front-hand`（手首から先）の 2 枚。手首を軸に −18°〜+10° で振る。頭の上と足裏の高さは横向きとそろえてある。
-  - 左向きで止まっても、正面の絵は反転させない（いつも同じ手で振る）。
-  - 正面を向かせたくないときは `greet={false}`。
-- `prefers-reduced-motion: reduce`: アニメーションなし。右下で正面を向いて静かに立つ。
-
-## 1-3. すり足（4 コマのスプライト）
-
-元の 4 コマのすり足しるべを、背景を抜いて足元の高さをそろえた横並びの 1 枚（`public/guide/walk/shirube-shuffle-{128,240}.webp`、21KB / 52KB）にしてあります。コマ送りは `transform` の `steps(4)` だけで、0.96 秒で 4 コマ。
-
-- **画面下の歩き回りで使う**: `<ShirubeWanderer gait="shuffle" />`。歩く速さは PC 16px/秒・スマホ 9px/秒と遅めで、正面は向きません。
-- **画面下以外に置く小物**: `<ShirubeShuffle />`（`src/components/guide/ShirubeShuffle.tsx`）
-
-```tsx
-import { ShirubeShuffle } from "@/components/guide/ShirubeShuffle";
-
-<ShirubeShuffle size={56} />                         // その場で足踏み
-<ShirubeShuffle size={44} travel travelSeconds={16} /> // 置いた箱の横幅を行ったり来たり
-<ShirubeShuffle size={48} label="読み込み中" />       // 読み上げあり（role="img"）
-```
-
-- 使いどころの例:
-  - カードやお知らせの角に小さく置く（例: 「今日の吉方位」カードの右下、記事末尾の「次の記事へ」の横）。
-  - お知らせの帯・空の一覧（「まだ保存した候補はありません」）の下線の上を行ったり来たり。
-  - 読み込み中・計算中の表示（`role="status"` の中に `label` 付きで）。
-  - 404 ページやメンテナンス表示の飾り。
-- 置き方の注意: 既定は `aria-hidden` の飾り。`travel` は親の横幅（コンテナクエリ `100cqw`）を使うので、親にブロック要素を用意する。動きを減らす設定では 1 コマ目で止まり、移動もしない。
-- デモ `/demo/shirube` の「すり足しるべ（小物）の置き方の例」と、上部の「歩き方」切り替えで両方を確認できます。
-
-## 2. レイアウトまたは特定ページへの置き方
-
-### 特定ページにだけ置く場合（推奨・段階導入向け）
-
-対象ページの JSX 末尾に 1 行足します。固定配置（`position: fixed; bottom: 0`）のため、本文レイアウトの押し出し（CLS）は起きません。
-
-```tsx
-<ShirubeWanderer />
-```
-
-### サイト全体へ置く場合
-
-`src/app/layout.tsx` の `</body>` 直前（`<SiteFooter />` より後ろ）に `<ShirubeWanderer />` を置きます。
-
-```tsx
-<div className="flex min-h-screen">
-  <GlobalSidebar />
-  <div className="flex min-w-0 w-full flex-1 flex-col">
-    <main className="flex-1 w-full min-w-0 pt-14 lg:pt-0">{children}</main>
-    <SiteFooter />
-  </div>
-</div>
-<ShirubeWanderer />
-```
-
-## 3. 組み込み時の注意点
-
-- **pointer-events**: 外側ステージ（`.shirube-wander-stage`）は常に `pointer-events: none` です。既定（`onInteract` 未指定）ではキャラ本人も `pointer-events: none` のため、下部のボタン・リンク・フッター操作を塞ぎません。クリック動作を付ける場合も `onInteract` 経由でキャラの最小領域だけに留めてください。
-- **サイズとスマホ配慮**: 表示の高さはスマホ 60px・PC 120px（幅はそれぞれ約 30px / 59px）。
-- **下部の固定ボタンをよける**: 画面下端に接した `position: fixed / sticky` の操作要素（ボタン・リンクを含む帯）と、`data-shirube-avoid` を付けた要素を見つけると、その上端＋4px より上を歩きます（`--shirube-lift`、上限は画面の高さの 35%）。iPhone のホームバー（`safe-area-inset-bottom`）も避けます。自動で見つからない帯には `data-shirube-avoid` を付けてください。不要なら `avoidBottomObstacles={false}`。デモの「下部の固定ボタン帯を出す」で確認できます。
-- **prefers-reduced-motion**: 本番の既定（`forceReducedMotion` 未指定）は OS の `prefers-reduced-motion: reduce` を自動判定し、reduce 時は `requestAnimationFrame` を回さず画面下端の右寄り（`restSide` で変更可）に静止表示します。本番では `forceReducedMotion` を固定指定しないでください。
-- **トップや主要 CTA・既存しるべとの重複**: トップの「しるべに案内してもらう」など既存の `GuideCharacter` や主要 CTA のすぐ上に重なりすぎないか、実機幅（375px / 1280px）で見た目を確認してください。既存のしるべ（立ち絵）と同じ画面に出す場合は、どちらかを控えめにしてください。
-- **master へのマージ**: 本番反映（`master` へのマージ・デプロイ）は必ずオーナー確認を経て行ってください。試作用デモ（`/demo/shirube`）を本番に公開したくない場合は、マージ前にデモルートを外すか `NON_CORE_DISALLOW` / `NOINDEX_ROBOTS` の維持を確認してください。
+小物として単体で使う 4 コマすり足（`<ShirubeShuffle />`）も従来どおり利用できます。本番反映（`master` へのマージ）はオーナー確認を経て行ってください。

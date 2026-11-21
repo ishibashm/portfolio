@@ -1,12 +1,11 @@
 /* ==========================================================================
- * しるべ歩き回り試作（ShirubeWanderer / ShirubeWalkRig）のスタイル。
+ * しるべ自由歩き回り＆自動案内（ShirubeWanderer / ShirubeWalkRig）のスタイル。
  *
  * 決まり（docs/motion-accents.md に合わせる）:
  * - 動かすのは transform と opacity だけ（CLS を起こさない）。
  * - 既定（JS なし・prefers-reduced-motion: reduce）の見た目が静止の最終形。
- *   歩く足の振り・体の上下・呼吸は no-preference の中だけ。
- * - 歩行の keyframes は試作スクリプト（/workspace/shirube-walk/render.py）の
- *   プレビューと同じ値を 16 分割で書き出したもの。
+ *   歩く足の振り・体の上下・呼吸・ジャンプ・振り返りバウンスは no-preference の中だけ。
+ * - 配色は紺 #1e2a5a・金 #c9a54a・生成り #faf7f3/#f8f1dc・白のみ。
  * ======================================================================== */
 
 .shirube-wander-stage {
@@ -16,19 +15,10 @@
      足が地面を滑って見えないようにしてある。 */
   --shirube-cycle: 1s;
   position: fixed;
-  inset-inline: 0;
-  bottom: 0;
+  inset: 0;
   z-index: 30;
   pointer-events: none;
-  overflow-x: clip;
-  overflow-y: visible;
-  height: 0;
-  /* iPhone のホームバーと、画面下の固定ボタン帯（--shirube-lift）を避ける */
-  transform: translate3d(
-    0,
-    calc(-1 * (var(--shirube-lift, 0px) + env(safe-area-inset-bottom, 0px))),
-    0
-  );
+  overflow: clip;
 }
 
 @media (min-width: 640px) {
@@ -40,7 +30,7 @@
 
 .shirube-wander-actor {
   position: absolute;
-  bottom: 0;
+  top: 0;
   left: 0;
   pointer-events: none;
   will-change: transform;
@@ -48,6 +38,8 @@
 
 /* 動きを減らす設定（reduce）や JS 無効時は、下端の右寄りに静かに立つ。 */
 .shirube-wander-stage[data-motion="reduced"] .shirube-wander-actor {
+  top: auto;
+  bottom: calc(var(--shirube-lift, 0px) + env(safe-area-inset-bottom, 0px));
   left: auto;
   right: 16px;
   will-change: auto;
@@ -88,6 +80,11 @@
     transparent 100%
   );
   pointer-events: none;
+}
+
+/* ジャンプ中は足元の影を薄くする */
+.shirube-wander-stage[data-state="hopping"] .shirube-wander-shadow {
+  opacity: 0.25;
 }
 
 /* ---- 部品分けのちびしるべ ---------------------------------------------- */
@@ -131,7 +128,7 @@
   transform-origin: 39.85% 88.05%;
 }
 
-/* ---- 正面（立ち止まって手を振る） -------------------------------------- */
+/* ---- 正面（立ち止まって手を振る・ひと休み） ---------------------------- */
 
 .shirube-rig-side {
   position: absolute;
@@ -170,14 +167,57 @@
   transform-origin: 82.68% 41.06%;
 }
 
-/* 正面を向いている間と、動きを減らす設定（静止）のときは正面の絵を見せる */
+/* ---- 指さし案内ポーズ（公式イラスト） ---------------------------------- */
+
+.shirube-rig-pointing {
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  height: 100%;
+  aspect-ratio: 240 / 296;
+  /* 元絵は左を指している。親 .shirube-wander-flip の反転と合わせ、
+     左向き時はそのまま左を指し、右向き時は反転して右を指すようにする。 */
+  transform: translateX(-50%) scaleX(-1);
+  transform-origin: 50% 100%;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.shirube-rig-pointing-pic,
+.shirube-rig-pointing-pic img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  user-select: none;
+  -webkit-user-drag: none;
+}
+
+/* 正面を向いている間（greeting / sitting）と静止時は正面の絵を見せる */
 .shirube-wander-stage[data-state="greeting"] .shirube-rig-front,
+.shirube-wander-stage[data-state="sitting"] .shirube-rig-front,
 .shirube-wander-stage[data-motion="reduced"] .shirube-rig-front {
   opacity: 1;
 }
 
 .shirube-wander-stage[data-state="greeting"] .shirube-rig-side,
+.shirube-wander-stage[data-state="sitting"] .shirube-rig-side,
+.shirube-wander-stage[data-state="pointing"] .shirube-rig-side,
 .shirube-wander-stage[data-motion="reduced"] .shirube-rig-side {
+  opacity: 0;
+}
+
+/* ひと休み（sitting）は正面ポーズで少し腰を落ち着ける */
+.shirube-wander-stage[data-state="sitting"] .shirube-rig-front-hop {
+  transform: translateY(3%) scale(1.02, 0.96);
+}
+
+/* 指さし案内（pointing）は公式の指さしイラストを表示する */
+.shirube-wander-stage[data-state="pointing"] .shirube-rig-pointing {
+  opacity: 1;
+}
+
+.shirube-wander-stage[data-state="pointing"] .shirube-rig-front {
   opacity: 0;
 }
 
@@ -228,6 +268,8 @@
   left: 50%;
 }
 
+/* ---- 操作ボタン・吹き出し・非表示タブ ---------------------------------- */
+
 .shirube-wander-hit {
   pointer-events: auto;
   display: inline-block;
@@ -243,46 +285,217 @@
   border-radius: 8px;
 }
 
+.shirube-bubble {
+  position: absolute;
+  pointer-events: auto;
+  width: max-content;
+  max-width: 180px;
+  border-radius: 14px;
+  border: 1px solid #c9a54a;
+  background: #ffffff;
+  color: #1e2a5a;
+  padding: 8px 10px;
+  box-shadow: 0 6px 18px rgba(30, 42, 90, 0.14);
+  font-size: 12px;
+  line-height: 1.5;
+  z-index: 2;
+}
+
+@media (min-width: 640px) {
+  .shirube-bubble {
+    max-width: 220px;
+    padding: 10px 12px;
+    font-size: 13px;
+  }
+}
+
+.shirube-bubble[data-anchored="reduced"] {
+  right: 16px;
+  bottom: calc(
+    var(--shirube-lift, 0px) + env(safe-area-inset-bottom, 0px) +
+      var(--shirube-h) + 12px
+  );
+}
+
+.shirube-bubble[data-anchored="reduced"][data-rest-side="left"] {
+  left: 16px;
+  right: auto;
+}
+
+.shirube-bubble-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 3px;
+}
+
+.shirube-bubble-name {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  color: #1e2a5a;
+  background: #f8f1dc;
+  border: 1px solid rgba(201, 165, 74, 0.5);
+  border-radius: 9999px;
+  padding: 0 6px;
+  line-height: 1.6;
+}
+
+.shirube-bubble-hide {
+  pointer-events: auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 9999px;
+  border: 1px solid rgba(30, 42, 90, 0.18);
+  background: #faf7f3;
+  color: #1e2a5a;
+  font-size: 13px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.shirube-bubble-hide:hover {
+  background: #f8f1dc;
+  border-color: #c9a54a;
+}
+
+.shirube-bubble-hide:focus-visible {
+  outline: 2px solid #c9a54a;
+  outline-offset: 1px;
+}
+
+.shirube-bubble-text {
+  margin: 0;
+  color: #1e2a5a;
+}
+
+.shirube-bubble-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 6px;
+}
+
+.shirube-bubble-link {
+  display: inline-block;
+  border-radius: 9999px;
+  border: 1px solid #c9a54a;
+  background: #f8f1dc;
+  color: #1e2a5a;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 2px 8px;
+  text-decoration: none;
+}
+
+.shirube-bubble-link:hover {
+  background: #faf7f3;
+}
+
+.shirube-restore-tab {
+  position: absolute;
+  right: 12px;
+  bottom: calc(12px + env(safe-area-inset-bottom, 0px));
+  pointer-events: auto;
+  width: 28px;
+  height: 28px;
+  border-radius: 9999px;
+  border: 1px solid #c9a54a;
+  background: #1e2a5a;
+  color: #faf7f3;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 3px 10px rgba(30, 42, 90, 0.25);
+  cursor: pointer;
+}
+
+.shirube-restore-tab:focus-visible {
+  outline: 2px solid #c9a54a;
+  outline-offset: 2px;
+}
+
+/* 指さし対象へのやさしい金の縁取り（レイアウトを変えない outline のみ） */
+.shirube-tip-target-highlight {
+  outline: 2px solid #c9a54a;
+  outline-offset: 4px;
+  border-radius: 6px;
+}
+
 @media (prefers-reduced-motion: no-preference) {
-  .shirube-wander-stage {
-    transition: transform 320ms ease-out;
+  .shirube-tip-target-highlight {
+    transition: outline-color 400ms ease-out;
   }
 
   .shirube-wander-stage[data-motion="active"] .shirube-wander-flip {
     transition: transform 280ms ease-in-out;
   }
 
-  /* 歩いている間: 足を交互に振り、体は 1 サイクルに 2 回はずむ */
+  /* 歩いている間: 負の animation-delay（-0.25 周期）で静止時の 0° から滑らかに踏み出す */
   .shirube-wander-stage[data-motion="active"][data-state="walking"]
     .shirube-rig-leg-near {
-    animation: shirube-walk-leg-near var(--shirube-cycle) linear infinite;
+    animation: shirube-walk-leg-near var(--shirube-cycle) linear
+      calc(var(--shirube-cycle) * -0.25) infinite;
   }
 
   .shirube-wander-stage[data-motion="active"][data-state="walking"]
     .shirube-rig-leg-far {
-    animation: shirube-walk-leg-far var(--shirube-cycle) linear infinite;
+    animation: shirube-walk-leg-far var(--shirube-cycle) linear
+      calc(var(--shirube-cycle) * -0.25) infinite;
   }
 
   .shirube-wander-stage[data-motion="active"][data-state="walking"]
     .shirube-rig-bob {
-    animation: shirube-walk-bob var(--shirube-cycle) linear infinite;
+    animation: shirube-walk-bob var(--shirube-cycle) linear
+      calc(var(--shirube-cycle) * -0.25) infinite;
   }
 
   .shirube-wander-stage[data-motion="active"][data-state="walking"]
     .shirube-rig-body {
-    animation: shirube-walk-body var(--shirube-cycle) linear infinite;
+    animation: shirube-walk-body var(--shirube-cycle) linear
+      calc(var(--shirube-cycle) * -0.25) infinite;
   }
 
   .shirube-wander-stage[data-motion="active"][data-state="walking"]
     .shirube-wander-shadow {
     animation: shirube-wander-shadow calc(var(--shirube-cycle) / 2) ease-in-out
-      infinite;
+      calc(var(--shirube-cycle) * -0.25) infinite;
   }
 
   /* 立ち止まり・振り返り中: 足をそろえて、ゆっくり呼吸する */
-  .shirube-wander-stage[data-motion="active"]:not([data-state="walking"])
+  .shirube-wander-stage[data-motion="active"]:not([data-state="walking"]):not(
+      [data-state="hopping"]
+    )
     .shirube-rig-body {
     animation: shirube-idle-breath 3.2s ease-in-out infinite;
+  }
+
+  /* ジャンプの踏み切り・空中伸び・着地つぶれ */
+  .shirube-wander-stage[data-motion="active"][data-state="hopping"]
+    .shirube-wander-gait {
+    animation: shirube-hop-takeoff 480ms ease-out 1 both;
+  }
+
+  .shirube-wander-stage[data-motion="active"].is-landing .shirube-wander-gait {
+    animation: shirube-hop-land 260ms ease-out 1 both;
+  }
+
+  /* 正面（greeting / sitting / pointing）から横向きへ戻る際の小さな弾み */
+  .shirube-wander-stage[data-motion="active"].is-turning-back
+    .shirube-wander-gait {
+    animation: shirube-turn-back-bounce 300ms ease-out 1 both;
+  }
+
+  /* 吹き出しの静かな現れ */
+  .shirube-bubble {
+    animation: shirube-bubble-in 200ms ease-out 1 both;
   }
 
   @keyframes shirube-walk-leg-near {
@@ -523,9 +736,10 @@
     }
   }
 
-  /* 横向き ⇔ 正面の切り替えは 160ms のクロスフェード */
+  /* 横向き ⇔ 正面 ⇔ 指さしの切り替えは 160ms のクロスフェード */
   .shirube-rig-side,
-  .shirube-rig-front {
+  .shirube-rig-front,
+  .shirube-rig-pointing {
     transition: opacity 160ms ease-out;
   }
 
@@ -536,6 +750,8 @@
   }
 
   .shirube-wander-stage[data-motion="active"][data-state="greeting"]
+    .shirube-rig-front-breath,
+  .shirube-wander-stage[data-motion="active"][data-state="sitting"]
     .shirube-rig-front-breath {
     animation: shirube-idle-breath 2.4s ease-in-out 380ms infinite;
   }
@@ -568,6 +784,62 @@
     }
     100% {
       transform: translateY(0) scale(1, 1);
+    }
+  }
+
+  @keyframes shirube-turn-back-bounce {
+    0% {
+      transform: translateY(0) scale(1, 1);
+    }
+    35% {
+      transform: translateY(0) scale(1.05, 0.94);
+    }
+    68% {
+      transform: translateY(-4%) scale(0.98, 1.03);
+    }
+    100% {
+      transform: translateY(0) scale(1, 1);
+    }
+  }
+
+  @keyframes shirube-hop-takeoff {
+    0% {
+      transform: scale(1.08, 0.88);
+    }
+    30% {
+      transform: scale(0.94, 1.08);
+    }
+    70% {
+      transform: scale(0.97, 1.04);
+    }
+    100% {
+      transform: scale(1, 1);
+    }
+  }
+
+  @keyframes shirube-hop-land {
+    0% {
+      transform: scale(1, 1);
+    }
+    40% {
+      transform: scale(1.1, 0.86);
+    }
+    75% {
+      transform: scale(0.98, 1.03);
+    }
+    100% {
+      transform: scale(1, 1);
+    }
+  }
+
+  @keyframes shirube-bubble-in {
+    0% {
+      opacity: 0;
+      transform: translateY(4px) scale(0.97);
+    }
+    100% {
+      opacity: 1;
+      transform: translateY(0) scale(1);
     }
   }
 

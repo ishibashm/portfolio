@@ -9,6 +9,7 @@ import {
 } from "@testing-library/react";
 import { ShirubeWanderer } from "@/components/guide/ShirubeWanderer";
 import { ShirubeShuffle } from "@/components/guide/ShirubeShuffle";
+import { SHIRUBE_HIDDEN_STORAGE_KEY } from "@/components/guide/ShirubeBubble";
 import {
   computeBottomLift,
   createInitialWanderState,
@@ -21,6 +22,7 @@ import { metadata as demoMetadata } from "@/app/demo/shirube/page";
 
 afterEach(() => {
   cleanup();
+  window.localStorage.removeItem(SHIRUBE_HIDDEN_STORAGE_KEY);
   vi.unstubAllGlobals();
   vi.restoreAllMocks();
 });
@@ -157,11 +159,15 @@ describe("ShirubeWanderer", () => {
     expect(rafSpy).not.toHaveBeenCalled();
   });
 
-  it("no-preference のときは画面下端を translate3d でゆっくり移動する", () => {
+  it("no-preference のときは画面内を translate3d(x, y, 0) でゆっくり移動する", () => {
     stubMatchMedia(false);
     Object.defineProperty(window, "innerWidth", {
       configurable: true,
       value: 1200,
+    });
+    Object.defineProperty(window, "innerHeight", {
+      configurable: true,
+      value: 800,
     });
 
     let now = 0;
@@ -180,7 +186,9 @@ describe("ShirubeWanderer", () => {
     const actor = screen.getByTestId("shirube-wanderer-actor");
     expect(stage.getAttribute("data-motion")).toBe("active");
     const initialTransform = actor.style.transform;
-    expect(initialTransform).toMatch(/^translate3d\([\d.]+px, 0, 0\)$/);
+    expect(initialTransform).toMatch(
+      /^translate3d\([\d.-]+px, [\d.-]+px, 0\)$/,
+    );
 
     act(() => {
       now = 80;
@@ -192,19 +200,91 @@ describe("ShirubeWanderer", () => {
     expect(actor.style.transform).not.toBe(initialTransform);
   });
 
-  it("ラッパーと既定のキャラはポインタを塞がず、onInteract 指定時だけ小さなボタンになる", () => {
+  it("キャラボタンは aria-label「しるべに話しかける」を持ち、タップで案内表示、onInteract で上書きできる", () => {
     stubMatchMedia(true);
-    const { rerender } = render(<ShirubeWanderer />);
+    const { rerender } = render(
+      <ShirubeWanderer pathnameOverride="/houi/today" />,
+    );
 
-    const stage = screen.getByTestId("shirube-wanderer");
-    expect(stage.getAttribute("aria-hidden")).toBe("true");
-    expect(screen.queryByRole("button")).toBeNull();
+    const btn = screen.getByRole("button", { name: "しるべに話しかける" });
+    fireEvent.click(btn);
 
+    const bubble = screen.getByRole("status");
+    expect(bubble.getAttribute("aria-live")).toBe("polite");
+    expect(bubble.textContent).toContain("今日いちばん良い方位");
+
+    // Esc で吹き出しを閉じる
+    fireEvent.keyDown(window, { key: "Escape" });
+    expect(screen.queryByTestId("shirube-bubble")).toBeNull();
+
+    // onInteract で上書き可能
     const onInteract = vi.fn();
     rerender(<ShirubeWanderer onInteract={onInteract} />);
-    const btn = screen.getByRole("button", { name: /しるべ/ });
-    fireEvent.click(btn);
+    fireEvent.click(screen.getByRole("button", { name: "しるべに話しかける" }));
     expect(onInteract).toHaveBeenCalledTimes(1);
+  });
+
+  it("吹き出しの × で隠れて localStorage に保存され、端タブで呼び戻せる", () => {
+    stubMatchMedia(true);
+    render(<ShirubeWanderer pathnameOverride="/" />);
+
+    fireEvent.click(screen.getByRole("button", { name: "しるべに話しかける" }));
+    expect(screen.getByTestId("shirube-bubble")).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "しるべを休ませる" }));
+    expect(window.localStorage.getItem(SHIRUBE_HIDDEN_STORAGE_KEY)).toBe("1");
+    expect(
+      screen.queryByRole("button", { name: "しるべに話しかける" }),
+    ).toBeNull();
+
+    const restoreTab = screen.getByRole("button", { name: "しるべを呼ぶ" });
+    fireEvent.click(restoreTab);
+    expect(window.localStorage.getItem(SHIRUBE_HIDDEN_STORAGE_KEY)).toBeNull();
+    expect(
+      screen.getByRole("button", { name: "しるべに話しかける" }),
+    ).toBeInTheDocument();
+  });
+
+  it("reduced-motion でもタップ・自動案内で吹き出しと対象の金枠強調が動き、rAF は回さない", () => {
+    vi.useFakeTimers();
+    stubMatchMedia(true);
+    const rafSpy = vi.fn(() => 1);
+    vi.stubGlobal("requestAnimationFrame", rafSpy);
+
+    const heading = document.createElement("h2");
+    heading.textContent = "先に結論：南東が吉";
+    heading.getBoundingClientRect = () =>
+      ({
+        top: 200,
+        bottom: 240,
+        left: 40,
+        right: 400,
+        width: 360,
+        height: 40,
+      }) as DOMRect;
+    document.body.appendChild(heading);
+
+    render(
+      <ShirubeWanderer
+        pathnameOverride="/blog/test-article"
+        enterTipDelayMs={1000}
+      />,
+    );
+
+    act(() => {
+      vi.advanceTimersByTime(1000);
+    });
+
+    expect(screen.getByTestId("shirube-bubble").textContent).toContain(
+      "先に結論",
+    );
+    expect(heading.classList.contains("shirube-tip-target-highlight")).toBe(
+      true,
+    );
+    expect(rafSpy).not.toHaveBeenCalled();
+
+    heading.remove();
+    vi.useRealTimers();
   });
 });
 
@@ -253,17 +333,26 @@ describe("正面のしるべとすり足", () => {
     }
   });
 
-  it("gait=shuffle では 4 コマのスプライトに切り替わり、部品分けの絵は出さない", () => {
+  it("gait=shuffle では 4 コマのスプライト（picture + webp/png）に切り替わり、部品分けの絵は出さない", () => {
     stubMatchMedia(true);
     render(<ShirubeWanderer gait="shuffle" />);
     const stage = screen.getByTestId("shirube-wanderer");
     expect(stage.getAttribute("data-gait")).toBe("shuffle");
     expect(screen.queryByTestId("shirube-walk-rig")).toBeNull();
-    const img = screen
-      .getByTestId("shirube-shuffle-sprite")
-      .querySelector("img")!;
-    expect(img.getAttribute("srcset")).toContain(
+    const sprite = screen.getByTestId("shirube-shuffle-sprite");
+    const pic = sprite.querySelector("picture")!;
+    expect(pic).not.toBeNull();
+    const source = pic.querySelector('source[type="image/webp"]')!;
+    expect(source.getAttribute("srcset")).toContain(
       "/guide/walk/shirube-shuffle-128.webp 268w",
+    );
+    const img = pic.querySelector("img")!;
+    expect(img.getAttribute("src")).toBe("/guide/walk/shirube-shuffle-240.png");
+    expect(img.getAttribute("srcset")).toContain(
+      "/guide/walk/shirube-shuffle-128.png 268w",
+    );
+    expect(img.getAttribute("srcset")).toContain(
+      "/guide/walk/shirube-shuffle-240.png 500w",
     );
     expect(existsSync("public/guide/walk/shirube-shuffle-128.webp")).toBe(true);
     expect(existsSync("public/guide/walk/shirube-shuffle-240.webp")).toBe(true);
@@ -399,6 +488,9 @@ describe("CSS と SEO 方針", () => {
         "shirube-walk-leg-far",
         "shirube-walk-bob",
         "shirube-idle-breath",
+        "shirube-hop-takeoff",
+        "shirube-hop-land",
+        "shirube-turn-back-bounce",
       ]),
     );
     for (const [, body] of frames) {

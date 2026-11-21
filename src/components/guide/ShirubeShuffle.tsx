@@ -22,6 +22,11 @@ export const SHIRUBE_SHUFFLE_SRC_SET = [
   "/guide/walk/shirube-shuffle-240.webp 500w",
 ].join(", ");
 
+export const SHIRUBE_SHUFFLE_PNG_SRC_SET = [
+  "/guide/walk/shirube-shuffle-128.png 268w",
+  "/guide/walk/shirube-shuffle-240.png 500w",
+].join(", ");
+
 /**
  * スプライト本体（窓 + 4 コマの帯）。高さは CSS 変数 --shuffle-h で決まる。
  * displayHeight は画像の選び分け（sizes）にだけ使う目安の表示高さ（px）。
@@ -33,25 +38,32 @@ export function ShirubeShuffleSprite({
 }) {
   // 帯の表示幅 = 高さ × 1 コマの縦横比 × 4 コマ
   const stripWidth = Math.ceil(displayHeight * SHIRUBE_SHUFFLE_ASPECT * 4);
+  const sizes = `${stripWidth}px`;
   return (
     <span
       className="shirube-shuffle-window"
       data-testid="shirube-shuffle-sprite"
     >
       {/* 4 コマの帯を transform でずらすため、next/image の最適化は使わない */}
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img
-        className="shirube-shuffle-strip"
-        src="/guide/walk/shirube-shuffle-240.webp"
-        srcSet={SHIRUBE_SHUFFLE_SRC_SET}
-        sizes={`${stripWidth}px`}
-        width={500}
-        height={240}
-        alt=""
-        loading="lazy"
-        decoding="async"
-        draggable={false}
-      />
+      <picture>
+        <source
+          type="image/webp"
+          srcSet={SHIRUBE_SHUFFLE_SRC_SET}
+          sizes={sizes}
+        />
+        <img
+          className="shirube-shuffle-strip"
+          src="/guide/walk/shirube-shuffle-240.png"
+          srcSet={SHIRUBE_SHUFFLE_PNG_SRC_SET}
+          sizes={sizes}
+          width={500}
+          height={240}
+          alt=""
+          loading="lazy"
+          decoding="async"
+          draggable={false}
+        />
+      </picture>
     </span>
   );
 }

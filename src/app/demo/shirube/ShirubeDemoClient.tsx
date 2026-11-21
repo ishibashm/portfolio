@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { ShirubeShuffle } from "@/components/guide/ShirubeShuffle";
 import {
@@ -14,54 +14,92 @@ const STATE_LABELS: Record<ShirubeWanderSnapshot["state"], string> = {
   paused: "ひと休み中",
   turning: "振り返り中",
   greeting: "正面であいさつ中",
+  sitting: "床でひと息中",
+  hopping: "ジャンプ中",
+  pointing: "指さし案内中",
   idle: "静止（reduced-motion）",
 };
 
 const DUMMY_CARDS = [
   {
+    id: "direction",
     eyebrow: "方位の目安",
     title: "今いる場所から八方位を見渡す",
-    body: "画面の下端をしるべがゆっくり行き来する様子を、通常コンテンツの横幅と合わせて確認するためのダミーカードです。本文の可読性や操作を邪魔しない距離感を保ちます。",
+    body: "画面下端だけでなく、カードや見出しの上端（床）へ飛び移りながら自由に巡回します。本文を隠さないよう、要素の左右端を優先して立ちます。",
   },
   {
+    id: "timing",
     eyebrow: "時期の整理",
     title: "動く候補日を静かに見比べる",
-    body: "足の振り・体の上下・左右反転はすべて CSS transform だけで動かし、重いアニメーションライブラリは使いません。画像は 3 枚合わせて 100KB 未満です。",
+    body: "歩いている間とジャンプ中だけ描画フレームを回し、止まっている間はタイマーで待機します。タブが裏にあるときは動きを止めます。",
   },
   {
+    id: "market",
     eyebrow: "相場の確認",
     title: "家賃と暮らしやすさを並べて考える",
-    body: "スマホ幅では高さ 60px に小さく収め、ラッパーには pointer-events: none を当てています。画面下に固定のボタン帯があるときは、その上を歩きます。",
+    body: "スマホ幅では高さ 60px に収め、床の数も最大 4 か所まで。主要ボタンや入力欄の上には立ち止まらない仕組みです。",
   },
 ] as const;
 
 export function ShirubeDemoClient() {
-  // デモ限定の「動きを止める」トグル。既定は false（OS の prefers-reduced-motion に従う）。
   const [stopMotionToggle, setStopMotionToggle] = useState(false);
-  // デモ限定: スマホでよくある「画面下に固定された CTA 帯」を出して、よけ方を確かめる
   const [showFixedCta, setShowFixedCta] = useState(false);
-  // デモ限定: 歩き方の切り替え（部品分けの歩き / 4 コマのすり足）
   const [gait, setGait] = useState<"rig" | "shuffle">("rig");
+  const [fixSeed, setFixSeed] = useState(false);
   const osReduced = usePrefersReducedMotion();
+
   const [snapshot, setSnapshot] = useState<ShirubeWanderSnapshot>({
     motion: "reduced",
     state: "idle",
     facing: "left",
+    perchId: "bottom",
+    tipId: null,
+    hidden: false,
   });
+
   const [tapLog, setTapLog] = useState<string>("まだ押されていません");
   const [tapCount, setTapCount] = useState<number>(0);
+
+  // 3 秒後に結果を表示して、しるべの結果リアクションを確認するデモ
+  const [resultPending, setResultPending] = useState(false);
+  const [delayedResultVisible, setDelayedResultVisible] = useState(false);
+  const resultTimerRef = useRef<number>(0);
+
+  // 小さな必須フォームの確認用
+  const [birthDate, setBirthDate] = useState("");
+  const [originCity, setOriginCity] = useState("");
+  const [formSaved, setFormSaved] = useState(false);
+
+  useEffect(() => {
+    return () => {
+      if (resultTimerRef.current) {
+        window.clearTimeout(resultTimerRef.current);
+      }
+    };
+  }, []);
 
   const recordTap = (label: string) => {
     setTapCount((prev) => prev + 1);
     setTapLog(`「${label}」を押せました`);
   };
 
+  const triggerDelayedResult = () => {
+    if (resultTimerRef.current) window.clearTimeout(resultTimerRef.current);
+    setDelayedResultVisible(false);
+    setResultPending(true);
+    resultTimerRef.current = window.setTimeout(() => {
+      resultTimerRef.current = 0;
+      setResultPending(false);
+      setDelayedResultVisible(true);
+    }, 3000);
+  };
+
   return (
     <div className="min-h-screen bg-[#faf7f3] text-[#1e2a5a]">
-      <div className="mx-auto flex w-full max-w-5xl flex-col gap-8 px-4 pb-32 pt-8 sm:px-6 lg:px-8">
-        {/* ヘッダー */}
+      <div className="mx-auto flex w-full max-w-5xl flex-col gap-8 px-4 pb-36 pt-8 sm:px-6 lg:px-8">
+        {/* ヒーロー + コントロール */}
         <header className="rounded-2xl border border-[#c9a54a]/45 bg-white p-6 shadow-sm">
-          <div className="flex flex-wrap items-center justify-between gap-4">
+          <div className="flex flex-wrap items-start justify-between gap-4">
             <div className="space-y-1.5">
               <p className="inline-flex items-center gap-2 text-xs font-semibold tracking-wider text-[#1e2a5a]">
                 <span className="rounded bg-[#1e2a5a] px-2 py-0.5 text-[11px] text-[#f3d98b]">
@@ -70,14 +108,13 @@ export function ShirubeDemoClient() {
                 <span>検索非公開（noindex / Disallow: /demo）</span>
               </p>
               <h1 className="text-xl font-bold tracking-tight text-[#1e2a5a] sm:text-2xl">
-                しるべ 画面下端歩き回りプロトタイプ
+                しるべ 自由歩き回り＆自動案内デモ
               </h1>
               <p className="max-w-2xl text-sm leading-relaxed text-slate-700">
-                部品分け（頭と体・手前の足・奥の足）にしたちびしるべが、画面の一番下のふちを舞台の床のように歩いたり立ち止まったりする試作です。歩くあいだは足を交互に振って体が小さくはずみ、止まると足をそろえて静かに呼吸します。
+                画面全体を自律的に歩き回り、見出しやカードの上へ飛び移ったり、状況に合わせて指さし案内をしてくれる「しるべ」の確認ページです。キャラをタップすると今のページに合った案内が出ます。
               </p>
             </div>
 
-            {/* デモ限定の動きトグル */}
             <div className="flex flex-col items-start gap-2 rounded-xl border border-slate-200 bg-[#faf7f3] p-3.5 sm:items-end">
               <button
                 type="button"
@@ -118,7 +155,24 @@ export function ShirubeDemoClient() {
                   ? "下部の固定ボタン帯を消す"
                   : "下部の固定ボタン帯を出す（よけ方の確認）"}
               </button>
-              <p className="text-xs text-slate-600">
+              <button
+                type="button"
+                onClick={() => setFixSeed((v) => !v)}
+                aria-pressed={fixSeed}
+                className={`rounded-full border px-4 py-2 text-xs font-semibold transition-colors ${
+                  fixSeed
+                    ? "border-[#c9a54a] bg-[#f8f1dc] text-[#1e2a5a]"
+                    : "border-[#1e2a5a]/30 bg-white text-[#1e2a5a] hover:bg-[#faf7f3]"
+                }`}
+              >
+                {fixSeed
+                  ? "ランダムの種を固定中（seed=42）"
+                  : "ランダムの種を固定（デモ再現用）"}
+              </button>
+              <p
+                className="text-xs text-slate-600"
+                data-testid="shirube-demo-status"
+              >
                 状態:{" "}
                 <strong className="text-[#1e2a5a]">
                   {STATE_LABELS[snapshot.state]}
@@ -129,11 +183,222 @@ export function ShirubeDemoClient() {
                   {snapshot.facing === "left" ? "左" : "右"}
                 </strong>
                 {" / "}
-                OS 設定: {osReduced ? "動きを減らす" : "通常"}
+                床:{" "}
+                <strong className="text-[#1e2a5a]">
+                  {snapshot.perchId ?? "bottom"}
+                </strong>
+                {" / "}
+                案内:{" "}
+                <strong className="text-[#1e2a5a]">
+                  {snapshot.tipId ?? "なし"}
+                </strong>
+                {" / "}
+                OS: {osReduced ? "動きを減らす" : "通常"}
               </p>
             </div>
           </div>
         </header>
+
+        {/* 今日の吉方位 結果カード（吉凶の緑は判定バッジにのみ使用） */}
+        <section
+          aria-label="今日の吉方位"
+          data-shirube-perch="today-card"
+          data-shirube-tip="today-lucky"
+          className="rounded-2xl border border-[#c9a54a]/50 bg-white p-6 shadow-sm"
+        >
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <p className="text-xs font-semibold tracking-wider text-[#9c7926]">
+                日盤のめやす
+              </p>
+              <h2 className="text-lg font-bold text-[#1e2a5a]">今日の吉方位</h2>
+            </div>
+            <span
+              data-verdict="good"
+              className="inline-flex items-center gap-1.5 rounded-full border border-emerald-200 bg-emerald-50 px-3.5 py-1 text-sm font-bold text-emerald-800"
+            >
+              南東：吉
+            </span>
+          </div>
+          <p className="mt-2 text-sm leading-relaxed text-slate-700">
+            午前中は南東、午後は東が穏やかに動きやすい目安です。詳しい時間帯ごとの吉凶は下の表からも確認できます。
+          </p>
+
+          <div className="mt-4 flex flex-wrap items-center gap-3">
+            <button
+              type="button"
+              onClick={triggerDelayedResult}
+              disabled={resultPending}
+              className="rounded-full border border-[#c9a54a] bg-[#f8f1dc] px-4 py-2 text-xs font-semibold text-[#1e2a5a] hover:bg-[#f3d98b]/60 disabled:opacity-60"
+            >
+              {resultPending
+                ? "判定を計算中…（3 秒後に表示）"
+                : "3 秒後に新しい判定結果を出す（結果リアクション確認）"}
+            </button>
+            {delayedResultVisible ? (
+              <div
+                data-shirube-result="delayed"
+                data-verdict="good"
+                className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-2 text-xs font-semibold text-emerald-900"
+              >
+                試算結果：北西も吉（移動の候補に入れられます）
+              </div>
+            ) : null}
+          </div>
+        </section>
+
+        {/* 先に結論セクション（見出しテキスト一致のデモ） */}
+        <section
+          aria-label="先に結論"
+          className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm"
+        >
+          <h2 className="text-base font-bold text-[#1e2a5a]">
+            先に結論：まずは時期と方位の目安を並べてみる
+          </h2>
+          <p className="mt-2 text-sm leading-relaxed text-slate-700">
+            引越し先を決めるときは、最初に「いつ動けそうか」をざっくり置き、その時期に使いやすい方位の地域から家賃相場を見比べると迷いにくくなります。
+          </p>
+        </section>
+
+        {/* 動画プレースホルダ（外部 iframe は置かず data-shirube-tip="video" で再現） */}
+        <section
+          aria-label="解説動画プレースホルダ"
+          className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm"
+        >
+          <h2 className="text-base font-bold text-[#1e2a5a]">
+            3 分でわかる方位の見方
+          </h2>
+          <div
+            data-shirube-tip="video"
+            data-shirube-perch="video-box"
+            className="mt-3 flex aspect-video max-w-xl flex-col items-center justify-center rounded-xl border border-[#c9a54a]/50 bg-[#1e2a5a] p-6 text-center text-[#faf7f3]"
+          >
+            <span className="inline-flex h-12 w-12 items-center justify-center rounded-full border border-[#c9a54a] bg-[#faf7f3]/10 text-lg text-[#f3d98b]">
+              ▶
+            </span>
+            <p className="mt-3 text-sm font-semibold">
+              解説動画プレースホルダ（外部埋め込みなし・デモ用）
+            </p>
+            <p className="mt-1 text-xs text-[#faf7f3]/75">
+              data-shirube-tip=&quot;video&quot; に合わせてしるべが案内します
+            </p>
+          </div>
+        </section>
+
+        {/* 必須入力フォーム（未入力時の案内と、フォーカス中の回避確認） */}
+        <section
+          aria-label="条件入力デモ"
+          className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm"
+        >
+          <h2 className="text-base font-bold text-[#1e2a5a]">
+            生年月日と出発地の入力（必須フォーム確認）
+          </h2>
+          <p className="mt-1 text-sm text-slate-700">
+            入力欄にフォーカスしている間は吹き出しや移動で邪魔をせず、未入力のまましばらく待つと「次はここを入力してください」と案内します。
+          </p>
+          <form
+            className="mt-4 grid gap-4 sm:grid-cols-3"
+            onSubmit={(e) => {
+              e.preventDefault();
+              setFormSaved(true);
+              recordTap("フォームを保存");
+            }}
+          >
+            <label className="flex flex-col gap-1 text-xs font-semibold text-[#1e2a5a]">
+              生年月日（必須）
+              <input
+                type="date"
+                required
+                value={birthDate}
+                onChange={(e) => {
+                  setBirthDate(e.target.value);
+                  setFormSaved(false);
+                }}
+                className="rounded-lg border border-slate-300 bg-[#faf7f3] px-3 py-2 text-sm text-[#1e2a5a]"
+              />
+            </label>
+            <label className="flex flex-col gap-1 text-xs font-semibold text-[#1e2a5a]">
+              いま住んでいる地域（必須）
+              <select
+                required
+                value={originCity}
+                onChange={(e) => {
+                  setOriginCity(e.target.value);
+                  setFormSaved(false);
+                }}
+                className="rounded-lg border border-slate-300 bg-[#faf7f3] px-3 py-2 text-sm text-[#1e2a5a]"
+              >
+                <option value="">選択してください</option>
+                <option value="tokyo">東京都</option>
+                <option value="osaka">大阪府</option>
+                <option value="fukuoka">福岡県</option>
+              </select>
+            </label>
+            <div className="flex items-end">
+              <button
+                type="submit"
+                data-primary-cta
+                className="w-full rounded-full bg-[#1e2a5a] px-5 py-2.5 text-sm font-semibold text-[#f3d98b] hover:opacity-90"
+              >
+                条件を保存する
+              </button>
+            </div>
+          </form>
+          {formSaved ? (
+            <p className="mt-2 text-xs text-slate-600">
+              デモ上の入力状態を確認しました（外部送信は行いません）。
+            </p>
+          ) : null}
+        </section>
+
+        {/* 横幅のある本文カード（自動床検出の対象） */}
+        <section
+          aria-label="ダミー本文カード"
+          className="grid gap-5 md:grid-cols-3"
+        >
+          {DUMMY_CARDS.map((card) => (
+            <article
+              key={card.id}
+              data-shirube-perch={`card-${card.id}`}
+              className="flex flex-col justify-between rounded-2xl border border-slate-200 bg-white p-5 shadow-sm"
+            >
+              <div className="space-y-2">
+                <p className="text-xs font-semibold tracking-wider text-[#9c7926]">
+                  {card.eyebrow}
+                </p>
+                <h3 className="text-base font-bold text-[#1e2a5a]">
+                  {card.title}
+                </h3>
+                <p className="text-sm leading-relaxed text-slate-700">
+                  {card.body}
+                </p>
+              </div>
+              <div className="mt-5 border-t border-slate-100 pt-3">
+                <button
+                  type="button"
+                  onClick={() => recordTap(card.title)}
+                  className="text-xs font-semibold text-[#1e2a5a] underline decoration-[#c9a54a] underline-offset-4 hover:text-[#9c7926]"
+                >
+                  カードのダミー操作を試す
+                </button>
+              </div>
+            </article>
+          ))}
+        </section>
+
+        {/* 空状態ブロック（data-empty-state の確認） */}
+        <section
+          aria-label="保存した候補の空状態"
+          data-empty-state
+          className="rounded-2xl border border-dashed border-[#c9a54a]/70 bg-[#f8f1dc]/50 p-6 text-center"
+        >
+          <h2 className="text-base font-bold text-[#1e2a5a]">
+            保存した候補（空状態のサンプル）
+          </h2>
+          <p className="mt-1 text-sm text-slate-700">
+            まだ保存した引越し候補はありません。気になる地域や日取りを見つけて追加できます。
+          </p>
+        </section>
 
         {/* すり足しるべの使いどころ（画面下以外に置く小物） */}
         <section
@@ -173,71 +438,7 @@ export function ShirubeDemoClient() {
           </div>
         </section>
 
-        {/* 横幅のあるダミーコンテンツ */}
-        <section
-          aria-label="ダミー本文カード"
-          className="grid gap-5 md:grid-cols-3"
-        >
-          {DUMMY_CARDS.map((card) => (
-            <article
-              key={card.title}
-              className="flex flex-col justify-between rounded-2xl border border-slate-200 bg-white p-5 shadow-sm"
-            >
-              <div className="space-y-2">
-                <p className="text-xs font-semibold tracking-wider text-[#9c7926]">
-                  {card.eyebrow}
-                </p>
-                <h2 className="text-base font-bold text-[#1e2a5a]">
-                  {card.title}
-                </h2>
-                <p className="text-sm leading-relaxed text-slate-700">
-                  {card.body}
-                </p>
-              </div>
-              <div className="mt-5 pt-3 border-t border-slate-100">
-                <button
-                  type="button"
-                  onClick={() => recordTap(card.title)}
-                  className="text-xs font-semibold text-[#1e2a5a] underline decoration-[#c9a54a] underline-offset-4 hover:text-[#9c7926]"
-                >
-                  カードのダミー操作を試す
-                </button>
-              </div>
-            </article>
-          ))}
-        </section>
-
-        {/* 広い余白と仕様メモ */}
-        <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-          <h2 className="text-base font-bold text-[#1e2a5a]">
-            確認ポイント（タップ領域・スマホ幅・reduced-motion）
-          </h2>
-          <dl className="mt-4 grid gap-4 text-sm sm:grid-cols-2">
-            <div className="rounded-xl border border-slate-200 bg-[#faf7f3] p-4">
-              <dt className="font-semibold text-[#1e2a5a]">
-                タップ・クリックを塞がない
-              </dt>
-              <dd className="mt-1 leading-relaxed text-slate-700">
-                しるべのステージ全体は{" "}
-                <code className="rounded bg-white px-1 py-0.5 text-xs">
-                  pointer-events: none
-                </code>{" "}
-                です。下端や角のボタンがしるべの背後になってもそのまま押せます。
-              </dd>
-            </div>
-            <div className="rounded-xl border border-slate-200 bg-[#faf7f3] p-4">
-              <dt className="font-semibold text-[#1e2a5a]">
-                reduced-motion 時は静止表示
-              </dt>
-              <dd className="mt-1 leading-relaxed text-slate-700">
-                OS が「視差効果を減らす」設定のとき（または上のトグル ON
-                時）はアニメーションを一切回さず、右下端に静かに佇みます。
-              </dd>
-            </div>
-          </dl>
-        </section>
-
-        {/* 下部・角のサンプルボタンとリンク（操作が塞がれていないことの確認用） */}
+        {/* 下部の操作確認エリア */}
         <section
           aria-label="下部の操作確認エリア"
           className="rounded-2xl border border-[#c9a54a]/50 bg-white p-6 shadow-sm"
@@ -248,13 +449,14 @@ export function ShirubeDemoClient() {
             </h2>
             <p
               aria-live="polite"
-              className="rounded-full bg-[#faf7f3] px-3 py-1 text-xs font-medium text-[#1e2a5a] border border-slate-200"
+              className="rounded-full border border-slate-200 bg-[#faf7f3] px-3 py-1 text-xs font-medium text-[#1e2a5a]"
             >
               操作確認（{tapCount} 回）: {tapLog}
             </p>
           </div>
           <p className="mt-2 text-sm text-slate-700">
-            しるべが画面最下端を歩いていても、以下の下部ボタンやリンクが問題なく押せることを確かめられます。
+            ステージ全体は pointer-events: none
+            のため、しるべ本体と吹き出し以外の場所にあるボタンやリンクはそのまま押せます。
           </p>
 
           <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -285,24 +487,6 @@ export function ShirubeDemoClient() {
         </section>
       </div>
 
-      {/* 画面下端の四隅にもダミー操作を置いて、最下端でも塞がれないことを確かめる */}
-      <div className="pointer-events-none fixed inset-x-0 bottom-3 z-20 mx-auto flex max-w-5xl items-center justify-between px-4 sm:px-6 lg:px-8">
-        <button
-          type="button"
-          onClick={() => recordTap("最下端・左角ボタン")}
-          className="pointer-events-auto rounded-full border border-[#c9a54a] bg-white/95 px-3.5 py-1.5 text-xs font-semibold text-[#1e2a5a] shadow-sm hover:bg-[#f8f1dc]"
-        >
-          左角テストボタン
-        </button>
-        <button
-          type="button"
-          onClick={() => recordTap("最下端・右角ボタン")}
-          className="pointer-events-auto rounded-full border border-[#1e2a5a]/40 bg-white/95 px-3.5 py-1.5 text-xs font-semibold text-[#1e2a5a] shadow-sm hover:bg-[#f8f1dc]"
-        >
-          右角テストボタン
-        </button>
-      </div>
-
       {showFixedCta ? (
         <div
           data-shirube-avoid
@@ -320,6 +504,7 @@ export function ShirubeDemoClient() {
 
       <ShirubeWanderer
         gait={gait}
+        seed={fixSeed ? 42 : undefined}
         forceReducedMotion={stopMotionToggle ? true : undefined}
         onStatusChange={setSnapshot}
       />
