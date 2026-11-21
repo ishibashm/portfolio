@@ -32,7 +32,7 @@
 ### 床の検出ルール（`shirubePerch.ts`）
 
 - 画面最下端（`id: "bottom"`）は常に床として含みます。画面下の固定 CTA（`[data-shirube-avoid]` や下端の `fixed / sticky` 操作要素）と `safe-area-inset-bottom` を避けて持ち上げます。
-- 追加の床は明示属性 `[data-shirube-perch]` と既定セレクタ（`main h2`, `main h3`, `main article`, `main section > div[class*="rounded"]`, `main button`, `main a[class*="rounded-full"]`）から自動検出します。
+- 追加の床は明示属性 `[data-shirube-perch]` と既定セレクタ（`main h2`, `main article`, `main section[class*="rounded"]`, `main section > div[class*="rounded"]`）から自動検出します。ボタンやリンクは文字を隠しやすく押す邪魔にもなるので、既定では床にしません（必要なら `data-shirube-perch` を付けます）。
 - 以下の要素は床から除外し、上にも重なりません:
   - 非表示要素、ステージ内要素、`[data-shirube-avoid]` 内要素
   - `button[type="submit"]`、`[data-primary-cta]`、フォーカス中の入力欄

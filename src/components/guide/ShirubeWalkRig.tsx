@@ -31,13 +31,13 @@ export type ShirubeWalkPart =
 const SIZES = "(min-width: 640px) 59px, 30px";
 const POINTING_SIZES = "(min-width: 640px) 98px, 50px";
 
-/** 素材の 128px / 240px 版の横幅（px）。横向き 517、正面 503 の原寸から。 */
+/** 素材の 128px / 240px 版の横幅（px）。横向き 517、正面 533 の原寸から。 */
 const WIDTHS: Record<ShirubeWalkPart, [number, number]> = {
   "leg-far": [62, 117],
   "leg-near": [62, 117],
   body: [62, 117],
-  "front-body": [61, 114],
-  "front-hand": [61, 114],
+  "front-body": [64, 120],
+  "front-hand": [64, 120],
 };
 
 function srcSet(part: ShirubeWalkPart, ext: "webp" | "png") {

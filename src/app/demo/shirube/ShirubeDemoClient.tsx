@@ -46,6 +46,13 @@ export function ShirubeDemoClient() {
   const [showFixedCta, setShowFixedCta] = useState(false);
   const [gait, setGait] = useState<"rig" | "shuffle">("rig");
   const [fixSeed, setFixSeed] = useState(false);
+  // ?tour=1 のときだけ、録画・確認用に自動案内の間隔を短くする（本番の既定は 45 秒）
+  const [tour, setTour] = useState(false);
+  useEffect(() => {
+    // URL はマウント後にしか読めないので、ここで一度だけ反映する
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setTour(new URLSearchParams(window.location.search).get("tour") === "1");
+  }, []);
   const osReduced = usePrefersReducedMotion();
 
   const [snapshot, setSnapshot] = useState<ShirubeWanderSnapshot>({
@@ -505,6 +512,8 @@ export function ShirubeDemoClient() {
       <ShirubeWanderer
         gait={gait}
         seed={fixSeed ? 42 : undefined}
+        autoTipMinIntervalMs={tour ? 9000 : undefined}
+        enterTipDelayMs={tour ? 2500 : undefined}
         forceReducedMotion={stopMotionToggle ? true : undefined}
         onStatusChange={setSnapshot}
       />

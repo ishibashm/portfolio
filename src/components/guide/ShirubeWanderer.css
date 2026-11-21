@@ -137,16 +137,16 @@
 }
 
 /* 横向きの体の中心（素材幅の 44%）に、正面の体の中心（50%）を合わせる。
-   正面の素材は横向きより少し細い（503 / 517）。 */
+   正面の素材は振る手のぶん横向きより少し広い（533 / 517）。体の中心は素材幅の 48.62%。 */
 .shirube-rig-front {
   position: absolute;
   bottom: 0;
-  left: -4.74%;
-  width: 97.3%;
+  left: -5.82%;
+  width: 103.09%;
   height: 100%;
   display: block;
   opacity: 0;
-  transform-origin: 50% 100%;
+  transform-origin: 48.62% 100%;
 }
 
 /* 親（.shirube-wander-flip）の左右反転を打ち消し、正面はいつも同じ手で振る */
@@ -164,7 +164,7 @@
 
 /* 手首（袖口の少し上）を軸に手を振る */
 .shirube-rig-front-hand {
-  transform-origin: 82.68% 41.06%;
+  transform-origin: 79.81% 39.66%;
 }
 
 /* ---- 指さし案内ポーズ（公式イラスト） ---------------------------------- */

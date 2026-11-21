@@ -359,11 +359,11 @@ export function pickNextRoamAction(
   random: () => number = Math.random,
 ): WanderActionKind {
   const baseWeights: { action: WanderActionKind; weight: number }[] = [
-    { action: "walk", weight: options.canWalk ? 36 : 0 },
-    { action: "hop", weight: options.canHop ? 30 : 0 },
+    { action: "walk", weight: options.canWalk ? 44 : 0 },
+    { action: "hop", weight: options.canHop ? 18 : 0 },
     { action: "greet", weight: options.canGreet ? 14 : 0 },
-    { action: "sit", weight: options.canSit ? 12 : 0 },
-    { action: "pause", weight: 8 },
+    { action: "sit", weight: options.canSit ? 14 : 0 },
+    { action: "pause", weight: 10 },
   ];
 
   const last = recentActions[recentActions.length - 1];
@@ -395,12 +395,29 @@ export function pickHopTargetPerch(
   currentPerchId: string,
   lastPerchId: string | null,
   random: () => number = Math.random,
+  near?: { x: number; y: number; maxDx?: number; maxDy?: number },
 ): Perch | null {
   const candidates = perches.filter((p) => p.id !== currentPerchId);
   if (candidates.length === 0) return null;
 
   const fresh = candidates.filter((p) => p.id !== lastPerchId);
-  const pool = fresh.length > 0 ? fresh : candidates;
+  let pool = fresh.length > 0 ? fresh : candidates;
+  // 気ままな飛び移りは「届きそうな」近くの床だけにする（画面の端から端へ飛ばない）
+  if (near) {
+    const maxDx = near.maxDx ?? 380;
+    const maxDy = near.maxDy ?? 320;
+    const reachable = pool.filter((p) => {
+      const dx =
+        near.x < p.left
+          ? p.left - near.x
+          : near.x > p.right
+            ? near.x - p.right
+            : 0;
+      return dx <= maxDx && Math.abs(p.top - near.y) <= maxDy;
+    });
+    if (reachable.length > 0) pool = reachable;
+    else return null;
+  }
   const idx = Math.min(pool.length - 1, Math.floor(random() * pool.length));
   return pool[idx] ?? null;
 }
@@ -636,6 +653,9 @@ function transitionToNextRoamAction(
       currentPerch.id,
       state.lastPerchId,
       random,
+      mustLeavePerch
+        ? undefined
+        : { x: state.x + roam.actorWidth * 0.5, y: state.y },
     );
     if (nextPerch) {
       const toX = pickPerchLandingX(nextPerch, roam.actorWidth, random);

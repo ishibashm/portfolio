@@ -368,3 +368,33 @@ describe("shirubeTips（ルート一致・対象解決・頻度制限・文章�
     expect(canShowAutoTip(state, t + 100_000, cfg, { tipId: "g" })).toBe(false);
   });
 });
+
+describe("気ままな飛び移りは近くの床だけ", () => {
+  it("near を渡すと横に遠すぎる床は選ばない", async () => {
+    const { pickHopTargetPerch } =
+      await import("@/components/guide/shirubeWanderLogic");
+    const perches = [
+      { id: "bottom", left: 0, right: 1200, top: 800, kind: "bottom" as const },
+      {
+        id: "far",
+        left: 1000,
+        right: 1200,
+        top: 500,
+        kind: "element" as const,
+      },
+      { id: "near", left: 200, right: 500, top: 600, kind: "element" as const },
+    ];
+    for (const r of [0, 0.5, 0.99]) {
+      expect(
+        pickHopTargetPerch(perches, "bottom", null, () => r, { x: 300, y: 800 })
+          ?.id,
+      ).toBe("near");
+    }
+    expect(
+      pickHopTargetPerch(perches.slice(0, 2), "bottom", null, () => 0.5, {
+        x: 100,
+        y: 800,
+      }),
+    ).toBeNull();
+  });
+});

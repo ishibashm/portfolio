@@ -55,12 +55,11 @@ export interface FindPerchesOptions {
 export const DEFAULT_PERCH_SELECTORS = [
   "[data-shirube-perch]",
   "main h2",
-  "main h3",
   "main article",
+  'main section[class*="rounded"]',
   'main section > div[class*="rounded"]',
-  "main button",
-  'main a[class*="rounded-full"]',
 ] as const;
+// ボタンやリンクの上は文字を隠しやすく、押したい人の邪魔にもなるので既定の床にしない。
 
 const AVOID_RECT_SELECTOR = [
   "[data-shirube-avoid]",
