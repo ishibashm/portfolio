@@ -6,6 +6,7 @@ import { TOKYO_ORIGIN, type Origin } from "@/lib/todayWeather/origin";
  *
  * サーバーで描くだけで、入力・位置情報・ブラウザの JavaScript を使わない。
  */
+import { Fragment } from "react";
 import Link from "next/link";
 import {
   NationalWeatherMap,
@@ -16,6 +17,7 @@ import {
   type CityDirections,
 } from "@/components/home/NationalWeather";
 import { STAR_NAMES } from "@/lib/kigakuContent";
+import { buildLoveFortuneFromBoard } from "@/lib/loveFortune";
 import { buildTodayBoard, type TodayBoard } from "@/lib/todayDirections";
 import {
   directionFromOrigin,
@@ -154,6 +156,10 @@ export function TodayOverviewCard({
 }) {
   const directions = cityDirectionsFor(data, board, origin);
   const groups = citiesByDirection(data, origin);
+  const loveFortune = buildLoveFortuneFromBoard(board);
+  const loveByStar = new Map(
+    loveFortune.items.map((item) => [item.star, item]),
+  );
   const redCities = (data?.cities ?? []).filter(
     (city) => directions[city.prefectureCode]?.unlucky,
   );
@@ -218,10 +224,39 @@ export function TodayOverviewCard({
               </div>
             </div>
           </div>
-          <div className="overflow-x-auto">
+          <div>
             <table className="w-full text-left text-xs">
-              <caption className="text-left font-semibold">
-                本命星別の今日の吉方位と、その先の天気
+              <caption className="pb-1 text-left font-semibold">
+                <span className="block">
+                  本命星別の今日の吉方位と、その先の天気
+                </span>
+                <span className="mt-0.5 inline-flex items-center gap-1 text-xs font-medium text-slate-700">
+                  <svg
+                    aria-hidden="true"
+                    viewBox="0 0 20 20"
+                    className="h-4 w-4 shrink-0 text-slate-800"
+                    fill="none"
+                  >
+                    <circle
+                      cx="10"
+                      cy="10"
+                      r="8.5"
+                      stroke="currentColor"
+                      strokeWidth="1.4"
+                    />
+                    <path
+                      d="M10 1.8v2.2M10 16v2.2M1.8 10H4M16 10h2.2"
+                      stroke="currentColor"
+                      strokeWidth="1.4"
+                      strokeLinecap="round"
+                    />
+                    <path
+                      d="M10 13.8s-3.6-2.2-3.6-4.7a2.1 2.1 0 0 1 3.6-1.45A2.1 2.1 0 0 1 13.6 9.1c0 2.5-3.6 4.7-3.6 4.7Z"
+                      fill="#e11d48"
+                    />
+                  </svg>
+                  今日の恋愛の目安（各行の下段）
+                </span>
               </caption>
               <thead>
                 <tr>
@@ -239,33 +274,60 @@ export function TodayOverviewCard({
               <tbody>
                 {board.stars.map((star) => {
                   const weather = luckyWeather(star.lucky, groups);
+                  const love = loveByStar.get(star.star);
                   return (
-                    <tr key={star.star} className="border-t border-slate-200">
-                      <th scope="row" className="whitespace-nowrap px-1.5 py-1">
-                        {star.name}
-                      </th>
-                      <td className="whitespace-nowrap px-1.5 py-1">
-                        {star.lucky.length
-                          ? star.lucky
-                              .map((direction) => DIRECTION_LABELS[direction])
-                              .join("・")
-                          : "なし"}
-                      </td>
-                      <td className="px-1.5 py-1">
-                        {weather.length ? (
-                          weather.map((part) => (
-                            <span
-                              key={part}
-                              className="block whitespace-nowrap"
+                    <Fragment key={star.star}>
+                      <tr className="border-t border-slate-200">
+                        <th
+                          scope="row"
+                          className="whitespace-nowrap px-1.5 py-1"
+                        >
+                          {love ? (
+                            <Link
+                              href={love.href}
+                              className="underline decoration-slate-300 hover:text-rose-600"
                             >
-                              {part}
+                              {star.name}
+                            </Link>
+                          ) : (
+                            star.name
+                          )}
+                        </th>
+                        <td className="whitespace-nowrap px-1.5 py-1">
+                          {star.lucky.length
+                            ? star.lucky
+                                .map((direction) => DIRECTION_LABELS[direction])
+                                .join("・")
+                            : "なし"}
+                        </td>
+                        <td className="px-1.5 py-1">
+                          {weather.length ? (
+                            weather.map((part) => (
+                              <span
+                                key={part}
+                                className="block whitespace-nowrap"
+                              >
+                                {part}
+                              </span>
+                            ))
+                          ) : (
+                            <span className="text-slate-500">
+                              地図の都市なし
                             </span>
-                          ))
-                        ) : (
-                          <span className="text-slate-500">地図の都市なし</span>
-                        )}
-                      </td>
-                    </tr>
+                          )}
+                        </td>
+                      </tr>
+                      {love ? (
+                        <tr>
+                          <td
+                            colSpan={3}
+                            className="px-1.5 pb-2 pt-0.5 text-[11px] leading-relaxed text-slate-700"
+                          >
+                            {love.text}
+                          </td>
+                        </tr>
+                      ) : null}
+                    </Fragment>
                   );
                 })}
               </tbody>
@@ -284,7 +346,12 @@ export function TodayOverviewCard({
               >
                 早見
               </Link>
-              <span className="text-slate-600">で分かります</span>
+              <span className="text-slate-600">
+                で分かります（本命星は立春が年の境目で、1月1日から立春前の生まれは前年の星です）。
+              </span>
+            </p>
+            <p className="mt-1 text-xs text-slate-600">
+              これは占い上の目安で、伝統的な見方です。的中や成果を保証しません。
             </p>
           </div>
         </aside>
