@@ -1082,13 +1082,14 @@ export function stepWanderState(
   roam?: RoamContext,
 ): WanderState {
   // タブ復帰時などの大きなフレーム飛びを抑える（タイマー駆動時はそのまま渡せるよう
-  // 移動・ホップフェーズのみ 100ms 上限を掛ける）
+  // 移動・ホップフェーズのみ 250ms 上限を掛ける）。上限が小さすぎると、重い端末で
+  // コマ数が落ちたときにしるべの時間だけゆっくり進み、定位置へなかなか戻らなくなる。
   const isMovingPhase =
     prev.phase === "walking" ||
     prev.phase === "hopping" ||
     prev.phase === "stepping";
   const dt = isMovingPhase
-    ? Math.min(Math.max(0, deltaMs), 100)
+    ? Math.min(Math.max(0, deltaMs), 250)
     : Math.max(0, deltaMs);
   if (dt === 0) return prev;
 

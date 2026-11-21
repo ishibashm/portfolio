@@ -790,7 +790,7 @@ describe("定位置は画面右下の端（離れても 10〜20 秒で戻る）"
 
   it("戻るときも向きは進む方向（ムーンウォークしない）", async () => {
     for (const seed of [2, 9, 31]) {
-      for (const dt of [16, 100]) {
+      for (const dt of [16, 100, 250]) {
         const { frames } = await simulateHome(seed, 180, dt);
         for (let i = 1; i < frames.length; i += 1) {
           const dx = frames[i].x - frames[i - 1].x;

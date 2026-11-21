@@ -1175,7 +1175,7 @@ export function ShirubeWanderer({
       }
     };
 
-    const scheduleNext = (state: WanderState) => {
+    const scheduleNext = (state: WanderState, fromTick = false) => {
       if (disposed || document.visibilityState === "hidden") return;
       const needsRaf =
         state.phase === "walking" ||
@@ -1183,7 +1183,10 @@ export function ShirubeWanderer({
         state.phase === "stepping";
       if (needsRaf) {
         if (!rafId) {
-          lastTs = performance.now();
+          // rAF の続きのときは、そのコマの時刻（tick で入れた lastTs）をそのまま使う。
+          // ここで now を入れ直すと、毎コマの処理時間ぶん時間が抜け落ち、
+          // 重い端末ほどしるべがゆっくり歩いてしまう（録画中は約 6 割の速さだった）。
+          if (!fromTick) lastTs = performance.now();
           rafId = window.requestAnimationFrame(tick);
         }
         return;
@@ -1237,7 +1240,7 @@ export function ShirubeWanderer({
       stateRef.current = next;
       applyTransform(next, d.height);
       syncVisual(next);
-      scheduleNext(next);
+      scheduleNext(next, true);
     };
 
     const resumeEngine = () => {
