@@ -64,12 +64,14 @@ describe("PR-B: 検索意図を先頭に置くメタデータ", () => {
       title: `${areaMetadata.title} | Cloud Palette`,
       description: areaMetadata.description,
     });
-    expect(todayMetadata.title).toMatch(/^今日の吉方位と時間/);
+    expect(todayMetadata.title).toBe(
+      "今日の方位を時間別に見る｜本命星別の日盤と十二支",
+    );
     expect(todayMetadata.openGraph).toMatchObject({
       title: `${todayMetadata.title} | Cloud Palette`,
     });
     expect(dashboardMetadata.title).toBe(
-      "今日の吉方位と時間帯を生年月日で確認｜目的地の方位と真太陽時",
+      "生年月日で今日の方位・時間帯を確認｜目的地と真太陽時",
     );
     expect(dashboardMetadata.openGraph).toMatchObject({
       title: `${dashboardMetadata.title} | Cloud Palette`,
