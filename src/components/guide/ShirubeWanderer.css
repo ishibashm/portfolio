@@ -167,35 +167,10 @@
   transform-origin: 79.81% 39.66%;
 }
 
-/* ---- 指さし案内ポーズ（公式イラスト） ---------------------------------- */
-
-.shirube-rig-pointing {
-  position: absolute;
-  bottom: 0;
-  left: 50%;
-  height: 100%;
-  aspect-ratio: 240 / 296;
-  /* 元絵は左を指している。親 .shirube-wander-flip の反転と合わせ、
-     左向き時はそのまま左を指し、右向き時は反転して右を指すようにする。 */
-  transform: translateX(-50%) scaleX(-1);
-  transform-origin: 50% 100%;
-  opacity: 0;
-  pointer-events: none;
-}
-
-.shirube-rig-pointing-pic,
-.shirube-rig-pointing-pic img {
-  display: block;
-  width: 100%;
-  height: 100%;
-  object-fit: contain;
-  user-select: none;
-  -webkit-user-drag: none;
-}
-
 /* 正面を向いている間（greeting / sitting）と静止時は正面の絵を見せる */
 .shirube-wander-stage[data-state="greeting"] .shirube-rig-front,
 .shirube-wander-stage[data-state="sitting"] .shirube-rig-front,
+.shirube-wander-stage[data-state="pointing"] .shirube-rig-front,
 .shirube-wander-stage[data-motion="reduced"] .shirube-rig-front {
   opacity: 1;
 }
@@ -212,13 +187,15 @@
   transform: translateY(3%) scale(1.02, 0.96);
 }
 
-/* 指さし案内（pointing）は公式の指さしイラストを表示する */
-.shirube-wander-stage[data-state="pointing"] .shirube-rig-pointing {
-  opacity: 1;
+/* 指さし案内（pointing）は正面のまま、案内したい物の側の手を挙げる。
+   左にある物を示すときは正面ごと反転させ、挙げた手が左に来るようにする。 */
+.shirube-wander-stage[data-state="pointing"][data-facing="left"]
+  .shirube-rig-front {
+  transform: none;
 }
 
-.shirube-wander-stage[data-state="pointing"] .shirube-rig-front {
-  opacity: 0;
+.shirube-wander-stage[data-state="pointing"] .shirube-rig-front-hand {
+  transform: rotate(-14deg);
 }
 
 /* ---- すり足（4 コマのスプライト） --------------------------------------- */
@@ -738,9 +715,29 @@
 
   /* 横向き ⇔ 正面 ⇔ 指さしの切り替えは 160ms のクロスフェード */
   .shirube-rig-side,
-  .shirube-rig-front,
-  .shirube-rig-pointing {
+  .shirube-rig-front {
     transition: opacity 160ms ease-out;
+  }
+
+  /* 指さし中は手を挙げたまま、小さく「こちら」と動かす */
+  .shirube-wander-stage[data-motion="active"][data-state="pointing"]
+    .shirube-rig-front-hand {
+    animation: shirube-front-point 1.6s ease-in-out infinite;
+  }
+
+  .shirube-wander-stage[data-motion="active"][data-state="pointing"]
+    .shirube-rig-front-hop {
+    animation: shirube-front-hop 380ms ease-out 1 both;
+  }
+
+  @keyframes shirube-front-point {
+    0%,
+    100% {
+      transform: rotate(-14deg);
+    }
+    50% {
+      transform: rotate(-6deg);
+    }
   }
 
   /* 正面を向いたら小さく弾んでから、呼吸しながら手を振る */
