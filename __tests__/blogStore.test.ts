@@ -80,7 +80,29 @@ vi.mock("@/lib/blog", async () => {
               readingMinutes: 1,
               body: "ログ本文",
             }
-          : undefined,
+          : slug === "video-added-in-md"
+            ? {
+                slug: "video-added-in-md",
+                title: "動画つき記事",
+                description: "md",
+                publishedAt: "2026-08-10",
+                updatedAt: undefined,
+                category: "引越しの考え方",
+                tags: ["a"],
+                draft: false,
+                readingMinutes: 3,
+                youtubeId: "dQw4w9WgXcQ",
+                body: [
+                  "結論の段落です。",
+                  "",
+                  "::youtube",
+                  "",
+                  "## なぜ 3 月に開かないのか",
+                  "",
+                  "Markdown 側の説明。",
+                ].join("\n"),
+              }
+            : undefined,
   };
 });
 
@@ -386,6 +408,87 @@ describe("loadBlogPost", () => {
       .mockResolvedValueOnce(null) // その slug の行は無い
       .mockResolvedValueOnce({ slug: "other" }); // だが DB は空ではない
     expect(await loadBlogPost("from-markdown")).toBeUndefined();
+  });
+
+  it("Markdown にだけ ::youtube があるときは DB 本文の該当見出し直前に 1 つだけ挿入する", async () => {
+    findFirst.mockResolvedValue({
+      ...dbRow,
+      slug: "video-added-in-md",
+      content: [
+        "結論の段落です。管理画面で足した一文。",
+        "",
+        "## なぜ 3 月に開かないのか",
+        "",
+        "DB 側の説明。",
+      ].join("\n"),
+    });
+    const post = await loadBlogPost("video-added-in-md");
+
+    expect(post?.youtubeId).toBe("dQw4w9WgXcQ");
+    expect(post?.body).toContain("管理画面で足した一文。");
+    expect(post?.body).toContain("DB 側の説明。");
+    expect(post?.body).not.toContain("Markdown 側の説明。");
+    const lines = post?.body.split("\n") ?? [];
+    const directiveIndices = lines
+      .map((line, i) => (line.trim() === "::youtube" ? i : -1))
+      .filter((i) => i !== -1);
+    expect(directiveIndices).toHaveLength(1);
+    const headingIndex = lines.indexOf("## なぜ 3 月に開かないのか");
+    expect(headingIndex).toBeGreaterThan(directiveIndices[0]);
+    expect(post?.body).toContain(
+      "結論の段落です。管理画面で足した一文。\n\n::youtube\n\n## なぜ 3 月に開かないのか",
+    );
+  });
+
+  it("DB 本文にすでに ::youtube があるときは二重挿入しない", async () => {
+    const content = [
+      "導入です。",
+      "",
+      "::youtube",
+      "",
+      "## なぜ 3 月に開かないのか",
+      "",
+      "DB 側の説明。",
+    ].join("\n");
+    findFirst.mockResolvedValue({
+      ...dbRow,
+      slug: "video-added-in-md",
+      content,
+    });
+    const post = await loadBlogPost("video-added-in-md");
+
+    expect(post?.youtubeId).toBe("dQw4w9WgXcQ");
+    expect(post?.body).toBe(content);
+  });
+
+  it("直後の見出しが DB 本文に無いときもフォールバックで 1 回だけ入り本文は置き換わらない", async () => {
+    findFirst.mockResolvedValue({
+      ...dbRow,
+      slug: "video-added-in-md",
+      content: [
+        "導入です。管理画面の文言。",
+        "",
+        "## 別の見出し",
+        "",
+        "DB 側の説明。",
+      ].join("\n"),
+    });
+    const post = await loadBlogPost("video-added-in-md");
+
+    expect(post?.youtubeId).toBe("dQw4w9WgXcQ");
+    expect(post?.body).toContain("管理画面の文言。");
+    expect(post?.body).not.toContain("Markdown 側の説明。");
+    expect(post?.body).toBe(
+      [
+        "導入です。管理画面の文言。",
+        "",
+        "::youtube",
+        "",
+        "## 別の見出し",
+        "",
+        "DB 側の説明。",
+      ].join("\n"),
+    );
   });
 });
 

@@ -117,19 +117,141 @@ function toBlogPost(row: {
   };
 }
 
+type FenceState = { char: "`" | "~"; length: number } | null;
+
+function updateFence(line: string, fence: FenceState): FenceState {
+  const match = /^ {0,3}(`{3,}|~{3,})(.*)$/.exec(line);
+  if (!match) return fence;
+  const marker = match[1];
+  const rest = match[2];
+  const char = marker[0] as "`" | "~";
+  if (!fence) {
+    if (char === "`" && rest.includes("`")) return fence;
+    return { char, length: marker.length };
+  }
+  if (
+    fence.char === char &&
+    marker.length >= fence.length &&
+    /^[ \t]*$/.test(rest)
+  ) {
+    return null;
+  }
+  return fence;
+}
+
+function parseAtxHeading(line: string): string | null {
+  const match = /^ {0,3}#{1,6}[ \t]+(.+?)[ \t]*$/.exec(line);
+  if (!match) return null;
+  return match[1].replace(/[ \t]+#+$/, "").trim();
+}
+
+function scanMarkdownStructure(body: string): {
+  lines: string[];
+  directiveIndex: number;
+  headings: { lineIndex: number; text: string }[];
+} {
+  const lines = body.split(/\r?\n/);
+  let fence: FenceState = null;
+  let directiveIndex = -1;
+  const headings: { lineIndex: number; text: string }[] = [];
+
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+    const nextFence = updateFence(line, fence);
+    if (nextFence !== fence) {
+      fence = nextFence;
+      continue;
+    }
+    if (fence) continue;
+
+    if (directiveIndex === -1 && line.trim() === "::youtube") {
+      directiveIndex = i;
+      continue;
+    }
+    const heading = parseAtxHeading(line);
+    if (heading !== null) {
+      headings.push({ lineIndex: i, text: heading });
+    }
+  }
+
+  return { lines, directiveIndex, headings };
+}
+
+/**
+ * DB 本文に `::youtube` が無く、Markdown 本文にスタンドアロンの `::youtube`
+ * があるときだけ、DB 本文の文言を残したままディレクティブ 1 行を差し込む。
+ */
+function insertYoutubeDirective(dbBody: string, mdBody: string): string {
+  const md = scanMarkdownStructure(mdBody);
+  if (md.directiveIndex === -1) return dbBody;
+
+  const db = scanMarkdownStructure(dbBody);
+  if (db.directiveIndex !== -1) return dbBody;
+
+  const nextHeading = md.headings.find((h) => h.lineIndex > md.directiveIndex);
+  let prevHeading: { lineIndex: number; text: string } | undefined;
+  for (const h of md.headings) {
+    if (h.lineIndex < md.directiveIndex) prevHeading = h;
+    else break;
+  }
+
+  let insertAt: number | undefined;
+  if (nextHeading) {
+    const matched = db.headings.find((h) => h.text === nextHeading.text);
+    if (matched) insertAt = matched.lineIndex;
+  }
+  if (insertAt === undefined && prevHeading) {
+    const prevIdx = db.headings.findIndex((h) => h.text === prevHeading.text);
+    if (prevIdx !== -1) {
+      insertAt =
+        prevIdx + 1 < db.headings.length
+          ? db.headings[prevIdx + 1].lineIndex
+          : db.lines.length;
+    }
+  }
+  if (insertAt === undefined) {
+    insertAt =
+      db.headings.length > 0 ? db.headings[0].lineIndex : db.lines.length;
+  }
+
+  const before = db.lines.slice(0, insertAt);
+  const after = db.lines.slice(insertAt);
+  while (before.length > 0 && before[before.length - 1].trim() === "") {
+    before.pop();
+  }
+  while (after.length > 0 && after[0].trim() === "") {
+    after.shift();
+  }
+
+  const parts: string[] = [];
+  if (before.length > 0) parts.push(before.join("\n"));
+  parts.push("::youtube");
+  if (after.length > 0) parts.push(after.join("\n"));
+  return parts.join("\n\n");
+}
+
 /**
  * 動画の項目は DB に列が無い。取り込みで落ちるので、同じ slug の
  * Markdown frontmatter から補う（無ければそのまま）。
+ * あとから Markdown だけに `::youtube` を足した記事は、DB 本文にも
+ * ディレクティブ 1 行だけを差し込む。
  */
 function withMarkdownVideo(
   post: BlogPost,
-  md: BlogPostSummary | MarkdownVideoMeta | undefined = getMarkdownBlogPost(
-    post.slug,
-  ),
+  md:
+    | BlogPost
+    | BlogPostSummary
+    | MarkdownVideoMeta
+    | undefined = getMarkdownBlogPost(post.slug),
 ): BlogPost {
   if (!md?.youtubeId) return post;
+  const body =
+    "body" in md && typeof md.body === "string"
+      ? insertYoutubeDirective(post.body, md.body)
+      : post.body;
   return {
     ...post,
+    body,
     youtubeId: md.youtubeId,
     videoUploadDate: md.videoUploadDate,
     videoDuration: md.videoDuration,
@@ -296,7 +418,7 @@ export const loadBlogPageData = cache(async function loadBlogPageData(
       const post = posts.find((item) => item.slug === slug);
       if (!post) return { post: undefined, related: [] };
       return {
-        post,
+        post: withMarkdownVideo(post),
         related: posts
           .filter((item) => isListedBlogSlug(item.slug))
           .map(toSummary),
