@@ -12,9 +12,9 @@ import { TodayFortunePanel } from "@/components/houi/TodayFortunePanel";
 import { parseBirthYearParam } from "@/lib/todayWeather/birthYear";
 
 // 生まれ年を searchParams から読むため、訪問ごとに描画される。
-const title = "今日の吉方位と時間別の方位｜本命星別の日盤と十二支";
+const title = "今日の方位を時間別に見る｜本命星別の日盤と十二支";
 const description =
-  "今日と明日の吉方位と、十二支ごとの時間別の方位を本命星別に確認できます。五黄殺・暗剣殺・日破は全員に凶として表示し、日本時間の日付で更新します。";
+  "本命星を選ぶと、今日と明日の吉方位・避けたい方位と、十二支ごとの時間別の方位が分かります。五黄殺・暗剣殺・日破は全員に凶として表示し、日本時間の日付で更新します。時間帯は東京基準の真太陽時で区切ります。方位の吉凶は占い上の目安です。";
 export const metadata: Metadata = {
   title,
   description,
@@ -53,18 +53,13 @@ export default async function TodayPage({ searchParams }: Props = {}) {
         ]}
       />
       <article className="mx-auto max-w-5xl space-y-6">
-        <TodayFortunePanel
-          birthYear={birthYear}
-          invalidBirthYear={invalidBirthYear}
-          stars={data.stars}
-        />
         <CurrentDirections />
         <header className="space-y-3">
           <h1 className="font-serif text-3xl font-bold">
             今日の吉方位と時間別の方位
           </h1>
-          <p className="font-bold">
-            本命星を選ぶと、今日の吉方位と避けたい方位が分かります。
+          <p className="text-sm leading-relaxed">
+            今日の方位は、本命星ごとの日盤で見られます。時間別の方位は、十二支の刻（約2時間）ごとの時盤です。このページは本命星を選ぶ早見表で、日本時間の日付で今日と明日を出します。五黄殺・暗剣殺・日破は、本命星にかかわらず凶です。時盤の吉でも、その日の日盤が凶なら凶を優先します。時間帯の区切りは東京（東経139.6917度）の真太陽時で、時刻は日本標準時です。これは占い上の目安で、効果を保証するものではありません。月命星と個人の天中殺は含みません。
           </p>
           <p className="text-sm">
             生年月日と場所で今日の方位を確かめるときは
@@ -76,9 +71,6 @@ export default async function TodayPage({ searchParams }: Props = {}) {
             </Link>
             を使ってください。
           </p>
-          <p className="text-sm">
-            五黄殺・暗剣殺・日破は、本命星にかかわらず凶です。
-          </p>
           <p className="text-sm text-slate-600">
             表示対象：<time dateTime={data.date}>{data.date}</time>
             （日本時間・Asia/Tokyo）。開くたびに日本時間の日付で計算します。
@@ -87,6 +79,11 @@ export default async function TodayPage({ searchParams }: Props = {}) {
             本命星が分からない方はこちら
           </Link>
         </header>
+        <TodayFortunePanel
+          birthYear={birthYear}
+          invalidBirthYear={invalidBirthYear}
+          stars={data.stars}
+        />
         <section aria-labelledby="stars-heading" className="space-y-3">
           <h2 id="stars-heading" className="text-xl font-bold">
             本命星別の日盤・時間帯
@@ -223,7 +220,7 @@ export default async function TodayPage({ searchParams }: Props = {}) {
           ))}
         </section>
         <p className="text-sm text-slate-600">
-          本命星だけの早見表です。月命星・個人の天中殺は含みません。引越しは年盤・月盤も確認してください。方位の吉凶は伝統的な見方で、効果を保証するものではありません。
+          引越しなど長期の移動は、年盤・月盤も合わせて確認してください。
         </p>
         <p className="text-sm">
           日盤と時間帯の表の関係、刻の境目が地域でずれる理由は

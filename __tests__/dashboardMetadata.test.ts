@@ -17,7 +17,11 @@ describe("dashboard metadata", () => {
       metadata.openGraph?.description,
       summary,
     ]) {
-      expect(description).toContain("8 方位の吉凶・時間帯の吉凶・真太陽時");
+      expect(description).toContain("八方位");
+      expect(description).toContain("時間帯の吉凶");
+      expect(description).toContain("真太陽時");
+      expect(description).toContain("占い上の目安");
+      expect(description).not.toContain("時間別");
       expect(description).not.toContain("天中殺");
     }
   });

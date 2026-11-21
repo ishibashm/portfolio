@@ -204,4 +204,26 @@ describe("今日の方位", () => {
     expect(html).toContain('name="birthYear"');
     expect(html).toContain("1990年生まれ");
   });
+  it("SEOメタデータと冒頭の結論をフォームより前に表示する", async () => {
+    const { default: TodayPage, metadata } =
+      await import("@/app/houi/today/page");
+    expect(metadata.title).toBe(
+      "今日の方位を時間別に見る｜本命星別の日盤と十二支",
+    );
+    expect(metadata.description).toBe(
+      "本命星を選ぶと、今日と明日の吉方位・避けたい方位と、十二支ごとの時間別の方位が分かります。五黄殺・暗剣殺・日破は全員に凶として表示し、日本時間の日付で更新します。時間帯は東京基準の真太陽時で区切ります。方位の吉凶は占い上の目安です。",
+    );
+    const html = renderToStaticMarkup(await TodayPage());
+    for (const phrase of [
+      "今日の方位は、本命星ごとの日盤",
+      "時間別の方位",
+      "占い上の目安",
+      "東京（東経139.6917度）の真太陽時",
+    ]) {
+      expect(html).toContain(phrase);
+    }
+    expect(html.indexOf("今日の方位は、本命星ごとの日盤")).toBeLessThan(
+      html.indexOf('name="birthYear"'),
+    );
+  });
 });
