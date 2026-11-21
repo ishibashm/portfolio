@@ -8,6 +8,7 @@ import {
   screen,
 } from "@testing-library/react";
 import { ShirubeWanderer } from "@/components/guide/ShirubeWanderer";
+import { ShirubeShuffle } from "@/components/guide/ShirubeShuffle";
 import {
   computeBottomLift,
   createInitialWanderState,
@@ -41,7 +42,7 @@ describe("ShirubeWanderer", () => {
     stubMatchMedia(true);
     const { container } = render(<ShirubeWanderer />);
 
-    const rig = screen.getByTestId("shirube-walk-rig");
+    const rig = screen.getByTestId("shirube-rig-side");
     const parts = [...rig.querySelectorAll("picture")].map((p) =>
       p.getAttribute("data-part"),
     );
@@ -229,6 +230,108 @@ describe("shirubeWanderLogic", () => {
       state = stepWanderState(state, 50, bounds, config, () => 0.9);
     }
     expect(["turning", "walking"]).toContain(state.phase);
+  });
+});
+
+describe("正面のしるべとすり足", () => {
+  it("正面の胴体と手（手を振る部品）を持ち、素材が public に揃っている", () => {
+    stubMatchMedia(true);
+    render(<ShirubeWanderer />);
+    const front = screen.getByTestId("shirube-rig-front");
+    const parts = [...front.querySelectorAll("picture")].map((p) =>
+      p.getAttribute("data-part"),
+    );
+    expect(parts).toEqual(["front-body", "front-hand"]);
+    for (const part of parts) {
+      for (const size of ["128", "240"]) {
+        for (const ext of ["webp", "png"]) {
+          expect(
+            existsSync(`public/guide/walk/shirube-walk-${part}-${size}.${ext}`),
+          ).toBe(true);
+        }
+      }
+    }
+  });
+
+  it("gait=shuffle では 4 コマのスプライトに切り替わり、部品分けの絵は出さない", () => {
+    stubMatchMedia(true);
+    render(<ShirubeWanderer gait="shuffle" />);
+    const stage = screen.getByTestId("shirube-wanderer");
+    expect(stage.getAttribute("data-gait")).toBe("shuffle");
+    expect(screen.queryByTestId("shirube-walk-rig")).toBeNull();
+    const img = screen
+      .getByTestId("shirube-shuffle-sprite")
+      .querySelector("img")!;
+    expect(img.getAttribute("srcset")).toContain(
+      "/guide/walk/shirube-shuffle-128.webp 268w",
+    );
+    expect(existsSync("public/guide/walk/shirube-shuffle-128.webp")).toBe(true);
+    expect(existsSync("public/guide/walk/shirube-shuffle-240.webp")).toBe(true);
+  });
+
+  it("単体の ShirubeShuffle は既定で飾り扱い、label があれば img として読み上げる", () => {
+    const { rerender } = render(<ShirubeShuffle />);
+    let el = screen.getByTestId("shirube-shuffle");
+    expect(el.getAttribute("aria-hidden")).toBe("true");
+    expect(el.getAttribute("data-travel")).toBe("false");
+    expect(el.style.getPropertyValue("--shuffle-h")).toBe("48px");
+
+    rerender(<ShirubeShuffle size={40} travel label="読み込み中" />);
+    el = screen.getByTestId("shirube-shuffle");
+    expect(el.getAttribute("role")).toBe("img");
+    expect(el.getAttribute("aria-label")).toBe("読み込み中");
+    expect(el.getAttribute("aria-hidden")).toBeNull();
+    expect(el.getAttribute("data-travel")).toBe("true");
+    expect(el.style.getPropertyValue("--shuffle-h")).toBe("40px");
+  });
+
+  it("目的地に着くとときどき正面を向き（greeting）、終わると少し間を置いて歩き出す", () => {
+    const bounds = getWanderBounds(1000, 60, 16);
+    const config = getWanderConfig(1000);
+    expect(config.greetChance).toBeGreaterThan(0);
+    let state = createInitialWanderState(bounds, config, () => 0.1);
+    for (let i = 0; i < 400 && state.phase === "walking"; i += 1) {
+      state = stepWanderState(state, 50, bounds, config, () => 0.1);
+    }
+    expect(state.phase).toBe("greeting");
+    expect(state.remainingMs).toBeGreaterThanOrEqual(config.minGreetMs);
+    expect(state.remainingMs).toBeLessThanOrEqual(config.maxGreetMs);
+
+    for (let i = 0; i < 200 && state.phase === "greeting"; i += 1) {
+      state = stepWanderState(state, 50, bounds, config, () => 0.9);
+    }
+    expect(state.phase).toBe("paused");
+    expect(state.remainingMs).toBe(config.afterGreetMs);
+    expect(state.glancedDuringPause).toBe(true);
+
+    for (let i = 0; i < 100 && state.phase === "paused"; i += 1) {
+      state = stepWanderState(state, 50, bounds, config, () => 0.9);
+    }
+    expect(["turning", "walking"]).toContain(state.phase);
+  });
+
+  it("すり足は正面を向かず、歩く速さも遅い", () => {
+    for (const vw of [375, 1280]) {
+      const rig = getWanderConfig(vw);
+      const shuffle = getWanderConfig(vw, { gait: "shuffle" });
+      expect(shuffle.greetChance).toBe(0);
+      expect(shuffle.speedPxPerSec).toBeLessThan(rig.speedPxPerSec);
+    }
+    expect(getWanderConfig(1280, { greet: false }).greetChance).toBe(0);
+  });
+
+  it("CSS: 動きを減らす設定と greeting のときに正面を見せ、手は手首を軸に振る", () => {
+    const css = readFileSync(
+      "src/components/guide/ShirubeWanderer.css",
+      "utf8",
+    );
+    expect(css).toMatch(
+      /\[data-motion="reduced"\] \.shirube-rig-front\s*{\s*opacity:\s*1/,
+    );
+    expect(css).toMatch(/\.shirube-rig-front-hand\s*{\s*transform-origin:/);
+    expect(css).toContain("@keyframes shirube-front-wave");
+    expect(css).toContain("@keyframes shirube-shuffle-steps");
+    expect(css).toMatch(/steps\(4\)/);
   });
 });
 

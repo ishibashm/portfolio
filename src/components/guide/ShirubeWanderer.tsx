@@ -7,6 +7,9 @@
  *   振り、体を小さく上下させる。止まっているときは足をそろえて静かに呼吸する。
  * - 画面下に固定されたボタン帯（固定 CTA・下部ナビ・`data-shirube-avoid`）が
  *   あれば、その上端より上を歩く（スマホで主要ボタンに重ならないように）。
+ * - 立ち止まったとき、ときどき正面を向いて手を振る（data-state="greeting"）。
+ *   reduced-motion では正面の静止ポーズで右下に立つ。
+ * - `gait="shuffle"` で 4 コマのすり足（スプライト）に切り替えられる。
  * - ラッパーは `pointer-events: none` で固定配置し、本文や CTA を塞がない。
  * - `prefers-reduced-motion: reduce`（および SSR / JS 実行前）では動かさず、
  *   画面下端の端に静かに立つ（docs/motion-accents.md の方針）。
@@ -16,6 +19,7 @@
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { GUIDE_NAME } from "@/components/guide/GuideCharacter";
 import { ShirubeWalkRig } from "@/components/guide/ShirubeWalkRig";
+import { ShirubeShuffleSprite } from "@/components/guide/ShirubeShuffle";
 import { prefersReducedMotion } from "@/components/motion/reducedMotion";
 import {
   clampX,
@@ -25,6 +29,7 @@ import {
   getWanderConfig,
   stepWanderState,
   type BottomObstacleRect,
+  type WanderGait,
   type WanderFacing,
   type WanderPhase,
   type WanderState,
@@ -61,6 +66,13 @@ export interface ShirubeWandererProps {
    * 操作要素を見つけたら、その上端より上を歩く。
    */
   avoidBottomObstacles?: boolean;
+  /**
+   * 歩き方。"rig"（既定）は部品分けで足を振る歩き、"shuffle" は 4 コマのすり足。
+   * すり足は歩く速さも遅くなる。
+   */
+  gait?: WanderGait;
+  /** 立ち止まったときにときどき正面を向いて手を振るか（既定: rig のとき true）。 */
+  greet?: boolean;
   /** デモ確認用: 状態変化の通知（高頻度な座標更新では呼ばない）。 */
   onStatusChange?: (snapshot: ShirubeWanderSnapshot) => void;
 }
@@ -161,6 +173,8 @@ export function ShirubeWanderer({
   restSide = "right",
   edgeMarginPx = 16,
   avoidBottomObstacles = true,
+  gait = "rig",
+  greet,
   onInteract,
   onStatusChange,
 }: ShirubeWandererProps) {
@@ -273,7 +287,7 @@ export function ShirubeWanderer({
       const aw = measureActorWidth();
       return {
         bounds: getWanderBounds(vw, aw, edgeMarginPx),
-        config: getWanderConfig(vw),
+        config: getWanderConfig(vw, { gait, greet }),
       };
     };
 
@@ -343,7 +357,7 @@ export function ShirubeWanderer({
       window.removeEventListener("resize", handleResize);
       window.cancelAnimationFrame(rafId);
     };
-  }, [isReduced, restFacing, edgeMarginPx]);
+  }, [isReduced, restFacing, edgeMarginPx, gait, greet]);
 
   const visualState: ShirubeWanderVisualState = isReduced
     ? "idle"
@@ -356,7 +370,13 @@ export function ShirubeWanderer({
   const avatar = (
     <span className="shirube-wander-gait">
       <span className="shirube-wander-shadow" aria-hidden="true" />
-      <ShirubeWalkRig />
+      {gait === "shuffle" ? (
+        <span className="shirube-wander-shuffle">
+          <ShirubeShuffleSprite displayHeight={120} />
+        </span>
+      ) : (
+        <ShirubeWalkRig />
+      )}
     </span>
   );
 
@@ -369,6 +389,7 @@ export function ShirubeWanderer({
       data-state={visualState}
       data-facing={facing}
       data-rest-side={restSide}
+      data-gait={gait}
       aria-hidden={onInteract ? undefined : true}
     >
       <div

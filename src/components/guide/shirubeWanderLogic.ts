@@ -6,7 +6,13 @@
  */
 
 export type WanderFacing = "left" | "right";
-export type WanderPhase = "walking" | "paused" | "turning";
+/**
+ * - walking: 歩いている
+ * - paused: 立ち止まり（ときどき反対側を見渡す）
+ * - turning: 向きを変える短い間
+ * - greeting: 正面を向いて手を振っている（立ち止まりの一種）
+ */
+export type WanderPhase = "walking" | "paused" | "turning" | "greeting";
 
 export interface WanderBounds {
   minX: number;
@@ -41,6 +47,26 @@ export interface WanderConfig {
   maxPauseMs: number;
   /** 振り返り後の間（ms） */
   turnBeatMs: number;
+  /** 目的地に着いたとき、正面を向いて手を振る確率（0〜1）。0 なら振らない。 */
+  greetChance: number;
+  /** 正面を向いている時間の下限（ms） */
+  minGreetMs: number;
+  /** 正面を向いている時間の上限（ms） */
+  maxGreetMs: number;
+  /** 正面から横向きに戻ったあと、歩き出すまでの間（ms） */
+  afterGreetMs: number;
+}
+
+export type WanderGait = "rig" | "shuffle";
+
+export interface WanderConfigOptions {
+  /**
+   * 歩き方。rig（既定）は部品分けの歩き、shuffle は 4 コマのすり足。
+   * すり足は一歩が小さいので、速さを落として足が滑って見えないようにする。
+   */
+  gait?: WanderGait;
+  /** 正面を向いて手を振るか。既定は rig のときだけ true。 */
+  greet?: boolean;
 }
 
 export function getWanderBounds(
@@ -55,9 +81,14 @@ export function getWanderBounds(
   return { minX, maxX };
 }
 
-export function getWanderConfig(viewportWidth: number): WanderConfig {
+export function getWanderConfig(
+  viewportWidth: number,
+  options: WanderConfigOptions = {},
+): WanderConfig {
   const isCompact = viewportWidth < 640;
-  return isCompact
+  const gait = options.gait ?? "rig";
+  const greet = options.greet ?? gait === "rig";
+  const base = isCompact
     ? {
         speedPxPerSec: 14,
         minStridePx: 56,
@@ -74,6 +105,16 @@ export function getWanderConfig(viewportWidth: number): WanderConfig {
         maxPauseMs: 5200,
         turnBeatMs: 280,
       };
+  return {
+    ...base,
+    // すり足: スマホ 9px/秒・PC 16px/秒（4 コマ 0.96 秒で進む距離に合わせる）
+    speedPxPerSec:
+      gait === "shuffle" ? (isCompact ? 9 : 16) : base.speedPxPerSec,
+    greetChance: greet ? 0.45 : 0,
+    minGreetMs: 2600,
+    maxGreetMs: 4200,
+    afterGreetMs: 700,
+  };
 }
 
 export function clampX(x: number, bounds: WanderBounds): number {
@@ -174,6 +215,27 @@ export function stepWanderState(
     };
   }
 
+  if (prev.phase === "greeting") {
+    const remaining = prev.remainingMs - dt;
+    if (remaining > 0) {
+      return {
+        ...prev,
+        x: clampedX,
+        targetX: clampedTarget,
+        remainingMs: remaining,
+      };
+    }
+    // 横向きに戻って、少し間を置いてから歩き出す（見渡しは省く）
+    return {
+      ...prev,
+      x: clampedX,
+      targetX: clampedTarget,
+      phase: "paused",
+      remainingMs: config.afterGreetMs,
+      glancedDuringPause: true,
+    };
+  }
+
   if (prev.phase === "paused") {
     const remaining = prev.remainingMs - dt;
 
@@ -222,6 +284,20 @@ export function stepWanderState(
   const step = (config.speedPxPerSec * dt) / 1000;
 
   if (Math.abs(distance) <= step) {
+    // ときどき正面を向いて手を振る
+    if (config.greetChance > 0 && random() < config.greetChance) {
+      const greetMs =
+        config.minGreetMs +
+        random() * Math.max(0, config.maxGreetMs - config.minGreetMs);
+      return {
+        x: clampedTarget,
+        targetX: clampedTarget,
+        facing: prev.facing,
+        phase: "greeting",
+        remainingMs: greetMs,
+        glancedDuringPause: false,
+      };
+    }
     const pauseMs =
       config.minPauseMs +
       random() * Math.max(0, config.maxPauseMs - config.minPauseMs);

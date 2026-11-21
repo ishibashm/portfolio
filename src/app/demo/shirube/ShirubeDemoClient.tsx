@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { ShirubeShuffle } from "@/components/guide/ShirubeShuffle";
 import {
   ShirubeWanderer,
   usePrefersReducedMotion,
@@ -12,6 +13,7 @@ const STATE_LABELS: Record<ShirubeWanderSnapshot["state"], string> = {
   walking: "歩行中",
   paused: "ひと休み中",
   turning: "振り返り中",
+  greeting: "正面であいさつ中",
   idle: "静止（reduced-motion）",
 };
 
@@ -38,6 +40,8 @@ export function ShirubeDemoClient() {
   const [stopMotionToggle, setStopMotionToggle] = useState(false);
   // デモ限定: スマホでよくある「画面下に固定された CTA 帯」を出して、よけ方を確かめる
   const [showFixedCta, setShowFixedCta] = useState(false);
+  // デモ限定: 歩き方の切り替え（部品分けの歩き / 4 コマのすり足）
+  const [gait, setGait] = useState<"rig" | "shuffle">("rig");
   const osReduced = usePrefersReducedMotion();
   const [snapshot, setSnapshot] = useState<ShirubeWanderSnapshot>({
     motion: "reduced",
@@ -94,6 +98,18 @@ export function ShirubeDemoClient() {
               </button>
               <button
                 type="button"
+                onClick={() =>
+                  setGait((g) => (g === "rig" ? "shuffle" : "rig"))
+                }
+                aria-pressed={gait === "shuffle"}
+                className="rounded-full border border-[#1e2a5a]/40 bg-white px-4 py-2 text-xs font-semibold text-[#1e2a5a] hover:bg-[#faf7f3]"
+              >
+                {gait === "rig"
+                  ? "歩き方: 足を振る歩き（すり足に切り替え）"
+                  : "歩き方: すり足（足を振る歩きに戻す）"}
+              </button>
+              <button
+                type="button"
                 onClick={() => setShowFixedCta((v) => !v)}
                 aria-pressed={showFixedCta}
                 className="rounded-full border border-[#1e2a5a]/40 bg-white px-4 py-2 text-xs font-semibold text-[#1e2a5a] hover:bg-[#faf7f3]"
@@ -118,6 +134,44 @@ export function ShirubeDemoClient() {
             </div>
           </div>
         </header>
+
+        {/* すり足しるべの使いどころ（画面下以外に置く小物） */}
+        <section
+          aria-label="すり足しるべの使いどころ"
+          className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm"
+        >
+          <h2 className="text-base font-bold text-[#1e2a5a]">
+            すり足しるべ（小物）の置き方の例
+          </h2>
+          <p className="mt-1 text-sm leading-relaxed text-slate-700">
+            4
+            コマのすり足で歩く小さなしるべです。カードの角・お知らせの帯・読み込み中の表示などに置けます。動きを減らす設定では
+            1 コマ目で止まります。
+          </p>
+          <div className="mt-5 grid gap-4 md:grid-cols-3">
+            <div className="flex items-end gap-3 rounded-xl border border-slate-200 bg-[#faf7f3] p-4">
+              <ShirubeShuffle size={56} />
+              <p className="text-sm leading-relaxed text-slate-700">
+                カードの角で足踏み（その場で歩く）
+              </p>
+            </div>
+            <div className="rounded-xl border border-[#c9a54a]/50 bg-[#f8f1dc] p-4">
+              <p className="text-sm font-semibold text-[#1e2a5a]">
+                お知らせの帯を行ったり来たり
+              </p>
+              <div className="mt-2 border-b border-[#c9a54a]/60">
+                <ShirubeShuffle size={44} travel travelSeconds={16} />
+              </div>
+            </div>
+            <div
+              role="status"
+              className="flex flex-col items-center justify-center gap-2 rounded-xl border border-slate-200 p-4"
+            >
+              <ShirubeShuffle size={48} label="読み込み中" />
+              <p className="text-sm text-slate-700">読み込み中…（例）</p>
+            </div>
+          </div>
+        </section>
 
         {/* 横幅のあるダミーコンテンツ */}
         <section
@@ -265,6 +319,7 @@ export function ShirubeDemoClient() {
       ) : null}
 
       <ShirubeWanderer
+        gait={gait}
         forceReducedMotion={stopMotionToggle ? true : undefined}
         onStatusChange={setSnapshot}
       />

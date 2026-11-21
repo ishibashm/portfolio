@@ -131,6 +131,103 @@
   transform-origin: 39.85% 88.05%;
 }
 
+/* ---- 正面（立ち止まって手を振る） -------------------------------------- */
+
+.shirube-rig-side {
+  position: absolute;
+  inset: 0;
+  display: block;
+}
+
+/* 横向きの体の中心（素材幅の 44%）に、正面の体の中心（50%）を合わせる。
+   正面の素材は横向きより少し細い（503 / 517）。 */
+.shirube-rig-front {
+  position: absolute;
+  bottom: 0;
+  left: -4.74%;
+  width: 97.3%;
+  height: 100%;
+  display: block;
+  opacity: 0;
+  transform-origin: 50% 100%;
+}
+
+/* 親（.shirube-wander-flip）の左右反転を打ち消し、正面はいつも同じ手で振る */
+.shirube-wander-stage[data-facing="left"] .shirube-rig-front {
+  transform: scaleX(-1);
+}
+
+.shirube-rig-front-hop,
+.shirube-rig-front-breath {
+  position: absolute;
+  inset: 0;
+  display: block;
+  transform-origin: 50% 100%;
+}
+
+/* 手首（袖口の少し上）を軸に手を振る */
+.shirube-rig-front-hand {
+  transform-origin: 82.68% 41.06%;
+}
+
+/* 正面を向いている間と、動きを減らす設定（静止）のときは正面の絵を見せる */
+.shirube-wander-stage[data-state="greeting"] .shirube-rig-front,
+.shirube-wander-stage[data-motion="reduced"] .shirube-rig-front {
+  opacity: 1;
+}
+
+.shirube-wander-stage[data-state="greeting"] .shirube-rig-side,
+.shirube-wander-stage[data-motion="reduced"] .shirube-rig-side {
+  opacity: 0;
+}
+
+/* ---- すり足（4 コマのスプライト） --------------------------------------- */
+
+.shirube-shuffle {
+  display: inline-block;
+  vertical-align: bottom;
+}
+
+/* travel: 置いた箱の横幅いっぱいを行ったり来たりする */
+.shirube-shuffle[data-travel="true"] {
+  display: block;
+  width: 100%;
+  container-type: inline-size;
+}
+
+.shirube-shuffle-mover {
+  display: inline-block;
+}
+
+.shirube-shuffle-window {
+  position: relative;
+  display: block;
+  overflow: hidden;
+  height: var(--shuffle-h, 48px);
+  /* 1 コマの縦横比 284 / 546 */
+  width: calc(var(--shuffle-h, 48px) * 0.5201);
+}
+
+.shirube-shuffle-strip {
+  display: block;
+  height: 100%;
+  width: 400%;
+  max-width: none;
+  user-select: none;
+  -webkit-user-drag: none;
+}
+
+.shirube-wander-shuffle {
+  --shuffle-h: var(--shirube-h);
+  display: block;
+  /* コマの下端に 1% ほど余白があるので、足裏を床にそろえる */
+  margin-bottom: calc(var(--shirube-h) * -0.011);
+}
+
+.shirube-wander-stage[data-gait="shuffle"] .shirube-wander-shadow {
+  left: 50%;
+}
+
 .shirube-wander-hit {
   pointer-events: auto;
   display: inline-block;
@@ -423,6 +520,94 @@
     50% {
       opacity: 0.78;
       transform: translate(-50%, 35%) scaleX(0.93);
+    }
+  }
+
+  /* 横向き ⇔ 正面の切り替えは 160ms のクロスフェード */
+  .shirube-rig-side,
+  .shirube-rig-front {
+    transition: opacity 160ms ease-out;
+  }
+
+  /* 正面を向いたら小さく弾んでから、呼吸しながら手を振る */
+  .shirube-wander-stage[data-motion="active"][data-state="greeting"]
+    .shirube-rig-front-hop {
+    animation: shirube-front-hop 380ms ease-out 1 both;
+  }
+
+  .shirube-wander-stage[data-motion="active"][data-state="greeting"]
+    .shirube-rig-front-breath {
+    animation: shirube-idle-breath 2.4s ease-in-out 380ms infinite;
+  }
+
+  .shirube-wander-stage[data-motion="active"][data-state="greeting"]
+    .shirube-rig-front-hand {
+    animation: shirube-front-wave 1.1s ease-in-out 280ms infinite;
+  }
+
+  /* すり足: その場の小物は常に、歩き回りでは歩いている間だけコマ送り */
+  .shirube-shuffle .shirube-shuffle-strip,
+  .shirube-wander-stage[data-motion="active"][data-gait="shuffle"][data-state="walking"]
+    .shirube-shuffle-strip {
+    animation: shirube-shuffle-steps 0.96s steps(4) infinite;
+  }
+
+  .shirube-shuffle[data-travel="true"] .shirube-shuffle-mover {
+    animation: shirube-shuffle-travel var(--shuffle-travel, 14s) linear infinite;
+  }
+
+  @keyframes shirube-front-hop {
+    0% {
+      transform: translateY(0) scale(1, 1);
+    }
+    35% {
+      transform: translateY(0) scale(1.05, 0.93);
+    }
+    65% {
+      transform: translateY(-5%) scale(0.98, 1.03);
+    }
+    100% {
+      transform: translateY(0) scale(1, 1);
+    }
+  }
+
+  @keyframes shirube-front-wave {
+    0%,
+    100% {
+      transform: rotate(0deg);
+    }
+    30% {
+      transform: rotate(-18deg);
+    }
+    65% {
+      transform: rotate(10deg);
+    }
+  }
+
+  @keyframes shirube-shuffle-steps {
+    0% {
+      transform: translateX(0);
+    }
+    100% {
+      transform: translateX(-100%);
+    }
+  }
+
+  @keyframes shirube-shuffle-travel {
+    0% {
+      transform: translateX(0) scaleX(1);
+    }
+    49.9% {
+      transform: translateX(calc(100cqw - 100%)) scaleX(1);
+    }
+    50% {
+      transform: translateX(calc(100cqw - 100%)) scaleX(-1);
+    }
+    99.9% {
+      transform: translateX(0) scaleX(-1);
+    }
+    100% {
+      transform: translateX(0) scaleX(1);
     }
   }
 }
