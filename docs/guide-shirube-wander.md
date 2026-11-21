@@ -1,6 +1,6 @@
 # しるべ自由歩き回り＆自動案内（`ShirubeWanderer`）ガイド
 
-この機能は `feat/shirube-wander` ブランチのデモ（`/demo/shirube`、noindex）で確認できます。本番のトップページや共通レイアウトへ組み込む際は、以下の仕組みと注意点を確認してください。
+共通レイアウト（`src/app/layout.tsx`）に `<SiteShirube />` を 1 回だけ置き、実際のページを歩き回って案内します。管理画面・ログイン・API 系（`/admin` `/auth` `/login` `/mcp` `/api`）には出しません。試作の `/demo/shirube` は本番に残さないため削除しました。確認は `npm run dev` で実際のページ（`/`・`/houi/today`・記事・404 など）を開いて行います。
 
 ## 1. 構成ファイル
 
@@ -11,7 +11,9 @@
 | `src/components/guide/shirubeWanderLogic.ts` | 移動・ジャンプ・休止・指さしの純粋状態マシン（`random` 注入可能）               |
 | `src/components/guide/shirubeTips.ts`        | ルート別の案内辞書・対象探索 `resolveTipTarget`・頻度制御 `canShowAutoTip`      |
 | `src/components/guide/ShirubeBubble.tsx`     | 吹き出し UI（白地・紺文字・金枠）と非表示時の右下タブ                           |
-| `src/components/guide/ShirubeWalkRig.tsx`    | 部品分けちびしるべ（横向き・正面・指さし公式絵）                                |
+| `src/components/guide/ShirubeWalkRig.tsx`    | 部品分けちびしるべ（横向き・正面）                                              |
+| `src/components/guide/SiteShirube.tsx`       | レイアウトから置く入口（出さない画面の判定・後から読み込み）                    |
+| `src/components/guide/shirubeBubblePlace.ts` | 吹き出しの置き場所選び（ボタン・リンクに重ねない）                              |
 | `src/components/guide/ShirubeShuffle.tsx`    | 4 コマすり足スプライト（WebP + PNG フォールバック）                             |
 | `src/components/guide/ShirubeWanderer.css`   | ステージ・歩行・ジャンプ・振り返り・吹き出しのスタイル                          |
 
@@ -32,11 +34,14 @@
 ### 床の検出ルール（`shirubePerch.ts`）
 
 - 画面最下端（`id: "bottom"`）は常に床として含みます。画面下の固定 CTA（`[data-shirube-avoid]` や下端の `fixed / sticky` 操作要素）と `safe-area-inset-bottom` を避けて持ち上げます。
-- 追加の床は明示属性 `[data-shirube-perch]` と既定セレクタ（`main h2`, `main article`, `main section[class*="rounded"]`, `main section > div[class*="rounded"]`）から自動検出します。ボタンやリンクは文字を隠しやすく押す邪魔にもなるので、既定では床にしません（必要なら `data-shirube-perch` を付けます）。
+- 追加の床は明示属性 `[data-shirube-perch]` と既定セレクタ（`main h2`, `main article`, `main section[class*="rounded"]`, `main section > div[class*="rounded"]`, `main .wg-card`）から自動検出します。ボタンやリンクは文字を隠しやすく押す邪魔にもなるので、既定では床にしません（必要なら `data-shirube-perch` を付けます）。
 - 以下の要素は床から除外し、上にも重なりません:
   - 非表示要素、ステージ内要素、`[data-shirube-avoid]` 内要素
   - `button[type="submit"]`、`[data-primary-cta]`、フォーカス中の入力欄
   - 画面上端から「キャラの高さ + 16px」より上にある要素（頭が切れるため）
+- **上が空いている所だけ**: 床の上、しるべの背丈 + 10px の範囲を `elementFromPoint` で 14px おきに調べ、文字・画像・ボタン・色や枠の付いた箱（上のカードなど）が無い横の区間だけを床にします。区間が狭い（しるべの幅 + 16px 未満）・空きが無いカードは使いません。カードが隙間なく縦に並ぶページでは、画面下端だけを歩きます。
+- **固定サイドバー**: PC で左に固定のメニューがあるときは、本文（`main`）の左端より右だけを歩きます。
+- **ページ側のしるべと並ばない**: トップの指さしなど、ページにもともと描かれた大きなしるべ（`/guide/shirube-*` の画像、高さ 64px 以上）が 3 割以上見えている間は、歩き回るしるべは姿を消し、自動の案内も出しません。
 - **上限**: PC は最大 12 か所（幅 120px 以上）、スマホ（`< 640px`）は最大 4 か所（幅 200px 以上のみ）。
 
 ## 3. 自動ガイド（案内辞書とページごとの追加方法）
@@ -72,13 +77,15 @@
 | `empty`  | `[data-empty-state]` が画面内に入ったとき                                                                                   |
 
 - **頻度制限**: 自動表示は最小 45 秒間隔、1 ページ表示あたり最大 6 回まで。同じチップは自動では繰り返しません。
+- **結果への反応は優先**: `result`（吉凶が出た）だけは、直前に別の案内が出ていても出します。ただし続けざまにならないよう、前の案内から最低 10 秒は空けます。
+- **指さしの動き方**: 対象が別の床の近く（横 380px 以内）なら跳んで行って指さします。同じ床で離れているとき・遠すぎるときは、跳ばずにその場で対象の方を向いて手を挙げます。
 - **入力中の配慮**: `input` / `textarea` / `select` にフォーカスがある間は自動吹き出しを出しません。
 - **自動スクロール禁止**: 閲覧を邪魔しないようページを自動スクロールせず、現在ビューポート内にある対象だけを指さします。
 - **自動消去と縁取り**: 吹き出しは約 7 秒で自動で閉じます。対象要素にはレイアウトを変えない 2px の金枠（`.shirube-tip-target-highlight`）を約 2.5 秒付けます。
 
 ## 4. 吹き出し・休む（非表示）・呼び戻す
 
-- **吹き出し**: 白背景・紺文字（`#1e2a5a`）・金枠（`#c9a54a`）。PC 最大幅 220px、スマホ最大幅 180px。画面外へはみ出さないよう自動で位置を調整します。`role="status"` / `aria-live="polite"` を付与。緑・赤は吉凶判定専用とし、吹き出し UI には使いません。
+- **吹き出し**: 白背景・紺文字（`#1e2a5a`）・金枠（`#c9a54a`）。PC 最大幅 220px、スマホ最大幅 180px。置き場所は上（中央・左右寄せ）→横→下の順に試し、ボタン・リンク・入力欄に重ならない最初の場所を選びます（`chooseBubblePlacement`）。スマホではどこも重なるとき自動の案内は出さず、タップされたときだけ一番重なりの小さい場所に出します。PC は重ならない場所を優先しつつ出します。吹き出しは画面に固定なので、120px 以上スクロールしたら閉じます。`role="status"` / `aria-live="polite"` を付与。緑・赤は吉凶判定専用とし、吹き出し UI には使いません。
 - **タップと Esc**: しるべ本体（`<button aria-label="しるべに話しかける">`）を押すと今のページの案内を表示します。`Escape` キーで吹き出しを閉じます。
 - **休ませる／呼び戻す**: 吹き出し右上の `×` を押すと、しるべは画面右下の小さな丸タブ（28×28 紺円・`aria-label="しるべを呼ぶ"`）へ隠れます。状態は `localStorage` の `shirube:hidden`（`"1"` / 未設定）に保存され、タブを押すと復帰します。
 
@@ -94,11 +101,12 @@
 
 ## 6. 組み込み方
 
-```tsx
-import { ShirubeWanderer } from "@/components/guide/ShirubeWanderer";
+`src/app/layout.tsx` の `<body>` の最後に、すでに置いてあります。
 
-// ページ末尾または layout.tsx の <SiteFooter /> の後ろに配置
-<ShirubeWanderer />;
+```tsx
+import { SiteShirube } from "@/components/guide/SiteShirube";
+
+<SiteShirube />; // 出さない画面は SHIRUBE_EXCLUDED_PREFIXES で管理
 ```
 
 小物として単体で使う 4 コマすり足（`<ShirubeShuffle />`）も従来どおり利用できます。本番反映（`master` へのマージ）はオーナー確認を経て行ってください。
