@@ -35,22 +35,63 @@ const SITTING_STAR_HINT: Record<number, string> = {
   9: "知性や名誉の象意",
 };
 
-const NO_LUCKY_LINE =
-  "今日は吉方位はなし。待ち合わせや会合は共通の避けたい方位を外して選ぶのが目安です。";
+type NoLuckyKind = "center" | "commonUnlucky" | "normal";
+
+const NO_LUCKY_TEMPLATES: Record<
+  NoLuckyKind,
+  (placeLabel: string, hint: string) => string
+> = {
+  center: (placeLabel, hint) =>
+    `今日は吉方位はなし。${placeLabel}に回座し、${hint}。遠出より近場や家でのやり取りをていねいに過ごすのが目安です。`,
+  commonUnlucky: (placeLabel, hint) =>
+    `今日は吉方位はなし。${placeLabel}に回座し、${hint}。その方位への外出は控え、近場や家での連絡をていねいにするのが目安です。`,
+  normal: (placeLabel, hint) =>
+    `今日は吉方位はなし。${placeLabel}に回座し、${hint}。遠出は控え、近場で過ごしたり連絡をていねいにするのが目安です。`,
+};
+
+const BOARD_CELLS: readonly (CompassDirection | "CENTER")[] = [
+  "CENTER",
+  "N",
+  "NE",
+  "E",
+  "SE",
+  "S",
+  "SW",
+  "W",
+  "NW",
+];
+
+function findSittingCell(
+  star: number,
+  board: TodayBoard["board"],
+): CompassDirection | "CENTER" {
+  return BOARD_CELLS.find((cell) => board[cell] === star) ?? "CENTER";
+}
 
 function buildStarLine(
+  star: number,
   lucky: CompassDirection[],
   board: TodayBoard["board"],
+  common: TodayBoard["common"],
 ): string {
+  const cell = findSittingCell(star, board);
+  const placeLabel = cell === "CENTER" ? "中宮" : DIRECTION_LABELS[cell];
   if (lucky.length === 0) {
-    return NO_LUCKY_LINE;
+    const hint = SITTING_STAR_HINT[star] ?? "";
+    const kind: NoLuckyKind =
+      cell === "CENTER"
+        ? "center"
+        : common.some((item) => item.direction === cell)
+          ? "commonUnlucky"
+          : "normal";
+    return NO_LUCKY_TEMPLATES[kind](placeLabel, hint);
   }
   const dirParts = lucky.map((direction) => {
     const label = DIRECTION_LABELS[direction];
     const hint = SITTING_STAR_HINT[board[direction]];
     return hint ? `${label}（${hint}）` : label;
   });
-  return `吉方位は${dirParts.join("・")}。会合や約束の外出先に向きます。`;
+  return `${placeLabel}に回座。吉方位は${dirParts.join("・")}。会合や約束の外出先に向きます。`;
 }
 
 /**
@@ -69,7 +110,7 @@ export function buildLoveFortuneFromBoard(
       star,
       name: STAR_NAMES[star],
       lucky,
-      text: buildStarLine(lucky, board.board),
+      text: buildStarLine(star, lucky, board.board, board.common),
       href: `/houi/${year}/${star}`,
     })),
   };
