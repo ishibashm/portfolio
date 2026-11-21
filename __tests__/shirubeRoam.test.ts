@@ -427,3 +427,94 @@ describe("固定サイドバーの上には立たない", () => {
     for (const p of perches) expect(p.left).toBeGreaterThanOrEqual(256 + 16);
   });
 });
+
+describe("カードの上が空いている所だけに立つ", () => {
+  it("freeSpans の区間だけを床にし、狭すぎる区間や空きの無いカードは使わない", async () => {
+    const { findPerches } = await import("@/components/guide/shirubePerch");
+    const base = { top: 400, bottom: 600, width: 600, height: 200 };
+    const perches = findPerches(
+      [
+        {
+          id: "a",
+          left: 100,
+          right: 700,
+          ...base,
+          freeSpans: [
+            [100, 160],
+            [500, 700],
+          ],
+        },
+        { id: "b", left: 100, right: 700, ...base, top: 520, freeSpans: [] },
+      ],
+      { width: 1280, height: 800 },
+      { actorWidth: 59, actorHeight: 120 },
+    );
+    const el = perches.filter((p) => p.kind === "element");
+    expect(el).toHaveLength(1);
+    expect(el[0].left).toBe(500);
+    expect(el[0].right).toBe(700);
+  });
+
+  it("spansFromSamples は連続した空きを区間にまとめる", async () => {
+    const { spansFromSamples } =
+      await import("@/components/guide/shirubePerch");
+    expect(
+      spansFromSamples(
+        [10, 24, 38, 52, 66],
+        [true, true, false, true, true],
+        14,
+      ),
+    ).toEqual([
+      [3, 31],
+      [45, 73],
+    ]);
+  });
+});
+
+describe("吹き出しはボタンやリンクに重ねない", () => {
+  const anchor = {
+    x: 200,
+    y: 500,
+    actorWidth: 30,
+    actorHeight: 60,
+    viewportWidth: 390,
+    viewportHeight: 760,
+  };
+  it("上がボタンでふさがっていれば横か下に置く", async () => {
+    const { chooseBubblePlacement } =
+      await import("@/components/guide/shirubeBubblePlace");
+    const size = { width: 180, height: 80 };
+    const free = chooseBubblePlacement(anchor, size, []);
+    expect(free.placement).toBe("above");
+    expect(free.safe).toBe(true);
+    const blocked = chooseBubblePlacement(anchor, size, [
+      { left: 0, top: 300, right: 390, bottom: 440 },
+    ]);
+    expect(blocked.placement).not.toBe("above");
+    expect(blocked.safe).toBe(true);
+  });
+  it("どこに置いても重なるときは safe: false（自動の案内は出さない）", async () => {
+    const { chooseBubblePlacement } =
+      await import("@/components/guide/shirubeBubblePlace");
+    const r = chooseBubblePlacement(anchor, { width: 180, height: 80 }, [
+      { left: 0, top: 0, right: 390, bottom: 760 },
+    ]);
+    expect(r.safe).toBe(false);
+  });
+});
+
+describe("結果への反応は頻度の制限より優先", () => {
+  it("直前に別の案内が出ていても結果の反応は出せる。ただし 10 秒は空ける", async () => {
+    const { canShowAutoTip, recordAutoTipShown, createTipRateLimitState } =
+      await import("@/components/guide/shirubeTips");
+    const s = recordAutoTipShown(createTipRateLimitState(), 0, "enter-tip");
+    expect(canShowAutoTip(s, 3_000, undefined, { tipId: "r" })).toBe(false);
+    expect(
+      canShowAutoTip(s, 3_000, undefined, { tipId: "r", priority: true }),
+    ).toBe(false);
+    expect(
+      canShowAutoTip(s, 11_000, undefined, { tipId: "r", priority: true }),
+    ).toBe(true);
+    expect(canShowAutoTip(s, 11_000, undefined, { tipId: "r" })).toBe(false);
+  });
+});

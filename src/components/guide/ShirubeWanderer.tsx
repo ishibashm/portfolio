@@ -70,7 +70,16 @@ import {
   type WanderPhase,
   type WanderState,
 } from "@/components/guide/shirubeWanderLogic";
+import {
+  bubbleSize,
+  chooseBubblePlacement,
+  collectBubbleBlockers,
+  type BubbleAnchor,
+  type BubbleRect,
+} from "@/components/guide/shirubeBubblePlace";
 import "./ShirubeWanderer.css";
+
+type BubbleAnchorState = BubbleAnchor & { blockers: BubbleRect[] };
 
 export type ShirubeWanderVisualState = WanderPhase | "idle";
 
@@ -249,6 +258,27 @@ function withContentLeft<T extends { minX: number; maxX: number }>(
   return { ...bounds, minX };
 }
 
+/**
+ * ページにもともと描かれている大きなしるべ（トップの指さしなど）が見えているか。
+ * 見えている間は歩き回るしるべは姿を消し、同じ画面に 2 人並ばないようにする。
+ */
+export function isOtherShirubeVisible(
+  doc: Document = document,
+  win: Window = window,
+): boolean {
+  const imgs = doc.querySelectorAll<HTMLImageElement>(
+    'img[src*="/guide/shirube-"]',
+  );
+  for (const img of imgs) {
+    if (img.closest(".shirube-wander-stage")) continue;
+    const r = img.getBoundingClientRect();
+    if (r.height < 64 || r.width <= 0) continue;
+    const visibleH = Math.min(r.bottom, win.innerHeight) - Math.max(r.top, 0);
+    if (visibleH > r.height * 0.3) return true;
+  }
+  return false;
+}
+
 export function usePrefersReducedMotion(): boolean {
   return useSyncExternalStore(
     subscribeReducedMotion,
@@ -376,6 +406,9 @@ export function ShirubeWanderer({
     (typeof window !== "undefined" ? window.location.pathname : "/");
 
   const [isHidden, setIsHidden] = useShirubeHidden();
+  /** ページ側の大きなしるべが見えていて、姿を消している間 true */
+  const awayRef = useRef(false);
+  const dismissBubbleRef = useRef<(() => void) | null>(null);
   const osReduced = usePrefersReducedMotion();
   const isReduced = forceReducedMotion ?? osReduced;
   const restFacing: WanderFacing = restSide === "left" ? "right" : "left";
@@ -422,15 +455,12 @@ export function ShirubeWanderer({
   });
 
   const [activeTip, setActiveTip] = useState<ShirubeTip | null>(null);
-  const [bubbleAnchor, setBubbleAnchor] = useState<{
-    x: number;
-    y: number;
-    actorWidth: number;
-    actorHeight: number;
-    viewportWidth: number;
-    minLeft?: number;
-    viewportHeight: number;
-  } | null>(null);
+  const [bubbleAnchor, setBubbleAnchor] = useState<BubbleAnchorState | null>(
+    null,
+  );
+  // 動きを減らす設定のときの吹き出し位置（静止位置から計算）
+  const [reducedBubbleAnchor, setReducedBubbleAnchor] =
+    useState<BubbleAnchorState | null>(null);
 
   const reportStatus = useCallback(
     (
@@ -497,6 +527,10 @@ export function ShirubeWanderer({
     }
   }, [clearHighlight]);
 
+  useEffect(() => {
+    dismissBubbleRef.current = dismissBubble;
+  }, [dismissBubble]);
+
   const hideShirube = useCallback(() => {
     dismissBubble();
     setIsHidden(true);
@@ -506,13 +540,18 @@ export function ShirubeWanderer({
     setIsHidden(false);
   }, [setIsHidden]);
 
-  /** 吹き出しを表示し、画面内に対象があれば指さし＋金の縁取りを行う */
+  /**
+   * 吹き出しを表示し、画面内に対象があれば指さし＋金の縁取りを行う。
+   * 自動の案内（auto）は、吹き出しがボタンやリンクに重ならない置き場所が
+   * 無ければ出さずに false を返す（タップされたときは一番ましな場所に出す）。
+   */
   const presentTip = useCallback(
-    (tip: ShirubeTip, explicitTarget?: Element | null) => {
-      if (typeof window === "undefined") return;
-      if (bubbleTimerRef.current) {
-        window.clearTimeout(bubbleTimerRef.current);
-      }
+    (
+      tip: ShirubeTip,
+      explicitTarget?: Element | null,
+      opts: { auto?: boolean } = {},
+    ): boolean => {
+      if (typeof window === "undefined") return false;
 
       const resolvedTarget =
         explicitTarget ??
@@ -522,63 +561,83 @@ export function ShirubeWanderer({
           ? resolvedTarget
           : null;
 
+      const dims = getActorDimensions(actorRef.current);
+      const vw = window.innerWidth;
+      const vh = window.innerHeight;
+      const blockers = collectBubbleBlockers(document, window);
+      const linkCount = tip.links?.length ?? (tip.link ? 1 : 0);
+      const size = bubbleSize(vw, tip.text, linkCount);
+      const minLeft = getContentLeft(document, window);
+
+      let nextState: WanderState | null = null;
+      let anchor: BubbleAnchorState;
+      if (!isReduced && stateRef.current) {
+        nextState = stateRef.current;
+        if (inViewTarget && perchesRef.current.length > 0) {
+          const r = inViewTarget.getBoundingClientRect();
+          nextState = startPointingToward(
+            stateRef.current,
+            { left: r.left, right: r.right, top: r.top, bottom: r.bottom },
+            {
+              perches: perchesRef.current,
+              actorWidth: dims.width,
+              actorHeight: dims.height,
+              viewportHeight: vh,
+            },
+            BUBBLE_AUTO_HIDE_MS,
+          );
+        }
+        anchor = {
+          x: nextState.hop ? nextState.hop.toX : nextState.x,
+          y: nextState.hop ? nextState.hop.toY : nextState.y,
+          actorWidth: dims.width,
+          actorHeight: dims.height,
+          viewportWidth: vw,
+          minLeft,
+          viewportHeight: vh,
+          blockers,
+        };
+      } else {
+        // 動きを減らす設定: 右下（または左下）に静止している位置
+        anchor = {
+          x: restSide === "left" ? 16 : vw - 16 - dims.width,
+          y: vh - bottomLiftRef.current,
+          actorWidth: dims.width,
+          actorHeight: dims.height,
+          viewportWidth: vw,
+          minLeft,
+          viewportHeight: vh,
+          blockers,
+        };
+      }
+
+      if (opts.auto && !chooseBubblePlacement(anchor, size, blockers).safe) {
+        return false;
+      }
+
+      if (bubbleTimerRef.current) {
+        window.clearTimeout(bubbleTimerRef.current);
+      }
       if (inViewTarget) {
         highlightTargetElement(inViewTarget);
       } else {
         clearHighlight();
       }
-
       setActiveTip(tip);
-
-      if (!isReduced && stateRef.current) {
-        const dims = getActorDimensions(actorRef.current);
-        const roam: RoamContext = {
-          perches: perchesRef.current,
-          actorWidth: dims.width,
-          actorHeight: dims.height,
-          viewportHeight: window.innerHeight,
-        };
-
-        if (inViewTarget && roam.perches.length > 0) {
-          const r = inViewTarget.getBoundingClientRect();
-          const next = startPointingToward(
-            stateRef.current,
-            { left: r.left, right: r.right, top: r.top, bottom: r.bottom },
-            roam,
-            BUBBLE_AUTO_HIDE_MS,
-          );
-          stateRef.current = next;
-          setBubbleAnchor({
-            x: next.hop ? next.hop.toX : next.x,
-            y: next.hop ? next.hop.toY : next.y,
-            actorWidth: dims.width,
-            actorHeight: dims.height,
-            viewportWidth: window.innerWidth,
-            minLeft: getContentLeft(document, window),
-            viewportHeight: window.innerHeight,
-          });
-          resumeEngineRef.current?.();
-        } else {
-          setBubbleAnchor({
-            x: stateRef.current.x,
-            y: stateRef.current.y,
-            actorWidth: dims.width,
-            actorHeight: dims.height,
-            viewportWidth: window.innerWidth,
-            minLeft: getContentLeft(document, window),
-            viewportHeight: window.innerHeight,
-          });
-        }
-      } else {
-        setBubbleAnchor(null);
+      setBubbleAnchor(isReduced ? null : anchor);
+      if (nextState && nextState !== stateRef.current) {
+        stateRef.current = nextState;
+        resumeEngineRef.current?.();
       }
+      if (isReduced) setReducedBubbleAnchor(anchor);
 
       bubbleTimerRef.current = window.setTimeout(() => {
         bubbleTimerRef.current = 0;
         setActiveTip(null);
       }, BUBBLE_AUTO_HIDE_MS);
+      return true;
     },
-    [clearHighlight, highlightTargetElement, isReduced],
+    [clearHighlight, highlightTargetElement, isReduced, restSide],
   );
 
   /** 自動案内トリガー（頻度制限・入力欄フォーカス回避あり） */
@@ -588,7 +647,7 @@ export function ShirubeWanderer({
       overrideTip?: ShirubeTip,
       explicitTarget?: Element | null,
     ) => {
-      if (isHidden) return;
+      if (isHidden || awayRef.current) return;
       if (
         typeof document !== "undefined" &&
         document.visibilityState === "hidden"
@@ -613,6 +672,7 @@ export function ShirubeWanderer({
         {
           inputFocused: isInputCurrentlyFocused(),
           tipId: candidate.id,
+          priority: trigger === "result",
         },
       );
       if (!allowed) return;
@@ -636,12 +696,12 @@ export function ShirubeWanderer({
         }
       }
 
+      if (!presentTip(candidate, targetEl, { auto: true })) return;
       rateLimitRef.current = recordAutoTipShown(
         rateLimitRef.current,
         now,
         candidate.id,
       );
-      presentTip(candidate, targetEl);
     },
     [autoTipMinIntervalMs, isHidden, pathname, presentTip],
   );
@@ -682,6 +742,18 @@ export function ShirubeWanderer({
     tapCursorRef.current = 0;
   }, [pathname]);
 
+  // 吹き出しは画面に固定なので、大きくスクロールしたら閉じる
+  // （ページが動いた後にボタンや文字の上へ残らないように）
+  useEffect(() => {
+    if (!activeTip) return;
+    const startY = window.scrollY;
+    const onScroll = () => {
+      if (Math.abs(window.scrollY - startY) > 120) dismissBubble();
+    };
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, [activeTip, dismissBubble]);
+
   // Esc キーで吹き出しを閉じる
   useEffect(() => {
     if (!activeTip) return;
@@ -716,6 +788,14 @@ export function ShirubeWanderer({
       raf = 0;
       if (document.visibilityState === "hidden") return;
 
+      // 0. ページに大きなしるべが見えている間は姿を消す
+      const away = isOtherShirubeVisible(document, window);
+      if (away !== awayRef.current) {
+        awayRef.current = away;
+        if (stage) stage.setAttribute("data-away", away ? "true" : "false");
+        if (away) dismissBubbleRef.current?.();
+      }
+
       // 1. 下部固定 CTA の持ち上げ量
       let lift = 0;
       if (avoidBottomObstacles && stage) {
@@ -736,7 +816,9 @@ export function ShirubeWanderer({
 
       // 2. ビューポート内の床（perch）一覧を更新
       const dims = getActorDimensions(actorRef.current);
-      const candidates = collectPerchCandidates(document, window);
+      const candidates = collectPerchCandidates(document, window, undefined, {
+        actorHeight: dims.height,
+      });
       const avoidRects = collectAvoidRects(document, window);
       const perches = findPerches(
         candidates,
@@ -964,7 +1046,7 @@ export function ShirubeWanderer({
 
       if (next.phase === "pointing") {
         const d = getActorDimensions(actorRef.current);
-        setBubbleAnchor({
+        setBubbleAnchor((prev) => ({
           x: next.x,
           y: next.y,
           actorWidth: d.width,
@@ -972,7 +1054,8 @@ export function ShirubeWanderer({
           viewportWidth: window.innerWidth,
           minLeft: getContentLeft(document, window),
           viewportHeight: window.innerHeight,
-        });
+          blockers: prev?.blockers ?? [],
+        }));
       }
 
       reportStatus(
@@ -1362,7 +1445,8 @@ export function ShirubeWanderer({
       {activeTip ? (
         <ShirubeBubble
           tip={activeTip}
-          anchor={isReduced ? null : bubbleAnchor}
+          anchor={isReduced ? reducedBubbleAnchor : bubbleAnchor}
+          reduced={isReduced}
           restSide={restSide}
           onHideShirube={hideShirube}
           onDismissBubble={dismissBubble}

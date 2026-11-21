@@ -263,62 +263,6 @@ const CANDIDATES_TIPS: readonly ShirubeTip[] = [
   },
 ];
 
-const DEMO_TIPS: readonly ShirubeTip[] = [
-  {
-    id: "today-lucky",
-    text: "今日いちばん良い方位はここに出ています",
-    target: {
-      tipId: "today-lucky",
-      selector: "[data-verdict]",
-      headingText: "今日の吉方位",
-    },
-    when: "enter",
-  },
-  {
-    id: "blog-conclusion",
-    text: "急ぐときは『先に結論』だけでも大丈夫です",
-    target: { tipId: "blog-conclusion", headingText: "先に結論" },
-    when: "scroll",
-  },
-  {
-    id: "video",
-    text: "動画でも見られます",
-    target: {
-      tipId: "video",
-      selector: '[data-shirube-tip="video"], iframe[src*="youtube"]',
-      allowH1Fallback: false,
-    },
-    when: "scroll",
-  },
-  {
-    id: "demo-result",
-    text: "結果が出ましたね。内容を見てみましょう",
-    target: {
-      tipId: "demo-result",
-      selector: "[data-shirube-result], [data-verdict]",
-      allowH1Fallback: false,
-    },
-    when: "result",
-  },
-  {
-    id: "demo-empty",
-    text: "まだ候補がありません。案内からどうぞ",
-    target: {
-      tipId: "demo-empty",
-      selector: "[data-empty-state]",
-      allowH1Fallback: false,
-    },
-    link: { href: "/annai", label: "しるべに案内してもらう" },
-    when: "empty",
-  },
-  {
-    id: "demo-idle",
-    text: "迷ったら『しるべに案内してもらう』からどうぞ",
-    link: { href: "/annai", label: "しるべに案内してもらう" },
-    when: "idle",
-  },
-];
-
 export const NOT_FOUND_TIPS: readonly ShirubeTip[] = [
   {
     id: "not-found",
@@ -393,7 +337,6 @@ export const ALL_ROUTE_TIP_SETS: Record<string, readonly ShirubeTip[]> = {
   "/blog": BLOG_LIST_TIPS,
   "/houi": HOUI_TOP_TIPS,
   "/relocation/candidates": CANDIDATES_TIPS,
-  "/demo/shirube": DEMO_TIPS,
   "/404": NOT_FOUND_TIPS,
   default: DEFAULT_TIPS,
 };
@@ -421,7 +364,6 @@ export function getTipsForRoute(
   if (options.is404 || p === "/404") return NOT_FOUND_TIPS;
 
   if (p === "/") return HOME_TIPS;
-  if (matchesPrefix(p, "/demo/shirube")) return DEMO_TIPS;
   if (matchesPrefix(p, "/houi/today")) return HOUI_TODAY_TIPS;
   if (matchesPrefix(p, "/houi/relocation-calendar")) {
     return RELOCATION_CALENDAR_TIPS;
@@ -555,11 +497,14 @@ export interface TipRateLimitConfig {
   minIntervalMs: number;
   /** 1 ページ表示あたりの自動表示上限。既定 6 回 */
   maxPerPageView: number;
+  /** 結果（吉凶）への反応など優先の案内の最小間隔（ms）。既定 10 秒 */
+  priorityMinIntervalMs?: number;
 }
 
 export const DEFAULT_TIP_RATE_LIMIT: TipRateLimitConfig = {
   minIntervalMs: 45_000,
   maxPerPageView: 6,
+  priorityMinIntervalMs: 10_000,
 };
 
 export function createTipRateLimitState(): TipRateLimitState {
@@ -574,17 +519,32 @@ export function canShowAutoTip(
   state: TipRateLimitState,
   nowMs: number,
   config: TipRateLimitConfig = DEFAULT_TIP_RATE_LIMIT,
-  options: { inputFocused?: boolean; tipId?: string } = {},
+  options: { inputFocused?: boolean; tipId?: string; priority?: boolean } = {},
 ): boolean {
   if (options.inputFocused) return false;
-  if (state.autoCount >= config.maxPerPageView) return false;
+  // 優先の案内（結果が出た直後の反応）は、通常の間隔や回数の上限を待たずに出す。
+  // それでも続けざまにならないよう、最低 priorityMinIntervalMs は空ける。
+  const minInterval = options.priority
+    ? (config.priorityMinIntervalMs ??
+      DEFAULT_TIP_RATE_LIMIT.priorityMinIntervalMs ??
+      10_000)
+    : config.minIntervalMs;
+  if (!options.priority && state.autoCount >= config.maxPerPageView) {
+    return false;
+  }
   if (
     state.lastAutoShownAt !== null &&
-    nowMs - state.lastAutoShownAt < config.minIntervalMs
+    nowMs - state.lastAutoShownAt < minInterval
   ) {
     return false;
   }
-  if (options.tipId && state.shownIds.includes(options.tipId)) return false;
+  if (
+    options.tipId &&
+    !options.priority &&
+    state.shownIds.includes(options.tipId)
+  ) {
+    return false;
+  }
   return true;
 }
 

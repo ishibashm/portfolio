@@ -18,7 +18,7 @@ import {
   stepWanderState,
 } from "@/components/guide/shirubeWanderLogic";
 import { NON_CORE_DISALLOW } from "@/lib/siteStructure";
-import { metadata as demoMetadata } from "@/app/demo/shirube/page";
+import { isShirubeExcluded } from "@/components/guide/SiteShirube";
 
 afterEach(() => {
   cleanup();
@@ -499,8 +499,17 @@ describe("CSS と SEO 方針", () => {
     }
   });
 
-  it("デモページは noindex かつ NON_CORE_DISALLOW に /demo が含まれる", () => {
-    expect(NON_CORE_DISALLOW).toContain("/demo");
-    expect(demoMetadata.robots).toMatchObject({ index: false });
+  it("試作デモページは本番に残さない（/demo/shirube を消した）", () => {
+    expect(existsSync(`${process.cwd()}/src/app/demo/shirube`)).toBe(false);
+    expect(NON_CORE_DISALLOW).not.toContain("/demo");
+  });
+
+  it("サイト全体のレイアウトに歩き回るしるべを 1 回だけ置き、管理画面などには出さない", () => {
+    const layout = readFileSync(`${process.cwd()}/src/app/layout.tsx`, "utf8");
+    expect(layout.match(/<SiteShirube \/>/g)?.length).toBe(1);
+    expect(isShirubeExcluded("/admin/blog")).toBe(true);
+    expect(isShirubeExcluded("/auth/callback")).toBe(true);
+    expect(isShirubeExcluded("/houi/today")).toBe(false);
+    expect(isShirubeExcluded("/")).toBe(false);
   });
 });

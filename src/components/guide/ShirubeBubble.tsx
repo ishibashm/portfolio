@@ -15,22 +15,21 @@ import type {
   ShirubeTip,
   ShirubeTipLink,
 } from "@/components/guide/shirubeTips";
+import {
+  bubbleSize,
+  chooseBubblePlacement,
+  type BubbleAnchor,
+  type BubbleRect,
+} from "@/components/guide/shirubeBubblePlace";
 
 export const SHIRUBE_HIDDEN_STORAGE_KEY = "shirube:hidden";
 
 export interface ShirubeBubbleProps {
   tip: ShirubeTip;
-  /** アクティブ時のキャラ位置（ビューポート座標）。reduced-motion 時は null */
-  anchor: {
-    x: number;
-    y: number;
-    actorWidth: number;
-    actorHeight: number;
-    viewportWidth: number;
-    /** 本文が始まる x（固定サイドバーの右端）。吹き出しをその左へ出さない */
-    minLeft?: number;
-    viewportHeight: number;
-  } | null;
+  /** キャラ位置（ビューポート座標）と、重ねたくない物の矩形。null なら CSS の既定位置 */
+  anchor: (BubbleAnchor & { blockers?: readonly BubbleRect[] }) | null;
+  /** 動きを減らす設定（位置は anchor から計算するが、data-anchored は reduced） */
+  reduced?: boolean;
   restSide: "right" | "left";
   onHideShirube: () => void;
   onDismissBubble: () => void;
@@ -39,6 +38,7 @@ export interface ShirubeBubbleProps {
 export function ShirubeBubble({
   tip,
   anchor,
+  reduced = false,
   restSide,
   onHideShirube,
   onDismissBubble,
@@ -50,37 +50,27 @@ export function ShirubeBubble({
       : [];
 
   let style: CSSProperties | undefined;
-  let placement: "above" | "below" = "above";
+  let placement: "above" | "below" | "left" | "right" = "above";
 
   if (anchor) {
-    const isMobile = anchor.viewportWidth < 640;
-    const bubbleWidth = isMobile ? 180 : 220;
-    const margin = 8;
-    const minLeft = (anchor.minLeft ?? 0) + margin;
-    const centerX = anchor.x + anchor.actorWidth * 0.5;
-    const rawLeft = centerX - bubbleWidth * 0.5;
-    const clampedLeft = Math.min(
-      Math.max(minLeft, anchor.viewportWidth - bubbleWidth - margin),
-      Math.max(minLeft, rawLeft),
-    );
-
-    const actorTop = anchor.y - anchor.actorHeight;
-    // 上に十分な空間（約 110px）が無ければキャラの下側へ出す
-    if (actorTop < 118 && anchor.y + 96 < anchor.viewportHeight) {
-      placement = "below";
+    const size = bubbleSize(anchor.viewportWidth, tip.text, links.length);
+    const pl = chooseBubblePlacement(anchor, size, anchor.blockers ?? []);
+    placement = pl.placement;
+    if (pl.placement === "above") {
+      // 下端を合わせて、実際の高さが見積もりと違っても上へ伸びるようにする
       style = {
-        left: `${Math.round(clampedLeft)}px`,
-        top: `${Math.round(anchor.y + 8)}px`,
+        left: `${Math.round(pl.left)}px`,
+        bottom: `${Math.round(anchor.viewportHeight - (pl.top + size.height))}px`,
+      };
+    } else if (pl.placement === "left") {
+      style = {
+        right: `${Math.round(anchor.viewportWidth - (pl.left + size.width))}px`,
+        top: `${Math.round(pl.top)}px`,
       };
     } else {
-      placement = "above";
-      const bottomOffset = Math.max(
-        margin,
-        anchor.viewportHeight - actorTop + 10,
-      );
       style = {
-        left: `${Math.round(clampedLeft)}px`,
-        bottom: `${Math.round(bottomOffset)}px`,
+        left: `${Math.round(pl.left)}px`,
+        top: `${Math.round(pl.top)}px`,
       };
     }
   }
@@ -93,6 +83,7 @@ export function ShirubeBubble({
       data-placement={placement}
       data-rest-side={restSide}
       data-anchored={anchor ? "dynamic" : "reduced"}
+      data-reduced={reduced || undefined}
       role="status"
       aria-live="polite"
       style={style}

@@ -30,6 +30,11 @@ export interface PerchCandidate {
   isPrimaryCta?: boolean;
   isFocusedInput?: boolean;
   explicit?: boolean;
+  /**
+   * 床の上（しるべの背丈ぶん）が空いている横の区間。DOM 側で測って入れる。
+   * 指定があるときは、この区間だけを床にする（上のカードや文字に体が重ならないように）。
+   */
+  freeSpans?: ReadonlyArray<readonly [number, number]>;
 }
 
 export interface AvoidRect {
@@ -146,21 +151,32 @@ export function findPerches(
     const usableWidth = right - left;
     if (usableWidth < minWidth) continue;
 
-    // しるべが立つ空間 [left, right] × [top - actorHeight, top + 4] が
-    // 避けるべき領域（送信ボタン・入力欄・data-shirube-avoid）に被るなら除外
-    const overlapsAvoid = avoidRects.some((a) =>
-      rectsOverlap(left, right, c.top - actorHeight, c.top + 4, a),
-    );
-    if (overlapsAvoid) continue;
+    // 上が空いている区間だけを床にする（指定が無ければ全幅）
+    const spans: [number, number][] = c.freeSpans
+      ? c.freeSpans
+          .map(
+            ([a, b]) =>
+              [Math.max(left, a), Math.min(right, b)] as [number, number],
+          )
+          .filter(([a, b]) => b - a >= actorWidth + 16)
+      : [[left, right]];
 
-    valid.push({
-      id: c.id,
-      left,
-      right,
-      top: Math.round(c.top),
-      kind: "element",
-      explicit: Boolean(c.explicit),
-      width: usableWidth,
+    spans.forEach(([sl, sr], k) => {
+      // しるべが立つ空間 [sl, sr] × [top - actorHeight, top + 4] が
+      // 避けるべき領域（送信ボタン・入力欄・data-shirube-avoid）に被るなら除外
+      const overlapsAvoid = avoidRects.some((a) =>
+        rectsOverlap(sl, sr, c.top - actorHeight, c.top + 4, a),
+      );
+      if (overlapsAvoid) return;
+      valid.push({
+        id: spans.length > 1 ? `${c.id}#${k}` : c.id,
+        left: sl,
+        right: sr,
+        top: Math.round(c.top),
+        kind: "element",
+        explicit: Boolean(c.explicit),
+        width: sr - sl,
+      });
     });
   }
 
@@ -338,10 +354,95 @@ export function collectAvoidRects(
 /**
  * DOM から床候補を収集する（薄い DOM アダプタ）。
  */
+/** 背丈の上の空きを調べる横の刻み（px） */
+const CLEARANCE_STEP_PX = 14;
+
+/**
+ * 点 (x, y) に「しるべの体が重なると困る物」（文字・画像・ボタン・色の付いた箱）があるか。
+ * しるべ自身と、ページ全体の背景（html / body / main / 画面いっぱいの透明な器）は除く。
+ */
+export function isBlockedAt(
+  doc: Document,
+  win: Window,
+  x: number,
+  y: number,
+): boolean {
+  if (y < 0 || x < 0 || x > win.innerWidth || y > win.innerHeight) return true;
+  const el = doc.elementFromPoint?.(x, y);
+  if (!el) return false;
+  if (el.closest(".shirube-wander-stage")) return false;
+  const tag = el.tagName;
+  if (tag === "HTML" || tag === "BODY" || tag === "MAIN") return false;
+  if (
+    /^(IMG|SVG|PICTURE|VIDEO|IFRAME|CANVAS|BUTTON|INPUT|TEXTAREA|SELECT|A|LABEL|P|H[1-6]|LI|SPAN|STRONG|EM|SMALL|TABLE|TD|TH)$/.test(
+      tag,
+    )
+  ) {
+    return true;
+  }
+  const r = el.getBoundingClientRect();
+  const isPageWrapper =
+    r.width >= win.innerWidth * 0.9 || r.height >= win.innerHeight;
+  const cs = win.getComputedStyle(el);
+  const bg = cs.backgroundColor;
+  const hasBg = !!bg && bg !== "transparent" && !/rgba\([^)]*,\s*0\)$/.test(bg);
+  const hasBorder =
+    parseFloat(cs.borderTopWidth) > 0 || parseFloat(cs.borderLeftWidth) > 0;
+  const hasShadow = cs.boxShadow && cs.boxShadow !== "none";
+  if ((hasBg || hasBorder || hasShadow) && !isPageWrapper) return true;
+  // 透明な器の中でも、その点に文字が直接あるなら重なる
+  return (
+    Array.from(el.childNodes).some(
+      (n) => n.nodeType === 3 && (n.textContent ?? "").trim().length > 0,
+    ) && !isPageWrapper
+  );
+}
+
+/**
+ * 床 [left, right] の上、背丈 + 余白ぶんが空いている横の区間を返す（DOM で測る）。
+ * 純粋な部分（サンプル列 → 区間）は {@link spansFromSamples}。
+ */
+export function measureFreeSpans(
+  doc: Document,
+  win: Window,
+  left: number,
+  right: number,
+  top: number,
+  actorHeight: number,
+): [number, number][] {
+  const rows = [top - 6, top - actorHeight * 0.5, top - actorHeight - 10];
+  const xs: number[] = [];
+  for (let x = left + 4; x <= right - 4; x += CLEARANCE_STEP_PX) xs.push(x);
+  const free = xs.map((x) => rows.every((y) => !isBlockedAt(doc, win, x, y)));
+  return spansFromSamples(xs, free, CLEARANCE_STEP_PX);
+}
+
+/** x のサンプル列と空き判定から、連続して空いている区間を作る（純粋関数）。 */
+export function spansFromSamples(
+  xs: readonly number[],
+  free: readonly boolean[],
+  step: number,
+): [number, number][] {
+  const out: [number, number][] = [];
+  let start: number | null = null;
+  for (let i = 0; i < xs.length; i += 1) {
+    if (free[i]) {
+      if (start === null) start = xs[i] - step / 2;
+    } else if (start !== null) {
+      out.push([start, xs[i - 1] + step / 2]);
+      start = null;
+    }
+  }
+  if (start !== null && xs.length > 0)
+    out.push([start, xs[xs.length - 1] + step / 2]);
+  return out;
+}
+
 export function collectPerchCandidates(
   doc: Document = document,
   win: Window = window,
   selectors: readonly string[] = DEFAULT_PERCH_SELECTORS,
+  opts: { actorHeight?: number; measureClearance?: boolean } = {},
 ): PerchCandidate[] {
   const combined = selectors.join(", ");
   if (!combined) return [];
@@ -386,6 +487,22 @@ export function collectPerchCandidates(
       isPrimaryCta,
       isFocusedInput,
       explicit,
+      freeSpans:
+        opts.measureClearance !== false &&
+        visible &&
+        !insideStage &&
+        r.top > 0 &&
+        r.top < win.innerHeight &&
+        typeof doc.elementFromPoint === "function"
+          ? measureFreeSpans(
+              doc,
+              win,
+              Math.max(0, r.left),
+              Math.min(win.innerWidth, r.right),
+              r.top,
+              opts.actorHeight ?? (win.innerWidth < 640 ? 60 : 120),
+            )
+          : undefined,
     });
     idx += 1;
   });
