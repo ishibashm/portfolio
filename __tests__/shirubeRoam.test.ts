@@ -252,7 +252,10 @@ describe("自由移動の状態遷移（ホップ・着地・床消失・指さ�
       viewportHeight: 800,
     };
 
-    let state = createInitialWanderState(bounds, config, () => 0.3, 800);
+    let state = {
+      ...createInitialWanderState(bounds, config, () => 0.3, 800),
+      x: 300,
+    };
     state = startPointingToward(
       state,
       { left: 260, right: 520, top: 340, bottom: 420 },
@@ -267,6 +270,31 @@ describe("自由移動の状態遷移（ホップ・着地・床消失・指さ�
     }
     expect(state.phase).toBe("pointing");
     expect(state.perchId).toBe("card-1");
+  });
+
+  it("同じ床で離れているときは跳ばずに、その場で対象の方を向いて指さす", () => {
+    const bounds = getWanderBounds(1000, 59, 16);
+    const config = getWanderConfig(1000);
+    const roam: RoamContext = {
+      perches: [bottomPerch],
+      actorWidth: 59,
+      actorHeight: 120,
+      viewportHeight: 800,
+    };
+    const state = {
+      ...createInitialWanderState(bounds, config, () => 0.3, 800),
+      x: 900,
+    };
+    const next = startPointingToward(
+      state,
+      { left: 100, right: 300, top: 500, bottom: 600 },
+      roam,
+      5000,
+    );
+    expect(next.phase).toBe("pointing");
+    expect(next.hop).toBeNull();
+    expect(next.x).toBe(900);
+    expect(next.facing).toBe("left");
   });
 });
 
@@ -420,7 +448,17 @@ describe("固定サイドバーの上には立たない", () => {
   it("contentLeftPx より左を床にしない", async () => {
     const { findPerches } = await import("@/components/guide/shirubePerch");
     const perches = findPerches(
-      [{ id: "card", left: 100, right: 700, top: 400, bottom: 600 }],
+      [
+        {
+          id: "card",
+          left: 100,
+          right: 700,
+          top: 400,
+          bottom: 600,
+          width: 600,
+          height: 200,
+        },
+      ],
       { width: 1280, height: 800 },
       { contentLeftPx: 256 },
     );

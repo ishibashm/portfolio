@@ -611,7 +611,13 @@ export function ShirubeWanderer({
         };
       }
 
-      if (opts.auto && !chooseBubblePlacement(anchor, size, blockers).safe) {
+      // スマホでは、ボタンやリンクに重ならない置き場所が無ければ自動の案内は出さない。
+      // PC は重ならない場所を優先して選ぶが、見つからなくても出す（画面が広く、7 秒で消える）。
+      if (
+        opts.auto &&
+        vw < 640 &&
+        !chooseBubblePlacement(anchor, size, blockers).safe
+      ) {
         return false;
       }
 
@@ -833,6 +839,8 @@ export function ShirubeWanderer({
         },
       );
       perchesRef.current = perches;
+      // 確認用: いま乗れる床の数（見た目には影響しない）
+      stage?.setAttribute("data-perches", String(perches.length));
 
       // 現在乗っている床が動いた／消えた場合の追従
       if (!isReduced && stateRef.current) {

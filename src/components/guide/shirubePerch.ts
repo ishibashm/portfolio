@@ -65,6 +65,7 @@ export const DEFAULT_PERCH_SELECTORS = [
   "main article",
   'main section[class*="rounded"]',
   'main section > div[class*="rounded"]',
+  "main .wg-card",
 ] as const;
 // ボタンやリンクの上は文字を隠しやすく、押したい人の邪魔にもなるので既定の床にしない。
 

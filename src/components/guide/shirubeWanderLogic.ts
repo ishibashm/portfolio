@@ -584,6 +584,22 @@ export function startPointingToward(
   const alreadyClose =
     nearest.id === state.perchId && Math.abs(toX - state.x) < 40;
 
+  // 同じ床の上で離れている、または遠すぎて一跳びで届かないときは、
+  // その場で対象の方を向いて手を挙げる（床の上を跳んで横切らない）。
+  const sameFloorFar = nearest.id === state.perchId && !alreadyClose;
+  const tooFarToHop =
+    nearest.id !== state.perchId && Math.abs(toX - state.x) > 380;
+  if (sameFloorFar || tooFarToHop) {
+    const here = state.x + actorWidth * 0.5;
+    return {
+      ...state,
+      facing: targetCenterX >= here ? "right" : "left",
+      phase: "pointing",
+      remainingMs: durationMs,
+      hop: null,
+    };
+  }
+
   if (alreadyClose) {
     return {
       ...state,
