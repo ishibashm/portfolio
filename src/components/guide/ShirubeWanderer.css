@@ -19,6 +19,17 @@
   z-index: 30;
   pointer-events: none;
   overflow: clip;
+  /* 定位置（右端）とのすき間は JS（getHomeRightMarginPx）。箱でスマホ 2px / PC 4px ＋ ノッチなどの safe-area。
+     padding-right は JS が safe-area-inset-right を読むためのもの（中身の位置には影響しない）。 */
+  /* 動きを減らす設定の正面の立ち姿は、振っている手が箱より右へ出るので少しだけ多めに空ける */
+  --shirube-rest-gap: 6px;
+  padding-right: env(safe-area-inset-right, 0px);
+}
+
+@media (min-width: 640px) {
+  .shirube-wander-stage {
+    --shirube-rest-gap: 10px;
+  }
 }
 
 @media (min-width: 640px) {
@@ -41,7 +52,7 @@
   top: auto;
   bottom: calc(var(--shirube-lift, 0px) + env(safe-area-inset-bottom, 0px));
   left: auto;
-  right: 16px;
+  right: calc(var(--shirube-rest-gap, 10px) + env(safe-area-inset-right, 0px));
   will-change: auto;
 }
 
@@ -294,7 +305,7 @@
 }
 
 .shirube-bubble[data-anchored="reduced"] {
-  right: 16px;
+  right: calc(var(--shirube-rest-gap, 10px) + env(safe-area-inset-right, 0px));
   bottom: calc(
     var(--shirube-lift, 0px) + env(safe-area-inset-bottom, 0px) +
       var(--shirube-h) + 12px

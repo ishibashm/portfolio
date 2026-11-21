@@ -58,6 +58,7 @@ import {
   computeBottomLift,
   createInitialWanderState,
   createSeededRandom,
+  getHomeRightMarginPx,
   getWanderBounds,
   getWanderConfig,
   reconcilePerch,
@@ -246,6 +247,24 @@ export function getContentLeft(
   const left = main.getBoundingClientRect().left;
   if (!Number.isFinite(left) || left <= 0) return 0;
   return left > win.innerWidth - 240 ? 0 : Math.round(left);
+}
+
+/** 縦スクロールバーを除いた画面の幅（定位置を右端にぴったり寄せるため） */
+function getLayoutWidth(win: Window = window): number {
+  const cw = win.document?.documentElement?.clientWidth ?? 0;
+  return cw > 0 && cw <= win.innerWidth ? cw : win.innerWidth;
+}
+
+/**
+ * 定位置（右端）とのすき間。PC 8px / スマホ 4px に、ノッチなどの
+ * safe-area-inset-right（ステージの padding-right に入れてある）を足す。
+ */
+function getRightMarginPx(stage: HTMLElement | null, vw: number): number {
+  let safe = 0;
+  if (stage && typeof window !== "undefined") {
+    safe = parseFloat(window.getComputedStyle(stage).paddingRight) || 0;
+  }
+  return getHomeRightMarginPx(vw) + safe;
 }
 
 function withContentLeft<T extends { minX: number; maxX: number }>(
@@ -602,7 +621,14 @@ export function ShirubeWanderer({
       } else {
         // 動きを減らす設定: 右下（または左下）に静止している位置
         anchor = {
-          x: restSide === "left" ? 16 : vw - 16 - dims.width,
+          x:
+            restSide === "left"
+              ? 16
+              : getLayoutWidth(window) -
+                getRightMarginPx(stageRef.current, getLayoutWidth(window)) -
+                // CSS の --shirube-rest-gap（スマホ 6px / PC 10px）にそろえる
+                (getLayoutWidth(window) < 640 ? 4 : 6) -
+                dims.width,
           y: vh - bottomLiftRef.current,
           actorWidth: dims.width,
           actorHeight: dims.height,
@@ -828,13 +854,15 @@ export function ShirubeWanderer({
         actorHeight: dims.height,
       });
       const avoidRects = collectAvoidRects(document, window);
+      const layoutW = getLayoutWidth(window);
       const perches = findPerches(
         candidates,
-        { width: window.innerWidth, height: window.innerHeight },
+        { width: layoutW, height: window.innerHeight },
         {
           actorWidth: dims.width,
           actorHeight: dims.height,
           edgeMarginPx,
+          rightEdgeMarginPx: getRightMarginPx(stage, layoutW),
           contentLeftPx: getContentLeft(document, window),
           bottomLiftPx: lift,
           avoidRects,
@@ -946,13 +974,15 @@ export function ShirubeWanderer({
       dims.height,
       window.innerHeight - bottomLiftRef.current,
     );
+    const layoutW = getLayoutWidth(window);
+    const rightMargin = getRightMarginPx(stageRef.current, layoutW);
     const initialBounds = withContentLeft(
-      getWanderBounds(window.innerWidth, dims.width, edgeMarginPx),
+      getWanderBounds(layoutW, dims.width, edgeMarginPx, rightMargin),
       getContentLeft(document, window),
       edgeMarginPx,
     );
     const initialConfig = getWanderConfig(window.innerWidth, { gait, greet });
-    // 基本はその場の足踏みから始める（移動はときどき）
+    // 定位置（画面右下の端）で、その場の足踏みから始める（移動はときどき）
     const initialState = startStepping(
       createInitialWanderState(
         initialBounds,
@@ -963,17 +993,19 @@ export function ShirubeWanderer({
       initialBounds,
       initialConfig,
       randomRef.current,
+      initialBounds.maxX,
     );
     stateRef.current = initialState;
 
     if (perchesRef.current.length === 0) {
       perchesRef.current = findPerches(
         [],
-        { width: window.innerWidth, height: window.innerHeight },
+        { width: layoutW, height: window.innerHeight },
         {
           actorWidth: dims.width,
           actorHeight: dims.height,
           edgeMarginPx,
+          rightEdgeMarginPx: rightMargin,
           contentLeftPx: getContentLeft(document, window),
           bottomLiftPx: bottomLiftRef.current,
         },
@@ -1097,8 +1129,9 @@ export function ShirubeWanderer({
 
     const buildRoamContext = () => {
       const d = getActorDimensions(actorRef.current);
-      const vw = window.innerWidth;
+      const vw = getLayoutWidth(window);
       const vh = window.innerHeight;
+      const rm = getRightMarginPx(stageRef.current, vw);
       const perches =
         perchesRef.current.length > 0
           ? perchesRef.current
@@ -1109,6 +1142,7 @@ export function ShirubeWanderer({
                 actorWidth: d.width,
                 actorHeight: d.height,
                 edgeMarginPx,
+                rightEdgeMarginPx: rm,
                 contentLeftPx: getContentLeft(document, window),
                 bottomLiftPx: bottomLiftRef.current,
               },
@@ -1116,7 +1150,7 @@ export function ShirubeWanderer({
       return {
         dims: d,
         bounds: withContentLeft(
-          getWanderBounds(vw, d.width, edgeMarginPx),
+          getWanderBounds(vw, d.width, edgeMarginPx, rm),
           getContentLeft(document, window),
           edgeMarginPx,
         ),

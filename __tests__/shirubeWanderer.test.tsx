@@ -293,11 +293,16 @@ describe("shirubeWanderLogic", () => {
   it("画面幅に収まる範囲を歩き、目標に着くと立ち止まり、その後向きを変えて再び歩く", () => {
     const bounds = getWanderBounds(1000, 80, 16);
     const config = getWanderConfig(1000);
-    let state = createInitialWanderState(bounds, config, () => 0.1);
-
-    expect(state.x).toBeGreaterThanOrEqual(bounds.minX);
-    expect(state.x).toBeLessThanOrEqual(bounds.maxX);
-    expect(state.phase).toBe("walking");
+    const initial = createInitialWanderState(bounds, config, () => 0.1);
+    // 初期位置は定位置（右端）で、ページの方（左）を向いて立っている
+    expect(initial.x).toBe(bounds.maxX);
+    expect(initial.facing).toBe("left");
+    expect(initial.phase).toBe("paused");
+    let state = {
+      ...initial,
+      phase: "walking" as const,
+      targetX: bounds.maxX - 200,
+    };
 
     // 目標まで進める
     for (let i = 0; i < 400 && state.phase === "walking"; i += 1) {
@@ -379,7 +384,11 @@ describe("正面のしるべとすり足", () => {
     const bounds = getWanderBounds(1000, 60, 16);
     const config = getWanderConfig(1000);
     expect(config.greetChance).toBeGreaterThan(0);
-    let state = createInitialWanderState(bounds, config, () => 0.1);
+    let state = {
+      ...createInitialWanderState(bounds, config, () => 0.1),
+      phase: "walking" as const,
+      targetX: bounds.maxX - 200,
+    };
     for (let i = 0; i < 400 && state.phase === "walking"; i += 1) {
       state = stepWanderState(state, 50, bounds, config, () => 0.1);
     }

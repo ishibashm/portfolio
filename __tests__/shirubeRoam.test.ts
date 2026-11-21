@@ -659,3 +659,147 @@ describe("ムーンウォークしない・基本はその場で足踏み", () =
     }
   });
 });
+
+describe("定位置は画面右下の端（離れても 10〜20 秒で戻る）", () => {
+  const VW = 1280;
+  const ACTOR_W = 59;
+
+  it("下端の床は右端から 4px（スマホ 2px）までで、定位置はそこにぴったり寄る", async () => {
+    const L = await import("@/components/guide/shirubeWanderLogic");
+    for (const [vw, w, gap] of [
+      [1280, 59, 4],
+      [390, 30, 2],
+    ] as const) {
+      const perches = findPerches(
+        [],
+        { width: vw, height: 800 },
+        {
+          actorWidth: w,
+          actorHeight: 120,
+          edgeMarginPx: 16,
+          rightEdgeMarginPx: L.getHomeRightMarginPx(vw),
+        },
+      );
+      const homeX = L.getHomeX({
+        perches,
+        actorWidth: w,
+        actorHeight: 120,
+        viewportHeight: 800,
+      });
+      expect(homeX).not.toBeNull();
+      // しるべの右端と画面右端のすき間
+      expect(vw - (homeX! + w)).toBe(gap);
+      // 初期位置も定位置
+      const bounds = L.getWanderBounds(vw, w, 16, gap);
+      const init = L.createInitialWanderState(
+        bounds,
+        L.getWanderConfig(vw),
+        () => 0.5,
+        800,
+      );
+      expect(init.x).toBe(homeX);
+    }
+  });
+
+  async function simulateHome(seed: number, seconds: number, dtMs: number) {
+    const L = await import("@/components/guide/shirubeWanderLogic");
+    const perches: Perch[] = [
+      { id: "bottom", left: 16, right: VW - 4, top: 800, kind: "bottom" },
+      { id: "card-a", left: 300, right: 700, top: 420, kind: "element" },
+      { id: "card-b", left: 640, right: 1000, top: 560, kind: "element" },
+    ];
+    const roam: RoamContext = {
+      perches,
+      actorWidth: ACTOR_W,
+      actorHeight: 120,
+      viewportHeight: 800,
+    };
+    const homeX = L.getHomeX(roam)!;
+    const random = L.createSeededRandom(seed);
+    const bounds = L.getWanderBounds(VW, ACTOR_W, 16, 4);
+    const config = L.getWanderConfig(VW);
+    let s = L.startStepping(
+      L.createInitialWanderState(bounds, config, random, 800),
+      bounds,
+      config,
+      random,
+      homeX,
+    );
+    const frames: {
+      x: number;
+      perch: string;
+      phase: string;
+      facing: string;
+    }[] = [];
+    for (let t = 0; t < seconds * 1000; t += dtMs) {
+      s = L.stepWanderState(s, dtMs, bounds, config, random, roam);
+      frames.push({
+        x: s.x,
+        perch: s.perchId,
+        phase: s.phase,
+        facing: s.facing,
+      });
+    }
+    return { frames, homeX, config };
+  }
+
+  it("ほとんどの時間は右端の定位置にいて、出かけても必ず戻ってくる", async () => {
+    for (const seed of [1, 5, 42, 2026]) {
+      const { frames, homeX, config } = await simulateHome(seed, 300, 50);
+      const atHome = (f: (typeof frames)[number]) =>
+        f.perch === "bottom" && f.x >= homeX - config.maxStepDriftPx - 2;
+      const homeShare = frames.filter(atHome).length / frames.length;
+      expect(homeShare).toBeGreaterThan(0.45);
+
+      // 離れている時間は 1 回あたり（戻る時間＋その場の行動の終わり待ちを含めて）40 秒以内
+      let awayRun = 0;
+      let maxAway = 0;
+      let trips = 0;
+      for (let i = 0; i < frames.length; i += 1) {
+        if (atHome(frames[i])) {
+          if (awayRun > 0) trips += 1;
+          awayRun = 0;
+        } else {
+          awayRun += 50;
+          maxAway = Math.max(maxAway, awayRun);
+        }
+      }
+      expect(maxAway).toBeLessThanOrEqual(40_000);
+      // 5 分で何度か出かけて戻ってくる
+      expect(trips).toBeGreaterThanOrEqual(2);
+    }
+  });
+
+  it("定位置の足踏みは右端から homeStepDriftPx（PC 3px）より左へ離れず、右端を越えない", async () => {
+    for (const seed of [3, 8, 64]) {
+      const { frames, homeX, config } = await simulateHome(seed, 180, 50);
+      for (const f of frames) {
+        expect(f.x).toBeLessThanOrEqual(homeX + 0.001);
+        if (
+          f.phase === "stepping" &&
+          f.perch === "bottom" &&
+          f.x > homeX - 40
+        ) {
+          expect(f.x).toBeGreaterThanOrEqual(
+            homeX - config.homeStepDriftPx - 0.001,
+          );
+        }
+      }
+    }
+  });
+
+  it("戻るときも向きは進む方向（ムーンウォークしない）", async () => {
+    for (const seed of [2, 9, 31]) {
+      for (const dt of [16, 100]) {
+        const { frames } = await simulateHome(seed, 180, dt);
+        for (let i = 1; i < frames.length; i += 1) {
+          const dx = frames[i].x - frames[i - 1].x;
+          if (Math.abs(dx) < 0.01) continue;
+          if (!["walking", "stepping", "hopping"].includes(frames[i].phase))
+            continue;
+          expect(frames[i].facing).toBe(dx > 0 ? "right" : "left");
+        }
+      }
+    }
+  });
+});

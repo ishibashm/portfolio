@@ -48,6 +48,8 @@ export interface FindPerchesOptions {
   actorHeight?: number;
   actorWidth?: number;
   edgeMarginPx?: number;
+  /** 右端とのすき間（既定は edgeMarginPx）。定位置を右端にぴったり寄せるために小さくする */
+  rightEdgeMarginPx?: number;
   /** 左に固定のサイドバーなどがあるとき、本文が始まる x（その左には立たない） */
   contentLeftPx?: number;
   /** 画面最下端の持ち上げ量（固定 CTA・safe-area 分） */
@@ -104,6 +106,7 @@ export function findPerches(
   const actorHeight = opts.actorHeight ?? (isMobile ? 60 : 120);
   const actorWidth = opts.actorWidth ?? (isMobile ? 30 : 59);
   const edgeMarginPx = opts.edgeMarginPx ?? 16;
+  const rightEdgeMarginPx = Math.max(0, opts.rightEdgeMarginPx ?? edgeMarginPx);
   const contentLeftPx = Math.max(0, opts.contentLeftPx ?? 0);
   const bottomLiftPx = Math.max(0, opts.bottomLiftPx ?? 0);
   const maxPerches = isMobile
@@ -119,7 +122,7 @@ export function findPerches(
     contentLeftPx + edgeMarginPx,
     Math.max(0, vw - actorWidth),
   );
-  const bottomRight = Math.max(bottomLeft, vw - edgeMarginPx);
+  const bottomRight = Math.max(bottomLeft, vw - rightEdgeMarginPx);
 
   const bottomPerch: Perch = {
     id: "bottom",
@@ -148,7 +151,7 @@ export function findPerches(
     if (c.bottom <= 0 || c.top >= vh) continue;
 
     const left = Math.max(contentLeftPx + edgeMarginPx, c.left);
-    const right = Math.min(vw - edgeMarginPx, c.right);
+    const right = Math.min(vw - rightEdgeMarginPx, c.right);
     const usableWidth = right - left;
     if (usableWidth < minWidth) continue;
 
