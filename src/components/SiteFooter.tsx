@@ -30,19 +30,19 @@ export const SITE_FOOTER_LINKS = [
 
 export function SiteFooter() {
   return (
-    <footer className="border-t border-slate-300/80 px-4 py-6 text-sm">
-      <p className="text-center text-xs font-semibold text-slate-600">
+    <footer className="border-t border-slate-300/80 dark:border-theme-border px-4 py-6 text-sm">
+      <p className="text-center text-xs font-semibold text-slate-600 dark:text-ink-muted">
         © {currentYearInJapan()} {SITE_NAME}. {SITE_TAGLINE}ためのサービスです。
       </p>
       <nav
         aria-label="サイト情報"
-        className="mx-auto mt-4 flex max-w-[1700px] flex-wrap items-center justify-center gap-x-4 gap-y-2 text-xs text-slate-500"
+        className="mx-auto mt-4 flex max-w-[1700px] flex-wrap items-center justify-center gap-x-4 gap-y-2 text-xs text-ink-muted"
       >
         {SITE_FOOTER_LINKS.map((item) => (
           <Link
             key={item.href}
             href={item.href}
-            className="hover:text-rose-600 transition-colors"
+            className="hover:text-accent transition-colors"
           >
             {item.label}
           </Link>
@@ -50,7 +50,7 @@ export function SiteFooter() {
         <Link
           href="/llms.txt"
           target="_blank"
-          className="hover:text-rose-600 transition-colors font-mono text-[11px]"
+          className="hover:text-accent transition-colors font-mono text-[11px]"
         >
           AI Agent Spec (/llms.txt)
         </Link>
@@ -60,9 +60,9 @@ export function SiteFooter() {
       </div>
       <nav
         aria-label="YouTube チャンネル"
-        className="mx-auto mt-4 flex max-w-[1700px] flex-wrap items-center justify-center gap-x-4 gap-y-2 text-xs text-slate-600"
+        className="mx-auto mt-4 flex max-w-[1700px] flex-wrap items-center justify-center gap-x-4 gap-y-2 text-xs text-slate-600 dark:text-ink-muted"
       >
-        <span className="font-bold text-slate-500">YouTube</span>
+        <span className="font-bold text-ink-muted">YouTube</span>
         <YouTubeChannelLinks className="flex flex-wrap gap-x-4 gap-y-2" />
       </nav>
     </footer>

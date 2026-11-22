@@ -27,7 +27,11 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
-import { GRID_STROKE, SERIES } from "@/lib/chartPalette";
+import {
+  THEMED_GRID_STROKE,
+  THEMED_SERIES,
+  THEMED_TOOLTIP_STYLES,
+} from "@/lib/chartPalette";
 import { ESTAT_API_CREDIT } from "@/lib/estatCredit";
 import type { EstatRentSnapshot } from "@/utils/estatRent";
 
@@ -93,35 +97,45 @@ export function OfficialRentSection({
   const cities = [...retail.cities].sort((x, y) => y.yen - x.yen);
 
   return (
-    <section className="rounded-3xl border border-gray-200 bg-white p-5 shadow-sm">
-      <h2 className="text-sm font-bold text-stone-800">
+    <section className="rounded-3xl border border-gray-200 dark:border-theme-border bg-white dark:bg-theme-surface p-5 shadow-sm">
+      <h2 className="text-sm font-bold text-stone-800 dark:text-ink">
         民営家賃の推移（消費者物価指数・2025年＝100）—{" "}
         {monthLabel(cpi.latestMonth)}まで
       </h2>
-      <p className="mt-0.5 mb-4 text-xs leading-relaxed text-stone-500">
+      <p className="mt-0.5 mb-4 text-xs leading-relaxed text-stone-500 dark:text-ink-muted">
         {`総務省が毎月出す消費者物価指数の品目「民営家賃」。同じ質の借家の家賃が、2025年の平均を 100 としてどれだけ動いたかを表す。広さや築年の違う物件が混ざっても動かないので、掲載の中央値より相場の向きを読みやすい。${monthLabel(cpi.latestMonth)}は${summary}。毎月、前月分が出たあとに取り直す。`}
       </p>
 
       <div className="h-56">
         <ResponsiveContainer width="100%" height="100%">
           <LineChart data={chart}>
-            <CartesianGrid strokeDasharray="3 3" stroke={GRID_STROKE} />
-            <XAxis dataKey="month" tick={{ fontSize: 10 }} minTickGap={24} />
+            <CartesianGrid strokeDasharray="3 3" stroke={THEMED_GRID_STROKE} />
+            <XAxis
+              dataKey="month"
+              tick={{ fontSize: 10, fill: "var(--wg-ink-muted)" }}
+              minTickGap={24}
+            />
             <YAxis
-              tick={{ fontSize: 10 }}
+              tick={{ fontSize: 10, fill: "var(--wg-ink-muted)" }}
               width={44}
               domain={["auto", "auto"]}
             />
             <Tooltip
+              {...THEMED_TOOLTIP_STYLES}
               labelFormatter={(m) => monthLabel(String(m))}
               formatter={(v) => (typeof v === "number" ? v.toFixed(1) : v)}
             />
-            <Legend wrapperStyle={{ fontSize: 11 }} />
+            <Legend
+              wrapperStyle={{ fontSize: 11 }}
+              formatter={(value) => (
+                <span className="text-ink-muted">{value}</span>
+              )}
+            />
             {first && (
               <Line
                 dataKey="a"
                 name={first.areaName}
-                stroke={SERIES.primary}
+                stroke={THEMED_SERIES.primary}
                 dot={false}
                 strokeWidth={2}
               />
@@ -130,7 +144,7 @@ export function OfficialRentSection({
               <Line
                 dataKey="b"
                 name={second.areaName}
-                stroke={SERIES.secondary}
+                stroke={THEMED_SERIES.secondary}
                 dot={false}
                 strokeWidth={2}
               />
@@ -141,14 +155,14 @@ export function OfficialRentSection({
 
       <div className={`mt-4 grid gap-3 ${showAreas ? "md:grid-cols-2" : ""}`}>
         {showAreas && (
-          <details className="rounded-xl border border-stone-200 p-3">
-            <summary className="cursor-pointer text-xs font-bold text-stone-700">
+          <details className="rounded-xl border border-stone-200 dark:border-theme-border p-3">
+            <summary className="cursor-pointer text-xs font-bold text-stone-700 dark:text-ink">
               地域別の前年同月比（{areas.length} 地域・
               {monthLabel(cpi.latestMonth)}）
             </summary>
             <table className="mt-2 w-full text-xs">
               <thead>
-                <tr className="text-left text-stone-500">
+                <tr className="text-left text-stone-500 dark:text-ink-muted">
                   <th className="py-1 font-semibold">地域</th>
                   <th className="whitespace-nowrap py-1 pl-3 text-right font-semibold">
                     指数
@@ -160,7 +174,10 @@ export function OfficialRentSection({
               </thead>
               <tbody>
                 {areas.map((a) => (
-                  <tr key={a.areaName} className="border-t border-stone-100">
+                  <tr
+                    key={a.areaName}
+                    className="border-t border-stone-100 dark:border-theme-border"
+                  >
                     <td className="py-1">{a.areaName}</td>
                     <td className="whitespace-nowrap py-1 pl-3 text-right tabular-nums">
                       {a.index.toFixed(1)}
@@ -175,17 +192,17 @@ export function OfficialRentSection({
           </details>
         )}
 
-        <details className="rounded-xl border border-stone-200 p-3">
-          <summary className="cursor-pointer text-xs font-bold text-stone-700">
+        <details className="rounded-xl border border-stone-200 dark:border-theme-border p-3">
+          <summary className="cursor-pointer text-xs font-bold text-stone-700 dark:text-ink">
             都市別の家賃の水準（{cities.length} 都市・
             {monthLabel(retail.latestMonth)}）
           </summary>
-          <p className="mt-2 text-xs leading-relaxed text-stone-500">
+          <p className="mt-2 text-xs leading-relaxed text-stone-500 dark:text-ink-muted">
             {RETAIL_NOTE}
           </p>
           <table className="mt-2 w-full text-xs">
             <thead>
-              <tr className="text-left text-stone-500">
+              <tr className="text-left text-stone-500 dark:text-ink-muted">
                 <th className="py-1 font-semibold">都市</th>
                 <th className="whitespace-nowrap py-1 pl-3 text-right font-semibold">
                   3.3㎡あたり
@@ -200,7 +217,10 @@ export function OfficialRentSection({
             </thead>
             <tbody>
               {cities.map((c) => (
-                <tr key={c.areaCode} className="border-t border-stone-100">
+                <tr
+                  key={c.areaCode}
+                  className="border-t border-stone-100 dark:border-theme-border"
+                >
                   <td className="py-1">{c.areaName}</td>
                   <td className="whitespace-nowrap py-1 pl-3 text-right tabular-nums">
                     {c.yen.toLocaleString()}円
@@ -220,7 +240,7 @@ export function OfficialRentSection({
         </details>
       </div>
 
-      <p className="mt-4 text-xs leading-relaxed text-stone-500">
+      <p className="mt-4 text-xs leading-relaxed text-stone-500 dark:text-ink-muted">
         {`${SOURCE_NOTE}${ESTAT_API_CREDIT}`}
       </p>
     </section>

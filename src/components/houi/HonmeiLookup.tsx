@@ -84,7 +84,7 @@ export function HonmeiLookup({ starNames, linkYear }: Props) {
     <>
       <b className="font-serif text-base">{starNames[classical]}</b>
       {physical !== classical && (
-        <span className="ml-2 text-xs text-slate-600">
+        <span className="ml-2 text-xs text-slate-600 dark:text-ink-muted">
           （独自モデルでは{starNames[physical]}）
         </span>
       )}
@@ -92,10 +92,10 @@ export function HonmeiLookup({ starNames, linkYear }: Props) {
   );
 
   return (
-    <div className="mt-5 rounded-2xl border border-slate-300 bg-white/90 p-5">
+    <div className="mt-5 rounded-2xl border border-slate-300 dark:border-theme-border bg-white/90 dark:bg-theme-surface p-5">
       <div className="flex flex-wrap items-end gap-3">
         <label className="block">
-          <span className="block text-xs font-bold text-slate-700">
+          <span className="block text-xs font-bold text-slate-700 dark:text-ink">
             生年月日
           </span>
           <input
@@ -104,31 +104,33 @@ export function HonmeiLookup({ starNames, linkYear }: Props) {
             min={`${MIN_BIRTH_YEAR}-01-01`}
             max={`${MAX_BIRTH_YEAR}-12-31`}
             onChange={(e) => void applyDate(e.target.value)}
-            className="mt-1.5 min-h-11 w-44 rounded-lg border border-slate-300 px-3 py-2 text-base sm:text-sm"
+            className="mt-1.5 min-h-11 w-44 rounded-lg border border-slate-300 dark:border-theme-border px-3 py-2 text-base sm:text-sm"
           />
         </label>
         <button
           type="button"
           onClick={() => void loadFromProfile()}
-          className="min-h-11 rounded-full border border-slate-300 bg-white px-4 py-2 text-xs font-bold text-slate-700 transition-colors hover:bg-slate-50"
+          className="min-h-11 rounded-full border border-slate-300 dark:border-theme-border bg-white dark:bg-theme-surface px-4 py-2 text-xs font-bold text-slate-700 dark:text-ink transition-colors hover:bg-slate-50 dark:hover:bg-theme-subtle"
         >
           プロフィールから読み込む
         </button>
       </div>
 
-      <p className="mt-3 text-xs leading-relaxed text-slate-600">
+      <p className="mt-3 text-xs leading-relaxed text-slate-600 dark:text-ink-muted">
         年月日まで入れると、
         <b>立春前の生まれを前年として数える判定まで自動で行います</b>
         。入力はこの端末の中だけで計算し、送信しません。
       </p>
 
       {notice && (
-        <p className="mt-3 text-xs leading-relaxed text-amber-800">{notice}</p>
+        <p className="mt-3 text-xs leading-relaxed text-amber-800 dark:text-theme-gold">
+          {notice}
+        </p>
       )}
 
       {result && (
         <section
-          className="mt-4 rounded-xl border border-slate-200 p-4 text-sm"
+          className="mt-4 rounded-xl border border-slate-200 dark:border-theme-border p-4 text-sm"
           aria-label="生年月日の干支"
         >
           <h3 className="font-bold">年月日の六十干支</h3>
@@ -138,7 +140,7 @@ export function HonmeiLookup({ starNames, linkYear }: Props) {
             （JST正午の代表値）
           </p>
           {result.calendar.boundaryAlternatives && (
-            <p className="mt-2 text-amber-900">
+            <p className="mt-2 text-amber-900 dark:text-theme-gold">
               この日は節入りです。出生時刻が不明なため確定できません。
               {result.calendar.boundaryAlternatives.boundary?.atJst
                 .replace("T", " ")
@@ -152,7 +154,9 @@ export function HonmeiLookup({ starNames, linkYear }: Props) {
           <p className="mt-2">
             日柱の空亡：{result.calendar.kanshi.voidBranches.join("・")}
           </p>
-          <p className="mt-2 text-xs text-slate-600">{result.calendar.basis}</p>
+          <p className="mt-2 text-xs text-slate-600 dark:text-ink-muted">
+            {result.calendar.basis}
+          </p>
           <details className="mt-3">
             <summary className="cursor-pointer">
               出生年の二十四節気・節入り時刻（JST・計算値）
@@ -183,7 +187,7 @@ export function HonmeiLookup({ starNames, linkYear }: Props) {
             {starLine(result.dayStart.classical, result.dayStart.physical)}
           </p>
           {result.physicalChanges && (
-            <p className="mt-1 text-xs leading-relaxed text-slate-500">
+            <p className="mt-1 text-xs leading-relaxed text-slate-500 dark:text-ink-muted">
               独自モデル（木星黄経）はこの日のうちに切り替わります。生まれた時刻が遅い場合は
               {starNames[result.dayEnd.physical]}
               になります。一般的な九星気学の本命星は変わりません。
@@ -192,7 +196,7 @@ export function HonmeiLookup({ starNames, linkYear }: Props) {
           <Link
             prefetch={false}
             href={`/houi/${linkYear}/${result.dayStart.classical}`}
-            className="mt-2 inline-flex min-h-11 items-center text-xs font-bold text-rose-600 hover:underline"
+            className="mt-2 inline-flex min-h-11 items-center text-xs font-bold text-rose-600 dark:text-accent hover:underline"
           >
             {linkYear}年の吉方位を見る →
           </Link>
@@ -200,18 +204,18 @@ export function HonmeiLookup({ starNames, linkYear }: Props) {
       )}
 
       {result && result.classicalChanges && (
-        <div className="mt-4 rounded-xl border border-amber-200 bg-amber-50 p-4">
-          <p className="text-xs font-bold text-amber-900">
+        <div className="mt-4 rounded-xl border border-amber-200 dark:border-theme-border bg-amber-50 dark:bg-theme-gold-soft p-4">
+          <p className="text-xs font-bold text-amber-900 dark:text-theme-gold">
             この日は立春です。生まれた<b>時刻</b>で本命星が分かれます。
           </p>
-          <ul className="mt-2 space-y-1.5 text-xs leading-relaxed text-amber-900">
+          <ul className="mt-2 space-y-1.5 text-xs leading-relaxed text-amber-900 dark:text-theme-gold">
             <li>
               立春の瞬間より<b>前</b>に生まれた場合:{" "}
               {starLine(result.dayStart.classical, result.dayStart.physical)}
               <Link
                 prefetch={false}
                 href={`/houi/${linkYear}/${result.dayStart.classical}`}
-                className="ml-2 inline-flex min-h-11 items-center font-bold text-rose-600 hover:underline"
+                className="ml-2 inline-flex min-h-11 items-center font-bold text-rose-600 dark:text-accent hover:underline"
               >
                 {linkYear}年の吉方位 →
               </Link>
@@ -222,13 +226,13 @@ export function HonmeiLookup({ starNames, linkYear }: Props) {
               <Link
                 prefetch={false}
                 href={`/houi/${linkYear}/${result.dayEnd.classical}`}
-                className="ml-2 inline-flex min-h-11 items-center font-bold text-rose-600 hover:underline"
+                className="ml-2 inline-flex min-h-11 items-center font-bold text-rose-600 dark:text-accent hover:underline"
               >
                 {linkYear}年の吉方位 →
               </Link>
             </li>
           </ul>
-          <p className="mt-2 text-xs leading-relaxed text-amber-800">
+          <p className="mt-2 text-xs leading-relaxed text-amber-800 dark:text-theme-gold">
             立春の時刻は年ごとに違います（2月3日〜4日ごろ）。母子手帳などで出生時刻を確認してください。
           </p>
         </div>

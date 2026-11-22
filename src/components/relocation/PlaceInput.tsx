@@ -52,7 +52,7 @@ const LocationPickerInner = dynamic(
   {
     ssr: false,
     loading: () => (
-      <div className="flex h-full w-full items-center justify-center rounded-xl border border-stone-200 bg-stone-50 text-xs text-stone-500">
+      <div className="flex h-full w-full items-center justify-center rounded-xl border border-stone-200 dark:border-theme-border bg-stone-50 dark:bg-theme-subtle text-xs text-stone-500 dark:text-ink-muted">
         地図を読み込んでいます…
       </div>
     ),
@@ -113,47 +113,50 @@ export interface PlaceInputProps {
 /** 縮尺ごとの class。構造は同じで、字の大きさと余白だけが違う。 */
 const VARIANT_STYLES = {
   compact: {
-    label: "text-[10px] uppercase font-bold text-stone-500",
-    optionalBadge: "ml-1.5 text-[10px] font-normal text-stone-600",
+    label: "text-[10px] uppercase font-bold text-stone-500 dark:text-ink-muted",
+    optionalBadge:
+      "ml-1.5 text-[10px] font-normal text-stone-600 dark:text-ink-muted",
     currentLocation:
-      "min-h-11 rounded-lg px-2 text-xs font-semibold text-emerald-700 hover:bg-emerald-50 shrink-0",
+      "min-h-11 rounded-lg px-2 text-xs font-semibold text-theme-link hover:bg-theme-link-soft shrink-0",
     input:
-      "w-full px-3 py-2 bg-white border border-stone-200 rounded-xl text-xs text-stone-700 placeholder-stone-300 focus:outline-none focus:border-indigo-300",
-    searching: "text-[10px] text-stone-600 animate-pulse",
-    notice: "text-[10px] text-amber-600",
+      "w-full px-3 py-2 bg-white dark:bg-theme-surface border border-stone-200 dark:border-theme-border rounded-xl text-xs text-stone-700 dark:text-ink placeholder-ink-muted focus:outline-none focus:border-theme-link",
+    searching: "text-[10px] text-stone-600 dark:text-ink-muted animate-pulse",
+    notice: "text-[10px] text-theme-gold",
     resolve:
-      "shrink-0 min-h-[36px] px-3 rounded-xl border border-indigo-200 bg-indigo-50 text-xs font-semibold text-indigo-700 hover:bg-indigo-100",
+      "shrink-0 min-h-[36px] px-3 rounded-xl border border-indigo-200 dark:border-theme-border bg-indigo-50 dark:bg-theme-link-soft text-xs font-semibold text-indigo-700 dark:text-theme-link hover:bg-indigo-100 dark:hover:bg-theme-link-soft",
     suggestion:
-      "w-full text-left px-2.5 py-1.5 text-xs text-stone-700 hover:bg-indigo-50 transition-colors",
-    picked: "flex items-center gap-1.5 text-[10px] text-stone-500",
+      "w-full text-left px-2.5 py-1.5 text-xs text-stone-700 dark:text-ink hover:bg-indigo-50 dark:hover:bg-theme-link-soft transition-colors",
+    picked:
+      "flex items-center gap-1.5 text-[10px] text-stone-500 dark:text-ink-muted",
     pinSize: 10,
-    help: "text-xs text-stone-600 leading-relaxed",
+    help: "text-xs text-stone-600 dark:text-ink-muted leading-relaxed",
     /* 地図・座標の入口もスマートフォンで押しやすい高さを確保する。 */
     coordsToggle:
-      "inline-flex min-h-11 items-center self-start rounded-lg px-2 text-xs text-stone-600 hover:bg-stone-100 hover:text-stone-800",
+      "inline-flex min-h-11 items-center self-start rounded-lg px-2 text-xs text-stone-600 dark:text-ink-muted hover:bg-stone-100 dark:hover:bg-theme-subtle hover:text-stone-800 dark:hover:text-ink",
     coordInput:
-      "px-2 py-1.5 bg-white border border-stone-200 rounded-lg text-[11px] font-mono text-stone-700",
+      "px-2 py-1.5 bg-white dark:bg-theme-surface border border-stone-200 dark:border-theme-border rounded-lg text-[11px] font-mono text-stone-700 dark:text-ink",
   },
   form: {
-    label: "text-sm font-bold text-slate-800",
-    optionalBadge: "ml-1.5 text-xs font-normal text-slate-400",
+    label: "text-sm font-bold text-slate-800 dark:text-ink",
+    optionalBadge: "ml-1.5 text-xs font-normal text-ink-muted",
     currentLocation:
-      "min-h-11 rounded-lg px-2 text-xs font-semibold text-emerald-700 hover:bg-emerald-50 shrink-0",
+      "min-h-11 rounded-lg px-2 text-xs font-semibold text-theme-link hover:bg-theme-link-soft shrink-0",
     input:
-      "w-full px-3 py-2.5 bg-white border border-slate-300 rounded-xl text-sm text-slate-900 placeholder-slate-300 outline-none focus:border-rose-400 transition-colors",
-    searching: "text-xs text-slate-400 animate-pulse",
-    notice: "text-xs text-amber-600",
+      "w-full px-3 py-2.5 bg-white dark:bg-theme-surface border border-slate-300 dark:border-theme-border rounded-xl text-sm text-slate-900 dark:text-ink placeholder-ink-muted outline-none focus:border-accent transition-colors",
+    searching: "text-xs text-ink-muted animate-pulse",
+    notice: "text-xs text-theme-gold",
     resolve:
-      "shrink-0 min-h-[42px] px-3 rounded-xl border border-rose-200 bg-rose-50 text-sm font-semibold text-rose-700 hover:bg-rose-100",
+      "shrink-0 min-h-[42px] px-3 rounded-xl border border-rose-200 dark:border-theme-border bg-rose-50 dark:bg-theme-accent-soft text-sm font-semibold text-rose-700 dark:text-accent hover:bg-rose-100 dark:hover:bg-theme-accent-soft",
     suggestion:
-      "w-full text-left px-3 py-2 text-sm text-slate-700 hover:bg-rose-50 transition-colors",
-    picked: "flex items-center gap-1.5 text-xs text-slate-500",
+      "w-full text-left px-3 py-2 text-sm text-slate-700 dark:text-ink hover:bg-rose-50 dark:hover:bg-theme-accent-soft transition-colors",
+    picked:
+      "flex items-center gap-1.5 text-xs text-slate-500 dark:text-ink-muted",
     pinSize: 12,
-    help: "text-xs text-slate-500 leading-relaxed",
+    help: "text-xs text-slate-500 dark:text-ink-muted leading-relaxed",
     coordsToggle:
-      "inline-flex min-h-11 items-center self-start rounded-lg px-2 text-xs text-slate-600 hover:bg-slate-100 hover:text-slate-800",
+      "inline-flex min-h-11 items-center self-start rounded-lg px-2 text-xs text-slate-600 dark:text-ink-muted hover:bg-slate-100 dark:hover:bg-theme-subtle hover:text-slate-800 dark:hover:text-ink",
     coordInput:
-      "px-2 py-2 bg-white border border-slate-300 rounded-lg text-sm font-mono text-slate-700",
+      "px-2 py-2 bg-white dark:bg-theme-surface border border-slate-300 dark:border-theme-border rounded-lg text-sm font-mono text-slate-700 dark:text-ink",
   },
 } as const;
 
@@ -436,7 +439,7 @@ export function PlaceInput({
       {notice && <p className={s.notice}>{notice}</p>}
 
       {suggestions.length > 0 && (
-        <ul className="flex flex-col gap-0.5 border border-stone-200 rounded-lg overflow-hidden">
+        <ul className="flex flex-col gap-0.5 border border-stone-200 dark:border-theme-border rounded-lg overflow-hidden">
           {suggestions.map((suggestion) => (
             <li key={`${suggestion.name}-${suggestion.lat}-${suggestion.lon}`}>
               <button
@@ -453,7 +456,10 @@ export function PlaceInput({
 
       {/* 決まった場所。座標そのものではなく、地名で確かめられるようにする */}
       <div className={s.picked}>
-        <MapPin size={s.pinSize} className="text-stone-600 shrink-0" />
+        <MapPin
+          size={s.pinSize}
+          className="text-stone-600 dark:text-ink-muted shrink-0"
+        />
         {/* 呼び出し側が名前を持っているなら、それが正（右の地図など、
             この欄の外で座標が動くことがある。欄の中で最後に選んだ名前を
             出し続けると、別の場所に前の地名が付いたまま残る） */}
@@ -468,7 +474,7 @@ export function PlaceInput({
         ) : hasCoords ? (
           <span>設定済み（{formatCoords(lat, lon)}）</span>
         ) : (
-          <span className="text-stone-600">
+          <span className="text-stone-600 dark:text-ink-muted">
             {optional ? "未設定でも判定は出ます" : "まだ設定されていません"}
           </span>
         )}
@@ -545,7 +551,7 @@ export function PlaceInput({
                 setNearby(null);
                 void resolvePlaceName(herePos.lat, herePos.lon).then(setNearby);
               }}
-              className="self-start rounded-full border border-indigo-200 bg-indigo-50 px-4 py-2 text-xs font-bold text-indigo-700 transition-colors hover:bg-indigo-100"
+              className="self-start rounded-full border border-indigo-200 dark:border-theme-border bg-indigo-50 dark:bg-theme-link-soft px-4 py-2 text-xs font-bold text-indigo-700 dark:text-theme-link transition-colors hover:bg-indigo-100 dark:hover:bg-theme-link-soft"
             >
               いま居る場所をここにする
             </button>

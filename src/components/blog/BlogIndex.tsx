@@ -41,11 +41,11 @@ export type BlogSortMode = "category" | "date";
  */
 function PostCard({ post }: { post: BlogPostSummary }) {
   return (
-    <article className="flex flex-col rounded-3xl border border-slate-300 bg-white/90 p-6 shadow-sm">
+    <article className="flex flex-col rounded-3xl border border-slate-300 dark:border-theme-border bg-white/90 dark:bg-theme-surface p-6 shadow-sm">
       <BlogCardVideo post={post} />
       {/* カテゴリの札はここには出さない。節の見出しが同じことを
           言っているので、同じ語が節の中で 10 回並ぶだけになる。 */}
-      <div className="flex flex-wrap items-center gap-3 text-[11px] text-slate-500">
+      <div className="flex flex-wrap items-center gap-3 text-[11px] text-ink-muted">
         <time dateTime={post.publishedAt}>
           {formatBlogDate(post.publishedAt)}
         </time>
@@ -56,23 +56,23 @@ function PostCard({ post }: { post: BlogPostSummary }) {
       {/* 節の見出しが h2 になったので、カードの題は h3。
           見出しの段を飛ばすと読み上げの目次が崩れる。 */}
       <h3 className="mt-4 font-serif text-lg font-bold leading-7">
-        <Link href={`/blog/${post.slug}`} className="hover:text-rose-600">
+        <Link href={`/blog/${post.slug}`} className="hover:text-accent">
           {post.title}
         </Link>
       </h3>
-      <p className="mt-3 max-w-[70ch] flex-1 text-sm leading-7 text-slate-600">
+      <p className="mt-3 max-w-[70ch] flex-1 text-sm leading-7 text-slate-600 dark:text-ink-muted">
         {post.description}
       </p>
       <div className="mt-5 flex flex-wrap gap-2">
         {post.tags.map((tag) => (
-          <span key={tag} className="text-[11px] text-slate-500">
+          <span key={tag} className="text-[11px] text-ink-muted">
             #{tag}
           </span>
         ))}
       </div>
       <Link
         href={`/blog/${post.slug}`}
-        className="mt-6 inline-flex self-start rounded-full bg-slate-900 px-5 py-2.5 text-xs font-bold text-white hover:bg-slate-800"
+        className="mt-6 inline-flex self-start rounded-full bg-slate-900 dark:bg-slate-700 px-5 py-2.5 text-xs font-bold text-white hover:bg-slate-800 dark:hover:bg-slate-700"
       >
         記事を読む →
       </Link>
@@ -118,18 +118,18 @@ export function BlogIndex({
   const title = blogIndexTitle();
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#faf7f5] via-[#f5efe9] to-[#f0e9e1] text-slate-900">
+    <div className="min-h-screen bg-gradient-to-br from-[#faf7f5] dark:from-background via-[#f5efe9] dark:via-background to-[#f0e9e1] dark:to-background text-slate-900 dark:text-ink">
       <main className="mx-auto max-w-[1700px] px-5 py-12">
-        <div className="flex flex-wrap items-end justify-between gap-5 border-b border-slate-300 pb-8">
+        <div className="flex flex-wrap items-end justify-between gap-5 border-b border-slate-300 dark:border-theme-border pb-8">
           <div>
-            <div className="flex items-center gap-2 text-xs font-bold tracking-[0.18em] text-rose-600">
+            <div className="flex items-center gap-2 text-xs font-bold tracking-[0.18em] text-accent">
               <BookOpenText className="h-4 w-4" />
               CLOUD PALETTE JOURNAL
             </div>
             <h1 className="mt-4 font-serif text-3xl font-bold tracking-tight md:text-4xl">
               {title}
             </h1>
-            <p className="mt-4 max-w-[70ch] text-sm leading-7 text-slate-700">
+            <p className="mt-4 max-w-[70ch] text-sm leading-7 text-slate-700 dark:text-ink">
               {DESCRIPTION}
             </p>
             <GuideCharacter pose="pointing" size="sm" className="mt-5 max-w-xl">
@@ -138,7 +138,7 @@ export function BlogIndex({
           </div>
           <a
             href="/blog/feed.xml"
-            className="inline-flex items-center gap-2 rounded-full border border-slate-300 bg-white px-4 py-2 text-xs font-bold text-slate-700 hover:border-rose-400"
+            className="inline-flex items-center gap-2 rounded-full border border-slate-300 dark:border-theme-border bg-white dark:bg-theme-surface px-4 py-2 text-xs font-bold text-slate-700 dark:text-ink hover:border-rose-400 dark:hover:border-theme-border"
           >
             <Rss className="h-3.5 w-3.5" /> RSS
           </a>
@@ -161,8 +161,8 @@ export function BlogIndex({
                 aria-current={on ? "page" : undefined}
                 className={`rounded-full border px-4 py-2 text-xs font-bold ${
                   on
-                    ? "border-rose-400 bg-rose-50 text-rose-700"
-                    : "border-slate-300 bg-white text-slate-700 hover:border-rose-400 hover:text-rose-600"
+                    ? "border-rose-400 dark:border-theme-border bg-rose-50 dark:bg-theme-accent-soft text-rose-700 dark:text-accent"
+                    : "border-slate-300 dark:border-theme-border bg-white dark:bg-theme-surface text-slate-700 dark:text-ink hover:border-rose-400 dark:hover:border-theme-border hover:text-accent"
                 }`}
               >
                 {opt.label}
@@ -180,10 +180,10 @@ export function BlogIndex({
               <a
                 key={group.id}
                 href={`#${group.id}`}
-                className="inline-flex items-center gap-2 rounded-full border border-slate-300 bg-white px-4 py-2 text-xs font-bold text-slate-700 hover:border-rose-400 hover:text-rose-600"
+                className="inline-flex items-center gap-2 rounded-full border border-slate-300 dark:border-theme-border bg-white dark:bg-theme-surface px-4 py-2 text-xs font-bold text-slate-700 dark:text-ink hover:border-rose-400 dark:hover:border-theme-border hover:text-accent"
               >
                 {group.category}
-                <span className="text-[11px] font-normal text-slate-500">
+                <span className="text-[11px] font-normal text-ink-muted">
                   {group.posts.length}
                 </span>
               </a>
@@ -203,10 +203,10 @@ export function BlogIndex({
             <section key={group.id} className="mt-12">
               <h2
                 id={group.id}
-                className="scroll-mt-6 border-b border-slate-300 pb-2 font-serif text-xl font-bold"
+                className="scroll-mt-6 border-b border-slate-300 dark:border-theme-border pb-2 font-serif text-xl font-bold"
               >
                 {group.category}
-                <span className="ml-3 text-xs font-normal text-slate-500">
+                <span className="ml-3 text-xs font-normal text-ink-muted">
                   {group.posts.length}本
                 </span>
               </h2>

@@ -28,7 +28,7 @@ export function ArbitrageSidebarSection({
   return (
     <section
       data-testid="arbitrage-sidebar-section"
-      className="overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-xs dark:border-stone-200 dark:bg-stone-50"
+      className="overflow-hidden rounded-2xl border border-gray-100 dark:border-theme-border bg-white dark:bg-theme-surface shadow-xs  "
     >
       <h3>
         <button
@@ -37,20 +37,20 @@ export function ArbitrageSidebarSection({
           aria-controls={contentId}
           onClick={() => setIsOpen((open) => !open)}
           className={`flex min-h-12 w-full cursor-pointer items-center justify-between gap-3 px-4 py-3 text-left select-none ${
-            isOpen ? "border-b border-gray-100 dark:border-stone-200" : ""
+            isOpen ? "border-b border-gray-100 dark:border-theme-border" : ""
           }`}
         >
-          <span className="flex min-w-0 items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-stone-500">
+          <span className="flex min-w-0 items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-stone-500 dark:text-ink-muted">
             {icon}
             <span className="truncate">{title}</span>
           </span>
           <span className="flex min-w-0 shrink-0 items-center gap-1.5">
-            <span className="max-w-32 truncate text-[10px] font-semibold normal-case tracking-normal text-stone-600">
+            <span className="max-w-32 truncate text-[10px] font-semibold normal-case tracking-normal text-stone-600 dark:text-ink-muted">
               {summary}
             </span>
             <ChevronRight
               aria-hidden="true"
-              className={`h-4 w-4 shrink-0 text-stone-500 transition-transform duration-200 ${
+              className={`h-4 w-4 shrink-0 text-stone-500 dark:text-ink-muted transition-transform duration-200 ${
                 isOpen ? "rotate-90" : ""
               }`}
             />

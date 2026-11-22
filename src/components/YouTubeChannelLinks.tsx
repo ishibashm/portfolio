@@ -14,7 +14,7 @@ export function YouTubeChannelLinks({
             href={channel.url}
             target="_blank"
             rel="noopener noreferrer"
-            className="font-semibold hover:text-rose-600"
+            className="font-semibold hover:text-accent"
           >
             {channel.name}
           </a>

@@ -2,7 +2,7 @@ import Link from "next/link";
 
 export function PurposeLinks() {
   return (
-    <section className="w-full max-w-[1700px] rounded-3xl border border-rose-200 bg-white p-6">
+    <section className="w-full max-w-[1700px] rounded-3xl border border-rose-200 dark:border-theme-border bg-white dark:bg-theme-surface p-6">
       <h2 className="text-xl font-serif font-bold">調べたいことを選ぶ</h2>
       <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
         {[
@@ -15,7 +15,7 @@ export function PurposeLinks() {
             key={href}
             href={href}
             prefetch={false}
-            className="rounded-xl border border-rose-200 px-4 py-3 text-sm hover:bg-rose-50"
+            className="rounded-xl border border-rose-200 dark:border-theme-border px-4 py-3 text-sm hover:bg-rose-50 dark:hover:bg-theme-accent-soft"
           >
             {label}
           </Link>

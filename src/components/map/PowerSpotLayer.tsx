@@ -15,7 +15,7 @@ import {
   POWER_SPOT_CLUSTER_BELOW_ZOOM,
   type PowerSpot,
 } from "@/lib/powerSpots";
-import { TIER_BADGE_CLASS } from "@/utils/tierDisplay";
+import { LIGHT_TIER_BADGE_CLASS } from "@/utils/tierDisplay";
 import { TIER_LABELS, type DayTier } from "@/utils/dayTier";
 import type { DirectionCell } from "@/components/relocation/SpotVerdict";
 
@@ -249,7 +249,7 @@ function SpotMarker({
                   <span className="text-stone-600">この日の段階:</span>
                   <span
                     className={`px-1.5 py-0.5 rounded border font-bold ${
-                      (tier && TIER_BADGE_CLASS[tier]) ??
+                      (tier && LIGHT_TIER_BADGE_CLASS[tier]) ??
                       "bg-stone-100 border-stone-300 text-stone-700"
                     }`}
                   >

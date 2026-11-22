@@ -37,11 +37,11 @@ export default async function Home({
     registered,
   );
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#faf7f5] via-[#f5efe9] to-[#f0e9e1] text-slate-900 relative flex flex-col items-center justify-start overflow-y-auto pb-5 lg:pt-5 px-4 md:px-8 gap-4 font-sans">
+    <div className="min-h-screen bg-gradient-to-br from-[#faf7f5] dark:from-background via-[#f5efe9] dark:via-background to-[#f0e9e1] dark:to-background text-slate-900 dark:text-ink relative flex flex-col items-center justify-start overflow-y-auto pb-5 lg:pt-5 px-4 md:px-8 gap-4 font-sans">
       <ScrollReset />
       {/* Background Soft Glow Auras */}
-      <div className="fixed top-[-10vw] left-[-10vw] w-[40vw] h-[40vw] bg-rose-200/25 rounded-full blur-[100px] pointer-events-none -z-10" />
-      <div className="fixed bottom-[-10vw] right-[-10vw] w-[40vw] h-[40vw] bg-amber-200/25 rounded-full blur-[100px] pointer-events-none -z-10" />
+      <div className="fixed top-[-10vw] left-[-10vw] w-[40vw] h-[40vw] bg-rose-200/25 dark:bg-theme-accent-soft rounded-full blur-[100px] pointer-events-none -z-10" />
+      <div className="fixed bottom-[-10vw] right-[-10vw] w-[40vw] h-[40vw] bg-amber-200/25 dark:bg-theme-gold-soft rounded-full blur-[100px] pointer-events-none -z-10" />
 
       {/* サイトが何をするところかを最初に言い切る。
           以前は「知性と感性をかさねるポータル」で、3つのサブドメイン
@@ -50,35 +50,35 @@ export default async function Home({
           （幅 1800px 前後）では左右に 400px ずつ余っていた。中身の主役は
           下のダッシュボードなので、そこが収まる幅まで広げる。
           本文の行長は段落側の max-w-[70ch] が守る。 */}
-      <header className="relative overflow-hidden w-full max-w-[1700px] bg-white/95 backdrop-blur-xl border border-slate-300 p-5 md:p-6 rounded-3xl shadow-lg shadow-slate-200/50">
+      <header className="relative overflow-hidden w-full max-w-[1700px] bg-white/95 dark:bg-theme-surface backdrop-blur-xl border border-slate-300 dark:border-theme-border p-5 md:p-6 rounded-3xl shadow-lg shadow-slate-200/50 dark:shadow-black/20">
         {/* 金の羅盤の線画（飾り）。h1 とは重ねず、ラベル行の右上の余白に収まる大きさ。 */}
         <CompassDial className="pointer-events-none absolute -right-5 -top-5 hidden h-28 w-28 opacity-60 sm:block" />
         <div className="grid items-center gap-4 sm:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]">
           <div className="min-w-0">
             <div className="flex items-center gap-3 mb-3">
-              <div className="p-2.5 rounded-2xl bg-rose-600 text-white shadow-md shadow-rose-200">
+              <div className="p-2.5 rounded-2xl bg-rose-600 dark:bg-rose-700 text-white shadow-md shadow-rose-200 dark:shadow-black/20">
                 <Compass className="w-5 h-5" />
               </div>
-              <span className="text-xs font-bold tracking-widest text-slate-500 uppercase">
+              <span className="text-xs font-bold tracking-widest text-slate-500 dark:text-ink-muted uppercase">
                 {SITE_NAME}
               </span>
             </div>
-            <h1 className="text-2xl md:text-4xl font-bold tracking-tight text-slate-900 font-serif leading-snug">
+            <h1 className="text-2xl md:text-4xl font-bold tracking-tight text-slate-900 dark:text-ink font-serif leading-snug">
               {SITE_TAGLINE}
             </h1>
-            <p className="text-sm text-slate-700 mt-4 leading-relaxed max-w-[70ch]">
+            <p className="text-sm text-slate-700 dark:text-ink mt-4 leading-relaxed max-w-[70ch]">
               {SITE_DESCRIPTION}
             </p>
             <Link
               href={arbitrageHref(origin)}
-              className="mt-3 inline-flex px-6 py-3 rounded-full bg-slate-900 hover:bg-slate-800 text-white font-bold text-sm items-center gap-2 transition-all shadow-md active:scale-95"
+              className="mt-3 inline-flex px-6 py-3 rounded-full bg-slate-900 dark:bg-slate-700 hover:bg-slate-800 dark:hover:bg-slate-700 text-white font-bold text-sm items-center gap-2 transition-all shadow-md active:scale-95"
             >
               {CORE_ROUTES[0].label}
               <ArrowRight className="w-4 h-4" />
             </Link>
             <Link
               href="/houi#honmei-lookup"
-              className="mt-3 block text-sm font-semibold text-rose-600 underline underline-offset-4 hover:text-rose-700"
+              className="mt-3 block text-sm font-semibold text-rose-600 dark:text-accent underline underline-offset-4 hover:text-rose-700 dark:hover:text-accent"
             >
               今年の引越しの方位を本命星別に見る
             </Link>
@@ -86,7 +86,7 @@ export default async function Home({
           <Link
             href="/houi/today"
             aria-label="しるべ：今日の吉方位と時間を見る"
-            className="block w-full max-w-lg justify-self-center rounded-2xl focus-visible:outline-2 focus-visible:outline-rose-600"
+            className="block w-full max-w-lg justify-self-center rounded-2xl focus-visible:outline-2 focus-visible:outline-rose-600 dark:focus-visible:outline-accent"
           >
             <TodayShirubeBanner
               priority
@@ -117,10 +117,12 @@ export default async function Home({
       <div className="w-full max-w-[1700px] space-y-8">
         {ROUTE_GROUPS.map((g) => (
           <section key={g.key}>
-            <h2 className="text-lg font-bold text-slate-900 font-serif">
+            <h2 className="text-lg font-bold text-slate-900 dark:text-ink font-serif">
               {g.label}
             </h2>
-            <p className="text-xs text-slate-600 mt-1">{g.note}</p>
+            <p className="text-xs text-slate-600 dark:text-ink-muted mt-1">
+              {g.note}
+            </p>
             {/* 幅を広げたぶん、2 列のままだと 1 枚が 800px を超えて説明文が
                 2 行しかない札が間延びする。広い画面では列を増やして、札の
                 縦横比を今までの見え方に近づける。 */}
@@ -129,13 +131,13 @@ export default async function Home({
                 <Link
                   key={r.href}
                   href={r.href}
-                  className="group bg-white/95 backdrop-blur-xl border border-slate-300 rounded-3xl p-6 shadow-sm hover:shadow-lg hover:border-rose-300 transition-all"
+                  className="group bg-white/95 dark:bg-theme-surface backdrop-blur-xl border border-slate-300 dark:border-theme-border rounded-3xl p-6 shadow-sm hover:shadow-lg hover:border-rose-300 dark:hover:border-theme-border transition-all"
                 >
-                  <h3 className="text-base font-bold text-slate-900 font-serif flex items-center gap-2">
+                  <h3 className="text-base font-bold text-slate-900 dark:text-ink font-serif flex items-center gap-2">
                     {r.label}
-                    <ArrowRight className="w-4 h-4 text-rose-500 opacity-0 group-hover:opacity-100 transition-opacity" />
+                    <ArrowRight className="w-4 h-4 text-rose-500 dark:text-accent opacity-0 group-hover:opacity-100 transition-opacity" />
                   </h3>
-                  <p className="text-xs text-slate-600 mt-2 leading-relaxed">
+                  <p className="text-xs text-slate-600 dark:text-ink-muted mt-2 leading-relaxed">
                     {r.summary}
                   </p>
                 </Link>

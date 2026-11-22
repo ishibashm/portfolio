@@ -64,13 +64,22 @@ export const TIER_JP: Record<DayTier, string> = {
 };
 
 /** 段階バッジの配色（Tailwind クラス）。 */
-export const TIER_BADGE_CLASS: Record<DayTier, string> = {
+export const LIGHT_TIER_BADGE_CLASS: Record<DayTier, string> = {
   S: "bg-emerald-200 border-emerald-500 text-emerald-900",
   A: "bg-emerald-100 border-emerald-400 text-emerald-800",
   B: "bg-emerald-50 border-emerald-300 text-emerald-700",
   C: "bg-stone-100 border-stone-300 text-stone-600",
   D: "bg-orange-50 border-orange-300 text-orange-700",
   X: "bg-rose-50 border-rose-300 text-rose-700",
+};
+
+export const TIER_BADGE_CLASS: Record<DayTier, string> = {
+  S: `${LIGHT_TIER_BADGE_CLASS.S} dark:bg-emerald-400/25 dark:text-emerald-200`,
+  A: `${LIGHT_TIER_BADGE_CLASS.A} dark:bg-emerald-400/15 dark:text-emerald-300`,
+  B: `${LIGHT_TIER_BADGE_CLASS.B} dark:bg-emerald-400/8 dark:text-emerald-400`,
+  C: `${LIGHT_TIER_BADGE_CLASS.C} dark:bg-theme-subtle dark:text-ink-muted`,
+  D: `${LIGHT_TIER_BADGE_CLASS.D} dark:bg-theme-gold-soft dark:text-theme-gold`,
+  X: `${LIGHT_TIER_BADGE_CLASS.X} dark:bg-theme-bad-soft dark:text-theme-bad`,
 };
 
 /** 扇形の塗りの濃さ。良い段階ほど目立たせ、平は薄く敷く。 */
@@ -96,7 +105,7 @@ export interface TierPinColors {
  *
  * ダークは明るいほうが強く見えるので、ライトとは逆向きに並べる。
  * ライト  S 900 → A 800 → B 700（暗いほど強い）
- * ダーク  S 300 → A 400 → B 500（明るいほど強い）
+ * ダーク  S 200 → A 300 → B 400（明るいほど強い）
  *
  * S と B に同じ `dark:text-emerald-300` を当てていて、ダークでは
  * 二つが完全に同色（ΔE 0）だった。しかも A だけ暗く、S→A→B の順序が
@@ -113,13 +122,13 @@ export interface TierPinColors {
  * 3 段まとめて 900/800/700 に下げてある。AA を満たす一番明るい段が
  * 700 で、そこから 1 段ずつ。
  */
-const TIER_TEXT_CLASS: Record<DayTier, string> = {
-  S: "text-emerald-900 dark:text-emerald-300",
-  A: "text-emerald-800 dark:text-emerald-400",
-  B: "text-emerald-700 dark:text-emerald-500",
-  C: "text-stone-500 dark:text-stone-400",
-  D: "text-orange-600 dark:text-orange-400",
-  X: "text-red-500 dark:text-red-400",
+export const TIER_TEXT_CLASS: Record<DayTier, string> = {
+  S: "text-emerald-900 dark:text-emerald-200",
+  A: "text-emerald-800 dark:text-emerald-300",
+  B: "text-emerald-700 dark:text-emerald-400",
+  C: "text-stone-600 dark:text-ink-muted",
+  D: "text-orange-800 dark:text-theme-gold",
+  X: "text-red-700 dark:text-theme-bad",
 };
 
 /**

@@ -37,7 +37,7 @@ import { DIRECTION_LABELS, type NodeMapping } from "@/utils/directionGeo";
 const CompassScene = dynamic(() => import("@/components/houi/CompassScene"), {
   ssr: false,
   loading: () => (
-    <p className="p-6 text-sm text-stone-500">羅盤を読み込んでいます…</p>
+    <p className="p-6 text-sm text-ink-muted">羅盤を読み込んでいます…</p>
   ),
 });
 
@@ -210,22 +210,24 @@ export function MagneticCompass() {
   return (
     <section
       ref={hostRef}
-      className="mt-4 overflow-hidden rounded-3xl border border-stone-200 bg-gradient-to-b from-stone-50 to-amber-50/40 shadow-sm"
+      className="mt-4 overflow-hidden rounded-3xl border border-stone-200 dark:border-theme-border bg-gradient-to-b from-stone-50 dark:from-theme-subtle to-amber-50/40 dark:to-theme-gold-soft shadow-sm"
       aria-label="羅盤（真北と磁北）"
     >
-      <header className="space-y-3 border-b border-stone-200/70 px-5 py-4">
-        <p className="flex items-center gap-1.5 text-xs font-bold tracking-wider text-rose-600">
+      <header className="space-y-3 border-b border-stone-200/70 dark:border-theme-border px-5 py-4">
+        <p className="flex items-center gap-1.5 text-xs font-bold tracking-wider text-accent">
           <Compass className="h-3.5 w-3.5" aria-hidden />
           羅盤
         </p>
-        <p className="max-w-[70ch] text-xs leading-relaxed text-stone-600">
+        <p className="max-w-[70ch] text-xs leading-relaxed text-stone-600 dark:text-ink-muted">
           {LEAD}
         </p>
         {!from && (
-          <p className="text-sm font-bold text-stone-700">どこから？</p>
+          <p className="text-sm font-bold text-stone-700 dark:text-ink">
+            どこから？
+          </p>
         )}
         {error && (
-          <p role="alert" className="text-sm text-rose-700">
+          <p role="alert" className="text-sm text-rose-700 dark:text-accent">
             {error}
           </p>
         )}
@@ -234,17 +236,19 @@ export function MagneticCompass() {
             type="button"
             onClick={locate}
             disabled={locating}
-            className="min-h-11 rounded-lg border border-stone-300 bg-white px-3 py-2"
+            className="min-h-11 rounded-lg border border-stone-300 dark:border-theme-border bg-white dark:bg-theme-surface px-3 py-2"
           >
             {locating ? "取得中…" : "現在地"}
           </button>
           <label className="block">
-            <span className="block font-bold text-stone-700">出発地</span>
+            <span className="block font-bold text-stone-700 dark:text-ink">
+              出発地
+            </span>
             <select
               value={from}
               disabled={locating}
               onChange={(e) => setFrom(e.target.value)}
-              className="mt-1 min-h-11 rounded-lg border border-stone-300 bg-white px-2 py-1.5 text-base sm:text-xs"
+              className="mt-1 min-h-11 rounded-lg border border-stone-300 dark:border-theme-border bg-white dark:bg-theme-surface px-2 py-1.5 text-base sm:text-xs"
             >
               <option value="">選ぶ</option>
               {PREFS.map((p) => (
@@ -255,13 +259,13 @@ export function MagneticCompass() {
             </select>
           </label>
           <label className="block">
-            <span className="block font-bold text-stone-700">
+            <span className="block font-bold text-stone-700 dark:text-ink">
               目的地（任意）
             </span>
             <select
               value={to}
               onChange={(e) => setTo(e.target.value)}
-              className="mt-1 min-h-11 rounded-lg border border-stone-300 bg-white px-2 py-1.5 text-base sm:text-xs"
+              className="mt-1 min-h-11 rounded-lg border border-stone-300 dark:border-theme-border bg-white dark:bg-theme-surface px-2 py-1.5 text-base sm:text-xs"
             >
               <option value="">選ばない</option>
               {PREFS.filter((p) => p !== from).map((p) => (
@@ -285,8 +289,8 @@ export function MagneticCompass() {
                 onClick={() => setMapping(m)}
                 className={`min-h-11 min-w-11 rounded-full border px-2.5 py-1 font-semibold ${
                   mapping === m
-                    ? "border-stone-800 bg-stone-800 text-white"
-                    : "border-stone-300 bg-white text-stone-700"
+                    ? "border-stone-800 dark:border-theme-border bg-stone-800 dark:bg-slate-700 text-white"
+                    : "border-stone-300 dark:border-theme-border bg-white dark:bg-theme-surface text-stone-700 dark:text-ink"
                 }`}
               >
                 {label}
@@ -301,8 +305,8 @@ export function MagneticCompass() {
                 onClick={() => setView("3d")}
                 className={`min-h-11 min-w-11 rounded-full border px-2.5 py-1 font-semibold ${
                   view === "3d"
-                    ? "border-rose-600 bg-rose-600 text-white"
-                    : "border-stone-300 bg-white text-stone-700"
+                    ? "border-rose-600 dark:border-theme-border bg-rose-600 dark:bg-rose-700 text-white"
+                    : "border-stone-300 dark:border-theme-border bg-white dark:bg-theme-surface text-stone-700 dark:text-ink"
                 }`}
               >
                 立体
@@ -314,8 +318,8 @@ export function MagneticCompass() {
               onClick={() => setView("flat")}
               className={`min-h-11 min-w-11 rounded-full border px-2.5 py-1 font-semibold ${
                 view === "flat"
-                  ? "border-rose-600 bg-rose-600 text-white"
-                  : "border-stone-300 bg-white text-stone-700"
+                  ? "border-rose-600 dark:border-theme-border bg-rose-600 dark:bg-rose-700 text-white"
+                  : "border-stone-300 dark:border-theme-border bg-white dark:bg-theme-surface text-stone-700 dark:text-ink"
               }`}
             >
               平面
@@ -325,7 +329,7 @@ export function MagneticCompass() {
       </header>
 
       {!model ? (
-        <p className="p-6 text-sm text-stone-500">
+        <p className="p-6 text-sm text-ink-muted">
           出発地の県を選ぶと羅盤を表示します。
         </p>
       ) : view === "3d" && inView ? (
@@ -336,7 +340,7 @@ export function MagneticCompass() {
         </div>
       )}
 
-      <div className="space-y-2 border-t border-stone-200/70 px-5 py-4 text-sm text-stone-700">
+      <div className="space-y-2 border-t border-stone-200/70 dark:border-theme-border px-5 py-4 text-sm text-stone-700 dark:text-ink">
         {model && (
           <p data-testid="declination">
             {model.declinationKnown
@@ -348,11 +352,11 @@ export function MagneticCompass() {
           <div
             className={`rounded-2xl border p-3 ${
               t.differs
-                ? "border-amber-300 bg-amber-50"
-                : "border-stone-200 bg-white"
+                ? "border-amber-300 dark:border-theme-border bg-amber-50 dark:bg-theme-gold-soft"
+                : "border-stone-200 dark:border-theme-border bg-white dark:bg-theme-surface"
             }`}
           >
-            <p className="font-bold text-stone-800">
+            <p className="font-bold text-stone-800 dark:text-ink">
               {from} → {t.place.name}（約 {Math.round(t.distanceKm)} km）
             </p>
             <p className="mt-1 text-xs">
@@ -362,14 +366,14 @@ export function MagneticCompass() {
               {`方位磁針で測ると ${t.magneticBearing.toFixed(1)}° → ${DIRECTION_LABELS[t.magneticDirection]}`}
             </p>
             {t.differs && (
-              <p className="mt-1 text-xs font-bold text-amber-800">
+              <p className="mt-1 text-xs font-bold text-amber-800 dark:text-theme-gold">
                 {`方位磁針で測ると隣の方位（${DIRECTION_LABELS[t.magneticDirection]}）に見えます。判定は真北の${DIRECTION_LABELS[t.trueDirection]}です。`}
               </p>
             )}
           </div>
         )}
-        <p className="text-xs text-stone-500">{HOW_TO_READ}</p>
-        <p className="text-xs text-stone-500">{PLACE_NOTE}</p>
+        <p className="text-xs text-ink-muted">{HOW_TO_READ}</p>
+        <p className="text-xs text-ink-muted">{PLACE_NOTE}</p>
       </div>
     </section>
   );

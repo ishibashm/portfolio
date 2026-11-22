@@ -959,3 +959,44 @@
     }
   }
 }
+
+.dark .shirube-rig::before {
+  content: "";
+  position: absolute;
+  inset: -4% -30%;
+  border-radius: 50%;
+  background: radial-gradient(
+    ellipse,
+    rgb(254 240 208 / 0.65),
+    transparent 72%
+  );
+  pointer-events: none;
+}
+
+.dark .shirube-bubble {
+  background: var(--wg-surface);
+  color: var(--wg-ink);
+  border-color: var(--wg-gold);
+  box-shadow: 0 6px 18px var(--wg-shadow);
+}
+
+.dark .shirube-bubble-text {
+  color: inherit;
+}
+
+.dark .shirube-bubble-name,
+.dark .shirube-bubble-link,
+.dark .shirube-restore-tab {
+  color: var(--wg-gold);
+  background: var(--theme-gold-soft);
+}
+
+.dark .shirube-bubble-hide,
+.dark .shirube-bubble-link:hover {
+  color: var(--wg-ink);
+  background: var(--theme-subtle);
+}
+
+.dark .shirube-bubble-hide:hover {
+  background: var(--theme-gold-soft);
+}

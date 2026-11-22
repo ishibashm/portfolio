@@ -332,12 +332,15 @@ function WeatherRows({
           const direction = directions[city.prefectureCode];
           const unlucky = Boolean(direction?.unlucky);
           return (
-            <tr key={city.prefectureCode} className="border-t border-slate-200">
+            <tr
+              key={city.prefectureCode}
+              className="border-t border-slate-200 dark:border-theme-border"
+            >
               <th scope="row" className={`${cell} whitespace-nowrap`}>
                 {city.city}
               </th>
               <td
-                className={`${cell} whitespace-nowrap ${unlucky ? "font-bold text-rose-800" : ""}`}
+                className={`${cell} whitespace-nowrap ${unlucky ? "font-bold text-rose-800 dark:text-accent" : ""}`}
               >
                 {compact
                   ? (direction?.label ??
@@ -385,7 +388,7 @@ export function NationalWeatherTable({
   return (
     <>
       <details className="text-xs lg:hidden">
-        <summary className="cursor-pointer font-semibold text-slate-800 underline underline-offset-4">
+        <summary className="cursor-pointer font-semibold text-slate-800 dark:text-ink underline underline-offset-4">
           10都市の表を開く（最低気温・降水確率・明日）
         </summary>
         <div className="mt-2 overflow-x-auto">
@@ -416,7 +419,7 @@ export function NationalWeatherCards({
 }) {
   if (!data)
     return (
-      <p className="text-sm text-slate-700">
+      <p className="text-sm text-slate-700 dark:text-ink">
         いま天気を取得できません。時間をおいて開き直してください。
       </p>
     );

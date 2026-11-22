@@ -55,14 +55,14 @@ function HourTable({
             return (
               <tr
                 key={hour.branch}
-                className={`border-t border-slate-200 align-top ${
-                  current ? "bg-amber-50" : ""
+                className={`border-t border-slate-200 dark:border-theme-border align-top ${
+                  current ? "bg-amber-50 dark:bg-theme-gold-soft" : ""
                 }`}
               >
                 <th scope="row" className="whitespace-nowrap px-1.5 py-1">
                   {hour.branch} {hour.time}
                   {current ? (
-                    <span className="mt-0.5 block text-[10px] font-semibold text-amber-800">
+                    <span className="mt-0.5 block text-[10px] font-semibold text-amber-800 dark:text-theme-gold">
                       今の刻
                     </span>
                   ) : null}
@@ -97,7 +97,7 @@ function LuckyChips({
         items.map((item) => (
           <span
             key={item}
-            className="rounded-full bg-emerald-100 px-2 py-0.5 font-semibold text-emerald-900"
+            className="rounded-full bg-emerald-100 dark:bg-theme-good-soft px-2 py-0.5 font-semibold text-emerald-900 dark:text-theme-good"
           >
             {item}
           </span>
@@ -135,13 +135,13 @@ export function TodayHoursCard({
   return (
     <section
       aria-labelledby="today-hours-heading"
-      className="w-full max-w-[1700px] space-y-3 rounded-3xl border border-slate-300 bg-white/95 p-4 text-slate-900 shadow-lg shadow-slate-200/50 md:space-y-4 md:p-8"
+      className="w-full max-w-[1700px] space-y-3 rounded-3xl border border-slate-300 dark:border-theme-border bg-white/95 dark:bg-theme-surface p-4 text-slate-900 dark:text-ink shadow-lg shadow-slate-200/50 dark:shadow-black/20 md:space-y-4 md:p-8"
     >
       <div>
         <h2 id="today-hours-heading" className="text-xl font-bold">
           今日の吉方位と時間
         </h2>
-        <p className="text-xs text-slate-600">
+        <p className="text-xs text-slate-600 dark:text-ink-muted">
           <time dateTime={data.date}>{data.date}</time>
           （日本時間）・{origin.name}基準の真太陽時
           <Link href="#today-overview-heading" className="ml-2 underline">
@@ -160,13 +160,13 @@ export function TodayHoursCard({
               current.unlucky.map((item) => (
                 <li
                   key={item}
-                  className="rounded-full bg-rose-100 px-2 py-0.5 font-semibold text-rose-900"
+                  className="rounded-full bg-rose-100 dark:bg-theme-accent-soft px-2 py-0.5 font-semibold text-rose-900 dark:text-accent"
                 >
                   {item}
                 </li>
               ))
             ) : (
-              <li className="text-slate-700">なし</li>
+              <li className="text-slate-700 dark:text-ink">なし</li>
             )}
           </ul>
 
@@ -213,7 +213,7 @@ export function TodayHoursCard({
                 <div
                   key={direction}
                   aria-hidden="true"
-                  className={`rounded-md border px-0.5 py-2 text-xs ${bad ? "border-rose-400 bg-rose-50 text-rose-900" : lucky ? "border-emerald-400 bg-emerald-50 text-emerald-900" : direction === "CENTER" ? "border-amber-300 bg-amber-50" : "border-slate-200 bg-white"}`}
+                  className={`rounded-md border px-0.5 py-2 text-xs ${bad ? "border-rose-400 dark:border-theme-border bg-rose-50 dark:bg-theme-bad-soft text-rose-900 dark:text-theme-bad" : lucky ? "border-emerald-400 dark:border-theme-border bg-emerald-50 dark:bg-theme-good-soft text-emerald-900 dark:text-theme-good" : direction === "CENTER" ? "border-amber-300 dark:border-theme-border bg-amber-50 dark:bg-theme-gold-soft" : "border-slate-200 dark:border-theme-border bg-white dark:bg-theme-surface"}`}
                 >
                   <span className="block font-bold">
                     {direction === "CENTER" ? `${current.branch}の刻` : label}
@@ -233,7 +233,7 @@ export function TodayHoursCard({
           </div>
         </div>
         <details className="min-w-0 text-xs">
-          <summary className="min-h-11 cursor-pointer rounded-lg bg-slate-100 p-3 font-semibold text-slate-800">
+          <summary className="min-h-11 cursor-pointer rounded-lg bg-slate-100 dark:bg-theme-subtle p-3 font-semibold text-slate-800 dark:text-ink">
             本命星別の今の刻と、十二支の時間帯を見る
           </summary>
           <div className="mt-3 space-y-2">
@@ -241,7 +241,7 @@ export function TodayHoursCard({
               <details
                 key={star.star}
                 name="home-honmei-hours"
-                className={`rounded-lg border p-2 ${star.star === selected?.star ? "border-emerald-400 bg-emerald-50/40" : "border-slate-200"}`}
+                className={`rounded-lg border p-2 ${star.star === selected?.star ? "border-indigo-400 dark:border-theme-link bg-indigo-50/40 dark:bg-theme-link-soft" : "border-slate-200 dark:border-theme-border"}`}
               >
                 <summary className="min-h-11 cursor-pointer">
                   <span className="inline-grid w-[calc(100%-1.5rem)] gap-1.5 align-middle min-[1100px]:grid-cols-[6rem_minmax(0,1fr)_minmax(0,2fr)_auto]">
@@ -252,11 +252,11 @@ export function TodayHoursCard({
                     <span className="flex flex-wrap items-center gap-1">
                       今の吉 <LuckyChips items={star.lucky} inline />
                     </span>
-                    <span className="text-slate-700">
+                    <span className="text-slate-700 dark:text-ink">
                       追加で避けたい：
                       {list(additionalUnlucky(star.keyed, current.keyed))}
                     </span>
-                    <span className="text-slate-600 underline underline-offset-2">
+                    <span className="text-slate-600 dark:text-ink-muted underline underline-offset-2">
                       時間帯を開く
                     </span>
                   </span>
@@ -276,16 +276,22 @@ export function TodayHoursCard({
         </details>
       </div>
       <p className="text-xs">
-        <Link href="/houi/today" className="text-rose-600 underline">
+        <Link
+          href="/houi/today"
+          className="text-rose-600 dark:text-accent underline"
+        >
           詳しい日盤と、現在地での今の刻を見る
         </Link>
-        <span className="text-slate-600">・本命星は</span>
-        <Link href="/houi#honmei-lookup" className="text-rose-600 underline">
+        <span className="text-slate-600 dark:text-ink-muted">・本命星は</span>
+        <Link
+          href="/houi#honmei-lookup"
+          className="text-rose-600 dark:text-accent underline"
+        >
           早見
         </Link>
-        <span className="text-slate-600">で分かります</span>
+        <span className="text-slate-600 dark:text-ink-muted">で分かります</span>
       </p>
-      <p className="text-xs text-slate-600">
+      <p className="text-xs text-slate-600 dark:text-ink-muted">
         時盤の吉でも、今日の日盤が凶なら凶を優先します。時刻は{origin.name}
         （東経{origin.lon}
         度）の真太陽時で区切り、日本時間で表示しています。方位の吉凶は伝統的な見方で、効果を保証しません。

@@ -148,7 +148,7 @@ export function CandidateSave({
       <p>候補への方位です。部屋の窓・玄関の向きではありません。</p>
       {/* 次に何をすれば保存できるかを言う。以前は「状態: 位置確認／判定可能／
           保存済み」で、位置確認が「何をする段階か」読めなかった */}
-      <p className="font-semibold text-stone-800">
+      <p className="font-semibold text-stone-800 dark:text-ink">
         {saved === content
           ? "この内容で保存済みです。"
           : confirmed
@@ -158,7 +158,7 @@ export function CandidateSave({
               : "地図で所在地を確認すると保存できます。"}
       </p>
       {target.source && (
-        <p className="text-amber-700">
+        <p className="text-amber-700 dark:text-theme-gold">
           概略位置です。住所検索は建物の位置を保証しません。地図で確かめ、必要ならピンを指定し直してください。
         </p>
       )}
@@ -203,7 +203,7 @@ export function CandidateSave({
       */}
       {onDetailsChange && (
         <details
-          className="rounded-lg border border-stone-200 p-2"
+          className="rounded-lg border border-stone-200 dark:border-theme-border p-2"
           open={Object.values(details).some((v) => v != null && v !== "")}
         >
           <summary className="cursor-pointer font-semibold">
@@ -273,7 +273,7 @@ export function CandidateSave({
       )}
       <button
         type="button"
-        className="rounded bg-emerald-800 px-3 py-2 text-white disabled:opacity-40"
+        className="rounded bg-emerald-800 dark:bg-emerald-800 px-3 py-2 text-white disabled:opacity-40"
         disabled={!valid || !confirmed || busy || saved === content}
         onClick={() => void save()}
       >
@@ -299,7 +299,7 @@ export function CandidateSave({
         </Link>
       )}
       {error && (
-        <p role="alert" className="text-rose-700">
+        <p role="alert" className="text-rose-700 dark:text-accent">
           {error}
         </p>
       )}

@@ -263,7 +263,7 @@ export function TransactionsPanel({
 
   if (!hasBase) {
     return (
-      <p className="text-xs text-stone-500 leading-relaxed">
+      <p className="text-xs text-stone-500 dark:text-ink-muted leading-relaxed">
         出発地を設定すると、そこからの方位別に成約相場を表示します。
       </p>
     );
@@ -278,7 +278,7 @@ export function TransactionsPanel({
 
   return (
     <div className="space-y-4">
-      <div className="text-[11px] leading-relaxed text-stone-600 bg-amber-50 border border-amber-200 rounded-xl px-3 py-2.5">
+      <div className="text-[11px] leading-relaxed text-stone-600 dark:text-ink-muted bg-amber-50 dark:bg-theme-gold-soft border border-amber-200 dark:border-theme-border rounded-xl px-3 py-2.5">
         {
           "ここに出るのは国土交通省の成約価格（過去に実際に売買された価格）です。いま買える物件の一覧ではありません。購入を検討する方位の相場観に使ってください。"
         }
@@ -295,7 +295,7 @@ export function TransactionsPanel({
         <select
           value={minRatio}
           onChange={(e) => setMinRatio(e.target.value)}
-          className="w-full px-3 py-2 bg-gray-50 dark:bg-white border border-gray-200 dark:border-stone-200 rounded-xl text-xs outline-none cursor-pointer"
+          className="w-full px-3 py-2 bg-gray-50 dark:bg-theme-subtle border border-gray-200 dark:border-theme-border rounded-xl text-xs outline-none cursor-pointer"
         >
           <option value="">建物比率で絞らない</option>
           <option value="0.3">建物比率 3割以上</option>
@@ -303,7 +303,7 @@ export function TransactionsPanel({
           <option value="0.7">建物比率 7割以上</option>
         </select>
         {minRatio && (
-          <p className="text-xs text-stone-600 leading-relaxed mt-1">
+          <p className="text-xs text-stone-600 dark:text-ink-muted leading-relaxed mt-1">
             {
               "比率は積算（延床×再調達単価×残存年数比）による推定です。戸建てのみ計算でき、マンション・土地の事例はこの絞り込みでは表示されません。"
             }
@@ -318,7 +318,7 @@ export function TransactionsPanel({
           value={maxPrice}
           onChange={(e) => setMaxPrice(e.target.value)}
           aria-label="総額の上限"
-          className="w-full px-3 py-2 bg-gray-50 dark:bg-white border border-gray-200 dark:border-stone-200 rounded-xl text-xs outline-none cursor-pointer"
+          className="w-full px-3 py-2 bg-gray-50 dark:bg-theme-subtle border border-gray-200 dark:border-theme-border rounded-xl text-xs outline-none cursor-pointer"
         >
           <option value="">総額の上限なし</option>
           {PRICE_CAPS.map((v) => (
@@ -331,7 +331,7 @@ export function TransactionsPanel({
           value={minArea}
           onChange={(e) => setMinArea(e.target.value)}
           aria-label="面積の下限"
-          className="w-full px-3 py-2 bg-gray-50 dark:bg-white border border-gray-200 dark:border-stone-200 rounded-xl text-xs outline-none cursor-pointer"
+          className="w-full px-3 py-2 bg-gray-50 dark:bg-theme-subtle border border-gray-200 dark:border-theme-border rounded-xl text-xs outline-none cursor-pointer"
         >
           <option value="">面積の下限なし</option>
           {AREA_FLOORS.map((v) => (
@@ -345,7 +345,7 @@ export function TransactionsPanel({
           value={roadDirection}
           onChange={(e) => setRoadDirection(e.target.value)}
           aria-label="前面道路の方位"
-          className="col-span-2 w-full px-3 py-2 bg-gray-50 dark:bg-white border border-gray-200 dark:border-stone-200 rounded-xl text-xs outline-none cursor-pointer"
+          className="col-span-2 w-full px-3 py-2 bg-gray-50 dark:bg-theme-subtle border border-gray-200 dark:border-theme-border rounded-xl text-xs outline-none cursor-pointer"
         >
           <option value="">前面道路の方位を問わない</option>
           {ROAD_DIRECTION_OPTIONS.map((v) => (
@@ -356,14 +356,14 @@ export function TransactionsPanel({
         </select>
       </div>
       {roadDirection && (
-        <p className="text-xs text-stone-600 leading-relaxed">
+        <p className="text-xs text-stone-600 dark:text-ink-muted leading-relaxed">
           {
             "前面道路の方位は、土地が接する道路の向きです（国交省の取引価格情報）。家から見た方位とは別で、マンション・農地・林地は値が無いため、この絞り込みでは表示されません。"
           }
         </p>
       )}
       {verdicts && (
-        <label className="flex min-h-[24px] items-center gap-2 text-xs text-stone-700">
+        <label className="flex min-h-[24px] items-center gap-2 text-xs text-stone-700 dark:text-ink">
           <input
             type="checkbox"
             checked={openOnly}
@@ -373,7 +373,7 @@ export function TransactionsPanel({
         </label>
       )}
       {noOpenDirection && (
-        <p className="text-xs leading-relaxed text-amber-800">
+        <p className="text-xs leading-relaxed text-amber-800 dark:text-theme-gold">
           {
             "この日は開いている方位がありません（どの方位も五大凶殺か天中殺に当たっています）。日付を変えるか、チェックを外してください。"
           }
@@ -381,21 +381,23 @@ export function TransactionsPanel({
       )}
 
       {loading && (
-        <p className="text-xs text-stone-600 animate-pulse">
+        <p className="text-xs text-stone-600 dark:text-ink-muted animate-pulse">
           成約事例を読み込んでいます…
         </p>
       )}
-      {error && <p className="text-xs text-rose-600">{error}</p>}
+      {error && (
+        <p className="text-xs text-rose-600 dark:text-accent">{error}</p>
+      )}
 
       {data && !loading && (
         <>
           {/* 方位別の相場。中央値（外れ値に強い）で出す */}
           <section>
-            <h3 className="text-[10px] font-bold uppercase tracking-wider text-stone-500 mb-2">
+            <h3 className="text-[10px] font-bold uppercase tracking-wider text-stone-500 dark:text-ink-muted mb-2">
               方位別の成約相場（中央値）
             </h3>
             {data.byDirection.length === 0 ? (
-              <p className="text-xs text-stone-500 leading-relaxed">
+              <p className="text-xs text-stone-500 dark:text-ink-muted leading-relaxed">
                 {
                   "この範囲には座標整備済みの成約事例がまだありません。座標の整備（地区名から順に埋めています）が進むと表示されます。"
                 }
@@ -422,16 +424,18 @@ export function TransactionsPanel({
                       }
                       className={`flex items-baseline justify-between rounded-lg border px-2.5 py-1.5 text-left transition-colors ${
                         active
-                          ? "border-indigo-400 bg-indigo-50"
-                          : "border-stone-200 bg-white dark:bg-stone-50 hover:bg-stone-50"
+                          ? "border-indigo-400 dark:border-theme-border bg-indigo-50 dark:bg-theme-link-soft"
+                          : "border-stone-200 dark:border-theme-border bg-white dark:bg-theme-surface hover:bg-stone-50 dark:hover:bg-theme-subtle"
                       }`}
                     >
-                      <span className="text-xs font-bold text-stone-700">
+                      <span className="text-xs font-bold text-stone-700 dark:text-ink">
                         {DIRECTION_LABELS[d.direction] ?? d.direction}
                         {label && (
                           <span
                             className={`ml-1.5 text-[10px] font-bold ${
-                              open ? "text-emerald-700" : "text-rose-700"
+                              open
+                                ? "text-emerald-700 dark:text-theme-good"
+                                : "text-rose-700 dark:text-accent"
                             }`}
                           >
                             {label}
@@ -439,10 +443,10 @@ export function TransactionsPanel({
                         )}
                       </span>
                       <span className="text-right">
-                        <span className="block text-[11px] font-mono text-stone-700">
+                        <span className="block text-[11px] font-mono text-stone-700 dark:text-ink">
                           {unitManYen(d.medianUnitPriceSqm)}
                         </span>
-                        <span className="block text-[10px] text-stone-600">
+                        <span className="block text-[10px] text-stone-600 dark:text-ink-muted">
                           {d.count.toLocaleString()} 件
                         </span>
                       </span>
@@ -458,7 +462,7 @@ export function TransactionsPanel({
             <select
               value={typeFilter}
               onChange={(e) => setTypeFilter(e.target.value)}
-              className="w-full px-3 py-2 bg-gray-50 dark:bg-white border border-gray-200 dark:border-stone-200 rounded-xl text-xs outline-none cursor-pointer"
+              className="w-full px-3 py-2 bg-gray-50 dark:bg-theme-subtle border border-gray-200 dark:border-theme-border rounded-xl text-xs outline-none cursor-pointer"
             >
               <option value="">すべての種別</option>
               {types.map((t) => (
@@ -471,13 +475,13 @@ export function TransactionsPanel({
 
           {/* 直近の成約事例 */}
           <section>
-            <h3 className="text-[10px] font-bold uppercase tracking-wider text-stone-500 mb-2">
+            <h3 className="text-[10px] font-bold uppercase tracking-wider text-stone-500 dark:text-ink-muted mb-2">
               直近の成約事例（新しい順・{rows.length.toLocaleString()} 件表示）
             </h3>
             {/* 何で絞っているかを一覧の上で言う。方位は頁全体の状態なので、
                 ここで外せるようにする（上の札まで戻らなくてよい） */}
             {dirs && dirs.length > 0 && (
-              <p className="mb-2 flex flex-wrap items-center gap-2 text-xs text-indigo-800">
+              <p className="mb-2 flex flex-wrap items-center gap-2 text-xs text-indigo-800 dark:text-theme-link">
                 <span>
                   {`方位: ${dirs.map((d) => DIRECTION_LABELS[d] ?? d).join("・")}`}
                 </span>
@@ -496,18 +500,18 @@ export function TransactionsPanel({
               {rows.slice(0, 100).map((r) => (
                 <li
                   key={r.id}
-                  className="bg-white dark:bg-stone-50 border border-stone-200 rounded-lg px-2.5 py-2 text-[11px] leading-snug"
+                  className="bg-white dark:bg-theme-surface border border-stone-200 dark:border-theme-border rounded-lg px-2.5 py-2 text-[11px] leading-snug"
                 >
                   <div className="flex items-baseline justify-between gap-2">
-                    <span className="font-bold text-stone-700 truncate">
+                    <span className="font-bold text-stone-700 dark:text-ink truncate">
                       {r.municipality}
                       {r.districtName ?? ""}
                     </span>
-                    <span className="font-mono text-stone-700 shrink-0">
+                    <span className="font-mono text-stone-700 dark:text-ink shrink-0">
                       {manYen(r.tradePrice)}
                     </span>
                   </div>
-                  <div className="flex flex-wrap gap-x-2 text-[10px] text-stone-600 mt-0.5">
+                  <div className="flex flex-wrap gap-x-2 text-[10px] text-stone-600 dark:text-ink-muted mt-0.5">
                     <span>{r.propertyType ?? "種別不明"}</span>
                     {r.areaSqm !== null && <span>{r.areaSqm}㎡</span>}
                     <span>{unitManYen(r.unitPriceSqm)}</span>
@@ -532,7 +536,7 @@ export function TransactionsPanel({
                         {manYen(r.estLandPrice)}）
                       </span>
                     )}
-                    <span className="text-stone-500 font-bold">
+                    <span className="text-stone-500 dark:text-ink-muted font-bold">
                       {DIRECTION_LABELS[r.direction] ?? r.direction}・
                       {r.distanceKm}km
                     </span>
@@ -542,7 +546,7 @@ export function TransactionsPanel({
             </ul>
           </section>
 
-          <p className="text-xs text-stone-600 leading-relaxed">
+          <p className="text-xs text-stone-600 dark:text-ink-muted leading-relaxed">
             範囲内 {data.totalInRadius.toLocaleString()} 件
             {data.truncated ? "（多いため新しい順に切っています）" : ""}。
             {data.pendingCoords > 0
@@ -558,7 +562,7 @@ export function TransactionsPanel({
           */}
           <a
             href="/relocation/purchase"
-            className="block rounded-lg border border-indigo-200 bg-indigo-50 px-2.5 py-2 text-[10px] font-bold text-indigo-800 hover:bg-indigo-100"
+            className="block rounded-lg border border-indigo-200 dark:border-theme-border bg-indigo-50 dark:bg-theme-link-soft px-2.5 py-2 text-[10px] font-bold text-indigo-800 dark:text-theme-link hover:bg-indigo-100 dark:hover:bg-theme-link-soft"
           >
             全国の相場と比べる（種類別・築年数別・都道府県別）→
           </a>

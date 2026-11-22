@@ -41,7 +41,7 @@ const components: Components = {
   h2: ({ children, ...props }) => (
     <h2
       id={headingId(textOf(children))}
-      className={`mt-12 ${MEASURE} scroll-mt-6 border-b border-slate-300 pb-2 font-serif text-2xl font-bold text-slate-900`}
+      className={`mt-12 ${MEASURE} scroll-mt-6 border-b border-slate-300 dark:border-theme-border pb-2 font-serif text-2xl font-bold text-slate-900 dark:text-ink`}
       {...props}
     >
       {children}
@@ -49,7 +49,7 @@ const components: Components = {
   ),
   h3: ({ children, ...props }) => (
     <h3
-      className={`mt-8 ${MEASURE} font-serif text-lg font-bold text-slate-900`}
+      className={`mt-8 ${MEASURE} font-serif text-lg font-bold text-slate-900 dark:text-ink`}
       {...props}
     >
       {children}
@@ -57,7 +57,7 @@ const components: Components = {
   ),
   ul: ({ children, ...props }) => (
     <ul
-      className={`mt-4 ${MEASURE} list-disc space-y-2 pl-6 text-[15px] leading-7 text-slate-700`}
+      className={`mt-4 ${MEASURE} list-disc space-y-2 pl-6 text-[15px] leading-7 text-slate-700 dark:text-ink`}
       {...props}
     >
       {children}
@@ -65,14 +65,14 @@ const components: Components = {
   ),
   ol: ({ children, ...props }) => (
     <ol
-      className={`mt-4 ${MEASURE} list-decimal space-y-2 pl-6 text-[15px] leading-7 text-slate-700`}
+      className={`mt-4 ${MEASURE} list-decimal space-y-2 pl-6 text-[15px] leading-7 text-slate-700 dark:text-ink`}
       {...props}
     >
       {children}
     </ol>
   ),
   strong: ({ children, ...props }) => (
-    <strong className="font-bold text-slate-950" {...props}>
+    <strong className="font-bold text-slate-950 dark:text-ink" {...props}>
       {children}
     </strong>
   ),
@@ -81,7 +81,7 @@ const components: Components = {
     return (
       <a
         href={href}
-        className="font-semibold text-rose-600 underline decoration-rose-300 underline-offset-4 hover:text-rose-700"
+        className="font-semibold text-accent underline decoration-rose-300 dark:decoration-accent underline-offset-4 hover:text-rose-700 dark:hover:text-accent"
         {...(external ? { target: "_blank", rel: "noopener noreferrer" } : {})}
         {...props}
       >
@@ -91,7 +91,7 @@ const components: Components = {
   },
   blockquote: ({ children, ...props }) => (
     <blockquote
-      className={`mt-6 ${MEASURE} rounded-r-2xl border-l-4 border-rose-400 bg-rose-50 px-5 py-1 text-slate-700`}
+      className={`mt-6 ${MEASURE} rounded-r-2xl border-l-4 border-rose-400 dark:border-theme-border bg-rose-50 dark:bg-theme-accent-soft px-5 py-1 text-slate-700 dark:text-ink`}
       {...props}
     >
       {children}
@@ -101,7 +101,7 @@ const components: Components = {
   // 表のためだけに読み幅を広げると、本文の行長がその表に引きずられる。
   table: ({ children, ...props }) => (
     <div
-      className={`mt-6 ${MEASURE} max-w-full overflow-x-auto overscroll-x-contain rounded-2xl border border-slate-300 bg-white/90 [-webkit-overflow-scrolling:touch] [overflow-wrap:normal]`}
+      className={`mt-6 ${MEASURE} max-w-full overflow-x-auto overscroll-x-contain rounded-2xl border border-slate-300 dark:border-theme-border bg-white/90 dark:bg-theme-surface [-webkit-overflow-scrolling:touch] [overflow-wrap:normal]`}
     >
       <table className="min-w-full border-collapse text-sm" {...props}>
         {children}
@@ -109,25 +109,31 @@ const components: Components = {
     </div>
   ),
   thead: ({ children, ...props }) => (
-    <thead className="bg-stone-100/80" {...props}>
+    <thead className="bg-stone-100/80 dark:bg-theme-subtle" {...props}>
       {children}
     </thead>
   ),
   tr: ({ children, ...props }) => (
-    <tr className="border-b border-slate-200 last:border-0" {...props}>
+    <tr
+      className="border-b border-slate-200 dark:border-theme-border last:border-0"
+      {...props}
+    >
       {children}
     </tr>
   ),
   th: ({ children, ...props }) => (
     <th
-      className="min-w-32 whitespace-nowrap px-4 py-3 text-left text-xs font-bold text-slate-700"
+      className="min-w-32 whitespace-nowrap px-4 py-3 text-left text-xs font-bold text-slate-700 dark:text-ink"
       {...props}
     >
       {children}
     </th>
   ),
   td: ({ children, ...props }) => (
-    <td className="px-4 py-3 align-top leading-6 text-slate-700" {...props}>
+    <td
+      className="px-4 py-3 align-top leading-6 text-slate-700 dark:text-ink"
+      {...props}
+    >
       {children}
     </td>
   ),
@@ -135,7 +141,7 @@ const components: Components = {
   // スマホでページ全体が横に広がり、画面ごと縮んで見える）。
   code: ({ children, ...props }) => (
     <code
-      className="rounded bg-stone-200/70 px-1.5 py-0.5 font-mono text-[0.9em] text-slate-800"
+      className="rounded bg-stone-200/70 dark:bg-theme-subtle px-1.5 py-0.5 font-mono text-[0.9em] text-slate-800 dark:text-ink"
       {...props}
     >
       {children}
@@ -144,14 +150,17 @@ const components: Components = {
   // コードの塊は折り返さず、塊の中だけで横スクロールさせる。
   pre: ({ children, ...props }) => (
     <pre
-      className={`mt-6 ${MEASURE} max-w-full overflow-x-auto rounded-2xl border border-slate-300 bg-stone-100 p-4 text-[13px] leading-6 text-slate-800 [-webkit-overflow-scrolling:touch] [overflow-wrap:normal] [&_code]:bg-transparent [&_code]:p-0`}
+      className={`mt-6 ${MEASURE} max-w-full overflow-x-auto rounded-2xl border border-slate-300 dark:border-theme-border bg-stone-100 dark:bg-theme-subtle p-4 text-[13px] leading-6 text-slate-800 dark:text-ink [-webkit-overflow-scrolling:touch] [overflow-wrap:normal] [&_code]:bg-transparent [&_code]:p-0`}
       {...props}
     >
       {children}
     </pre>
   ),
   hr: ({ ...props }) => (
-    <hr className={`my-10 ${MEASURE} border-slate-300`} {...props} />
+    <hr
+      className={`my-10 ${MEASURE} border-slate-300 dark:border-theme-border`}
+      {...props}
+    />
   ),
   /*
     React 19 は、サーバーで描いた `<img>` のうち loading="lazy" でも
@@ -201,7 +210,7 @@ export function BlogArticleBody({
           {inject}
           <h2
             id={headingId(heading)}
-            className={`mt-12 ${MEASURE} scroll-mt-6 border-b border-slate-300 pb-2 font-serif text-2xl font-bold text-slate-900`}
+            className={`mt-12 ${MEASURE} scroll-mt-6 border-b border-slate-300 dark:border-theme-border pb-2 font-serif text-2xl font-bold text-slate-900 dark:text-ink`}
             {...props}
           >
             {children}
@@ -220,7 +229,7 @@ export function BlogArticleBody({
       }
       return (
         <p
-          className={`mt-4 ${MEASURE} text-[15px] leading-8 text-slate-700`}
+          className={`mt-4 ${MEASURE} text-[15px] leading-8 text-slate-700 dark:text-ink`}
           {...props}
         >
           {children}

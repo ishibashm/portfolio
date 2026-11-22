@@ -96,7 +96,7 @@ export function ListingEmailPreview({
   };
   return (
     <details
-      className="rounded-xl border border-stone-200 p-3 text-xs space-y-2"
+      className="rounded-xl border border-stone-200 dark:border-theme-border p-3 text-xs space-y-2"
       onToggle={(e) => {
         if (!e.currentTarget.open) clear();
       }}
@@ -121,7 +121,7 @@ export function ListingEmailPreview({
           メールの形式
           <select
             aria-label="メールの形式"
-            className="ml-2 min-h-11 max-w-full rounded-lg border border-stone-300 bg-white px-2 text-base sm:text-sm"
+            className="ml-2 min-h-11 max-w-full rounded-lg border border-stone-300 dark:border-theme-border bg-white dark:bg-theme-surface px-2 text-base sm:text-sm"
             value={format}
             disabled={busy}
             onChange={(e) => {
@@ -146,7 +146,7 @@ export function ListingEmailPreview({
           maxLength={12000}
           autoComplete="off"
           spellCheck={false}
-          className="block min-h-32 w-full border border-stone-300 rounded-lg p-2 text-base sm:text-sm"
+          className="block min-h-32 w-full border border-stone-300 dark:border-theme-border rounded-lg p-2 text-base sm:text-sm"
           onChange={(e) => {
             setSource(e.target.value);
             setUrls([]);
@@ -160,14 +160,14 @@ export function ListingEmailPreview({
           type="button"
           disabled={busy || !source.trim()}
           onClick={() => void preview()}
-          className="min-h-11 rounded-lg bg-stone-800 px-3 py-2 text-sm font-bold text-white hover:bg-stone-700 disabled:cursor-not-allowed disabled:opacity-50"
+          className="min-h-11 rounded-lg bg-stone-800 dark:bg-slate-700 px-3 py-2 text-sm font-bold text-white hover:bg-stone-700 dark:hover:bg-slate-700 disabled:cursor-not-allowed disabled:opacity-50"
         >
           {busy ? "解析中…" : "URLをプレビュー"}
         </button>
         <button
           type="button"
           onClick={clear}
-          className="min-h-11 rounded-lg border border-stone-300 bg-white px-3 py-2 text-sm font-semibold text-stone-700 hover:bg-stone-50"
+          className="min-h-11 rounded-lg border border-stone-300 dark:border-theme-border bg-white dark:bg-theme-surface px-3 py-2 text-sm font-semibold text-stone-700 dark:text-ink hover:bg-stone-50 dark:hover:bg-theme-subtle"
         >
           メール入力をクリア
         </button>

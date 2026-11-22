@@ -110,7 +110,7 @@ export default function Page() {
     .join("、");
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#faf7f5] via-[#f5efe9] to-[#f0e9e1] text-slate-900 font-sans">
+    <div className="min-h-screen bg-gradient-to-br from-[#faf7f5] dark:from-background via-[#f5efe9] dark:via-background to-[#f0e9e1] dark:to-background text-slate-900 dark:text-ink font-sans">
       {/* 早見表であって読み物ではない。長い本文はリード文だけで、あとは
           9 つの星の札と年ごとの一覧なので、記事の読み幅で止める理由が無い。
           /guide の索引と同じ 1700px。記事側（/houi/[year]/[star]）は本文が
@@ -128,22 +128,22 @@ export default function Page() {
         <h1 className="text-3xl md:text-4xl font-bold font-serif tracking-tight leading-snug">
           {year}年 引越しの方位と吉方位早見表
         </h1>
-        <p className="mt-5 max-w-[70ch] text-sm leading-relaxed text-slate-700">
+        <p className="mt-5 max-w-[70ch] text-sm leading-relaxed text-slate-700 dark:text-ink">
           引越しの方位は、自分の<b>本命星</b>と、その年の<b>年盤</b>
           で決まります。まず生まれ年から本命星を確認し、その年の方位一覧に進んでください。
         </p>
 
         <section
           aria-labelledby="houi-intro-heading"
-          className="mt-6 rounded-2xl border border-slate-300 bg-white/90 p-5"
+          className="mt-6 rounded-2xl border border-slate-300 dark:border-theme-border bg-white/90 dark:bg-theme-surface p-5"
         >
           <h2
             id="houi-intro-heading"
-            className="text-lg font-bold font-serif border-b border-slate-300 pb-2"
+            className="text-lg font-bold font-serif border-b border-slate-300 dark:border-theme-border pb-2"
           >
             吉方位の調べ方（先に結論）
           </h2>
-          <p className="mt-3 max-w-[70ch] text-sm leading-relaxed text-slate-700">
+          <p className="mt-3 max-w-[70ch] text-sm leading-relaxed text-slate-700 dark:text-ink">
             吉方位の調べ方は、生まれ年から<b>本命星</b>を出し、その年の
             <b>年盤</b>（引越しでは動く月の<b>月盤</b>
             も）で相性のよい星がいる方位を候補にし、五黄殺・暗剣殺・歳破や本命殺などの凶方位を除く順です。九星気学の一年は1月1日ではなく
@@ -153,12 +153,12 @@ export default function Page() {
             ため、引越しの費用や契約、通勤といった事実とは分けて考えます。
           </p>
           {sharedBadText && (
-            <p className="mt-2 max-w-[70ch] text-xs leading-relaxed text-slate-600">
+            <p className="mt-2 max-w-[70ch] text-xs leading-relaxed text-slate-600 dark:text-ink-muted">
               {year}年の年盤では、本命星に関係なく{sharedBadText}
               と表示されます。
             </p>
           )}
-          <p className="mt-3 max-w-[70ch] text-xs leading-relaxed text-slate-700">
+          <p className="mt-3 max-w-[70ch] text-xs leading-relaxed text-slate-700 dark:text-ink">
             無料・入力なしで早見表を見られます。生年月日を入れると、端末内の計算だけで本命星がわかります。今年と今月の吉方位は、本命星別ページで確認できます（
             {STARS.map((s, idx) => (
               <span key={s}>
@@ -166,7 +166,7 @@ export default function Page() {
                 <Link
                   prefetch={false}
                   href={`/houi/${year}/${s}`}
-                  className="font-bold text-rose-600 underline hover:text-rose-700"
+                  className="font-bold text-accent underline hover:text-rose-700 dark:hover:text-accent"
                 >
                   {STAR_NAMES[s]}
                 </Link>
@@ -175,10 +175,10 @@ export default function Page() {
             ）。
           </p>
 
-          <h3 className="mt-5 text-sm font-bold font-serif text-slate-800">
+          <h3 className="mt-5 text-sm font-bold font-serif text-slate-800 dark:text-ink">
             このサイトでの調べ方の手順（入力なしで確認できます）
           </h3>
-          <ol className="mt-2 max-w-[70ch] list-decimal pl-5 space-y-2 text-xs leading-relaxed text-slate-700">
+          <ol className="mt-2 max-w-[70ch] list-decimal pl-5 space-y-2 text-xs leading-relaxed text-slate-700 dark:text-ink">
             <li>
               <b>下の早見表で生まれ年の本命星を出す：</b>
               九星気学の一年は立春（2月3日から4日ごろ）で切り替わります。1月1日から立春の前日までの生まれは前年の星となり、立春当日は出生時刻で分かれます。
@@ -204,35 +204,35 @@ export default function Page() {
               費用や契約の事実は方位の判定とは別に見ます。候補の方位にある街と家賃相場は{" "}
               <Link
                 href="/houi/area"
-                className="font-bold text-rose-600 underline hover:text-rose-700"
+                className="font-bold text-accent underline hover:text-rose-700 dark:hover:text-accent"
               >
                 エリア別の方位と相場
               </Link>{" "}
               や{" "}
               <Link
                 href="/relocation/arbitrage"
-                className="font-bold text-rose-600 underline hover:text-rose-700"
+                className="font-bold text-accent underline hover:text-rose-700 dark:hover:text-accent"
               >
                 {coreRouteLabel("/relocation/arbitrage")}
               </Link>
               、動く時期の絞り込み（一般的な繁忙期や料金の傾向の案内を含む）は{" "}
               <Link
                 href="/relocation/timing"
-                className="font-bold text-rose-600 underline hover:text-rose-700"
+                className="font-bold text-accent underline hover:text-rose-700 dark:hover:text-accent"
               >
                 {coreRouteLabel("/relocation/timing")}
               </Link>
               、六曜・天赦日・一粒万倍日・土用などの日取りは{" "}
               <Link
                 href="/calendar"
-                className="font-bold text-rose-600 underline hover:text-rose-700"
+                className="font-bold text-accent underline hover:text-rose-700 dark:hover:text-accent"
               >
                 {coreRouteLabel("/calendar")}
               </Link>{" "}
               で確認できます。詳しい見方は{" "}
               <Link
                 href="/guide/honmei"
-                className="underline hover:text-rose-600"
+                className="underline hover:text-accent"
               >
                 使い方ガイド（本命星と吉方位）
               </Link>{" "}
@@ -242,17 +242,17 @@ export default function Page() {
         </section>
 
         <p className="mt-4">
-          <Link href="/houi/today" className="text-rose-600 underline">
+          <Link href="/houi/today" className="text-accent underline">
             今の時間・今日の吉方位を見る
           </Link>
         </p>
         <HonmeiStarLinks year={year} />
 
         <section id="honmei-lookup" className="mt-6 scroll-mt-6">
-          <h2 className="text-xl font-bold font-serif border-b border-slate-300 pb-2">
+          <h2 className="text-xl font-bold font-serif border-b border-slate-300 dark:border-theme-border pb-2">
             生まれ年から本命星を調べる
           </h2>
-          <p className="mt-3 text-xs leading-relaxed text-slate-600">
+          <p className="mt-3 text-xs leading-relaxed text-slate-600 dark:text-ink-muted">
             ※年の切り替わりは立春の瞬間（2月3〜4日ごろ）です。1月1日から立春の前日までに生まれた方は前年の本命星となり、立春当日生まれは出生時刻で分かれます。
           </p>
           {/* 9 枚。1 列のままだと器を広げても札が伸びるだけなので、
@@ -261,7 +261,7 @@ export default function Page() {
             {STARS.map((s) => (
               <div
                 key={s}
-                className="rounded-2xl border border-slate-300 bg-white/90 p-4"
+                className="rounded-2xl border border-slate-300 dark:border-theme-border bg-white/90 dark:bg-theme-surface p-4"
               >
                 <div className="flex flex-wrap items-baseline gap-3">
                   <span className="text-base font-bold font-serif">
@@ -270,19 +270,19 @@ export default function Page() {
                   <Link
                     prefetch={false}
                     href={`/houi/${years[0]}/${s}`}
-                    className="text-xs font-bold text-rose-600 hover:underline"
+                    className="text-xs font-bold text-accent hover:underline"
                   >
                     {years[0]}年の吉方位を見る →
                   </Link>
                 </div>
-                <p className="mt-2 text-xs text-slate-600 font-mono leading-relaxed">
+                <p className="mt-2 text-xs text-slate-600 dark:text-ink-muted font-mono leading-relaxed">
                   {(byStar.get(s) ?? []).join(" / ")}
                 </p>
               </div>
             ))}
           </div>
 
-          <p className="mt-8 text-xs font-bold text-slate-700">
+          <p className="mt-8 text-xs font-bold text-slate-700 dark:text-ink">
             生年月日から立春の境目を自動で見たいとき（任意・送信しません）
           </p>
           {/* 生年月日で引く早見。立春前の生まれの繰り下げを自動で行うので、
@@ -293,13 +293,19 @@ export default function Page() {
           <ActiveProfileBadge purpose="本命星と吉方位" className="mt-3 mb-3" />
           <HonmeiLookup starNames={STAR_NAMES} linkYear={years[0]} />
           <p className="mt-5 text-sm">
-            <Link href="/annai" className="underline text-slate-600">
+            <Link
+              href="/annai"
+              className="underline text-slate-600 dark:text-ink-muted"
+            >
               しるべに案内してもらう
             </Link>
           </p>
 
           <p className="mt-3 text-sm">
-            <Link href="/houi/3d" className="underline text-slate-600">
+            <Link
+              href="/houi/3d"
+              className="underline text-slate-600 dark:text-ink-muted"
+            >
               住所から街の立体と方位を見る
             </Link>
           </p>
@@ -310,22 +316,22 @@ export default function Page() {
             市区町村ページ（1,022 頁）へのサイト内の入口が実質ここだけ
             だったので、読む順序（吉方位を引く → その方位に何があるか）
             どおりの位置に上げる。註は読み終えた人が見ればよい。 */}
-        <section className="mt-10 rounded-2xl border border-slate-300 bg-white/90 p-5">
+        <section className="mt-10 rounded-2xl border border-slate-300 dark:border-theme-border bg-white/90 dark:bg-theme-surface p-5">
           <h2 className="text-base font-bold font-serif">
             吉方位が分かったら、その方位に何があるか
           </h2>
-          <p className="mt-3 text-xs text-slate-700 leading-relaxed">
+          <p className="mt-3 text-xs text-slate-700 dark:text-ink leading-relaxed">
             方位の吉凶だけでは引越し先は決まりません。いま住んでいる市区町村を選ぶと、そこから見た八方位それぞれのエリアと家賃相場を確認できます。県単位のまとめでは、相場の傾きと方位の対応を確認できます。たとえば
             <Link
               href="/houi/area/12203"
-              className="underline hover:text-rose-600"
+              className="underline hover:text-accent"
             >
               市川市
             </Link>
             や
             <Link
               href="/houi/area/23101"
-              className="underline hover:text-rose-600"
+              className="underline hover:text-accent"
             >
               名古屋市千種区
             </Link>
@@ -334,7 +340,7 @@ export default function Page() {
           <div className="mt-4 flex flex-wrap gap-3">
             <Link
               href="/houi/area"
-              className="inline-flex px-5 py-2.5 rounded-full bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs transition-colors"
+              className="inline-flex px-5 py-2.5 rounded-full bg-slate-900 dark:bg-slate-700 hover:bg-slate-800 dark:hover:bg-slate-700 text-white font-bold text-xs transition-colors"
             >
               エリア別の方位と相場を見る
             </Link>
@@ -348,7 +354,7 @@ export default function Page() {
                   prefetch={false}
                   key={code}
                   href={`/houi/pref/${code}`}
-                  className="inline-flex px-4 py-2.5 rounded-full border border-slate-400 bg-white hover:bg-slate-50 text-slate-800 font-bold text-xs transition-colors"
+                  className="inline-flex px-4 py-2.5 rounded-full border border-slate-400 dark:border-theme-border bg-white dark:bg-theme-surface hover:bg-slate-50 dark:hover:bg-theme-subtle text-slate-800 dark:text-ink font-bold text-xs transition-colors"
                 >
                   {name}
                 </Link>
@@ -361,9 +367,9 @@ export default function Page() {
           <AdBanner />
         </div>
 
-        <section className="mt-8 rounded-2xl border border-slate-300 bg-white/90 p-5">
+        <section className="mt-8 rounded-2xl border border-slate-300 dark:border-theme-border bg-white/90 dark:bg-theme-surface p-5">
           <h2 className="text-sm font-bold">算出方法が2種類あります</h2>
-          <p className="mt-3 text-xs text-slate-700 leading-relaxed">
+          <p className="mt-3 text-xs text-slate-700 dark:text-ink leading-relaxed">
             上の表は<b>一般的な九星気学</b>
             （9年周期）によるものです。このサイトのスキャナーには、木星の黄経から星を求める
             <b>独自モデル</b>
@@ -371,7 +377,7 @@ export default function Page() {
             9年周期にならず、{differing.length}
             件の生まれ年で本命星が変わります。一般的な資料と照らし合わせる場合は上の表を使ってください。
           </p>
-          <p className="mt-2 text-xs text-slate-500 leading-relaxed">
+          <p className="mt-2 text-xs text-ink-muted leading-relaxed">
             例: 1980年生まれは一般的な九星気学で
             {STAR_NAMES[starForBirthYear(1980, "classical")]}、独自モデルでは
             {STAR_NAMES[starForBirthYear(1980, "physical")]}
@@ -386,17 +392,17 @@ export default function Page() {
           として案内する。引き方がそろっているので、続けて読める並びは残す。
         */}
         <section className="mt-10">
-          <h2 className="text-xl font-bold font-serif border-b border-slate-300 pb-2">
+          <h2 className="text-xl font-bold font-serif border-b border-slate-300 dark:border-theme-border pb-2">
             風水（八宅）で見る 8 方位
           </h2>
-          <p className="text-xs text-slate-600 mt-3 leading-relaxed">
+          <p className="text-xs text-slate-600 dark:text-ink-muted mt-3 leading-relaxed">
             九星気学とは<b>別の流派</b>
             です。既定では判定に使っていません。方位の良し悪しは流派によって違うので、
             <b>両方が吉の方位もあれば、片方だけの方位もあります</b>。
           </p>
           <Link
             href="/houi/fengshui"
-            className="mt-4 inline-flex items-center gap-2 rounded-full border border-indigo-200 bg-white px-5 py-2.5 text-xs font-bold text-indigo-700 transition-colors hover:bg-indigo-50"
+            className="mt-4 inline-flex items-center gap-2 rounded-full border border-indigo-200 dark:border-theme-border bg-white dark:bg-theme-surface px-5 py-2.5 text-xs font-bold text-indigo-700 dark:text-theme-link transition-colors hover:bg-indigo-50 dark:hover:bg-theme-link-soft"
           >
             風水（八宅）で自分の吉方位を調べる →
           </Link>
@@ -407,27 +413,27 @@ export default function Page() {
           全国向けで偏角を持てないので、測り方のずれは羅盤で見せる。
         */}
         <section className="mt-10">
-          <h2 className="border-b border-slate-300 pb-2 font-serif text-xl font-bold">
+          <h2 className="border-b border-slate-300 dark:border-theme-border pb-2 font-serif text-xl font-bold">
             方位は真北で測ります（方位磁針とのずれ）
           </h2>
           <MagneticCompass />
         </section>
 
         <section className="mt-10">
-          <h2 className="text-xl font-bold font-serif border-b border-slate-300 pb-2">
+          <h2 className="text-xl font-bold font-serif border-b border-slate-300 dark:border-theme-border pb-2">
             年ごとの方位一覧
           </h2>
           <div className="mt-4 grid gap-4 sm:grid-cols-3">
             {years.map((y) => (
               <div
                 key={y}
-                className="rounded-2xl border border-slate-300 bg-white/90 p-4"
+                className="rounded-2xl border border-slate-300 dark:border-theme-border bg-white/90 dark:bg-theme-surface p-4"
               >
                 <h3 className="font-bold font-serif text-sm mb-2">
                   <Link
                     prefetch={false}
                     href={`/houi/${y}`}
-                    className="hover:text-rose-600"
+                    className="hover:text-accent"
                   >
                     {y}年
                   </Link>
@@ -438,7 +444,7 @@ export default function Page() {
                       <Link
                         prefetch={false}
                         href={`/houi/${y}/${s}`}
-                        className="text-xs text-slate-700 hover:text-rose-600"
+                        className="text-xs text-slate-700 dark:text-ink hover:text-accent"
                       >
                         {STAR_NAMES[s]}
                       </Link>
@@ -450,16 +456,16 @@ export default function Page() {
           </div>
         </section>
 
-        <section className="mt-10 rounded-2xl border border-slate-300 bg-white/90 p-5">
+        <section className="mt-10 rounded-2xl border border-slate-300 dark:border-theme-border bg-white/90 dark:bg-theme-surface p-5">
           <h2 className="text-sm font-bold">用語について</h2>
-          <p className="mt-3 text-xs text-slate-700">
+          <p className="mt-3 text-xs text-slate-700 dark:text-ink">
             方位と日取りを確認する順序は、
-            <Link href="/guide" className="underline hover:text-rose-600">
+            <Link href="/guide" className="underline hover:text-accent">
               使い方ガイド
             </Link>
             にまとめています。
           </p>
-          <dl className="mt-3 text-xs text-slate-700 leading-relaxed space-y-2">
+          <dl className="mt-3 text-xs text-slate-700 dark:text-ink leading-relaxed space-y-2">
             <div>
               <dt className="font-bold inline">五黄殺　</dt>
               <dd className="inline">
@@ -492,13 +498,13 @@ export default function Page() {
                 生年月日ごとに決まる期間。本命星では決まらないため、この早見表には含まれません。
                 <Link
                   href="/blog/moving-during-tenchusatsu"
-                  className="ml-1 underline hover:text-rose-600"
+                  className="ml-1 underline hover:text-accent"
                 >
                   天中殺に引っ越ししても大丈夫か、影響と対処を読む
                 </Link>
                 <Link
                   href="/blog/houi-and-tenchusatsu"
-                  className="ml-1 underline hover:text-rose-600"
+                  className="ml-1 underline hover:text-accent"
                 >
                   天中殺も気になる人はこちら（吉方位と天中殺の関係）
                 </Link>
@@ -507,14 +513,14 @@ export default function Page() {
           </dl>
         </section>
 
-        <div className="mt-10 rounded-2xl border border-amber-200 bg-amber-50 p-5">
-          <p className="text-xs text-amber-900 leading-relaxed">
+        <div className="mt-10 rounded-2xl border border-amber-200 dark:border-theme-border bg-amber-50 dark:bg-theme-gold-soft p-5">
+          <p className="text-xs text-amber-900 dark:text-theme-gold leading-relaxed">
             方位は<b>今住んでいる場所から見た向き</b>
             で決まります。方位ごとにどの街があるかを見るには、出発地と生年月日を入れてください。
           </p>
           <Link
             href="/relocation/arbitrage"
-            className="mt-4 inline-flex px-5 py-2.5 rounded-full bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs transition-colors"
+            className="mt-4 inline-flex px-5 py-2.5 rounded-full bg-slate-900 dark:bg-slate-700 hover:bg-slate-800 dark:hover:bg-slate-700 text-white font-bold text-xs transition-colors"
           >
             {coreRouteLabel("/relocation/arbitrage")}
           </Link>
