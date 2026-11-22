@@ -1,0 +1,20 @@
+# しるべのメニュー遷移と停止時の正面ポーズ（2026-11-23）
+
+- 依頼: 本人「しるべのメニューでいくつかとばない、リンク」（07:24 JST）。補足として、不具合は右端の定位置で開いたメニュー（はみ出し・他要素との重なり・ドラッグや pointer イベントに飲まれていないか）。追加要望として、歩いていないときは正面向きの立ち姿、歩くときだけ歩きポーズ。既存の正面素材を使う。マージはしない。
+- PR: https://github.com/ishibashm/portfolio/pull/1900 （未マージ。実装は box 上の Codex CLI。ブランチ `fix/shirube-menu-and-idle-pose`）
+  - 5cb08ac しるべのメニュー遷移と停止時の正面ポーズを修正
+  - 83cd6c2 しるべを定位置の足踏み中も正面向きにする
+- 本番調査（Playwright / Chrome、https://cloud-palette.com。定位置、PC 1280×800 とスマホ 390×844 タッチ。ほかに /、/blog、/houi/today、/relocation/arbitrage、/annai、タブレット、iPhone SE でも配置を計測）:
+  - Chromium ではメニューは画面内。しるべ本体との重なりは 0。より前面のオーバーレイも、elementFromPoint が項目以外を指す点もなかった。すき間はメニュー下端としるべ頭のあいだ約 8px。
+  - 6 項目はすべて動作した。今日の方位 → `/houi/today`、方位で街を探す → `/relocation/arbitrage`、ブログ → `/blog`、しるべに案内してもらう → `/annai`。ひとこと案内は吹き出し。定位置に戻るはメニューが閉じ、右端に残った。
+  - 画面外のはみ出しが原因、とは切り分けられなかった。一方で Link の `onClick={onClose}` がメニューを外し、同じ処理でしるべボタンへフォーカスを戻しており、環境によっては遷移がキャンセルされる余地があった。
+- 修正内容:
+  - リンクはクリック処理のあと（`setTimeout(0)`）にメニューを閉じる。同じ URL でも閉じる。閉じるまでフォーカスをトリガーへ戻さない。
+  - メニューを開いている間は、しるべ本体の pointer-events を無効にする（近くの項目のタップがドラッグ判定やトグルに飲まれないようにする）。
+  - 歩いていないとき（定位置の待機・その場足踏み `stepping`、ドロップ後、メニュー表示中）は既存のちびしるべ正面素材（`public/guide/walk/shirube-walk-front-body-*` と `front-hand-*`）を使う。トップの指さし立ち絵は頭身が違うため不使用。横向きの歩きポーズは walking / hopping / turning のみ。
+  - リンク遷移と右端定位置でのメニュー配置、正面／横向きの切り替えのテストを追加。関連テスト 63 件が通過。
+- ローカル確認（`http://127.0.0.1:3079/houi`、PC とスマホ）: 6 項目すべてが動く。待機中とメニュー表示中は正面。メニューは画面内、本体との重なりなし。
+- スクリーンショット（作業マシン `/workspace/shirube-menu-fix/`）:
+  - 本番（修正前）: `prod-desktop-menu.png`、`prod-mobile-menu.png`、各項目の `prod-*-after-*.png`
+  - ローカル（修正後）: `local-desktop-idle.png`、`local-desktop-idle-actor.png`、`local-desktop-menu.png`、`local-desktop-menu-actor.png`、同様に `local-mobile-*`、各項目の `local-*-after-*.png`
+- 本番の設定・DB は変更していない。マージは本人の承認待ち。
