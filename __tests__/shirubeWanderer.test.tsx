@@ -16,6 +16,7 @@ import {
   getWanderBounds,
   getWanderConfig,
   stepWanderState,
+  type WanderState,
 } from "@/components/guide/shirubeWanderLogic";
 import { NON_CORE_DISALLOW } from "@/lib/siteStructure";
 import { isShirubeExcluded } from "@/components/guide/SiteShirube";
@@ -298,9 +299,9 @@ describe("shirubeWanderLogic", () => {
     expect(initial.x).toBe(bounds.maxX);
     expect(initial.facing).toBe("left");
     expect(initial.phase).toBe("paused");
-    let state = {
+    let state: WanderState = {
       ...initial,
-      phase: "walking" as const,
+      phase: "walking",
       targetX: bounds.maxX - 200,
     };
 
@@ -384,9 +385,9 @@ describe("正面のしるべとすり足", () => {
     const bounds = getWanderBounds(1000, 60, 16);
     const config = getWanderConfig(1000);
     expect(config.greetChance).toBeGreaterThan(0);
-    let state = {
+    let state: WanderState = {
       ...createInitialWanderState(bounds, config, () => 0.1),
-      phase: "walking" as const,
+      phase: "walking",
       targetX: bounds.maxX - 200,
     };
     for (let i = 0; i < 400 && state.phase === "walking"; i += 1) {
