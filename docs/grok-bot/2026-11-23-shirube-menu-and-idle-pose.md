@@ -17,4 +17,5 @@
 - スクリーンショット（作業マシン `/workspace/shirube-menu-fix/`）:
   - 本番（修正前）: `prod-desktop-menu.png`、`prod-mobile-menu.png`、各項目の `prod-*-after-*.png`
   - ローカル（修正後）: `local-desktop-idle.png`、`local-desktop-idle-actor.png`、`local-desktop-menu.png`、`local-desktop-menu-actor.png`、同様に `local-mobile-*`、各項目の `local-*-after-*.png`
+- CI: check が成功。GitHub Actions run 45079823112（2026-11-23 07:49 開始 → 07:58 完了 JST、所要 9分20秒）。 https://github.com/ishibashm/portfolio/actions/runs/45079823112
 - 本番の設定・DB は変更していない。マージは本人の承認待ち。
