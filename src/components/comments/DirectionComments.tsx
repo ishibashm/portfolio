@@ -177,7 +177,7 @@ export function DirectionComments({
               prompt ??
               "いつ、どこからどこへ移って、その後どうだったかを書いてください。"
             }
-            className="w-full rounded-2xl border border-stone-300 dark:border-theme-border p-3 text-sm outline-none focus:ring-2 focus:ring-emerald-500 dark:focus:ring-theme-good"
+            className="w-full rounded-2xl border border-stone-300 dark:border-theme-border p-3 text-sm outline-none focus:ring-2 focus:ring-accent"
           />
           <div className="flex items-center justify-between">
             <span
@@ -206,7 +206,7 @@ export function DirectionComments({
             </div>
           </div>
           {error && (
-            <p className="rounded-xl bg-rose-50 dark:bg-theme-accent-soft p-3 text-xs text-rose-700 dark:text-accent">
+            <p className="rounded-xl bg-theme-accent-soft p-3 text-xs text-accent">
               {error}
             </p>
           )}

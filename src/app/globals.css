@@ -3,74 +3,58 @@
 @custom-variant dark (&:where(.dark, .dark *));
 
 :root {
-  /* ===== High-Contrast Warm Glass Theme Tokens =====
-     全サブドメイン共通のデザイントークン。
-     背景と文字のコントラスト・可読性を最高レベルに維持します。 */
-  --background: #faf7f3; /* warm paper background */
-  --foreground: #292524; /* slate-900: くっきり深みのある本文文字 */
-
-  --wg-ink: #0f172a; /* slate-900: 大見出しタイトル */
-  --wg-ink-muted: #334155; /* slate-700: くっきり見やすい補足テキスト */
-  --wg-accent: #be123c; /* rose-700: プライマリアクセント */
-  --wg-accent-soft: #ffe4e6; /* rose-100 */
-  --wg-gold: #92400e; /* amber-800: サブアクセント */
-  --wg-surface: rgba(
-    255,
-    255,
-    255,
-    0.92
-  ); /* 文字を浮き立たせる高不透明度カード地 */
-  --wg-surface-border: rgba(
-    203,
-    213,
-    225,
-    0.9
-  ); /* slate-200/90 の引き締まった境界線 */
-  --wg-shadow: rgba(15, 23, 42, 0.08); /* 落ち着いた立体影 */
-
   color-scheme: light;
-  --theme-subtle: #f5f0eb;
-  --theme-border: #d6d3d1;
-  --theme-link: #4338ca;
-  --theme-link-soft: #eef2ff;
-  --theme-gold-soft: #fffbeb;
+  --background: #faf7f2;
+  --foreground: #171c2b;
+  --wg-ink: var(--foreground);
+  --wg-ink-muted: #4d5568;
+  --wg-surface: #ffffff;
+  --theme-subtle: #f2ede4;
+  --theme-border: #ddd6ca;
+  --wg-surface-border: var(--theme-border);
+  --wg-shadow: rgb(23 28 43 / 0.08);
+  --wg-accent: #1e3a6e;
+  --wg-on-accent: #ffffff;
+  --wg-accent-soft: #ebf0fa;
+  --theme-link: var(--wg-accent);
+  --theme-link-soft: var(--wg-accent-soft);
+  --wg-gold: #8a6216;
+  --wg-gold-decor: #c9a54a;
+  --theme-gold-soft: #fbf5e6;
   --theme-good: #166534;
   --theme-good-soft: #dcfce7;
   --theme-bad: #9f1239;
   --theme-bad-soft: #ffe4e6;
-  --chart-primary: #1e40af;
-  --chart-secondary: #3b82f6;
-  --chart-tertiary: #7dd3fc;
-  --chart-neutral: #78716c;
-  --chart-grid: #e7e5e4;
+  --chart-primary: var(--wg-accent);
+  --chart-secondary: #4c6fa8;
+  --chart-tertiary: #a7bde4;
+  --chart-neutral: #7c8292;
+  --chart-grid: #e8e2d7;
 }
 
 :root.dark {
   color-scheme: dark;
-  --background: #18171d;
-  --foreground: #f5f2ef;
-  --wg-ink: #f5f2ef;
-  --wg-ink-muted: #ccc4ce;
-  --wg-accent: #fda4bf;
-  --wg-accent-soft: #392638;
-  --wg-gold: #f7d38a;
-  --wg-surface: #23222c;
-  --wg-surface-border: #494553;
-  --wg-shadow: rgb(0 0 0 / 0.25);
-  --theme-subtle: #2e2b39;
-  --theme-border: #494553;
-  --theme-link: #b9c6ff;
-  --theme-link-soft: #292c48;
-  --theme-gold-soft: #382e22;
+  --background: #151722;
+  --foreground: #f3efe8;
+  --wg-ink-muted: #b2b8ca;
+  --wg-surface: #1e2130;
+  --theme-subtle: #262a3c;
+  --theme-border: #383e56;
+  --wg-shadow: rgb(0 0 0 / 0.42);
+  --wg-accent: #8cb4ff;
+  --wg-on-accent: #151722;
+  --wg-accent-soft: #212d48;
+  --wg-gold: #dfb968;
+  --wg-gold-decor: var(--wg-gold);
+  --theme-gold-soft: #31291d;
   --theme-good: #86efac;
   --theme-good-soft: #1e382e;
   --theme-bad: #fda4a4;
   --theme-bad-soft: #41282e;
-  --chart-primary: #b9c6ff;
-  --chart-secondary: #60a5fa;
-  --chart-tertiary: #7dd3fc;
-  --chart-neutral: #a8a29e;
-  --chart-grid: #494553;
+  --chart-secondary: #5b8ad6;
+  --chart-tertiary: #a7bde4;
+  --chart-neutral: #8b92a6;
+  --chart-grid: #2e3347;
 }
 
 @theme inline {
@@ -91,6 +75,7 @@
   --color-ink: var(--wg-ink);
   --color-ink-muted: var(--wg-ink-muted);
   --color-accent: var(--wg-accent);
+  --color-on-accent: var(--wg-on-accent);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
   --font-serif: var(--font-shippori-mincho), serif; /* Add serif font */
@@ -128,9 +113,9 @@ body {
   .wg-page {
     background-image: linear-gradient(
       to bottom right,
-      rgba(255, 241, 242, 0.8),
-      #fafaf9,
-      rgba(255, 251, 235, 0.5)
+      var(--background),
+      var(--theme-subtle),
+      var(--theme-gold-soft)
     );
     color: var(--foreground);
   }
@@ -175,21 +160,21 @@ body {
     gap: 0.5rem;
     padding: 0.625rem 1.25rem;
     border-radius: 9999px;
-    background: #1e293b;
-    color: #fff;
+    background: var(--wg-accent);
+    color: var(--wg-on-accent);
     font-size: 0.75rem;
     font-weight: 600;
     box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
     transition: all 0.2s;
   }
   .wg-btn-primary:hover {
-    background: #292524; /* stone-800 */
+    filter: brightness(1.05);
   }
   .wg-btn-primary:active {
     transform: scale(0.95);
   }
 
-  /* アクセントボタン (rose ピル) */
+  /* アクセントボタン */
   .wg-btn-accent {
     display: inline-flex;
     align-items: center;
@@ -197,7 +182,7 @@ body {
     padding: 0.625rem 1.25rem;
     border-radius: 9999px;
     background: var(--wg-accent);
-    color: var(--background);
+    color: var(--wg-on-accent);
     font-size: 0.75rem;
     font-weight: 700;
     box-shadow: 0 4px 6px -1px var(--wg-shadow);
@@ -212,8 +197,8 @@ body {
 
   .text-glow {
     text-shadow:
-      0 0 10px rgba(16, 185, 129, 0.5),
-      0 0 20px rgba(16, 185, 129, 0.3);
+      0 0 10px color-mix(in srgb, var(--wg-accent) 50%, transparent),
+      0 0 20px color-mix(in srgb, var(--wg-accent) 30%, transparent);
   }
 
   .text-glow-gold {
@@ -250,19 +235,20 @@ body {
 }
 
 ::-webkit-scrollbar-thumb {
-  background: rgba(244, 63, 94, 0.25);
+  background: color-mix(in srgb, var(--wg-accent) 25%, transparent);
   border-radius: 999px;
   transition: background 0.3s;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(244, 63, 94, 0.55);
+  background: color-mix(in srgb, var(--wg-accent) 55%, transparent);
 }
 
 /* Firefox */
 * {
   scrollbar-width: thin;
-  scrollbar-color: rgba(244, 63, 94, 0.25) transparent;
+  scrollbar-color: color-mix(in srgb, var(--wg-accent) 25%, transparent)
+    transparent;
 }
 
 /* Scroll Down Indicator animation */

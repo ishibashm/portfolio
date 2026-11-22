@@ -27,7 +27,7 @@ export default function CalendarPage() {
             className="absolute top-0 left-0 w-full h-[1px] opacity-70"
             style={{
               background:
-                "linear-gradient(90deg, transparent, color-mix(in srgb, var(--color-accent, #10b981) 30%, transparent), transparent)",
+                "linear-gradient(90deg, transparent, color-mix(in srgb, var(--wg-accent) 30%, transparent), transparent)",
             }}
           />
           <div className="absolute bottom-0 left-0 w-full h-[1px] bg-gradient-to-r from-transparent via-slate-200 to-transparent" />
@@ -37,7 +37,7 @@ export default function CalendarPage() {
             className="absolute top-0 left-8 w-[1px] h-4"
             style={{
               backgroundColor:
-                "color-mix(in srgb, var(--color-accent, #10b981) 50%, transparent)",
+                "color-mix(in srgb, var(--wg-accent) 50%, transparent)",
             }}
           />
 
@@ -47,16 +47,16 @@ export default function CalendarPage() {
                 <span className="relative flex h-2 w-2">
                   <span
                     className="animate-ping absolute inline-flex h-full w-full rounded-full opacity-75"
-                    style={{ backgroundColor: "var(--color-accent, #10b981)" }}
+                    style={{ backgroundColor: "var(--wg-accent)" }}
                   />
                   <span
                     className="relative inline-flex rounded-full h-2 w-2"
-                    style={{ backgroundColor: "var(--color-accent, #10b981)" }}
+                    style={{ backgroundColor: "var(--wg-accent)" }}
                   />
                 </span>
                 <span
                   className="text-xs font-mono tracking-widest uppercase font-semibold flex items-center gap-1.5"
-                  style={{ color: "var(--color-accent, #10b981)" }}
+                  style={{ color: "var(--wg-accent)" }}
                 >
                   <Calendar className="w-3.5 h-3.5" />{" "}
                   六曜・天赦日・一粒万倍日・月相

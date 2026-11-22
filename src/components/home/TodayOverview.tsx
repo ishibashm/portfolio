@@ -106,7 +106,7 @@ function DayBoard({ board }: { board: TodayBoard }) {
             aria-hidden="true"
             className={`rounded-md border px-0.5 py-1 leading-tight ${
               common
-                ? "border-rose-400 dark:border-theme-border bg-rose-50 dark:bg-theme-accent-soft text-rose-900 dark:text-accent"
+                ? "border-accent bg-theme-accent-soft text-accent"
                 : cell === "CENTER"
                   ? "border-amber-300 dark:border-theme-border bg-amber-50 dark:bg-theme-gold-soft text-slate-900 dark:text-ink"
                   : "border-slate-200 dark:border-theme-border bg-white dark:bg-theme-surface text-slate-900 dark:text-ink"
@@ -210,7 +210,7 @@ export function TodayOverviewCard({
                   {board.common.map((item) => (
                     <li
                       key={item.direction}
-                      className="rounded-full bg-rose-100 dark:bg-theme-accent-soft px-2 py-0.5 font-semibold text-rose-900 dark:text-accent"
+                      className="rounded-full bg-theme-accent-soft px-2 py-0.5 font-semibold text-accent"
                     >
                       {item.label}（{item.reason}）
                     </li>
@@ -252,7 +252,7 @@ export function TodayOverviewCard({
                     />
                     <path
                       d="M10 13.8s-3.6-2.2-3.6-4.7a2.1 2.1 0 0 1 3.6-1.45A2.1 2.1 0 0 1 13.6 9.1c0 2.5-3.6 4.7-3.6 4.7Z"
-                      fill="#e11d48"
+                      fill="var(--wg-gold)"
                     />
                   </svg>
                   今日の恋愛の目安（各行の下段）
@@ -285,7 +285,7 @@ export function TodayOverviewCard({
                           {love ? (
                             <Link
                               href={love.href}
-                              className="underline decoration-slate-300 dark:decoration-theme-border hover:text-rose-600 dark:hover:text-accent"
+                              className="underline decoration-slate-300 dark:decoration-theme-border hover:text-accent"
                             >
                               {star.name}
                             </Link>
@@ -335,7 +335,7 @@ export function TodayOverviewCard({
             <p className="mt-1 text-xs">
               <Link
                 href="#today-hours-heading"
-                className="text-rose-600 dark:text-accent underline"
+                className="text-accent underline"
               >
                 下の今の刻と時間帯を見る
               </Link>
@@ -344,7 +344,7 @@ export function TodayOverviewCard({
               </span>
               <Link
                 href="/houi#honmei-lookup"
-                className="text-rose-600 dark:text-accent underline"
+                className="text-accent underline"
               >
                 早見
               </Link>

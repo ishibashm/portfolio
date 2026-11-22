@@ -81,7 +81,7 @@ const components: Components = {
     return (
       <a
         href={href}
-        className="font-semibold text-accent underline decoration-rose-300 dark:decoration-accent underline-offset-4 hover:text-rose-700 dark:hover:text-accent"
+        className="font-semibold text-accent underline decoration-accent underline-offset-4 hover:text-accent"
         {...(external ? { target: "_blank", rel: "noopener noreferrer" } : {})}
         {...props}
       >
@@ -91,7 +91,7 @@ const components: Components = {
   },
   blockquote: ({ children, ...props }) => (
     <blockquote
-      className={`mt-6 ${MEASURE} rounded-r-2xl border-l-4 border-rose-400 dark:border-theme-border bg-rose-50 dark:bg-theme-accent-soft px-5 py-1 text-slate-700 dark:text-ink`}
+      className={`mt-6 ${MEASURE} rounded-r-2xl border-l-4 border-accent bg-theme-accent-soft px-5 py-1 text-ink`}
       {...props}
     >
       {children}
@@ -141,7 +141,7 @@ const components: Components = {
   // スマホでページ全体が横に広がり、画面ごと縮んで見える）。
   code: ({ children, ...props }) => (
     <code
-      className="rounded bg-stone-200/70 dark:bg-theme-subtle px-1.5 py-0.5 font-mono text-[0.9em] text-slate-800 dark:text-ink"
+      className="rounded bg-stone-200/70 dark:bg-theme-subtle px-1.5 py-0.5 font-mono text-[0.9em] text-ink"
       {...props}
     >
       {children}
@@ -150,7 +150,7 @@ const components: Components = {
   // コードの塊は折り返さず、塊の中だけで横スクロールさせる。
   pre: ({ children, ...props }) => (
     <pre
-      className={`mt-6 ${MEASURE} max-w-full overflow-x-auto rounded-2xl border border-slate-300 dark:border-theme-border bg-stone-100 dark:bg-theme-subtle p-4 text-[13px] leading-6 text-slate-800 dark:text-ink [-webkit-overflow-scrolling:touch] [overflow-wrap:normal] [&_code]:bg-transparent [&_code]:p-0`}
+      className={`mt-6 ${MEASURE} max-w-full overflow-x-auto rounded-2xl border border-slate-300 dark:border-theme-border bg-theme-subtle p-4 text-[13px] leading-6 text-ink [-webkit-overflow-scrolling:touch] [overflow-wrap:normal] [&_code]:bg-transparent [&_code]:p-0`}
       {...props}
     >
       {children}
@@ -229,7 +229,7 @@ export function BlogArticleBody({
       }
       return (
         <p
-          className={`mt-4 ${MEASURE} text-[15px] leading-8 text-slate-700 dark:text-ink`}
+          className={`mt-4 ${MEASURE} text-[15px] leading-8 text-ink`}
           {...props}
         >
           {children}

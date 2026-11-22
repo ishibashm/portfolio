@@ -62,7 +62,7 @@ export function PortalLinkList({
               href={link.href}
               rel={link.rel}
               target="_blank"
-              className="inline-flex min-h-[24px] items-center font-semibold text-indigo-700 dark:text-theme-link underline hover:text-indigo-900 dark:hover:text-theme-link"
+              className="inline-flex min-h-[24px] items-center font-semibold text-accent underline hover:text-accent"
             >
               {link.name}
             </a>

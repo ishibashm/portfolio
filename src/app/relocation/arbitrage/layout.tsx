@@ -71,21 +71,21 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                 候補日を広い期間から絞るときや同行者がいる場合の判定は
                 <Link
                   href="/relocation/timing"
-                  className="mx-1 font-bold text-indigo-700 underline hover:text-indigo-900"
+                  className="mx-1 font-bold text-accent underline hover:text-accent"
                 >
                   {coreRouteLabel("/relocation/timing")}
                 </Link>
                 、生まれ年から本命星と年の方位早見表を見るときは
                 <Link
                   href="/houi"
-                  className="mx-1 font-bold text-indigo-700 underline hover:text-indigo-900"
+                  className="mx-1 font-bold text-accent underline hover:text-accent"
                 >
                   {coreRouteLabel("/houi")}
                 </Link>
                 、六曜や天赦日・一粒万倍日などの暦注で日を見るときは
                 <Link
                   href="/calendar"
-                  className="mx-1 font-bold text-indigo-700 underline hover:text-indigo-900"
+                  className="mx-1 font-bold text-accent underline hover:text-accent"
                 >
                   {coreRouteLabel("/calendar")}
                 </Link>

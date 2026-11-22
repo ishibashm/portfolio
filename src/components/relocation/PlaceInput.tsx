@@ -123,9 +123,9 @@ const VARIANT_STYLES = {
     searching: "text-[10px] text-stone-600 dark:text-ink-muted animate-pulse",
     notice: "text-[10px] text-theme-gold",
     resolve:
-      "shrink-0 min-h-[36px] px-3 rounded-xl border border-indigo-200 dark:border-theme-border bg-indigo-50 dark:bg-theme-link-soft text-xs font-semibold text-indigo-700 dark:text-theme-link hover:bg-indigo-100 dark:hover:bg-theme-link-soft",
+      "shrink-0 min-h-[36px] px-3 rounded-xl border border-theme-border bg-theme-accent-soft text-xs font-semibold text-accent hover:bg-theme-accent-soft",
     suggestion:
-      "w-full text-left px-2.5 py-1.5 text-xs text-stone-700 dark:text-ink hover:bg-indigo-50 dark:hover:bg-theme-link-soft transition-colors",
+      "w-full text-left px-2.5 py-1.5 text-xs text-stone-700 dark:text-ink hover:bg-theme-accent-soft transition-colors",
     picked:
       "flex items-center gap-1.5 text-[10px] text-stone-500 dark:text-ink-muted",
     pinSize: 10,
@@ -146,9 +146,9 @@ const VARIANT_STYLES = {
     searching: "text-xs text-ink-muted animate-pulse",
     notice: "text-xs text-theme-gold",
     resolve:
-      "shrink-0 min-h-[42px] px-3 rounded-xl border border-rose-200 dark:border-theme-border bg-rose-50 dark:bg-theme-accent-soft text-sm font-semibold text-rose-700 dark:text-accent hover:bg-rose-100 dark:hover:bg-theme-accent-soft",
+      "shrink-0 min-h-[42px] px-3 rounded-xl border border-theme-border bg-theme-accent-soft text-sm font-semibold text-accent hover:bg-theme-accent-soft",
     suggestion:
-      "w-full text-left px-3 py-2 text-sm text-slate-700 dark:text-ink hover:bg-rose-50 dark:hover:bg-theme-accent-soft transition-colors",
+      "w-full text-left px-3 py-2 text-sm text-slate-700 dark:text-ink hover:bg-theme-accent-soft transition-colors",
     picked:
       "flex items-center gap-1.5 text-xs text-slate-500 dark:text-ink-muted",
     pinSize: 12,
@@ -551,7 +551,7 @@ export function PlaceInput({
                 setNearby(null);
                 void resolvePlaceName(herePos.lat, herePos.lon).then(setNearby);
               }}
-              className="self-start rounded-full border border-indigo-200 dark:border-theme-border bg-indigo-50 dark:bg-theme-link-soft px-4 py-2 text-xs font-bold text-indigo-700 dark:text-theme-link transition-colors hover:bg-indigo-100 dark:hover:bg-theme-link-soft"
+              className="self-start rounded-full border border-theme-border bg-theme-accent-soft px-4 py-2 text-xs font-bold text-accent transition-colors hover:bg-theme-accent-soft"
             >
               いま居る場所をここにする
             </button>

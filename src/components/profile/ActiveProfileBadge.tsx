@@ -182,10 +182,7 @@ export function ActiveProfileBadge({
   return (
     <div className={className}>
       <p className="flex flex-wrap items-center gap-x-2 gap-y-1 rounded-xl border border-stone-200 dark:border-theme-border bg-white/80 dark:bg-theme-surface px-3 py-2 text-xs leading-relaxed text-stone-700 dark:text-ink">
-        <UserRound
-          className="h-3.5 w-3.5 shrink-0 text-rose-500 dark:text-accent"
-          aria-hidden
-        />
+        <UserRound className="h-3.5 w-3.5 shrink-0 text-accent" aria-hidden />
         <span>
           <b className="text-stone-800 dark:text-ink">使用中のプロフィール:</b>{" "}
           {state.line}
@@ -196,7 +193,7 @@ export function ActiveProfileBadge({
         <Link
           href="/account"
           /* 上と同じ（この帯のもう一方の押し所） */
-          className="inline-flex min-h-[24px] items-center font-semibold text-indigo-600 dark:text-theme-link underline hover:text-indigo-800 dark:hover:text-theme-link"
+          className="inline-flex min-h-[24px] items-center font-semibold text-accent underline hover:text-accent"
         >
           変更
         </Link>

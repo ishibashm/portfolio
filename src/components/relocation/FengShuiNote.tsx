@@ -169,7 +169,7 @@ export function FengShuiNote({
       className={`rounded-2xl border p-3 ${
         reading.auspicious
           ? "border-emerald-300 dark:border-theme-border bg-emerald-50/60 dark:bg-theme-good-soft"
-          : "border-rose-300 dark:border-theme-border bg-rose-50/60 dark:bg-theme-accent-soft"
+          : "border-rose-300 dark:border-theme-border bg-rose-50/60 dark:bg-theme-bad-soft"
       }`}
     >
       <div className="flex flex-wrap items-baseline justify-between gap-2">

@@ -1,3 +1,4 @@
+import { readFileSync } from "node:fs";
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { ThemeToggle } from "@/components/ThemeToggle";
@@ -108,4 +109,34 @@ describe("テーマ切り替え", () => {
     fireEvent.click(screen.getByRole("button", { name: /表示テーマ: 自動/ }));
     expect(root).not.toHaveClass("dark");
   });
+});
+
+describe("テーマのブランド色", () => {
+  it.each([
+    ["light", "#faf7f2", "#171c2b", "#1e3a6e", "#ffffff", "#8a6216"],
+    ["dark", "#151722", "#f3efe8", "#8cb4ff", "#151722", "#dfb968"],
+  ])(
+    "%s の地色、文字、勝色、ボタン文字、金を適用する",
+    (scheme, background, foreground, accent, onAccent, gold) => {
+      const css = readFileSync("src/app/globals.css", "utf8");
+      const palette = document.createElement("style");
+      // CSS 全体の Tailwind ディレクティブを除き、ルートの色定義を使う。
+      palette.textContent = css
+        .match(/:root(?:\.dark)?\s*\{[^}]+\}/g)!
+        .join("\n");
+      document.head.append(palette);
+      try {
+        media.matches = scheme === "dark";
+        runHeadScript();
+        const styles = getComputedStyle(root);
+        expect(styles.getPropertyValue("--background")).toBe(background);
+        expect(styles.getPropertyValue("--foreground")).toBe(foreground);
+        expect(styles.getPropertyValue("--wg-accent")).toBe(accent);
+        expect(styles.getPropertyValue("--wg-on-accent")).toBe(onAccent);
+        expect(styles.getPropertyValue("--wg-gold")).toBe(gold);
+      } finally {
+        palette.remove();
+      }
+    },
+  );
 });

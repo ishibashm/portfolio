@@ -196,7 +196,7 @@ export function HonmeiLookup({ starNames, linkYear }: Props) {
           <Link
             prefetch={false}
             href={`/houi/${linkYear}/${result.dayStart.classical}`}
-            className="mt-2 inline-flex min-h-11 items-center text-xs font-bold text-rose-600 dark:text-accent hover:underline"
+            className="mt-2 inline-flex min-h-11 items-center text-xs font-bold text-accent hover:underline"
           >
             {linkYear}年の吉方位を見る →
           </Link>
@@ -215,7 +215,7 @@ export function HonmeiLookup({ starNames, linkYear }: Props) {
               <Link
                 prefetch={false}
                 href={`/houi/${linkYear}/${result.dayStart.classical}`}
-                className="ml-2 inline-flex min-h-11 items-center font-bold text-rose-600 dark:text-accent hover:underline"
+                className="ml-2 inline-flex min-h-11 items-center font-bold text-accent hover:underline"
               >
                 {linkYear}年の吉方位 →
               </Link>
@@ -226,7 +226,7 @@ export function HonmeiLookup({ starNames, linkYear }: Props) {
               <Link
                 prefetch={false}
                 href={`/houi/${linkYear}/${result.dayEnd.classical}`}
-                className="ml-2 inline-flex min-h-11 items-center font-bold text-rose-600 dark:text-accent hover:underline"
+                className="ml-2 inline-flex min-h-11 items-center font-bold text-accent hover:underline"
               >
                 {linkYear}年の吉方位 →
               </Link>

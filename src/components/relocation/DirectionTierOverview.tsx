@@ -215,7 +215,7 @@ export function DirectionTierOverview({
                   aria-pressed={active}
                   className={`flex w-full items-center gap-2 rounded-lg px-1.5 py-1 text-left transition-colors ${
                     active
-                      ? "bg-indigo-50 dark:bg-theme-link-soft"
+                      ? "bg-theme-accent-soft"
                       : "hover:bg-stone-50 dark:hover:bg-theme-subtle"
                   }`}
                 >
@@ -248,7 +248,7 @@ export function DirectionTierOverview({
                       className={`w-12 shrink-0 text-[10px] font-bold ${
                         youxingFor(fengShui, r.direction)?.auspicious
                           ? "text-emerald-700 dark:text-theme-good"
-                          : "text-rose-700 dark:text-accent"
+                          : "text-rose-700 dark:text-theme-bad"
                       }`}
                     >
                       {youxingFor(fengShui, r.direction)?.youxing ?? ""}
@@ -263,7 +263,7 @@ export function DirectionTierOverview({
         {selectedDirection !== "ALL" && (
           <button
             onClick={() => onSelectDirection("ALL")}
-            className="mt-2 text-[10px] text-indigo-600 dark:text-theme-link underline"
+            className="mt-2 text-[10px] text-accent underline"
           >
             方位の絞り込みを外す
           </button>

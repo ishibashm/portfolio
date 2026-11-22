@@ -160,7 +160,7 @@ export function TodayHoursCard({
               current.unlucky.map((item) => (
                 <li
                   key={item}
-                  className="rounded-full bg-rose-100 dark:bg-theme-accent-soft px-2 py-0.5 font-semibold text-rose-900 dark:text-accent"
+                  className="rounded-full bg-rose-100 dark:bg-theme-bad-soft px-2 py-0.5 font-semibold text-rose-900 dark:text-theme-bad"
                 >
                   {item}
                 </li>
@@ -241,7 +241,7 @@ export function TodayHoursCard({
               <details
                 key={star.star}
                 name="home-honmei-hours"
-                className={`rounded-lg border p-2 ${star.star === selected?.star ? "border-indigo-400 dark:border-theme-link bg-indigo-50/40 dark:bg-theme-link-soft" : "border-slate-200 dark:border-theme-border"}`}
+                className={`rounded-lg border p-2 ${star.star === selected?.star ? "border-accent bg-theme-accent-soft" : "border-theme-border"}`}
               >
                 <summary className="min-h-11 cursor-pointer">
                   <span className="inline-grid w-[calc(100%-1.5rem)] gap-1.5 align-middle min-[1100px]:grid-cols-[6rem_minmax(0,1fr)_minmax(0,2fr)_auto]">
@@ -276,17 +276,11 @@ export function TodayHoursCard({
         </details>
       </div>
       <p className="text-xs">
-        <Link
-          href="/houi/today"
-          className="text-rose-600 dark:text-accent underline"
-        >
+        <Link href="/houi/today" className="text-accent underline">
           詳しい日盤と、現在地での今の刻を見る
         </Link>
         <span className="text-slate-600 dark:text-ink-muted">・本命星は</span>
-        <Link
-          href="/houi#honmei-lookup"
-          className="text-rose-600 dark:text-accent underline"
-        >
+        <Link href="/houi#honmei-lookup" className="text-accent underline">
           早見
         </Link>
         <span className="text-slate-600 dark:text-ink-muted">で分かります</span>

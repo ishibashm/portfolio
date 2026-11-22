@@ -60,13 +60,13 @@ function KpiCard({
 }) {
   return (
     <div
-      className="rounded-2xl border border-gray-200 dark:border-theme-border bg-white dark:bg-theme-surface p-4 shadow-xs"
+      className="rounded-2xl border border-gray-200 dark:border-theme-border bg-theme-surface p-4 shadow-xs"
       title={hint}
     >
-      <p className="text-xs font-semibold uppercase tracking-wider text-stone-600 dark:text-ink-muted">
+      <p className="text-xs font-semibold uppercase tracking-wider text-ink-muted">
         {label}
       </p>
-      <p className="mt-1 text-xl font-bold text-stone-800 dark:text-ink">{value}</p>
+      <p className="mt-1 text-xl font-bold text-ink">{value}</p>
     </div>
   );
 }
@@ -81,8 +81,8 @@ function Section({
   children: React.ReactNode;
 }) {
   return (
-    <section className="rounded-3xl border border-gray-200 dark:border-theme-border bg-white dark:bg-theme-surface p-5 shadow-sm">
-      <h2 className="text-sm font-bold text-stone-800 dark:text-ink">{title}</h2>
+    <section className="rounded-3xl border border-gray-200 dark:border-theme-border bg-theme-surface p-5 shadow-sm">
+      <h2 className="text-sm font-bold text-ink">{title}</h2>
       <p className="mt-0.5 mb-4 text-xs leading-relaxed text-ink-muted">
         {subtitle}
       </p>
@@ -96,7 +96,7 @@ export default function MarketAnalyticsPage() {
 
   if (!generated) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-rose-50/80 dark:from-theme-accent-soft via-stone-50 dark:via-theme-subtle to-amber-50/50 dark:to-theme-gold-soft p-6 font-sans">
+      <div className="min-h-screen bg-gradient-to-br from-theme-accent-soft via-background to-theme-gold-soft p-6 font-sans">
         <div className="mx-auto max-w-3xl rounded-3xl border border-amber-200 dark:border-theme-border bg-amber-50 dark:bg-theme-gold-soft p-8 text-center">
           <h1 className="text-lg font-bold text-amber-900 dark:text-theme-gold">
             家賃市場の計量分析（準備中）
@@ -146,7 +146,7 @@ export default function MarketAnalyticsPage() {
   }));
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-rose-50/80 dark:from-theme-accent-soft via-stone-50 dark:via-theme-subtle to-amber-50/50 dark:to-theme-gold-soft p-4 font-sans text-stone-800 dark:text-ink md:p-8">
+    <div className="min-h-screen bg-gradient-to-br from-theme-accent-soft via-background to-theme-gold-soft p-4 font-sans text-ink md:p-8">
       {/* 上限は max-w-5xl（1024px）だった。表とグラフを並べる道具の
           画面なので、ホーム（1700px）に揃える。上のデータ準備中の
           案内カードは中央に小さく出すのが正しいので max-w-3xl のまま。 */}
@@ -182,7 +182,7 @@ export default function MarketAnalyticsPage() {
           <p className="mt-1 text-xs text-ink-muted">
             <Link
               href="/blog/how-we-analyze-the-rental-market"
-              className="font-semibold text-indigo-600 dark:text-theme-link underline"
+              className="font-semibold text-accent underline"
             >
               この 3 つの分析の読み方
             </Link>
@@ -435,7 +435,7 @@ export default function MarketAnalyticsPage() {
           <div className="overflow-x-auto">
             <table className="w-full text-[11px]">
               <thead>
-                <tr className="border-b border-gray-200 dark:border-theme-border text-left text-[10px] uppercase tracking-wider text-stone-600 dark:text-ink-muted">
+                <tr className="border-b border-gray-200 dark:border-theme-border text-left text-[10px] uppercase tracking-wider text-ink-muted">
                   <th className="py-1.5 pr-2">市区町村</th>
                   <th className="py-1.5 pr-2 text-right">掲載数</th>
                   <th className="py-1.5 pr-2 text-right">㎡単価中央値</th>
@@ -478,7 +478,7 @@ export default function MarketAnalyticsPage() {
             </table>
           </div>
           {stats.volatilityRanking.length === 0 && (
-            <p className="text-xs text-stone-600 dark:text-ink-muted">データ待ち</p>
+            <p className="text-xs text-ink-muted">データ待ち</p>
           )}
         </Section>
 
@@ -505,7 +505,7 @@ export default function MarketAnalyticsPage() {
               ? new Date(`${clim.meta.from}T12:00:00+09:00`)
               : null;
             if (!from || Object.keys(profiles).length === 0) {
-              return <p className="text-xs text-stone-600 dark:text-ink-muted">データ待ち</p>;
+              return <p className="text-xs text-ink-muted">データ待ち</p>;
             }
             const idx = Math.min(
               8,
@@ -540,7 +540,7 @@ export default function MarketAnalyticsPage() {
               <div className="overflow-x-auto">
                 <table className="w-full text-[11px]">
                   <thead>
-                    <tr className="border-b border-gray-200 dark:border-theme-border text-left text-[10px] uppercase tracking-wider text-stone-600 dark:text-ink-muted">
+                    <tr className="border-b border-gray-200 dark:border-theme-border text-left text-[10px] uppercase tracking-wider text-ink-muted">
                       <th className="py-1.5 pr-2">本命星</th>
                       <th className="py-1.5 pr-2 text-right">今年度の三盤吉</th>
                       <th className="py-1.5 pr-2 text-right">9年平均</th>
@@ -580,7 +580,7 @@ export default function MarketAnalyticsPage() {
                             r.ratio >= 1.05
                               ? "text-emerald-700 dark:text-theme-good"
                               : r.ratio <= 0.95
-                                ? "text-rose-700 dark:text-accent"
+                                ? "text-rose-700 dark:text-theme-bad"
                                 : ""
                           }`}
                         >
@@ -590,7 +590,7 @@ export default function MarketAnalyticsPage() {
                     ))}
                   </tbody>
                 </table>
-                <p className="mt-2 text-xs text-stone-600 dark:text-ink-muted">
+                <p className="mt-2 text-xs text-ink-muted">
                   ※天中殺グループ6通りの平均。個人の値は物件スキャナーの「引っ越し時期を探す」で自分の命式に対して表示される。
                 </p>
               </div>
@@ -603,7 +603,7 @@ export default function MarketAnalyticsPage() {
           title="方法論と限界"
           subtitle="何を計算していて、何は言えないか。"
         >
-          <ul className="list-disc space-y-1.5 pl-4 text-[11px] leading-relaxed text-stone-600 dark:text-ink-muted">
+          <ul className="list-disc space-y-1.5 pl-4 text-[11px] leading-relaxed text-ink-muted">
             <li>
               <b>ヘドニック回帰</b>: log(家賃+管理費) を log(面積)・築年数・駅徒歩分に最小二乗で回帰。県ごとに別モデル。間取り・階数・構造は未投入なので、残差にはそれらの効果も混ざる。「割安」に見える物件には理由があることも多い。
             </li>
@@ -614,7 +614,7 @@ export default function MarketAnalyticsPage() {
               これは観測データの記述であって、因果関係でも将来の予測でもない。個別の物件判断は
               <Link
                 href="/relocation/arbitrage"
-                className="mx-0.5 font-semibold text-indigo-600 dark:text-theme-link underline"
+                className="mx-0.5 font-semibold text-accent underline"
               >
                 物件スキャナー
               </Link>

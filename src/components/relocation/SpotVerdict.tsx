@@ -620,13 +620,13 @@ export function SpotVerdict({
               setQuery(e.target.value);
               if (candidateContext) setTarget(null);
             }}
-            className="min-h-11 w-full pl-9 pr-3 py-2 bg-indigo-50/40 dark:bg-theme-link-soft border border-indigo-200/70 dark:border-theme-border rounded-xl text-base sm:text-sm focus:ring-2 focus:ring-theme-link outline-none transition-all"
+            className="min-h-11 w-full pl-9 pr-3 py-2 bg-theme-accent-soft border border-theme-border rounded-xl text-base sm:text-sm focus:ring-2 focus:ring-theme-link outline-none transition-all"
           />
         </div>
         <button
           type="submit"
           disabled={busy}
-          className="min-h-11 shrink-0 px-3 py-2 rounded-lg bg-stone-800 dark:bg-slate-700 text-white text-sm font-bold hover:bg-stone-700 dark:hover:bg-slate-700 disabled:opacity-50"
+          className="min-h-11 shrink-0 px-3 py-2 rounded-lg bg-accent text-on-accent text-sm font-bold hover:brightness-110 disabled:opacity-50"
         >
           {busy ? <Loader2 className="w-3 h-3 animate-spin" /> : "調べる"}
         </button>
@@ -692,7 +692,7 @@ export function SpotVerdict({
         </Link>
       )}
       {error && (
-        <p className="text-xs text-rose-600 dark:text-accent">
+        <p className="text-xs text-accent">
           {error}
           {onOpenMap && (
             <>
@@ -700,7 +700,7 @@ export function SpotVerdict({
               <button
                 type="button"
                 onClick={onOpenMap}
-                className="mt-2 inline-flex min-h-[44px] items-center rounded-lg border border-indigo-200 dark:border-theme-border bg-indigo-50 dark:bg-theme-link-soft px-3 font-bold text-indigo-700 dark:text-theme-link hover:bg-indigo-100 dark:hover:bg-theme-link-soft"
+                className="mt-2 inline-flex min-h-[44px] items-center rounded-lg border border-theme-border bg-theme-accent-soft px-3 font-bold text-accent hover:bg-theme-accent-soft"
               >
                 地図で場所を指定する →
               </button>
@@ -766,13 +766,13 @@ export function SpotVerdict({
           </div>
 
           {cell?.blocked && (
-            <p className="text-xs text-rose-600 dark:text-accent">
+            <p className="text-xs text-accent">
               天中殺により、この期間の移動は避ける扱いになっています。
             </p>
           )}
 
           {cell?.doyouSatsu && (
-            <p className="text-xs text-rose-600 dark:text-accent">
+            <p className="text-xs text-accent">
               {
                 "土用殺の方位です。土用の期間中はこの方位が塞がります（間日を除く）。年盤・月盤・日盤が吉でも避ける扱いです。"
               }
@@ -808,7 +808,7 @@ export function SpotVerdict({
               <button
                 type="button"
                 onClick={() => onFocus(target.lat, target.lon)}
-                className="text-[10px] font-bold text-indigo-600 dark:text-theme-link hover:underline"
+                className="text-[10px] font-bold text-accent hover:underline"
               >
                 地図でこの地点を見る →
               </button>
@@ -817,7 +817,7 @@ export function SpotVerdict({
               <button
                 type="button"
                 onClick={() => onBrowseDirection(direction)}
-                className="min-h-[24px] text-[10px] font-bold text-indigo-600 dark:text-theme-link hover:underline"
+                className="min-h-[24px] text-[10px] font-bold text-accent hover:underline"
               >
                 {`${cell?.directionLabel ?? direction}の他の街を見る →`}
               </button>

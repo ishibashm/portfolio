@@ -340,7 +340,7 @@ function WeatherRows({
                 {city.city}
               </th>
               <td
-                className={`${cell} whitespace-nowrap ${unlucky ? "font-bold text-rose-800 dark:text-accent" : ""}`}
+                className={`${cell} whitespace-nowrap ${unlucky ? "font-bold text-rose-800 dark:text-theme-bad" : ""}`}
               >
                 {compact
                   ? (direction?.label ??

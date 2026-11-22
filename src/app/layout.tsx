@@ -126,7 +126,10 @@ export const metadata: Metadata = {
   置いたままだと全頁のビルドで警告が出る（1,447 行）。値は変えていない。
 */
 export const viewport: Viewport = {
-  themeColor: "#faf7f3",
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#faf7f2" },
+    { media: "(prefers-color-scheme: dark)", color: "#151722" },
+  ],
 };
 
 import { GlobalSidebar } from "@/components/GlobalSidebar";
@@ -146,7 +149,7 @@ import { SiteShirube } from "@/components/guide/SiteShirube";
   見た目は変わらない。地色・文字色は以前から固定。
 */
 const SITE_THEME = {
-  glowColor: "#3b82f6",
+  glowColor: "#1e3a6e",
   glowIntensity: 0.5,
   animationSpeed: "4s",
   noiseOpacity: 0.05,

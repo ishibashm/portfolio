@@ -166,7 +166,7 @@ export default function GuideCharacter({
 export function GuideChatAvatar({ className = "" }: { className?: string }) {
   return (
     <picture
-      className={`relative block h-8 w-8 shrink-0 overflow-hidden rounded-full border-2 border-white dark:border-theme-border bg-[#fbf6ee] shadow-sm ring-1 ring-indigo-200 dark:ring-theme-link sm:h-10 sm:w-10 ${className}`}
+      className={`relative block h-8 w-8 shrink-0 overflow-hidden rounded-full border-2 border-white dark:border-theme-border bg-[#fbf6ee] shadow-sm ring-1 ring-accent sm:h-10 sm:w-10 ${className}`}
       data-shirube-avatar=""
     >
       <source

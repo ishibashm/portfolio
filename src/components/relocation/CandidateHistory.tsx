@@ -146,7 +146,7 @@ function Compass({ bearing }: { bearing: number }) {
         北
       </text>
       <g transform={`rotate(${bearing} 20 20)`}>
-        <path d="M20 9 L24 22 L20 19.5 L16 22 Z" fill="#e11d48" />
+        <path d="M20 9 L24 22 L20 19.5 L16 22 Z" fill="var(--wg-gold)" />
         <circle cx="20" cy="20" r="2" fill="#57534e" />
       </g>
     </svg>
@@ -204,7 +204,7 @@ function CandidateCard({
 
   return (
     <article
-      className="relative flex flex-col overflow-hidden rounded-2xl border border-stone-200 bg-white shadow-sm"
+      className="relative flex flex-col overflow-hidden rounded-2xl border border-stone-200 bg-theme-surface shadow-sm"
       aria-label={c.title || "候補"}
     >
       <div
@@ -215,10 +215,10 @@ function CandidateCard({
       <div className="flex flex-1 flex-col gap-3 p-4 pl-5">
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0">
-            <h2 className="truncate text-base font-bold text-stone-800">
+            <h2 className="truncate text-base font-bold text-ink">
               {c.title || `候補（${dateOf(c.createdAt)} 保存）`}
             </h2>
-            <p className="mt-0.5 text-xs text-stone-500">
+            <p className="mt-0.5 text-xs text-ink-muted">
               {dateOf(c.createdAt)} に保存 ・ 判定の日{" "}
               {c.judgment.context.targetDate}
             </p>
@@ -231,22 +231,22 @@ function CandidateCard({
               {tier} {TIER_JP[tier]}
             </span>
           ) : (
-            <span className="shrink-0 rounded-full border border-stone-300 bg-stone-50 px-2.5 py-1 text-xs font-bold text-stone-600">
+            <span className="shrink-0 rounded-full border border-stone-300 bg-theme-subtle px-2.5 py-1 text-xs font-bold text-ink-muted">
               {c.judgment.tier}
             </span>
           )}
         </div>
 
-        <div className="flex items-center gap-3 rounded-xl bg-stone-50 px-3 py-2">
+        <div className="flex items-center gap-3 rounded-xl bg-theme-subtle px-3 py-2">
           <Compass bearing={c.bearingDeg} />
           <div className="text-sm">
-            <p className="font-bold text-stone-800">
+            <p className="font-bold text-ink">
               {directionLabel(c.direction)}
-              <span className="ml-1.5 text-xs font-normal text-stone-500">
+              <span className="ml-1.5 text-xs font-normal text-ink-muted">
                 真北から {c.bearingDeg.toFixed(1)}°
               </span>
             </p>
-            <p className="text-xs text-stone-600">
+            <p className="text-xs text-ink-muted">
               出発地から約 {c.judgment.distanceKm.toFixed(1)} km
             </p>
           </div>
@@ -258,7 +258,7 @@ function CandidateCard({
           unstable) && (
           <ul className="flex flex-wrap gap-1.5 text-xs">
             {c.judgment.blocked && (
-              <li className="rounded-full border border-slate-300 bg-slate-100 px-2 py-0.5 font-semibold text-slate-700">
+              <li className="rounded-full border border-slate-300 bg-theme-subtle px-2 py-0.5 font-semibold text-ink-muted">
                 天中殺により移動を避ける扱い
               </li>
             )}
@@ -268,12 +268,12 @@ function CandidateCard({
               </li>
             )}
             {c.judgment.approximate && (
-              <li className="rounded-full border border-amber-300 bg-amber-50 px-2 py-0.5 font-semibold text-amber-800">
+              <li className="rounded-full border border-amber-300 bg-theme-gold-soft px-2 py-0.5 font-semibold text-theme-gold">
                 概略位置で保存
               </li>
             )}
             {unstable && (
-              <li className="rounded-full border border-amber-300 bg-amber-50 px-2 py-0.5 font-semibold text-amber-800">
+              <li className="rounded-full border border-amber-300 bg-theme-gold-soft px-2 py-0.5 font-semibold text-theme-gold">
                 {unstable}
               </li>
             )}
@@ -287,8 +287,8 @@ function CandidateCard({
                 key={key}
                 className="rounded-lg border border-stone-200 px-2 py-1"
               >
-                <dt className="inline text-stone-500">{label} </dt>
-                <dd className="inline font-semibold text-stone-800">
+                <dt className="inline text-ink-muted">{label} </dt>
+                <dd className="inline font-semibold text-ink">
                   {detailValue(key, c[key])}
                 </dd>
               </div>
@@ -297,14 +297,14 @@ function CandidateCard({
         )}
 
         {c.memo && !editing && (
-          <p className="whitespace-pre-wrap rounded-lg bg-amber-50/60 px-3 py-2 text-sm text-stone-700">
+          <p className="whitespace-pre-wrap rounded-lg bg-theme-gold-soft px-3 py-2 text-sm text-ink-muted">
             {c.memo}
           </p>
         )}
 
         {editing && (
           <div className="space-y-2 rounded-xl border border-stone-200 p-3">
-            <label className="block text-xs font-semibold text-stone-600">
+            <label className="block text-xs font-semibold text-ink-muted">
               タイトル
               <input
                 className="mt-1 block w-full rounded-lg border border-stone-300 p-2 text-sm font-normal"
@@ -313,7 +313,7 @@ function CandidateCard({
                 onChange={(e) => setTitle(e.target.value)}
               />
             </label>
-            <label className="block text-xs font-semibold text-stone-600">
+            <label className="block text-xs font-semibold text-ink-muted">
               メモ
               <textarea
                 className="mt-1 block w-full rounded-lg border border-stone-300 p-2 text-sm font-normal"
@@ -335,7 +335,7 @@ function CandidateCard({
               <button
                 type="button"
                 onClick={() => setEditing(false)}
-                className="rounded-lg border border-stone-300 px-3 py-1.5 text-xs font-semibold text-stone-700"
+                className="rounded-lg border border-stone-300 px-3 py-1.5 text-xs font-semibold text-ink-muted"
               >
                 やめる
               </button>
@@ -343,8 +343,8 @@ function CandidateCard({
           </div>
         )}
 
-        <details className="text-xs text-stone-600">
-          <summary className="cursor-pointer font-semibold text-stone-500">
+        <details className="text-xs text-ink-muted">
+          <summary className="cursor-pointer font-semibold text-ink-muted">
             保存したときの位置と条件
           </summary>
           <div className="mt-1 space-y-0.5">
@@ -381,14 +381,14 @@ function CandidateCard({
           <Link
             href={`/relocation/arbitrage?candidate=${c.id}`}
             prefetch={false}
-            className="inline-flex items-center gap-1 rounded-lg bg-rose-600 px-3 py-1.5 text-xs font-bold text-white hover:bg-rose-700"
+            className="inline-flex items-center gap-1 rounded-lg bg-accent px-3 py-1.5 text-xs font-bold text-on-accent hover:brightness-110"
           >
             <RotateCcw className="h-3.5 w-3.5" aria-hidden />
             現在の条件で再判定
           </Link>
           {url && (
             <a
-              className="inline-flex items-center gap-1 rounded-lg border border-stone-300 px-3 py-1.5 text-xs font-semibold text-stone-700 hover:border-stone-500"
+              className="inline-flex items-center gap-1 rounded-lg border border-stone-300 px-3 py-1.5 text-xs font-semibold text-ink-muted hover:border-stone-500"
               href={url}
               target="_blank"
               rel="noopener noreferrer"
@@ -402,7 +402,7 @@ function CandidateCard({
             <button
               type="button"
               onClick={() => setEditing(true)}
-              className="inline-flex items-center gap-1 rounded-lg border border-stone-300 px-3 py-1.5 text-xs font-semibold text-stone-700 hover:border-stone-500"
+              className="inline-flex items-center gap-1 rounded-lg border border-stone-300 px-3 py-1.5 text-xs font-semibold text-ink-muted hover:border-stone-500"
             >
               <Pencil className="h-3.5 w-3.5" aria-hidden />
               編集
@@ -412,7 +412,7 @@ function CandidateCard({
             type="button"
             disabled={busy}
             onClick={() => setDeleting(true)}
-            className="ml-auto inline-flex items-center gap-1 rounded-lg px-2 py-1.5 text-xs font-semibold text-rose-700 hover:bg-rose-50"
+            className="ml-auto inline-flex items-center gap-1 rounded-lg px-2 py-1.5 text-xs font-semibold text-accent hover:bg-theme-accent-soft"
           >
             <Trash2 className="h-3.5 w-3.5" aria-hidden />
             削除
@@ -420,7 +420,7 @@ function CandidateCard({
         </div>
 
         {deleting && (
-          <p className="rounded-lg bg-rose-50 px-3 py-2 text-xs text-rose-800">
+          <p className="rounded-lg bg-theme-accent-soft px-3 py-2 text-xs text-accent">
             この候補を削除します。元に戻せません。
             <button
               type="button"
@@ -436,7 +436,7 @@ function CandidateCard({
           </p>
         )}
         {error && (
-          <p role="alert" className="text-xs text-rose-700">
+          <p role="alert" className="text-xs text-accent">
             {error}
           </p>
         )}
@@ -453,29 +453,29 @@ function EmptyState() {
     ["「候補に保存」", "保存したときの判定ごと、ここに並びます"],
   ] as const;
   return (
-    <section className="rounded-3xl border border-dashed border-rose-200 bg-white/80 p-6 text-center">
-      <MapPin className="mx-auto h-8 w-8 text-rose-400" aria-hidden />
-      <h2 className="mt-2 text-lg font-bold text-stone-800">
+    <section className="rounded-3xl border border-dashed border-theme-border bg-theme-surface p-6 text-center">
+      <MapPin className="mx-auto h-8 w-8 text-accent" aria-hidden />
+      <h2 className="mt-2 text-lg font-bold text-ink">
         まだ保存した候補はありません
       </h2>
       <ol className="mx-auto mt-4 grid max-w-3xl gap-3 text-left md:grid-cols-3">
         {steps.map(([head, body], i) => (
           <li
             key={head}
-            className="rounded-2xl border border-stone-200 bg-stone-50 p-3"
+            className="rounded-2xl border border-stone-200 bg-theme-subtle p-3"
           >
-            <span className="flex h-6 w-6 items-center justify-center rounded-full bg-rose-600 text-xs font-bold text-white">
+            <span className="flex h-6 w-6 items-center justify-center rounded-full bg-accent text-xs font-bold text-on-accent">
               {i + 1}
             </span>
-            <p className="mt-2 text-sm font-bold text-stone-800">{head}</p>
-            <p className="mt-0.5 text-xs text-stone-600">{body}</p>
+            <p className="mt-2 text-sm font-bold text-ink">{head}</p>
+            <p className="mt-0.5 text-xs text-ink-muted">{body}</p>
           </li>
         ))}
       </ol>
       <Link
         href="/relocation/arbitrage"
         prefetch={false}
-        className="mt-5 inline-flex items-center gap-1.5 rounded-xl bg-rose-600 px-4 py-2 text-sm font-bold text-white hover:bg-rose-700"
+        className="mt-5 inline-flex items-center gap-1.5 rounded-xl bg-accent px-4 py-2 text-sm font-bold text-on-accent hover:brightness-110"
       >
         <MapPin className="h-4 w-4" aria-hidden />
         候補を探しに行く
@@ -527,8 +527,8 @@ export default function CandidateHistory() {
   return (
     <section className="space-y-4" aria-label="保存した候補の一覧">
       {rows.length > 0 && (
-        <div className="flex flex-wrap items-center gap-2 rounded-2xl border border-stone-200 bg-white/90 px-4 py-3">
-          <p className="text-sm font-bold text-stone-800">
+        <div className="flex flex-wrap items-center gap-2 rounded-2xl border border-stone-200 bg-theme-surface px-4 py-3">
+          <p className="text-sm font-bold text-ink">
             {rows.length}
             {cursor ? "+" : ""} 件
           </p>
@@ -553,7 +553,7 @@ export default function CandidateHistory() {
                   className={`rounded-full border px-2.5 py-1 text-xs font-semibold ${
                     sort === o.key
                       ? "border-stone-800 bg-stone-800 text-white"
-                      : "border-stone-300 bg-white text-stone-700"
+                      : "border-stone-300 bg-theme-surface text-ink-muted"
                   }`}
                 >
                   {o.label}
@@ -564,7 +564,7 @@ export default function CandidateHistory() {
               type="button"
               onClick={() => void load()}
               disabled={busy}
-              className="inline-flex items-center gap-1 rounded-full border border-stone-300 px-2.5 py-1 text-xs font-semibold text-stone-700 disabled:opacity-50"
+              className="inline-flex items-center gap-1 rounded-full border border-stone-300 px-2.5 py-1 text-xs font-semibold text-ink-muted disabled:opacity-50"
             >
               <RefreshCw className="h-3.5 w-3.5" aria-hidden />
               読み直す
@@ -576,7 +576,7 @@ export default function CandidateHistory() {
       {error && (
         <p
           role="alert"
-          className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-800"
+          className="rounded-xl border border-theme-border bg-theme-accent-soft px-4 py-3 text-sm text-accent"
         >
           {error}
         </p>
@@ -599,7 +599,7 @@ export default function CandidateHistory() {
       </div>
 
       {busy && (
-        <p role="status" className="text-sm text-stone-500">
+        <p role="status" className="text-sm text-ink-muted">
           読み込み中…
         </p>
       )}
@@ -608,7 +608,7 @@ export default function CandidateHistory() {
           type="button"
           disabled={busy}
           onClick={() => void load(cursor)}
-          className="mx-auto block rounded-xl border border-stone-300 bg-white px-4 py-2 text-sm font-semibold text-stone-700"
+          className="mx-auto block rounded-xl border border-stone-300 bg-theme-surface px-4 py-2 text-sm font-semibold text-ink-muted"
         >
           続きを見る
         </button>

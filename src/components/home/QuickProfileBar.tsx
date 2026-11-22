@@ -199,14 +199,14 @@ export function QuickProfileBar() {
             どちらから入れても結果は同じ（利用者の依頼、2026-09-04） */}
         <Link
           href="/profile"
-          className="ml-1 font-semibold text-indigo-600 dark:text-theme-link underline"
+          className="ml-1 font-semibold text-accent underline"
         >
           引越し先の候補も含めてまとめて登録する
         </Link>
       </p>
 
       {needsBirthDate && (
-        <p className="text-xs text-rose-700 dark:text-accent bg-rose-50 dark:bg-theme-accent-soft border border-rose-200 dark:border-theme-border rounded-xl px-4 py-3 mb-6 leading-relaxed">
+        <p className="text-xs text-accent bg-theme-accent-soft border border-theme-border rounded-xl px-4 py-3 mb-6 leading-relaxed">
           {
             "生年月日がまだ入っていません。入れるまで、下に出ている吉凶は仮の値（2000-01-01・東京）で計算した結果です。"
           }
@@ -260,7 +260,7 @@ export function QuickProfileBar() {
               touched.current = true;
               setBirthDate(e.target.value);
             }}
-            className="w-full bg-white dark:bg-theme-surface border border-slate-300 dark:border-theme-border rounded-xl px-3 py-2.5 text-sm text-slate-900 dark:text-ink outline-none focus:border-rose-400 dark:focus:border-theme-border transition-colors"
+            className="w-full bg-white dark:bg-theme-surface border border-slate-300 dark:border-theme-border rounded-xl px-3 py-2.5 text-sm text-slate-900 dark:text-ink outline-none focus:border-accent transition-colors"
           />
           <p className="text-xs text-ink-muted leading-relaxed">
             {PROFILE_FIELDS.birthDate.help}
@@ -322,7 +322,7 @@ export function QuickProfileBar() {
           type="button"
           onClick={handleSave}
           disabled={isSaving}
-          className="px-6 py-3 rounded-full bg-slate-900 dark:bg-slate-700 hover:bg-slate-800 dark:hover:bg-slate-700 disabled:bg-slate-300 dark:disabled:bg-theme-subtle text-white font-bold text-sm transition-all shadow-md active:scale-95"
+          className="px-6 py-3 rounded-full bg-accent text-on-accent hover:brightness-110 disabled:opacity-40 font-bold text-sm transition-all shadow-md active:scale-95"
         >
           {isSaving ? "保存中..." : "この設定で見る"}
         </button>

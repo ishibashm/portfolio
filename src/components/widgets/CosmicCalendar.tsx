@@ -633,7 +633,7 @@ export function CosmicCalendar({
         className="absolute top-0 left-0 w-full h-[1px] opacity-50"
         style={{
           background:
-            "linear-gradient(90deg, transparent, var(--color-accent, #10b981), transparent)",
+            "linear-gradient(90deg, transparent, var(--wg-accent), transparent)",
         }}
       />
 
@@ -648,7 +648,7 @@ export function CosmicCalendar({
         <div className="flex items-center gap-2 whitespace-nowrap">
           <span
             className="w-1.5 h-1.5 rounded-full animate-ping shrink-0"
-            style={{ backgroundColor: "var(--color-accent, #10b981)" }}
+            style={{ backgroundColor: "var(--wg-accent)" }}
           />
           <span className="text-xs font-mono text-stone-600 tracking-widest">
             {"// 暦カレンダー"}
@@ -710,11 +710,9 @@ export function CosmicCalendar({
                   : "bg-transparent opacity-20 pointer-events-none"
               } ${getScoreBorder(day)}`}
               style={{
-                borderColor: isSelected
-                  ? "var(--color-accent, #10b981)"
-                  : undefined,
+                borderColor: isSelected ? "var(--wg-accent)" : undefined,
                 boxShadow: isSelected
-                  ? "0 0 12px color-mix(in srgb, var(--color-accent, #10b981) 15%, transparent)"
+                  ? "0 0 12px color-mix(in srgb, var(--wg-accent) 15%, transparent)"
                   : undefined,
               }}
             >
@@ -796,7 +794,7 @@ export function CosmicCalendar({
               {isToday && (
                 <span
                   className="absolute -top-[1.5px] -left-[1.5px] w-2 h-2 border-t-2 border-l-2 rounded-tl-sm"
-                  style={{ borderColor: "var(--color-accent, #10b981)" }}
+                  style={{ borderColor: "var(--wg-accent)" }}
                 />
               )}
             </button>

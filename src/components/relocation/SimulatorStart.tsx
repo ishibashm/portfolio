@@ -261,7 +261,7 @@ export function SimulatorStart({
         </label>
 
         {error && (
-          <p className="rounded-xl bg-rose-50 dark:bg-theme-accent-soft p-3 text-xs text-rose-700 dark:text-accent">
+          <p className="rounded-xl bg-theme-accent-soft p-3 text-xs text-accent">
             {error}
           </p>
         )}
@@ -269,7 +269,7 @@ export function SimulatorStart({
         <button
           type="submit"
           disabled={busy}
-          className="min-h-[44px] w-full rounded-full bg-stone-800 dark:bg-slate-700 px-5 py-2.5 text-sm text-white transition disabled:opacity-40"
+          className="min-h-[44px] w-full rounded-full bg-accent px-5 py-2.5 text-sm text-on-accent transition hover:brightness-110 disabled:opacity-40"
         >
           {busy ? "調べています…" : "この引越しを試算する"}
         </button>

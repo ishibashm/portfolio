@@ -136,7 +136,7 @@ export function UserSpotLayer({
                     href={s.url}
                     target="_blank"
                     rel="nofollow noopener"
-                    className="mt-2 block break-all text-[10px] font-bold text-indigo-700 underline hover:text-indigo-900"
+                    className="mt-2 block break-all text-[10px] font-bold text-accent underline hover:text-accent"
                   >
                     {hostOf(s.url) ?? "物件のページを開く"}
                   </a>
@@ -151,7 +151,7 @@ export function UserSpotLayer({
                     <button
                       type="button"
                       onClick={() => onInspect(s.lat, s.lon)}
-                      className="flex-1 rounded border border-emerald-300 bg-emerald-50 px-2 py-1 text-[10px] font-bold text-emerald-800 hover:bg-emerald-100"
+                      className="flex-1 rounded border border-theme-border bg-theme-accent-soft px-2 py-1 text-[10px] font-bold text-accent hover:bg-theme-accent-soft"
                     >
                       この地点を判定へ
                     </button>

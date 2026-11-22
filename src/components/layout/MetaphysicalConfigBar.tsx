@@ -475,7 +475,7 @@ export const MetaphysicalConfigBar: React.FC<MetaphysicalConfigBarProps> = ({
         className="flex flex-wrap items-center justify-between gap-4 p-4 hover:bg-white/80 dark:hover:bg-theme-surface transition-colors cursor-pointer"
       >
         <div className="flex items-center gap-3.5">
-          <div className="p-1.5 rounded-lg bg-indigo-500/10 dark:bg-theme-link-soft text-indigo-600 dark:text-theme-link border border-indigo-200 dark:border-theme-border animate-pulse">
+          <div className="p-1.5 rounded-lg bg-theme-accent-soft text-accent border border-accent animate-pulse">
             <Compass className="w-4 h-4" />
           </div>
           <div className="flex flex-wrap items-center gap-x-6 gap-y-1">
@@ -494,8 +494,8 @@ export const MetaphysicalConfigBar: React.FC<MetaphysicalConfigBarProps> = ({
               <span
                 className={`px-2 py-0.5 rounded text-[10px] font-bold ${
                   config.useClassicalBoard
-                    ? "bg-indigo-500/20 dark:bg-theme-link-soft text-indigo-600 dark:text-theme-link border border-indigo-200 dark:border-theme-border"
-                    : "bg-amber-500/20 dark:bg-theme-gold-soft text-amber-600 dark:text-theme-gold border border-amber-200 dark:border-theme-border"
+                    ? "bg-theme-accent-soft text-accent border border-accent"
+                    : "bg-theme-gold-soft text-theme-gold border border-theme-gold"
                 }`}
               >
                 {config.useClassicalBoard
@@ -542,7 +542,7 @@ export const MetaphysicalConfigBar: React.FC<MetaphysicalConfigBarProps> = ({
         <div className="flex items-center gap-3 ml-auto">
           {isSyncing && (
             <span className="text-[10px] text-stone-600 dark:text-ink-muted flex items-center gap-1">
-              <RefreshCw className="w-3 h-3 animate-spin text-indigo-600 dark:text-theme-link" />
+              <RefreshCw className="w-3 h-3 animate-spin text-accent" />
               Syncing...
             </span>
           )}
@@ -561,22 +561,20 @@ export const MetaphysicalConfigBar: React.FC<MetaphysicalConfigBarProps> = ({
             {/* Target Date */}
             <div className="min-w-0 space-y-2">
               <label className="text-[10px] uppercase font-bold text-stone-600 dark:text-ink-muted tracking-wider flex items-center gap-1">
-                <Calendar className="w-3.5 h-3.5 text-indigo-600 dark:text-theme-link" />{" "}
-                目標年月日
+                <Calendar className="w-3.5 h-3.5 text-accent" /> 目標年月日
               </label>
               <input
                 type="date"
                 value={config.targetDate}
                 onChange={handleDateChange}
-                className="w-full px-3 py-2 bg-white dark:bg-theme-surface border border-stone-200 dark:border-theme-border rounded-xl text-stone-700 dark:text-ink focus:outline-none focus:border-indigo-200 dark:focus:border-theme-border transition-colors shadow-inner"
+                className="w-full px-3 py-2 bg-white dark:bg-theme-surface border border-stone-200 dark:border-theme-border rounded-xl text-stone-700 dark:text-ink focus:outline-none focus:border-accent transition-colors shadow-inner"
               />
             </div>
 
             {/* Board Standard */}
             <div className="min-w-0 space-y-2">
               <label className="text-[10px] uppercase font-bold text-stone-600 dark:text-ink-muted tracking-wider flex items-center gap-1">
-                <Sliders className="w-3.5 h-3.5 text-indigo-600 dark:text-theme-link" />{" "}
-                方位盤基準
+                <Sliders className="w-3.5 h-3.5 text-accent" /> 方位盤基準
               </label>
               <div className="grid grid-cols-2 gap-1.5 p-1 bg-white dark:bg-theme-surface rounded-xl border border-stone-200 dark:border-theme-border">
                 <button
@@ -586,7 +584,7 @@ export const MetaphysicalConfigBar: React.FC<MetaphysicalConfigBarProps> = ({
                   }
                   className={`py-1.5 rounded-lg text-[10px] font-bold transition-all ${
                     config.useClassicalBoard
-                      ? "bg-indigo-500/20 dark:bg-theme-link-soft text-indigo-600 dark:text-theme-link border border-indigo-200 dark:border-theme-border"
+                      ? "bg-theme-accent-soft text-accent border border-accent"
                       : "text-stone-600 dark:text-ink-muted hover:text-stone-800 dark:hover:text-ink"
                   }`}
                 >
@@ -599,7 +597,7 @@ export const MetaphysicalConfigBar: React.FC<MetaphysicalConfigBarProps> = ({
                   }
                   className={`py-1.5 rounded-lg text-[10px] font-bold transition-all ${
                     !config.useClassicalBoard
-                      ? "bg-amber-500/20 dark:bg-theme-gold-soft text-amber-600 dark:text-theme-gold border border-amber-200 dark:border-theme-border"
+                      ? "bg-theme-gold-soft text-theme-gold border border-theme-gold"
                       : "text-stone-600 dark:text-ink-muted hover:text-stone-800 dark:hover:text-ink"
                   }`}
                 >
@@ -654,8 +652,7 @@ export const MetaphysicalConfigBar: React.FC<MetaphysicalConfigBarProps> = ({
             {/* 時支の時刻基準 */}
             <div className="min-w-0 space-y-2">
               <label className="text-[10px] uppercase font-bold text-stone-600 dark:text-ink-muted tracking-wider flex items-center gap-1">
-                <Sliders className="w-3.5 h-3.5 text-indigo-600 dark:text-theme-link" />{" "}
-                時支の時刻
+                <Sliders className="w-3.5 h-3.5 text-accent" /> 時支の時刻
               </label>
               <div className="grid grid-cols-2 gap-1.5 p-1 bg-white dark:bg-theme-surface rounded-xl border border-stone-200 dark:border-theme-border">
                 <button
@@ -665,7 +662,7 @@ export const MetaphysicalConfigBar: React.FC<MetaphysicalConfigBarProps> = ({
                   }
                   className={`py-1.5 rounded-lg text-[10px] font-bold transition-all ${
                     config.zodiacTimeBasis !== "solar"
-                      ? "bg-indigo-500/20 dark:bg-theme-link-soft text-indigo-600 dark:text-theme-link border border-indigo-200 dark:border-theme-border"
+                      ? "bg-theme-accent-soft text-accent border border-accent"
                       : "text-stone-600 dark:text-ink-muted hover:text-stone-800 dark:hover:text-ink"
                   }`}
                   title="標準時: 日本標準時（東経135度）の時計時刻で時支を決めます。出発地に関わらず全国同じ答えになります。"
@@ -679,7 +676,7 @@ export const MetaphysicalConfigBar: React.FC<MetaphysicalConfigBarProps> = ({
                   }
                   className={`py-1.5 rounded-lg text-[10px] font-bold transition-all ${
                     config.zodiacTimeBasis === "solar"
-                      ? "bg-amber-500/20 dark:bg-theme-gold-soft text-amber-600 dark:text-theme-gold border border-amber-200 dark:border-theme-border"
+                      ? "bg-theme-gold-soft text-theme-gold border border-theme-gold"
                       : "text-stone-600 dark:text-ink-muted hover:text-stone-800 dark:hover:text-ink"
                   }`}
                   title="真太陽時: 出発地の経度と均時差で時刻を補正してから時支を決めます。那覇と根室では最大71分ずれます。"
@@ -697,7 +694,7 @@ export const MetaphysicalConfigBar: React.FC<MetaphysicalConfigBarProps> = ({
             {/* Direction Filter Mode */}
             <div className="space-y-2 col-span-1 sm:col-span-2">
               <label className="text-[10px] uppercase font-bold text-stone-600 dark:text-ink-muted tracking-wider flex items-center gap-1">
-                <Compass className="w-3.5 h-3.5 text-indigo-600 dark:text-theme-link" />{" "}
+                <Compass className="w-3.5 h-3.5 text-accent" />{" "}
                 吉凶方位フィルター
               </label>
               {/* 3 つの層（本命星・環境方位・天中殺）の組み合わせ。
@@ -732,7 +729,7 @@ export const MetaphysicalConfigBar: React.FC<MetaphysicalConfigBarProps> = ({
           <div className="space-y-2 pt-3 border-t border-stone-200 dark:border-theme-border">
             <div className="flex flex-wrap items-center justify-between gap-2">
               <label className="text-[10px] uppercase font-bold text-stone-600 dark:text-ink-muted tracking-wider flex items-center gap-1">
-                <Compass className="w-3.5 h-3.5 text-indigo-600 dark:text-theme-link" />
+                <Compass className="w-3.5 h-3.5 text-accent" />
                 プロフィール（全ページ共通・判定の基準）
               </label>
               {/* 使用中のプロフィールの切り替え（全頁共通の 1 つの部品）。
@@ -758,7 +755,7 @@ export const MetaphysicalConfigBar: React.FC<MetaphysicalConfigBarProps> = ({
                     if (e.target.value)
                       saveConfig({ ...config, birthDate: e.target.value });
                   }}
-                  className="w-full px-3 py-2 bg-white dark:bg-theme-surface border border-stone-200 dark:border-theme-border rounded-xl text-stone-700 dark:text-ink focus:outline-none focus:border-indigo-200 dark:focus:border-theme-border transition-colors shadow-inner"
+                  className="w-full px-3 py-2 bg-white dark:bg-theme-surface border border-stone-200 dark:border-theme-border rounded-xl text-stone-700 dark:text-ink focus:outline-none focus:border-accent transition-colors shadow-inner"
                 />
               </div>
               {/*
@@ -799,8 +796,7 @@ export const MetaphysicalConfigBar: React.FC<MetaphysicalConfigBarProps> = ({
             {/* Action Intent Weighting */}
             <div className="min-w-0 space-y-2">
               <label className="text-[10px] uppercase font-bold text-stone-600 dark:text-ink-muted tracking-wider flex items-center gap-1">
-                <PlayCircle className="w-3.5 h-3.5 text-indigo-600 dark:text-theme-link" />{" "}
-                移動の目的
+                <PlayCircle className="w-3.5 h-3.5 text-accent" /> 移動の目的
               </label>
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5 p-1 bg-white dark:bg-theme-surface rounded-xl border border-stone-200 dark:border-theme-border">
                 {ACTION_INTENTS.map((intent) => (
@@ -810,7 +806,7 @@ export const MetaphysicalConfigBar: React.FC<MetaphysicalConfigBarProps> = ({
                     onClick={() => handleIntentChange(intent)}
                     className={`py-1.5 rounded-lg text-[10px] font-bold transition-all border ${
                       config.actionIntent === intent
-                        ? "bg-indigo-500/20 dark:bg-theme-link-soft text-indigo-600 dark:text-theme-link border-indigo-200 dark:border-theme-border"
+                        ? "bg-theme-accent-soft text-accent border-theme-border"
                         : "bg-transparent text-stone-600 dark:text-ink-muted border-transparent hover:text-stone-800 dark:hover:text-ink"
                     }`}
                   >

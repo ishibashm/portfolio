@@ -51,7 +51,7 @@ function CandidateButton({
     <button
       type="button"
       onClick={() => onAdopt(candidate.date)}
-      className="rounded-full border border-stone-300 dark:border-theme-border bg-white dark:bg-theme-surface px-2.5 py-1 text-[11px] font-bold text-stone-700 dark:text-ink transition-colors hover:border-indigo-400 dark:hover:border-theme-border hover:text-indigo-700 dark:hover:text-theme-link"
+      className="rounded-full border border-stone-300 dark:border-theme-border bg-white dark:bg-theme-surface px-2.5 py-1 text-[11px] font-bold text-stone-700 dark:text-ink transition-colors hover:border-accent hover:text-accent"
       title={`${candidate.date} を目標日にする`}
     >
       {candidate.date.slice(5)}
@@ -159,9 +159,7 @@ export function TargetDateAdvice({
         )}
       </div>
 
-      {error && (
-        <p className="mt-2 text-xs text-rose-700 dark:text-accent">{error}</p>
-      )}
+      {error && <p className="mt-2 text-xs text-accent">{error}</p>}
 
       {result?.target && (
         <p className="mt-1 text-xs text-stone-600 dark:text-ink-muted">
@@ -171,7 +169,7 @@ export function TargetDateAdvice({
             ? `・${result.target.tags.join("・")}`
             : ""}
           {result.target.blocked && (
-            <b className="ml-2 text-rose-700 dark:text-accent">
+            <b className="ml-2 text-rose-700 dark:text-theme-bad">
               天中殺（この日は動けません）
             </b>
           )}

@@ -60,7 +60,7 @@ export function AgentEntry() {
   */
   const questionHref = available ? "/ask" : "/annai";
   return (
-    <section className="w-full max-w-[1700px] rounded-3xl border border-rose-200 dark:border-theme-border bg-white dark:bg-theme-surface p-6">
+    <section className="w-full max-w-[1700px] rounded-3xl border border-theme-border bg-white dark:bg-theme-surface p-6">
       {/* 2026-11-15: 有料AIを止めているので「エージェント」をやめ、案内役の名前にする。
           しるべの指さしは常に出す（JSなしの初回描画でも出る）。 */}
       <h2 className="text-xl font-serif font-bold">しるべに案内してもらう</h2>
@@ -90,7 +90,7 @@ export function AgentEntry() {
             key={item.id}
             href={available ? `/ask?start=${item.id}` : item.calculationHref}
             prefetch={false}
-            className="rounded-xl border border-rose-200 dark:border-theme-border px-4 py-3 text-sm hover:bg-rose-50 dark:hover:bg-theme-accent-soft"
+            className="rounded-xl border border-theme-border px-4 py-3 text-sm hover:bg-theme-accent-soft"
           >
             {item.id === "towns" && baseLabel
               ? `${baseLabel}から方位ごとの街を探す`
@@ -144,7 +144,7 @@ export function AgentEntry() {
         <Link
           href="/mcp"
           prefetch={false}
-          className="ml-1 font-semibold text-rose-700 dark:text-accent underline"
+          className="ml-1 font-semibold text-accent underline"
         >
           自分のAIからつなぐ
         </Link>

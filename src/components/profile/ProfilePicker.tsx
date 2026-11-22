@@ -81,14 +81,14 @@ export function ProfilePicker({
 
   const small = variant === "compact";
   const selectClass = small
-    ? "px-2 py-1.5 bg-white dark:bg-theme-surface border border-stone-200 dark:border-theme-border rounded-lg text-[10px] text-stone-700 dark:text-ink outline-none focus:border-indigo-200 dark:focus:border-theme-border"
-    : "bg-white dark:bg-theme-surface border border-slate-300 dark:border-theme-border rounded-xl px-3 py-2 text-sm text-slate-900 dark:text-ink outline-none focus:border-rose-400 dark:focus:border-theme-border";
+    ? "px-2 py-1.5 bg-white dark:bg-theme-surface border border-stone-200 dark:border-theme-border rounded-lg text-[10px] text-stone-700 dark:text-ink outline-none focus:border-accent"
+    : "bg-white dark:bg-theme-surface border border-slate-300 dark:border-theme-border rounded-xl px-3 py-2 text-sm text-slate-900 dark:text-ink outline-none focus:border-accent";
   /* 押し所は 24px 角より小さくしない（WCAG 2.2 の Target Size (Minimum)）。
      実測で 110 × 16px と 61 × 16px だった。字の大きさは変えず、縦に 24px を
      確保して中央に置く */
   const linkClass = small
-    ? "inline-flex min-h-[24px] items-center text-[10px] font-semibold text-indigo-600 dark:text-theme-link underline"
-    : "inline-flex min-h-[24px] items-center text-xs font-semibold text-indigo-600 dark:text-theme-link underline";
+    ? "inline-flex min-h-[24px] items-center text-[10px] font-semibold text-accent underline"
+    : "inline-flex min-h-[24px] items-center text-xs font-semibold text-accent underline";
 
   return (
     <div className={`flex flex-wrap items-center gap-2 ${className}`}>

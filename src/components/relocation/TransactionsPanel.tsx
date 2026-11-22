@@ -385,9 +385,7 @@ export function TransactionsPanel({
           成約事例を読み込んでいます…
         </p>
       )}
-      {error && (
-        <p className="text-xs text-rose-600 dark:text-accent">{error}</p>
-      )}
+      {error && <p className="text-xs text-accent">{error}</p>}
 
       {data && !loading && (
         <>
@@ -424,7 +422,7 @@ export function TransactionsPanel({
                       }
                       className={`flex items-baseline justify-between rounded-lg border px-2.5 py-1.5 text-left transition-colors ${
                         active
-                          ? "border-indigo-400 dark:border-theme-border bg-indigo-50 dark:bg-theme-link-soft"
+                          ? "border-accent bg-theme-accent-soft"
                           : "border-stone-200 dark:border-theme-border bg-white dark:bg-theme-surface hover:bg-stone-50 dark:hover:bg-theme-subtle"
                       }`}
                     >
@@ -435,7 +433,7 @@ export function TransactionsPanel({
                             className={`ml-1.5 text-[10px] font-bold ${
                               open
                                 ? "text-emerald-700 dark:text-theme-good"
-                                : "text-rose-700 dark:text-accent"
+                                : "text-rose-700 dark:text-theme-bad"
                             }`}
                           >
                             {label}
@@ -481,7 +479,7 @@ export function TransactionsPanel({
             {/* 何で絞っているかを一覧の上で言う。方位は頁全体の状態なので、
                 ここで外せるようにする（上の札まで戻らなくてよい） */}
             {dirs && dirs.length > 0 && (
-              <p className="mb-2 flex flex-wrap items-center gap-2 text-xs text-indigo-800 dark:text-theme-link">
+              <p className="mb-2 flex flex-wrap items-center gap-2 text-xs text-accent">
                 <span>
                   {`方位: ${dirs.map((d) => DIRECTION_LABELS[d] ?? d).join("・")}`}
                 </span>
@@ -562,7 +560,7 @@ export function TransactionsPanel({
           */}
           <a
             href="/relocation/purchase"
-            className="block rounded-lg border border-indigo-200 dark:border-theme-border bg-indigo-50 dark:bg-theme-link-soft px-2.5 py-2 text-[10px] font-bold text-indigo-800 dark:text-theme-link hover:bg-indigo-100 dark:hover:bg-theme-link-soft"
+            className="block rounded-lg border border-theme-border bg-theme-accent-soft px-2.5 py-2 text-[10px] font-bold text-accent hover:bg-theme-accent-soft"
           >
             全国の相場と比べる（種類別・築年数別・都道府県別）→
           </a>

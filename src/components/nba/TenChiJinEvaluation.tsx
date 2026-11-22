@@ -431,10 +431,7 @@ export function TenChiJinEvaluation({
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6 pb-4 border-b border-stone-200 dark:border-theme-border">
         <div>
           <h3 className="text-sm font-semibold tracking-wider text-stone-700 dark:text-ink flex items-center gap-2">
-            <BrainCircuit
-              size={16}
-              className="text-indigo-600 dark:text-theme-link"
-            />
+            <BrainCircuit size={16} className="text-accent" />
             天・地・人の総合評価
           </h3>
           <p className="mt-1 text-xs text-stone-500 dark:text-ink-muted">
@@ -507,7 +504,7 @@ export function TenChiJinEvaluation({
           </div>
           <div className="w-full bg-stone-200 dark:bg-theme-subtle h-2 rounded-full overflow-hidden mb-2">
             <div
-              className={`h-full rounded-full transition-all duration-1000 ${isTenLow ? "bg-red-600 dark:bg-rose-700" : "bg-indigo-600 dark:bg-indigo-800"}`}
+              className={`h-full rounded-full transition-all duration-1000 ${isTenLow ? "bg-red-600 dark:bg-rose-700" : "bg-accent"}`}
               style={{ width: `${timeMetrics.score}%` }}
             />
           </div>
@@ -544,7 +541,7 @@ export function TenChiJinEvaluation({
           </div>
           <div className="w-full bg-stone-200 dark:bg-theme-subtle h-2 rounded-full overflow-hidden mb-2">
             <div
-              className={`h-full rounded-full transition-all duration-1000 ${isChiLow ? "bg-red-600 dark:bg-rose-700" : "bg-indigo-600 dark:bg-indigo-800"}`}
+              className={`h-full rounded-full transition-all duration-1000 ${isChiLow ? "bg-red-600 dark:bg-rose-700" : "bg-accent"}`}
               style={{ width: `${spaceMetrics.score}%` }}
             />
           </div>
@@ -578,7 +575,7 @@ export function TenChiJinEvaluation({
           </div>
           <div className="w-full bg-stone-200 dark:bg-theme-subtle h-2 rounded-full overflow-hidden mb-2">
             <div
-              className={`h-full rounded-full transition-all duration-1000 ${isJinLow ? "bg-red-600 dark:bg-rose-700" : "bg-indigo-600 dark:bg-indigo-800"}`}
+              className={`h-full rounded-full transition-all duration-1000 ${isJinLow ? "bg-red-600 dark:bg-rose-700" : "bg-accent"}`}
               style={{ width: `${humanMetrics.score}%` }}
             />
           </div>

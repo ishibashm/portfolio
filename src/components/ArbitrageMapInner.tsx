@@ -1064,7 +1064,7 @@ export default function ArbitrageMapInner({
             <>
               {/* 目的のプリセット。個別の切り替え（下）の前に置く。
               どちらも見え方だけの変更で、判定にも絞り込みにも入らない。 */}
-              <div className="flex flex-wrap justify-end gap-0.5 p-0.5 rounded-lg bg-white/90 border border-stone-200 shadow-lg">
+              <div className="flex flex-wrap justify-end gap-0.5 p-0.5 rounded-lg bg-theme-surface border border-theme-border shadow-lg">
                 {LAYER_PRESET_ORDER.map((id) => (
                   <button
                     key={id}
@@ -1074,7 +1074,7 @@ export default function ArbitrageMapInner({
                     className={`min-h-11 min-w-11 px-2.5 py-1.5 rounded-md text-xs font-bold transition-colors active:scale-95 cursor-pointer ${
                       activeLayerPreset === id
                         ? "bg-stone-700 text-white"
-                        : "text-stone-600 hover:bg-white"
+                        : "text-ink-muted hover:bg-theme-accent-soft"
                     }`}
                   >
                     {LAYER_PRESETS[id].label}
@@ -1083,7 +1083,7 @@ export default function ArbitrageMapInner({
               </div>
               {/* 地図の下地。ハザード・用途地域と同じ列に置く。
               どれも「見え方だけ」で、判定にも絞り込みにも入らない。 */}
-              <div className="flex flex-wrap justify-end gap-0.5 p-0.5 rounded-lg bg-white/80 border border-stone-200 shadow-lg">
+              <div className="flex flex-wrap justify-end gap-0.5 p-0.5 rounded-lg bg-theme-surface border border-theme-border shadow-lg">
                 {BASE_MAP_ORDER.map((id) => (
                   <button
                     key={id}
@@ -1095,8 +1095,8 @@ export default function ArbitrageMapInner({
                     title={BASE_MAPS[id].note}
                     className={`min-h-11 min-w-11 px-2.5 py-1.5 rounded-md text-xs font-bold transition-colors active:scale-95 cursor-pointer ${
                       baseMap === id
-                        ? "bg-indigo-600 text-white"
-                        : "text-stone-600 hover:bg-white"
+                        ? "bg-accent text-on-accent"
+                        : "text-ink-muted hover:bg-theme-accent-soft"
                     }`}
                   >
                     {BASE_MAPS[id].label}
@@ -1108,8 +1108,8 @@ export default function ArbitrageMapInner({
                   title={HILLSHADE.note}
                   className={`min-h-11 min-w-11 px-2.5 py-1.5 rounded-md text-xs font-bold transition-colors active:scale-95 cursor-pointer ${
                     hillshade
-                      ? "bg-indigo-600 text-white"
-                      : "text-stone-600 hover:bg-white"
+                      ? "bg-accent text-on-accent"
+                      : "text-ink-muted hover:bg-theme-accent-soft"
                   }`}
                 >
                   {HILLSHADE.label}
@@ -1118,7 +1118,7 @@ export default function ArbitrageMapInner({
               {/* ハザードマップ（国交省「重ねるハザードマップ」）のタブ。
               「なし」を明示的に置くのは、消す操作を選び直しではなく
               1 押しにするため。選択は端末に残す。 */}
-              <div className="flex flex-wrap justify-end gap-0.5 p-0.5 rounded-lg bg-white/80 border border-stone-200 shadow-lg">
+              <div className="flex flex-wrap justify-end gap-0.5 p-0.5 rounded-lg bg-theme-surface border border-theme-border shadow-lg">
                 {(
                   [
                     ["none", "なし"],
@@ -1141,8 +1141,8 @@ export default function ArbitrageMapInner({
                     }
                     className={`min-h-11 min-w-11 px-2.5 py-1.5 rounded-md text-xs font-bold transition-colors active:scale-95 cursor-pointer ${
                       hazardTab === id
-                        ? "bg-rose-600 text-white"
-                        : "text-stone-600 hover:bg-white"
+                        ? "bg-accent text-on-accent"
+                        : "text-ink-muted hover:bg-theme-accent-soft"
                     }`}
                   >
                     {id === "none" ? "⚠️ なし" : label}
@@ -1164,7 +1164,7 @@ export default function ArbitrageMapInner({
                 title="用途地域（商業地域・住居地域など）を重ねて表示（出典: 不動産情報ライブラリ）"
                 className={`flex min-h-11 items-center gap-1.5 px-3 py-1.5 rounded-lg border text-xs font-bold transition-colors shadow-lg active:scale-95 cursor-pointer ${
                   zoningOn
-                    ? "bg-indigo-600 text-white border-indigo-600"
+                    ? "bg-accent text-on-accent border-accent"
                     : "bg-white/80 text-stone-700 border-stone-200 hover:bg-white"
                 }`}
               >
@@ -1243,7 +1243,7 @@ export default function ArbitrageMapInner({
                   aria-pressed={showSectors}
                   className={`flex min-h-11 items-center gap-1.5 px-3 py-1.5 rounded-lg border text-xs font-bold transition-colors shadow-lg active:scale-95 cursor-pointer ${
                     showSectors
-                      ? "bg-indigo-600 text-white border-indigo-600 hover:bg-indigo-700"
+                      ? "bg-accent text-on-accent border-accent hover:brightness-110"
                       : "bg-white/80 text-stone-500 border-stone-200 hover:bg-white"
                   }`}
                 >
@@ -1324,7 +1324,7 @@ export default function ArbitrageMapInner({
               2 つを並べて現在地を反転表示にすると、切り替えられること
               自体が見える。押した側が実際のズームと食い違わないよう、
               選択状態は状態変数ではなく現在のズームから引く。 */}
-              <div className="flex flex-wrap justify-end gap-0.5 p-0.5 rounded-lg bg-white/80 border border-stone-200 shadow-lg">
+              <div className="flex flex-wrap justify-end gap-0.5 p-0.5 rounded-lg bg-theme-surface border border-theme-border shadow-lg">
                 {hasBase && (
                   <button
                     onClick={() =>
@@ -1336,8 +1336,8 @@ export default function ArbitrageMapInner({
                     title="出発地を中心に、検索半径が収まるズームへ"
                     className={`min-h-11 min-w-11 px-2.5 py-1 rounded-md text-xs font-bold transition-colors active:scale-95 cursor-pointer ${
                       isOverview
-                        ? "text-stone-500 hover:bg-stone-100"
-                        : "bg-indigo-600 text-white"
+                        ? "text-ink-muted hover:bg-theme-accent-soft"
+                        : "bg-accent text-on-accent"
                     }`}
                   >
                     📍 近景
@@ -1350,8 +1350,8 @@ export default function ArbitrageMapInner({
                   title="全国を俯瞰して県ごとの方位の吉凶を見る"
                   className={`min-h-11 min-w-11 px-2.5 py-1 rounded-md text-xs font-bold transition-colors active:scale-95 cursor-pointer ${
                     isOverview
-                      ? "bg-indigo-600 text-white"
-                      : "text-stone-500 hover:bg-stone-100"
+                      ? "bg-accent text-on-accent"
+                      : "text-ink-muted hover:bg-theme-accent-soft"
                   }`}
                 >
                   🗾 全国
@@ -1391,9 +1391,9 @@ export default function ArbitrageMapInner({
         {zoom < 10 && (
           <div
             ref={mapControlRef}
-            className="absolute bottom-4 left-4 z-[1000] pointer-events-auto bg-white/85 backdrop-blur rounded-xl shadow-lg border border-stone-200 p-2.5 text-[10px] text-stone-700 space-y-1.5"
+            className="absolute bottom-4 left-4 z-[1000] pointer-events-auto bg-theme-surface backdrop-blur rounded-xl shadow-lg border border-theme-border p-2.5 text-[10px] text-ink space-y-1.5"
           >
-            <div className="font-bold text-stone-600">
+            <div className="font-bold text-ink-muted">
               {prefFilled ? "県の塗り分け" : "方位の塗り分け"}
             </div>
             {/* 何を塗るか。扇形（既定）は扇形の中が全部同じ方位なので県境に
@@ -1416,8 +1416,8 @@ export default function ArbitrageMapInner({
                   onClick={() => changeOverviewPaint(id)}
                   className={`min-h-11 min-w-11 rounded-md border px-2 text-xs font-bold ${
                     overviewPaint === id
-                      ? "border-indigo-500 bg-indigo-600 text-white"
-                      : "border-stone-300 bg-white text-stone-600 hover:bg-stone-100"
+                      ? "border-accent bg-accent text-on-accent"
+                      : "border-theme-border bg-theme-surface text-ink-muted hover:bg-theme-accent-soft"
                   }`}
                 >
                   {label}
@@ -1431,7 +1431,7 @@ export default function ArbitrageMapInner({
                   setShowSectors(true);
                   localStorage.setItem(SECTORS_STORAGE_KEY, "1");
                 }}
-                className="block min-h-[24px] text-[10px] font-bold text-indigo-700 underline"
+                className="block min-h-[24px] text-[10px] font-bold text-accent underline"
               >
                 方位の扇形が非表示です — 表示する
               </button>
@@ -1554,15 +1554,14 @@ export default function ArbitrageMapInner({
           </Marker>
         )}
 
-        {/* Pulsing ring around center (matching scan radius) */}
+        {/* 検索対象の半径を示す破線。方位の判定色とは分ける。 */}
         {zoom >= 10 && radiusKm && radiusKm !== "all" && (
           <Circle
             center={[baseLat, baseLon]}
             radius={Number(radiusKm) * 1000}
             pathOptions={{
-              color: "#10b981",
-              fillColor: "#10b981",
-              fillOpacity: 0.03,
+              color: "var(--wg-accent)",
+              fill: false,
               weight: 1.5,
               dashArray: "4,8",
             }}
@@ -1795,11 +1794,11 @@ export default function ArbitrageMapInner({
           className="absolute top-20 left-1/2 -translate-x-1/2 z-[2000]"
           style={{ animation: "fade-in-up 0.25s ease-out both" }}
         >
-          <div className="bg-white/80 text-stone-800 px-4 py-2 rounded-full border border-stone-300 shadow-2xl flex items-center gap-2 backdrop-blur-md">
+          <div className="bg-theme-surface text-ink px-4 py-2 rounded-full border border-theme-border shadow-2xl flex items-center gap-2 backdrop-blur-md">
             {toast.type === "success" ? (
-              <Check className="w-4 h-4 text-emerald-600" />
+              <Check className="w-4 h-4 text-ink-muted" />
             ) : (
-              <Copy className="w-4 h-4 text-indigo-600" />
+              <Copy className="w-4 h-4 text-accent" />
             )}
             <span className="text-[11px] font-medium tracking-tight whitespace-nowrap">
               {toast.message}

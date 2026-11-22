@@ -50,6 +50,9 @@ interface WealthMapProps {
 }
 
 /** 拡大の上限。市区町村の点が重ならずに見分けられるところまで。 */
+const INCOME_LOW = "#65738a";
+const INCOME_HIGH = "#1e3a6e";
+
 const MAX_ZOOM = 16;
 
 /*
@@ -101,7 +104,7 @@ export function WealthMap({
 
     return scaleLinear<string>()
       .domain([min, max])
-      .range(["#818cf8", "#f43f5e"]); // Indigo to Rose
+      .range([INCOME_LOW, INCOME_HIGH]);
   }, [data]);
 
   return (
@@ -145,10 +148,10 @@ export function WealthMap({
 
           {/* Render Base Location */}
           <Marker coordinates={[baseLon, baseLat]}>
-            <circle r={6 / k} fill="#10b981" />
+            <circle r={6 / k} fill="#8a6216" />
             <circle
               r={12 / k}
-              fill="#10b981"
+              fill="#8a6216"
               fillOpacity={0.3}
               className="animate-ping"
             />
@@ -157,7 +160,7 @@ export function WealthMap({
               y={-15 / k}
               style={{
                 fontFamily: "sans-serif",
-                fill: "#10b981",
+                fill: "#8a6216",
                 fontSize: `${10 / k}px`,
                 fontWeight: "bold",
               }}
@@ -254,10 +257,18 @@ export function WealthMap({
           一人当たり所得
         </div>
         <div className="flex items-center gap-2">
-          <span className="w-3 h-3 rounded-full bg-rose-500"></span> 高い
+          <span
+            className="w-3 h-3 rounded-full"
+            style={{ background: INCOME_HIGH }}
+          />{" "}
+          高い
         </div>
         <div className="flex items-center gap-2">
-          <span className="w-3 h-3 rounded-full bg-indigo-400"></span> 低い
+          <span
+            className="w-3 h-3 rounded-full"
+            style={{ background: INCOME_LOW }}
+          />{" "}
+          低い
         </div>
         <div className="font-bold border-b border-stone-300 pb-1 mb-1 mt-2">
           吉凶ステータス
@@ -273,7 +284,7 @@ export function WealthMap({
                   cx={7}
                   cy={7}
                   r={marker.radius}
-                  fill={marker.fill === "income" ? "#f43f5e" : marker.fill}
+                  fill={marker.fill === "income" ? INCOME_HIGH : marker.fill}
                   fillOpacity={marker.opacity}
                   stroke={marker.stroke ?? "none"}
                   strokeWidth={marker.strokeWidth}

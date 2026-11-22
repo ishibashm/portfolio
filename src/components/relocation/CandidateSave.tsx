@@ -273,7 +273,7 @@ export function CandidateSave({
       )}
       <button
         type="button"
-        className="rounded bg-emerald-800 dark:bg-emerald-800 px-3 py-2 text-white disabled:opacity-40"
+        className="rounded bg-accent px-3 py-2 text-on-accent disabled:opacity-40"
         disabled={!valid || !confirmed || busy || saved === content}
         onClick={() => void save()}
       >
@@ -299,7 +299,7 @@ export function CandidateSave({
         </Link>
       )}
       {error && (
-        <p role="alert" className="text-rose-700 dark:text-accent">
+        <p role="alert" className="text-accent">
           {error}
         </p>
       )}

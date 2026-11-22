@@ -5,7 +5,7 @@
  * - 動かすのは transform と opacity だけ（CLS を起こさない）。
  * - 既定（JS なし・prefers-reduced-motion: reduce）の見た目が静止の最終形。
  *   歩く足の振り・体の上下・呼吸・ジャンプ・振り返りバウンスは no-preference の中だけ。
- * - 配色は紺 #1e2a5a・金 #c9a54a・生成り #faf7f3/#f8f1dc・白のみ。
+ * - 吹き出しと操作部品はサイト共通の地色・文字・勝色・金を使う。
  * ======================================================================== */
 
 .shirube-wander-stage {
@@ -268,7 +268,7 @@
 }
 
 .shirube-wander-hit:focus-visible {
-  outline: 2px solid #c9a54a;
+  outline: 2px solid var(--wg-accent);
   outline-offset: 2px;
   border-radius: 8px;
 }
@@ -286,11 +286,11 @@
   width: max-content;
   max-width: 180px;
   border-radius: 14px;
-  border: 1px solid #c9a54a;
-  background: #ffffff;
-  color: #1e2a5a;
+  border: 1px solid var(--wg-gold-decor);
+  background: var(--wg-surface);
+  color: var(--wg-ink);
   padding: 8px 10px;
-  box-shadow: 0 6px 18px rgba(30, 42, 90, 0.14);
+  box-shadow: 0 6px 18px var(--wg-shadow);
   font-size: 12px;
   line-height: 1.5;
   z-index: 2;
@@ -329,8 +329,8 @@
   font-size: 10px;
   font-weight: 700;
   letter-spacing: 0.06em;
-  color: #1e2a5a;
-  background: #f8f1dc;
+  color: var(--wg-gold);
+  background: var(--theme-gold-soft);
   border: 1px solid rgba(201, 165, 74, 0.5);
   border-radius: 9999px;
   padding: 0 6px;
@@ -345,27 +345,27 @@
   width: 20px;
   height: 20px;
   border-radius: 9999px;
-  border: 1px solid rgba(30, 42, 90, 0.18);
-  background: #faf7f3;
-  color: #1e2a5a;
+  border: 1px solid var(--theme-border);
+  background: var(--background);
+  color: var(--wg-ink);
   font-size: 13px;
   line-height: 1;
   cursor: pointer;
 }
 
 .shirube-bubble-hide:hover {
-  background: #f8f1dc;
-  border-color: #c9a54a;
+  background: var(--theme-gold-soft);
+  border-color: var(--wg-gold-decor);
 }
 
 .shirube-bubble-hide:focus-visible {
-  outline: 2px solid #c9a54a;
+  outline: 2px solid var(--wg-accent);
   outline-offset: 1px;
 }
 
 .shirube-bubble-text {
   margin: 0;
-  color: #1e2a5a;
+  color: var(--wg-ink);
 }
 
 .shirube-bubble-links {
@@ -378,9 +378,9 @@
 .shirube-bubble-link {
   display: inline-block;
   border-radius: 9999px;
-  border: 1px solid #c9a54a;
-  background: #f8f1dc;
-  color: #1e2a5a;
+  border: 1px solid var(--wg-accent);
+  background: var(--wg-accent-soft);
+  color: var(--wg-accent);
   font-size: 11px;
   font-weight: 600;
   padding: 2px 8px;
@@ -388,7 +388,7 @@
 }
 
 .shirube-bubble-link:hover {
-  background: #faf7f3;
+  background: var(--background);
 }
 
 .shirube-restore-tab {
@@ -399,9 +399,9 @@
   width: 28px;
   height: 28px;
   border-radius: 9999px;
-  border: 1px solid #c9a54a;
-  background: #1e2a5a;
-  color: #faf7f3;
+  border: 1px solid var(--wg-gold-decor);
+  background: var(--wg-accent);
+  color: var(--wg-on-accent);
   font-size: 12px;
   font-weight: 700;
   line-height: 1;
@@ -413,13 +413,13 @@
 }
 
 .shirube-restore-tab:focus-visible {
-  outline: 2px solid #c9a54a;
+  outline: 2px solid var(--wg-accent);
   outline-offset: 2px;
 }
 
 /* 指さし対象へのやさしい金の縁取り（レイアウトを変えない outline のみ） */
 .shirube-tip-target-highlight {
-  outline: 2px solid #c9a54a;
+  outline: 2px solid var(--wg-accent);
   outline-offset: 4px;
   border-radius: 6px;
 }
@@ -971,32 +971,4 @@
     transparent 72%
   );
   pointer-events: none;
-}
-
-.dark .shirube-bubble {
-  background: var(--wg-surface);
-  color: var(--wg-ink);
-  border-color: var(--wg-gold);
-  box-shadow: 0 6px 18px var(--wg-shadow);
-}
-
-.dark .shirube-bubble-text {
-  color: inherit;
-}
-
-.dark .shirube-bubble-name,
-.dark .shirube-bubble-link,
-.dark .shirube-restore-tab {
-  color: var(--wg-gold);
-  background: var(--theme-gold-soft);
-}
-
-.dark .shirube-bubble-hide,
-.dark .shirube-bubble-link:hover {
-  color: var(--wg-ink);
-  background: var(--theme-subtle);
-}
-
-.dark .shirube-bubble-hide:hover {
-  background: var(--theme-gold-soft);
 }

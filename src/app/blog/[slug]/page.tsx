@@ -122,7 +122,7 @@ export default async function BlogPostPage({
   const affiliate = offersForPath(path)[0];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#faf7f5] dark:from-background via-[#f5efe9] dark:via-background to-[#f0e9e1] dark:to-background text-slate-900 dark:text-ink">
+    <div className="min-h-screen bg-background text-ink">
       <ArticleJsonLd
         type="BlogPosting"
         headline={post.title}
@@ -156,7 +156,7 @@ export default async function BlogPostPage({
         <div className="mt-8 grid grid-cols-[minmax(0,1fr)] gap-10 lg:grid-cols-[minmax(0,1fr)_300px] lg:items-start">
           <article className="min-w-0">
             <div className="flex flex-wrap items-center gap-3 text-xs text-ink-muted">
-              <span className="rounded-full bg-rose-50 dark:bg-theme-accent-soft px-3 py-1 font-bold text-rose-700 dark:text-accent">
+              <span className="rounded-full bg-theme-accent-soft px-3 py-1 font-bold text-accent">
                 {post.category}
               </span>
               <time dateTime={post.publishedAt}>
@@ -175,7 +175,7 @@ export default async function BlogPostPage({
             <h1 className="mt-5 font-serif text-3xl font-bold leading-tight tracking-tight md:text-4xl md:leading-tight">
               {post.title}
             </h1>
-            <p className="mt-5 border-l-4 border-rose-300 dark:border-theme-border pl-4 text-sm leading-7 text-slate-600 dark:text-ink-muted">
+            <p className="mt-5 border-l-4 border-theme-border pl-4 text-sm leading-7 text-ink-muted">
               {post.description}
             </p>
 
@@ -239,13 +239,13 @@ export default async function BlogPostPage({
                 className="hidden lg:block"
               />
             ) : null}
-            <section className="rounded-2xl border border-slate-300 dark:border-theme-border bg-white/80 dark:bg-theme-surface p-5">
+            <section className="rounded-2xl border border-slate-300 dark:border-theme-border bg-theme-surface p-5">
               <h2 className="font-serif text-sm font-bold">この記事のタグ</h2>
               <div className="mt-3 flex flex-wrap gap-2">
                 {post.tags.map((tag) => (
                   <span
                     key={tag}
-                    className="rounded-full bg-stone-100 dark:bg-theme-subtle px-2.5 py-1 text-[11px] text-slate-600 dark:text-ink-muted"
+                    className="rounded-full bg-stone-100 dark:bg-theme-subtle px-2.5 py-1 text-[11px] text-ink-muted"
                   >
                     #{tag}
                   </span>
@@ -254,14 +254,14 @@ export default async function BlogPostPage({
             </section>
 
             {related.length > 0 && (
-              <section className="rounded-2xl border border-slate-300 dark:border-theme-border bg-white/80 dark:bg-theme-surface p-5">
+              <section className="rounded-2xl border border-slate-300 dark:border-theme-border bg-theme-surface p-5">
                 <h2 className="font-serif text-sm font-bold">あわせて読む</h2>
                 <div className="mt-3 space-y-3">
                   {related.map((item) => (
                     <Link
                       key={item.slug}
                       href={`/blog/${item.slug}`}
-                      className="block text-xs font-semibold leading-5 text-slate-700 dark:text-ink hover:text-accent"
+                      className="block text-xs font-semibold leading-5 text-ink hover:text-accent"
                     >
                       {item.title} →
                     </Link>
@@ -278,7 +278,7 @@ export default async function BlogPostPage({
             {headings.length >= 2 && (
               <nav
                 aria-label="目次"
-                className="rounded-2xl border border-slate-300 dark:border-theme-border bg-white/80 dark:bg-theme-surface p-5"
+                className="rounded-2xl border border-slate-300 dark:border-theme-border bg-theme-surface p-5"
               >
                 <h2 className="font-serif text-sm font-bold">目次</h2>
                 <ol className="mt-3 space-y-2.5 text-xs leading-5">
@@ -286,7 +286,7 @@ export default async function BlogPostPage({
                     <li key={h.id}>
                       <a
                         href={`#${h.id}`}
-                        className="text-slate-600 dark:text-ink-muted hover:text-accent"
+                        className="text-ink-muted hover:text-accent"
                       >
                         {h.text}
                       </a>

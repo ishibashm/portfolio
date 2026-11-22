@@ -20,7 +20,7 @@ export function ArticleToolCta({ tags }: { tags: readonly string[] }) {
   return (
     <section
       aria-labelledby="article-tool-cta"
-      className="mt-12 rounded-2xl border border-rose-200 dark:border-theme-border bg-rose-50/70 dark:bg-theme-accent-soft p-5 md:p-6"
+      className="mt-12 rounded-2xl border border-theme-border bg-theme-accent-soft p-5 md:p-6"
     >
       <h2
         id="article-tool-cta"
@@ -58,7 +58,7 @@ export function ArticleToolCta({ tags }: { tags: readonly string[] }) {
       {tags.includes("天中殺") && (
         <Link
           href="/houi/tenchusatsu"
-          className="mt-4 inline-block rounded-xl border border-rose-200 dark:border-theme-border bg-white dark:bg-theme-surface px-4 py-3 text-sm"
+          className="mt-4 inline-block rounded-xl border border-theme-border bg-white dark:bg-theme-surface px-4 py-3 text-sm"
         >
           生年月日から天中殺を調べる
         </Link>
@@ -76,11 +76,11 @@ export function ArticleToolCta({ tags }: { tags: readonly string[] }) {
           >
             <Link
               href={t.href}
-              className="group block h-full rounded-xl border border-slate-300 dark:border-theme-border bg-white dark:bg-theme-surface p-4 transition-colors hover:border-rose-400 dark:hover:border-theme-border"
+              className="group block h-full rounded-xl border border-slate-300 dark:border-theme-border bg-white dark:bg-theme-surface p-4 transition-colors hover:border-accent"
             >
               <span className="flex items-center gap-2 font-serif text-sm font-bold text-slate-900 dark:text-ink">
                 {t.label}
-                <ArrowRight className="h-4 w-4 text-rose-500 dark:text-accent opacity-0 transition-opacity group-hover:opacity-100" />
+                <ArrowRight className="h-4 w-4 text-accent opacity-0 transition-opacity group-hover:opacity-100" />
               </span>
               <span className="mt-2 block text-xs leading-relaxed text-slate-600 dark:text-ink-muted">
                 {t.summary}

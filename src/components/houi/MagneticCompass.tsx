@@ -227,7 +227,7 @@ export function MagneticCompass() {
           </p>
         )}
         {error && (
-          <p role="alert" className="text-sm text-rose-700 dark:text-accent">
+          <p role="alert" className="text-sm text-accent">
             {error}
           </p>
         )}
@@ -305,7 +305,7 @@ export function MagneticCompass() {
                 onClick={() => setView("3d")}
                 className={`min-h-11 min-w-11 rounded-full border px-2.5 py-1 font-semibold ${
                   view === "3d"
-                    ? "border-rose-600 dark:border-theme-border bg-rose-600 dark:bg-rose-700 text-white"
+                    ? "border-accent bg-accent text-on-accent"
                     : "border-stone-300 dark:border-theme-border bg-white dark:bg-theme-surface text-stone-700 dark:text-ink"
                 }`}
               >
@@ -318,7 +318,7 @@ export function MagneticCompass() {
               onClick={() => setView("flat")}
               className={`min-h-11 min-w-11 rounded-full border px-2.5 py-1 font-semibold ${
                 view === "flat"
-                  ? "border-rose-600 dark:border-theme-border bg-rose-600 dark:bg-rose-700 text-white"
+                  ? "border-accent bg-accent text-on-accent"
                   : "border-stone-300 dark:border-theme-border bg-white dark:bg-theme-surface text-stone-700 dark:text-ink"
               }`}
             >

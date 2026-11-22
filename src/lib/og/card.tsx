@@ -83,7 +83,7 @@ export async function ogImage(input: {
         fontFamily: "Noto Sans JP",
       }}
     >
-      <div style={{ width: 18, height: "100%", background: "#be123c" }} />
+      <div style={{ width: 18, height: "100%", background: "#1e3a6e" }} />
       <div
         style={{
           display: "flex",

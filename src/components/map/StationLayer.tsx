@@ -189,7 +189,7 @@ export function StationLayer({
                   <button
                     type="button"
                     onClick={() => onInspect(s.lat, s.lon)}
-                    className="mt-2 w-full rounded border border-emerald-300 bg-emerald-50 px-2 py-1 text-[10px] font-bold text-emerald-800 hover:bg-emerald-100"
+                    className="mt-2 w-full rounded border border-theme-border bg-theme-accent-soft px-2 py-1 text-[10px] font-bold text-accent hover:bg-theme-accent-soft"
                   >
                     この地点を判定へ
                   </button>

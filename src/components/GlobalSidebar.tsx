@@ -292,8 +292,8 @@ export function GlobalSidebar() {
           flex items-center justify-between px-3.5 py-2.5 rounded-2xl transition-all group font-medium text-xs
           ${
             isActive
-              ? "bg-rose-600 dark:bg-rose-700 text-white shadow-md shadow-rose-200 dark:shadow-black/20"
-              : "text-stone-600 dark:text-ink-muted hover:bg-rose-50 dark:hover:bg-theme-accent-soft hover:text-stone-900 dark:hover:text-ink"
+              ? "bg-accent text-on-accent shadow-md shadow-accent/12 dark:shadow-black/20"
+              : "text-stone-600 dark:text-ink-muted hover:bg-theme-accent-soft hover:text-stone-900 dark:hover:text-ink"
           }
           ${centerWhenCollapsed}
         `}
@@ -301,7 +301,7 @@ export function GlobalSidebar() {
         <div className="flex items-center gap-3">
           <Icon
             size={18}
-            className={`shrink-0 ${isActive ? "text-white" : "text-stone-600 dark:text-ink-muted group-hover:text-rose-500 dark:group-hover:text-accent transition-colors"}`}
+            className={`shrink-0 ${isActive ? "text-on-accent" : "text-stone-600 dark:text-ink-muted group-hover:text-accent transition-colors"}`}
           />
           <span className={`whitespace-nowrap ${hideWhenCollapsed}`}>
             {item.label}
@@ -310,7 +310,7 @@ export function GlobalSidebar() {
         {isActive && (
           <ChevronRight
             size={16}
-            className={`text-white/70 shrink-0 ${hideWhenCollapsed}`}
+            className={`text-on-accent shrink-0 ${hideWhenCollapsed}`}
           />
         )}
       </Link>
@@ -345,14 +345,14 @@ export function GlobalSidebar() {
         アイコンも両方描いて CSS で切り替える。React で出し分けると、
         hydration 前に開いたときに三本線のままになる。
       */}
-      <header className="lg:hidden fixed top-0 inset-x-0 z-[47] flex h-14 items-center gap-1 border-b border-rose-100 dark:border-theme-border bg-white dark:bg-theme-surface px-1.5">
+      <header className="lg:hidden fixed top-0 inset-x-0 z-[47] flex h-14 items-center gap-1 border-b border-theme-border bg-white dark:bg-theme-surface px-1.5">
         <button
           type="button"
           data-menu-toggle
           aria-label="メニュー"
           aria-expanded={isOpen}
           aria-controls="global-sidebar"
-          className="p-2.5 rounded-xl text-stone-500 dark:text-ink-muted hover:text-rose-500 dark:hover:text-accent active:bg-rose-50 dark:active:bg-theme-accent-soft active:scale-95 transition-transform"
+          className="p-2.5 rounded-xl text-stone-500 dark:text-ink-muted hover:text-accent active:bg-theme-accent-soft active:scale-95 transition-transform"
         >
           <span data-menu-icon="open" className="block">
             <Menu size={24} />
@@ -361,7 +361,7 @@ export function GlobalSidebar() {
             <X size={24} />
           </span>
         </button>
-        <span className="font-serif font-bold tracking-tight text-stone-900 dark:text-ink">
+        <span className="font-serif font-bold tracking-tight text-accent">
           Cloud Palette
         </span>
         <ThemeToggle className="ml-auto mr-1" />
@@ -396,7 +396,7 @@ export function GlobalSidebar() {
         data-menu-panel
         className={`
           fixed top-0 left-0 h-full z-[46]
-          bg-white dark:bg-theme-surface border-r border-rose-100/80 dark:border-theme-border shadow-2xl shadow-rose-100/40 dark:shadow-black/20
+          bg-theme-surface border-r border-theme-border shadow-2xl shadow-accent/12 dark:shadow-black/20
           w-64 ${sidebarWidth} transition-[transform,width] duration-300 ease-in-out
           flex flex-col overflow-y-auto
           -translate-x-full lg:translate-x-0
@@ -404,10 +404,10 @@ export function GlobalSidebar() {
       >
         {/* Logo Area */}
         <div
-          className={`h-20 shrink-0 flex items-center justify-between gap-1 border-b border-rose-100/60 dark:border-theme-border transition-all duration-300 px-4 ${isCollapsed ? "lg:flex-col lg:justify-center lg:px-0" : ""}`}
+          className={`h-20 shrink-0 flex items-center justify-between gap-1 border-b border-theme-border transition-all duration-300 px-4 ${isCollapsed ? "lg:flex-col lg:justify-center lg:px-0" : ""}`}
         >
           <div className="flex items-center gap-3 text-stone-900 dark:text-ink">
-            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-rose-500 dark:from-rose-700 to-pink-500 dark:to-rose-700 text-white flex items-center justify-center shrink-0 shadow-md shadow-rose-200 dark:shadow-black/20">
+            <div className="w-9 h-9 rounded-xl bg-accent text-on-accent flex items-center justify-center shrink-0 shadow-md shadow-accent/12 dark:shadow-black/20">
               <Compass className="w-5 h-5" />
             </div>
             <span
@@ -430,7 +430,7 @@ export function GlobalSidebar() {
               要るように見えてしまう。日本語の見出しに合わせる。 */}
           {GROUPED_ITEMS.map((g) => (
             <div key={g.heading}>
-              <div className="my-3 border-t border-rose-100/60 dark:border-theme-border" />
+              <div className="my-3 border-t border-theme-border" />
               <div
                 className={`px-3 mb-1 text-[10px] font-semibold tracking-wider text-stone-600 dark:text-ink-muted ${hideWhenCollapsed}`}
               >
@@ -442,7 +442,7 @@ export function GlobalSidebar() {
         </nav>
 
         {/* Footer Area */}
-        <div className="mt-auto p-3 border-t border-rose-100/60 dark:border-theme-border bg-white/95 dark:bg-theme-surface z-10 shrink-0 flex flex-col gap-1.5">
+        <div className="mt-auto p-3 border-t border-theme-border bg-white/95 dark:bg-theme-surface z-10 shrink-0 flex flex-col gap-1.5">
           {/* PWA App Install Widget */}
           <div className={hideWhenCollapsed}>
             <PWAInstallPrompt />
@@ -463,7 +463,7 @@ export function GlobalSidebar() {
           {maybeLoggedIn && email === undefined ? null : email ? (
             <button
               onClick={handleLogout}
-              className={`flex items-center justify-start gap-3 text-rose-500 dark:text-accent hover:text-rose-600 dark:hover:text-accent hover:bg-rose-50 dark:hover:bg-theme-accent-soft p-2 rounded-xl transition-colors ${centerWhenCollapsed}`}
+              className={`flex items-center justify-start gap-3 text-accent hover:text-accent hover:bg-theme-accent-soft p-2 rounded-xl transition-colors ${centerWhenCollapsed}`}
               title={email}
             >
               <LogOut size={18} />
@@ -478,7 +478,7 @@ export function GlobalSidebar() {
               href={`/login?next=${encodeURIComponent(pathname || "/")}`}
               prefetch={false}
               onClick={closeSidebar}
-              className={`flex items-center justify-start gap-3 text-indigo-700 dark:text-theme-link hover:text-indigo-700 dark:hover:text-theme-link hover:bg-indigo-50 dark:hover:bg-theme-link-soft p-2 rounded-xl transition-colors ${centerWhenCollapsed}`}
+              className={`flex items-center justify-start gap-3 text-accent hover:text-accent hover:bg-theme-accent-soft p-2 rounded-xl transition-colors ${centerWhenCollapsed}`}
               title="ログイン"
             >
               <LogIn size={18} />
@@ -520,12 +520,12 @@ export function GlobalSidebar() {
 
           {/* Status */}
           <div
-            className={`px-3 py-3 rounded-xl bg-indigo-50/80 dark:bg-theme-link-soft border border-indigo-100 dark:border-theme-border flex items-center gap-3 ${centerWhenCollapsed}`}
+            className={`px-3 py-3 rounded-xl bg-theme-accent-soft border border-theme-border flex items-center gap-3 ${centerWhenCollapsed}`}
             title="システム稼働中"
           >
-            <div className="w-2 h-2 rounded-full bg-indigo-500 dark:bg-indigo-800 animate-pulse shrink-0" />
+            <div className="w-2 h-2 rounded-full bg-accent animate-pulse shrink-0" />
             <span
-              className={`text-[10px] text-indigo-700 dark:text-theme-link font-medium tracking-widest uppercase whitespace-nowrap ${hideWhenCollapsed}`}
+              className={`text-[10px] text-accent font-medium tracking-widest uppercase whitespace-nowrap ${hideWhenCollapsed}`}
             >
               システム稼働中
             </span>
@@ -539,7 +539,7 @@ export function GlobalSidebar() {
                 「運営」に置いてあり、そちらは短くしない（誰が運営して
                 いるかを確かめに来る人が読む欄なので）。 */}
             Engineered by{" "}
-            <span className="text-stone-500 dark:text-ink-muted font-medium hover:text-rose-500 dark:hover:text-accent transition-colors">
+            <span className="text-stone-500 dark:text-ink-muted font-medium hover:text-accent transition-colors">
               M. Ishi
             </span>
           </div>

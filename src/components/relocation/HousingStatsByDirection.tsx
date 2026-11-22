@@ -295,7 +295,7 @@ export function HousingStatsByDirection({
                   !isOpenDirection(verdicts[d.direction]) && (
                     <Link
                       href={`/relocation/timing?dir=${d.direction}`}
-                      className="mt-1 inline-flex min-h-[24px] items-center text-xs font-bold text-indigo-700 dark:text-theme-link underline hover:text-indigo-900 dark:hover:text-theme-link"
+                      className="mt-1 inline-flex min-h-[24px] items-center text-xs font-bold text-accent underline hover:text-accent"
                     >
                       この日は塞がっています — 開く日を引っ越し時期で探す
                     </Link>
@@ -329,7 +329,7 @@ export function HousingStatsByDirection({
                         )
                       }
                       aria-expanded={effectiveOpen === d.direction}
-                      className="mt-1 inline-flex min-h-[24px] items-center text-[10px] font-bold text-indigo-700 dark:text-theme-link underline hover:text-indigo-900 dark:hover:text-theme-link"
+                      className="mt-1 inline-flex min-h-[24px] items-center text-[10px] font-bold text-accent underline hover:text-accent"
                     >
                       {effectiveOpen === d.direction
                         ? "街を閉じる"
@@ -356,7 +356,7 @@ export function HousingStatsByDirection({
                                     name: m.name,
                                   })
                                 }
-                                className="min-h-[24px] font-semibold text-stone-800 dark:text-ink underline hover:text-indigo-700 dark:hover:text-theme-link"
+                                className="min-h-[24px] font-semibold text-stone-800 dark:text-ink underline hover:text-accent"
                               >
                                 {m.name}
                               </button>
@@ -364,7 +364,7 @@ export function HousingStatsByDirection({
                               <Link
                                 prefetch={false}
                                 href={`/houi/area/${m.code}`}
-                                className="font-semibold text-stone-800 dark:text-ink underline hover:text-indigo-700 dark:hover:text-theme-link"
+                                className="font-semibold text-stone-800 dark:text-ink underline hover:text-accent"
                               >
                                 {m.name}
                               </Link>
@@ -395,7 +395,7 @@ export function HousingStatsByDirection({
                               <Link
                                 prefetch={false}
                                 href={`/houi/area/${m.code}`}
-                                className="ml-2 inline-flex min-h-[24px] items-center text-stone-500 dark:text-ink-muted underline hover:text-indigo-700 dark:hover:text-theme-link"
+                                className="ml-2 inline-flex min-h-[24px] items-center text-stone-500 dark:text-ink-muted underline hover:text-accent"
                               >
                                 この街から見た方位
                               </Link>

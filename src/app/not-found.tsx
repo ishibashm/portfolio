@@ -21,9 +21,9 @@ export const metadata: Metadata = {
 
 export default function NotFound() {
   return (
-    <main className="flex min-h-screen items-center justify-center bg-gradient-to-br from-rose-50 dark:from-theme-accent-soft via-stone-50 dark:via-theme-subtle to-amber-50 dark:to-theme-gold-soft px-4 py-16 text-stone-800 dark:text-ink">
-      <section className="w-full max-w-xl rounded-3xl border border-white/80 dark:border-theme-border bg-white/80 dark:bg-theme-surface p-8 text-center shadow-xl shadow-rose-100/50 dark:shadow-black/20 backdrop-blur-xl sm:p-12">
-        <p className="font-mono text-sm font-bold tracking-[0.35em] text-rose-700 dark:text-accent">
+    <main className="flex min-h-screen items-center justify-center bg-gradient-to-br from-theme-accent-soft via-stone-50 dark:via-theme-subtle to-amber-50 dark:to-theme-gold-soft px-4 py-16 text-stone-800 dark:text-ink">
+      <section className="w-full max-w-xl rounded-3xl border border-white/80 dark:border-theme-border bg-white/80 dark:bg-theme-surface p-8 text-center shadow-xl shadow-accent/12 dark:shadow-black/20 backdrop-blur-xl sm:p-12">
+        <p className="font-mono text-sm font-bold tracking-[0.35em] text-accent">
           404
         </p>
         <h1 className="mt-4 font-serif text-3xl font-bold text-stone-900 dark:text-ink">

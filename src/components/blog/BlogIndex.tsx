@@ -138,7 +138,7 @@ export function BlogIndex({
           </div>
           <a
             href="/blog/feed.xml"
-            className="inline-flex items-center gap-2 rounded-full border border-slate-300 dark:border-theme-border bg-white dark:bg-theme-surface px-4 py-2 text-xs font-bold text-slate-700 dark:text-ink hover:border-rose-400 dark:hover:border-theme-border"
+            className="inline-flex items-center gap-2 rounded-full border border-slate-300 dark:border-theme-border bg-white dark:bg-theme-surface px-4 py-2 text-xs font-bold text-slate-700 dark:text-ink hover:border-accent"
           >
             <Rss className="h-3.5 w-3.5" /> RSS
           </a>
@@ -161,8 +161,8 @@ export function BlogIndex({
                 aria-current={on ? "page" : undefined}
                 className={`rounded-full border px-4 py-2 text-xs font-bold ${
                   on
-                    ? "border-rose-400 dark:border-theme-border bg-rose-50 dark:bg-theme-accent-soft text-rose-700 dark:text-accent"
-                    : "border-slate-300 dark:border-theme-border bg-white dark:bg-theme-surface text-slate-700 dark:text-ink hover:border-rose-400 dark:hover:border-theme-border hover:text-accent"
+                    ? "border-accent bg-theme-accent-soft text-accent"
+                    : "border-slate-300 dark:border-theme-border bg-white dark:bg-theme-surface text-slate-700 dark:text-ink hover:border-accent hover:text-accent"
                 }`}
               >
                 {opt.label}
@@ -180,7 +180,7 @@ export function BlogIndex({
               <a
                 key={group.id}
                 href={`#${group.id}`}
-                className="inline-flex items-center gap-2 rounded-full border border-slate-300 dark:border-theme-border bg-white dark:bg-theme-surface px-4 py-2 text-xs font-bold text-slate-700 dark:text-ink hover:border-rose-400 dark:hover:border-theme-border hover:text-accent"
+                className="inline-flex items-center gap-2 rounded-full border border-slate-300 dark:border-theme-border bg-white dark:bg-theme-surface px-4 py-2 text-xs font-bold text-slate-700 dark:text-ink hover:border-accent hover:text-accent"
               >
                 {group.category}
                 <span className="text-[11px] font-normal text-ink-muted">
