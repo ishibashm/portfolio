@@ -1,3 +1,4 @@
+import { getDefaultActorSize } from "./shirubeDrag";
 /**
  * しるべが乗れる「床（perch）」の検出（純粋関数 + 薄い DOM 収集）。
  *
@@ -103,8 +104,8 @@ export function findPerches(
   const vh = Math.max(0, viewport.height);
   const isMobile = vw < 640;
 
-  const actorHeight = opts.actorHeight ?? (isMobile ? 60 : 120);
-  const actorWidth = opts.actorWidth ?? (isMobile ? 30 : 59);
+  const actorHeight = opts.actorHeight ?? getDefaultActorSize(isMobile).height;
+  const actorWidth = opts.actorWidth ?? getDefaultActorSize(isMobile).width;
   const edgeMarginPx = opts.edgeMarginPx ?? 16;
   const rightEdgeMarginPx = Math.max(0, opts.rightEdgeMarginPx ?? edgeMarginPx);
   const contentLeftPx = Math.max(0, opts.contentLeftPx ?? 0);
@@ -504,7 +505,8 @@ export function collectPerchCandidates(
               Math.max(0, r.left),
               Math.min(win.innerWidth, r.right),
               r.top,
-              opts.actorHeight ?? (win.innerWidth < 640 ? 60 : 120),
+              opts.actorHeight ??
+                getDefaultActorSize(win.innerWidth < 640).height,
             )
           : undefined,
     });

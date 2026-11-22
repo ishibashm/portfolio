@@ -23,6 +23,7 @@ import { isShirubeExcluded } from "@/components/guide/SiteShirube";
 
 afterEach(() => {
   cleanup();
+  vi.useRealTimers();
   window.localStorage.removeItem(SHIRUBE_HIDDEN_STORAGE_KEY);
   vi.unstubAllGlobals();
   vi.restoreAllMocks();
@@ -38,6 +39,29 @@ function stubMatchMedia(reduce: boolean) {
       removeEventListener: vi.fn(),
     })),
   );
+}
+
+const menuTrigger = () =>
+  screen.getByRole("button", { name: /しるべ。メニューを開く/ });
+
+function chooseTip() {
+  fireEvent.click(menuTrigger());
+  fireEvent.click(screen.getByRole("menuitem", { name: "ひとこと案内" }));
+}
+
+function beginPointerDrag() {
+  const button = menuTrigger();
+  const start = {
+    pointerId: 1,
+    pointerType: "touch",
+    button: 0,
+    clientX: 100,
+    clientY: 100,
+  };
+  const end = { ...start, clientX: 220, clientY: 180 };
+  fireEvent.pointerDown(button, start);
+  fireEvent.pointerMove(button, end);
+  return { button, end };
 }
 
 describe("ShirubeWanderer", () => {
@@ -202,14 +226,13 @@ describe("ShirubeWanderer", () => {
     expect(actor.style.transform).not.toBe(initialTransform);
   });
 
-  it("キャラボタンは aria-label「しるべに話しかける」を持ち、タップで案内表示、onInteract で上書きできる", () => {
+  it("メニューのひとこと案内で吹き出しを表示し、onInteract で開く動作を上書きできる", () => {
     stubMatchMedia(true);
     const { rerender } = render(
       <ShirubeWanderer pathnameOverride="/houi/today" />,
     );
 
-    const btn = screen.getByRole("button", { name: "しるべに話しかける" });
-    fireEvent.click(btn);
+    chooseTip();
 
     const bubble = screen.getByRole("status");
     expect(bubble.getAttribute("aria-live")).toBe("polite");
@@ -226,25 +249,159 @@ describe("ShirubeWanderer", () => {
     expect(onInteract).toHaveBeenCalledTimes(1);
   });
 
+  it("メニューには指定された 6 項目があり、Esc と外側クリックでフォーカスを戻す", () => {
+    render(<ShirubeWanderer forceReducedMotion />);
+    const trigger = menuTrigger();
+    expect(trigger).toHaveAttribute("aria-haspopup", "menu");
+    expect(trigger).toHaveAttribute("aria-expanded", "false");
+    fireEvent.click(trigger);
+    expect(trigger).toHaveAttribute("aria-expanded", "true");
+    expect(screen.getByRole("menu")).toBeInTheDocument();
+    const items = screen.getAllByRole("menuitem");
+    expect(
+      items.map((item) => [item.textContent, item.getAttribute("href")]),
+    ).toEqual([
+      ["今日の方位", "/houi/today"],
+      ["方位で街を探す", "/relocation/arbitrage"],
+      ["ブログ", "/blog"],
+      ["しるべに案内してもらう", "/annai"],
+      ["ひとこと案内", null],
+      ["定位置に戻る", null],
+    ]);
+    expect(items[0]).toHaveFocus();
+    fireEvent.keyDown(items[0], { key: "ArrowDown" });
+    expect(items[1]).toHaveFocus();
+    fireEvent.keyDown(items[1], { key: "End" });
+    expect(items[5]).toHaveFocus();
+    fireEvent.keyDown(items[5], { key: "Tab" });
+    expect(items[0]).toHaveFocus();
+    fireEvent.keyDown(items[0], { key: "Escape" });
+    expect(screen.queryByRole("menu")).toBeNull();
+    expect(trigger).toHaveAttribute("aria-expanded", "false");
+    expect(trigger).toHaveFocus();
+    fireEvent.click(trigger);
+    fireEvent.click(document.body);
+    expect(screen.queryByRole("menu")).toBeNull();
+    expect(trigger).toHaveAttribute("aria-expanded", "false");
+    expect(trigger).toHaveFocus();
+  });
+
+  it.each(["menu", "drag"] as const)(
+    "%s 中は徘徊と自動案内を止める",
+    (interaction) => {
+      vi.useFakeTimers();
+      const raf = vi.fn(() => 1);
+      const cancel = vi.fn();
+      vi.stubGlobal("requestAnimationFrame", raf);
+      vi.stubGlobal("cancelAnimationFrame", cancel);
+      render(
+        <ShirubeWanderer
+          forceReducedMotion={false}
+          pathnameOverride="/houi/today"
+          enterTipDelayMs={500}
+        />,
+      );
+      expect(raf).toHaveBeenCalled();
+      if (interaction === "menu") fireEvent.click(menuTrigger());
+      else beginPointerDrag();
+      expect(cancel).toHaveBeenCalledWith(1);
+      expect(screen.getByTestId("shirube-wanderer")).toHaveAttribute(
+        "data-state",
+        "paused",
+      );
+      const actor = screen.getByTestId("shirube-wanderer-actor");
+      const position = actor.style.transform;
+      raf.mockClear();
+      act(() => vi.advanceTimersByTime(1000));
+      expect(actor.style.transform).toBe(position);
+      expect(raf).not.toHaveBeenCalled();
+      expect(screen.queryByRole("status")).toBeNull();
+    },
+  );
+
+  it("しきい値未満のタッチ移動はクリックとしてメニューを開く", () => {
+    render(<ShirubeWanderer forceReducedMotion />);
+    const button = menuTrigger();
+    const start = {
+      pointerId: 1,
+      pointerType: "touch",
+      button: 0,
+      clientX: 100,
+      clientY: 100,
+    };
+    const end = { ...start, clientX: 103, clientY: 104 };
+    fireEvent.pointerDown(button, start);
+    fireEvent.pointerMove(button, end);
+    fireEvent.pointerUp(button, end);
+    fireEvent.click(button, { detail: 1 });
+    expect(screen.getByRole("menu")).toBeInTheDocument();
+    expect(screen.getByTestId("shirube-wanderer")).not.toHaveAttribute(
+      "data-positioned",
+    );
+  });
+
+  it("しきい値を超えた操作はクリックにならず、仮置きから既存の時間で帰り始める", () => {
+    vi.useFakeTimers();
+    vi.spyOn(Math, "random").mockReturnValue(0.5);
+    vi.stubGlobal(
+      "requestAnimationFrame",
+      vi.fn(() => 1),
+    );
+    vi.stubGlobal("cancelAnimationFrame", vi.fn());
+    render(
+      <ShirubeWanderer forceReducedMotion={false} enterTipDelayMs={60_000} />,
+    );
+    const stage = screen.getByTestId("shirube-wanderer");
+    const actor = screen.getByTestId("shirube-wanderer-actor");
+    const { button, end } = beginPointerDrag();
+    expect(stage).toHaveAttribute("data-dragging", "true");
+    fireEvent.pointerUp(button, end);
+    fireEvent.click(button, { detail: 1 });
+    expect(screen.queryByRole("menu")).toBeNull();
+    expect(stage).toHaveAttribute("data-positioned", "true");
+    expect(actor.style.transform).toBe("translate3d(120.00px, 80.00px, 0)");
+    act(() => vi.advanceTimersByTime(14_999));
+    expect(stage).toHaveAttribute("data-positioned", "true");
+    act(() => vi.advanceTimersByTime(1));
+    expect(stage).not.toHaveAttribute("data-positioned");
+    expect(stage).toHaveAttribute("data-state", "hopping");
+    expect(stage).toHaveAttribute("data-facing", "right");
+  });
+
+  it("定位置に戻るを選ぶと仮置きからすぐ帰り始める", () => {
+    vi.stubGlobal(
+      "requestAnimationFrame",
+      vi.fn(() => 1),
+    );
+    vi.stubGlobal("cancelAnimationFrame", vi.fn());
+    render(<ShirubeWanderer forceReducedMotion={false} />);
+    const { button, end } = beginPointerDrag();
+    fireEvent.pointerUp(button, end);
+    fireEvent.click(button); // Enter / Space による click
+    fireEvent.click(screen.getByRole("menuitem", { name: "定位置に戻る" }));
+    const stage = screen.getByTestId("shirube-wanderer");
+    expect(stage).not.toHaveAttribute("data-positioned");
+    expect(stage).toHaveAttribute("data-state", "hopping");
+    expect(button).toHaveFocus();
+  });
+
   it("吹き出しの × で隠れて localStorage に保存され、端タブで呼び戻せる", () => {
     stubMatchMedia(true);
     render(<ShirubeWanderer pathnameOverride="/" />);
 
-    fireEvent.click(screen.getByRole("button", { name: "しるべに話しかける" }));
+    chooseTip();
     expect(screen.getByTestId("shirube-bubble")).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("button", { name: "しるべを休ませる" }));
     expect(window.localStorage.getItem(SHIRUBE_HIDDEN_STORAGE_KEY)).toBe("1");
     expect(
-      screen.queryByRole("button", { name: "しるべに話しかける" }),
+      screen.queryByRole("button", { name: /しるべ。メニューを開く/ }),
     ).toBeNull();
 
     const restoreTab = screen.getByRole("button", { name: "しるべを呼ぶ" });
     fireEvent.click(restoreTab);
     expect(window.localStorage.getItem(SHIRUBE_HIDDEN_STORAGE_KEY)).toBeNull();
-    expect(
-      screen.getByRole("button", { name: "しるべに話しかける" }),
-    ).toBeInTheDocument();
+    expect(menuTrigger()).toBeInTheDocument();
   });
 
   it("reduced-motion でもタップ・自動案内で吹き出しと対象の金枠強調が動き、rAF は回さない", () => {

@@ -26,7 +26,7 @@ export type ShirubeWalkPart =
   | (typeof SHIRUBE_FRONT_PARTS)[number];
 
 /** 表示幅（CSS の --shirube-h × 縦横比）に合わせた sizes。 */
-const SIZES = "(min-width: 640px) 59px, 30px";
+const SIZES = "(min-width: 640px) 82px, 41px";
 
 /** 素材の 128px / 240px 版の横幅（px）。横向き 517、正面 533 の原寸から。 */
 const WIDTHS: Record<ShirubeWalkPart, [number, number]> = {
