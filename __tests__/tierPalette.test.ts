@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 import {
+  TIER_BADGE_CLASS,
   TIER_FILL,
+  TIER_TEXT_CLASS,
   TIER_BORDER,
   BLOCKED_FILL,
   TIER_JP,
@@ -128,6 +130,14 @@ describe("段階の色", () => {
  * 物件のポップアップの見出しがこの色で出る。
  */
 describe("段階の文字色", () => {
+  it("ダークの D は橙の文字と面を使い、副アクセントの金を使わない", () => {
+    expect(TIER_BADGE_CLASS.D).toContain("dark:text-orange-");
+    expect(TIER_BADGE_CLASS.D).toContain("dark:bg-orange-");
+    expect(TIER_TEXT_CLASS.D).toContain("dark:text-orange-");
+    expect(TIER_BADGE_CLASS.D).not.toContain("theme-gold");
+    expect(TIER_TEXT_CLASS.D).not.toContain("theme-gold");
+  });
+
   /** "text-emerald-800 dark:text-emerald-300" → { light: 800, dark: 300 } */
   function emeraldSteps(t: DayTier): { light: number; dark: number } {
     const cls = tierPinColors(t)?.textClass ?? "";

@@ -78,7 +78,7 @@ export const TIER_BADGE_CLASS: Record<DayTier, string> = {
   A: `${LIGHT_TIER_BADGE_CLASS.A} dark:bg-emerald-400/15 dark:text-emerald-300`,
   B: `${LIGHT_TIER_BADGE_CLASS.B} dark:bg-emerald-400/8 dark:text-emerald-400`,
   C: `${LIGHT_TIER_BADGE_CLASS.C} dark:bg-theme-subtle dark:text-ink-muted`,
-  D: `${LIGHT_TIER_BADGE_CLASS.D} dark:bg-theme-gold-soft dark:text-theme-gold`,
+  D: `${LIGHT_TIER_BADGE_CLASS.D} dark:bg-orange-400/15 dark:text-orange-400`,
   X: `${LIGHT_TIER_BADGE_CLASS.X} dark:bg-theme-bad-soft dark:text-theme-bad`,
 };
 
@@ -127,7 +127,7 @@ export const TIER_TEXT_CLASS: Record<DayTier, string> = {
   A: "text-emerald-800 dark:text-emerald-300",
   B: "text-emerald-700 dark:text-emerald-400",
   C: "text-stone-600 dark:text-ink-muted",
-  D: "text-orange-800 dark:text-theme-gold",
+  D: "text-orange-800 dark:text-orange-400",
   X: "text-red-700 dark:text-theme-bad",
 };
 

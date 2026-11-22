@@ -705,7 +705,7 @@ export default function RelocationSimulatorPage() {
         ) {
           mRating = "凶";
           mColor =
-            "text-orange-400 dark:text-theme-gold border-orange-500/20 dark:border-theme-border bg-orange-500/5 dark:bg-theme-gold-soft";
+            "text-orange-400 dark:text-orange-400 border-orange-500/20 dark:border-theme-border bg-orange-500/5 dark:bg-orange-400/15";
         } else if (
           [
             "NOISE_VOID",
