@@ -1,13 +1,20 @@
 import { useLayoutEffect, useRef, type KeyboardEvent } from "react";
 import Link from "next/link";
+import { coreRouteLabel } from "@/lib/siteStructure";
 import {
   chooseBubblePlacement,
   collectBubbleBlockers,
 } from "./shirubeBubblePlace";
 
+const ARBITRAGE_HREF = "/relocation/arbitrage";
+
 const MENU_LINKS = [
   { href: "/houi/today", label: "今日の方位" },
-  { href: "/relocation/arbitrage", label: "方位で街を探す" },
+  // 道具の名前は CORE_ROUTES が正。字面を写さず coreRouteLabel で引く。
+  {
+    href: ARBITRAGE_HREF,
+    label: coreRouteLabel(ARBITRAGE_HREF) ?? ARBITRAGE_HREF,
+  },
   { href: "/blog", label: "ブログ" },
   { href: "/annai", label: "しるべに案内してもらう" },
 ];
