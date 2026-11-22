@@ -1,0 +1,1511 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>方位地図リデザインモック — Cloud Palette</title>
+  <!-- 無料・商用利用可 CDN: Leaflet 1.9.4 (BSD-2-Clause) / Google Fonts Shippori Mincho (OFL) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@400;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="" />
+  <style>
+    /* ==========================================================================
+       4役カラーパレット (:root / :root.dark) + 独立した判定専用色 (TIER_FILL)
+       ========================================================================== */
+    :root {
+      color-scheme: light;
+      /* ① 地色 (Surface) */
+      --background: #FAF7F2;
+      --wg-surface: #FFFFFF;
+      --theme-subtle: #F2EDE4;
+      --theme-border: #DDD6CA;
+      /* ② 文字 (Ink) */
+      --foreground: #171C2B;
+      --wg-ink: #171C2B;
+      --wg-ink-muted: #4D5568;
+      /* ③ 主アクセント (Primary: 勝色) */
+      --wg-accent: #1E3A6E;
+      --wg-accent-hover: #162B52;
+      --wg-accent-soft: #EBF0FA;
+      --wg-accent-contrast: #FFFFFF;
+      /* ④ 副アクセント (Secondary: 羅盤金) */
+      --wg-gold: #8A6216;
+      --theme-gold-soft: #FBF5E6;
+      --wg-gold-decor: #C9A54A;
+      /* 影・角丸 */
+      --shadow-sm: 0 1px 2px rgba(23, 28, 43, 0.05);
+      --shadow-md: 0 6px 18px -4px rgba(23, 28, 43, 0.09);
+      --shadow-float: 0 14px 32px -6px rgba(23, 28, 43, 0.16);
+      --radius-sm: 6px;
+      --radius-md: 10px;
+      --radius-lg: 16px;
+      /* 判定専用色 (TIER_FILL 厳守: 緑・赤は吉凶のみ) */
+      --tier-s: #047857;
+      --tier-a: #10B981;
+      --tier-b: #6EE7B7;
+      --tier-c: #A8A29E;
+      --tier-d: #FB923C;
+      --tier-x: #DC2626;
+      --tier-blocked: #64748B;
+      /* 判定テキスト・帯 (AA検証済) */
+      --tier-s-text: #064E3B; --tier-s-bg: rgba(4, 120, 87, 0.13); --tier-s-bd: rgba(4, 120, 87, 0.35);
+      --tier-a-text: #065F46; --tier-a-bg: rgba(16, 185, 129, 0.12); --tier-a-bd: rgba(16, 185, 129, 0.35);
+      --tier-b-text: #047857; --tier-b-bg: rgba(110, 231, 183, 0.22); --tier-b-bd: rgba(16, 185, 129, 0.32);
+      --tier-c-text: #57534E; --tier-c-bg: rgba(168, 162, 158, 0.14); --tier-c-bd: rgba(168, 162, 158, 0.35);
+      --tier-d-text: #C2410C; --tier-d-bg: rgba(251, 146, 60, 0.14); --tier-d-bd: rgba(251, 146, 60, 0.40);
+      --tier-x-text: #B91C1C; --tier-x-bg: rgba(220, 38, 38, 0.12); --tier-x-bd: rgba(220, 38, 38, 0.36);
+      --tier-blocked-text: #475569; --tier-blocked-bg: rgba(100, 116, 139, 0.14); --tier-blocked-bd: rgba(100, 116, 139, 0.35);
+      /* 地図用サーフェス */
+      --map-bg: #EFECE5;
+      --map-glass: rgba(255, 255, 255, 0.94);
+      --map-glass-hover: #FFFFFF;
+      --compass-line: rgba(30, 58, 110, 0.30);
+      --font-sans: "Hiragino Sans", "Hiragino Kaku Gothic ProN", "BIZ UDPGothic", "Yu Gothic", system-ui, sans-serif;
+      --font-serif: "Shippori Mincho", "Hiragino Mincho ProN", "Yu Mincho", Georgia, serif;
+      --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    }
+
+    :root.dark {
+      color-scheme: dark;
+      --background: #151722;
+      --wg-surface: #1E2130;
+      --theme-subtle: #262A3C;
+      --theme-border: #383E56;
+      --foreground: #F3EFE8;
+      --wg-ink: #F3EFE8;
+      --wg-ink-muted: #B2B8CA;
+      --wg-accent: #8CB4FF;
+      --wg-accent-hover: #A8C6FF;
+      --wg-accent-soft: #212D48;
+      --wg-accent-contrast: #151722;
+      --wg-gold: #DFB968;
+      --theme-gold-soft: #31291D;
+      --wg-gold-decor: #DFB968;
+      --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.30);
+      --shadow-md: 0 8px 20px -4px rgba(0, 0, 0, 0.44);
+      --shadow-float: 0 16px 36px -6px rgba(0, 0, 0, 0.58);
+      /* ダーク時は明るいほど強い (S > A > B) */
+      --tier-s-text: #6EE7B7; --tier-s-bg: rgba(52, 211, 153, 0.25); --tier-s-bd: rgba(52, 211, 153, 0.52);
+      --tier-a-text: #34D399; --tier-a-bg: rgba(52, 211, 153, 0.15); --tier-a-bd: rgba(52, 211, 153, 0.38);
+      --tier-b-text: #10B981; --tier-b-bg: rgba(52, 211, 153, 0.09); --tier-b-bd: rgba(52, 211, 153, 0.26);
+      --tier-c-text: #A8A29E; --tier-c-bg: rgba(168, 162, 158, 0.14); --tier-c-bd: rgba(168, 162, 158, 0.30);
+      --tier-d-text: #FB923C; --tier-d-bg: rgba(251, 146, 60, 0.16); --tier-d-bd: rgba(251, 146, 60, 0.38);
+      --tier-x-text: #F87171; --tier-x-bg: rgba(248, 113, 113, 0.18); --tier-x-bd: rgba(248, 113, 113, 0.42);
+      --tier-blocked-text: #94A3B8; --tier-blocked-bg: rgba(148, 163, 184, 0.16); --tier-blocked-bd: rgba(148, 163, 184, 0.34);
+      --map-bg: #121622;
+      --map-glass: rgba(30, 33, 48, 0.93);
+      --map-glass-hover: #262A3C;
+      --compass-line: rgba(223, 185, 104, 0.36);
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body {
+      height: 100%;
+      background: var(--background);
+      color: var(--foreground);
+      font-family: var(--font-sans);
+      font-size: 15px;
+      line-height: 1.6;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    .tabular { font-variant-numeric: tabular-nums; }
+    button { font-family: inherit; cursor: pointer; border: none; background: none; color: inherit; }
+    button:focus-visible { outline: 2px solid var(--wg-accent); outline-offset: 2px; }
+
+    /* ==========================================================================
+       トップバー
+       ========================================================================== */
+    .topbar {
+      height: 56px;
+      background: var(--wg-surface);
+      border-bottom: 1px solid var(--theme-border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 16px;
+      gap: 12px;
+      position: sticky;
+      top: 0;
+      z-index: 40;
+    }
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      min-width: 0;
+    }
+    .brand-mark {
+      width: 32px;
+      height: 32px;
+      border-radius: 9px;
+      background: var(--wg-accent);
+      color: var(--wg-accent-contrast);
+      display: grid;
+      place-items: center;
+      flex-shrink: 0;
+      border: 1px solid rgba(201, 165, 74, 0.45);
+    }
+    .brand-title {
+      font-family: var(--font-serif);
+      font-weight: 700;
+      font-size: 17px;
+      letter-spacing: -0.01em;
+      white-space: nowrap;
+    }
+    .brand-sub {
+      font-size: 12px;
+      color: var(--wg-ink-muted);
+      border-left: 1px solid var(--theme-border);
+      padding-left: 10px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    @media (max-width: 640px) {
+      .brand-sub { display: none; }
+      #btn-width-mode { display: none; }
+    }
+
+    .topbar-actions {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-shrink: 0;
+    }
+    .pill-toggle {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      min-height: 38px;
+      padding: 0 12px;
+      border-radius: 9999px;
+      background: var(--theme-subtle);
+      border: 1px solid var(--theme-border);
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--wg-ink);
+      transition: background 0.15s, border-color 0.15s;
+    }
+    .pill-toggle:hover { border-color: var(--wg-accent); }
+
+    /* ==========================================================================
+       ワークスペース 2ペイン (PC: 左390px + 右地図 / SP: 縦積み+ボトムシート)
+       ========================================================================== */
+    .workspace {
+      display: grid;
+      grid-template-columns: 396px minmax(0, 1fr);
+      height: calc(100dvh - 56px);
+      max-width: 1520px;
+      margin: 0 auto;
+    }
+    @media (max-width: 960px) {
+      .workspace {
+        grid-template-columns: 1fr;
+        height: auto;
+        min-height: calc(100dvh - 56px);
+      }
+    }
+
+    /* 左インスペクタパネル (PC) */
+    .side-panel {
+      background: var(--background);
+      border-right: 1px solid var(--theme-border);
+      overflow-y: auto;
+      padding: 18px 18px 28px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+    @media (max-width: 960px) {
+      .side-panel {
+        order: 2;
+        border-right: none;
+        border-top: 1px solid var(--theme-border);
+        padding: 16px 16px 104px;
+      }
+    }
+
+    .panel-card {
+      background: var(--wg-surface);
+      border: 1px solid var(--theme-border);
+      border-radius: var(--radius-lg);
+      padding: 16px;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .section-eyebrow {
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      color: var(--wg-gold);
+      margin-bottom: 4px;
+    }
+    .panel-heading {
+      font-family: var(--font-serif);
+      font-size: 18px;
+      font-weight: 700;
+      line-height: 1.35;
+      color: var(--wg-ink);
+    }
+    .panel-note {
+      font-size: 12px;
+      color: var(--wg-ink-muted);
+      margin-top: 6px;
+      line-height: 1.55;
+    }
+
+    /* 選択中方位のハイライトカード */
+    .focus-card {
+      border-color: var(--wg-accent);
+      background: linear-gradient(180deg, var(--wg-accent-soft) 0%, var(--wg-surface) 44%);
+    }
+    .focus-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      margin-bottom: 10px;
+    }
+    .focus-dir {
+      font-family: var(--font-serif);
+      font-size: 20px;
+      font-weight: 700;
+      display: flex;
+      align-items: baseline;
+      gap: 8px;
+    }
+    .focus-angle {
+      font-family: var(--font-mono);
+      font-size: 12px;
+      color: var(--wg-ink-muted);
+      font-weight: 500;
+    }
+    .kpi-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+      margin: 12px 0;
+    }
+    .kpi-box {
+      background: var(--theme-subtle);
+      border: 1px solid var(--theme-border);
+      border-radius: var(--radius-md);
+      padding: 8px 10px;
+    }
+    .kpi-label { font-size: 11px; color: var(--wg-ink-muted); }
+    .kpi-val { font-size: 15px; font-weight: 700; color: var(--wg-ink); margin-top: 2px; }
+    .board-row {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+      margin-top: 8px;
+    }
+    .board-chip {
+      font-size: 11px;
+      font-weight: 600;
+      padding: 3px 8px;
+      border-radius: var(--radius-sm);
+      background: var(--theme-subtle);
+      border: 1px solid var(--theme-border);
+      color: var(--wg-ink);
+    }
+    .cities-line {
+      font-size: 12px;
+      color: var(--wg-ink-muted);
+      margin-top: 10px;
+      padding-top: 10px;
+      border-top: 1px solid var(--theme-border);
+    }
+
+    /* 判定バッジ (色+記号+日本語) */
+    .tier-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 3px 8px;
+      border-radius: var(--radius-sm);
+      font-size: 12px;
+      font-weight: 700;
+      line-height: 1.25;
+      border: 1px solid transparent;
+      white-space: nowrap;
+    }
+    .tier-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 9999px;
+      flex-shrink: 0;
+    }
+    .tier-S { color: var(--tier-s-text); background: var(--tier-s-bg); border-color: var(--tier-s-bd); }
+    .tier-A { color: var(--tier-a-text); background: var(--tier-a-bg); border-color: var(--tier-a-bd); }
+    .tier-B { color: var(--tier-b-text); background: var(--tier-b-bg); border-color: var(--tier-b-bd); }
+    .tier-C { color: var(--tier-c-text); background: var(--tier-c-bg); border-color: var(--tier-c-bd); }
+    .tier-D { color: var(--tier-d-text); background: var(--tier-d-bg); border-color: var(--tier-d-bd); }
+    .tier-X { color: var(--tier-x-text); background: var(--tier-x-bg); border-color: var(--tier-x-bd); }
+    .tier-BLOCKED { color: var(--tier-blocked-text); background: var(--tier-blocked-bg); border-color: var(--tier-blocked-bd); }
+
+    /* 8方位一覧グリッド */
+    .dir-list {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 8px;
+      margin-top: 10px;
+    }
+    .dir-item {
+      text-align: left;
+      background: var(--wg-surface);
+      border: 1px solid var(--theme-border);
+      border-radius: var(--radius-md);
+      padding: 10px 11px;
+      transition: border-color 0.15s, background 0.15s, transform 0.12s;
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+    }
+    .dir-item:hover {
+      border-color: var(--wg-accent);
+      background: var(--theme-subtle);
+    }
+    .dir-item.active {
+      border: 2px solid var(--wg-accent);
+      background: var(--wg-accent-soft);
+      padding: 9px 10px;
+    }
+    .dir-item-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 4px;
+    }
+    .dir-item-name { font-weight: 700; font-size: 14px; }
+    .dir-item-rent { font-size: 12px; color: var(--wg-ink-muted); }
+
+    /* ==========================================================================
+       右: 地図ステージ
+       ========================================================================== */
+    .map-stage-wrap {
+      padding: 14px 16px 14px 14px;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+    }
+    @media (max-width: 960px) {
+      .map-stage-wrap {
+        order: 1;
+        padding: 10px 12px 12px;
+        height: 62dvh;
+        min-height: 430px;
+      }
+    }
+
+    .map-frame {
+      position: relative;
+      isolation: isolate;
+      width: 100%;
+      height: 100%;
+      border-radius: var(--radius-lg);
+      overflow: hidden;
+      border: 1px solid var(--theme-border);
+      background: var(--map-bg);
+      box-shadow: var(--shadow-md);
+    }
+    .map-frame.fullscreen {
+      position: fixed;
+      inset: 0;
+      z-index: 2000;
+      border-radius: 0;
+      border: none;
+      height: 100dvh;
+      width: 100vw;
+    }
+    #map {
+      width: 100%;
+      height: 100%;
+      background: var(--map-bg);
+    }
+
+    /* 地理院淡色タイルの和紙調ミュート処理 (Light) / 深藍夜羅盤 (Dark) */
+    .tile-pale-muted {
+      filter: saturate(0.38) contrast(0.95) brightness(1.03) sepia(0.08);
+    }
+    .tile-dark-compass {
+      filter: invert(1) hue-rotate(196deg) brightness(0.82) contrast(1.08) saturate(0.42);
+    }
+    .tile-photo-dark {
+      filter: brightness(0.86) contrast(1.04);
+    }
+    .tile-hillshade {
+      mix-blend-mode: multiply;
+    }
+    :root.dark .tile-hillshade {
+      mix-blend-mode: screen;
+      opacity: 0.16 !important;
+    }
+
+    /* 地図上 左上: 状態ピル */
+    .map-status-pill {
+      position: absolute;
+      top: 12px;
+      left: 12px;
+      z-index: 1000;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: var(--map-glass);
+      backdrop-filter: blur(8px);
+      border: 1px solid var(--theme-border);
+      border-radius: 9999px;
+      padding: 6px 12px 6px 10px;
+      box-shadow: var(--shadow-md);
+      font-size: 12px;
+      max-width: calc(100% - 80px);
+    }
+    .status-origin-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 9999px;
+      background: var(--wg-accent);
+      box-shadow: 0 0 0 2px var(--wg-surface), 0 0 0 3.5px var(--wg-gold-decor);
+      flex-shrink: 0;
+    }
+    .status-text {
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      font-weight: 600;
+      color: var(--wg-ink);
+    }
+    .status-meta {
+      color: var(--wg-ink-muted);
+      font-weight: 500;
+    }
+    .status-home-btn {
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--wg-accent);
+      padding: 3px 8px;
+      border-radius: 9999px;
+      background: var(--wg-accent-soft);
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+
+    /* 地図上 右上: スリム縦ツールバー (44x44px タッチターゲット) */
+    .map-toolbar {
+      position: absolute;
+      top: 12px;
+      right: 12px;
+      z-index: 1000;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .tool-group {
+      display: flex;
+      flex-direction: column;
+      background: var(--map-glass);
+      backdrop-filter: blur(8px);
+      border: 1px solid var(--theme-border);
+      border-radius: var(--radius-md);
+      box-shadow: var(--shadow-md);
+      overflow: hidden;
+    }
+    .tool-btn {
+      width: 44px;
+      height: 44px;
+      display: grid;
+      place-items: center;
+      color: var(--wg-ink);
+      transition: background 0.15s, color 0.15s;
+      position: relative;
+    }
+    .tool-btn + .tool-btn { border-top: 1px solid var(--theme-border); }
+    .tool-btn:hover { background: var(--theme-subtle); }
+    .tool-btn.active {
+      background: var(--wg-accent);
+      color: var(--wg-accent-contrast);
+    }
+
+    /* レイヤー設定ポップオーバー (PC右上 / SPはモーダルシート) */
+    .layer-popover {
+      position: absolute;
+      top: 12px;
+      right: 64px;
+      z-index: 1100;
+      width: 288px;
+      max-height: calc(100% - 76px);
+      overflow-y: auto;
+      background: var(--wg-surface);
+      border: 1px solid var(--theme-border);
+      border-radius: var(--radius-lg);
+      box-shadow: var(--shadow-float);
+      padding: 14px;
+      display: none;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .layer-popover.open { display: flex; }
+    @media (max-width: 640px) {
+      .layer-popover {
+        top: auto;
+        right: 10px;
+        left: 10px;
+        bottom: 10px;
+        width: auto;
+        max-height: 70%;
+      }
+    }
+    .pop-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding-bottom: 8px;
+      border-bottom: 1px solid var(--theme-border);
+    }
+    .pop-title { font-size: 13px; font-weight: 700; }
+    .pop-close {
+      width: 32px;
+      height: 32px;
+      border-radius: 8px;
+      display: grid;
+      place-items: center;
+      color: var(--wg-ink-muted);
+    }
+    .pop-close:hover { background: var(--theme-subtle); }
+    .pop-group-label {
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--wg-ink-muted);
+      margin-bottom: 6px;
+    }
+    .seg-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 4px;
+      background: var(--theme-subtle);
+      padding: 3px;
+      border-radius: var(--radius-md);
+      border: 1px solid var(--theme-border);
+    }
+    .seg-grid.two { grid-template-columns: repeat(2, 1fr); }
+    .seg-btn {
+      min-height: 36px;
+      padding: 4px 6px;
+      border-radius: 7px;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--wg-ink-muted);
+      transition: all 0.15s;
+    }
+    .seg-btn.active {
+      background: var(--wg-accent);
+      color: var(--wg-accent-contrast);
+      box-shadow: var(--shadow-sm);
+    }
+    .toggle-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      min-height: 38px;
+      font-size: 13px;
+      font-weight: 500;
+    }
+    .switch-pill {
+      width: 42px;
+      height: 24px;
+      border-radius: 9999px;
+      background: var(--theme-border);
+      position: relative;
+      transition: background 0.18s;
+      flex-shrink: 0;
+    }
+    .switch-pill::after {
+      content: "";
+      position: absolute;
+      top: 3px;
+      left: 3px;
+      width: 18px;
+      height: 18px;
+      border-radius: 9999px;
+      background: #FFFFFF;
+      transition: transform 0.18s;
+      box-shadow: 0 1px 2px rgba(0,0,0,0.2);
+    }
+    .switch-pill[aria-pressed="true"] { background: var(--wg-accent); }
+    .switch-pill[aria-pressed="true"]::after { transform: translateX(18px); }
+
+    /* 地図上 左下: スリム凡例 (右下はしるべのために必ず空ける!) */
+    .map-legend-wrap {
+      position: absolute;
+      bottom: 26px;
+      left: 12px;
+      z-index: 1000;
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 6px;
+      max-width: calc(100% - 96px);
+    }
+    .legend-chip-btn {
+      display: none;
+      align-items: center;
+      gap: 6px;
+      min-height: 40px;
+      padding: 0 12px;
+      border-radius: 9999px;
+      background: var(--map-glass);
+      backdrop-filter: blur(8px);
+      border: 1px solid var(--theme-border);
+      box-shadow: var(--shadow-md);
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--wg-ink);
+    }
+    .legend-bar {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 6px 10px;
+      background: var(--map-glass);
+      backdrop-filter: blur(8px);
+      border: 1px solid var(--theme-border);
+      border-radius: var(--radius-md);
+      padding: 6px 11px;
+      box-shadow: var(--shadow-md);
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--wg-ink);
+    }
+    .legend-item {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      white-space: nowrap;
+    }
+    @media (max-width: 640px) {
+      .map-legend-wrap { bottom: 32px; }
+      .legend-chip-btn { display: inline-flex; }
+      .legend-bar { display: none; max-width: 240px; }
+      .legend-bar.open { display: flex; }
+    }
+
+    /* モバイル1本指誤スクロールガード */
+    .scroll-guard-banner {
+      display: none;
+      position: absolute;
+      inset: 0;
+      z-index: 950;
+      background: rgba(21, 23, 34, 0.12);
+      align-items: flex-end;
+      justify-content: center;
+      padding-bottom: 66px;
+      pointer-events: none;
+    }
+    .scroll-guard-btn {
+      pointer-events: auto;
+      min-height: 44px;
+      padding: 0 18px;
+      border-radius: 9999px;
+      background: var(--wg-accent);
+      color: var(--wg-accent-contrast);
+      font-size: 13px;
+      font-weight: 700;
+      box-shadow: var(--shadow-float);
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+    @media (max-width: 960px) {
+      .map-frame.guard-on .scroll-guard-banner { display: flex; }
+    }
+
+    /* 地図上 8方位の羅盤カプセル札 (重なり防止・クリーン描画) */
+    .dir-capsule {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 3px 9px 3px 7px;
+      border-radius: 9999px;
+      background: var(--map-glass);
+      border: 1px solid var(--theme-border);
+      box-shadow: 0 2px 8px rgba(15, 23, 42, 0.14);
+      color: var(--wg-ink);
+      font-family: var(--font-sans);
+      font-size: 11px;
+      font-weight: 700;
+      white-space: nowrap;
+      transition: transform 0.16s ease, border-color 0.16s ease, box-shadow 0.16s ease;
+      cursor: pointer;
+    }
+    .dir-capsule .dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 9999px;
+      flex-shrink: 0;
+    }
+    .dir-capsule .sub {
+      font-weight: 600;
+      color: var(--wg-ink-muted);
+      font-size: 10.5px;
+    }
+    .dir-capsule.selected {
+      transform: scale(1.08);
+      border: 2px solid var(--wg-accent);
+      box-shadow: 0 4px 14px rgba(30, 58, 110, 0.28);
+      background: var(--wg-surface);
+    }
+    .dir-capsule.dimmed { opacity: 0.68; }
+    .dist-tag {
+      background: var(--map-glass);
+      border: 1px solid var(--theme-border);
+      color: var(--wg-ink-muted);
+      font-family: var(--font-mono);
+      font-size: 10px;
+      font-weight: 600;
+      padding: 1px 5px;
+      border-radius: 9999px;
+      white-space: nowrap;
+    }
+
+    /* Leaflet Attribution 整え */
+    .leaflet-control-attribution {
+      background: var(--map-glass) !important;
+      color: var(--wg-ink-muted) !important;
+      font-size: 10.5px !important;
+      padding: 2px 8px !important;
+      border-top-left-radius: 8px;
+    }
+    .leaflet-control-attribution a { color: var(--wg-accent) !important; }
+
+    /* モバイル専用ボトムシート (3段階: peek / half / hidden) */
+    .mobile-sheet {
+      display: none;
+    }
+    @media (max-width: 960px) {
+      .mobile-sheet {
+        display: flex;
+        flex-direction: column;
+        position: fixed;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        z-index: 1500;
+        background: var(--wg-surface);
+        border-top: 1px solid var(--theme-border);
+        border-top-left-radius: 18px;
+        border-top-right-radius: 18px;
+        box-shadow: var(--shadow-float);
+        padding: 8px 16px calc(12px + env(safe-area-inset-bottom, 0px));
+        transition: max-height 0.24s ease;
+        max-height: 68px;
+        overflow: hidden;
+      }
+      .mobile-sheet:not(.expanded) .sheet-body {
+        display: none;
+      }
+      .mobile-sheet.expanded {
+        max-height: 54dvh;
+        overflow-y: auto;
+      }
+    }
+    .sheet-handle-btn {
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+      padding-bottom: 6px;
+    }
+    .sheet-pill {
+      width: 36px;
+      height: 4px;
+      border-radius: 9999px;
+      background: var(--theme-border);
+    }
+    .sheet-summary {
+      width: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      font-size: 13px;
+      font-weight: 700;
+    }
+    .sheet-body {
+      padding-top: 10px;
+      border-top: 1px solid var(--theme-border);
+      margin-top: 6px;
+      font-size: 12px;
+      color: var(--wg-ink-muted);
+    }
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <div class="brand-mark" aria-hidden="true">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="9"/>
+          <polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76" fill="currentColor" fill-opacity="0.22"/>
+        </svg>
+      </div>
+      <span class="brand-title">Cloud Palette</span>
+      <span class="brand-sub">方位と家賃相場マップ（リデザイン案）</span>
+    </div>
+    <div class="topbar-actions">
+      <button type="button" class="pill-toggle" id="btn-width-mode" title="八方位の角度分割を切り替え">
+        <span>30°/60° 伝統分割</span>
+      </button>
+      <button type="button" class="pill-toggle" id="btn-theme" aria-pressed="false">
+        <span id="theme-label">ダーク切替</span>
+      </button>
+    </div>
+  </header>
+
+  <main class="workspace">
+    <!-- 左パネル: 選択方位インスペクタ + 8方位一覧 -->
+    <aside class="side-panel" aria-label="方位ごとの家賃相場と判定の参考情報">
+      <section class="panel-card focus-card" id="inspector-card">
+        <div class="section-eyebrow">選択中の方位（タップで切替）</div>
+        <div class="focus-head">
+          <div class="focus-dir">
+            <span id="ins-name">北東</span>
+            <span class="focus-angle tabular" id="ins-angle">真北 45°</span>
+          </div>
+          <span class="tier-badge tier-S" id="ins-badge">
+            <span class="tier-dot" style="background:var(--tier-s)"></span>S 三盤吉
+          </span>
+        </div>
+        <p class="panel-note" id="ins-desc" style="margin-top:0">
+          年盤・月盤・日盤がいずれも吉の目安となる方位です（九星気学の参考情報）。
+        </p>
+        <div class="kpi-grid tabular">
+          <div class="kpi-box">
+            <div class="kpi-label">家賃目安/㎡</div>
+            <div class="kpi-val" id="ins-rent-sqm">1,694円</div>
+          </div>
+          <div class="kpi-box">
+            <div class="kpi-label">月額目安</div>
+            <div class="kpi-val" id="ins-rent-mo">5.6万円</div>
+          </div>
+          <div class="kpi-box">
+            <div class="kpi-label">空き家率</div>
+            <div class="kpi-val" id="ins-vacancy">11.5%</div>
+          </div>
+        </div>
+        <div class="board-row" id="ins-boards"></div>
+        <div class="cities-line" id="ins-cities"></div>
+      </section>
+
+      <section class="panel-card">
+        <div class="section-eyebrow">出発地: 東京都渋谷区付近 · 2026-11-22</div>
+        <h1 class="panel-heading">方位ごとの街と相場（参考一覧）</h1>
+        <p class="panel-note">
+          国の住宅・土地統計調査（e-Stat）による市区町村の家賃水準と、九星気学の目安を並べて比較できます。地図の扇形または下のカードを選ぶと該当方位を強調します。
+        </p>
+        <div class="dir-list" id="dir-list"></div>
+      </section>
+
+      <div class="panel-note" style="padding: 0 4px;">
+        ※ 方位の吉凶は九星気学に基づく伝統的な目安（参考情報）であり、科学的な効果を保証するものではありません。家賃相場・通勤条件・ハザード情報などの事実とあわせてご判断ください。
+      </div>
+    </aside>
+
+    <!-- 右: 方位地図ステージ -->
+    <section class="map-stage-wrap" aria-label="方位地図">
+      <div class="map-frame guard-on" id="map-frame">
+        <div id="map"></div>
+
+        <!-- モバイル誤スクロール防止ガード -->
+        <div class="scroll-guard-banner" id="scroll-guard">
+          <button type="button" class="scroll-guard-btn" id="btn-unlock-map">
+            地図を操作する（または全画面）
+          </button>
+        </div>
+
+        <!-- 左上: 現在状態ピル -->
+        <div class="map-status-pill">
+          <span class="status-origin-dot" aria-hidden="true"></span>
+          <span class="status-text">渋谷区起点 <span class="status-meta">· 真北基準 · 三盤合成</span></span>
+          <button type="button" class="status-home-btn" id="btn-recenter">起点へ</button>
+        </div>
+
+        <!-- 右上: スリム縦ツールバー -->
+        <div class="map-toolbar">
+          <div class="tool-group">
+            <button type="button" class="tool-btn" id="btn-layers" aria-expanded="false" aria-label="レイヤーと下地設定" title="レイヤーと下地設定">
+              <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <polygon points="12 2 2 7 12 12 22 7 12 2"/>
+                <polyline points="2 17 12 22 22 17"/>
+                <polyline points="2 12 12 17 22 12"/>
+              </svg>
+            </button>
+            <button type="button" class="tool-btn" id="btn-fullscreen" aria-pressed="false" aria-label="全画面表示" title="全画面表示">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/>
+                <line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/>
+              </svg>
+            </button>
+          </div>
+          <div class="tool-group">
+            <button type="button" class="tool-btn" id="btn-zoom-in" aria-label="拡大" title="拡大">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            </button>
+            <button type="button" class="tool-btn" id="btn-zoom-out" aria-label="縮小" title="縮小">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            </button>
+          </div>
+        </div>
+
+        <!-- レイヤー設定ポップオーバー -->
+        <div class="layer-popover" id="layer-popover" role="dialog" aria-label="地図の表示設定">
+          <div class="pop-head">
+            <span class="pop-title">地図の表示設定</span>
+            <button type="button" class="pop-close" id="btn-close-pop" aria-label="閉じる">✕</button>
+          </div>
+
+          <div>
+            <div class="pop-group-label">目的別プリセット</div>
+            <div class="seg-grid two">
+              <button type="button" class="seg-btn active" data-preset="houi">方位を見る</button>
+              <button type="button" class="seg-btn" data-preset="land">土地を調べる</button>
+            </div>
+          </div>
+
+          <div>
+            <div class="pop-group-label">地図の下地（地理院タイル）</div>
+            <div class="seg-grid">
+              <button type="button" class="seg-btn active" data-basemap="pale">淡色(推奨)</button>
+              <button type="button" class="seg-btn" data-basemap="std">標準</button>
+              <button type="button" class="seg-btn" data-basemap="photo">空中写真</button>
+            </div>
+          </div>
+
+          <div>
+            <div class="pop-group-label">重ねる表示</div>
+            <div class="toggle-row">
+              <span>方位の扇形・札</span>
+              <button type="button" class="switch-pill" id="sw-sectors" aria-pressed="true" aria-label="方位の扇形を表示"></button>
+            </div>
+            <div class="toggle-row">
+              <span>距離リング (10/30/50km)</span>
+              <button type="button" class="switch-pill" id="sw-rings" aria-pressed="true" aria-label="距離リングを表示"></button>
+            </div>
+            <div class="toggle-row">
+              <span>地形の陰影起伏</span>
+              <button type="button" class="switch-pill" id="sw-hillshade" aria-pressed="false" aria-label="地形の陰影を重ねる"></button>
+            </div>
+          </div>
+
+          <p class="panel-note" style="margin-top:0">
+            表示の切り替えだけで判定は変わりません。出典: 地理院タイル（国土地理院）を加工して表示。
+          </p>
+        </div>
+
+        <!-- 左下: コンパクト凡例 (右下はしるべ安全領域として空ける) -->
+        <div class="map-legend-wrap">
+          <button type="button" class="legend-chip-btn" id="btn-legend-toggle" aria-expanded="false">
+            <span>凡例</span><span id="legend-arrow">▾</span>
+          </button>
+          <div class="legend-bar" id="legend-bar" aria-label="方位の吉凶凡例（参考目安）">
+            <span class="legend-item"><span class="tier-dot" style="background:var(--tier-s)"></span>S 三盤吉</span>
+            <span class="legend-item"><span class="tier-dot" style="background:var(--tier-a)"></span>A 吉2盤</span>
+            <span class="legend-item"><span class="tier-dot" style="background:var(--tier-b)"></span>B 吉1盤</span>
+            <span class="legend-item"><span class="tier-dot" style="background:var(--tier-c)"></span>C 平</span>
+            <span class="legend-item"><span class="tier-dot" style="background:var(--tier-d)"></span>D 軽い凶</span>
+            <span class="legend-item"><span class="tier-dot" style="background:var(--tier-x)"></span>X 五大凶殺</span>
+            <span class="legend-item"><span class="tier-dot" style="background:var(--tier-blocked)"></span>天中殺</span>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- モバイル専用ボトムシート (Peek / Half 切替) -->
+  <div class="mobile-sheet" id="mobile-sheet" aria-label="選択方位の要約">
+    <button type="button" class="sheet-handle-btn" id="btn-sheet-toggle" aria-expanded="false">
+      <span class="sheet-pill"></span>
+      <div class="sheet-summary">
+        <span id="sh-title">北東 · 家賃目安 5.6万円</span>
+        <span class="tier-badge tier-S" id="sh-badge">
+          <span class="tier-dot" style="background:var(--tier-s)"></span>S 三盤吉
+        </span>
+      </div>
+    </button>
+    <div class="sheet-body" id="sh-body"></div>
+  </div>
+
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
+  <script>
+    // =========================================================================
+    // 1. サンプルデータ (e-Stat水準の参考値 + TIER_FILL 6色準拠)
+    // =========================================================================
+    const ORIGIN = { lat: 35.6580, lon: 139.7016, name: "東京都渋谷区付近" };
+
+    const TIER_META = {
+      S:       { jp: "三盤吉",   fill: "#047857", lightOp: 0.22, darkOp: 0.28, dash: null },
+      A:       { jp: "吉2盤",    fill: "#10B981", lightOp: 0.17, darkOp: 0.22, dash: null },
+      B:       { jp: "吉1盤",    fill: "#6EE7B7", lightOp: 0.13, darkOp: 0.16, dash: null },
+      C:       { jp: "平",       fill: "#A8A29E", lightOp: 0.04, darkOp: 0.06, dash: null },
+      D:       { jp: "軽い凶",   fill: "#FB923C", lightOp: 0.13, darkOp: 0.18, dash: "6 4" },
+      X:       { jp: "五大凶殺", fill: "#DC2626", lightOp: 0.18, darkOp: 0.24, dash: "6 4" },
+      BLOCKED: { jp: "天中殺",   fill: "#64748B", lightOp: 0.14, darkOp: 0.18, dash: "4 4" },
+    };
+
+    const SECTORS = [
+      { dir: "N",  ja: "北",   deg: 0,   tier: "X",       rentSqm: "1,812円", rentMo: "5.4万円", vacancy: "10.9%", boards: ["年: 暗剣殺", "月: 平", "日: 暗剣殺"], cities: "東京都板橋区・練馬区、埼玉県さいたま市・川口市 ほか34市区町村", note: "年盤で暗剣殺にあたるため、九星気学では避ける目安とされる方位です（参考情報）。" },
+      { dir: "NE", ja: "北東", deg: 45,  tier: "S",       rentSqm: "1,694円", rentMo: "5.6万円", vacancy: "11.5%", boards: ["年: 吉", "月: 吉", "日: 大吉"], cities: "東京都足立区・葛飾区、千葉県松戸市・柏市、茨城県つくば市 ほか50市区町村", note: "年盤・月盤・日盤がいずれも吉の目安となる方位です（九星気学の参考情報）。" },
+      { dir: "E",  ja: "東",   deg: 90,  tier: "A",       rentSqm: "2,043円", rentMo: "5.8万円", vacancy: "10.4%", boards: ["年: 吉", "月: 吉", "日: 平"], cities: "東京都江戸川区・江東区、千葉県浦安市・市川市・船橋市 ほか27市区町村", note: "年盤・月盤の2盤で吉の目安が重なる方位です（参考情報）。" },
+      { dir: "SE", ja: "南東", deg: 135, tier: "C",       rentSqm: "1,613円", rentMo: "4.9万円", vacancy: "14.4%", boards: ["年: 平", "月: 平", "日: 平"], cities: "東京都品川区・大田区東部、千葉県木更津市・市原市 ほか14市区町村", note: "特別な吉凶が重ならない平穏な目安の方位です（参考情報）。" },
+      { dir: "S",  ja: "南",   deg: 180, tier: "X",       rentSqm: "3,210円", rentMo: "6.9万円", vacancy: "12.1%", boards: ["年: 五黄殺", "月: 歳破系", "日: 日破"], cities: "東京都目黒区・大田区、神奈川県川崎市・横浜市中心部 ほか17市区町村", note: "年盤で五黄殺にあたるため、九星気学では避ける目安とされる方位です（参考情報）。" },
+      { dir: "SW", ja: "南西", deg: 225, tier: "B",       rentSqm: "2,259円", rentMo: "6.2万円", vacancy: "9.8%",  boards: ["年: 平", "月: 吉", "日: 平"], cities: "東京都世田谷区・町田市、神奈川県藤沢市・鎌倉市・相模原市 ほか57市区町村", note: "月盤で吉の目安がある方位です。他の条件とあわせて検討できます（参考情報）。" },
+      { dir: "W",  ja: "西",   deg: 270, tier: "D",       rentSqm: "2,105円", rentMo: "5.9万円", vacancy: "9.4%",  boards: ["年: 平", "月: 本命的殺", "日: 平"], cities: "東京都杉並区・武蔵野市・三鷹市・立川市・八王子市 ほか31市区町村", note: "月盤に個人の注意要素が重なる目安です。時期をずらして確認する方法もあります（参考情報）。" },
+      { dir: "NW", ja: "北西", deg: 315, tier: "BLOCKED", rentSqm: "1,748円", rentMo: "5.3万円", vacancy: "11.2%", boards: ["年: 天中殺方位", "月: 平", "日: 平"], cities: "東京都中野区・西東京市、埼玉県所沢市・川越市 ほか42市区町村", note: "個人の天中殺方位にあたる参考表示です（段階に関わらず灰藍で表示）。" },
+    ];
+
+    // =========================================================================
+    // 2. 測地計算（真北基準・大圏頂点生成）
+    // =========================================================================
+    const RAD = Math.PI / 180;
+    const EARTH_KM = 6371.0088;
+
+    function destinationPoint(lat, lon, bearingDeg, distKm) {
+      const d = distKm / EARTH_KM;
+      const brng = bearingDeg * RAD;
+      const lat1 = lat * RAD;
+      const lon1 = lon * RAD;
+      const lat2 = Math.asin(Math.sin(lat1) * Math.cos(d) + Math.cos(lat1) * Math.sin(d) * Math.cos(brng));
+      const lon2 = lon1 + Math.atan2(Math.sin(brng) * Math.sin(d) * Math.cos(lat1), Math.cos(d) - Math.sin(lat1) * Math.sin(lat2));
+      return [lat2 / RAD, lon2 / RAD];
+    }
+
+    function halfWidthFor(dir, traditional) {
+      if (!traditional) return 22.5;
+      return ["N", "E", "S", "W"].includes(dir) ? 15 : 30;
+    }
+
+    function wedgePoints(lat, lon, bearing, halfW, radiusKm) {
+      const pts = [[lat, lon]];
+      const edgeSteps = 12;
+      const startB = bearing - halfW;
+      const endB = bearing + halfW;
+      for (let i = 1; i <= edgeSteps; i++) {
+        pts.push(destinationPoint(lat, lon, startB, (radiusKm * i) / edgeSteps));
+      }
+      const arcSteps = 14;
+      for (let i = 1; i < arcSteps; i++) {
+        pts.push(destinationPoint(lat, lon, startB + ((endB - startB) * i) / arcSteps, radiusKm));
+      }
+      for (let i = edgeSteps; i >= 1; i--) {
+        pts.push(destinationPoint(lat, lon, endB, (radiusKm * i) / edgeSteps));
+      }
+      return pts;
+    }
+
+    // =========================================================================
+    // 3. 状態管理 & Leaflet 初期化
+    // =========================================================================
+    const state = {
+      dark: false,
+      baseMap: "pale",
+      showSectors: true,
+      showRings: true,
+      showHillshade: false,
+      traditionalSplit: true, // 30°/60° 九星気学標準
+      selectedDir: "NE",
+      fullscreen: false,
+      guardUnlocked: false,
+    };
+
+    const isMobileInit = window.innerWidth <= 960;
+    const map = L.map("map", {
+      center: [ORIGIN.lat, ORIGIN.lon],
+      zoom: 10,
+      maxZoom: 18,
+      minZoom: 5,
+      zoomControl: false,
+      dragging: !isMobileInit,
+      scrollWheelZoom: true,
+    });
+
+    const GSI = "https://cyberjapandata.gsi.go.jp/xyz";
+    const GSI_ATTR = '出典: <a href="https://maps.gsi.go.jp/development/ichiran.html" target="_blank" rel="noreferrer">地理院タイル</a>（国土地理院）を加工して作成';
+
+    const BASE_DEFS = {
+      pale:  { url: `${GSI}/pale/{z}/{x}/{y}.png`, maxNativeZoom: 18 },
+      std:   { url: `${GSI}/std/{z}/{x}/{y}.png`, maxNativeZoom: 18 },
+      photo: { url: `${GSI}/seamlessphoto/{z}/{x}/{y}.jpg`, maxNativeZoom: 18 },
+    };
+
+    let baseLayer = null;
+    let hillshadeLayer = null;
+    const sectorGroup = L.layerGroup().addTo(map);
+    const compassLineGroup = L.layerGroup().addTo(map);
+    const ringGroup = L.layerGroup().addTo(map);
+    const labelGroup = L.layerGroup().addTo(map);
+    let originMarker = null;
+
+    function rebuildBaseTile() {
+      if (baseLayer) map.removeLayer(baseLayer);
+      const def = BASE_DEFS[state.baseMap];
+      let cls = "";
+      if (state.dark) {
+        cls = state.baseMap === "photo" ? "tile-photo-dark" : "tile-dark-compass";
+      } else if (state.baseMap === "pale") {
+        cls = "tile-pale-muted";
+      }
+      baseLayer = L.tileLayer(def.url, {
+        attribution: GSI_ATTR,
+        maxZoom: 20,
+        maxNativeZoom: def.maxNativeZoom,
+        className: cls,
+      }).addTo(map);
+      baseLayer.bringToBack();
+
+      if (hillshadeLayer) { map.removeLayer(hillshadeLayer); hillshadeLayer = null; }
+      if (state.showHillshade) {
+        hillshadeLayer = L.tileLayer(`${GSI}/hillshademap/{z}/{x}/{y}.png`, {
+          attribution: GSI_ATTR,
+          maxZoom: 20,
+          maxNativeZoom: 16,
+          opacity: 0.24,
+          className: "tile-hillshade",
+        }).addTo(map);
+      }
+    }
+
+    function renderOriginMarker() {
+      if (originMarker) map.removeLayer(originMarker);
+      const accent = state.dark ? "#8CB4FF" : "#1E3A6E";
+      const gold = state.dark ? "#DFB968" : "#C9A54A";
+      const bg = state.dark ? "#1E2130" : "#FFFFFF";
+      const svg = `
+        <svg width="32" height="32" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg" aria-label="出発地">
+          <circle cx="16" cy="16" r="13" fill="${bg}" fill-opacity="0.88" stroke="${gold}" stroke-width="1.6"/>
+          <line x1="16" y1="2" x2="16" y2="7" stroke="${gold}" stroke-width="1.5"/>
+          <line x1="16" y1="25" x2="16" y2="30" stroke="${accent}" stroke-width="1.2" stroke-opacity="0.6"/>
+          <line x1="2" y1="16" x2="7" y2="16" stroke="${accent}" stroke-width="1.2" stroke-opacity="0.6"/>
+          <line x1="25" y1="16" x2="30" y2="16" stroke="${accent}" stroke-width="1.2" stroke-opacity="0.6"/>
+          <circle cx="16" cy="16" r="5.5" fill="${accent}" stroke="${bg}" stroke-width="2"/>
+        </svg>`;
+      originMarker = L.marker([ORIGIN.lat, ORIGIN.lon], {
+        icon: L.divIcon({ className: "", html: svg, iconSize: [32, 32], iconAnchor: [16, 16] }),
+        zIndexOffset: 500,
+      }).addTo(map);
+      originMarker.bindPopup(`<strong>${ORIGIN.name}</strong><br><span style="font-size:12px">方位計測の起点（真北基準）</span>`);
+    }
+
+    // 画面短辺から逆算して8方位ラベルの円環距離(km)を算出 -> PCでも390pxスマホでも絶対に重ならない!
+    function computeLabelRadiusKm() {
+      const size = map.getSize();
+      const pxRadius = Math.max(76, Math.min(185, Math.min(size.x, size.y) * 0.33));
+      const originPt = map.latLngToContainerPoint([ORIGIN.lat, ORIGIN.lon]);
+      const targetLL = map.containerPointToLatLng([originPt.x, originPt.y - pxRadius]);
+      const km = map.distance([ORIGIN.lat, ORIGIN.lon], targetLL) / 1000;
+      return Math.max(1.2, Math.min(480, km));
+    }
+
+    function renderOverlays() {
+      sectorGroup.clearLayers();
+      compassLineGroup.clearLayers();
+      ringGroup.clearLayers();
+      labelGroup.clearLayers();
+
+      const accentColor = state.dark ? "#8CB4FF" : "#1E3A6E";
+      const goldColor = state.dark ? "#DFB968" : "#C9A54A";
+      const rayColor = state.dark ? "rgba(223, 185, 104, 0.38)" : "rgba(30, 58, 110, 0.30)";
+      const radiusKm = 420;
+
+      // 1. 扇形ポリゴン
+      if (state.showSectors) {
+        SECTORS.forEach((s) => {
+          const meta = TIER_META[s.tier];
+          const hw = halfWidthFor(s.dir, state.traditionalSplit);
+          const pts = wedgePoints(ORIGIN.lat, ORIGIN.lon, s.deg, hw, radiusKm);
+          const isSelected = state.selectedDir === s.dir;
+          const baseOp = state.dark ? meta.darkOp : meta.lightOp;
+          const fillOp = state.selectedDir
+            ? (isSelected ? Math.min(0.45, baseOp + 0.08) : baseOp * 0.45)
+            : baseOp;
+
+          const poly = L.polygon(pts, {
+            color: meta.fill,
+            fillColor: meta.fill,
+            fillOpacity: fillOp,
+            weight: meta.dash ? 1.2 : 0.6,
+            opacity: meta.dash ? 0.55 : 0.25,
+            dashArray: meta.dash || undefined,
+          }).addTo(sectorGroup);
+
+          poly.on("click", () => selectDirection(s.dir));
+
+          // 選択方位の勝色輪郭ハイライト
+          if (isSelected) {
+            L.polygon(pts, {
+              color: accentColor,
+              weight: 3,
+              opacity: 0.95,
+              fill: false,
+              interactive: false,
+            }).addTo(sectorGroup);
+          }
+        });
+
+        // 2. 専用の方位境目ライン + 真北の金色基準線
+        const boundaries = state.traditionalSplit
+          ? [15, 75, 105, 165, 195, 255, 285, 345]
+          : [22.5, 67.5, 112.5, 157.5, 202.5, 247.5, 292.5, 337.5];
+
+        boundaries.forEach((b) => {
+          const linePts = [];
+          for (let i = 0; i <= 10; i++) linePts.push(destinationPoint(ORIGIN.lat, ORIGIN.lon, b, (radiusKm * i) / 10));
+          L.polyline(linePts, { color: rayColor, weight: 1, interactive: false }).addTo(compassLineGroup);
+        });
+        // 真北基準の細い羅盤金線
+        const northPts = [];
+        for (let i = 0; i <= 10; i++) northPts.push(destinationPoint(ORIGIN.lat, ORIGIN.lon, 0, (radiusKm * i) / 10));
+        L.polyline(northPts, { color: goldColor, weight: 1.5, opacity: 0.68, dashArray: "6 5", interactive: false }).addTo(compassLineGroup);
+
+        // 3. 円環配置の8方位札（重なりゼロ）
+        const labelKm = computeLabelRadiusKm();
+        const compact = map.getSize().x < 480;
+        SECTORS.forEach((s) => {
+          const meta = TIER_META[s.tier];
+          const pos = destinationPoint(ORIGIN.lat, ORIGIN.lon, s.deg, labelKm);
+          const isSelected = state.selectedDir === s.dir;
+          const isDimmed = state.selectedDir && !isSelected;
+          const shortTier = s.tier === "BLOCKED" ? "天中殺" : `${s.tier}${compact ? "" : " " + meta.jp}`;
+          const html = `
+            <div class="dir-capsule ${isSelected ? "selected" : ""} ${isDimmed ? "dimmed" : ""}" data-dir="${s.dir}">
+              <span class="dot" style="background:${meta.fill}"></span>
+              <span>${s.ja}</span>
+              <span class="sub">${shortTier}</span>
+            </div>`;
+          const m = L.marker(pos, {
+            icon: L.divIcon({ className: "", html, iconSize: [0, 0], iconAnchor: [compact ? 30 : 48, 12] }),
+            zIndexOffset: isSelected ? 400 : 200,
+          }).addTo(labelGroup);
+          m.on("click", () => selectDirection(s.dir));
+        });
+      }
+
+      // 4. 距離リング (勝色/羅盤金の極細目盛り)
+      if (state.showRings) {
+        [10, 30, 50].forEach((km) => {
+          L.circle([ORIGIN.lat, ORIGIN.lon], {
+            radius: km * 1000,
+            color: state.dark ? "rgba(223, 185, 104, 0.30)" : "rgba(30, 58, 110, 0.24)",
+            weight: 1,
+            dashArray: "3 5",
+            fill: false,
+            interactive: false,
+          }).addTo(ringGroup);
+
+          const tagPos = destinationPoint(ORIGIN.lat, ORIGIN.lon, 355, km);
+          L.marker(tagPos, {
+            icon: L.divIcon({
+              className: "",
+              html: `<span class="dist-tag">${km}km</span>`,
+              iconSize: [0, 0],
+              iconAnchor: [16, 8],
+            }),
+            interactive: false,
+          }).addTo(ringGroup);
+        });
+      }
+    }
+
+    // =========================================================================
+    // 4. インスペクタ & 一覧 & モバイルボトムシート同期
+    // =========================================================================
+    function renderInspector() {
+      const s = SECTORS.find((x) => x.dir === state.selectedDir) || SECTORS[1];
+      const meta = TIER_META[s.tier];
+      const labelText = s.tier === "BLOCKED" ? "天中殺" : `${s.tier} ${meta.jp}`;
+
+      document.getElementById("ins-name").textContent = s.ja;
+      document.getElementById("ins-angle").textContent = `真北 ${s.deg}°`;
+      const badge = document.getElementById("ins-badge");
+      badge.className = `tier-badge tier-${s.tier}`;
+      badge.innerHTML = `<span class="tier-dot" style="background:${meta.fill}"></span>${labelText}`;
+      document.getElementById("ins-desc").textContent = s.note;
+      document.getElementById("ins-rent-sqm").textContent = s.rentSqm;
+      document.getElementById("ins-rent-mo").textContent = s.rentMo;
+      document.getElementById("ins-vacancy").textContent = s.vacancy;
+      document.getElementById("ins-boards").innerHTML = s.boards.map((b) => `<span class="board-chip">${b}</span>`).join("");
+      document.getElementById("ins-cities").textContent = `主な市区町村: ${s.cities}`;
+
+      // モバイルボトムシート更新
+      document.getElementById("sh-title").textContent = `${s.ja} · 月額目安 ${s.rentMo}（${s.rentSqm}/㎡）`;
+      const shBadge = document.getElementById("sh-badge");
+      shBadge.className = `tier-badge tier-${s.tier}`;
+      shBadge.innerHTML = `<span class="tier-dot" style="background:${meta.fill}"></span>${labelText}`;
+      document.getElementById("sh-body").innerHTML = `
+        <p style="margin-bottom:8px;color:var(--wg-ink)">${s.note}</p>
+        <div class="board-row" style="margin-bottom:8px">${s.boards.map((b) => `<span class="board-chip">${b}</span>`).join("")}</div>
+        <p>空き家率: <strong class="tabular">${s.vacancy}</strong> ／ ${s.cities}</p>
+      `;
+
+      // 8方位カード一覧
+      const listEl = document.getElementById("dir-list");
+      listEl.innerHTML = SECTORS.map((item) => {
+        const m = TIER_META[item.tier];
+        const txt = item.tier === "BLOCKED" ? "天中殺" : `${item.tier} ${m.jp}`;
+        return `
+          <button type="button" class="dir-item ${item.dir === state.selectedDir ? "active" : ""}" data-dir="${item.dir}">
+            <div class="dir-item-top">
+              <span class="dir-item-name">${item.ja}</span>
+              <span class="tier-badge tier-${item.tier}" style="font-size:11px;padding:2px 6px">
+                <span class="tier-dot" style="background:${m.fill}"></span>${txt}
+              </span>
+            </div>
+            <div class="dir-item-rent tabular">月額目安 ${item.rentMo} · 空き家 ${item.vacancy}</div>
+          </button>`;
+      }).join("");
+
+      listEl.querySelectorAll(".dir-item").forEach((btn) => {
+        btn.addEventListener("click", () => selectDirection(btn.dataset.dir));
+      });
+    }
+
+    function selectDirection(dir) {
+      state.selectedDir = dir;
+      renderOverlays();
+      renderInspector();
+    }
+
+    // =========================================================================
+    // 5. イベント配線（ライト/ダーク、レイヤー、全画面、モバイル操作）
+    // =========================================================================
+    document.getElementById("btn-theme").addEventListener("click", () => {
+      state.dark = !state.dark;
+      document.documentElement.classList.toggle("dark", state.dark);
+      document.getElementById("btn-theme").setAttribute("aria-pressed", String(state.dark));
+      document.getElementById("theme-label").textContent = state.dark ? "ライト切替" : "ダーク切替";
+      rebuildBaseTile();
+      renderOriginMarker();
+      renderOverlays();
+    });
+
+    document.getElementById("btn-width-mode").addEventListener("click", (e) => {
+      state.traditionalSplit = !state.traditionalSplit;
+      e.currentTarget.querySelector("span").textContent = state.traditionalSplit ? "30°/60° 伝統分割" : "45° 均等分割";
+      renderOverlays();
+    });
+
+    document.getElementById("btn-recenter").addEventListener("click", () => {
+      map.setView([ORIGIN.lat, ORIGIN.lon], 10, { animate: true });
+    });
+
+    document.getElementById("btn-zoom-in").addEventListener("click", () => map.zoomIn());
+    document.getElementById("btn-zoom-out").addEventListener("click", () => map.zoomOut());
+
+    // レイヤー設定ポップオーバー
+    const pop = document.getElementById("layer-popover");
+    const btnLayers = document.getElementById("btn-layers");
+    function setPopOpen(open) {
+      pop.classList.toggle("open", open);
+      btnLayers.classList.toggle("active", open);
+      btnLayers.setAttribute("aria-expanded", String(open));
+    }
+    btnLayers.addEventListener("click", () => setPopOpen(!pop.classList.contains("open")));
+    document.getElementById("btn-close-pop").addEventListener("click", () => setPopOpen(false));
+
+    // プリセット
+    pop.querySelectorAll("[data-preset]").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        pop.querySelectorAll("[data-preset]").forEach((b) => b.classList.remove("active"));
+        btn.classList.add("active");
+        if (btn.dataset.preset === "houi") {
+          state.baseMap = "pale"; state.showSectors = true; state.showHillshade = false;
+        } else {
+          state.baseMap = "pale"; state.showSectors = false; state.showHillshade = true;
+        }
+        syncPopoverUI();
+        rebuildBaseTile();
+        renderOverlays();
+      });
+    });
+
+    // 下地切替
+    pop.querySelectorAll("[data-basemap]").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        state.baseMap = btn.dataset.basemap;
+        syncPopoverUI();
+        rebuildBaseTile();
+      });
+    });
+
+    // スイッチ群
+    document.getElementById("sw-sectors").addEventListener("click", () => {
+      state.showSectors = !state.showSectors; syncPopoverUI(); renderOverlays();
+    });
+    document.getElementById("sw-rings").addEventListener("click", () => {
+      state.showRings = !state.showRings; syncPopoverUI(); renderOverlays();
+    });
+    document.getElementById("sw-hillshade").addEventListener("click", () => {
+      state.showHillshade = !state.showHillshade; syncPopoverUI(); rebuildBaseTile();
+    });
+
+    function syncPopoverUI() {
+      pop.querySelectorAll("[data-basemap]").forEach((b) => b.classList.toggle("active", b.dataset.basemap === state.baseMap));
+      document.getElementById("sw-sectors").setAttribute("aria-pressed", String(state.showSectors));
+      document.getElementById("sw-rings").setAttribute("aria-pressed", String(state.showRings));
+      document.getElementById("sw-hillshade").setAttribute("aria-pressed", String(state.showHillshade));
+    }
+
+    // 全画面切替
+    const mapFrame = document.getElementById("map-frame");
+    const btnFs = document.getElementById("btn-fullscreen");
+    btnFs.addEventListener("click", () => {
+      state.fullscreen = !state.fullscreen;
+      mapFrame.classList.toggle("fullscreen", state.fullscreen);
+      btnFs.classList.toggle("active", state.fullscreen);
+      btnFs.setAttribute("aria-pressed", String(state.fullscreen));
+      if (state.fullscreen) {
+        mapFrame.classList.remove("guard-on");
+        map.dragging.enable();
+      }
+      requestAnimationFrame(() => requestAnimationFrame(() => {
+        map.invalidateSize();
+        renderOverlays();
+      }));
+    });
+
+    // モバイル誤スクロールガード解除
+    document.getElementById("btn-unlock-map").addEventListener("click", () => {
+      state.guardUnlocked = true;
+      mapFrame.classList.remove("guard-on");
+      map.dragging.enable();
+    });
+
+    // モバイル凡例トグル
+    const legendBar = document.getElementById("legend-bar");
+    document.getElementById("btn-legend-toggle").addEventListener("click", (e) => {
+      const open = !legendBar.classList.contains("open");
+      legendBar.classList.toggle("open", open);
+      e.currentTarget.setAttribute("aria-expanded", String(open));
+      document.getElementById("legend-arrow").textContent = open ? "▴" : "▾";
+    });
+
+    // モバイルボトムシート展開切替
+    const sheet = document.getElementById("mobile-sheet");
+    document.getElementById("btn-sheet-toggle").addEventListener("click", (e) => {
+      const exp = !sheet.classList.contains("expanded");
+      sheet.classList.toggle("expanded", exp);
+      e.currentTarget.setAttribute("aria-expanded", String(exp));
+    });
+
+    // ズーム・リサイズ時に円環ラベル位置を自動再計算（重なり防止）
+    map.on("zoomend resize", () => renderOverlays());
+
+    // 初期描画
+    rebuildBaseTile();
+    renderOriginMarker();
+    renderOverlays();
+    renderInspector();
+  </script>
+</body>
+</html>

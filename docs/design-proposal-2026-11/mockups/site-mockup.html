@@ -1,0 +1,1183 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>Cloud Palette | 引越し先を方位と家賃相場で比較して決める（リデザイン案）</title>
+  <!-- 無料・商用利用可 CDN: Google Fonts Shippori Mincho (OFL, weight 400/700 のみ) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@400;700&display=swap" rel="stylesheet" />
+  <style>
+    /* ==========================================================================
+       4役カラーパレット (:root / :root.dark) + 独立した判定専用色 (TIER_FILL)
+       役割1: 地色 / 役割2: 文字 / 役割3: 主アクセント(勝色) / 役割4: 副アクセント(羅盤金)
+       緑・赤は吉凶判定専用。ボタン・リンク・ナビ・装飾に一切不使用。
+       ========================================================================== */
+    :root {
+      color-scheme: light;
+      /* ① 地色 (Surface) */
+      --background: #FAF7F2;
+      --wg-surface: #FFFFFF;
+      --theme-subtle: #F2EDE4;
+      --theme-border: #DDD6CA;
+      /* ② 文字 (Ink) */
+      --foreground: #171C2B;
+      --wg-ink: #171C2B;
+      --wg-ink-muted: #4D5568;
+      /* ③ 主アクセント (Primary: 勝色・紺藍) */
+      --wg-accent: #1E3A6E;
+      --wg-accent-hover: #162B52;
+      --wg-accent-soft: #EBF0FA;
+      --wg-accent-contrast: #FFFFFF;
+      /* ④ 副アクセント (Secondary: 羅盤金) */
+      --wg-gold: #8A6216;
+      --theme-gold-soft: #FBF5E6;
+      --wg-gold-decor: #C9A54A;
+      /* 影・角丸 */
+      --shadow-sm: 0 1px 2px rgba(23, 28, 43, 0.05);
+      --shadow-md: 0 6px 18px -4px rgba(23, 28, 43, 0.08);
+      --shadow-float: 0 14px 32px -6px rgba(23, 28, 43, 0.14);
+      --radius-sm: 6px;
+      --radius-md: 10px;
+      --radius-lg: 16px;
+      /* 判定専用色 (TIER_FILL 厳守) */
+      --tier-s: #047857; --tier-s-text: #064E3B; --tier-s-bg: rgba(4, 120, 87, 0.12); --tier-s-bd: rgba(4, 120, 87, 0.34);
+      --tier-a: #10B981; --tier-a-text: #065F46; --tier-a-bg: rgba(16, 185, 129, 0.11); --tier-a-bd: rgba(16, 185, 129, 0.34);
+      --tier-b: #6EE7B7; --tier-b-text: #047857; --tier-b-bg: rgba(110, 231, 183, 0.22); --tier-b-bd: rgba(16, 185, 129, 0.30);
+      --tier-c: #A8A29E; --tier-c-text: #57534E; --tier-c-bg: rgba(168, 162, 158, 0.14); --tier-c-bd: rgba(168, 162, 158, 0.34);
+      --tier-d: #FB923C; --tier-d-text: #C2410C; --tier-d-bg: rgba(251, 146, 60, 0.13); --tier-d-bd: rgba(251, 146, 60, 0.38);
+      --tier-x: #DC2626; --tier-x-text: #B91C1C; --tier-x-bg: rgba(220, 38, 38, 0.11); --tier-x-bd: rgba(220, 38, 38, 0.34);
+      --tier-blocked: #64748B; --tier-blocked-text: #475569; --tier-blocked-bg: rgba(100, 116, 139, 0.13); --tier-blocked-bd: rgba(100, 116, 139, 0.34);
+      /* しるべ用フレーム背景 */
+      --shirube-stage-bg: linear-gradient(145deg, #FBF5E6 0%, #EFE8D8 55%, #E7EEF8 100%);
+      --shirube-bubble-bg: #FFFDF8;
+      --shirube-bubble-bd: rgba(201, 165, 74, 0.55);
+      /* タイポ */
+      --font-sans: "Hiragino Sans", "Hiragino Kaku Gothic ProN", "BIZ UDPGothic", "Yu Gothic", system-ui, sans-serif;
+      --font-serif: "Shippori Mincho", "Hiragino Mincho ProN", "Yu Mincho", Georgia, serif;
+      --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      --sidebar-w: 248px;
+    }
+
+    :root.dark {
+      color-scheme: dark;
+      --background: #151722;
+      --wg-surface: #1E2130;
+      --theme-subtle: #262A3C;
+      --theme-border: #383E56;
+      --foreground: #F3EFE8;
+      --wg-ink: #F3EFE8;
+      --wg-ink-muted: #B2B8CA;
+      --wg-accent: #8CB4FF;
+      --wg-accent-hover: #A8C6FF;
+      --wg-accent-soft: #212D48;
+      --wg-accent-contrast: #151722;
+      --wg-gold: #DFB968;
+      --theme-gold-soft: #31291D;
+      --wg-gold-decor: #DFB968;
+      --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.28);
+      --shadow-md: 0 8px 20px -4px rgba(0, 0, 0, 0.42);
+      --shadow-float: 0 16px 36px -6px rgba(0, 0, 0, 0.56);
+      --tier-s-text: #6EE7B7; --tier-s-bg: rgba(52, 211, 153, 0.25); --tier-s-bd: rgba(52, 211, 153, 0.50);
+      --tier-a-text: #34D399; --tier-a-bg: rgba(52, 211, 153, 0.15); --tier-a-bd: rgba(52, 211, 153, 0.38);
+      --tier-b-text: #10B981; --tier-b-bg: rgba(52, 211, 153, 0.09); --tier-b-bd: rgba(52, 211, 153, 0.26);
+      --tier-c-text: #A8A29E; --tier-c-bg: rgba(168, 162, 158, 0.14); --tier-c-bd: rgba(168, 162, 158, 0.30);
+      --tier-d-text: #FB923C; --tier-d-bg: rgba(251, 146, 60, 0.16); --tier-d-bd: rgba(251, 146, 60, 0.38);
+      --tier-x-text: #F87171; --tier-x-bg: rgba(248, 113, 113, 0.18); --tier-x-bd: rgba(248, 113, 113, 0.42);
+      --tier-blocked-text: #94A3B8; --tier-blocked-bg: rgba(148, 163, 184, 0.16); --tier-blocked-bd: rgba(148, 163, 184, 0.34);
+      --shirube-stage-bg: linear-gradient(145deg, #21263B 0%, #1B2032 58%, #2B251C 100%);
+      --shirube-bubble-bg: #232638;
+      --shirube-bubble-bd: rgba(223, 185, 104, 0.42);
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html {
+      scroll-padding-top: 3.5rem;
+    }
+    body {
+      background: var(--background);
+      color: var(--foreground);
+      font-family: var(--font-sans);
+      font-size: 15px;
+      line-height: 1.7;
+      min-height: 100vh;
+      -webkit-font-smoothing: antialiased;
+    }
+    a { color: inherit; text-decoration: none; }
+    button { font-family: inherit; cursor: pointer; border: none; background: none; color: inherit; }
+    button:focus-visible, a:focus-visible { outline: 2px solid var(--wg-accent); outline-offset: 2px; }
+    .tabular { font-variant-numeric: tabular-nums; }
+
+    /* ==========================================================================
+       レイアウト骨格 (PC: 固定左サイドバー 248px + メイン / SP: 固定ヘッダー 56px)
+       ========================================================================== */
+    .app-shell {
+      display: flex;
+      min-height: 100vh;
+    }
+
+    /* モバイルヘッダー */
+    .mobile-header {
+      display: none;
+      position: fixed;
+      top: 0;
+      inset-inline: 0;
+      height: 56px;
+      z-index: 47;
+      background: var(--wg-surface);
+      border-bottom: 1px solid var(--theme-border);
+      padding: 0 12px;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+    }
+    .mobile-header-left {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .icon-btn {
+      width: 44px;
+      height: 44px;
+      border-radius: var(--radius-md);
+      display: grid;
+      place-items: center;
+      color: var(--wg-ink);
+    }
+    .icon-btn:hover { background: var(--theme-subtle); }
+
+    .drawer-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      z-index: 45;
+      background: rgba(15, 20, 34, 0.42);
+    }
+    html[data-menu="open"] .drawer-overlay { display: block; }
+
+    /* 左サイドバー */
+    .sidebar {
+      position: fixed;
+      top: 0;
+      left: 0;
+      height: 100vh;
+      width: var(--sidebar-w);
+      z-index: 46;
+      background: var(--wg-surface);
+      border-right: 1px solid var(--theme-border);
+      display: flex;
+      flex-direction: column;
+      overflow-y: auto;
+      transition: transform 0.25s ease;
+    }
+    .sidebar-spacer {
+      width: var(--sidebar-w);
+      flex-shrink: 0;
+    }
+
+    @media (max-width: 1023px) {
+      .mobile-header { display: flex; }
+      .sidebar { transform: translateX(-100%); box-shadow: var(--shadow-float); }
+      html[data-menu="open"] .sidebar { transform: translateX(0); }
+      .sidebar-spacer { display: none; }
+    }
+
+    .sidebar-brand {
+      height: 68px;
+      padding: 0 20px;
+      display: flex;
+      align-items: center;
+      gap: 11px;
+      border-bottom: 1px solid var(--theme-border);
+      flex-shrink: 0;
+    }
+    .brand-mark {
+      width: 34px;
+      height: 34px;
+      border-radius: 10px;
+      background: var(--wg-accent);
+      color: var(--wg-accent-contrast);
+      display: grid;
+      place-items: center;
+      border: 1px solid rgba(201, 165, 74, 0.45);
+      flex-shrink: 0;
+    }
+    .brand-name {
+      font-family: var(--font-serif);
+      font-weight: 700;
+      font-size: 18px;
+      letter-spacing: -0.01em;
+    }
+
+    .sidebar-nav {
+      padding: 14px 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+    }
+    .nav-group-label {
+      margin-top: 14px;
+      padding: 10px 10px 4px;
+      border-top: 1px solid var(--theme-border);
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.05em;
+      color: var(--wg-ink-muted);
+    }
+    .nav-link {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      min-height: 40px;
+      padding: 8px 12px;
+      border-radius: var(--radius-md);
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--wg-ink-muted);
+      position: relative;
+      transition: background 0.15s, color 0.15s;
+    }
+    .nav-link:hover {
+      background: var(--theme-subtle);
+      color: var(--wg-ink);
+    }
+    /* 刷新されたアクティブ状態: 真っ赤全面塗りをやめ、淡藍面＋左端3px勝色バー */
+    .nav-link.active {
+      background: var(--wg-accent-soft);
+      color: var(--wg-accent);
+      font-weight: 700;
+    }
+    .nav-link.active::before {
+      content: "";
+      position: absolute;
+      left: 0;
+      top: 8px;
+      bottom: 8px;
+      width: 3px;
+      border-radius: 0 3px 3px 0;
+      background: var(--wg-accent);
+    }
+
+    .sidebar-footer {
+      margin-top: auto;
+      padding: 14px 12px 16px;
+      border-top: 1px solid var(--theme-border);
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    /* 3値テーマ切替 (ライト / ダーク / 自動) — feat/dark-mode 互換 */
+    .theme-seg {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 3px;
+      padding: 3px;
+      background: var(--theme-subtle);
+      border: 1px solid var(--theme-border);
+      border-radius: var(--radius-md);
+    }
+    .theme-seg button {
+      min-height: 32px;
+      border-radius: 7px;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--wg-ink-muted);
+      transition: background 0.15s, color 0.15s;
+    }
+    .theme-seg button.active {
+      background: var(--wg-surface);
+      color: var(--wg-accent);
+      box-shadow: var(--shadow-sm);
+    }
+
+    /* ログインリンクも緑をやめて勝色へ */
+    .login-link {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      min-height: 40px;
+      padding: 8px 12px;
+      border-radius: var(--radius-md);
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--wg-accent);
+    }
+    .login-link:hover { background: var(--wg-accent-soft); }
+
+    /* ==========================================================================
+       メインコンテンツ (最大幅 1200px, 余白 4px スケール)
+       ========================================================================== */
+    .main-area {
+      flex: 1;
+      min-width: 0;
+      padding: 28px 32px 72px;
+    }
+    @media (max-width: 1023px) {
+      .main-area { padding: 72px 16px 88px; }
+    }
+    .container {
+      max-width: 1140px;
+      margin: 0 auto;
+      display: flex;
+      flex-direction: column;
+      gap: 24px;
+    }
+
+    .card {
+      background: var(--wg-surface);
+      border: 1px solid var(--theme-border);
+      border-radius: var(--radius-lg);
+      padding: 24px;
+      box-shadow: var(--shadow-sm);
+    }
+    @media (max-width: 640px) {
+      .card { padding: 18px; }
+    }
+
+    /* ==========================================================================
+       ヒーローカード (和紙×勝色×羅盤金 + しるべ調和)
+       ========================================================================== */
+    .hero-card {
+      position: relative;
+      overflow: hidden;
+      display: grid;
+      grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr);
+      gap: 24px;
+      align-items: center;
+    }
+    @media (max-width: 820px) {
+      .hero-card { grid-template-columns: 1fr; gap: 18px; }
+    }
+    .compass-watermark {
+      position: absolute;
+      top: -26px;
+      right: -26px;
+      width: 150px;
+      height: 150px;
+      color: var(--wg-gold-decor);
+      opacity: 0.22;
+      pointer-events: none;
+    }
+    .eyebrow-row {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 4px 11px;
+      border-radius: 9999px;
+      background: var(--theme-gold-soft);
+      border: 1px solid rgba(201, 165, 74, 0.38);
+      color: var(--wg-gold);
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      margin-bottom: 14px;
+    }
+    .hero-h1 {
+      font-family: var(--font-serif);
+      font-size: clamp(1.625rem, 3vw, 2.25rem);
+      font-weight: 700;
+      line-height: 1.32;
+      letter-spacing: -0.015em;
+      color: var(--wg-ink);
+    }
+    .hero-lead {
+      margin-top: 14px;
+      font-size: 15px;
+      line-height: 1.75;
+      color: var(--wg-ink-muted);
+      max-width: 38em;
+    }
+    .hero-actions {
+      margin-top: 20px;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 12px 18px;
+    }
+    .btn-primary {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      min-height: 44px;
+      padding: 0 22px;
+      border-radius: 9999px;
+      background: var(--wg-accent);
+      color: var(--wg-accent-contrast);
+      font-size: 14px;
+      font-weight: 700;
+      box-shadow: var(--shadow-sm);
+      transition: background 0.15s, transform 0.12s;
+    }
+    .btn-primary:hover { background: var(--wg-accent-hover); }
+    .btn-primary:active { transform: scale(0.98); }
+
+    .text-link {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--wg-accent);
+      text-decoration: underline;
+      text-underline-offset: 4px;
+      text-decoration-thickness: 1.5px;
+    }
+    .text-link:hover { color: var(--wg-accent-hover); }
+
+    /* しるべビジュアル枠 */
+    .shirube-hero-box {
+      position: relative;
+      border-radius: 14px;
+      background: var(--shirube-stage-bg);
+      border: 1px solid rgba(201, 165, 74, 0.42);
+      padding: 16px 18px 0;
+      display: grid;
+      grid-template-columns: 126px minmax(0, 1fr);
+      gap: 12px;
+      align-items: end;
+      min-height: 196px;
+      overflow: hidden;
+    }
+    .shirube-hero-img {
+      width: 126px;
+      height: auto;
+      display: block;
+      filter: drop-shadow(0 6px 12px rgba(23, 28, 43, 0.16));
+    }
+    .shirube-hero-copy {
+      align-self: center;
+      padding-bottom: 16px;
+    }
+    .shirube-role-tag {
+      display: inline-block;
+      font-size: 11px;
+      font-weight: 700;
+      padding: 2px 8px;
+      border-radius: var(--radius-sm);
+      background: var(--wg-accent);
+      color: var(--wg-accent-contrast);
+      margin-bottom: 6px;
+    }
+    .shirube-hero-title {
+      font-family: var(--font-serif);
+      font-size: 16px;
+      font-weight: 700;
+      line-height: 1.4;
+      color: var(--wg-ink);
+    }
+    .shirube-hero-text {
+      font-size: 12.5px;
+      color: var(--wg-ink-muted);
+      margin-top: 6px;
+      line-height: 1.55;
+    }
+
+    /* ==========================================================================
+       今日の天気と方位カード (都市切替ピル + 概要 + 九星日盤)
+       ========================================================================== */
+    .section-head {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 8px;
+      margin-bottom: 14px;
+    }
+    .section-h2 {
+      font-family: var(--font-serif);
+      font-size: 20px;
+      font-weight: 700;
+      line-height: 1.4;
+      color: var(--wg-ink);
+    }
+    .section-meta {
+      font-size: 12px;
+      color: var(--wg-ink-muted);
+    }
+
+    .city-pills {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-bottom: 18px;
+    }
+    .city-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      min-height: 36px;
+      padding: 0 14px;
+      border-radius: 9999px;
+      border: 1px solid var(--theme-border);
+      background: var(--wg-surface);
+      color: var(--wg-ink-muted);
+      font-size: 13px;
+      font-weight: 600;
+      transition: all 0.15s;
+    }
+    .city-pill:hover {
+      border-color: var(--wg-accent);
+      color: var(--wg-ink);
+    }
+    .city-pill.active {
+      background: var(--wg-accent);
+      border-color: var(--wg-accent);
+      color: var(--wg-accent-contrast);
+    }
+
+    .overview-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 268px;
+      gap: 20px;
+      align-items: start;
+    }
+    @media (max-width: 860px) {
+      .overview-grid { grid-template-columns: 1fr; }
+    }
+
+    /* 方位 × 家賃相場プレビュー (判定バッジ + tabular-nums) */
+    .dir-cards-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+    }
+    @media (max-width: 560px) {
+      .dir-cards-grid { grid-template-columns: 1fr; }
+    }
+    .mini-dir-card {
+      background: var(--theme-subtle);
+      border: 1px solid var(--theme-border);
+      border-radius: var(--radius-md);
+      padding: 12px 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .mini-dir-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+    }
+    .mini-dir-title {
+      font-weight: 700;
+      font-size: 15px;
+      color: var(--wg-ink);
+    }
+    .mini-dir-stats {
+      font-size: 12.5px;
+      color: var(--wg-ink-muted);
+      display: flex;
+      flex-wrap: wrap;
+      gap: 4px 12px;
+    }
+    .mini-dir-stats strong { color: var(--wg-ink); }
+
+    /* 判定バッジ (色+記号+日本語: 緑・赤はここだけ!) */
+    .tier-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 2px 8px;
+      border-radius: var(--radius-sm);
+      font-size: 12px;
+      font-weight: 700;
+      line-height: 1.3;
+      border: 1px solid transparent;
+      white-space: nowrap;
+    }
+    .tier-dot { width: 8px; height: 8px; border-radius: 9999px; flex-shrink: 0; }
+    .tier-S { color: var(--tier-s-text); background: var(--tier-s-bg); border-color: var(--tier-s-bd); }
+    .tier-A { color: var(--tier-a-text); background: var(--tier-a-bg); border-color: var(--tier-a-bd); }
+    .tier-B { color: var(--tier-b-text); background: var(--tier-b-bg); border-color: var(--tier-b-bd); }
+    .tier-C { color: var(--tier-c-text); background: var(--tier-c-bg); border-color: var(--tier-c-bd); }
+    .tier-D { color: var(--tier-d-text); background: var(--tier-d-bg); border-color: var(--tier-d-bd); }
+    .tier-X { color: var(--tier-x-text); background: var(--tier-x-bg); border-color: var(--tier-x-bd); }
+    .tier-BLOCKED { color: var(--tier-blocked-text); background: var(--tier-blocked-bg); border-color: var(--tier-blocked-bd); }
+
+    /* 3x3 九星日盤 */
+    .day-board-wrap {
+      background: var(--theme-subtle);
+      border: 1px solid var(--theme-border);
+      border-radius: var(--radius-md);
+      padding: 14px;
+    }
+    .day-board-title {
+      font-size: 13px;
+      font-weight: 700;
+      margin-bottom: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .day-board {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 6px;
+      text-align: center;
+    }
+    .board-cell {
+      background: var(--wg-surface);
+      border: 1px solid var(--theme-border);
+      border-radius: var(--radius-sm);
+      padding: 7px 4px;
+      line-height: 1.25;
+    }
+    .board-cell.center {
+      background: var(--theme-gold-soft);
+      border-color: rgba(201, 165, 74, 0.55);
+    }
+    .board-cell.unlucky {
+      background: var(--tier-x-bg);
+      border-color: var(--tier-x-bd);
+      color: var(--tier-x-text);
+    }
+    .cell-dir { display: block; font-size: 11px; color: var(--wg-ink-muted); }
+    .board-cell.unlucky .cell-dir { color: var(--tier-x-text); opacity: 0.85; }
+    .cell-star { display: block; font-family: var(--font-serif); font-size: 15px; font-weight: 700; margin: 2px 0; }
+    .cell-note { display: block; font-size: 10.5px; font-weight: 700; min-height: 1.2em; }
+
+    /* ==========================================================================
+       中核ツール導線カード群
+       ========================================================================== */
+    .group-header {
+      margin-bottom: 12px;
+    }
+    .group-sub {
+      font-size: 12.5px;
+      color: var(--wg-ink-muted);
+      margin-top: 2px;
+    }
+    .launcher-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 14px;
+    }
+    @media (max-width: 900px) { .launcher-grid { grid-template-columns: repeat(2, 1fr); } }
+    @media (max-width: 560px) { .launcher-grid { grid-template-columns: 1fr; } }
+
+    .tool-card {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      background: var(--wg-surface);
+      border: 1px solid var(--theme-border);
+      border-radius: var(--radius-lg);
+      padding: 18px 20px;
+      box-shadow: var(--shadow-sm);
+      transition: border-color 0.16s, box-shadow 0.16s, transform 0.16s;
+    }
+    .tool-card:hover {
+      border-color: var(--wg-accent);
+      box-shadow: var(--shadow-md);
+      transform: translateY(-1px);
+    }
+    .tool-card-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+    }
+    .tool-card-title {
+      font-family: var(--font-serif);
+      font-size: 16px;
+      font-weight: 700;
+      color: var(--wg-ink);
+    }
+    .tool-arrow {
+      color: var(--wg-accent);
+      font-weight: 700;
+      transition: transform 0.15s;
+    }
+    .tool-card:hover .tool-arrow { transform: translateX(3px); }
+    .tool-card-desc {
+      font-size: 13px;
+      color: var(--wg-ink-muted);
+      line-height: 1.6;
+    }
+
+    /* フッター */
+    .site-footer {
+      border-top: 1px solid var(--theme-border);
+      padding-top: 24px;
+      margin-top: 16px;
+      font-size: 12px;
+      color: var(--wg-ink-muted);
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      align-items: center;
+      text-align: center;
+    }
+    .footer-links {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 8px 18px;
+    }
+    .footer-links a:hover { color: var(--wg-accent); text-decoration: underline; }
+
+    /* ==========================================================================
+       常駐案内役「しるべ」（右下・紺×金×生成りの調和デザイン）
+       ========================================================================== */
+    .shirube-dock {
+      position: fixed;
+      right: 16px;
+      bottom: 16px;
+      z-index: 35;
+      display: flex;
+      align-items: flex-end;
+      gap: 10px;
+      pointer-events: none;
+    }
+    .shirube-bubble {
+      pointer-events: auto;
+      width: 224px;
+      background: var(--shirube-bubble-bg);
+      border: 1.5px solid var(--shirube-bubble-bd);
+      border-radius: 14px;
+      padding: 10px 12px;
+      box-shadow: var(--shadow-float);
+      font-size: 12px;
+      line-height: 1.55;
+      color: var(--wg-ink);
+    }
+    .shirube-bubble.hidden { display: none; }
+    .bubble-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 4px;
+    }
+    .bubble-name {
+      font-size: 11px;
+      font-weight: 700;
+      padding: 1px 7px;
+      border-radius: 9999px;
+      background: var(--theme-gold-soft);
+      color: var(--wg-gold);
+      border: 1px solid rgba(201, 165, 74, 0.35);
+    }
+    .bubble-close {
+      width: 24px;
+      height: 24px;
+      border-radius: 9999px;
+      display: grid;
+      place-items: center;
+      color: var(--wg-ink-muted);
+      font-size: 12px;
+    }
+    .bubble-close:hover { background: var(--theme-subtle); }
+    .bubble-cta {
+      display: inline-block;
+      margin-top: 7px;
+      font-size: 11.5px;
+      font-weight: 700;
+      color: var(--wg-accent);
+      background: var(--wg-accent-soft);
+      padding: 4px 10px;
+      border-radius: 9999px;
+    }
+    .shirube-avatar-btn {
+      pointer-events: auto;
+      width: 64px;
+      height: 64px;
+      border-radius: 9999px;
+      background: var(--wg-surface);
+      border: 2px solid var(--wg-gold-decor);
+      box-shadow: var(--shadow-float);
+      overflow: hidden;
+      display: grid;
+      place-items: center;
+      flex-shrink: 0;
+    }
+    .shirube-avatar-btn img {
+      width: 58px;
+      height: 58px;
+      object-fit: contain;
+    }
+  </style>
+</head>
+<body>
+  <!-- モバイル固定ヘッダー -->
+  <header class="mobile-header">
+    <div class="mobile-header-left">
+      <button type="button" class="icon-btn" id="btn-menu-toggle" aria-label="メニューを開く" aria-expanded="false">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+          <line x1="4" y1="7" x2="20" y2="7"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="17" x2="20" y2="17"/>
+        </svg>
+      </button>
+      <div class="brand-mark" style="width:28px;height:28px;border-radius:8px" aria-hidden="true">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1">
+          <circle cx="12" cy="12" r="9"/><polygon points="16 8 14 14 8 16 10 10 16 8" fill="currentColor" fill-opacity="0.22"/>
+        </svg>
+      </div>
+      <span class="brand-name" style="font-size:16px">Cloud Palette</span>
+    </div>
+    <button type="button" class="icon-btn" id="btn-mobile-theme" aria-label="ライト/ダーク切替">
+      <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+        <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+      </svg>
+    </button>
+  </header>
+
+  <div class="drawer-overlay" id="drawer-overlay" aria-hidden="true"></div>
+
+  <div class="app-shell">
+    <!-- 左サイドバー (PC常設 / モバイルドロワー) -->
+    <aside class="sidebar" id="global-sidebar" aria-label="サイトナビゲーション">
+      <div class="sidebar-brand">
+        <div class="brand-mark" aria-hidden="true">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="9"/><polygon points="16 8 14 14 8 16 10 10 16 8" fill="currentColor" fill-opacity="0.25"/>
+          </svg>
+        </div>
+        <span class="brand-name">Cloud Palette</span>
+      </div>
+
+      <nav class="sidebar-nav">
+        <a href="#" class="nav-link active" aria-current="page">ホーム</a>
+        <a href="#" class="nav-link">しるべに案内してもらう</a>
+        <a href="#" class="nav-link">生年月日と場所を登録</a>
+        <a href="#" class="nav-link">使い方ガイド</a>
+        <a href="#" class="nav-link">引越しの読みもの</a>
+        <a href="#" class="nav-link">保存した候補</a>
+
+        <div class="nav-group-label">いつ — 時期を選ぶ</div>
+        <a href="#" class="nav-link">今日の吉方位と時間</a>
+        <a href="#" class="nav-link">引越しの日取りを選ぶ</a>
+        <a href="#" class="nav-link">引越し時期を分析する</a>
+        <a href="#" class="nav-link">天中殺と時期を調べる</a>
+
+        <div class="nav-group-label">どこへ — 方位で選ぶ</div>
+        <a href="map-mockup.html" class="nav-link">方位で街を探す</a>
+        <a href="#" class="nav-link">引越し先を試算する</a>
+        <a href="#" class="nav-link">移住先の地域を比べる</a>
+        <a href="#" class="nav-link">本命星と吉方位を調べる</a>
+
+        <div class="nav-group-label">いくら — 相場を知る</div>
+        <a href="#" class="nav-link">家賃相場を分析する</a>
+        <a href="#" class="nav-link">購入の相場を分析する</a>
+      </nav>
+
+      <div class="sidebar-footer">
+        <div class="theme-seg" role="group" aria-label="配色の切り替え">
+          <button type="button" data-theme-mode="light" class="active">ライト</button>
+          <button type="button" data-theme-mode="dark">ダーク</button>
+          <button type="button" data-theme-mode="auto">自動</button>
+        </div>
+        <a href="#" class="login-link">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+            <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/>
+          </svg>
+          <span>ログイン</span>
+        </a>
+      </div>
+    </aside>
+
+    <div class="sidebar-spacer" aria-hidden="true"></div>
+
+    <!-- メインコンテンツ -->
+    <main class="main-area">
+      <div class="container">
+        <!-- ヒーローセクション -->
+        <section class="card hero-card">
+          <svg class="compass-watermark" viewBox="0 0 120 120" fill="none" stroke="currentColor" aria-hidden="true">
+            <circle cx="60" cy="60" r="54" stroke-width="1"/>
+            <circle cx="60" cy="60" r="42" stroke-width="0.8" stroke-dasharray="3 3"/>
+            <line x1="60" y1="4" x2="60" y2="116" stroke-width="0.9"/>
+            <line x1="4" y1="60" x2="116" y2="60" stroke-width="0.9"/>
+            <line x1="20" y1="20" x2="100" y2="100" stroke-width="0.6"/>
+            <line x1="100" y1="20" x2="20" y2="100" stroke-width="0.6"/>
+          </svg>
+
+          <div>
+            <div class="eyebrow-row">公的統計（e-Stat）× 九星気学の羅盤</div>
+            <h1 class="hero-h1">引越し先を方位と家賃相場で比較して決める</h1>
+            <p class="hero-lead">
+              今住んでいる場所から見た8方位ごとに、市区町村の家賃水準と空き家率（e-Statの公的統計）を一覧で比較できます。九星気学の吉凶は伝統的な参考情報として併記し、費用や立地といった事実と分けて検討できます。
+            </p>
+            <div class="hero-actions">
+              <a href="map-mockup.html" class="btn-primary">
+                <span>方位で街を探す</span>
+                <span aria-hidden="true">→</span>
+              </a>
+              <a href="#" class="text-link">今年の引越しの方位を本命星別に見る</a>
+            </div>
+          </div>
+
+          <div class="shirube-hero-box">
+            <img class="shirube-hero-img" src="data:image/webp;base64,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" alt="案内役しるべ（紺の羽織と金の羅盤を持つ易者）" />
+            <div class="shirube-hero-copy">
+              <span class="shirube-role-tag">案内役 · しるべ</span>
+              <div class="shirube-hero-title">今日の吉方位と時間帯の目安をご案内します</div>
+              <p class="shirube-hero-text">
+                生年月日と出発地を入れると、地図と一覧にあなた向けの目安が重なります。未入力のままでも全国相場は確認できます。
+              </p>
+            </div>
+          </div>
+        </section>
+
+        <!-- 今日の天気と方位カード -->
+        <section class="card" aria-labelledby="sec-today">
+          <div class="section-head">
+            <h2 class="section-h2" id="sec-today">今日の方位と主要エリアの目安</h2>
+            <span class="section-meta tabular">2026-11-22（日本時間）· 起点: <strong id="origin-label">東京</strong></span>
+          </div>
+
+          <nav class="city-pills" aria-label="起点とする都市の切り替え" id="city-pills">
+            <button type="button" class="city-pill" data-city="札幌">札幌</button>
+            <button type="button" class="city-pill" data-city="仙台">仙台</button>
+            <button type="button" class="city-pill" data-city="新潟">新潟</button>
+            <button type="button" class="city-pill active" data-city="東京" aria-current="location">東京</button>
+            <button type="button" class="city-pill" data-city="名古屋">名古屋</button>
+            <button type="button" class="city-pill" data-city="大阪">大阪</button>
+            <button type="button" class="city-pill" data-city="広島">広島</button>
+            <button type="button" class="city-pill" data-city="高知">高知</button>
+            <button type="button" class="city-pill" data-city="福岡">福岡</button>
+            <button type="button" class="city-pill" data-city="那覇">那覇</button>
+          </nav>
+
+          <div class="overview-grid">
+            <div>
+              <div class="dir-cards-grid" id="preview-dirs">
+                <div class="mini-dir-card">
+                  <div class="mini-dir-top">
+                    <span class="mini-dir-title">北東エリア</span>
+                    <span class="tier-badge tier-S"><span class="tier-dot" style="background:var(--tier-s)"></span>S 三盤吉</span>
+                  </div>
+                  <div class="mini-dir-stats tabular">
+                    <span>家賃 <strong>1,694円/㎡</strong></span>
+                    <span>月額目安 <strong>5.6万円</strong></span>
+                    <span>空き家 <strong>11.5%</strong></span>
+                  </div>
+                </div>
+                <div class="mini-dir-card">
+                  <div class="mini-dir-top">
+                    <span class="mini-dir-title">東エリア</span>
+                    <span class="tier-badge tier-A"><span class="tier-dot" style="background:var(--tier-a)"></span>A 吉2盤</span>
+                  </div>
+                  <div class="mini-dir-stats tabular">
+                    <span>家賃 <strong>2,043円/㎡</strong></span>
+                    <span>月額目安 <strong>5.8万円</strong></span>
+                    <span>空き家 <strong>10.4%</strong></span>
+                  </div>
+                </div>
+                <div class="mini-dir-card">
+                  <div class="mini-dir-top">
+                    <span class="mini-dir-title">南西エリア</span>
+                    <span class="tier-badge tier-B"><span class="tier-dot" style="background:var(--tier-b)"></span>B 吉1盤</span>
+                  </div>
+                  <div class="mini-dir-stats tabular">
+                    <span>家賃 <strong>2,259円/㎡</strong></span>
+                    <span>月額目安 <strong>6.2万円</strong></span>
+                    <span>空き家 <strong>9.8%</strong></span>
+                  </div>
+                </div>
+                <div class="mini-dir-card">
+                  <div class="mini-dir-top">
+                    <span class="mini-dir-title">南東エリア</span>
+                    <span class="tier-badge tier-C"><span class="tier-dot" style="background:var(--tier-c)"></span>C 平</span>
+                  </div>
+                  <div class="mini-dir-stats tabular">
+                    <span>家賃 <strong>1,613円/㎡</strong></span>
+                    <span>月額目安 <strong>4.9万円</strong></span>
+                    <span>空き家 <strong>14.4%</strong></span>
+                  </div>
+                </div>
+                <div class="mini-dir-card">
+                  <div class="mini-dir-top">
+                    <span class="mini-dir-title">西エリア</span>
+                    <span class="tier-badge tier-D"><span class="tier-dot" style="background:var(--tier-d)"></span>D 軽い凶</span>
+                  </div>
+                  <div class="mini-dir-stats tabular">
+                    <span>家賃 <strong>2,105円/㎡</strong></span>
+                    <span>月額目安 <strong>5.9万円</strong></span>
+                    <span>空き家 <strong>9.4%</strong></span>
+                  </div>
+                </div>
+                <div class="mini-dir-card">
+                  <div class="mini-dir-top">
+                    <span class="mini-dir-title">南エリア</span>
+                    <span class="tier-badge tier-X"><span class="tier-dot" style="background:var(--tier-x)"></span>X 五大凶殺</span>
+                  </div>
+                  <div class="mini-dir-stats tabular">
+                    <span>家賃 <strong>3,210円/㎡</strong></span>
+                    <span>月額目安 <strong>6.9万円</strong></span>
+                    <span>空き家 <strong>12.1%</strong></span>
+                  </div>
+                </div>
+              </div>
+              <p class="section-meta" style="margin-top:10px">
+                ※ 緑・橙・赤の段階バッジは九星気学の参考判定専用です（見本表示）。家賃・空き家率は公的統計の集計値です。
+              </p>
+            </div>
+
+            <!-- 3x3 今日の日盤 -->
+            <aside class="day-board-wrap" aria-label="今日の日盤（全国共通・北が上）">
+              <div class="day-board-title">
+                <span>今日の日盤（北が上）</span>
+                <span style="font-size:11px;color:var(--wg-gold)">中宮: 一白</span>
+              </div>
+              <div class="day-board">
+                <div class="board-cell unlucky"><span class="cell-dir">北西</span><span class="cell-star">二黒</span><span class="cell-note">暗剣殺</span></div>
+                <div class="board-cell"><span class="cell-dir">北</span><span class="cell-star">六白</span><span class="cell-note"></span></div>
+                <div class="board-cell unlucky"><span class="cell-dir">北東</span><span class="cell-star">四緑</span><span class="cell-note">暗剣殺</span></div>
+                <div class="board-cell"><span class="cell-dir">西</span><span class="cell-star">三碧</span><span class="cell-note"></span></div>
+                <div class="board-cell center"><span class="cell-dir">中宮</span><span class="cell-star">一白</span><span class="cell-note" style="color:var(--wg-gold)">基準星</span></div>
+                <div class="board-cell"><span class="cell-dir">東</span><span class="cell-star">八白</span><span class="cell-note"></span></div>
+                <div class="board-cell unlucky"><span class="cell-dir">南西</span><span class="cell-star">五黄</span><span class="cell-note">五黄殺</span></div>
+                <div class="board-cell unlucky"><span class="cell-dir">南</span><span class="cell-star">九紫</span><span class="cell-note">日破</span></div>
+                <div class="board-cell"><span class="cell-dir">南東</span><span class="cell-star">七赤</span><span class="cell-note"></span></div>
+              </div>
+              <p class="section-meta" style="margin-top:10px;line-height:1.5">
+                共通で注意とされる方位は赤枠で表示しています。個人の吉方位は本命星によって異なります（参考情報）。
+              </p>
+            </aside>
+          </div>
+        </section>
+
+        <!-- 中核ツール導線 -->
+        <section aria-labelledby="sec-where">
+          <div class="group-header">
+            <h2 class="section-h2" id="sec-where">どこへ — 方位と相場で選ぶ</h2>
+            <p class="group-sub">出発地から見た8方位の地図・家賃水準・候補エリアを比較できます</p>
+          </div>
+          <div class="launcher-grid">
+            <a href="map-mockup.html" class="tool-card">
+              <div class="tool-card-head">
+                <h3 class="tool-card-title">方位で街を探す</h3>
+                <span class="tool-arrow" aria-hidden="true">→</span>
+              </div>
+              <p class="tool-card-desc">淡色地図と羅盤の8方位を重ね、市区町村ごとの家賃相場・空き家率・ハザード参考層をまとめて確認します。</p>
+            </a>
+            <a href="#" class="tool-card">
+              <div class="tool-card-head">
+                <h3 class="tool-card-title">引越し先を試算する</h3>
+                <span class="tool-arrow" aria-hidden="true">→</span>
+              </div>
+              <p class="tool-card-desc">出発地・候補地・移動予定日の3点から、方位の角度と三盤の参考判定・周辺相場を試算します。</p>
+            </a>
+            <a href="#" class="tool-card">
+              <div class="tool-card-head">
+                <h3 class="tool-card-title">本命星と吉方位を調べる</h3>
+                <span class="tool-arrow" aria-hidden="true">→</span>
+              </div>
+              <p class="tool-card-desc">生まれ年から本命星を確認し、年盤・月盤ごとの方位の目安を早見表で見比べられます。</p>
+            </a>
+          </div>
+        </section>
+
+        <section aria-labelledby="sec-when">
+          <div class="group-header">
+            <h2 class="section-h2" id="sec-when">いつ・いくら — 時期と予算を整理する</h2>
+            <p class="group-sub">引越しの日取り候補と公的統計ベースの賃料・売買相場を確認できます</p>
+          </div>
+          <div class="launcher-grid">
+            <a href="#" class="tool-card">
+              <div class="tool-card-head">
+                <h3 class="tool-card-title">引越しの日取りを選ぶ</h3>
+                <span class="tool-arrow" aria-hidden="true">→</span>
+              </div>
+              <p class="tool-card-desc">六曜・土用・節入りと三盤の重なりをカレンダーで一覧し、候補日を整理します。</p>
+            </a>
+            <a href="#" class="tool-card">
+              <div class="tool-card-head">
+                <h3 class="tool-card-title">家賃相場を分析する</h3>
+                <span class="tool-arrow" aria-hidden="true">→</span>
+              </div>
+              <p class="tool-card-desc">e-Stat の住宅・土地統計調査をもとに、エリア別の平米単価と空き家率の傾向を比較します。</p>
+            </a>
+            <a href="#" class="tool-card">
+              <div class="tool-card-head">
+                <h3 class="tool-card-title">購入の相場を分析する</h3>
+                <span class="tool-arrow" aria-hidden="true">→</span>
+              </div>
+              <p class="tool-card-desc">国土交通省の公開データをもとに、成約価格帯と地域差を客観的に把握できます。</p>
+            </a>
+          </div>
+        </section>
+
+        <footer class="site-footer">
+          <p>© 2026 Cloud Palette. 引越し先を方位と家賃相場で比較して決めるための参考ツール集です。</p>
+          <div class="footer-links">
+            <a href="#">使い方ガイド</a>
+            <a href="#">このサイトについて</a>
+            <a href="#">編集方針</a>
+            <a href="#">プライバシーポリシー</a>
+            <a href="#">利用規約</a>
+          </div>
+        </footer>
+      </div>
+    </main>
+  </div>
+
+  <!-- 右下常駐しるべ（紺×金×生成り） -->
+  <div class="shirube-dock">
+    <div class="shirube-bubble" id="shirube-bubble" role="status" aria-live="polite">
+      <div class="bubble-head">
+        <span class="bubble-name">しるべ</span>
+        <button type="button" class="bubble-close" id="btn-close-bubble" aria-label="吹き出しを閉じる">✕</button>
+      </div>
+      <p>迷ったら『方位で街を探す』から、今お住まいの地域を起点にして見比べてみてください。</p>
+      <a href="map-mockup.html" class="bubble-cta">方位地図を開く →</a>
+    </div>
+    <button type="button" class="shirube-avatar-btn" id="btn-shirube-toggle" aria-label="しるべの案内を表示">
+      <img src="data:image/webp;base64,UklGRvAJAABXRUJQVlA4IOQJAACQJwCdASpgAGAAPmEmj0UkIiEVzY8gQAYEsYBihlfNdgm+h25nmA83L0f/4nfat5n/1Nq48B/u/hL42/QvtTyU4kfy37kfqv7fxw8AL15/kd/fAF+Vf2j/b8bf2N9gD+Wf1X/Qcej9w/4XsAfmz/ifdH8hn/L/p/Pj9Lf97/I/AR/Mf69/zOxF6Pv7ROnD04RlQ5bw+cvMqBMdze7bVHq9LXQf5/yBQgQK3/czZqwQSfjuBk29hZW5+mZ1qKnyPFIHuo5QCRH+WkG8off7pkm7XN9JmNnxOYqPGN7Y30i0iis1JJxGsBBYv7gO9Yrw20bYoDLJVc1J9lsxutjEnn2Y0Coaf1FFyf92QN88kQgJi5NiQrxFD2Da+n0xAf/GDzhP3whpE34W40LLlag9QU1+1Vkmncxnd1RBTjSbIOE/x9GtaylAAP7+nNl/OulzDwn/+J2tef5/2/6r8TuEyfm28l5YdbBxTN0a7awe2xi45gFslMZXXTJ+Wr4dlfpFJciUpxKQCr5GNvvQrxPe7w0X/+N950dQ38XzpSjM41BJonPgd8aumcGfhLtmgvYFBTFXXkn3EHJf4yh5lGDAxqXBxDqySX37GBKf4qFMbP+thx4WdL5dIO9E+u0Hn9zLV6wAURPMcQJ7LjnsSbJGg2vqfi+w46e+tqRKTEVR2rI8p6IGtkoSlojm673lmKQa8IjBuMFSZb5wJtVyZcxnkQsejo3GlK3sy6akr2izh0SJF8kLX28BzTs2w+hdvZ/N/zqo+dBoUuJoJcH4rKlt+mOM6gDpNG8G4mrjMQylW4OBr63H/x7W3t+zCfhcgdf+yGKCiMM9a62B9PIRdf3+C+DRMmLM8A9vWLG/xQLFEWLm8oLxmZ0T1TAbZvaiL8Yhwg79xi+R1AvpFC8ta/QimlcZVajImKKtAoNYCoLlppOsjdFw8zlynBx+9DqLzpIG0TvcVRJTan/vmP2hUx5CZZxV7yyZcOkNiTmMeLX8v5Rcj9yDdhTmj/SmF8/kgHqEzuZCFG93HSjk852Bqq8s3uAHGuFzZmPEHK41PpNFO/JnHOfRJBvMXnCFV1od+L/SOLXlu3woZPjop9fqrHiQ7wQy6oEz3UbEixzeCRq4JJ+d8KbcvIOGKehEtRZ8bRWwihcnVejtWqhcFec8tIdrlkgH/3r4s5DZR8Uh/aS2dryzdtMNd1RAqirRCBvpcV6rgFrF7TdVMoku+qbzPx0oz+Wd4PTWe/8R2oIpXiQfZ0orCwE9v3I6bLRQeflHXbxZuGTvmNc+TEzN9F6N1kwHY07ggSC8WR5+hfrRRmJa9l5ZzxpVAiH80TU8NGG0w2LeV+6v9qO5uCDjf4MSy92ZKqmuHWQn1h6/tGv9OMX3MLaQc906vv2lMZeTM3+UrJ1nF98k2hsYSRrL5/t37ypCzfsVGCr77X0bWn/wbY7ADu8xDp5ZZZTZi5BN+wHTkm7Hu2zUMGQRO3lPRF90szxf0Y0UneEFe3/oCnyujhe41EXy92oKFayFX38McdHnXyf8hp8Y5pSABjY5pd366DjP9pdi+qfLa90P23Y2NmPtfOYXuuNuIbm3Nbp8pnQYMSb2S5bFOemFF7lkozK9aO34sutiyAcpBkXO+v5P15vFgy3gWmxXdmI9x2j3LGMM6UGab++V1vO2XWPb7aiJAZB55bhzb3aBQoX4HKhmOgojaiwKy2XUb4FGcQFqZhvR9bnwV1R62HagY9K1ew3dKd+bgmafqFfJned46az/gP4sq7AxOF8nFpTfykApEGwP8f7Nqj08mkFbe200fs3eBF+7/9D2QyITy9JrsttUjXz9+WRTDP33Dcb2j/2Pirl8EiHbh8gCESwR8xf8nedl16jS6/wfkiNKcqptO/LKfnOxBiFSjdK+m9R4fiROlRif+dD9cdwAsH0/v0FZMCluEDpVjGcP0+XpgVvvWktIzozEWNnvlb+2rPNPVcmmLn5B0dihYfzf7e+KZuilduwyY+Ivh+50EiJrlBDApzJbAtTRV4QVEZ4fVlLg/jh2+5xkb+Go8ZTefZtxYvJsolQNOi+91zsMe3BlpfCaI/39j4DNz9ibFW6nJMu5Qcdx/eQF2Itr9mIR/ByaMvLswLR9oTzKXLtKDV25dupC7V8oZ34FIoZwb93Ci5IXgHHReg3hydAEJwz2CnAJzYw10V83NJ7TloC4dUb22NQVT2/KE6Xq2ARgMftJOaIU6zxu7lX3tOZ7OhMncMhiQmTHiay9XS6WM3DMDjan/te5CAw37wKLNZ35v1g+Rm+8CyOuQxKSYHI1Erip5tsskdicpo0u/uht1yPC3d5udpkWJNSvcUEYXhQmf/pfqlSfpcFDhIu4hPnnLM93sVvh8//Ca3rqjpsASskCI0R0CUhW8oH5vObOLQFvBFRGtCQpWL5ZtyYJtZ/zBGLO1DGfL2XxexieBur1UAIG/bAAhOjJT9RCAB1ak/p6I3b2fvBq9IkjgjKOxc4hQLF1o5fbq96vD0/roBjg1zPYqNsXRKxF2NMx/F2EdJqQol6hc0ooE1WNceyGVZ3U0KQD/5LQTyNARIfLfzg33Zkp2N92CW9wE+dc/fvPNZ57T2znaXj+fS6a74w8uZ1Hpk9cmVpu/pT5Pjy38K1dfbVphWxXZBU8bDwSQz7xoCtelu72aj8PHKs23lHoYkVTP8vHPmCjakD+385rQOQOs8muAaFXZPVdo22+Q66/scImbT7wSgd/h3f+aNofIP6WkLSmuUuKLCTf9RC9LFtFHz9nUbpbF3pHjNjnU+qPktur/EqDhT9DKL0s+p5cNDlgHbD/YfQ5hvTFgYVtdzRjh8X6EtJumqRX+HgLlSgKfCNp5xaV7nbhOkdCgwUpP8uWFdCqo/gnpMbuayNnKozymr8jrtNuJ+7BFhRMhco6Uk58NKLj/SPTREndwaX0L7TblKbwV94LXgC7xHpqh1wD0fkoe/stgFbej9H8VAr+uFP+jqGbsC0FvqAWA2oVWhMFZClWqhUfLZB9z42RL8VP0iZJd9H0njeYXF3FmYQ0TqoBj/gHZc7PBDdHgXK6i8qAAuoy9ACgHsZDlV3Ujg0CW+u7WukhZCWKiCHK5NNyrnwK2O2b0fQq/kHAdHCX+x+REmtN9t5qjRztiR9uOa5fgw44YgHCg1UVjzancUaeh86UcMgdw4ScMKGrIrGibcYUncrQIr/6rk0zzb8+fLhDcrWGjo7Ng4H0TE45kyZNF68qvyGvTzKW0TO7bPNrDjacxAk7gbEMbVDKXER3dNcHRJNbdVGep31TG3JOV6AvoeD/2Z9vmmHPv2kr+VgB2HA38hEx6tF5wr2X2hFG5m2bYoxz+UTesZDZX352bUa7d2OjF2gAAAA=" alt="案内役しるべ" />
+    </button>
+  </div>
+
+  <script>
+    // 1. ライト / ダーク / 自動 3値テーマ切替 (:root.dark — feat/dark-mode 互換)
+    let themeMode = "light";
+    const mql = window.matchMedia("(prefers-color-scheme: dark)");
+
+    function applyTheme(mode) {
+      themeMode = mode;
+      const isDark = mode === "dark" || (mode === "auto" && mql.matches);
+      document.documentElement.classList.toggle("dark", isDark);
+      document.querySelectorAll("[data-theme-mode]").forEach((btn) => {
+        btn.classList.toggle("active", btn.dataset.themeMode === mode);
+      });
+    }
+
+    document.querySelectorAll("[data-theme-mode]").forEach((btn) => {
+      btn.addEventListener("click", () => applyTheme(btn.dataset.themeMode));
+    });
+    document.getElementById("btn-mobile-theme").addEventListener("click", () => {
+      applyTheme(document.documentElement.classList.contains("dark") ? "light" : "dark");
+    });
+    mql.addEventListener("change", () => { if (themeMode === "auto") applyTheme("auto"); });
+
+    // 2. モバイルドロワー開閉 (<html data-menu="open"> 方式)
+    const menuBtn = document.getElementById("btn-menu-toggle");
+    function setMenu(open) {
+      document.documentElement.setAttribute("data-menu", open ? "open" : "closed");
+      menuBtn.setAttribute("aria-expanded", String(open));
+    }
+    menuBtn.addEventListener("click", () => {
+      const isOpen = document.documentElement.getAttribute("data-menu") === "open";
+      setMenu(!isOpen);
+    });
+    document.getElementById("drawer-overlay").addEventListener("click", () => setMenu(false));
+
+    // 3. 都市切替ピル (インタラクティブデモ)
+    document.getElementById("city-pills").addEventListener("click", (e) => {
+      const pill = e.target.closest(".city-pill");
+      if (!pill) return;
+      document.querySelectorAll(".city-pill").forEach((p) => {
+        p.classList.remove("active");
+        p.removeAttribute("aria-current");
+      });
+      pill.classList.add("active");
+      pill.setAttribute("aria-current", "location");
+      document.getElementById("origin-label").textContent = pill.dataset.city;
+    });
+
+    // 4. しるべ吹き出し開閉（モバイルは初期で畳み、タップで展開して本文を遮らない）
+    const bubble = document.getElementById("shirube-bubble");
+    if (window.innerWidth <= 640) bubble.classList.add("hidden");
+    document.getElementById("btn-close-bubble").addEventListener("click", () => bubble.classList.add("hidden"));
+    document.getElementById("btn-shirube-toggle").addEventListener("click", () => bubble.classList.toggle("hidden"));
+  </script>
+</body>
+</html>
