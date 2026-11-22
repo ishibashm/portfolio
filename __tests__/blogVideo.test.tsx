@@ -1,5 +1,6 @@
-import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { cleanup, render } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { renderToStaticMarkup } from "react-dom/server";
 import fs from "node:fs";
 import { isValidYouTubeId, normalizeVideoUploadDate } from "@/lib/blogVideo";
 import { YouTubeFacade } from "@/components/blog/YouTubeFacade";
@@ -53,27 +54,15 @@ describe("blog YouTube video", () => {
     expect(isValidYouTubeId("_-012345678")).toBe(true);
   });
 
-  it("loads only the local poster until clicked and keeps the 16:9 box", () => {
-    const { container } = render(<YouTubeFacade {...video} />);
-    expect(container.querySelector("iframe")).toBeNull();
-    const img = container.querySelector("img")!;
-    expect(img).toHaveAttribute("src", video.cover);
-    expect(img).toHaveAttribute("width", "1800");
-    expect(img).toHaveAttribute("height", "945");
-    // picture の外なので、lazy が無いと React 19 が PNG を先読みする。
-    expect(img).toHaveAttribute("loading", "lazy");
-    expect(img).not.toHaveAttribute("fetchpriority");
-    const button = screen.getByRole("button", {
-      name: `動画を再生: ${video.title}`,
-    });
-    const box = button.parentElement!;
-    expect(box.style.aspectRatio).toBe("16 / 9");
-    fireEvent.click(button);
+  it("最初の HTML に遅延読み込みの iframe を出し、16:9 の枠を保つ", () => {
+    const container = document.createElement("div");
+    container.innerHTML = renderToStaticMarkup(<BlogVideo {...video} />);
     const frame = container.querySelector("iframe")!;
-    expect(frame.parentElement).toBe(box);
+    expect(frame.parentElement?.style.aspectRatio).toBe("16 / 9");
+    expect(frame).toHaveAttribute("loading", "lazy");
     expect(frame).toHaveAttribute(
       "src",
-      `https://www.youtube-nocookie.com/embed/${video.youtubeId}?autoplay=1&rel=0`,
+      `https://www.youtube-nocookie.com/embed/${video.youtubeId}?rel=0`,
     );
     expect(frame).toHaveAttribute("title", video.title);
     expect(frame).toHaveAttribute(
@@ -85,9 +74,9 @@ describe("blog YouTube video", () => {
       "referrerpolicy",
       "strict-origin-when-cross-origin",
     );
-    expect(
-      screen.getByText("ナレーション：VOICEVOX:玄野武宏"),
-    ).toBeInTheDocument();
+    expect(container.querySelector("figcaption")).toHaveTextContent(
+      "ナレーション：VOICEVOX:玄野武宏",
+    );
   });
 
   it("emits complete safely escaped VideoObject", () => {

@@ -121,7 +121,6 @@ describe("YouTube の導線", () => {
       createElement(YouTubeFacade, {
         youtubeId: "Abc_123-xyz",
         title: "題",
-        cover: "/blog/x.png",
       }),
     );
     expect(html).toContain("方位と住まいの手帖で他の動画を見る");

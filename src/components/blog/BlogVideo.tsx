@@ -15,7 +15,7 @@ export function BlogVideo(props: BlogVideoProps) {
   if (!isValidYouTubeId(props.youtubeId)) return null;
   return (
     <>
-      <YouTubeFacade {...props} />
+      <YouTubeFacade youtubeId={props.youtubeId} title={props.title} />
       <VideoJsonLd {...props} />
     </>
   );
