@@ -181,7 +181,9 @@
   transform-origin: 79.81% 39.66%;
 }
 
-/* 正面を向いている間（greeting / sitting）と静止時は正面の絵を見せる */
+/* 立ち止まっている間と案内のポーズでは正面の絵を見せる */
+.shirube-wander-stage[data-state="idle"] .shirube-rig-front,
+.shirube-wander-stage[data-state="paused"] .shirube-rig-front,
 .shirube-wander-stage[data-state="greeting"] .shirube-rig-front,
 .shirube-wander-stage[data-state="sitting"] .shirube-rig-front,
 .shirube-wander-stage[data-state="pointing"] .shirube-rig-front,
@@ -189,6 +191,8 @@
   opacity: 1;
 }
 
+.shirube-wander-stage[data-state="idle"] .shirube-rig-side,
+.shirube-wander-stage[data-state="paused"] .shirube-rig-side,
 .shirube-wander-stage[data-state="greeting"] .shirube-rig-side,
 .shirube-wander-stage[data-state="sitting"] .shirube-rig-side,
 .shirube-wander-stage[data-state="pointing"] .shirube-rig-side,
@@ -274,6 +278,10 @@
 
 .shirube-wander-stage[data-dragging="true"] .shirube-wander-hit {
   cursor: grabbing;
+}
+
+.shirube-wander-hit[aria-expanded="true"] {
+  pointer-events: none;
 }
 
 .shirube-menu {

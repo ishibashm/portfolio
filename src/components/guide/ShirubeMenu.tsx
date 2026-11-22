@@ -35,6 +35,7 @@ export function ShirubeMenu({
   onReturnHome,
 }: ShirubeMenuProps) {
   const ref = useRef<HTMLDivElement>(null);
+  const linkCloseTimer = useRef<number | undefined>(undefined);
 
   useLayoutEffect(() => {
     const menu = ref.current;
@@ -83,6 +84,7 @@ export function ShirubeMenu({
     document.addEventListener("keydown", escape, true);
     window.addEventListener("resize", place);
     return () => {
+      window.clearTimeout(linkCloseTimer.current);
       document.removeEventListener("click", outside, true);
       document.removeEventListener("keydown", escape, true);
       window.removeEventListener("resize", place);
@@ -134,7 +136,16 @@ export function ShirubeMenu({
       onKeyDown={onKeyDown}
     >
       {MENU_LINKS.map(({ href, label }) => (
-        <Link key={href} href={href} role="menuitem" onClick={onClose}>
+        <Link
+          key={href}
+          href={href}
+          role="menuitem"
+          onClick={() => {
+            // 同じ URL でも閉じる。遷移処理が済むまでフォーカスを戻さない。
+            window.clearTimeout(linkCloseTimer.current);
+            linkCloseTimer.current = window.setTimeout(onClose, 0);
+          }}
+        >
           {label}
         </Link>
       ))}
