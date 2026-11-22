@@ -101,7 +101,7 @@ const components: Components = {
   // 表のためだけに読み幅を広げると、本文の行長がその表に引きずられる。
   table: ({ children, ...props }) => (
     <div
-      className={`mt-6 ${MEASURE} overflow-x-auto rounded-2xl border border-slate-300 bg-white/90`}
+      className={`mt-6 ${MEASURE} max-w-full overflow-x-auto overscroll-x-contain rounded-2xl border border-slate-300 bg-white/90 [-webkit-overflow-scrolling:touch] [overflow-wrap:normal]`}
     >
       <table className="min-w-full border-collapse text-sm" {...props}>
         {children}
@@ -131,6 +131,8 @@ const components: Components = {
       {children}
     </td>
   ),
+  // 長いファイル名や英数字の続く `code` は、本文の中では折り返す（折り返さないと
+  // スマホでページ全体が横に広がり、画面ごと縮んで見える）。
   code: ({ children, ...props }) => (
     <code
       className="rounded bg-stone-200/70 px-1.5 py-0.5 font-mono text-[0.9em] text-slate-800"
@@ -138,6 +140,15 @@ const components: Components = {
     >
       {children}
     </code>
+  ),
+  // コードの塊は折り返さず、塊の中だけで横スクロールさせる。
+  pre: ({ children, ...props }) => (
+    <pre
+      className={`mt-6 ${MEASURE} max-w-full overflow-x-auto rounded-2xl border border-slate-300 bg-stone-100 p-4 text-[13px] leading-6 text-slate-800 [-webkit-overflow-scrolling:touch] [overflow-wrap:normal] [&_code]:bg-transparent [&_code]:p-0`}
+      {...props}
+    >
+      {children}
+    </pre>
   ),
   hr: ({ ...props }) => (
     <hr className={`my-10 ${MEASURE} border-slate-300`} {...props} />
@@ -156,7 +167,12 @@ const components: Components = {
     void node;
     return (
       // eslint-disable-next-line @next/next/no-img-element
-      <img {...props} alt={alt ?? ""} loading="lazy" />
+      <img
+        {...props}
+        alt={alt ?? ""}
+        loading="lazy"
+        className="h-auto max-w-full"
+      />
     );
   },
 };
@@ -212,8 +228,14 @@ export function BlogArticleBody({
       );
     },
   };
+  /*
+    本文の器。スマホで本文がはみ出してページ全体が横に広がらないよう、
+    - min-w-0: 親が flex / grid でも、長い語に引っ張られて列が広がらない
+    - overflow-wrap:anywhere: 長い URL・英数字・`code` は、入りきらないときだけ途中で折り返す
+      （表とコードの塊は、それぞれの器の中で横スクロールさせるので normal に戻す）
+  */
   return (
-    <div>
+    <div className="min-w-0 max-w-full [overflow-wrap:anywhere]">
       <ReactMarkdown
         remarkPlugins={[remarkGfm]}
         skipHtml
