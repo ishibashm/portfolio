@@ -179,34 +179,34 @@ export function QuickProfileBar() {
   const needsBirthDate = !birthDate;
 
   return (
-    <section className="w-full max-w-[1700px] bg-white/95 backdrop-blur-xl border border-slate-300 rounded-3xl shadow-lg shadow-slate-200/50 p-6 md:p-8">
+    <section className="w-full max-w-[1700px] bg-white/95 dark:bg-theme-surface backdrop-blur-xl border border-slate-300 dark:border-theme-border rounded-3xl shadow-lg shadow-slate-200/50 dark:shadow-black/20 p-6 md:p-8">
       <div className="flex items-baseline justify-between gap-3 mb-1">
-        <h2 className="text-lg font-bold text-slate-900 font-serif">
+        <h2 className="text-lg font-bold text-slate-900 dark:text-ink font-serif">
           まずここを入れる
         </h2>
         {saved !== "none" && (
-          <span className="text-[11px] text-emerald-700 shrink-0">
+          <span className="text-[11px] text-theme-link shrink-0">
             {saved === "cloud"
               ? "保存しました（他の端末でも使えます）"
               : "この端末に保存しました"}
           </span>
         )}
       </div>
-      <p className="text-sm text-slate-600 mb-6 leading-relaxed max-w-[70ch]">
+      <p className="text-sm text-slate-600 dark:text-ink-muted mb-6 leading-relaxed max-w-[70ch]">
         方位も日取りも、この 3
         つから決まります。入れておくと、下のダッシュボードと街探し・地図・カレンダーが同じ設定で動きます。
         {/* 落ち着いて入れたい人の行き先。/profile は同じ値を書くので、
             どちらから入れても結果は同じ（利用者の依頼、2026-09-04） */}
         <Link
           href="/profile"
-          className="ml-1 font-semibold text-indigo-600 underline"
+          className="ml-1 font-semibold text-accent underline"
         >
           引越し先の候補も含めてまとめて登録する
         </Link>
       </p>
 
       {needsBirthDate && (
-        <p className="text-xs text-rose-700 bg-rose-50 border border-rose-200 rounded-xl px-4 py-3 mb-6 leading-relaxed">
+        <p className="text-xs text-accent bg-theme-accent-soft border border-theme-border rounded-xl px-4 py-3 mb-6 leading-relaxed">
           {
             "生年月日がまだ入っていません。入れるまで、下に出ている吉凶は仮の値（2000-01-01・東京）で計算した結果です。"
           }
@@ -216,7 +216,7 @@ export function QuickProfileBar() {
       {/* 使用中のプロフィールの切り替え。作る・直す・消すは /profile と
           /account（利用者の指摘、2026-09-12。独自の保存 UI をやめた） */}
       <ProfilePicker
-        className="mb-6 pb-5 border-b border-slate-200"
+        className="mb-6 pb-5 border-b border-slate-200 dark:border-theme-border"
         onApplied={(p) => {
           setBirthDate(p.birthDate);
           setBaseLat(p.baseLat);
@@ -235,7 +235,7 @@ export function QuickProfileBar() {
         <div className="flex min-w-0 flex-col gap-2">
           <label
             htmlFor="quick-birth-date"
-            className="text-sm font-bold text-slate-800"
+            className="text-sm font-bold text-slate-800 dark:text-ink"
           >
             {PROFILE_FIELDS.birthDate.label}
           </label>
@@ -260,9 +260,9 @@ export function QuickProfileBar() {
               touched.current = true;
               setBirthDate(e.target.value);
             }}
-            className="w-full bg-white border border-slate-300 rounded-xl px-3 py-2.5 text-sm text-slate-900 outline-none focus:border-rose-400 transition-colors"
+            className="w-full bg-white dark:bg-theme-surface border border-slate-300 dark:border-theme-border rounded-xl px-3 py-2.5 text-sm text-slate-900 dark:text-ink outline-none focus:border-accent transition-colors"
           />
-          <p className="text-xs text-slate-500 leading-relaxed">
+          <p className="text-xs text-ink-muted leading-relaxed">
             {PROFILE_FIELDS.birthDate.help}
           </p>
         </div>
@@ -312,8 +312,8 @@ export function QuickProfileBar() {
         />
       </div>
 
-      <div className="flex flex-wrap items-center justify-end gap-4 mt-6 pt-5 border-t border-slate-200">
-        <span className="text-xs text-slate-500">
+      <div className="flex flex-wrap items-center justify-end gap-4 mt-6 pt-5 border-t border-slate-200 dark:border-theme-border">
+        <span className="text-xs text-ink-muted">
           {
             "出生地が未入力のあいだは、天体ライン（太陽・金星・木星）の加点を付けずに判定します"
           }
@@ -322,7 +322,7 @@ export function QuickProfileBar() {
           type="button"
           onClick={handleSave}
           disabled={isSaving}
-          className="px-6 py-3 rounded-full bg-slate-900 hover:bg-slate-800 disabled:bg-slate-300 text-white font-bold text-sm transition-all shadow-md active:scale-95"
+          className="px-6 py-3 rounded-full bg-accent text-on-accent hover:brightness-110 disabled:opacity-40 font-bold text-sm transition-all shadow-md active:scale-95"
         >
           {isSaving ? "保存中..." : "この設定で見る"}
         </button>

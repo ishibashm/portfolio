@@ -60,7 +60,7 @@ export function AgentEntry() {
   */
   const questionHref = available ? "/ask" : "/annai";
   return (
-    <section className="w-full max-w-[1700px] rounded-3xl border border-rose-200 bg-white p-6">
+    <section className="w-full max-w-[1700px] rounded-3xl border border-theme-border bg-white dark:bg-theme-surface p-6">
       {/* 2026-11-15: 有料AIを止めているので「エージェント」をやめ、案内役の名前にする。
           しるべの指さしは常に出す（JSなしの初回描画でも出る）。 */}
       <h2 className="text-xl font-serif font-bold">しるべに案内してもらう</h2>
@@ -72,12 +72,15 @@ export function AgentEntry() {
         className="mt-4 max-w-2xl"
       >
         引越しの予定はありますか？気になることを選んでください。
-        <span className="mt-1 block text-xs text-slate-500">
+        <span className="mt-1 block text-xs text-slate-500 dark:text-ink-muted">
           サイトの計算と公開記事にもとづく参考情報です。
         </span>
       </GuideCharacter>
       {paidApisPaused && (
-        <p role="status" className="mt-4 rounded-xl bg-amber-50 p-3 text-sm">
+        <p
+          role="status"
+          className="mt-4 rounded-xl bg-amber-50 dark:bg-theme-gold-soft p-3 text-sm"
+        >
           {PAID_APIS_PAUSED_TEXT}
         </p>
       )}
@@ -87,13 +90,15 @@ export function AgentEntry() {
             key={item.id}
             href={available ? `/ask?start=${item.id}` : item.calculationHref}
             prefetch={false}
-            className="rounded-xl border border-rose-200 px-4 py-3 text-sm hover:bg-rose-50"
+            className="rounded-xl border border-theme-border px-4 py-3 text-sm hover:bg-theme-accent-soft"
           >
             {item.id === "towns" && baseLabel
               ? `${baseLabel}から方位ごとの街を探す`
               : item.label}
             {!available && (
-              <span className="ml-1 text-xs text-slate-500">（計算のみ）</span>
+              <span className="ml-1 text-xs text-slate-500 dark:text-ink-muted">
+                （計算のみ）
+              </span>
             )}
           </Link>
         ))}
@@ -114,7 +119,7 @@ export function AgentEntry() {
         </Link>
       </div>
       {faq && (
-        <div className="mt-4 rounded-xl bg-stone-50 p-4 text-sm">
+        <div className="mt-4 rounded-xl bg-stone-50 dark:bg-theme-subtle p-4 text-sm">
           <p className="font-bold">AIを使わずに調べられますか？</p>
           <p className="mt-2">
             はい。本命星の早見表や、日付・方位の計算ページはAIを使わずに確認できます。
@@ -134,12 +139,12 @@ export function AgentEntry() {
       >
         {available ? "自由に質問する" : "案内役に聞く"}
       </Link>
-      <p className="mt-3 text-sm text-slate-600">
+      <p className="mt-3 text-sm text-slate-600 dark:text-ink-muted">
         結果は、ご自分のAIに渡して続きを相談できます。
         <Link
           href="/mcp"
           prefetch={false}
-          className="ml-1 font-semibold text-rose-700 underline"
+          className="ml-1 font-semibold text-accent underline"
         >
           自分のAIからつなぐ
         </Link>

@@ -21,8 +21,7 @@ export const metadata = {
   robots: { index: false, follow: false },
 };
 
-const SHELL =
-  "min-h-screen bg-gradient-to-br from-rose-50/80 via-stone-50 to-amber-50/50";
+const SHELL = "min-h-screen wg-page";
 const MAIN =
   "mx-auto max-w-[1700px] space-y-5 px-4 pb-16 pt-20 md:px-8 lg:pt-10";
 
@@ -32,22 +31,22 @@ export default async function CandidatesPage() {
     return (
       <div className={SHELL}>
         <main className={MAIN}>
-          <header className="rounded-3xl border border-stone-200 bg-white/90 p-6 shadow-sm">
-            <h1 className="text-2xl font-bold text-stone-800">保存した候補</h1>
-            <p className="mt-2 text-sm text-stone-600">
+          <header className="rounded-3xl border border-theme-border bg-theme-surface p-6 shadow-sm">
+            <h1 className="text-2xl font-bold text-ink">保存した候補</h1>
+            <p className="mt-2 text-sm text-ink-muted">
               物件URL・住所・メール本文から、ログインもメール接続もせずに候補を調べられます。候補をアカウントに保存したり、保存済みの候補を見るときにログインが必要です。
             </p>
             <Link
               href="/relocation/arbitrage#candidate-import"
               prefetch={false}
-              className="mt-4 inline-flex rounded-xl bg-rose-600 px-4 py-2 text-sm font-bold text-white hover:bg-rose-700"
+              className="mt-4 inline-flex rounded-xl bg-accent px-4 py-2 text-sm font-bold text-on-accent hover:brightness-110"
             >
               URL・住所・メール本文から候補を調べる（ログイン不要）
             </Link>
             <Link
               href="/login?next=%2Frelocation%2Fcandidates"
               prefetch={false}
-              className="mt-4 ml-3 inline-flex rounded-xl border border-stone-300 px-4 py-2 text-sm font-bold text-stone-700 hover:bg-stone-50"
+              className="mt-4 ml-3 inline-flex rounded-xl border border-theme-border px-4 py-2 text-sm font-bold text-ink hover:bg-theme-subtle"
             >
               ログインして保存した候補を見る
             </Link>
@@ -59,28 +58,28 @@ export default async function CandidatesPage() {
   return (
     <div className={SHELL}>
       <main className={MAIN}>
-        <header className="relative overflow-hidden rounded-3xl border border-stone-200 bg-white/90 p-6 shadow-sm md:p-8">
+        <header className="relative overflow-hidden rounded-3xl border border-theme-border bg-theme-surface p-6 shadow-sm md:p-8">
           <div
-            className="absolute -right-16 -top-16 h-48 w-48 rounded-full bg-rose-100/60 blur-2xl"
+            className="absolute -right-16 -top-16 h-48 w-48 rounded-full bg-theme-accent-soft blur-2xl"
             aria-hidden
           />
           <div className="relative flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
             <div className="max-w-[70ch]">
-              <p className="flex items-center gap-1.5 text-xs font-bold tracking-wider text-rose-600">
+              <p className="flex items-center gap-1.5 text-xs font-bold tracking-wider text-accent">
                 <Bookmark className="h-3.5 w-3.5" aria-hidden />
                 引越し先の候補
               </p>
-              <h1 className="mt-2 text-2xl font-bold text-stone-800 md:text-3xl">
+              <h1 className="mt-2 text-2xl font-bold text-ink md:text-3xl">
                 保存した候補
               </h1>
-              <p className="mt-2 text-sm leading-relaxed text-stone-600">
+              <p className="mt-2 text-sm leading-relaxed text-ink-muted">
                 物件や地点を「候補に保存」すると、ここに並びます。保存したときの方位の段階（S〜X）・方位・距離を残すので、候補どうしを見比べられます。出発地や日付を変えたときは、札の「現在の条件で再判定」で今の条件に当て直してください。
               </p>
             </div>
             <Link
               href="/relocation/arbitrage#candidate-import"
               prefetch={false}
-              className="inline-flex shrink-0 items-center gap-1.5 self-start rounded-xl bg-rose-600 px-4 py-2.5 text-sm font-bold text-white shadow-sm hover:bg-rose-700 lg:self-auto"
+              className="inline-flex shrink-0 items-center gap-1.5 self-start rounded-xl bg-accent px-4 py-2.5 text-sm font-bold text-on-accent shadow-sm hover:brightness-110 lg:self-auto"
             >
               <MapPin className="h-4 w-4" aria-hidden />
               URL・住所・メール本文から候補を追加

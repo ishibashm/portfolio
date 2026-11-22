@@ -5,7 +5,7 @@ import { toJapanDateString } from "@/utils/japanDate";
 import type { MunicipalityPoint } from "@/lib/municipalityCoords";
 
 const chip =
-  "rounded-lg border bg-white px-3 py-2 aria-pressed:border-teal-700 aria-pressed:bg-teal-100";
+  "rounded-lg border bg-white dark:bg-theme-surface px-3 py-2 aria-pressed:border-theme-link aria-pressed:bg-theme-link-soft";
 const presets = {
   today: "今日",
   month: "1か月後",
@@ -292,7 +292,7 @@ export function OriginChooser({
           {chooseLabel}
         </button>
       </div>
-      <p className="text-xs text-slate-600">
+      <p className="text-xs text-slate-600 dark:text-ink-muted">
         位置情報はボタンを押したときだけ使い、市区町村名にしてから使います。
       </p>
       {!!points.length && (

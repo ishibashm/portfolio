@@ -103,7 +103,9 @@ export const AdBanner: React.FC<AdBannerProps> = ({
       className={`w-full overflow-hidden my-6 ${className}`}
       aria-label="スポンサー広告"
     >
-      <p className="mb-1 text-xs leading-4 text-slate-500">広告</p>
+      <p className="mb-1 text-xs leading-4 text-slate-500 dark:text-ink-muted">
+        広告
+      </p>
       <ins
         className="adsbygoogle"
         style={{ display: "block", minHeight: AD_MIN_HEIGHT[format] }}

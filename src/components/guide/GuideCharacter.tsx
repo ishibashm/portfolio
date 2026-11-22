@@ -89,7 +89,7 @@ export function GuideAvatar({
         loading={priority === "low" ? "eager" : "lazy"}
         fetchPriority={priority === "low" ? "low" : "auto"}
         decoding="async"
-        className="block h-auto w-full select-none"
+        className="block h-auto w-full select-none dark:rounded-2xl dark:bg-[radial-gradient(ellipse,#f4dfb8_0%,transparent_72%)]"
         draggable={false}
       />
     </picture>
@@ -129,19 +129,19 @@ export default function GuideCharacter({
     >
       <GuideAvatar pose={pose} size={size} priority={priority} float={float} />
       <figcaption
-        className={`relative mb-3 min-w-0 flex-1 rounded-2xl border border-[#c9a54a]/60 bg-white px-4 py-3 text-left text-sm leading-relaxed text-slate-800 shadow-sm`}
+        className={`relative mb-3 min-w-0 flex-1 rounded-2xl border border-[#c9a54a]/60 bg-white dark:bg-theme-surface px-4 py-3 text-left text-sm leading-relaxed text-slate-800 dark:text-ink shadow-sm`}
       >
         {/* 吹き出しの尾。イラストの側へ向ける。 */}
         <span
           aria-hidden="true"
-          className={`absolute bottom-4 h-3 w-3 rotate-45 border-[#c9a54a]/60 bg-white ${
+          className={`absolute bottom-4 h-3 w-3 rotate-45 border-[#c9a54a]/60 bg-white dark:bg-theme-surface ${
             side === "right"
               ? "-right-[7px] border-r border-t"
               : "-left-[7px] border-b border-l"
           }`}
         />
         {showName && (
-          <span className="mb-1 flex items-center gap-2 text-[11px] font-bold tracking-wider text-[#1e2a5a]">
+          <span className="mb-1 flex items-center gap-2 text-[11px] font-bold tracking-wider text-[#1e2a5a] dark:text-ink">
             {/* 名札に一度だけ金の光が走る（motion-sweep） */}
             <InViewOnce className="motion-sweep rounded-sm bg-[#1e2a5a] px-1.5 py-0.5 text-[10px] text-[#f3d98b]">
               {GUIDE_TITLE}
@@ -166,7 +166,7 @@ export default function GuideCharacter({
 export function GuideChatAvatar({ className = "" }: { className?: string }) {
   return (
     <picture
-      className={`relative block h-8 w-8 shrink-0 overflow-hidden rounded-full border-2 border-white bg-[#fbf6ee] shadow-sm ring-1 ring-indigo-200 sm:h-10 sm:w-10 ${className}`}
+      className={`relative block h-8 w-8 shrink-0 overflow-hidden rounded-full border-2 border-white dark:border-theme-border bg-[#fbf6ee] shadow-sm ring-1 ring-accent sm:h-10 sm:w-10 ${className}`}
       data-shirube-avatar=""
     >
       <source

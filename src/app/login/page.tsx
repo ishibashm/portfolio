@@ -191,37 +191,37 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-rose-50/80 via-stone-50 to-amber-50/50 text-stone-800 px-4 font-sans">
-      <div className="w-full max-w-md bg-white/80 border border-rose-100/80 rounded-3xl p-8 flex flex-col items-center shadow-xl shadow-rose-100/40 backdrop-blur-xl relative overflow-hidden">
+    <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-theme-accent-soft via-background to-theme-gold-soft text-ink px-4 font-sans">
+      <div className="w-full max-w-md bg-theme-surface border border-theme-border rounded-3xl p-8 flex flex-col items-center shadow-xl shadow-accent/12 backdrop-blur-xl relative overflow-hidden">
         {/* Top subtle ambient glow */}
-        <div className="absolute -top-24 -left-24 w-48 h-48 bg-rose-200/40 rounded-full blur-3xl"></div>
+        <div className="absolute -top-24 -left-24 w-48 h-48 bg-theme-accent-soft rounded-full blur-3xl"></div>
         <div className="absolute -bottom-24 -right-24 w-48 h-48 bg-amber-200/40 rounded-full blur-3xl"></div>
 
-        <h1 className="text-2xl font-bold mb-1 tracking-wider text-stone-900 font-serif">
+        <h1 className="text-2xl font-bold mb-1 tracking-wider text-ink font-serif">
           Cloud Palette
         </h1>
         {/* ログインは任意。中核ページは未ログインでも全て使えるので、
             ここで案内するのは「何が増えるか」だけにする。 */}
-        <p className="text-stone-500 text-xs text-center mb-6 leading-relaxed">
+        <p className="text-ink-muted text-xs text-center mb-6 leading-relaxed">
           ログインすると、生年月日や出発地の設定を
           <br />
           他の端末でも引き継げます。
         </p>
-        <p className="text-stone-600 text-xs text-center mb-6 leading-relaxed">
+        <p className="text-ink-muted text-xs text-center mb-6 leading-relaxed">
           ログインしなくても、方位の判定・物件検索・カレンダーはそのままご利用いただけます。
         </p>
 
         {/* Logged in User Status */}
         {currentUser && (
-          <div className="w-full bg-stone-50 border border-stone-200/80 rounded-xl p-4 mb-6 text-xs text-stone-500 space-y-2">
+          <div className="w-full bg-stone-50 border border-stone-200/80 rounded-xl p-4 mb-6 text-xs text-ink-muted space-y-2">
             <div>現在ログイン中のアカウント:</div>
-            <div className="font-semibold text-stone-800 break-all">
+            <div className="font-semibold text-ink break-all">
               {currentUser.email}
             </div>
             {/* 「権限がありません」と出していたが、一般の利用者にとっては
                 ログインは成功しており、設定の同期も使える。管理画面に
                 入れないだけなので、失敗のように見せない。 */}
-            <div className="font-bold text-emerald-600">
+            <div className="font-bold text-accent">
               ログイン済みです。設定は端末をまたいで同期されます。
             </div>
             <button
@@ -233,7 +233,7 @@ export default function LoginPage() {
                 setAuthError(null);
                 window.location.reload();
               }}
-              className="mt-2 text-rose-500 hover:text-rose-600 underline font-medium cursor-pointer"
+              className="mt-2 text-accent hover:text-accent underline font-medium cursor-pointer"
             >
               ログアウトして別のアカウントでログイン
             </button>
@@ -245,7 +245,7 @@ export default function LoginPage() {
             Supabase 経由。 */}
         {clientId ? (
           loading ? (
-            <div className="w-full min-h-[44px] flex items-center justify-center text-xs text-stone-500">
+            <div className="w-full min-h-[44px] flex items-center justify-center text-xs text-ink-muted">
               ログイン中…
             </div>
           ) : (
@@ -259,7 +259,7 @@ export default function LoginPage() {
           <button
             onClick={handleGoogleLogin}
             disabled={loading}
-            className="w-full flex items-center justify-center gap-3 bg-white text-stone-800 border border-stone-200 px-6 py-2.5 rounded-xl font-medium hover:bg-stone-50 active:scale-[0.98] transition-all duration-200 disabled:opacity-50 disabled:pointer-events-none shadow-md"
+            className="w-full flex items-center justify-center gap-3 bg-theme-surface text-ink border border-stone-200 px-6 py-2.5 rounded-xl font-medium hover:bg-stone-50 active:scale-[0.98] transition-all duration-200 disabled:opacity-50 disabled:pointer-events-none shadow-md"
           >
             <svg
               className="w-4 h-4"
@@ -293,11 +293,11 @@ export default function LoginPage() {
         {/* よくある新規登録と同じく、押す前に規約の在り処を示す。
             チェックボックスは置かない（Google のボタンは押した時点で
             認証が始まるので、押させない状態を作るとボタンが死ぬ）。 */}
-        <p className="mt-4 text-center text-xs leading-relaxed text-stone-500">
+        <p className="mt-4 text-center text-xs leading-relaxed text-ink-muted">
           ログインすると、
           <Link
             href="/terms"
-            className="underline hover:text-stone-700"
+            className="underline hover:text-ink"
             target="_blank"
             rel="noopener noreferrer"
           >
@@ -306,7 +306,7 @@ export default function LoginPage() {
           と
           <Link
             href="/privacy"
-            className="underline hover:text-stone-700"
+            className="underline hover:text-ink"
             target="_blank"
             rel="noopener noreferrer"
           >
@@ -320,7 +320,7 @@ export default function LoginPage() {
         </p>
 
         {authError && (
-          <div className="w-full mt-4 p-3 bg-red-50 border border-red-200 rounded-xl text-red-600 text-[11px] leading-relaxed">
+          <div className="w-full mt-4 p-3 bg-theme-accent-soft border border-theme-border rounded-xl text-accent text-[11px] leading-relaxed">
             ⚠️ {authError}
           </div>
         )}
@@ -330,7 +330,7 @@ export default function LoginPage() {
             on the same condition or it just renders a dead control in
             production that also discloses the admin address. */}
         {process.env.NODE_ENV === "development" && (
-          <div className="w-full mt-4 pt-4 border-t border-rose-100/80 flex flex-col items-center">
+          <div className="w-full mt-4 pt-4 border-t border-theme-border flex flex-col items-center">
             {/* 既定値に実在のアドレスを置かない。
                 本番のバンドルからは NODE_ENV のガードごと消えるが、
                 公開リポジトリのソースには平文で残る（収集の的になる）。
@@ -347,19 +347,19 @@ export default function LoginPage() {
                 )}; path=/; max-age=31536000`;
                 window.location.href = nextUrl;
               }}
-              className="w-full bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 text-emerald-700 font-mono text-[10px] uppercase tracking-wider py-2.5 rounded-xl active:scale-[0.98] transition-all disabled:opacity-40"
+              className="w-full bg-theme-accent-soft hover:bg-theme-accent-soft border border-theme-border text-accent font-mono text-[10px] uppercase tracking-wider py-2.5 rounded-xl active:scale-[0.98] transition-all disabled:opacity-40"
             >
               ⚡ 開発用バイパスでログイン
             </button>
             {!process.env.NEXT_PUBLIC_ADMIN_EMAIL && (
-              <p className="mt-2 text-xs text-stone-600 text-center leading-relaxed">
+              <p className="mt-2 text-xs text-ink-muted text-center leading-relaxed">
                 .env.local に NEXT_PUBLIC_ADMIN_EMAIL を設定すると使えます。
               </p>
             )}
           </div>
         )}
 
-        <p className="text-xs text-stone-600 text-center mt-6 font-mono leading-relaxed max-w-[280px]">
+        <p className="text-xs text-ink-muted text-center mt-6 font-mono leading-relaxed max-w-[280px]">
           {process.env.NODE_ENV === "development"
             ? "ローカル開発環境で動作しています。"
             : ""}

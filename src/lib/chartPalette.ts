@@ -32,3 +32,23 @@ export const GRID_STROKE = "#e7e5e4"; // stone-200
 
 /** 参照・補助線の破線パターン。主系列は実線のまま。 */
 export const REFERENCE_DASH = "4 4";
+
+// SVG の色を CSS 変数で解決する画面用。テーマ変更でグラフを作り直さない。
+export const THEMED_SERIES = {
+  primary: "var(--chart-primary)",
+  secondary: "var(--chart-secondary)",
+  tertiary: "var(--chart-tertiary)",
+  neutral: "var(--chart-neutral)",
+} as const;
+
+export const THEMED_GRID_STROKE = "var(--chart-grid)";
+
+export const THEMED_TOOLTIP_STYLES = {
+  contentStyle: {
+    backgroundColor: "var(--wg-surface)",
+    borderColor: "var(--theme-border)",
+    color: "var(--wg-ink)",
+  },
+  labelStyle: { color: "var(--wg-ink)" },
+  itemStyle: { color: "var(--wg-ink)" },
+};

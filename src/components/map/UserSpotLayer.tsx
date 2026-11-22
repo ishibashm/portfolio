@@ -3,7 +3,7 @@
 import { CircleMarker, Popup, Tooltip } from "react-leaflet";
 import { useUserSpots, removeUserSpot } from "@/lib/userSpots";
 import { spotFromBase } from "@/lib/powerSpots";
-import { TIER_BADGE_CLASS } from "@/utils/tierDisplay";
+import { LIGHT_TIER_BADGE_CLASS } from "@/utils/tierDisplay";
 import { TIER_LABELS, type DayTier } from "@/utils/dayTier";
 import type { DirectionCell } from "@/components/relocation/SpotVerdict";
 
@@ -108,7 +108,7 @@ export function UserSpotLayer({
                         <span className="text-stone-600">この日の段階:</span>
                         <span
                           className={`px-1.5 py-0.5 rounded border font-bold ${
-                            (tier && TIER_BADGE_CLASS[tier]) ??
+                            (tier && LIGHT_TIER_BADGE_CLASS[tier]) ??
                             "bg-stone-100 border-stone-300 text-stone-700"
                           }`}
                         >
@@ -136,7 +136,7 @@ export function UserSpotLayer({
                     href={s.url}
                     target="_blank"
                     rel="nofollow noopener"
-                    className="mt-2 block break-all text-[10px] font-bold text-indigo-700 underline hover:text-indigo-900"
+                    className="mt-2 block break-all text-[10px] font-bold text-accent underline hover:text-accent"
                   >
                     {hostOf(s.url) ?? "物件のページを開く"}
                   </a>
@@ -151,7 +151,7 @@ export function UserSpotLayer({
                     <button
                       type="button"
                       onClick={() => onInspect(s.lat, s.lon)}
-                      className="flex-1 rounded border border-emerald-300 bg-emerald-50 px-2 py-1 text-[10px] font-bold text-emerald-800 hover:bg-emerald-100"
+                      className="flex-1 rounded border border-theme-border bg-theme-accent-soft px-2 py-1 text-[10px] font-bold text-accent hover:bg-theme-accent-soft"
                     >
                       この地点を判定へ
                     </button>

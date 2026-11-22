@@ -61,7 +61,7 @@ export default function Page() {
   );
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#faf7f5] via-[#f5efe9] to-[#f0e9e1] text-slate-900 font-sans">
+    <div className="min-h-screen wg-page text-ink font-sans">
       {/* 市区町村ページ・県ページの両方にパンくずがあるのに、その親の
           この頁だけ構造化データが無かった（画面のパンくずはあった）。 */}
       <BreadcrumbJsonLd
@@ -72,8 +72,8 @@ export default function Page() {
       />
       {/* 都道府県ごとのリンク一覧。読み物ではないので /houi と揃える。 */}
       <article className="max-w-[1700px] mx-auto px-5 py-12">
-        <nav className="text-xs text-slate-500 mb-6">
-          <Link href="/houi" className="hover:text-rose-600">
+        <nav className="text-xs text-ink-muted mb-6">
+          <Link href="/houi" className="hover:text-accent">
             {HOUI_BREADCRUMB_LABEL}
           </Link>
           <span className="mx-2">/</span>
@@ -83,7 +83,7 @@ export default function Page() {
         <h1 className="text-3xl md:text-4xl font-bold font-serif tracking-tight leading-snug">
           エリア別の方位と家賃相場
         </h1>
-        <p className="mt-5 max-w-[70ch] text-sm leading-relaxed text-slate-700">
+        <p className="mt-5 max-w-[70ch] text-sm leading-relaxed text-ink-muted">
           吉方位が分かっても、その方位に実際どんな街があっていくらなのかが分からないと引越し先は決められません。
           <b>いま住んでいる市区町村</b>
           を選ぶと、そこから見た八方位それぞれのエリアと家賃相場を確認できます。
@@ -91,8 +91,8 @@ export default function Page() {
         {/* 固有の文章を書いた頁だけ索引に載せている（#750〜）。一覧では
             どれがそれか分からず、全部同じ札に見えていた。読み手にとっては
             「その方位に街が無い」まで書いてある頁のほうが役に立つ。 */}
-        <p className="mt-3 text-xs text-slate-500">
-          <span className="mr-1.5 inline-block h-2 w-2 rounded-full bg-rose-500 align-middle" />
+        <p className="mt-3 text-xs text-ink-muted">
+          <span className="mr-1.5 inline-block h-2 w-2 rounded-full bg-accent align-middle" />
           が付いている市区町村には、方位ごとの街の並びを書いた解説があります（
           {Object.keys(AREA_EDITORIAL).length}
           エリア）。一覧には解説のある街を載せています。それ以外の街も、下の検索欄や各県のまとめから選べます。
@@ -101,11 +101,11 @@ export default function Page() {
         <AreaQuickFind areas={quick} />
 
         {/* 県の目次。JS が無くても効くよう、頁内の飛び先へのリンクにする */}
-        <p className="mt-6 text-sm text-slate-700">
+        <p className="mt-6 text-sm text-ink-muted">
           県ごとの相場と方位のまとめは
           <Link
             href="/houi/pref"
-            className="font-semibold text-rose-600 underline hover:text-rose-700"
+            className="font-semibold text-accent underline hover:text-accent"
           >
             都道府県の一覧
           </Link>
@@ -113,16 +113,16 @@ export default function Page() {
         </p>
         <nav
           aria-label="都道府県の目次"
-          className="mt-4 rounded-2xl border border-slate-300 bg-white/80 p-4"
+          className="mt-4 rounded-2xl border border-theme-border bg-theme-surface/80 p-4"
         >
-          <p className="text-xs font-bold text-slate-600">都道府県から探す</p>
+          <p className="text-xs font-bold text-ink-muted">都道府県から探す</p>
           <dl className="mt-2 space-y-1.5">
             {[...regions.entries()].map(([region, list]) => (
               <div
                 key={region}
                 className="flex flex-wrap items-baseline gap-x-3 gap-y-1"
               >
-                <dt className="w-24 shrink-0 text-xs text-slate-500">
+                <dt className="w-24 shrink-0 text-xs text-ink-muted">
                   {region}
                 </dt>
                 <dd className="flex flex-wrap gap-x-3 gap-y-1">
@@ -130,7 +130,7 @@ export default function Page() {
                     <a
                       key={p.code}
                       href={`#pref-${p.code}`}
-                      className="text-sm font-semibold text-slate-800 underline decoration-slate-300 hover:text-rose-600"
+                      className="text-sm font-semibold text-ink underline decoration-slate-300 hover:text-accent"
                     >
                       {p.pref}
                     </a>
@@ -148,16 +148,16 @@ export default function Page() {
             const hasPrefPage = code in PREF_EDITORIAL;
             return (
               <section key={pref} id={`pref-${code}`} className="scroll-mt-20">
-                <h2 className="text-base font-bold font-serif border-b border-slate-300 pb-2">
+                <h2 className="text-base font-bold font-serif border-b border-theme-border pb-2">
                   {pref}
-                  <span className="ml-2 text-xs font-normal text-slate-500">
+                  <span className="ml-2 text-xs font-normal text-ink-muted">
                     {list.length}エリア
                   </span>
                   {hasPrefPage && (
                     <Link
                       prefetch={false}
                       href={`/houi/pref/${code}`}
-                      className="ml-3 text-xs font-bold text-rose-600 hover:underline"
+                      className="ml-3 text-xs font-bold text-accent hover:underline"
                     >
                       {pref}の相場と方位のまとめ →
                     </Link>
@@ -171,10 +171,10 @@ export default function Page() {
                         prefetch={false}
                         key={a.code}
                         href={`/houi/area/${a.code}`}
-                        className="px-3 py-1.5 rounded-full border border-slate-300 bg-white text-xs font-semibold hover:border-rose-400 transition-colors"
+                        className="px-3 py-1.5 rounded-full border border-theme-border bg-theme-surface text-xs font-semibold hover:border-accent transition-colors"
                       >
                         {a.code in AREA_EDITORIAL && (
-                          <span className="mr-1.5 inline-block h-2 w-2 rounded-full bg-rose-500 align-middle" />
+                          <span className="mr-1.5 inline-block h-2 w-2 rounded-full bg-accent align-middle" />
                         )}
                         {a.city}
                       </Link>

@@ -66,18 +66,18 @@ export function FengShuiSetup({
 }) {
   if (!stored.enabled) {
     return (
-      <div className="rounded-2xl border border-stone-200 bg-white/60 p-3">
+      <div className="rounded-2xl border border-stone-200 dark:border-theme-border bg-white/60 dark:bg-theme-surface p-3">
         <div className="flex flex-wrap items-center justify-between gap-2">
-          <p className="text-xs text-stone-600">
+          <p className="text-xs text-stone-600 dark:text-ink-muted">
             {label}
-            <span className="ml-2 text-[10px] text-stone-500">
+            <span className="ml-2 text-[10px] text-stone-500 dark:text-ink-muted">
               既定では判定に使っていません
             </span>
           </p>
           <button
             type="button"
             onClick={() => writeFengShuiSettings({ enabled: true })}
-            className="rounded-full border border-stone-300 bg-white px-4 py-1.5 text-[11px] font-bold text-stone-700 hover:bg-stone-50"
+            className="rounded-full border border-stone-300 dark:border-theme-border bg-white dark:bg-theme-surface px-4 py-1.5 text-[11px] font-bold text-stone-700 dark:text-ink hover:bg-stone-50 dark:hover:bg-theme-subtle"
           >
             併記する
           </button>
@@ -88,11 +88,11 @@ export function FengShuiSetup({
 
   if (!fengShuiActive(stored)) {
     return (
-      <div className="rounded-2xl border border-stone-200 bg-white/60 p-3">
-        <p className="text-xs text-stone-600">
+      <div className="rounded-2xl border border-stone-200 dark:border-theme-border bg-white/60 dark:bg-theme-surface p-3">
+        <p className="text-xs text-stone-600 dark:text-ink-muted">
           八宅は<b>生まれ年と性別</b>
           で本命卦が決まります。性別を選んでください。
-          <span className="ml-1 text-[10px] text-stone-500">
+          <span className="ml-1 text-[10px] text-stone-500 dark:text-ink-muted">
             この端末にだけ残り、送信しません。
           </span>
         </p>
@@ -102,7 +102,7 @@ export function FengShuiSetup({
               key={s}
               type="button"
               onClick={() => writeFengShuiSettings({ sex: s })}
-              className="rounded-full border border-stone-300 bg-white px-4 py-1.5 text-[11px] font-bold text-stone-700 hover:bg-stone-50"
+              className="rounded-full border border-stone-300 dark:border-theme-border bg-white dark:bg-theme-surface px-4 py-1.5 text-[11px] font-bold text-stone-700 dark:text-ink hover:bg-stone-50 dark:hover:bg-theme-subtle"
             >
               {SEX_LABELS[s]}
             </button>
@@ -110,7 +110,7 @@ export function FengShuiSetup({
           <button
             type="button"
             onClick={() => writeFengShuiSettings({ enabled: false })}
-            className="px-2 py-1.5 text-[11px] text-stone-500 underline"
+            className="px-2 py-1.5 text-[11px] text-stone-500 dark:text-ink-muted underline"
           >
             やめる
           </button>
@@ -168,13 +168,13 @@ export function FengShuiNote({
     <div
       className={`rounded-2xl border p-3 ${
         reading.auspicious
-          ? "border-emerald-300 bg-emerald-50/60"
-          : "border-rose-300 bg-rose-50/60"
+          ? "border-emerald-300 dark:border-theme-border bg-emerald-50/60 dark:bg-theme-good-soft"
+          : "border-rose-300 dark:border-theme-border bg-rose-50/60 dark:bg-theme-bad-soft"
       }`}
     >
       <div className="flex flex-wrap items-baseline justify-between gap-2">
         <div className="flex flex-wrap items-baseline gap-2">
-          <span className="text-[10px] font-bold text-stone-500">
+          <span className="text-[10px] font-bold text-stone-500 dark:text-ink-muted">
             風水（八宅）
           </span>
           <span className="text-sm font-bold">
@@ -183,7 +183,9 @@ export function FengShuiNote({
           {/* 色だけで吉凶を出さない。字を必ず添える */}
           <span
             className={`rounded px-1.5 py-0.5 text-[10px] font-bold text-white ${
-              reading.auspicious ? "bg-emerald-700" : "bg-rose-700"
+              reading.auspicious
+                ? "bg-emerald-700 dark:bg-emerald-800"
+                : "bg-rose-700 dark:bg-rose-700"
             }`}
           >
             {reading.auspicious ? "吉" : "凶"}
@@ -192,18 +194,18 @@ export function FengShuiNote({
         <button
           type="button"
           onClick={() => writeFengShuiSettings({ enabled: false })}
-          className="text-[10px] text-stone-500 underline"
+          className="text-[10px] text-stone-500 dark:text-ink-muted underline"
         >
           併記をやめる
         </button>
       </div>
 
-      <p className="mt-1.5 text-xs leading-relaxed text-stone-700">
+      <p className="mt-1.5 text-xs leading-relaxed text-stone-700 dark:text-ink">
         {reading.meaning}
       </p>
 
       {differs && (
-        <p className="mt-2 text-xs leading-relaxed text-stone-600">
+        <p className="mt-2 text-xs leading-relaxed text-stone-600 dark:text-ink-muted">
           気学ではこの移動を
           <b>{kigakuLabel}</b>
           として扱っています。八宅は八卦に45度ずつ、気学の伝統的な区切りは四隅60度・四正30度と
@@ -212,7 +214,7 @@ export function FengShuiNote({
         </p>
       )}
 
-      <p className="mt-2 text-xs leading-relaxed text-stone-600">
+      <p className="mt-2 text-xs leading-relaxed text-stone-600 dark:text-ink-muted">
         <b>気学の判定とは足し合わせていません。</b>
         別の流派の見立てを並べているだけです。どちらを重く見るかは決めていません。
       </p>

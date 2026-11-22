@@ -105,12 +105,12 @@ export function DirectionComments({
   const tooLong = trimmed.length > COMMENT_MAX_LENGTH;
 
   return (
-    <section className="mt-10 border-t border-stone-200 pt-6">
+    <section className="mt-10 border-t border-stone-200 dark:border-theme-border pt-6">
       {count > 0 && (
         <>
-          <h2 className="text-base font-bold text-stone-800">
+          <h2 className="text-base font-bold text-stone-800 dark:text-ink">
             {heading}
-            <span className="ml-2 text-xs font-normal text-stone-500">
+            <span className="ml-2 text-xs font-normal text-ink-muted">
               {count}件
             </span>
           </h2>
@@ -118,20 +118,20 @@ export function DirectionComments({
             {rows!.map((c) => (
               <li
                 key={c.id}
-                className="rounded-2xl border border-stone-200 bg-white/70 p-4"
+                className="rounded-2xl border border-stone-200 dark:border-theme-border bg-white/70 dark:bg-theme-surface p-4"
               >
                 <div className="flex items-baseline gap-2">
-                  <span className="text-xs font-bold text-stone-700">
+                  <span className="text-xs font-bold text-stone-700 dark:text-ink">
                     {c.displayName}
                   </span>
                   <time
-                    className="text-[11px] text-stone-600"
+                    className="text-[11px] text-stone-600 dark:text-ink-muted"
                     dateTime={c.createdAt}
                   >
                     {new Date(c.createdAt).toLocaleDateString("ja-JP")}
                   </time>
                 </div>
-                <p className="mt-2 whitespace-pre-wrap text-sm leading-relaxed text-stone-700">
+                <p className="mt-2 whitespace-pre-wrap text-sm leading-relaxed text-stone-700 dark:text-ink">
                   {c.body}
                 </p>
               </li>
@@ -145,7 +145,7 @@ export function DirectionComments({
           {signedIn === false ? (
             <Link
               href="/login"
-              className="inline-block rounded-full border border-stone-300 px-4 py-2 text-xs text-stone-600 transition hover:bg-stone-100"
+              className="inline-block rounded-full border border-stone-300 dark:border-theme-border px-4 py-2 text-xs text-stone-600 dark:text-ink-muted transition hover:bg-stone-100 dark:hover:bg-theme-subtle"
             >
               ログインして体験を書く
             </Link>
@@ -153,13 +153,13 @@ export function DirectionComments({
             <button
               type="button"
               onClick={() => setOpen(true)}
-              className="rounded-full border border-stone-300 px-4 py-2 text-xs text-stone-600 transition hover:bg-stone-100"
+              className="rounded-full border border-stone-300 dark:border-theme-border px-4 py-2 text-xs text-stone-600 dark:text-ink-muted transition hover:bg-stone-100 dark:hover:bg-theme-subtle"
             >
               この方位の体験を書く
             </button>
           )}
           {prompt && (
-            <p className="mt-2 text-xs leading-relaxed text-stone-500">
+            <p className="mt-2 text-xs leading-relaxed text-ink-muted">
               {prompt}
             </p>
           )}
@@ -177,11 +177,11 @@ export function DirectionComments({
               prompt ??
               "いつ、どこからどこへ移って、その後どうだったかを書いてください。"
             }
-            className="w-full rounded-2xl border border-stone-300 p-3 text-sm outline-none focus:ring-2 focus:ring-emerald-500"
+            className="w-full rounded-2xl border border-stone-300 dark:border-theme-border p-3 text-sm outline-none focus:ring-2 focus:ring-accent"
           />
           <div className="flex items-center justify-between">
             <span
-              className={`text-[11px] ${tooLong ? "text-rose-600" : "text-stone-600"}`}
+              className={`text-[11px] ${tooLong ? "text-accent" : "text-stone-600 dark:text-ink-muted"}`}
             >
               {trimmed.length} / {COMMENT_MAX_LENGTH}
               {tooShort && `（${COMMENT_MIN_LENGTH}文字以上）`}
@@ -190,7 +190,7 @@ export function DirectionComments({
               <button
                 type="button"
                 onClick={() => setOpen(false)}
-                className="rounded-full px-4 py-2 text-xs text-stone-500"
+                className="rounded-full px-4 py-2 text-xs text-ink-muted"
               >
                 やめる
               </button>
@@ -199,14 +199,14 @@ export function DirectionComments({
                 disabled={
                   sending || trimmed.length < COMMENT_MIN_LENGTH || tooLong
                 }
-                className="rounded-full bg-stone-800 px-5 py-2 text-xs text-white transition disabled:opacity-40"
+                className="rounded-full bg-stone-800 dark:bg-slate-700 px-5 py-2 text-xs text-white transition disabled:opacity-40"
               >
                 {sending ? "送信中…" : "投稿する"}
               </button>
             </div>
           </div>
           {error && (
-            <p className="rounded-xl bg-rose-50 p-3 text-xs text-rose-700">
+            <p className="rounded-xl bg-theme-accent-soft p-3 text-xs text-accent">
               {error}
             </p>
           )}

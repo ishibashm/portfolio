@@ -83,11 +83,8 @@ describe("設定バーの時刻基準", () => {
   it("既定は標準時が選ばれている", async () => {
     await open();
     const standard = screen.getByText("標準時");
-    // 選択中は indigo の枠が付く。標準時側に付いていること。
-    expect(standard.className).toContain("indigo");
-    expect(screen.getByText("真太陽時").className).not.toContain(
-      "amber-500/20",
-    );
+    expect(standard).toHaveClass("bg-theme-accent-soft");
+    expect(screen.getByText("真太陽時")).not.toHaveClass("bg-theme-gold-soft");
   });
 
   it("真太陽時を押すと端末に残る", async () => {
@@ -104,7 +101,7 @@ describe("設定バーの時刻基準", () => {
     localStorage.setItem(KEY, JSON.stringify({ zodiac_time_basis: "solar" }));
     await open();
     await waitFor(() => {
-      expect(screen.getByText("真太陽時").className).toContain("amber");
+      expect(screen.getByText("真太陽時")).toHaveClass("bg-theme-gold-soft");
     });
   });
 });

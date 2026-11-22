@@ -34,8 +34,8 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         決まった日付に開いている方位の街を、家賃の水準と空き家率つきで並べます。いま募集中の部屋の一覧ではありません。未設定のときは東京からの街と家賃を表示します。
       </ToolPageIntro>
       <div className="mx-auto max-w-[1700px] px-4 pt-4 md:px-8">
-        <details className="rounded-2xl border border-slate-200 bg-white/90">
-          <summary className="cursor-pointer px-5 py-4 text-sm font-bold text-slate-800">
+        <details className="rounded-2xl border border-slate-200 dark:border-theme-border bg-white/90 dark:bg-theme-surface">
+          <summary className="cursor-pointer px-5 py-4 text-sm font-bold text-ink">
             このツールの概要と使い方
           </summary>
           <section
@@ -43,22 +43,22 @@ export default function Layout({ children }: { children: React.ReactNode }) {
             className="space-y-4 px-5 pb-5"
           >
             <div className="space-y-2">
-              <h2 className="text-sm font-bold text-slate-800">
+              <h2 className="text-sm font-bold text-ink">
                 {coreRouteLabel("/relocation/arbitrage")}で分かること（結論）
               </h2>
-              <p className="max-w-[70ch] text-sm leading-relaxed text-slate-700">
+              <p className="max-w-[70ch] text-sm leading-relaxed text-ink-muted">
                 いま住んでいる場所（出発地）から見た八方位の吉凶を、選んだ日付について地図の塗り分けで確認できるツールです（ログインなしで使えます）。あわせて、その方位にある市区町村の家賃水準と空き家率を並べて比較できます。
               </p>
-              <p className="max-w-[70ch] text-xs leading-relaxed text-slate-600">
+              <p className="max-w-[70ch] text-xs leading-relaxed text-ink-muted">
                 九星気学にもとづく方位の吉凶は占い上の目安であり、科学的な効果を保証するものではありません。引越し先は契約条件や費用、通勤・生活環境とあわせて判断してください。
               </p>
             </div>
 
-            <div className="space-y-2 border-t border-slate-200 pt-3">
-              <h3 className="text-xs font-bold text-slate-800">
+            <div className="space-y-2 border-t border-slate-200 dark:border-theme-border pt-3">
+              <h3 className="text-xs font-bold text-ink">
                 使い方の手順と関連ツール
               </h3>
-              <ol className="list-decimal pl-5 space-y-1 text-xs leading-relaxed text-slate-700 max-w-[70ch]">
+              <ol className="list-decimal pl-5 space-y-1 text-xs leading-relaxed text-ink-muted max-w-[70ch]">
                 <li>
                   生年月日と出発地は必須ではありません。出発地は都市ボタンで切り替えられ、未設定のときは東京からの街と家賃水準を表示します。閲覧用の切替では保存済みの出発地は変わりません。生年月日を入れると吉凶が付きます（設定は他のページと共有されます）。
                 </li>
@@ -67,25 +67,25 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                   地図の八方位の吉凶と、方位ごとの市区町村一覧を確認します。
                 </li>
               </ol>
-              <p className="max-w-[70ch] text-xs leading-relaxed text-slate-600">
+              <p className="max-w-[70ch] text-xs leading-relaxed text-ink-muted">
                 候補日を広い期間から絞るときや同行者がいる場合の判定は
                 <Link
                   href="/relocation/timing"
-                  className="mx-1 font-bold text-indigo-700 underline hover:text-indigo-900"
+                  className="mx-1 font-bold text-accent underline hover:text-accent"
                 >
                   {coreRouteLabel("/relocation/timing")}
                 </Link>
                 、生まれ年から本命星と年の方位早見表を見るときは
                 <Link
                   href="/houi"
-                  className="mx-1 font-bold text-indigo-700 underline hover:text-indigo-900"
+                  className="mx-1 font-bold text-accent underline hover:text-accent"
                 >
                   {coreRouteLabel("/houi")}
                 </Link>
                 、六曜や天赦日・一粒万倍日などの暦注で日を見るときは
                 <Link
                   href="/calendar"
-                  className="mx-1 font-bold text-indigo-700 underline hover:text-indigo-900"
+                  className="mx-1 font-bold text-accent underline hover:text-accent"
                 >
                   {coreRouteLabel("/calendar")}
                 </Link>
@@ -93,11 +93,11 @@ export default function Layout({ children }: { children: React.ReactNode }) {
               </p>
             </div>
 
-            <div className="space-y-1.5 border-t border-slate-200 pt-3">
-              <h3 className="text-xs font-bold text-slate-800">
+            <div className="space-y-1.5 border-t border-slate-200 dark:border-theme-border pt-3">
+              <h3 className="text-xs font-bold text-ink">
                 家賃水準・空き家率の統計について（方位の判定とは別の公的統計）
               </h3>
-              <p className="max-w-[70ch] text-xs leading-relaxed text-slate-600">
+              <p className="max-w-[70ch] text-xs leading-relaxed text-ink-muted">
                 方位ごとに並べる市区町村の家賃の水準と空き家率は、e-Stat「統計でみる市区町村のすがた」（総務省「住宅・土地統計調査」）にもとづく街ごとの統計値です。いま募集中の家賃や物件一覧ではなく、部屋の募集掲載は出していません。
               </p>
             </div>

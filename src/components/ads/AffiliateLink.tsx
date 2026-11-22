@@ -3,7 +3,7 @@ import { type AffiliateOffer } from "@/lib/affiliateOffers";
 import { sponsorizeAnchors } from "@/lib/affiliateHtml";
 
 const prLabel = (
-  <span className="mr-1 inline-block rounded bg-stone-200 px-1.5 py-0.5 align-middle text-[10px] font-bold tracking-wide text-stone-700">
+  <span className="mr-1 inline-block rounded bg-stone-200 dark:bg-theme-subtle px-1.5 py-0.5 align-middle text-[10px] font-bold tracking-wide text-stone-700 dark:text-ink">
     PR
   </span>
 );
@@ -58,7 +58,7 @@ export function AffiliateOffers({
   return (
     <aside
       aria-label="プロモーション"
-      className="mx-auto max-w-[1700px] px-5 pt-4 text-sm leading-7 text-slate-700"
+      className="mx-auto max-w-[1700px] px-5 pt-4 text-sm leading-7 text-slate-700 dark:text-ink"
     >
       <p>本ページはプロモーションを含みます</p>
       <ul className="mt-2 space-y-2">
@@ -109,7 +109,9 @@ export function AffiliatePlacement({
       aria-label="スポンサー広告"
       className={`my-4 w-full overflow-hidden ${className}`}
     >
-      <p className="mb-1 text-xs leading-4 text-slate-500">広告</p>
+      <p className="mb-1 text-xs leading-4 text-slate-500 dark:text-ink-muted">
+        広告
+      </p>
       {html ? (
         <div
           className="[&_a]:inline-block [&_img]:max-w-full"
@@ -120,13 +122,15 @@ export function AffiliatePlacement({
           href={offer.href}
           target="_blank"
           rel="sponsored nofollow noopener"
-          className="text-[13px] leading-6 text-slate-700 underline decoration-slate-300 underline-offset-2 hover:text-slate-900"
+          className="text-[13px] leading-6 text-slate-700 dark:text-ink underline decoration-slate-300 dark:decoration-theme-border underline-offset-2 hover:text-slate-900 dark:hover:text-ink"
         >
           {offer.label ?? offer.href}
         </a>
       )}
       {offer.note ? (
-        <p className="mt-1 text-xs leading-4 text-slate-500">{offer.note}</p>
+        <p className="mt-1 text-xs leading-4 text-slate-500 dark:text-ink-muted">
+          {offer.note}
+        </p>
       ) : null}
     </div>
   );

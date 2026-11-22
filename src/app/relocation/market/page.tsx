@@ -30,7 +30,11 @@ import {
   YAxis,
 } from "recharts";
 
-import { GRID_STROKE, SERIES } from "@/lib/chartPalette";
+import {
+  THEMED_GRID_STROKE,
+  THEMED_SERIES,
+  THEMED_TOOLTIP_STYLES,
+} from "@/lib/chartPalette";
 import { HedonicFactorTable } from "@/components/relocation/HedonicFactorTable";
 
 import marketStats from "@/data/marketStats.json";
@@ -56,13 +60,13 @@ function KpiCard({
 }) {
   return (
     <div
-      className="rounded-2xl border border-gray-200 bg-white p-4 shadow-xs"
+      className="rounded-2xl border border-gray-200 dark:border-theme-border bg-theme-surface p-4 shadow-xs"
       title={hint}
     >
-      <p className="text-xs font-semibold uppercase tracking-wider text-stone-600">
+      <p className="text-xs font-semibold uppercase tracking-wider text-ink-muted">
         {label}
       </p>
-      <p className="mt-1 text-xl font-bold text-stone-800">{value}</p>
+      <p className="mt-1 text-xl font-bold text-ink">{value}</p>
     </div>
   );
 }
@@ -77,9 +81,9 @@ function Section({
   children: React.ReactNode;
 }) {
   return (
-    <section className="rounded-3xl border border-gray-200 bg-white p-5 shadow-sm">
-      <h2 className="text-sm font-bold text-stone-800">{title}</h2>
-      <p className="mt-0.5 mb-4 text-xs leading-relaxed text-stone-500">
+    <section className="rounded-3xl border border-gray-200 dark:border-theme-border bg-theme-surface p-5 shadow-sm">
+      <h2 className="text-sm font-bold text-ink">{title}</h2>
+      <p className="mt-0.5 mb-4 text-xs leading-relaxed text-ink-muted">
         {subtitle}
       </p>
       {children}
@@ -92,12 +96,12 @@ export default function MarketAnalyticsPage() {
 
   if (!generated) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-rose-50/80 via-stone-50 to-amber-50/50 p-6 font-sans">
-        <div className="mx-auto max-w-3xl rounded-3xl border border-amber-200 bg-amber-50 p-8 text-center">
-          <h1 className="text-lg font-bold text-amber-900">
+      <div className="min-h-screen bg-gradient-to-br from-theme-accent-soft via-background to-theme-gold-soft p-6 font-sans">
+        <div className="mx-auto max-w-3xl rounded-3xl border border-amber-200 dark:border-theme-border bg-amber-50 dark:bg-theme-gold-soft p-8 text-center">
+          <h1 className="text-lg font-bold text-amber-900 dark:text-theme-gold">
             家賃市場の計量分析（準備中）
           </h1>
-          <p className="mt-2 text-xs leading-relaxed text-amber-800">
+          <p className="mt-2 text-xs leading-relaxed text-amber-800 dark:text-theme-gold">
             データの集計がまだ一度も走っていません。集計が終わると、ここにヘドニック回帰・分布分析・生存分析が並びます。
           </p>
         </div>
@@ -142,14 +146,14 @@ export default function MarketAnalyticsPage() {
   }));
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-rose-50/80 via-stone-50 to-amber-50/50 p-4 font-sans text-stone-800 md:p-8">
+    <div className="min-h-screen bg-gradient-to-br from-theme-accent-soft via-background to-theme-gold-soft p-4 font-sans text-ink md:p-8">
       {/* 上限は max-w-5xl（1024px）だった。表とグラフを並べる道具の
           画面なので、ホーム（1700px）に揃える。上のデータ準備中の
           案内カードは中央に小さく出すのが正しいので max-w-3xl のまま。 */}
       <div className="mx-auto max-w-[1700px] space-y-5">
         <header>
           <h1 className="text-xl font-bold">家賃市場の計量分析</h1>
-          <p className="mt-1 text-xs leading-relaxed text-stone-500">
+          <p className="mt-1 text-xs leading-relaxed text-ink-muted">
             株式の定量分析で使う道具（ファクターモデル・分布分析・生存分析）を賃貸市場に当てています。集計した時点:{" "}
             {new Date(generated).toLocaleString("ja-JP", {
               timeZone: "Asia/Tokyo",
@@ -166,7 +170,7 @@ export default function MarketAnalyticsPage() {
             日数は出さない（`listingSnapshotNote` の註）。
           */}
           {snapshotNote && (
-            <p className="mt-2 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs leading-relaxed text-amber-900">
+            <p className="mt-2 rounded-xl border border-amber-200 dark:border-theme-border bg-amber-50 dark:bg-theme-gold-soft px-3 py-2 text-xs leading-relaxed text-amber-900 dark:text-theme-gold">
               {snapshotNote}
             </p>
           )}
@@ -175,10 +179,10 @@ export default function MarketAnalyticsPage() {
             残差が何を意味するのかは下の注記まで読まないと分からない。
             記事のほうは索引に載るので、検索から来た人の入口にもなる。
           */}
-          <p className="mt-1 text-xs text-stone-500">
+          <p className="mt-1 text-xs text-ink-muted">
             <Link
               href="/blog/how-we-analyze-the-rental-market"
-              className="font-semibold text-indigo-600 underline"
+              className="font-semibold text-accent underline"
             >
               この 3 つの分析の読み方
             </Link>
@@ -255,23 +259,23 @@ export default function MarketAnalyticsPage() {
                     sqm: p.medianSqmRent,
                   }))}
                 >
-                  <CartesianGrid strokeDasharray="3 3" stroke={GRID_STROKE} />
+                  <CartesianGrid strokeDasharray="3 3" stroke={THEMED_GRID_STROKE} />
                   <XAxis
                     dataKey="date"
-                    tick={{ fontSize: 10 }}
+                    tick={{ fontSize: 10, fill: "var(--wg-ink-muted)" }}
                     minTickGap={24}
                   />
                   <YAxis
-                    tick={{ fontSize: 10 }}
+                    tick={{ fontSize: 10, fill: "var(--wg-ink-muted)" }}
                     width={52}
                     domain={["auto", "auto"]}
                     unit="円"
                   />
-                  <Tooltip formatter={(v) => [`${v}円/㎡`, "㎡単価中央値"]} />
+                  <Tooltip {...THEMED_TOOLTIP_STYLES} formatter={(v) => [`${v}円/㎡`, "㎡単価中央値"]} />
                   <Line
                     dataKey="sqm"
                     name="㎡単価中央値"
-                    stroke={SERIES.primary}
+                    stroke={THEMED_SERIES.primary}
                     dot={false}
                     strokeWidth={2}
                   />
@@ -279,7 +283,7 @@ export default function MarketAnalyticsPage() {
               </ResponsiveContainer>
             </div>
           ) : (
-            <p className="rounded-xl bg-stone-50 border border-stone-200 p-3 text-xs leading-relaxed text-stone-500">
+            <p className="rounded-xl bg-stone-50 dark:bg-theme-subtle border border-stone-200 dark:border-theme-border p-3 text-xs leading-relaxed text-ink-muted">
               蓄積中（現在 {stats.rentIndexSeries.length} 日ぶん）。集計が 5 日ぶん貯まるとチャートが表示されます。
             </p>
           )}
@@ -293,21 +297,21 @@ export default function MarketAnalyticsPage() {
           <div className="h-56">
             <ResponsiveContainer width="100%" height="100%">
               <LineChart data={dailySeries}>
-                <CartesianGrid strokeDasharray="3 3" stroke={GRID_STROKE} />
-                <XAxis dataKey="date" tick={{ fontSize: 10 }} minTickGap={24} />
-                <YAxis tick={{ fontSize: 10 }} width={44} />
-                <Tooltip />
+                <CartesianGrid strokeDasharray="3 3" stroke={THEMED_GRID_STROKE} />
+                <XAxis dataKey="date" tick={{ fontSize: 10, fill: "var(--wg-ink-muted)" }} minTickGap={24} />
+                <YAxis tick={{ fontSize: 10, fill: "var(--wg-ink-muted)" }} width={44} />
+                <Tooltip {...THEMED_TOOLTIP_STYLES} />
                 <Line
                   dataKey="count"
                   name="新規掲載"
-                  stroke={SERIES.neutral}
+                  stroke={THEMED_SERIES.neutral}
                   dot={false}
                   strokeWidth={1}
                 />
                 <Line
                   dataKey="ma7"
                   name="7日平均"
-                  stroke={SERIES.primary}
+                  stroke={THEMED_SERIES.primary}
                   dot={false}
                   strokeWidth={2}
                 />
@@ -331,12 +335,12 @@ export default function MarketAnalyticsPage() {
                 <BarChart data={rentHist}>
                   <XAxis
                     dataKey="label"
-                    tick={{ fontSize: 9 }}
+                    tick={{ fontSize: 9, fill: "var(--wg-ink-muted)" }}
                     minTickGap={16}
                   />
-                  <YAxis tick={{ fontSize: 9 }} width={44} />
-                  <Tooltip />
-                  <Bar dataKey="count" name="件数" fill={SERIES.secondary} />
+                  <YAxis tick={{ fontSize: 9, fill: "var(--wg-ink-muted)" }} width={44} />
+                  <Tooltip {...THEMED_TOOLTIP_STYLES} />
+                  <Bar dataKey="count" name="件数" fill={THEMED_SERIES.secondary} />
                 </BarChart>
               </ResponsiveContainer>
             </div>
@@ -351,11 +355,11 @@ export default function MarketAnalyticsPage() {
                 <BarChart data={residualHist}>
                   <XAxis
                     dataKey="label"
-                    tick={{ fontSize: 9 }}
+                    tick={{ fontSize: 9, fill: "var(--wg-ink-muted)" }}
                     minTickGap={16}
                   />
-                  <YAxis tick={{ fontSize: 9 }} width={44} />
-                  <Tooltip />
+                  <YAxis tick={{ fontSize: 9, fill: "var(--wg-ink-muted)" }} width={44} />
+                  <Tooltip {...THEMED_TOOLTIP_STYLES} />
                   {/* 左裾（割安側）だけ青、割高側は灰。副題の「左裾を
                       拾っている」を色でも示す。isCheap は元から計算して
                       いたのに塗り分けに使われていなかった。 */}
@@ -363,7 +367,7 @@ export default function MarketAnalyticsPage() {
                     {residualHist.map((b) => (
                       <Cell
                         key={b.label}
-                        fill={b.isCheap ? SERIES.secondary : SERIES.neutral}
+                        fill={b.isCheap ? THEMED_SERIES.secondary : THEMED_SERIES.neutral}
                       />
                     ))}
                   </Bar>
@@ -381,28 +385,29 @@ export default function MarketAnalyticsPage() {
           <div className="h-56">
             <ResponsiveContainer width="100%" height="100%">
               <LineChart data={survivalSeries}>
-                <CartesianGrid strokeDasharray="3 3" stroke={GRID_STROKE} />
+                <CartesianGrid strokeDasharray="3 3" stroke={THEMED_GRID_STROKE} />
                 <XAxis
                   dataKey="day"
-                  tick={{ fontSize: 10 }}
+                  tick={{ fontSize: 10, fill: "var(--wg-ink-muted)" }}
                   label={{
                     value: "掲載からの日数",
                     position: "insideBottom",
                     offset: -2,
                     fontSize: 10,
+                    fill: "var(--wg-ink-muted)",
                   }}
                 />
                 <YAxis
-                  tick={{ fontSize: 10 }}
+                  tick={{ fontSize: 10, fill: "var(--wg-ink-muted)" }}
                   width={40}
                   unit="%"
                   domain={[0, 100]}
                 />
-                <Tooltip formatter={(v) => [`${v}%`, "残存率"]} />
+                <Tooltip {...THEMED_TOOLTIP_STYLES} formatter={(v) => [`${v}%`, "残存率"]} />
                 <Line
                   dataKey="pct"
                   name="残存率"
-                  stroke={SERIES.primary}
+                  stroke={THEMED_SERIES.primary}
                   dot={false}
                   strokeWidth={2}
                   type="stepAfter"
@@ -430,7 +435,7 @@ export default function MarketAnalyticsPage() {
           <div className="overflow-x-auto">
             <table className="w-full text-[11px]">
               <thead>
-                <tr className="border-b border-gray-200 text-left text-[10px] uppercase tracking-wider text-stone-600">
+                <tr className="border-b border-gray-200 dark:border-theme-border text-left text-[10px] uppercase tracking-wider text-ink-muted">
                   <th className="py-1.5 pr-2">市区町村</th>
                   <th className="py-1.5 pr-2 text-right">掲載数</th>
                   <th className="py-1.5 pr-2 text-right">㎡単価中央値</th>
@@ -449,7 +454,7 @@ export default function MarketAnalyticsPage() {
                 {stats.volatilityRanking.map((m) => (
                   <tr
                     key={m.prefecture + m.municipality}
-                    className="border-b border-gray-100 last:border-0"
+                    className="border-b border-gray-100 dark:border-theme-border last:border-0"
                   >
                     <td className="py-1.5 pr-2 font-semibold">
                       {m.prefecture}
@@ -473,7 +478,7 @@ export default function MarketAnalyticsPage() {
             </table>
           </div>
           {stats.volatilityRanking.length === 0 && (
-            <p className="text-xs text-stone-600">データ待ち</p>
+            <p className="text-xs text-ink-muted">データ待ち</p>
           )}
         </Section>
 
@@ -500,7 +505,7 @@ export default function MarketAnalyticsPage() {
               ? new Date(`${clim.meta.from}T12:00:00+09:00`)
               : null;
             if (!from || Object.keys(profiles).length === 0) {
-              return <p className="text-xs text-stone-600">データ待ち</p>;
+              return <p className="text-xs text-ink-muted">データ待ち</p>;
             }
             const idx = Math.min(
               8,
@@ -535,7 +540,7 @@ export default function MarketAnalyticsPage() {
               <div className="overflow-x-auto">
                 <table className="w-full text-[11px]">
                   <thead>
-                    <tr className="border-b border-gray-200 text-left text-[10px] uppercase tracking-wider text-stone-600">
+                    <tr className="border-b border-gray-200 dark:border-theme-border text-left text-[10px] uppercase tracking-wider text-ink-muted">
                       <th className="py-1.5 pr-2">本命星</th>
                       <th className="py-1.5 pr-2 text-right">今年度の三盤吉</th>
                       <th className="py-1.5 pr-2 text-right">9年平均</th>
@@ -546,7 +551,7 @@ export default function MarketAnalyticsPage() {
                     {sorted.map((r) => (
                       <tr
                         key={r.star}
-                        className="border-b border-gray-100 last:border-0"
+                        className="border-b border-gray-100 dark:border-theme-border last:border-0"
                       >
                         <td className="py-1.5 pr-2 font-semibold">
                           {
@@ -573,9 +578,9 @@ export default function MarketAnalyticsPage() {
                         <td
                           className={`py-1.5 text-right font-mono ${
                             r.ratio >= 1.05
-                              ? "text-emerald-700"
+                              ? "text-emerald-700 dark:text-theme-good"
                               : r.ratio <= 0.95
-                                ? "text-rose-700"
+                                ? "text-rose-700 dark:text-theme-bad"
                                 : ""
                           }`}
                         >
@@ -585,7 +590,7 @@ export default function MarketAnalyticsPage() {
                     ))}
                   </tbody>
                 </table>
-                <p className="mt-2 text-xs text-stone-600">
+                <p className="mt-2 text-xs text-ink-muted">
                   ※天中殺グループ6通りの平均。個人の値は物件スキャナーの「引っ越し時期を探す」で自分の命式に対して表示される。
                 </p>
               </div>
@@ -598,7 +603,7 @@ export default function MarketAnalyticsPage() {
           title="方法論と限界"
           subtitle="何を計算していて、何は言えないか。"
         >
-          <ul className="list-disc space-y-1.5 pl-4 text-[11px] leading-relaxed text-stone-600">
+          <ul className="list-disc space-y-1.5 pl-4 text-[11px] leading-relaxed text-ink-muted">
             <li>
               <b>ヘドニック回帰</b>: log(家賃+管理費) を log(面積)・築年数・駅徒歩分に最小二乗で回帰。県ごとに別モデル。間取り・階数・構造は未投入なので、残差にはそれらの効果も混ざる。「割安」に見える物件には理由があることも多い。
             </li>
@@ -609,7 +614,7 @@ export default function MarketAnalyticsPage() {
               これは観測データの記述であって、因果関係でも将来の予測でもない。個別の物件判断は
               <Link
                 href="/relocation/arbitrage"
-                className="mx-0.5 font-semibold text-indigo-600 underline"
+                className="mx-0.5 font-semibold text-accent underline"
               >
                 物件スキャナー
               </Link>

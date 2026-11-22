@@ -61,7 +61,7 @@ export function BlogHero({
           height={945}
           fetchPriority="high"
           decoding="async"
-          className="w-full h-auto rounded-xl border border-stone-200"
+          className="w-full h-auto rounded-xl border border-stone-200 dark:border-theme-border"
         />
       </picture>
     </figure>

@@ -43,14 +43,14 @@ export function PortalLinkList({
   if (links.length === 0) return null;
   return (
     <div
-      className={`rounded-2xl border border-slate-300 bg-white/90 p-4 ${className}`}
+      className={`rounded-2xl border border-slate-300 dark:border-theme-border bg-white/90 dark:bg-theme-surface p-4 ${className}`}
     >
-      <p className="text-xs font-bold text-slate-800">
+      <p className="text-xs font-bold text-slate-800 dark:text-ink">
         {cityName}で募集中の部屋を見る
       </p>
       {/* 文の途中で改行すると、日本語の文中に半角スペースが入る
           （jsxJapaneseLinebreak が拾う）。1 つの式にまとめて渡す。 */}
-      <p className="mt-1 text-xs leading-relaxed text-slate-600">
+      <p className="mt-1 text-xs leading-relaxed text-slate-600 dark:text-ink-muted">
         {
           "このサイトは方位・暦・公的な統計を扱っていて、募集中の部屋そのものは持っていません。下の各社でご覧ください。"
         }
@@ -62,12 +62,14 @@ export function PortalLinkList({
               href={link.href}
               rel={link.rel}
               target="_blank"
-              className="inline-flex min-h-[24px] items-center font-semibold text-indigo-700 underline hover:text-indigo-900"
+              className="inline-flex min-h-[24px] items-center font-semibold text-accent underline hover:text-accent"
             >
               {link.name}
             </a>
             {link.city && (
-              <span className="ml-1 text-slate-500">（{cityName}の賃貸）</span>
+              <span className="ml-1 text-slate-500 dark:text-ink-muted">
+                （{cityName}の賃貸）
+              </span>
             )}
             {/* 市区町村まで絞った URL だけ写せるようにする。トップページを
                 写しても、向こうで街を選び直すことになるので意味が薄い */}
@@ -75,7 +77,7 @@ export function PortalLinkList({
           </li>
         ))}
       </ul>
-      <p className="mt-2 text-xs leading-relaxed text-slate-500">
+      <p className="mt-2 text-xs leading-relaxed text-slate-500 dark:text-ink-muted">
         {note ? `${disclaimer}${note}` : disclaimer}
       </p>
     </div>

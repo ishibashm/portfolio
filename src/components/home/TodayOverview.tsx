@@ -106,13 +106,13 @@ function DayBoard({ board }: { board: TodayBoard }) {
             aria-hidden="true"
             className={`rounded-md border px-0.5 py-1 leading-tight ${
               common
-                ? "border-rose-400 bg-rose-50 text-rose-900"
+                ? "border-accent bg-theme-accent-soft text-accent"
                 : cell === "CENTER"
-                  ? "border-amber-300 bg-amber-50 text-slate-900"
-                  : "border-slate-200 bg-white text-slate-900"
+                  ? "border-amber-300 dark:border-theme-border bg-amber-50 dark:bg-theme-gold-soft text-slate-900 dark:text-ink"
+                  : "border-slate-200 dark:border-theme-border bg-white dark:bg-theme-surface text-slate-900 dark:text-ink"
             }`}
           >
-            <span className="block text-[10px] text-slate-600">
+            <span className="block text-[10px] text-slate-600 dark:text-ink-muted">
               {cell === "CENTER" ? "中宮" : DIRECTION_LABELS[cell]}
             </span>
             <span className="block text-sm font-bold">
@@ -166,13 +166,13 @@ export function TodayOverviewCard({
   return (
     <section
       aria-labelledby="today-overview-heading"
-      className="@container w-full max-w-[1700px] space-y-3 rounded-3xl border border-slate-300 bg-white/95 p-4 text-slate-900 shadow-lg shadow-slate-200/50 md:space-y-4 md:p-8"
+      className="@container w-full max-w-[1700px] space-y-3 rounded-3xl border border-slate-300 dark:border-theme-border bg-white/95 dark:bg-theme-surface p-4 text-slate-900 dark:text-ink shadow-lg shadow-slate-200/50 dark:shadow-black/20 md:space-y-4 md:p-8"
     >
       <div>
         <h2 id="today-overview-heading" className="text-xl font-bold">
           今日の天気と方位
         </h2>
-        <p className="text-xs text-slate-600">
+        <p className="text-xs text-slate-600 dark:text-ink-muted">
           <time dateTime={board.date}>{board.date}</time>
           （日本時間）・方位は{origin.name}から見たもの
         </p>
@@ -186,11 +186,11 @@ export function TodayOverviewCard({
           {data ? (
             <NationalWeatherMap data={data} directions={directions} />
           ) : (
-            <p className="text-sm text-slate-700">
+            <p className="text-sm text-slate-700 dark:text-ink">
               いま天気を取得できません。時間をおいて開き直してください。
             </p>
           )}
-          <p className="text-xs text-slate-700">
+          <p className="text-xs text-slate-700 dark:text-ink">
             札の色は天気（薄黄は晴れ、薄青は雨、水色は雪、灰色はくもり）。赤い札は全員に共通の避けたい方位にある都市。太い青枠は残りの降水確率50%以上。
           </p>
         </div>
@@ -210,13 +210,13 @@ export function TodayOverviewCard({
                   {board.common.map((item) => (
                     <li
                       key={item.direction}
-                      className="rounded-full bg-rose-100 px-2 py-0.5 font-semibold text-rose-900"
+                      className="rounded-full bg-theme-accent-soft px-2 py-0.5 font-semibold text-accent"
                     >
                       {item.label}（{item.reason}）
                     </li>
                   ))}
                 </ul>
-                <p className="text-slate-700">
+                <p className="text-slate-700 dark:text-ink">
                   {redCities.length
                     ? `地図では${redCities.map((city) => city.city).join("・")}を赤くしています。`
                     : "今日は地図の代表都市に当たりません。"}
@@ -230,11 +230,11 @@ export function TodayOverviewCard({
                 <span className="block">
                   本命星別の今日の吉方位と、その先の天気
                 </span>
-                <span className="mt-0.5 inline-flex items-center gap-1 text-xs font-medium text-slate-700">
+                <span className="mt-0.5 inline-flex items-center gap-1 text-xs font-medium text-slate-700 dark:text-ink">
                   <svg
                     aria-hidden="true"
                     viewBox="0 0 20 20"
-                    className="h-4 w-4 shrink-0 text-slate-800"
+                    className="h-4 w-4 shrink-0 text-slate-800 dark:text-ink"
                     fill="none"
                   >
                     <circle
@@ -252,7 +252,7 @@ export function TodayOverviewCard({
                     />
                     <path
                       d="M10 13.8s-3.6-2.2-3.6-4.7a2.1 2.1 0 0 1 3.6-1.45A2.1 2.1 0 0 1 13.6 9.1c0 2.5-3.6 4.7-3.6 4.7Z"
-                      fill="#e11d48"
+                      fill="var(--wg-gold)"
                     />
                   </svg>
                   今日の恋愛の目安（各行の下段）
@@ -277,7 +277,7 @@ export function TodayOverviewCard({
                   const love = loveByStar.get(star.star);
                   return (
                     <Fragment key={star.star}>
-                      <tr className="border-t border-slate-200">
+                      <tr className="border-t border-slate-200 dark:border-theme-border">
                         <th
                           scope="row"
                           className="whitespace-nowrap px-1.5 py-1"
@@ -285,7 +285,7 @@ export function TodayOverviewCard({
                           {love ? (
                             <Link
                               href={love.href}
-                              className="underline decoration-slate-300 hover:text-rose-600"
+                              className="underline decoration-slate-300 dark:decoration-theme-border hover:text-accent"
                             >
                               {star.name}
                             </Link>
@@ -311,7 +311,7 @@ export function TodayOverviewCard({
                               </span>
                             ))
                           ) : (
-                            <span className="text-slate-500">
+                            <span className="text-slate-500 dark:text-ink-muted">
                               地図の都市なし
                             </span>
                           )}
@@ -321,7 +321,7 @@ export function TodayOverviewCard({
                         <tr>
                           <td
                             colSpan={3}
-                            className="px-1.5 pb-2 pt-0.5 text-[11px] leading-relaxed text-slate-700"
+                            className="px-1.5 pb-2 pt-0.5 text-[11px] leading-relaxed text-slate-700 dark:text-ink"
                           >
                             {love.text}
                           </td>
@@ -335,22 +335,24 @@ export function TodayOverviewCard({
             <p className="mt-1 text-xs">
               <Link
                 href="#today-hours-heading"
-                className="text-rose-600 underline"
+                className="text-accent underline"
               >
                 下の今の刻と時間帯を見る
               </Link>
-              <span className="text-slate-600">・本命星は</span>
+              <span className="text-slate-600 dark:text-ink-muted">
+                ・本命星は
+              </span>
               <Link
                 href="/houi#honmei-lookup"
-                className="text-rose-600 underline"
+                className="text-accent underline"
               >
                 早見
               </Link>
-              <span className="text-slate-600">
+              <span className="text-slate-600 dark:text-ink-muted">
                 で分かります（本命星は立春が年の境目で、1月1日から立春前の生まれは前年の星です）。
               </span>
             </p>
-            <p className="mt-1 text-xs text-slate-600">
+            <p className="mt-1 text-xs text-slate-600 dark:text-ink-muted">
               これは占い上の目安で、伝統的な見方です。的中や成果を保証しません。
             </p>
           </div>
@@ -359,10 +361,10 @@ export function TodayOverviewCard({
       {data ? (
         <NationalWeatherTable data={data} directions={directions} />
       ) : null}
-      <p className="text-xs text-slate-600">
+      <p className="text-xs text-slate-600 dark:text-ink-muted">
         今日の最低は5時・11時発表で予報に出ないため、当日0時以降の観測値（アメダス）を表示します。観測の取得時点までの最低で、欠測時は表示しません。
       </p>
-      <p className="text-xs text-slate-600">
+      <p className="text-xs text-slate-600 dark:text-ink-muted">
         出典：
         <a
           className="underline"

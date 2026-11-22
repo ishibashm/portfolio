@@ -20,38 +20,35 @@ export function ArticleToolCta({ tags }: { tags: readonly string[] }) {
   return (
     <section
       aria-labelledby="article-tool-cta"
-      className="mt-12 rounded-2xl border border-rose-200 bg-rose-50/70 p-5 md:p-6"
+      className="mt-12 rounded-2xl border border-theme-border bg-theme-accent-soft p-5 md:p-6"
     >
       <h2
         id="article-tool-cta"
-        className="font-serif text-base font-bold text-slate-900"
+        className="font-serif text-base font-bold text-slate-900 dark:text-ink"
       >
         自分の場合はどうかを、同じ基準で確かめる
       </h2>
-      <p className="mt-2 text-xs leading-relaxed text-slate-700 max-w-[70ch]">
+      <p className="mt-2 text-xs leading-relaxed text-slate-700 dark:text-ink max-w-[70ch]">
         この記事で説明している判定は、サイト内の道具と同じ計算で出しています。生年月日と今住んでいる場所を一度入れれば、どの道具も同じ設定を読みます。
       </p>
       {tags.some((tag) => ["方位", "距離", "引越し", "家賃"].includes(tag)) && (
-        <p className="mt-2 text-xs leading-relaxed text-slate-700 max-w-[70ch]">
+        <p className="mt-2 text-xs leading-relaxed text-slate-700 dark:text-ink max-w-[70ch]">
           出発地から見た街の並びは
-          <Link href="/houi/area" className="underline hover:text-rose-600">
+          <Link href="/houi/area" className="underline hover:text-accent">
             エリア別の解説
           </Link>
           で確認できます。たとえば、
-          <Link href="/houi/pref/13" className="underline hover:text-rose-600">
+          <Link href="/houi/pref/13" className="underline hover:text-accent">
             東京都
           </Link>
           の中でも出発地が変われば方位は変わります。
-          <Link
-            href="/houi/area/13108"
-            className="underline hover:text-rose-600"
-          >
+          <Link href="/houi/area/13108" className="underline hover:text-accent">
             江東区を出発地にした街の並び
           </Link>
           と県の一覧を比べ、実際の住所で確かめる手順は
           <Link
             href="/guide/compare-areas"
-            className="underline hover:text-rose-600"
+            className="underline hover:text-accent"
           >
             地域を比べるガイド
           </Link>
@@ -61,7 +58,7 @@ export function ArticleToolCta({ tags }: { tags: readonly string[] }) {
       {tags.includes("天中殺") && (
         <Link
           href="/houi/tenchusatsu"
-          className="mt-4 inline-block rounded-xl border border-rose-200 bg-white px-4 py-3 text-sm"
+          className="mt-4 inline-block rounded-xl border border-theme-border bg-white dark:bg-theme-surface px-4 py-3 text-sm"
         >
           生年月日から天中殺を調べる
         </Link>
@@ -79,22 +76,22 @@ export function ArticleToolCta({ tags }: { tags: readonly string[] }) {
           >
             <Link
               href={t.href}
-              className="group block h-full rounded-xl border border-slate-300 bg-white p-4 transition-colors hover:border-rose-400"
+              className="group block h-full rounded-xl border border-slate-300 dark:border-theme-border bg-white dark:bg-theme-surface p-4 transition-colors hover:border-accent"
             >
-              <span className="flex items-center gap-2 font-serif text-sm font-bold text-slate-900">
+              <span className="flex items-center gap-2 font-serif text-sm font-bold text-slate-900 dark:text-ink">
                 {t.label}
-                <ArrowRight className="h-4 w-4 text-rose-500 opacity-0 transition-opacity group-hover:opacity-100" />
+                <ArrowRight className="h-4 w-4 text-accent opacity-0 transition-opacity group-hover:opacity-100" />
               </span>
-              <span className="mt-2 block text-xs leading-relaxed text-slate-600">
+              <span className="mt-2 block text-xs leading-relaxed text-slate-600 dark:text-ink-muted">
                 {t.summary}
               </span>
             </Link>
           </li>
         ))}
       </ul>
-      <p className="mt-4 text-xs leading-relaxed text-slate-500">
+      <p className="mt-4 text-xs leading-relaxed text-ink-muted">
         判定の考え方と出典、何を保証していないかは
-        <Link href="/about" className="underline hover:text-rose-600">
+        <Link href="/about" className="underline hover:text-accent">
           このサイトについて
         </Link>
         に書いています。

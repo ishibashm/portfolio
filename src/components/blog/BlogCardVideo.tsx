@@ -11,7 +11,7 @@ export function BlogCardVideo({
   return (
     <Link
       href={`/blog/${post.slug}`}
-      className="relative mb-4 block w-full overflow-hidden rounded-xl bg-slate-100"
+      className="relative mb-4 block w-full overflow-hidden rounded-xl bg-slate-100 dark:bg-theme-subtle"
       style={{ aspectRatio: "16 / 9" }}
       aria-label={`記事を読む: ${post.title}`}
     >
@@ -30,7 +30,7 @@ export function BlogCardVideo({
         aria-hidden="true"
         className="absolute inset-0 flex items-center justify-center"
       >
-        <span className="rounded-xl bg-red-600 px-5 py-3 text-white shadow">
+        <span className="rounded-xl bg-accent px-5 py-3 text-on-accent shadow">
           <Play className="h-6 w-6 fill-current" />
         </span>
       </span>

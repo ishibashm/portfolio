@@ -1,60 +1,81 @@
 @import "tailwindcss";
 
-/*
- * dark: を「OS の設定」ではなく「.dark が付いているとき」に切り替える。
- *
- * Tailwind v4 の dark: は既定で @media (prefers-color-scheme: dark) に
- * コンパイルされる。ところがこのサイトは暗い地色を持っていない——
- * 下の --background は #f7f4f0 の固定で、prefers-color-scheme の
- * 上書きもどこにも無い。
- *
- * そのため OS をダークにしている利用者には「背景は明るいまま dark: だけが
- * 発火する」状態になっていた。コードベース全体で dark: は 341 か所ある。
- * 実測（物件ポップアップの見出し、段階の文字色）:
- *
- *              S       A       B
- *   OS ダーク  1.5:1   1.9:1   2.5:1   ← 白地に明るい緑。ほぼ読めない
- *   OS ライト  7.6:1   3.7:1   2.5:1
- *
- * .dark を付ける場所はいまどこにも無いので、この 1 行で dark: は効かなく
- * なり、全員がライトの配色を見る。ダークテーマを入れるときは、地色を
- * 用意したうえで html に .dark を付ければ、既存の dark: がそのまま効く。
- */
 @custom-variant dark (&:where(.dark, .dark *));
 
 :root {
-  /* ===== High-Contrast Warm Glass Theme Tokens =====
-     全サブドメイン共通のデザイントークン。
-     背景と文字のコントラスト・可読性を最高レベルに維持します。 */
-  --background: #f7f4f0; /* warm paper background */
-  --foreground: #0f172a; /* slate-900: くっきり深みのある本文文字 */
+  color-scheme: light;
+  --background: #faf7f2;
+  --foreground: #171c2b;
+  --wg-ink: var(--foreground);
+  --wg-ink-muted: #4d5568;
+  --wg-surface: #ffffff;
+  --theme-subtle: #f2ede4;
+  --theme-border: #ddd6ca;
+  --wg-surface-border: var(--theme-border);
+  --wg-shadow: rgb(23 28 43 / 0.08);
+  --wg-accent: #1e3a6e;
+  --wg-on-accent: #ffffff;
+  --wg-accent-soft: #ebf0fa;
+  --theme-link: var(--wg-accent);
+  --theme-link-soft: var(--wg-accent-soft);
+  --wg-gold: #8a6216;
+  --wg-gold-decor: #c9a54a;
+  --theme-gold-soft: #fbf5e6;
+  --theme-good: #166534;
+  --theme-good-soft: #dcfce7;
+  --theme-bad: #9f1239;
+  --theme-bad-soft: #ffe4e6;
+  --chart-primary: var(--wg-accent);
+  --chart-secondary: #4c6fa8;
+  --chart-tertiary: #a7bde4;
+  --chart-neutral: #7c8292;
+  --chart-grid: #e8e2d7;
+}
 
-  --wg-ink: #0f172a; /* slate-900: 大見出しタイトル */
-  --wg-ink-muted: #334155; /* slate-700: くっきり見やすい補足テキスト */
-  --wg-accent: #e11d48; /* rose-600: プライマリアクセント */
-  --wg-accent-soft: #ffe4e6; /* rose-100 */
-  --wg-gold: #d97706; /* amber-600: サブアクセント */
-  --wg-surface: rgba(
-    255,
-    255,
-    255,
-    0.92
-  ); /* 文字を浮き立たせる高不透明度カード地 */
-  --wg-surface-border: rgba(
-    203,
-    213,
-    225,
-    0.9
-  ); /* slate-200/90 の引き締まった境界線 */
-  --wg-shadow: rgba(15, 23, 42, 0.08); /* 落ち着いた立体影 */
+:root.dark {
+  color-scheme: dark;
+  --background: #151722;
+  --foreground: #f3efe8;
+  --wg-ink-muted: #b2b8ca;
+  --wg-surface: #1e2130;
+  --theme-subtle: #262a3c;
+  --theme-border: #383e56;
+  --wg-shadow: rgb(0 0 0 / 0.42);
+  --wg-accent: #8cb4ff;
+  --wg-on-accent: #151722;
+  --wg-accent-soft: #212d48;
+  --wg-gold: #dfb968;
+  --wg-gold-decor: var(--wg-gold);
+  --theme-gold-soft: #31291d;
+  --theme-good: #86efac;
+  --theme-good-soft: #1e382e;
+  --theme-bad: #fda4a4;
+  --theme-bad-soft: #41282e;
+  --chart-secondary: #5b8ad6;
+  --chart-tertiary: #a7bde4;
+  --chart-neutral: #8b92a6;
+  --chart-grid: #2e3347;
 }
 
 @theme inline {
+  --color-theme-surface: var(--wg-surface);
+  --color-theme-subtle: var(--theme-subtle);
+  --color-theme-border: var(--theme-border);
+  --color-theme-link: var(--theme-link);
+  --color-theme-link-soft: var(--theme-link-soft);
+  --color-theme-accent-soft: var(--wg-accent-soft);
+  --color-theme-gold: var(--wg-gold);
+  --color-theme-gold-soft: var(--theme-gold-soft);
+  --color-theme-good: var(--theme-good);
+  --color-theme-good-soft: var(--theme-good-soft);
+  --color-theme-bad: var(--theme-bad);
+  --color-theme-bad-soft: var(--theme-bad-soft);
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-ink: var(--wg-ink);
   --color-ink-muted: var(--wg-ink-muted);
   --color-accent: var(--wg-accent);
+  --color-on-accent: var(--wg-on-accent);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
   --font-serif: var(--font-shippori-mincho), serif; /* Add serif font */
@@ -92,11 +113,16 @@ body {
   .wg-page {
     background-image: linear-gradient(
       to bottom right,
-      rgba(255, 241, 242, 0.8),
-      #fafaf9,
-      rgba(255, 251, 235, 0.5)
+      var(--background),
+      var(--theme-subtle),
+      var(--theme-gold-soft)
     );
     color: var(--foreground);
+  }
+
+  .dark .wg-page {
+    background-image: none;
+    background-color: var(--background);
   }
 
   /* 標準グラスカード */
@@ -110,7 +136,7 @@ body {
 
   /* カード内のセクション区切り付きヘッダー下線 */
   .wg-divider {
-    border-color: rgba(255, 228, 230, 0.6); /* rose-100/60 */
+    border-color: var(--wg-surface-border);
   }
 
   /* ピル型バッジ/チップ */
@@ -122,9 +148,9 @@ body {
     border-radius: 9999px;
     font-size: 0.75rem;
     font-weight: 600;
-    background: #fff1f2; /* rose-50 */
-    border: 1px solid rgba(254, 205, 211, 0.6); /* rose-200/60 */
-    color: #e11d48; /* rose-600 */
+    background: var(--wg-accent-soft);
+    border: 1px solid var(--wg-surface-border);
+    color: var(--wg-accent);
   }
 
   /* プライマリボタン (濃色ピル) */
@@ -134,21 +160,21 @@ body {
     gap: 0.5rem;
     padding: 0.625rem 1.25rem;
     border-radius: 9999px;
-    background: var(--wg-ink);
-    color: #fff;
+    background: var(--wg-accent);
+    color: var(--wg-on-accent);
     font-size: 0.75rem;
     font-weight: 600;
     box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
     transition: all 0.2s;
   }
   .wg-btn-primary:hover {
-    background: #292524; /* stone-800 */
+    filter: brightness(1.05);
   }
   .wg-btn-primary:active {
     transform: scale(0.95);
   }
 
-  /* アクセントボタン (rose ピル) */
+  /* アクセントボタン */
   .wg-btn-accent {
     display: inline-flex;
     align-items: center;
@@ -156,7 +182,7 @@ body {
     padding: 0.625rem 1.25rem;
     border-radius: 9999px;
     background: var(--wg-accent);
-    color: #fff;
+    color: var(--wg-on-accent);
     font-size: 0.75rem;
     font-weight: 700;
     box-shadow: 0 4px 6px -1px var(--wg-shadow);
@@ -171,8 +197,8 @@ body {
 
   .text-glow {
     text-shadow:
-      0 0 10px rgba(16, 185, 129, 0.5),
-      0 0 20px rgba(16, 185, 129, 0.3);
+      0 0 10px color-mix(in srgb, var(--wg-accent) 50%, transparent),
+      0 0 20px color-mix(in srgb, var(--wg-accent) 30%, transparent);
   }
 
   .text-glow-gold {
@@ -209,19 +235,20 @@ body {
 }
 
 ::-webkit-scrollbar-thumb {
-  background: rgba(244, 63, 94, 0.25);
+  background: color-mix(in srgb, var(--wg-accent) 25%, transparent);
   border-radius: 999px;
   transition: background 0.3s;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(244, 63, 94, 0.55);
+  background: color-mix(in srgb, var(--wg-accent) 55%, transparent);
 }
 
 /* Firefox */
 * {
   scrollbar-width: thin;
-  scrollbar-color: rgba(244, 63, 94, 0.25) transparent;
+  scrollbar-color: color-mix(in srgb, var(--wg-accent) 25%, transparent)
+    transparent;
 }
 
 /* Scroll Down Indicator animation */

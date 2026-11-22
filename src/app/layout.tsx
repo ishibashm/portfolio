@@ -3,6 +3,7 @@ import { consentDefaultScript, getAdsenseIds } from "@/lib/adsense";
 import { SITE_SAME_AS } from "@/lib/siteChannels";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
+import { themeScript } from "@/lib/theme";
 import {
   CORE_ROUTES,
   INDEXED_ROBOTS,
@@ -125,7 +126,10 @@ export const metadata: Metadata = {
   置いたままだと全頁のビルドで警告が出る（1,447 行）。値は変えていない。
 */
 export const viewport: Viewport = {
-  themeColor: "#faf7f3",
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#faf7f2" },
+    { media: "(prefers-color-scheme: dark)", color: "#151722" },
+  ],
 };
 
 import { GlobalSidebar } from "@/components/GlobalSidebar";
@@ -145,8 +149,7 @@ import { SiteShirube } from "@/components/guide/SiteShirube";
   見た目は変わらない。地色・文字色は以前から固定。
 */
 const SITE_THEME = {
-  accent: "#3b82f6",
-  glowColor: "#3b82f6",
+  glowColor: "#1e3a6e",
   glowIntensity: 0.5,
   animationSpeed: "4s",
   noiseOpacity: 0.05,
@@ -203,19 +206,7 @@ export default async function RootLayout({
   // 見本値のまま広告スクリプトを読み込まない。
   const adsense = getAdsenseIds();
 
-  // サイトの地色と文字色は固定する。
-  //
-  // ホームの「AI相談」から配色を書き換えられる仕組みがあり、書き込まれた値は
-  // 全訪問者の全ページに !important で適用される。実際に本番の body 背景が
-  // #020617（ほぼ黒）になっており、明色前提で作られたカードの外側に暗い余白が
-  // 出ていた。広告を載せるサイトで、訪問者の操作によって全体の見た目が変わるのは
-  // 事故のもとなので、地色と文字色だけは受け付けない。
-  //
-  // アクセント・光量・角丸・書体も上の SITE_THEME で固定する。
-  const bg = "#faf7f3";
-  const fg = "#292524";
   const {
-    accent,
     glowColor,
     glowIntensity,
     animationSpeed,
@@ -228,8 +219,9 @@ export default async function RootLayout({
   const fontVarName = "var(--font-sans)";
 
   return (
-    <html lang="ja">
+    <html lang="ja" suppressHydrationWarning>
       <head>
+        <script dangerouslySetInnerHTML={{ __html: themeScript }} />
         <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="default" />
@@ -349,9 +341,6 @@ export default async function RootLayout({
           dangerouslySetInnerHTML={{
             __html: `
           :root {
-            --background: ${bg} !important;
-            --foreground: ${fg} !important;
-            --color-accent: ${accent} !important;
             --glow-color: ${glowColor} !important;
             --glow-intensity: ${glowIntensity} !important;
             --animation-speed: ${animationSpeed} !important;

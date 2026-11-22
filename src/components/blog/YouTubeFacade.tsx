@@ -35,7 +35,7 @@ export function YouTubeFacade({
         ) : (
           <button
             type="button"
-            className="absolute inset-0 h-full w-full cursor-pointer focus-visible:outline-4 focus-visible:outline-offset-[-4px] focus-visible:outline-rose-500"
+            className="absolute inset-0 h-full w-full cursor-pointer focus-visible:outline-4 focus-visible:outline-offset-[-4px] focus-visible:outline-accent"
             aria-label={`動画を再生: ${title}`}
             onClick={() => setPlayingId(youtubeId)}
           >
@@ -64,15 +64,15 @@ export function YouTubeFacade({
           </button>
         )}
       </div>
-      <figcaption className="mt-2 text-sm text-slate-600">
+      <figcaption className="mt-2 text-sm text-slate-600 dark:text-ink-muted">
         ナレーション：VOICEVOX:玄野武宏
       </figcaption>
-      <p className="mt-2 text-sm text-slate-700">
+      <p className="mt-2 text-sm text-slate-700 dark:text-ink">
         <a
           href={HOUI_SUMAI_CHANNEL.url}
           target="_blank"
           rel="noopener noreferrer"
-          className="font-semibold text-rose-700 underline decoration-rose-300 underline-offset-4 hover:text-rose-800"
+          className="font-semibold text-accent underline decoration-accent underline-offset-4 hover:text-accent"
         >
           {`${HOUI_SUMAI_CHANNEL.name}で他の動画を見る`}
         </a>
@@ -81,7 +81,7 @@ export function YouTubeFacade({
           href={`${HOUI_SUMAI_CHANNEL.url}?sub_confirmation=1`}
           target="_blank"
           rel="noopener noreferrer"
-          className="font-semibold text-rose-700 underline decoration-rose-300 underline-offset-4 hover:text-rose-800"
+          className="font-semibold text-accent underline decoration-accent underline-offset-4 hover:text-accent"
         >
           チャンネル登録
         </a>

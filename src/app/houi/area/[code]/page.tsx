@@ -250,7 +250,7 @@ export default async function Page({
   const affiliate = areaAffiliateOffer(area.code, HOUSING);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#faf7f5] via-[#f5efe9] to-[#f0e9e1] text-slate-900 font-sans">
+    <div className="min-h-screen wg-page text-ink font-sans">
       {/*
         description は 50 文字以上にする。Google の Dataset は 50〜5000 字を
         求め、以前の文（45 字）は Search Console で「文字列長が無効」の
@@ -275,12 +275,12 @@ export default async function Page({
       />
       {/* 幅は全画面で 1700px に揃える（1/3 と同じ理由）。 */}
       <article className="max-w-[1700px] mx-auto px-5 py-12">
-        <nav className="text-xs text-slate-500 mb-6">
-          <Link href="/houi" className="hover:text-rose-600">
+        <nav className="text-xs text-ink-muted mb-6">
+          <Link href="/houi" className="hover:text-accent">
             {HOUI_BREADCRUMB_LABEL}
           </Link>
           <span className="mx-2">/</span>
-          <Link href="/houi/area" className="hover:text-rose-600">
+          <Link href="/houi/area" className="hover:text-accent">
             エリア別
           </Link>
           <span className="mx-2">/</span>
@@ -288,7 +288,7 @@ export default async function Page({
             <>
               <Link
                 href={`/houi/pref/${prefCode}`}
-                className="hover:text-rose-600"
+                className="hover:text-accent"
               >
                 {area.pref}
               </Link>
@@ -318,7 +318,7 @@ export default async function Page({
           }
         >
           <div>
-            <p className="mt-5 text-sm leading-relaxed text-slate-700">
+            <p className="mt-5 text-sm leading-relaxed text-ink-muted">
               吉方位が分かっても、その方位に実際どんな街があっていくらなのかが分からないと引越し先は決められません。
               {area.full}
               を出発地として、八方位それぞれにある市区町村と、住宅・土地統計調査から作った借家の家賃をまとめました。
@@ -332,7 +332,7 @@ export default async function Page({
               count={ranking.length}
               source={
                 <>
-                  <p className="mt-3 text-xs leading-relaxed text-slate-500">
+                  <p className="mt-3 text-xs leading-relaxed text-ink-muted">
                     {HOUSING.year} 年 住宅・土地統計調査（e-Stat 表 ID{" "}
                     <a
                       href="https://www.e-stat.go.jp/dbview?sid=0000020108"
@@ -342,7 +342,7 @@ export default async function Page({
                     </a>
                     ）／{ESTAT_SOURCE}
                   </p>
-                  <p className="mt-1 text-xs leading-relaxed text-slate-500">
+                  <p className="mt-1 text-xs leading-relaxed text-ink-muted">
                     {ESTAT_API_CREDIT}
                   </p>
                 </>
@@ -356,7 +356,7 @@ export default async function Page({
                 {editorial.intro.map((paragraph, i) => (
                   <p
                     key={i}
-                    className="max-w-[70ch] text-sm leading-relaxed text-slate-700"
+                    className="max-w-[70ch] text-sm leading-relaxed text-ink-muted"
                   >
                     {paragraph}
                   </p>
@@ -365,10 +365,10 @@ export default async function Page({
             )}
 
             {prefCode && (
-              <p className="mt-3 text-xs text-slate-600">
+              <p className="mt-3 text-xs text-ink-muted">
                 <Link
                   href={`/houi/pref/${prefCode}`}
-                  className="underline hover:text-rose-600"
+                  className="underline hover:text-accent"
                 >
                   {area.pref}の家賃を安い順・高い順で比べる
                 </Link>
@@ -410,16 +410,16 @@ export default async function Page({
               rows={rentRows(HOUSING, nearby)}
               origin={figures}
             />
-            <p className="mt-3 text-xs leading-relaxed text-slate-600">
+            <p className="mt-3 text-xs leading-relaxed text-ink-muted">
               下の方位一覧にある同県の市区町村から、距離が近い順に最大8件を選びました。境界が接している自治体の一覧ではありません。
               {`家賃差＝（比較先の1㎡あたり家賃−${area.city}の1㎡あたり家賃）÷${area.city}の1㎡あたり家賃×100（整数に丸め）。公表値がない場合は比較しません。`}
             </p>
 
             <section className="mt-10">
-              <h2 className="text-xl font-bold font-serif border-b border-slate-300 pb-2">
+              <h2 className="text-xl font-bold font-serif border-b border-theme-border pb-2">
                 方位ごとのエリア
               </h2>
-              <p className="text-xs text-slate-600 mt-3">
+              <p className="text-xs text-ink-muted mt-3">
                 {area.full}の中心から 5〜150km
                 の範囲。距離が近い順に並べています。
               </p>
@@ -512,7 +512,7 @@ export default async function Page({
                 </div>
               )}
               {farOnly.length > 0 && (
-                <p className="mt-2 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs leading-relaxed text-slate-700">
+                <p className="mt-2 rounded-xl border border-theme-border bg-theme-subtle px-3 py-2 text-xs leading-relaxed text-ink-muted">
                   <b>
                     150km 以内に市区町村が無い方位:{" "}
                     {farOnly
@@ -528,27 +528,27 @@ export default async function Page({
                   <div key={d}>
                     <h3 className="text-base font-bold font-serif flex items-baseline gap-2">
                       <span>{DIRECTION_LABELS[d]}</span>
-                      <span className="text-xs font-normal text-slate-500">
+                      <span className="text-xs font-normal text-ink-muted">
                         {groups[d].length}エリア
                       </span>
                     </h3>
                     <div className="mt-3 overflow-x-auto">
                       <table className="w-full text-xs border-collapse">
                         <thead>
-                          <tr className="bg-stone-100">
-                            <th className="border border-slate-300 p-2 text-left font-bold">
+                          <tr className="bg-theme-subtle">
+                            <th className="border border-theme-border p-2 text-left font-bold">
                               市区町村
                             </th>
-                            <th className="border border-slate-300 p-2 text-right font-bold">
+                            <th className="border border-theme-border p-2 text-right font-bold">
                               距離
                             </th>
-                            <th className="border border-slate-300 p-2 text-right font-bold">
+                            <th className="border border-theme-border p-2 text-right font-bold">
                               家賃（円/㎡）
                             </th>
-                            <th className="border border-slate-300 p-2 text-right font-bold">
+                            <th className="border border-theme-border p-2 text-right font-bold">
                               1戸の目安
                             </th>
-                            <th className="border border-slate-300 p-2 text-right font-bold">
+                            <th className="border border-theme-border p-2 text-right font-bold">
                               {area.city}比
                             </th>
                           </tr>
@@ -562,34 +562,34 @@ export default async function Page({
                             const diff = rentDiffPct(figures, f);
                             return (
                               <tr key={n.code}>
-                                <td className="border border-slate-300 p-2">
+                                <td className="border border-theme-border p-2">
                                   <Link
                                     prefetch={false}
                                     href={`/houi/area/${n.code}`}
-                                    className="hover:text-rose-600 font-semibold"
+                                    className="hover:text-accent font-semibold"
                                   >
                                     {n.full}
                                   </Link>
                                 </td>
-                                <td className="border border-slate-300 p-2 text-right font-mono">
+                                <td className="border border-theme-border p-2 text-right font-mono">
                                   {n.distanceKm}km
                                 </td>
-                                <td className="border border-slate-300 p-2 text-right font-mono">
+                                <td className="border border-theme-border p-2 text-right font-mono">
                                   {f?.rentPerSqm?.toLocaleString() ?? "—"}
                                 </td>
-                                <td className="border border-slate-300 p-2 text-right font-mono">
+                                <td className="border border-theme-border p-2 text-right font-mono">
                                   {f?.monthlyRentEstimate?.toLocaleString() ??
                                     "—"}
                                 </td>
                                 <td
-                                  className={`border border-slate-300 p-2 text-right font-mono font-bold ${
+                                  className={`border border-theme-border p-2 text-right font-mono font-bold ${
                                     diff === null
-                                      ? "text-slate-500"
+                                      ? "text-ink-muted"
                                       : diff < 0
-                                        ? "text-emerald-700"
+                                        ? "text-emerald-700 dark:text-theme-good"
                                         : diff > 0
-                                          ? "text-rose-700"
-                                          : "text-slate-500"
+                                          ? "text-rose-700 dark:text-theme-bad"
+                                          : "text-ink-muted"
                                   }`}
                                 >
                                   {diff === null
@@ -614,21 +614,21 @@ export default async function Page({
         */}
 
             <section className="mt-10">
-              <h2 className="text-xl font-bold font-serif border-b border-slate-300 pb-2">
+              <h2 className="text-xl font-bold font-serif border-b border-theme-border pb-2">
                 {year}年、自分にとっての吉方位はどれか
               </h2>
-              <p className="mt-4 text-sm leading-relaxed text-slate-700">
+              <p className="mt-4 text-sm leading-relaxed text-ink-muted">
                 方位の吉凶は本命星ごとに違います。{year}
                 年の年盤では次のとおりです。上の表と突き合わせてください。
               </p>
               <div className="mt-4 overflow-x-auto">
                 <table className="w-full text-xs border-collapse">
                   <thead>
-                    <tr className="bg-stone-100">
-                      <th className="border border-slate-300 p-2 text-left font-bold">
+                    <tr className="bg-theme-subtle">
+                      <th className="border border-theme-border p-2 text-left font-bold">
                         本命星
                       </th>
-                      <th className="border border-slate-300 p-2 text-left font-bold">
+                      <th className="border border-theme-border p-2 text-left font-bold">
                         {year}年の吉方位
                       </th>
                     </tr>
@@ -636,16 +636,16 @@ export default async function Page({
                   <tbody>
                     {goodByStar.map((g) => (
                       <tr key={g.star}>
-                        <td className="border border-slate-300 p-2">
+                        <td className="border border-theme-border p-2">
                           <Link
                             prefetch={false}
                             href={`/houi/${year}/${g.star}`}
-                            className="font-semibold hover:text-rose-600"
+                            className="font-semibold hover:text-accent"
                           >
                             {STAR_NAMES[g.star]}
                           </Link>
                         </td>
-                        <td className="border border-slate-300 p-2">
+                        <td className="border border-theme-border p-2">
                           {g.dirs.length
                             ? g.dirs.map((d) => DIRECTION_LABELS[d]).join("・")
                             : "この年は吉方位なし"}
@@ -655,9 +655,9 @@ export default async function Page({
                   </tbody>
                 </table>
               </div>
-              <p className="mt-3 text-xs text-slate-600 leading-relaxed">
+              <p className="mt-3 text-xs text-ink-muted leading-relaxed">
                 自分の本命星が分からない場合は
-                <Link href="/houi" className="underline hover:text-rose-600">
+                <Link href="/houi" className="underline hover:text-accent">
                   生まれ年から引ける早見表
                 </Link>
                 をご覧ください。年盤で吉でも月によって変わるため、実際に動く月の月盤も確認してください。
@@ -693,10 +693,10 @@ export default async function Page({
             そこに出てこない。出発地を選び直したい人のために県で辿れるようにする。 */}
             {siblings.length > 0 && (
               <section className="mt-10">
-                <h2 className="text-xl font-bold font-serif border-b border-slate-300 pb-2">
+                <h2 className="text-xl font-bold font-serif border-b border-theme-border pb-2">
                   {area.pref}のほかのエリアを出発地にする
                 </h2>
-                <p className="mt-3 text-xs text-slate-600">
+                <p className="mt-3 text-xs text-ink-muted">
                   出発地が変われば方位も変わります。近くにお住まいの場合はこちらから。
                   {siblings.length < prefAreaCount && (
                     <>
@@ -707,8 +707,8 @@ export default async function Page({
                 </p>
                 {/* 解説を書いた頁には印を付ける。一覧（/houi/area）と同じ規約。
                 雛形のままの頁と、方位ごとの街の並びまで書いた頁は中身が違う */}
-                <p className="mt-1 text-xs text-slate-500">
-                  <span className="mr-1.5 inline-block h-2 w-2 rounded-full bg-rose-500 align-middle" />
+                <p className="mt-1 text-xs text-ink-muted">
+                  <span className="mr-1.5 inline-block h-2 w-2 rounded-full bg-accent align-middle" />
                   が付いているエリアには解説があります。
                 </p>
                 <div className="mt-4 flex flex-wrap gap-2">
@@ -717,10 +717,10 @@ export default async function Page({
                       prefetch={false}
                       key={s.code}
                       href={`/houi/area/${s.code}`}
-                      className="px-3 py-1.5 rounded-full border border-slate-300 bg-white text-xs font-semibold hover:border-rose-400 transition-colors"
+                      className="px-3 py-1.5 rounded-full border border-theme-border bg-theme-surface text-xs font-semibold hover:border-accent transition-colors"
                     >
                       {s.code in AREA_EDITORIAL && (
-                        <span className="mr-1.5 inline-block h-2 w-2 rounded-full bg-rose-500 align-middle" />
+                        <span className="mr-1.5 inline-block h-2 w-2 rounded-full bg-accent align-middle" />
                       )}
                       {s.city}
                     </Link>
@@ -730,14 +730,14 @@ export default async function Page({
                   {prefCode && (
                     <Link
                       href={`/houi/pref/${prefCode}`}
-                      className="inline-flex text-xs font-semibold text-rose-600 underline hover:text-rose-700"
+                      className="inline-flex text-xs font-semibold text-accent underline hover:text-accent"
                     >
                       {area.pref}全体の相場と方位を見る
                     </Link>
                   )}
                   <Link
                     href="/houi/area"
-                    className="inline-flex text-xs font-semibold text-rose-600 underline hover:text-rose-700"
+                    className="inline-flex text-xs font-semibold text-accent underline hover:text-accent"
                   >
                     すべての市区町村から選ぶ（{AREAS.length}エリア）
                   </Link>

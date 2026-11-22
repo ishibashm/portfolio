@@ -656,16 +656,16 @@ export default function DirectionTownsPage() {
   );
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-rose-50/80 via-stone-50 to-amber-50/50 text-stone-800 p-4 md:p-8 font-sans">
+    <div className="min-h-screen bg-gradient-to-br from-theme-accent-soft via-background to-theme-gold-soft text-ink p-4 md:p-8 font-sans">
       {/* 地図と一覧を左右に並べる画面なので、余った幅はそのまま地図の
           描画面積になる（CLAUDE.md 3 節「頁の横幅」）。 */}
       <div className="max-w-[2560px] mx-auto space-y-6">
-        <div className="bg-white/80 backdrop-blur-xl border border-rose-100/80 p-6 rounded-3xl shadow-xl shadow-rose-100/30">
-          <h1 className="text-xl font-bold font-serif text-stone-900 flex items-center gap-2">
-            <Compass className="w-6 h-6 text-amber-500" />
+        <div className="bg-theme-surface backdrop-blur-xl border border-theme-border p-6 rounded-3xl shadow-xl shadow-accent/12 dark:shadow-black/20">
+          <h1 className="text-xl font-bold font-serif text-ink flex items-center gap-2">
+            <Compass className="w-6 h-6 text-amber-500 dark:text-theme-gold dark:text-theme-gold" />
             {coreRouteLabel("/relocation/arbitrage")}
           </h1>
-          <p className="text-stone-600 mt-1 text-xs max-w-[70ch] leading-relaxed">
+          <p className="text-ink-muted mt-1 text-xs max-w-[70ch] leading-relaxed">
             いま住んでいる場所から見た八方位の吉凶と、それぞれの方位にある市区町村の家賃の水準・空き家率を並べます。物件の掲載は出しません。
           </p>
           <div className="mt-3 space-y-2">
@@ -673,18 +673,18 @@ export default function DirectionTownsPage() {
               arbitrage
               origin={coordinateOrigin(baseLat, baseLon) ?? TOKYO_ORIGIN}
             />
-            <p className="text-xs text-stone-600">
+            <p className="text-xs text-ink-muted">
               閲覧用の起点を切り替えます。未設定時は東京からの街と家賃を表示します。
               {!birthDate ? "生年月日を入れると吉凶が付きます。" : ""}
             </p>
           </div>
           {/* どのプロフィールで方位を出しているかを頭に 1 行 */}
           <ActiveProfileBadge purpose="方位の吉凶と街の並び" className="mt-3" />
-          <p className="mt-3 text-xs leading-relaxed text-stone-600 max-w-[70ch]">
+          <p className="mt-3 text-xs leading-relaxed text-ink-muted max-w-[70ch]">
             {"日を決めるのが先です。いつなら動けるかは "}
             <Link
               href="/relocation/timing"
-              className="inline-flex min-h-[24px] items-center font-bold underline text-indigo-700 hover:text-indigo-900"
+              className="inline-flex min-h-[24px] items-center font-bold underline text-accent hover:text-accent"
             >
               引っ越し時期
             </Link>
@@ -710,7 +710,7 @@ export default function DirectionTownsPage() {
               <a
                 key={href}
                 href={href}
-                className="inline-flex min-h-[24px] items-center rounded-full border border-stone-300 bg-white/80 px-3 font-bold text-stone-700 hover:bg-stone-100"
+                className="inline-flex min-h-[24px] items-center rounded-full border border-stone-300 dark:border-theme-border dark:border-theme-border bg-theme-surface px-3 font-bold text-ink hover:bg-stone-100 dark:hover:bg-theme-subtle dark:hover:bg-theme-subtle"
               >
                 {label}
               </a>
@@ -734,11 +734,11 @@ export default function DirectionTownsPage() {
 
         {/* 細かな出発地の登録は任意。閲覧用の都市リンクとは分ける。 */}
         {settingsLoaded && state !== null && (
-          <div className="rounded-3xl border border-amber-200 bg-amber-50 p-5 space-y-3">
-            <h2 className="text-sm font-bold text-amber-900">
+          <div className="rounded-3xl border border-amber-200 dark:border-theme-border dark:border-theme-border bg-amber-50 dark:bg-theme-gold-soft dark:bg-theme-gold-soft p-5 space-y-3">
+            <h2 className="text-sm font-bold text-amber-900 dark:text-theme-gold dark:text-theme-gold">
               出発地を詳しく選ぶ（プロフィールに保存）
             </h2>
-            <p className="text-xs text-amber-800 leading-relaxed max-w-[70ch]">
+            <p className="text-xs text-amber-800 dark:text-theme-gold dark:text-theme-gold leading-relaxed max-w-[70ch]">
               市区町村を選ぶと、登録済みの出発地も更新します。閲覧だけなら上の都市ボタンを使えます。
             </p>
             <fieldset disabled={originBusy}>
@@ -747,7 +747,7 @@ export default function DirectionTownsPage() {
             {originBusy && <p role="status">出発地を調べています…</p>}
             {originError && <p role="alert">{originError}</p>}
             {!birthDate && (
-              <p className="text-xs text-amber-800">
+              <p className="text-xs text-amber-800 dark:text-theme-gold dark:text-theme-gold">
                 生年月日は未設定です。
                 <a
                   href="#arb-config"
@@ -784,10 +784,10 @@ export default function DirectionTownsPage() {
                   help="方位はここから測ります。"
                 />
                 {basePlace && (
-                  <p className="text-xs leading-relaxed text-stone-600">
+                  <p className="text-xs leading-relaxed text-ink-muted">
                     <Link
                       href={`/houi/area/${basePlace.code}`}
-                      className="inline-flex min-h-[24px] items-center font-bold underline text-indigo-700 hover:text-indigo-900"
+                      className="inline-flex min-h-[24px] items-center font-bold underline text-accent hover:text-accent"
                     >
                       {`${basePlace.pref}${basePlace.city}のページ`}
                     </Link>
@@ -813,7 +813,7 @@ export default function DirectionTownsPage() {
                   const open = event.currentTarget.open;
                   if (open !== state?.detailsOpen) patch({ detailsOpen: open });
                 }}
-                className="rounded-3xl border border-stone-200 bg-white/80 p-4 space-y-3"
+                className="rounded-3xl border border-stone-200 dark:border-theme-border dark:border-theme-border bg-theme-surface p-4 space-y-3"
               >
                 <summary className="cursor-pointer text-sm font-bold">
                   詳しい条件
@@ -821,7 +821,7 @@ export default function DirectionTownsPage() {
                 <div className="space-y-1">
                   <label
                     htmlFor="towns-radius"
-                    className="text-xs font-semibold text-stone-600 block"
+                    className="text-xs font-semibold text-ink-muted block"
                   >
                     どこまでの街を見るか
                   </label>
@@ -836,7 +836,7 @@ export default function DirectionTownsPage() {
                         radius_km: v === null ? "all" : String(v),
                       });
                     }}
-                    className="w-full min-h-[36px] px-3 py-2 bg-white border border-stone-200 rounded-xl text-xs outline-none focus:border-indigo-500"
+                    className="w-full min-h-[36px] px-3 py-2 bg-theme-surface border border-stone-200 dark:border-theme-border rounded-xl text-xs outline-none focus:border-accent"
                   >
                     {RADIUS_OPTIONS.map((o) => (
                       <option
@@ -855,7 +855,7 @@ export default function DirectionTownsPage() {
                     if (isTenchusatsuMode(e.target.value))
                       patch({ tenchusatsuMode: e.target.value });
                   }}
-                  className="w-full min-h-[36px] px-3 py-2 bg-white border border-stone-200 rounded-xl text-xs outline-none focus:border-indigo-500"
+                  className="w-full min-h-[36px] px-3 py-2 bg-theme-surface border border-stone-200 dark:border-theme-border rounded-xl text-xs outline-none focus:border-accent"
                 >
                   {TENCHUSATSU_MODES.map((m) => (
                     <option key={m.id} value={m.id}>
@@ -863,10 +863,10 @@ export default function DirectionTownsPage() {
                     </option>
                   ))}
                 </select>
-                <p className="text-xs leading-relaxed text-stone-600">
+                <p className="text-xs leading-relaxed text-ink-muted">
                   {tenchusatsuEntry?.description ?? ""}
                 </p>
-                <label className="flex min-h-[24px] items-center gap-2 text-xs text-stone-700">
+                <label className="flex min-h-[24px] items-center gap-2 text-xs text-ink">
                   <input
                     type="checkbox"
                     checked={involuntaryMove}
@@ -896,24 +896,22 @@ export default function DirectionTownsPage() {
                 （#1297・#1298）。 */}
             <div
               id="arb-towns-section"
-              className="scroll-mt-4 rounded-3xl border border-stone-200 bg-white/80 p-4 space-y-3"
+              className="scroll-mt-4 rounded-3xl border border-stone-200 dark:border-theme-border dark:border-theme-border bg-theme-surface p-4 space-y-3"
             >
               <div className="flex flex-wrap items-baseline justify-between gap-2">
-                <h2 className="text-sm font-bold text-stone-900">
-                  方位ごとの街
-                </h2>
+                <h2 className="text-sm font-bold text-ink">方位ごとの街</h2>
                 {selectedDirectionLabel && (
                   <button
                     type="button"
                     onClick={() => patch({ selectedDirection: "ALL" })}
-                    className="min-h-[24px] text-xs font-bold text-indigo-700 underline"
+                    className="min-h-[24px] text-xs font-bold text-accent underline"
                   >
                     {`${selectedDirectionLabel}だけ表示中 — 全方位に戻す`}
                   </button>
                 )}
               </div>
               {kigakuUnavailableReason && hasBaseLocation && (
-                <p className="text-xs leading-relaxed text-amber-800">
+                <p className="text-xs leading-relaxed text-amber-800 dark:text-theme-gold dark:text-theme-gold">
                   {`${kigakuUnavailableReason}。それまでは八方位の順に並べます。`}
                 </p>
               )}
@@ -958,9 +956,9 @@ export default function DirectionTownsPage() {
                 （畳んだままだと押した結果が見えない）。 */}
             <div
               id="arb-spot-section"
-              className="scroll-mt-4 rounded-3xl border border-stone-200 bg-white/80 p-4 space-y-3"
+              className="scroll-mt-4 rounded-3xl border border-stone-200 dark:border-theme-border dark:border-theme-border bg-theme-surface p-4 space-y-3"
             >
-              <h2 className="text-sm font-bold text-stone-900">
+              <h2 className="text-sm font-bold text-ink">
                 物件URL・住所から候補を検討
               </h2>
               <SpotVerdict
@@ -1044,7 +1042,7 @@ export default function DirectionTownsPage() {
           {/* 右: 地図。扇形と県塗りは dayKigaku から。物件は描かない。 */}
           <div
             id="candidate-location-map"
-            className="scroll-mt-4 w-full lg:w-[64%] xl:w-[68%] h-[60vh] lg:h-[calc(100vh-220px)] min-h-[420px] lg:min-h-[600px] rounded-3xl overflow-hidden shadow-lg border border-stone-200 relative bg-stone-50 shrink-0"
+            className="scroll-mt-4 w-full lg:w-[64%] xl:w-[68%] h-[60vh] lg:h-[calc(100vh-220px)] min-h-[420px] lg:min-h-[600px] rounded-3xl overflow-hidden shadow-lg border border-stone-200 dark:border-theme-border dark:border-theme-border relative bg-stone-50 dark:bg-theme-subtle dark:bg-theme-subtle shrink-0"
           >
             <ArbitrageMap
               baseLat={hasBaseLocation ? baseLatNum : mapCenter[0]}

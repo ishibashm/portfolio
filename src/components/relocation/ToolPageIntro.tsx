@@ -21,15 +21,15 @@ export function ToolPageIntro({
   return (
     <div className="mx-auto max-w-[1700px] px-4 pt-6 md:px-8">
       {title ? (
-        <p className="text-xs font-bold tracking-wide text-slate-500">
+        <p className="text-xs font-bold tracking-wide text-ink-muted">
           {title}
         </p>
       ) : null}
-      <p className="mt-2 max-w-[70ch] text-sm leading-relaxed text-slate-700">
+      <p className="mt-2 max-w-[70ch] text-sm leading-relaxed text-ink">
         {children}
       </p>
-      <p className="mt-2 text-xs text-slate-600">
-        <Link href={guideHref} className="underline hover:text-rose-600">
+      <p className="mt-2 text-xs text-ink-muted">
+        <Link href={guideHref} className="underline hover:text-accent">
           {guideLabel}
         </Link>
       </p>

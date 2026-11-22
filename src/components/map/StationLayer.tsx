@@ -17,7 +17,7 @@ import {
 } from "@/lib/stations";
 import { spotFromBase } from "@/lib/powerSpots";
 import { nearestMunicipality, nearestPlaceLabel } from "@/lib/nearestPlace";
-import { TIER_BADGE_CLASS } from "@/utils/tierDisplay";
+import { LIGHT_TIER_BADGE_CLASS } from "@/utils/tierDisplay";
 import { TIER_LABELS, type DayTier } from "@/utils/dayTier";
 import type { DirectionCell } from "@/components/relocation/SpotVerdict";
 
@@ -166,7 +166,7 @@ export function StationLayer({
                         <span className="text-stone-600">この日の段階:</span>
                         <span
                           className={`px-1.5 py-0.5 rounded border font-bold ${
-                            (tier && TIER_BADGE_CLASS[tier]) ??
+                            (tier && LIGHT_TIER_BADGE_CLASS[tier]) ??
                             "bg-stone-100 border-stone-300 text-stone-700"
                           }`}
                         >
@@ -189,7 +189,7 @@ export function StationLayer({
                   <button
                     type="button"
                     onClick={() => onInspect(s.lat, s.lon)}
-                    className="mt-2 w-full rounded border border-emerald-300 bg-emerald-50 px-2 py-1 text-[10px] font-bold text-emerald-800 hover:bg-emerald-100"
+                    className="mt-2 w-full rounded border border-theme-border bg-theme-accent-soft px-2 py-1 text-[10px] font-bold text-accent hover:bg-theme-accent-soft"
                   >
                     この地点を判定へ
                   </button>

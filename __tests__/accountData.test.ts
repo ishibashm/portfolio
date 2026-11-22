@@ -176,6 +176,7 @@ const KEPT: Record<string, string> = {
   simulator_show_spots: "名所を出すか（シミュレータ）",
   simulator_show_stations: "駅を出すか（シミュレータ）",
   map_theme: "地図の明暗",
+  theme: "サイトの表示テーマ",
   map_hazard_tab_v1: "災害情報のタブ",
   stc_activeTab: "ホームの時計のタブ",
   timing_view_v1: "時期ツールの範囲と絞り込み",

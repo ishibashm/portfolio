@@ -81,27 +81,27 @@ export function ProfilePicker({
 
   const small = variant === "compact";
   const selectClass = small
-    ? "px-2 py-1.5 bg-white border border-stone-200 rounded-lg text-[10px] text-stone-700 outline-none focus:border-indigo-200"
-    : "bg-white border border-slate-300 rounded-xl px-3 py-2 text-sm text-slate-900 outline-none focus:border-rose-400";
+    ? "px-2 py-1.5 bg-white dark:bg-theme-surface border border-stone-200 dark:border-theme-border rounded-lg text-[10px] text-stone-700 dark:text-ink outline-none focus:border-accent"
+    : "bg-white dark:bg-theme-surface border border-slate-300 dark:border-theme-border rounded-xl px-3 py-2 text-sm text-slate-900 dark:text-ink outline-none focus:border-accent";
   /* 押し所は 24px 角より小さくしない（WCAG 2.2 の Target Size (Minimum)）。
      実測で 110 × 16px と 61 × 16px だった。字の大きさは変えず、縦に 24px を
      確保して中央に置く */
   const linkClass = small
-    ? "inline-flex min-h-[24px] items-center text-[10px] font-semibold text-indigo-600 underline"
-    : "inline-flex min-h-[24px] items-center text-xs font-semibold text-indigo-600 underline";
+    ? "inline-flex min-h-[24px] items-center text-[10px] font-semibold text-accent underline"
+    : "inline-flex min-h-[24px] items-center text-xs font-semibold text-accent underline";
 
   return (
     <div className={`flex flex-wrap items-center gap-2 ${className}`}>
       <label className="flex items-center gap-1.5">
         <UserCheck
-          className={`${small ? "h-3 w-3" : "h-4 w-4"} text-emerald-600`}
+          className={`${small ? "h-3 w-3" : "h-4 w-4"} text-theme-link`}
           aria-hidden
         />
         <span
           className={
             small
-              ? "text-[10px] font-bold text-stone-600"
-              : "text-xs font-bold text-slate-700"
+              ? "text-[10px] font-bold text-stone-600 dark:text-ink-muted"
+              : "text-xs font-bold text-slate-700 dark:text-ink"
           }
         >
           使用中のプロフィール
@@ -136,7 +136,7 @@ export function ProfilePicker({
       {note && (
         <p
           role="status"
-          className={`w-full ${small ? "text-[10px]" : "text-xs"} text-emerald-700`}
+          className={`w-full ${small ? "text-[10px]" : "text-xs"} text-theme-link`}
         >
           {note}
         </p>

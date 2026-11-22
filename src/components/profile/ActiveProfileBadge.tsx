@@ -158,7 +158,7 @@ export function ActiveProfileBadge({
   if (state.kind === "none") {
     return (
       <p
-        className={`flex flex-wrap items-center gap-x-2 gap-y-1 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-[11px] leading-relaxed text-amber-900 ${className}`}
+        className={`flex flex-wrap items-center gap-x-2 gap-y-1 rounded-xl border border-amber-200 dark:border-theme-border bg-amber-50 dark:bg-theme-gold-soft px-3 py-2 text-[11px] leading-relaxed text-amber-900 dark:text-theme-gold ${className}`}
       >
         <UserRound className="h-3.5 w-3.5 shrink-0" aria-hidden />
         <span>
@@ -170,7 +170,7 @@ export function ActiveProfileBadge({
           /* 押し所は 24px 角より小さくしない（WCAG 2.2 の Target Size
              (Minimum)）。実測 45 × 18px。文中ではなく帯の右端に立っている
              ので、文の行送りは崩れない */
-          className="inline-flex min-h-[24px] items-center font-bold underline hover:text-amber-950"
+          className="inline-flex min-h-[24px] items-center font-bold underline hover:text-amber-950 dark:hover:text-theme-gold"
         >
           登録する
         </Link>
@@ -181,10 +181,11 @@ export function ActiveProfileBadge({
   const drift = state.drift;
   return (
     <div className={className}>
-      <p className="flex flex-wrap items-center gap-x-2 gap-y-1 rounded-xl border border-stone-200 bg-white/80 px-3 py-2 text-xs leading-relaxed text-stone-700">
-        <UserRound className="h-3.5 w-3.5 shrink-0 text-rose-500" aria-hidden />
+      <p className="flex flex-wrap items-center gap-x-2 gap-y-1 rounded-xl border border-stone-200 dark:border-theme-border bg-white/80 dark:bg-theme-surface px-3 py-2 text-xs leading-relaxed text-stone-700 dark:text-ink">
+        <UserRound className="h-3.5 w-3.5 shrink-0 text-accent" aria-hidden />
         <span>
-          <b className="text-stone-800">使用中のプロフィール:</b> {state.line}
+          <b className="text-stone-800 dark:text-ink">使用中のプロフィール:</b>{" "}
+          {state.line}
           {" — この設定で"}
           {purpose}
           {"を出しています"}
@@ -192,7 +193,7 @@ export function ActiveProfileBadge({
         <Link
           href="/account"
           /* 上と同じ（この帯のもう一方の押し所） */
-          className="inline-flex min-h-[24px] items-center font-semibold text-indigo-600 underline hover:text-indigo-800"
+          className="inline-flex min-h-[24px] items-center font-semibold text-accent underline hover:text-accent"
         >
           変更
         </Link>
@@ -200,7 +201,7 @@ export function ActiveProfileBadge({
       {drift && (
         <p
           role="status"
-          className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs leading-relaxed text-amber-900"
+          className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 rounded-xl border border-amber-200 dark:border-theme-border bg-amber-50 dark:bg-theme-gold-soft px-3 py-2 text-xs leading-relaxed text-amber-900 dark:text-theme-gold"
         >
           <span>
             {`いまの出発地は、プロフィール「${drift.preset.name}」に登録した出発地（${drift.place}）と違います。`}
@@ -209,7 +210,7 @@ export function ActiveProfileBadge({
             type="button"
             disabled={reverting}
             onClick={() => void revert(drift.preset)}
-            className="inline-flex min-h-[24px] items-center rounded-lg border border-amber-300 bg-white px-2 font-bold text-amber-900 hover:bg-amber-100 disabled:opacity-50"
+            className="inline-flex min-h-[24px] items-center rounded-lg border border-amber-300 dark:border-theme-border bg-white dark:bg-theme-surface px-2 font-bold text-amber-900 dark:text-theme-gold hover:bg-amber-100 dark:hover:bg-theme-gold-soft disabled:opacity-50"
           >
             {reverting ? "戻しています…" : "登録した出発地に戻す"}
           </button>

@@ -18,7 +18,7 @@ export function HonmeiStarLinks({
             key={star}
             prefetch={false}
             href={`/houi/${year}/${star}`}
-            className="rounded-xl border border-rose-200 bg-white px-4 py-3 text-sm hover:bg-rose-50"
+            className="rounded-xl border border-theme-border bg-white dark:bg-theme-surface px-4 py-3 text-sm hover:bg-theme-accent-soft"
           >
             {STAR_NAMES[star]}
           </Link>
