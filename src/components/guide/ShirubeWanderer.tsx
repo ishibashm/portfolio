@@ -1688,7 +1688,6 @@ export function ShirubeWanderer({
   const facing: WanderFacing = isReduced ? restFacing : activeVisual.facing;
   const moving =
     visualState === "walking" ||
-    visualState === "stepping" ||
     visualState === "hopping" ||
     visualState === "turning";
 

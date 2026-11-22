@@ -184,6 +184,7 @@
 /* 立ち止まっている間と案内のポーズでは正面の絵を見せる */
 .shirube-wander-stage[data-state="idle"] .shirube-rig-front,
 .shirube-wander-stage[data-state="paused"] .shirube-rig-front,
+.shirube-wander-stage[data-state="stepping"] .shirube-rig-front,
 .shirube-wander-stage[data-state="greeting"] .shirube-rig-front,
 .shirube-wander-stage[data-state="sitting"] .shirube-rig-front,
 .shirube-wander-stage[data-state="pointing"] .shirube-rig-front,
@@ -193,6 +194,7 @@
 
 .shirube-wander-stage[data-state="idle"] .shirube-rig-side,
 .shirube-wander-stage[data-state="paused"] .shirube-rig-side,
+.shirube-wander-stage[data-state="stepping"] .shirube-rig-side,
 .shirube-wander-stage[data-state="greeting"] .shirube-rig-side,
 .shirube-wander-stage[data-state="sitting"] .shirube-rig-side,
 .shirube-wander-stage[data-state="pointing"] .shirube-rig-side,
@@ -514,61 +516,6 @@
     .shirube-wander-shadow {
     animation: shirube-wander-shadow calc(var(--shirube-cycle) / 2) ease-in-out
       calc(var(--shirube-cycle) * -0.25) infinite;
-  }
-
-  /* その場の足踏み（stepping）: 足を交互に小さく持ち上げる。前後に振らないので
-     後ろ向きに進んで見えることがない。体も小さく上下する */
-  .shirube-wander-stage[data-motion="active"][data-state="stepping"]
-    .shirube-rig-leg-near {
-    animation: shirube-step-leg-near var(--shirube-cycle) ease-in-out infinite;
-  }
-
-  .shirube-wander-stage[data-motion="active"][data-state="stepping"]
-    .shirube-rig-leg-far {
-    animation: shirube-step-leg-far var(--shirube-cycle) ease-in-out infinite;
-  }
-
-  .shirube-wander-stage[data-motion="active"][data-state="stepping"]
-    .shirube-rig-bob {
-    animation: shirube-step-bob calc(var(--shirube-cycle) / 2) ease-in-out
-      infinite;
-  }
-
-  .shirube-wander-stage[data-motion="active"][data-gait="shuffle"][data-state="stepping"]
-    .shirube-shuffle-strip {
-    animation: shirube-shuffle-steps 1.3s steps(4) infinite;
-  }
-
-  @keyframes shirube-step-leg-near {
-    0%,
-    50%,
-    100% {
-      transform: translateY(0%) rotate(0deg);
-    }
-    25% {
-      transform: translateY(-3.5%) rotate(-7deg);
-    }
-  }
-
-  @keyframes shirube-step-leg-far {
-    0%,
-    50%,
-    100% {
-      transform: translateY(0%) rotate(-6deg);
-    }
-    75% {
-      transform: translateY(-3.5%) rotate(-12deg);
-    }
-  }
-
-  @keyframes shirube-step-bob {
-    0%,
-    100% {
-      transform: translateY(0.6%);
-    }
-    50% {
-      transform: translateY(-0.5%);
-    }
   }
 
   /* 立ち止まり・振り返り中: 足をそろえて、ゆっくり呼吸する */

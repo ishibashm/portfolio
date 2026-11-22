@@ -234,7 +234,7 @@ describe("ShirubeWanderer", () => {
     const actor = screen.getByTestId("shirube-wanderer-actor");
     expect(stage.getAttribute("data-motion")).toBe("active");
     expect(stage.getAttribute("data-state")).toBe("stepping");
-    expectFrontPose(false);
+    expectFrontPose(true);
     const initialTransform = actor.style.transform;
     expect(initialTransform).toMatch(
       /^translate3d\([\d.-]+px, [\d.-]+px, 0\)$/,
@@ -603,12 +603,23 @@ describe("正面のしるべとすり足", () => {
     }
   });
 
-  it("gait=shuffle では足踏み中に 4 コマのスプライトを使い、メニューを開くと正面を向く", () => {
+  it("gait=shuffle でも定位置での足踏み中とメニュー表示中は正面を向く", () => {
     stubMatchMedia(false);
     render(<ShirubeWanderer gait="shuffle" />);
     const stage = screen.getByTestId("shirube-wanderer");
     expect(stage.getAttribute("data-gait")).toBe("shuffle");
-    expect(screen.queryByTestId("shirube-walk-rig")).toBeNull();
+    expect(stage).toHaveAttribute("data-state", "stepping");
+    expect(screen.queryByTestId("shirube-shuffle-sprite")).toBeNull();
+    expectFrontPose(true);
+
+    fireEvent.click(menuTrigger());
+    expect(stage).toHaveAttribute("data-state", "paused");
+    expect(screen.queryByTestId("shirube-shuffle-sprite")).toBeNull();
+    expectFrontPose(true);
+  });
+
+  it("単体の ShirubeShuffle は既定で飾り扱い、label があれば img として読み上げる", () => {
+    const { rerender } = render(<ShirubeShuffle />);
     const sprite = screen.getByTestId("shirube-shuffle-sprite");
     const pic = sprite.querySelector("picture")!;
     expect(pic).not.toBeNull();
@@ -624,15 +635,9 @@ describe("正面のしるべとすり足", () => {
     expect(img.getAttribute("srcset")).toContain(
       "/guide/walk/shirube-shuffle-240.png 500w",
     );
-    fireEvent.click(menuTrigger());
-    expect(screen.queryByTestId("shirube-shuffle-sprite")).toBeNull();
-    expectFrontPose(true);
     expect(existsSync("public/guide/walk/shirube-shuffle-128.webp")).toBe(true);
     expect(existsSync("public/guide/walk/shirube-shuffle-240.webp")).toBe(true);
-  });
 
-  it("単体の ShirubeShuffle は既定で飾り扱い、label があれば img として読み上げる", () => {
-    const { rerender } = render(<ShirubeShuffle />);
     let el = screen.getByTestId("shirube-shuffle");
     expect(el.getAttribute("aria-hidden")).toBe("true");
     expect(el.getAttribute("data-travel")).toBe("false");
@@ -689,11 +694,18 @@ describe("正面のしるべとすり足", () => {
   it("CSS: 待機とあいさつは正面、歩行中は横向きにし、手は手首を軸に振る", () => {
     render(<ShirubeWanderer forceReducedMotion={false} />);
     const stage = screen.getByTestId("shirube-wanderer");
-    for (const state of ["idle", "paused", "greeting", "sitting", "pointing"]) {
+    for (const state of [
+      "idle",
+      "paused",
+      "stepping",
+      "greeting",
+      "sitting",
+      "pointing",
+    ]) {
       stage.setAttribute("data-state", state);
       expectFrontPose(true);
     }
-    for (const state of ["walking", "stepping", "hopping", "turning"]) {
+    for (const state of ["walking", "hopping", "turning"]) {
       stage.setAttribute("data-state", state);
       expectFrontPose(false);
     }
