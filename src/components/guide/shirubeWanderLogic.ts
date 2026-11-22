@@ -102,7 +102,7 @@ export interface WanderConfig {
   /**
    * 歩行速度（px / 秒）。CSS の 1 歩きサイクル（--shirube-cycle）で足が進む距離
    * （表示の高さ × 約 0.234）に合わせ、足が地面を滑って見えないようにする。
-   * PC: 120px × 0.234 ÷ 1.08s ≒ 26 / スマホ: 60px × 0.234 ÷ 1s ≒ 14
+   * 拡大前の足運びを基準にした速度（PC 約 26 / スマホ 約 14）
    */
   speedPxPerSec: number;
   /** 1 回の移動距離の下限（px） */
@@ -955,6 +955,36 @@ function startReturnHome(
     lastPerchId: currentPerch.id,
     hop,
   };
+}
+
+/** 仮の立ち位置からも、現在の下端の床を使って定位置へ戻す。 */
+export function returnShirubeHome(
+  state: WanderState,
+  roam: RoamContext,
+  config: WanderConfig,
+): WanderState {
+  const homeX = getHomeX(roam);
+  const bottom = roam.perches.find((p) => p.kind === "bottom");
+  if (homeX === null || !bottom) return state;
+  const onBottom =
+    Math.abs(state.y - bottom.top) < 0.5 &&
+    state.x >= getPerchBounds(bottom, roam.actorWidth).minX &&
+    state.x <= homeX;
+  if (
+    onBottom &&
+    state.perchId === bottom.id &&
+    !state.hop &&
+    Math.abs(state.x - homeX) <= config.homeStepDriftPx
+  ) {
+    return state;
+  }
+  return startReturnHome(
+    { ...state, perchId: onBottom ? bottom.id : state.perchId },
+    onBottom ? bottom : { ...bottom, id: state.perchId, kind: "element" },
+    homeX,
+    roam,
+    config,
+  );
 }
 
 function transitionAfterRelocateChoice(
