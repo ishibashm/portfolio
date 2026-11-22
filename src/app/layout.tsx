@@ -133,6 +133,7 @@ import { SiteFooter } from "@/components/SiteFooter";
 import { PageViewBeacon } from "@/components/PageViewBeacon";
 import { ChunkLoadRecovery } from "@/components/ChunkLoadRecovery";
 import { SerifFontLoader } from "@/components/SerifFontLoader";
+import { SiteShirube } from "@/components/guide/SiteShirube";
 
 /*
   サイトの配色・光量・角丸・書体は定数で持つ。
@@ -158,38 +159,38 @@ const jsonLdSchema = {
     {
       "@type": "WebSite",
       "@id": "https://cloud-palette.com/#website",
-      "url": "https://cloud-palette.com",
-      "name": SITE_NAME,
-      "alternateName": SITE_TAGLINE,
-      "description": SITE_DESCRIPTION,
-      "publisher": {
+      url: "https://cloud-palette.com",
+      name: SITE_NAME,
+      alternateName: SITE_TAGLINE,
+      description: SITE_DESCRIPTION,
+      publisher: {
         "@id": "https://cloud-palette.com/#organization",
       },
-      "inLanguage": "ja",
+      inLanguage: "ja",
     },
     {
       "@type": "Organization",
       "@id": "https://cloud-palette.com/#organization",
-      "name": SITE_NAME,
-      "alternateName": "Cloud Palette Core Labs",
-      "url": "https://cloud-palette.com",
-      "logo": "https://cloud-palette.com/icon-512.png",
+      name: SITE_NAME,
+      alternateName: "Cloud Palette Core Labs",
+      url: "https://cloud-palette.com",
+      logo: "https://cloud-palette.com/icon-512.png",
       // 運営している公式の YouTube チャンネルと X アカウント。検索エンジンが同じ運営元だと
       // 結び付けられるようにする。作っていないチャンネルは載せない。
-      "sameAs": [...SITE_SAME_AS],
+      sameAs: [...SITE_SAME_AS],
     },
     {
       "@type": "WebApplication",
-      "name": SITE_NAME,
-      "alternateName": SITE_TAGLINE,
-      "operatingSystem": "All",
+      name: SITE_NAME,
+      alternateName: SITE_TAGLINE,
+      operatingSystem: "All",
       // 引越し・住まい探しの道具として申告する。以前は BusinessApplication で、
       // 中身（住居選び）とカテゴリが一致していなかった。
-      "applicationCategory": "LifestyleApplication",
-      "url": "https://cloud-palette.com",
-      "description": SITE_DESCRIPTION,
-      "inLanguage": "ja",
-      "featureList": CORE_ROUTES.map((r) => r.label),
+      applicationCategory: "LifestyleApplication",
+      url: "https://cloud-palette.com",
+      description: SITE_DESCRIPTION,
+      inLanguage: "ja",
+      featureList: CORE_ROUTES.map((r) => r.label),
     },
   ],
 };
@@ -232,11 +233,14 @@ export default async function RootLayout({
         <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="default" />
-        
+
         {/* LLMO / AI Search Agent Citation Links */}
         <link rel="author" href="https://cloud-palette.com" />
         <link rel="help" href="https://cloud-palette.com/llms.txt" />
-        <meta name="citation_title" content={`${SITE_NAME} | ${SITE_TAGLINE}`} />
+        <meta
+          name="citation_title"
+          content={`${SITE_NAME} | ${SITE_TAGLINE}`}
+        />
         <meta name="citation_publisher" content={SITE_NAME} />
 
         {/* Search Console / AdSense の所有権確認。値は環境変数から入れる。
@@ -411,10 +415,14 @@ export default async function RootLayout({
               （利用者の指示）。以前は PageComments を置いて中核 9 頁
               すべてに出していた。 */}
           <div className="flex min-w-0 w-full flex-1 flex-col">
-            <main className="flex-1 w-full min-w-0 pt-14 lg:pt-0">{children}</main>
+            <main className="flex-1 w-full min-w-0 pt-14 lg:pt-0">
+              {children}
+            </main>
             <SiteFooter />
           </div>
         </div>
+        {/* 画面の中を歩き回って案内するしるべ（管理画面などには出ない） */}
+        <SiteShirube />
       </body>
     </html>
   );

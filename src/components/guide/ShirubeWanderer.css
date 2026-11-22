@@ -1,0 +1,961 @@
+/* ==========================================================================
+ * しるべ自由歩き回り＆自動案内（ShirubeWanderer / ShirubeWalkRig）のスタイル。
+ *
+ * 決まり（docs/motion-accents.md に合わせる）:
+ * - 動かすのは transform と opacity だけ（CLS を起こさない）。
+ * - 既定（JS なし・prefers-reduced-motion: reduce）の見た目が静止の最終形。
+ *   歩く足の振り・体の上下・呼吸・ジャンプ・振り返りバウンスは no-preference の中だけ。
+ * - 配色は紺 #1e2a5a・金 #c9a54a・生成り #faf7f3/#f8f1dc・白のみ。
+ * ======================================================================== */
+
+.shirube-wander-stage {
+  /* 表示の高さ。幅は素材の縦横比（517 / 1063）で決まる。 */
+  --shirube-h: 60px;
+  /* 1 歩きサイクルの長さ。歩く速さ（shirubeWanderLogic）と足の運びを合わせ、
+     足が地面を滑って見えないようにしてある。 */
+  --shirube-cycle: 1s;
+  position: fixed;
+  inset: 0;
+  z-index: 30;
+  pointer-events: none;
+  overflow: clip;
+  /* 定位置（右端）とのすき間は JS（getHomeRightMarginPx）。箱でスマホ 2px / PC 4px ＋ ノッチなどの safe-area。
+     padding-right は JS が safe-area-inset-right を読むためのもの（中身の位置には影響しない）。 */
+  /* 動きを減らす設定の正面の立ち姿は、振っている手が箱より右へ出るので少しだけ多めに空ける */
+  --shirube-rest-gap: 6px;
+  padding-right: env(safe-area-inset-right, 0px);
+}
+
+@media (min-width: 640px) {
+  .shirube-wander-stage {
+    --shirube-rest-gap: 10px;
+  }
+}
+
+@media (min-width: 640px) {
+  .shirube-wander-stage {
+    --shirube-h: 120px;
+    --shirube-cycle: 1.08s;
+  }
+}
+
+.shirube-wander-actor {
+  position: absolute;
+  top: 0;
+  left: 0;
+  pointer-events: none;
+  will-change: transform;
+}
+
+/* 動きを減らす設定（reduce）や JS 無効時は、下端の右寄りに静かに立つ。 */
+.shirube-wander-stage[data-motion="reduced"] .shirube-wander-actor {
+  top: auto;
+  bottom: calc(var(--shirube-lift, 0px) + env(safe-area-inset-bottom, 0px));
+  left: auto;
+  right: calc(var(--shirube-rest-gap, 10px) + env(safe-area-inset-right, 0px));
+  will-change: auto;
+}
+
+.shirube-wander-stage[data-motion="reduced"][data-rest-side="left"]
+  .shirube-wander-actor {
+  left: 16px;
+  right: auto;
+}
+
+.shirube-wander-flip {
+  display: inline-block;
+  transform-origin: 50% 100%;
+}
+
+.shirube-wander-gait {
+  position: relative;
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  transform-origin: 50% 100%;
+}
+
+/* 舞台の床に接している接地感だけを出す控えめな影 */
+.shirube-wander-shadow {
+  position: absolute;
+  bottom: 0;
+  left: 42%;
+  width: 92%;
+  height: 6px;
+  transform: translate(-50%, 35%);
+  border-radius: 9999px;
+  background: radial-gradient(
+    ellipse at center,
+    rgba(30, 42, 90, 0.22) 0%,
+    rgba(30, 42, 90, 0.07) 55%,
+    transparent 100%
+  );
+  pointer-events: none;
+}
+
+/* ジャンプ中は足元の影を薄くする */
+.shirube-wander-stage[data-state="hopping"] .shirube-wander-shadow {
+  opacity: 0.25;
+}
+
+/* ---- 部品分けのちびしるべ ---------------------------------------------- */
+
+.shirube-rig {
+  position: relative;
+  display: block;
+  height: var(--shirube-h);
+  aspect-ratio: 517 / 1063;
+  /* 素材の下端に 1% ほど余白があるので、足裏を床にそろえる */
+  margin-bottom: calc(var(--shirube-h) * -0.009);
+}
+
+.shirube-rig-bob,
+.shirube-rig-part {
+  position: absolute;
+  inset: 0;
+  display: block;
+}
+
+.shirube-rig-part img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  user-select: none;
+  -webkit-user-drag: none;
+}
+
+/* 付け根（袴の裾に隠れた位置）と腰の軸。素材キャンバスに対する割合。 */
+.shirube-rig-leg-near {
+  transform-origin: 35.98% 84.76%;
+}
+
+.shirube-rig-leg-far {
+  transform-origin: 39.07% 83.44%;
+  /* 立ち姿では奥の足を少しだけ前に出して、両足が見えるようにする */
+  transform: rotate(-6deg);
+}
+
+.shirube-rig-body {
+  transform-origin: 39.85% 88.05%;
+}
+
+/* ---- 正面（立ち止まって手を振る・ひと休み） ---------------------------- */
+
+.shirube-rig-side {
+  position: absolute;
+  inset: 0;
+  display: block;
+}
+
+/* 横向きの体の中心（素材幅の 44%）に、正面の体の中心（50%）を合わせる。
+   正面の素材は振る手のぶん横向きより少し広い（533 / 517）。体の中心は素材幅の 48.62%。 */
+.shirube-rig-front {
+  position: absolute;
+  bottom: 0;
+  left: -5.82%;
+  width: 103.09%;
+  height: 100%;
+  display: block;
+  opacity: 0;
+  transform-origin: 48.62% 100%;
+}
+
+/* 親（.shirube-wander-flip）の左右反転を打ち消し、正面はいつも同じ手で振る */
+.shirube-wander-stage[data-facing="left"] .shirube-rig-front {
+  transform: scaleX(-1);
+}
+
+.shirube-rig-front-hop,
+.shirube-rig-front-breath {
+  position: absolute;
+  inset: 0;
+  display: block;
+  transform-origin: 50% 100%;
+}
+
+/* 手首（袖口の少し上）を軸に手を振る */
+.shirube-rig-front-hand {
+  transform-origin: 79.81% 39.66%;
+}
+
+/* 正面を向いている間（greeting / sitting）と静止時は正面の絵を見せる */
+.shirube-wander-stage[data-state="greeting"] .shirube-rig-front,
+.shirube-wander-stage[data-state="sitting"] .shirube-rig-front,
+.shirube-wander-stage[data-state="pointing"] .shirube-rig-front,
+.shirube-wander-stage[data-motion="reduced"] .shirube-rig-front {
+  opacity: 1;
+}
+
+.shirube-wander-stage[data-state="greeting"] .shirube-rig-side,
+.shirube-wander-stage[data-state="sitting"] .shirube-rig-side,
+.shirube-wander-stage[data-state="pointing"] .shirube-rig-side,
+.shirube-wander-stage[data-motion="reduced"] .shirube-rig-side {
+  opacity: 0;
+}
+
+/* ひと休み（sitting）は正面ポーズで少し腰を落ち着ける */
+.shirube-wander-stage[data-state="sitting"] .shirube-rig-front-hop {
+  transform: translateY(3%) scale(1.02, 0.96);
+}
+
+/* 指さし案内（pointing）は正面のまま、案内したい物の側の手を挙げる。
+   左にある物を示すときは正面ごと反転させ、挙げた手が左に来るようにする。 */
+.shirube-wander-stage[data-state="pointing"][data-facing="left"]
+  .shirube-rig-front {
+  transform: none;
+}
+
+.shirube-wander-stage[data-state="pointing"] .shirube-rig-front-hand {
+  transform: rotate(-14deg);
+}
+
+/* ---- すり足（4 コマのスプライト） --------------------------------------- */
+
+.shirube-shuffle {
+  display: inline-block;
+  vertical-align: bottom;
+}
+
+/* travel: 置いた箱の横幅いっぱいを行ったり来たりする */
+.shirube-shuffle[data-travel="true"] {
+  display: block;
+  width: 100%;
+  container-type: inline-size;
+}
+
+.shirube-shuffle-mover {
+  display: inline-block;
+}
+
+.shirube-shuffle-window {
+  position: relative;
+  display: block;
+  overflow: hidden;
+  height: var(--shuffle-h, 48px);
+  /* 1 コマの縦横比 284 / 546 */
+  width: calc(var(--shuffle-h, 48px) * 0.5201);
+}
+
+.shirube-shuffle-strip {
+  display: block;
+  height: 100%;
+  width: 400%;
+  max-width: none;
+  user-select: none;
+  -webkit-user-drag: none;
+}
+
+.shirube-wander-shuffle {
+  --shuffle-h: var(--shirube-h);
+  display: block;
+  /* コマの下端に 1% ほど余白があるので、足裏を床にそろえる */
+  margin-bottom: calc(var(--shirube-h) * -0.011);
+}
+
+.shirube-wander-stage[data-gait="shuffle"] .shirube-wander-shadow {
+  left: 50%;
+}
+
+/* ---- 操作ボタン・吹き出し・非表示タブ ---------------------------------- */
+
+.shirube-wander-hit {
+  pointer-events: auto;
+  display: inline-block;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+}
+
+.shirube-wander-hit:focus-visible {
+  outline: 2px solid #c9a54a;
+  outline-offset: 2px;
+  border-radius: 8px;
+}
+
+/* ページ側の大きなしるべ（トップの指さしなど）が見えている間は姿を消す */
+.shirube-wander-stage[data-away="true"] .shirube-wander-actor,
+.shirube-wander-stage[data-away="true"] .shirube-bubble {
+  opacity: 0;
+  visibility: hidden;
+}
+
+.shirube-bubble {
+  position: absolute;
+  pointer-events: auto;
+  width: max-content;
+  max-width: 180px;
+  border-radius: 14px;
+  border: 1px solid #c9a54a;
+  background: #ffffff;
+  color: #1e2a5a;
+  padding: 8px 10px;
+  box-shadow: 0 6px 18px rgba(30, 42, 90, 0.14);
+  font-size: 12px;
+  line-height: 1.5;
+  z-index: 2;
+}
+
+@media (min-width: 640px) {
+  .shirube-bubble {
+    max-width: 220px;
+    padding: 10px 12px;
+    font-size: 13px;
+  }
+}
+
+.shirube-bubble[data-anchored="reduced"] {
+  right: calc(var(--shirube-rest-gap, 10px) + env(safe-area-inset-right, 0px));
+  bottom: calc(
+    var(--shirube-lift, 0px) + env(safe-area-inset-bottom, 0px) +
+      var(--shirube-h) + 12px
+  );
+}
+
+.shirube-bubble[data-anchored="reduced"][data-rest-side="left"] {
+  left: 16px;
+  right: auto;
+}
+
+.shirube-bubble-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 3px;
+}
+
+.shirube-bubble-name {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  color: #1e2a5a;
+  background: #f8f1dc;
+  border: 1px solid rgba(201, 165, 74, 0.5);
+  border-radius: 9999px;
+  padding: 0 6px;
+  line-height: 1.6;
+}
+
+.shirube-bubble-hide {
+  pointer-events: auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 9999px;
+  border: 1px solid rgba(30, 42, 90, 0.18);
+  background: #faf7f3;
+  color: #1e2a5a;
+  font-size: 13px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.shirube-bubble-hide:hover {
+  background: #f8f1dc;
+  border-color: #c9a54a;
+}
+
+.shirube-bubble-hide:focus-visible {
+  outline: 2px solid #c9a54a;
+  outline-offset: 1px;
+}
+
+.shirube-bubble-text {
+  margin: 0;
+  color: #1e2a5a;
+}
+
+.shirube-bubble-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 6px;
+}
+
+.shirube-bubble-link {
+  display: inline-block;
+  border-radius: 9999px;
+  border: 1px solid #c9a54a;
+  background: #f8f1dc;
+  color: #1e2a5a;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 2px 8px;
+  text-decoration: none;
+}
+
+.shirube-bubble-link:hover {
+  background: #faf7f3;
+}
+
+.shirube-restore-tab {
+  position: absolute;
+  right: 12px;
+  bottom: calc(12px + env(safe-area-inset-bottom, 0px));
+  pointer-events: auto;
+  width: 28px;
+  height: 28px;
+  border-radius: 9999px;
+  border: 1px solid #c9a54a;
+  background: #1e2a5a;
+  color: #faf7f3;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 3px 10px rgba(30, 42, 90, 0.25);
+  cursor: pointer;
+}
+
+.shirube-restore-tab:focus-visible {
+  outline: 2px solid #c9a54a;
+  outline-offset: 2px;
+}
+
+/* 指さし対象へのやさしい金の縁取り（レイアウトを変えない outline のみ） */
+.shirube-tip-target-highlight {
+  outline: 2px solid #c9a54a;
+  outline-offset: 4px;
+  border-radius: 6px;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .shirube-tip-target-highlight {
+    transition: outline-color 400ms ease-out;
+  }
+
+  .shirube-wander-stage[data-motion="active"] .shirube-wander-flip {
+    transition: transform 280ms ease-in-out;
+  }
+
+  /* 歩いている間: 負の animation-delay（-0.25 周期）で静止時の 0° から滑らかに踏み出す */
+  .shirube-wander-stage[data-motion="active"][data-state="walking"]
+    .shirube-rig-leg-near {
+    animation: shirube-walk-leg-near var(--shirube-cycle) linear
+      calc(var(--shirube-cycle) * -0.25) infinite;
+  }
+
+  .shirube-wander-stage[data-motion="active"][data-state="walking"]
+    .shirube-rig-leg-far {
+    animation: shirube-walk-leg-far var(--shirube-cycle) linear
+      calc(var(--shirube-cycle) * -0.25) infinite;
+  }
+
+  .shirube-wander-stage[data-motion="active"][data-state="walking"]
+    .shirube-rig-bob {
+    animation: shirube-walk-bob var(--shirube-cycle) linear
+      calc(var(--shirube-cycle) * -0.25) infinite;
+  }
+
+  .shirube-wander-stage[data-motion="active"][data-state="walking"]
+    .shirube-rig-body {
+    animation: shirube-walk-body var(--shirube-cycle) linear
+      calc(var(--shirube-cycle) * -0.25) infinite;
+  }
+
+  .shirube-wander-stage[data-motion="active"][data-state="walking"]
+    .shirube-wander-shadow {
+    animation: shirube-wander-shadow calc(var(--shirube-cycle) / 2) ease-in-out
+      calc(var(--shirube-cycle) * -0.25) infinite;
+  }
+
+  /* その場の足踏み（stepping）: 足を交互に小さく持ち上げる。前後に振らないので
+     後ろ向きに進んで見えることがない。体も小さく上下する */
+  .shirube-wander-stage[data-motion="active"][data-state="stepping"]
+    .shirube-rig-leg-near {
+    animation: shirube-step-leg-near var(--shirube-cycle) ease-in-out infinite;
+  }
+
+  .shirube-wander-stage[data-motion="active"][data-state="stepping"]
+    .shirube-rig-leg-far {
+    animation: shirube-step-leg-far var(--shirube-cycle) ease-in-out infinite;
+  }
+
+  .shirube-wander-stage[data-motion="active"][data-state="stepping"]
+    .shirube-rig-bob {
+    animation: shirube-step-bob calc(var(--shirube-cycle) / 2) ease-in-out
+      infinite;
+  }
+
+  .shirube-wander-stage[data-motion="active"][data-gait="shuffle"][data-state="stepping"]
+    .shirube-shuffle-strip {
+    animation: shirube-shuffle-steps 1.3s steps(4) infinite;
+  }
+
+  @keyframes shirube-step-leg-near {
+    0%,
+    50%,
+    100% {
+      transform: translateY(0%) rotate(0deg);
+    }
+    25% {
+      transform: translateY(-3.5%) rotate(-7deg);
+    }
+  }
+
+  @keyframes shirube-step-leg-far {
+    0%,
+    50%,
+    100% {
+      transform: translateY(0%) rotate(-6deg);
+    }
+    75% {
+      transform: translateY(-3.5%) rotate(-12deg);
+    }
+  }
+
+  @keyframes shirube-step-bob {
+    0%,
+    100% {
+      transform: translateY(0.6%);
+    }
+    50% {
+      transform: translateY(-0.5%);
+    }
+  }
+
+  /* 立ち止まり・振り返り中: 足をそろえて、ゆっくり呼吸する */
+  .shirube-wander-stage[data-motion="active"]:not([data-state="walking"]):not(
+      [data-state="hopping"]
+    ):not([data-state="stepping"])
+    .shirube-rig-body {
+    animation: shirube-idle-breath 3.2s ease-in-out infinite;
+  }
+
+  /* ジャンプの踏み切り・空中伸び・着地つぶれ */
+  .shirube-wander-stage[data-motion="active"][data-state="hopping"]
+    .shirube-wander-gait {
+    animation: shirube-hop-takeoff 480ms ease-out 1 both;
+  }
+
+  .shirube-wander-stage[data-motion="active"].is-landing .shirube-wander-gait {
+    animation: shirube-hop-land 260ms ease-out 1 both;
+  }
+
+  /* 正面（greeting / sitting / pointing）から横向きへ戻る際の小さな弾み */
+  .shirube-wander-stage[data-motion="active"].is-turning-back
+    .shirube-wander-gait {
+    animation: shirube-turn-back-bounce 300ms ease-out 1 both;
+  }
+
+  /* 吹き出しの静かな現れ */
+  .shirube-bubble {
+    animation: shirube-bubble-in 200ms ease-out 1 both;
+  }
+
+  @keyframes shirube-walk-leg-near {
+    0% {
+      transform: translateY(0%) rotate(-24deg);
+    }
+    6.25% {
+      transform: translateY(0%) rotate(-22.2deg);
+    }
+    12.5% {
+      transform: translateY(0%) rotate(-17deg);
+    }
+    18.75% {
+      transform: translateY(0%) rotate(-9.2deg);
+    }
+    25% {
+      transform: translateY(0%) rotate(-0deg);
+    }
+    31.25% {
+      transform: translateY(0%) rotate(9.2deg);
+    }
+    37.5% {
+      transform: translateY(0%) rotate(17deg);
+    }
+    43.75% {
+      transform: translateY(0%) rotate(22.2deg);
+    }
+    50% {
+      transform: translateY(0%) rotate(24deg);
+    }
+    56.25% {
+      transform: translateY(-0.23%) rotate(22.2deg);
+    }
+    62.5% {
+      transform: translateY(-0.8%) rotate(17deg);
+    }
+    68.75% {
+      transform: translateY(-1.37%) rotate(9.2deg);
+    }
+    75% {
+      transform: translateY(-1.6%) rotate(0deg);
+    }
+    81.25% {
+      transform: translateY(-1.37%) rotate(-9.2deg);
+    }
+    87.5% {
+      transform: translateY(-0.8%) rotate(-17deg);
+    }
+    93.75% {
+      transform: translateY(-0.23%) rotate(-22.2deg);
+    }
+    100% {
+      transform: translateY(0%) rotate(-24deg);
+    }
+  }
+
+  @keyframes shirube-walk-leg-far {
+    0% {
+      transform: translateY(0%) rotate(24deg);
+    }
+    6.25% {
+      transform: translateY(-0.23%) rotate(22.2deg);
+    }
+    12.5% {
+      transform: translateY(-0.8%) rotate(17deg);
+    }
+    18.75% {
+      transform: translateY(-1.37%) rotate(9.2deg);
+    }
+    25% {
+      transform: translateY(-1.6%) rotate(0deg);
+    }
+    31.25% {
+      transform: translateY(-1.37%) rotate(-9.2deg);
+    }
+    37.5% {
+      transform: translateY(-0.8%) rotate(-17deg);
+    }
+    43.75% {
+      transform: translateY(-0.23%) rotate(-22.2deg);
+    }
+    50% {
+      transform: translateY(0%) rotate(-24deg);
+    }
+    56.25% {
+      transform: translateY(0%) rotate(-22.2deg);
+    }
+    62.5% {
+      transform: translateY(0%) rotate(-17deg);
+    }
+    68.75% {
+      transform: translateY(0%) rotate(-9.2deg);
+    }
+    75% {
+      transform: translateY(0%) rotate(-0deg);
+    }
+    81.25% {
+      transform: translateY(0%) rotate(9.2deg);
+    }
+    87.5% {
+      transform: translateY(0%) rotate(17deg);
+    }
+    93.75% {
+      transform: translateY(0%) rotate(22.2deg);
+    }
+    100% {
+      transform: translateY(0%) rotate(24deg);
+    }
+  }
+
+  @keyframes shirube-walk-bob {
+    0% {
+      transform: translateY(1.2%);
+    }
+    6.25% {
+      transform: translateY(0.88%);
+    }
+    12.5% {
+      transform: translateY(0.1%);
+    }
+    18.75% {
+      transform: translateY(-0.68%);
+    }
+    25% {
+      transform: translateY(-1%);
+    }
+    31.25% {
+      transform: translateY(-0.68%);
+    }
+    37.5% {
+      transform: translateY(0.1%);
+    }
+    43.75% {
+      transform: translateY(0.88%);
+    }
+    50% {
+      transform: translateY(1.2%);
+    }
+    56.25% {
+      transform: translateY(0.88%);
+    }
+    62.5% {
+      transform: translateY(0.1%);
+    }
+    68.75% {
+      transform: translateY(-0.68%);
+    }
+    75% {
+      transform: translateY(-1%);
+    }
+    81.25% {
+      transform: translateY(-0.68%);
+    }
+    87.5% {
+      transform: translateY(0.1%);
+    }
+    93.75% {
+      transform: translateY(0.88%);
+    }
+    100% {
+      transform: translateY(1.2%);
+    }
+  }
+
+  @keyframes shirube-walk-body {
+    0% {
+      transform: rotate(1.2deg);
+    }
+    6.25% {
+      transform: rotate(1.35deg);
+    }
+    12.5% {
+      transform: rotate(1.7deg);
+    }
+    18.75% {
+      transform: rotate(2.05deg);
+    }
+    25% {
+      transform: rotate(2.2deg);
+    }
+    31.25% {
+      transform: rotate(2.05deg);
+    }
+    37.5% {
+      transform: rotate(1.7deg);
+    }
+    43.75% {
+      transform: rotate(1.35deg);
+    }
+    50% {
+      transform: rotate(1.2deg);
+    }
+    56.25% {
+      transform: rotate(1.35deg);
+    }
+    62.5% {
+      transform: rotate(1.7deg);
+    }
+    68.75% {
+      transform: rotate(2.05deg);
+    }
+    75% {
+      transform: rotate(2.2deg);
+    }
+    81.25% {
+      transform: rotate(2.05deg);
+    }
+    87.5% {
+      transform: rotate(1.7deg);
+    }
+    93.75% {
+      transform: rotate(1.35deg);
+    }
+    100% {
+      transform: rotate(1.2deg);
+    }
+  }
+
+  @keyframes shirube-idle-breath {
+    0%,
+    100% {
+      transform: scale(1, 1);
+    }
+    50% {
+      transform: scale(1.006, 1.014);
+    }
+  }
+
+  @keyframes shirube-wander-shadow {
+    0%,
+    100% {
+      opacity: 1;
+      transform: translate(-50%, 35%) scaleX(1);
+    }
+    50% {
+      opacity: 0.78;
+      transform: translate(-50%, 35%) scaleX(0.93);
+    }
+  }
+
+  /* 横向き ⇔ 正面 ⇔ 指さしの切り替えは 160ms のクロスフェード */
+  .shirube-rig-side,
+  .shirube-rig-front {
+    transition: opacity 160ms ease-out;
+  }
+
+  .shirube-wander-actor {
+    transition:
+      opacity 240ms ease-out,
+      visibility 240ms;
+  }
+
+  /* 指さし中は手を挙げたまま、小さく「こちら」と動かす */
+  .shirube-wander-stage[data-motion="active"][data-state="pointing"]
+    .shirube-rig-front-hand {
+    animation: shirube-front-point 1.6s ease-in-out infinite;
+  }
+
+  .shirube-wander-stage[data-motion="active"][data-state="pointing"]
+    .shirube-rig-front-hop {
+    animation: shirube-front-hop 380ms ease-out 1 both;
+  }
+
+  @keyframes shirube-front-point {
+    0%,
+    100% {
+      transform: rotate(-14deg);
+    }
+    50% {
+      transform: rotate(-6deg);
+    }
+  }
+
+  /* 正面を向いたら小さく弾んでから、呼吸しながら手を振る */
+  .shirube-wander-stage[data-motion="active"][data-state="greeting"]
+    .shirube-rig-front-hop {
+    animation: shirube-front-hop 380ms ease-out 1 both;
+  }
+
+  .shirube-wander-stage[data-motion="active"][data-state="greeting"]
+    .shirube-rig-front-breath,
+  .shirube-wander-stage[data-motion="active"][data-state="sitting"]
+    .shirube-rig-front-breath {
+    animation: shirube-idle-breath 2.4s ease-in-out 380ms infinite;
+  }
+
+  .shirube-wander-stage[data-motion="active"][data-state="greeting"]
+    .shirube-rig-front-hand {
+    animation: shirube-front-wave 1.1s ease-in-out 280ms infinite;
+  }
+
+  /* すり足: その場の小物は常に、歩き回りでは歩いている間だけコマ送り */
+  .shirube-shuffle .shirube-shuffle-strip,
+  .shirube-wander-stage[data-motion="active"][data-gait="shuffle"][data-state="walking"]
+    .shirube-shuffle-strip {
+    animation: shirube-shuffle-steps 0.96s steps(4) infinite;
+  }
+
+  .shirube-shuffle[data-travel="true"] .shirube-shuffle-mover {
+    animation: shirube-shuffle-travel var(--shuffle-travel, 14s) linear infinite;
+  }
+
+  @keyframes shirube-front-hop {
+    0% {
+      transform: translateY(0) scale(1, 1);
+    }
+    35% {
+      transform: translateY(0) scale(1.05, 0.93);
+    }
+    65% {
+      transform: translateY(-5%) scale(0.98, 1.03);
+    }
+    100% {
+      transform: translateY(0) scale(1, 1);
+    }
+  }
+
+  @keyframes shirube-turn-back-bounce {
+    0% {
+      transform: translateY(0) scale(1, 1);
+    }
+    35% {
+      transform: translateY(0) scale(1.05, 0.94);
+    }
+    68% {
+      transform: translateY(-4%) scale(0.98, 1.03);
+    }
+    100% {
+      transform: translateY(0) scale(1, 1);
+    }
+  }
+
+  @keyframes shirube-hop-takeoff {
+    0% {
+      transform: scale(1.08, 0.88);
+    }
+    30% {
+      transform: scale(0.94, 1.08);
+    }
+    70% {
+      transform: scale(0.97, 1.04);
+    }
+    100% {
+      transform: scale(1, 1);
+    }
+  }
+
+  @keyframes shirube-hop-land {
+    0% {
+      transform: scale(1, 1);
+    }
+    40% {
+      transform: scale(1.1, 0.86);
+    }
+    75% {
+      transform: scale(0.98, 1.03);
+    }
+    100% {
+      transform: scale(1, 1);
+    }
+  }
+
+  @keyframes shirube-bubble-in {
+    0% {
+      opacity: 0;
+      transform: translateY(4px) scale(0.97);
+    }
+    100% {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+    }
+  }
+
+  @keyframes shirube-front-wave {
+    0%,
+    100% {
+      transform: rotate(0deg);
+    }
+    30% {
+      transform: rotate(-18deg);
+    }
+    65% {
+      transform: rotate(10deg);
+    }
+  }
+
+  @keyframes shirube-shuffle-steps {
+    0% {
+      transform: translateX(0);
+    }
+    100% {
+      transform: translateX(-100%);
+    }
+  }
+
+  @keyframes shirube-shuffle-travel {
+    0% {
+      transform: translateX(0) scaleX(1);
+    }
+    49.9% {
+      transform: translateX(calc(100cqw - 100%)) scaleX(1);
+    }
+    50% {
+      transform: translateX(calc(100cqw - 100%)) scaleX(-1);
+    }
+    99.9% {
+      transform: translateX(0) scaleX(-1);
+    }
+    100% {
+      transform: translateX(0) scaleX(1);
+    }
+  }
+}
