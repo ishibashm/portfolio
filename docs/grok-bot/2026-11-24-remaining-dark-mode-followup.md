@@ -5,6 +5,7 @@
   - 21ea0cb5 1回目（/mcp・暦・ガイド・検証・都道府県・年盤月盤）。2026-11-23。
   - 26a8a855 プロフィール・アカウント・引越し時期分析など、残っていた白い地と途中で切り替わるレイアウトをダークモードにそろえる（2026-11-24 06:56 JST コミット、06:59 ごろ push）
   - d87cb3d1 地図の重ね順と目印の検査を、テーマ変数と行番号の変化に合わせる（07:12 JST ごろ）
+  - 18a97087 #1911 と重ならないよう、今日の概況カードのファイルをこの枝から外す（07:30 JST）
 - 原因:
   - /profile と /account はページとカードにベージュグラデと `bg-white` が残っており、入力欄だけが `color-scheme: dark` で黒くなっていた。
   - /relocation/timing は layout の導入部が地色なし（ダークな body が見える）なのにカードが白、page 本体が `min-h-screen bg-gradient-to-br from-rose-50/80 via-stone-50 to-amber-50/50` のため、見出しから下が白いグラデになり途中で切り替わって見えた。
@@ -26,5 +27,10 @@
   - 直したあと: `/workspace/dark-mode-2/after/`
   - 1回目のライト／ダーク撮影は `/workspace/dark-mode-2/` 直下に残してある。
 - テスト: 関連 vitest と、CI で落ちた `mapStackingContext` / `mapMarkerKeyboard` を直して再実行し成功。eslint はエラー 0（既存の hooks 警告のみ）。`npm run format:staged` のあと pre-commit の prettier 通過。
-- CI: 26a8a855 の check（run 45275128648、06:59–07:11 JST）は、地色を `bg-theme-surface` に替えた地図の検査と、SimulatorMap の行番号ずれで失敗。d87cb3d1 で期待値だけ直し、再実行を待っている。本番の挙動は変えていない。前回（21ea0cb5）は run 45161914614 が成功済み。
+- CI:
+  - 21ea0cb5: run 45161914614 成功（2026-11-23 20:05–20:21 JST、15分49秒）。
+  - 26a8a855: run 45275128648 失敗（06:59–07:11 JST、12分45秒）。地図の器の地色を `bg-theme-surface` に替えた検査と、SimulatorMap の行番号ずれ。
+  - d87cb3d1: run 45277500320 成功（07:12:58–07:28:31 JST、15分33秒）。https://github.com/ishibashm/portfolio/actions/runs/45277500320
+  - 18a97087: #1911（`fix/home-map-gap`）と同じ `TodayOverview.tsx` を触らないよう、トークンだけの変更を戻した。この画面はもともと `dark:` の変数が付いている。check は再実行中。
+- 他の枝: #1911 のファイル（`src/components/home/TodayOverview.tsx`、`__tests__/nationalWeather.test.tsx`）は最終的にこの枝の差分に含めていない。GlobalSidebar も変更していない。
 - 本番の設定・DB は変更していない。マージは本人の承認待ち。
