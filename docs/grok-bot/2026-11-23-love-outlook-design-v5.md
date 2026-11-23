@@ -1,0 +1,28 @@
+# 今日の恋愛の目安に、巻頭のイラストと控えめな動きを添える（2026-11-23）
+
+- 依頼: 本人「イラストも作成して加えてみて」（2026-11-23 16:56 JST）。続いて「モーショングラフィックも追加できるようだったらして」（17:02 JST）。対象は PR #1908（feat/love-outlook-rich）。マージはしていない。作業前に最新 master（#1907、bac3291）を取り込み、すでに乗っていたことを確認した。
+- イラスト: 作業マシンの `/workspace/love-design-v5/love-horoscope-header-source.jpg`（実寸 1280×720、約 272KB。GenerateImage で作った自社素材）。深い紺の夜空に金の線画で、中央の羅針盤、左の三日月、星座、向き合う折り鶴、四隅の飾り枠。文字なし、紺と金だけ。
+- 画像の置き方:
+  - 号数風ヘッダー（日付・曜日・中宮）の下に、幅いっぱいの表紙バナーとして置く。
+  - 見出し「今日の恋愛の目安」はバナーに重ねず、すぐ下の紙面へ出す。中央の羅針盤を文字で隠さず、ライトとダークの本文コントラスト（インク色で 4.5:1 以上）を保つため。
+  - 幅が十分なとき（コンテナ 52rem 以上）は縦横比 3:1、狭い画面では 11:5（約 2.2:1）に CSS でトリミングし、`object-position` で羅針盤と鶴が残るようにした。
+- 画像のサイズと読み込み:
+  - `public/home/love-horoscope-header.webp`（1280×720、89,866 バイト、約 88KB）。スマホ用の別ファイルは作らず、1 枚を CSS でトリミング。合計は 120KB 以内。
+  - `next/image` で `width={1280}` `height={720}`、`alt=""`、`loading="lazy"`（初期表示より下のため）。
+- 動き（既存の動きの飾りと同じ決まり。`docs/motion-accents.md` に 8 番として追記）:
+  - バナー上の小さな金の星（自作 SVG、10 個）がゆっくり瞬く。1 周期 3.2〜4.2 秒（1 秒に 3 回以上は光らせない）。
+  - 画面に入ったとき（`InViewOnce`）、金の光の筋が 1 回だけ約 1.8 秒で横切る。
+  - 羅針盤のまわりの光の輪（破線の金の円）が 48 秒で 1 回転する。
+  - 各星のカードは既存の `motion-reveal` で、スクロールに合わせて順にフェードインする。
+  - 動かすのは `transform` と `opacity` だけ。アニメーションは `@media (prefers-reduced-motion: no-preference)` の中だけ。減らす設定では星と輪は止まったまま見え、光の筋は出ない。外部ライブラリや動画ファイルは足していない。飾りはバナー内に閉じ、歩くしるべの領域には出さない。
+- PR: https://github.com/ishibashm/portfolio/pull/1908 （未マージ。同じ PR をこの方向で更新）
+  - 5beaff3 今日の恋愛の目安を、占い雑誌の巻頭頁に近づける
+  - c76521e 今日の恋愛の目安に、巻頭のイラストと控えめな動きを添える
+- ローカル確認（`http://127.0.0.1:3088`、ライト／ダーク、幅 390px・1280px・1600px）: 1280px では 3:1 のバナーと 3×3 の見開き。390px と 1600px の右列では低いトリミングでも羅針盤と鶴が見える。見出しはバナーの外で読める。
+- スクリーンショット（作業マシン `/workspace/love-design-v5/`）:
+  - `after-local-desktop-light-love.png` / `after-local-desktop-dark-love.png` / `after-local-mobile-light-love.png` / `after-local-mobile-dark-love.png`
+  - 幅 1600px の参考: `after-local-wide-desktop-light-love.png`
+  - 動きの短い録画: `motion.mp4`（894×720、約 7.6 秒、約 651KB。光の筋が左から右へ 1 回横切るところと、星のまたたきが見える）
+- テスト: vitest 4 ファイル・46 件が通過（`todayLoveOutlook` / `motionAccents` / `loveFortune` / `nationalWeather`）。eslint と prettier は pre-commit で通過。
+- CI: check が成功。GitHub Actions run 45136331182（2026-11-23 17:09 開始 → 17:24 完了 JST、所要 15分21秒）。 https://github.com/ishibashm/portfolio/actions/runs/45136331182
+- 本番の設定・DB は変更していない。マージはしていない。
