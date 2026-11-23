@@ -469,6 +469,25 @@ html:not([data-menu="open"]) [data-menu-icon="close"] {
   transform: rotate(var(--a)) translateY(-16px);
 }
 
+/* 恋愛の目安の表紙：金の光の筋。既定は画面外（最終も画面外） */
+.motion-plate-sweep {
+  position: relative;
+  overflow: hidden;
+}
+.motion-plate-sweep::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(
+    105deg,
+    transparent 32%,
+    color-mix(in oklab, var(--wg-gold) 38%, transparent) 50%,
+    transparent 68%
+  );
+  transform: translateX(-130%);
+}
+
 @media (prefers-reduced-motion: reduce) {
   .motion-burst {
     display: none;
@@ -586,6 +605,21 @@ html:not([data-menu="open"]) [data-menu-icon="close"] {
         opacity: 0;
         transform: translateY(12px);
       }
+    }
+  }
+
+  /* 表紙の金の光が 1 回横切る（ライトスイープ）。InViewOnce で発火 */
+  .motion-plate-sweep[data-inview="true"]::after {
+    animation: motion-sweep 1.8s ease-in-out 0.35s 1 both;
+  }
+
+  /* 羅針盤のまわりの光の輪。ごくゆっくり回る */
+  .motion-halo-spin {
+    animation: motion-halo-spin 48s linear infinite;
+  }
+  @keyframes motion-halo-spin {
+    to {
+      transform: rotate(360deg);
     }
   }
 }

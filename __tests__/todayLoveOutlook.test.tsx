@@ -44,6 +44,16 @@ it("見出し、9星のリンク、回座、吉方位と近場の目安を表示
   expect(html.match(/近場が目安/g)).toHaveLength(4);
   expect(html.match(/bg-theme-bad-soft/g)).toHaveLength(1);
   expect(html).toContain("その方位への外出は控え");
+  expect(html).toContain("<img");
+  expect(html).toContain('alt=""');
+  expect(html).toContain('width="1280"');
+  expect(html).toContain('height="720"');
+  expect(html).toContain('loading="lazy"');
+  expect(html).toContain("love-horoscope-header.webp");
+  expect(html).toContain("motion-plate-sweep");
+  expect(html.match(/motion-twinkle/g)).toHaveLength(10);
+  expect(html).toContain("motion-halo-spin");
+  expect(html.match(/motion-reveal/g)).toHaveLength(9);
 });
 
 it("翌日も日盤に応じた方位と近場の目安を表示する", () => {

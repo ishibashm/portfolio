@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { TodayLoveOutlookPlate } from "@/components/home/TodayLoveOutlookPlate";
 import { STAR_NAMES } from "@/lib/kigakuContent";
 import type { LoveFortune, LoveFortuneItem } from "@/lib/loveFortune";
 import { formatJapaneseDate } from "@/lib/reminderText";
@@ -159,8 +160,8 @@ export function TodayLoveOutlook({
           <path d="M.5 12V.5H12" />
         </svg>
       ))}
-      <header className="border-b border-theme-gold px-4 pt-4 pb-[3px]">
-        <div className="mb-2 grid gap-1 border-b border-theme-gold/40 pb-2 @min-[52rem]:grid-cols-2 @min-[52rem]:items-center">
+      <header className="border-b border-theme-gold pb-[3px]">
+        <div className="grid gap-1 border-b border-theme-gold/40 px-4 pt-4 pb-2 @min-[52rem]:grid-cols-2 @min-[52rem]:items-center">
           <p
             aria-hidden="true"
             className="font-sans text-[0.625rem] font-semibold tracking-[0.24em] text-theme-gold"
@@ -172,7 +173,8 @@ export function TodayLoveOutlook({
             <span>中宮　{STAR_NAMES[center]}</span>
           </p>
         </div>
-        <div className="grid gap-2 border-b-2 border-accent pb-3 @min-[52rem]:grid-cols-[1fr_auto] @min-[52rem]:items-end">
+        <TodayLoveOutlookPlate />
+        <div className="grid gap-2 border-b-2 border-accent px-4 pt-3 pb-3 @min-[52rem]:grid-cols-[1fr_auto] @min-[52rem]:items-end">
           <div className="space-y-2">
             <h3
               id="today-love-heading"
@@ -255,7 +257,8 @@ export function TodayLoveOutlook({
             return (
               <li
                 key={star}
-                className="group space-y-2 px-4 py-3 @min-[52rem]:nth-[n+4]:border-t @min-[52rem]:not-nth-[3n+1]:border-l @min-[52rem]:border-theme-border"
+                className="motion-reveal group space-y-2 px-4 py-3 @min-[52rem]:nth-[n+4]:border-t @min-[52rem]:not-nth-[3n+1]:border-l @min-[52rem]:border-theme-border"
+                style={{ ["--i" as string]: star - 1 }}
               >
                 <div className="flex items-center gap-2.5">
                   <ElementMedallion star={star} />
