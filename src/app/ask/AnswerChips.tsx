@@ -31,7 +31,7 @@ export function AnswerChips({
   const [conditions, setConditions] = useState<string[]>([]);
   const [pendingOrigin, setPendingOrigin] = useState<PickedOrigin>();
   const chip =
-    "rounded-lg border border-teal-600 bg-white px-3 py-2 text-sm aria-pressed:bg-teal-100";
+    "rounded-lg border border-accent bg-theme-surface px-3 py-2 text-sm aria-pressed:bg-theme-accent-soft";
   async function chooseOrigin(origin: PickedOrigin) {
     const choice = settingString(readSettingsSync(), "ask_origin_save_choice");
     if (!choice && origin.lat !== undefined && origin.lon !== undefined) {
@@ -62,7 +62,7 @@ export function AnswerChips({
     <fieldset
       disabled={disabled}
       aria-label="回答ボタン"
-      className="mb-3 space-y-3 rounded-xl border border-teal-600 bg-teal-50 p-3 disabled:opacity-50"
+      className="mb-3 space-y-3 rounded-xl border border-accent bg-theme-accent-soft p-3 disabled:opacity-50"
     >
       <legend className="text-sm font-semibold">ボタンで条件を伝える</legend>
       {fields.includes("birthYear") && !birthDateKnown && (

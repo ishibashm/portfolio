@@ -17,34 +17,34 @@ export const metadata: Metadata = {
 
 export default function PrivacyPolicyPage() {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#faf7f5] via-[#f5efe9] to-[#f0e9e1] text-slate-900 py-12 px-4 md:px-8">
+    <div className="min-h-screen bg-background text-ink py-12 px-4 md:px-8">
       {/* 幅は全画面で 1700px に揃える（1/3 と同じ理由）。 */}
-      <div className="max-w-[1700px] mx-auto bg-white/90 backdrop-blur-xl border border-slate-300 rounded-3xl p-8 md:p-12 shadow-xl">
+      <div className="max-w-[1700px] mx-auto bg-theme-surface backdrop-blur-xl border border-theme-border rounded-3xl p-8 md:p-12 shadow-xl">
         <Link
           href="/"
-          className="inline-flex items-center gap-2 text-xs font-semibold text-rose-600 hover:text-rose-700 mb-6 transition-colors"
+          className="inline-flex items-center gap-2 text-xs font-semibold text-accent hover:text-accent mb-6 transition-colors"
         >
           <ArrowLeft className="w-4 h-4" />
           トップページへ戻る
         </Link>
 
-        <div className="flex items-center gap-3 mb-6 border-b border-slate-200 pb-6">
-          <div className="p-3 rounded-2xl bg-rose-500 text-white shadow-md">
+        <div className="flex items-center gap-3 mb-6 border-b border-theme-border pb-6">
+          <div className="p-3 rounded-2xl bg-accent text-on-accent shadow-md">
             <Shield className="w-6 h-6" />
           </div>
           <div>
             <h1 className="text-2xl md:text-3xl font-bold font-serif">
               プライバシーポリシー
             </h1>
-            <p className="text-xs text-slate-600 mt-1">
+            <p className="text-xs text-ink-muted mt-1">
               最終更新日: 2026年11月18日
             </p>
           </div>
         </div>
 
-        <div className="space-y-6 text-sm text-slate-700 leading-relaxed font-sans">
+        <div className="space-y-6 text-sm text-ink leading-relaxed font-sans">
           <section>
-            <h2 className="text-lg font-bold text-slate-900 font-serif mb-2">
+            <h2 className="text-lg font-bold text-ink font-serif mb-2">
               1. 個人情報の収集と利用
             </h2>
             <p>
@@ -70,7 +70,7 @@ export default function PrivacyPolicyPage() {
           </section>
 
           <section>
-            <h2 className="text-lg font-bold text-slate-900 font-serif mb-2">
+            <h2 className="text-lg font-bold text-ink font-serif mb-2">
               2. 広告の配信について（Google AdSense等）
             </h2>
             <p>
@@ -83,7 +83,7 @@ export default function PrivacyPolicyPage() {
                 href="https://www.google.com/settings/ads"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-rose-600 underline font-semibold mx-1"
+                className="text-accent underline font-semibold mx-1"
               >
                 Googleの広告設定
               </a>
@@ -92,7 +92,7 @@ export default function PrivacyPolicyPage() {
                 href="https://policies.google.com/technologies/partner-sites"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-rose-600 underline font-semibold mx-1"
+                className="text-accent underline font-semibold mx-1"
               >
                 Googleのサービスを使用するサイトやアプリから収集した情報のGoogleによる使用
               </a>
@@ -110,7 +110,7 @@ export default function PrivacyPolicyPage() {
           </section>
 
           <section>
-            <h2 className="text-lg font-bold text-slate-900 font-serif mb-2">
+            <h2 className="text-lg font-bold text-ink font-serif mb-2">
               3. アクセス解析ツールについて
             </h2>
             <p>
@@ -119,7 +119,7 @@ export default function PrivacyPolicyPage() {
           </section>
 
           <section>
-            <h2 className="text-lg font-bold text-slate-900 font-serif mb-2">
+            <h2 className="text-lg font-bold text-ink font-serif mb-2">
               4. 外部への送信について（利用者情報の外部送信）
             </h2>
             <p>
@@ -128,7 +128,7 @@ export default function PrivacyPolicyPage() {
             <div className="mt-3 overflow-x-auto">
               <table className="w-full min-w-[640px] border-collapse text-xs">
                 <thead>
-                  <tr className="border-b border-slate-300 text-left">
+                  <tr className="border-b border-theme-border text-left">
                     <th className="py-2 pr-3 font-semibold">送信先</th>
                     <th className="py-2 pr-3 font-semibold">
                       送信されるページ・場面
@@ -140,14 +140,14 @@ export default function PrivacyPolicyPage() {
                   {EXTERNAL_TRANSMISSIONS.map((t) => (
                     <tr
                       key={t.recipient}
-                      className="border-b border-slate-200 align-top"
+                      className="border-b border-theme-border align-top"
                     >
                       <td className="py-2 pr-3">
                         <a
                           href={t.policy}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="text-rose-600 underline"
+                          className="text-accent underline"
                         >
                           {t.recipient}
                         </a>
@@ -165,7 +165,7 @@ export default function PrivacyPolicyPage() {
           </section>
 
           <section>
-            <h2 className="text-lg font-bold text-slate-900 font-serif mb-2">
+            <h2 className="text-lg font-bold text-ink font-serif mb-2">
               5. 免責事項
             </h2>
             <p>
@@ -174,14 +174,14 @@ export default function PrivacyPolicyPage() {
           </section>
 
           <section>
-            <h2 className="text-lg font-bold text-slate-900 font-serif mb-2">
+            <h2 className="text-lg font-bold text-ink font-serif mb-2">
               6. お問い合わせ
             </h2>
             <p>
               プライバシーポリシーに関するお問い合わせは、
               <Link
                 href="/contact"
-                className="text-rose-600 underline font-semibold mx-1"
+                className="text-accent underline font-semibold mx-1"
               >
                 お問い合わせページ
               </Link>

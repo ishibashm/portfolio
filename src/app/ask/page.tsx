@@ -31,14 +31,14 @@ export default function Page() {
   const paidPaused = paidApisDisabled();
   const aiOn = state.enabled && !paidPaused;
   return (
-    <main className="min-h-screen bg-gradient-to-br from-[#faf7f5] via-[#f5efe9] to-[#f0e9e1] text-slate-900">
+    <main className="min-h-screen bg-background text-ink">
       <article className="mx-auto max-w-[1700px] px-5 py-12">
-        <nav aria-label="パンくず" className="mb-4 text-sm text-slate-600">
+        <nav aria-label="パンくず" className="mb-4 text-sm text-ink-muted">
           <Link href="/">ホーム</Link>
           <span aria-hidden="true"> / </span>
           <span aria-current="page">{PAGE_NAME}</span>
         </nav>
-        <Link href="/houi" className="text-sm underline text-slate-600">
+        <Link href="/houi" className="text-sm text-accent underline">
           本命星と吉方位の早見表へ
         </Link>
         <h1 className="mt-5 text-2xl font-bold font-serif sm:text-3xl">
@@ -52,7 +52,7 @@ export default function Page() {
           /* サーバーで描くので、JSが動かない環境でもこの案内と /annai への道は出る。 */
           <section
             aria-label="AI回答の停止"
-            className="mt-4 flex items-start gap-3 rounded-2xl border border-rose-200 bg-white p-4 text-sm leading-relaxed sm:gap-4"
+            className="mt-4 flex items-start gap-3 rounded-2xl border border-theme-border bg-theme-gold-soft p-4 text-sm leading-relaxed sm:gap-4"
           >
             {/* 文で状態を伝えるので、イラストは読み上げない（装飾）。 */}
             <GuideAvatar pose="magnifier" size="sm" decorative />
@@ -62,13 +62,13 @@ export default function Page() {
               </p>
               <Link
                 href="/annai"
-                className="mt-3 inline-block rounded-xl border border-rose-300 px-4 py-2 font-semibold text-rose-700 hover:bg-rose-50"
+                className="mt-3 inline-block rounded-xl border border-theme-border px-4 py-2 font-semibold text-accent hover:border-accent hover:bg-theme-accent-soft"
               >
                 案内役に聞く
               </Link>
-              <p className="mt-3 text-slate-600">
+              <p className="mt-3 text-ink-muted">
                 結果は、ご自分のAIに渡して続きを相談できます。
-                <Link href="/mcp" className="ml-1 underline">
+                <Link href="/mcp" className="ml-1 text-accent underline">
                   自分のAIからつなぐ
                 </Link>
               </p>
@@ -81,12 +81,9 @@ export default function Page() {
             : "計算の連鎖は深さ3・最大4、20回までです。1回8秒・全体30秒で打ち切ります。街から先の展開は地理の参考です。"}
         </p>
         {aiOn && (
-          <p className="mt-3 text-sm leading-relaxed text-slate-700">
+          <p className="mt-3 text-sm leading-relaxed text-ink">
             フォームで聞く（JSなし）:{" "}
-            <Link
-              href="/annai"
-              className="font-semibold text-rose-700 underline"
-            >
+            <Link href="/annai" className="font-semibold text-accent underline">
               案内役に聞く
             </Link>
           </p>
@@ -98,7 +95,7 @@ export default function Page() {
           persistConversation
           paidApisPaused={paidPaused}
         />
-        <p className="mt-8 text-sm text-slate-600">
+        <p className="mt-8 text-sm text-ink-muted">
           吉凶は九星気学の考え方による参考情報です。契約・費用・通勤など、現実の条件と合わせて検討してください。
         </p>
       </article>

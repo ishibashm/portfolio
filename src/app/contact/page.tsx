@@ -45,30 +45,28 @@ export default function ContactPage() {
   }
 
   const field =
-    "w-full px-4 py-3 rounded-xl border border-slate-300 bg-white text-sm outline-none focus:border-rose-400";
+    "w-full px-4 py-3 rounded-xl border border-theme-border bg-theme-surface text-sm outline-none focus:border-accent";
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#faf7f5] via-[#f5efe9] to-[#f0e9e1] text-slate-900 font-sans">
+    <div className="min-h-screen bg-background text-ink font-sans">
       {/* 幅は全画面で 1700px に揃える（/guide/[slug] と同じ理由）。 */}
       <div className="max-w-[1700px] mx-auto px-5 py-12">
         <h1 className="text-3xl font-bold font-serif tracking-tight">
           お問い合わせ
         </h1>
-        <p className="mt-4 text-sm leading-relaxed text-slate-700">
+        <p className="mt-4 text-sm leading-relaxed text-ink">
           判定内容の誤り、物件データの不備、掲載の停止依頼などをお寄せください。いただいた内容は運営者のみが確認します。
         </p>
 
         {state === "done" ? (
-          <div className="mt-8 rounded-2xl border border-emerald-200 bg-emerald-50 p-6">
-            <h2 className="text-sm font-bold text-emerald-900">
-              送信しました
-            </h2>
-            <p className="mt-2 text-xs text-emerald-900 leading-relaxed">
+          <div className="mt-8 rounded-2xl border border-theme-border bg-theme-accent-soft p-6">
+            <h2 className="text-sm font-bold text-accent">送信しました</h2>
+            <p className="mt-2 text-xs text-accent leading-relaxed">
               内容を確認のうえ、必要に応じてご記入のメールアドレス宛にご連絡します。
             </p>
             <Link
               href="/"
-              className="mt-4 inline-flex text-xs font-bold text-emerald-800 hover:underline"
+              className="mt-4 inline-flex text-xs font-bold text-accent hover:underline"
             >
               ホームに戻る
             </Link>
@@ -78,16 +76,22 @@ export default function ContactPage() {
             <div>
               <label
                 htmlFor="name"
-                className="text-xs font-bold text-slate-600 block mb-1.5"
+                className="text-xs font-bold text-ink-muted block mb-1.5"
               >
                 お名前
               </label>
-              <input id="name" name="name" required maxLength={100} className={field} />
+              <input
+                id="name"
+                name="name"
+                required
+                maxLength={100}
+                className={field}
+              />
             </div>
             <div>
               <label
                 htmlFor="email"
-                className="text-xs font-bold text-slate-600 block mb-1.5"
+                className="text-xs font-bold text-ink-muted block mb-1.5"
               >
                 メールアドレス
               </label>
@@ -103,7 +107,7 @@ export default function ContactPage() {
             <div>
               <label
                 htmlFor="body"
-                className="text-xs font-bold text-slate-600 block mb-1.5"
+                className="text-xs font-bold text-ink-muted block mb-1.5"
               >
                 お問い合わせ内容
               </label>
@@ -120,25 +124,30 @@ export default function ContactPage() {
             {/* ボット除け。人間には見えないので、値が入っていれば自動投稿と判断する */}
             <div className="hidden" aria-hidden="true">
               <label htmlFor="website">Website</label>
-              <input id="website" name="website" tabIndex={-1} autoComplete="off" />
+              <input
+                id="website"
+                name="website"
+                tabIndex={-1}
+                autoComplete="off"
+              />
             </div>
 
-            <p className="text-xs text-slate-500 leading-relaxed">
+            <p className="text-xs text-ink-muted leading-relaxed">
               送信することで
-              <Link href="/privacy" className="underline hover:text-rose-600">
+              <Link href="/privacy" className="underline hover:text-accent">
                 プライバシーポリシー
               </Link>
               に同意したものとみなします。
             </p>
 
             {state === "error" && (
-              <p className="text-xs text-rose-700 font-semibold">{message}</p>
+              <p className="text-xs text-accent font-semibold">{message}</p>
             )}
 
             <button
               type="submit"
               disabled={state === "sending"}
-              className="px-6 py-3 rounded-full bg-slate-900 hover:bg-slate-800 disabled:opacity-50 text-white font-bold text-sm transition-colors"
+              className="px-6 py-3 rounded-full bg-accent hover:brightness-110 disabled:opacity-50 text-on-accent font-bold text-sm transition-colors"
             >
               {state === "sending" ? "送信中..." : "送信する"}
             </button>

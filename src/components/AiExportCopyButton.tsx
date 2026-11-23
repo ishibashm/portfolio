@@ -23,12 +23,12 @@ export function AiExportCopyButton({ text }: { text: string }) {
       <button
         type="button"
         onClick={() => void copy()}
-        className="min-h-[32px] rounded-lg bg-stone-800 px-3 py-1.5 text-xs font-bold text-white hover:bg-stone-700"
+        className="min-h-[32px] rounded-lg bg-accent px-3 py-1.5 text-xs font-bold text-on-accent hover:brightness-110"
       >
         コピー
       </button>
       {message ? (
-        <p role="status" className="text-sm text-slate-700">
+        <p role="status" className="text-sm text-ink">
           {message}
         </p>
       ) : null}

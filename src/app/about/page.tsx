@@ -23,7 +23,7 @@ export const metadata: Metadata = {
 
 export default function AboutPage() {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#faf7f5] via-[#f5efe9] to-[#f0e9e1] text-slate-900 font-sans">
+    <div className="min-h-screen bg-background text-ink font-sans">
       {/* 幅は全画面で 1700px に揃える（/guide/[slug] と同じ理由）。 */}
       <article className="max-w-[1700px] mx-auto px-5 py-12">
         <h1 className="text-3xl font-bold font-serif tracking-tight">
@@ -31,25 +31,22 @@ export default function AboutPage() {
         </h1>
 
         <section className="mt-8">
-          <h2 className="text-lg font-bold font-serif border-b border-slate-300 pb-2">
+          <h2 className="text-lg font-bold font-serif border-b border-theme-border pb-2">
             何をするサイトか
           </h2>
-          <p className="mt-4 text-sm leading-relaxed text-slate-700">
+          <p className="mt-4 text-sm leading-relaxed text-ink">
             {SITE_DESCRIPTION}
             募集中の部屋の一覧は出していません（掲載元の規約に従って取り込みを
             2026-09-13 に止め、9 月 20
             日に物件検索の掲載を閉じました）。実際の募集は各社のサイトでご確認ください。
           </p>
-          <ul className="mt-4 text-sm text-slate-700 space-y-2 list-disc pl-5">
+          <ul className="mt-4 text-sm text-ink space-y-2 list-disc pl-5">
             {CORE_ROUTES.map((r) => (
               <li key={r.href}>
-                <Link
-                  href={r.href}
-                  className="font-semibold hover:text-rose-600"
-                >
+                <Link href={r.href} className="font-semibold hover:text-accent">
                   {r.label}
                 </Link>
-                <span className="text-xs text-slate-600"> — {r.summary}</span>
+                <span className="text-xs text-ink-muted"> — {r.summary}</span>
               </li>
             ))}
           </ul>
@@ -66,28 +63,28 @@ export default function AboutPage() {
           「残数は必ず実測してから言う」と同じ理由）。構造だけを書く。
         */}
         <section className="mt-10">
-          <h2 className="text-lg font-bold font-serif border-b border-slate-300 pb-2">
+          <h2 className="text-lg font-bold font-serif border-b border-theme-border pb-2">
             決めるために、この道具が何をするか
           </h2>
-          <p className="mt-4 text-sm leading-relaxed text-slate-700">
+          <p className="mt-4 text-sm leading-relaxed text-ink">
             引越しの決断が重いのは、選択肢が多すぎて比べられないからです。このサイトがするのは、どの未来が来るかを当てることではなく、比べられる形に整えることです。
           </p>
-          <dl className="mt-4 text-sm text-slate-700 space-y-3">
+          <dl className="mt-4 text-sm text-ink space-y-3">
             <div>
-              <dt className="font-bold text-xs text-slate-500">候補を絞る</dt>
+              <dt className="font-bold text-xs text-ink-muted">候補を絞る</dt>
               <dd className="leading-relaxed">
                 全国の市区町村を、方位の吉凶と住まいの統計の両方で絞り込みます。まず動ける日を決め、その日に開いている方位の街だけを並べます。検討できる数まで候補を減らすところが、手作業ではいちばん手間の掛かる部分です。
               </dd>
             </div>
             <div>
-              <dt className="font-bold text-xs text-slate-500">
+              <dt className="font-bold text-xs text-ink-muted">
                 前提を1つに固定する
               </dt>
               <dd className="leading-relaxed">
                 生年月日と出発地は「使用中のプロフィール」1つに決まり、どの画面も同じ値を読みます。各ページの上部に「この設定でこの方位を出しています」と表示します。判定の基準は常に真北、暦の日付は常に日本時間なので、閲覧する場所や時刻で答えが変わることはありません。真北で判定する理由は
                 <Link
                   href="/blog/where-feng-shui-came-from"
-                  className="underline hover:text-rose-600"
+                  className="underline hover:text-accent"
                 >
                   風水はどこから来たのか
                 </Link>
@@ -95,7 +92,7 @@ export default function AboutPage() {
               </dd>
             </div>
             <div>
-              <dt className="font-bold text-xs text-slate-500">
+              <dt className="font-bold text-xs text-ink-muted">
                 分からないことは、分からないと書く
               </dt>
               <dd className="leading-relaxed">
@@ -103,7 +100,7 @@ export default function AboutPage() {
               </dd>
             </div>
             <div>
-              <dt className="font-bold text-xs text-slate-500">
+              <dt className="font-bold text-xs text-ink-muted">
                 「動かない」も答えとして出す
               </dt>
               <dd className="leading-relaxed">
@@ -111,16 +108,16 @@ export default function AboutPage() {
               </dd>
             </div>
           </dl>
-          <p className="mt-4 text-sm leading-relaxed text-slate-700">
+          <p className="mt-4 text-sm leading-relaxed text-ink">
             反対に、この道具が決めないこともあります。方位の判定は参考にする条件の1つで、家賃、災害リスク、契約条件、通勤時間、医療・教育環境、家族の合意は別に確かめる必要があります。判定の考え方がいつ・誰の手で形になったものかは
             <Link
               href="/blog/where-kigaku-and-houi-came-from"
-              className="underline hover:text-rose-600"
+              className="underline hover:text-accent"
             >
               九星気学と方位はどこから来たのか
             </Link>
             に、操作の手順は
-            <Link href="/guide" className="underline hover:text-rose-600">
+            <Link href="/guide" className="underline hover:text-accent">
               使い方の案内
             </Link>
             にまとめています。
@@ -128,12 +125,12 @@ export default function AboutPage() {
         </section>
 
         <section className="mt-10">
-          <h2 className="text-lg font-bold font-serif border-b border-slate-300 pb-2">
+          <h2 className="text-lg font-bold font-serif border-b border-theme-border pb-2">
             データの出典
           </h2>
-          <dl className="mt-4 text-sm text-slate-700 space-y-3">
+          <dl className="mt-4 text-sm text-ink space-y-3">
             <div>
-              <dt className="font-bold text-xs text-slate-500">住まいの統計</dt>
+              <dt className="font-bold text-xs text-ink-muted">住まいの統計</dt>
               <dd className="leading-relaxed">
                 市区町村ごとの借家の家賃と空き家率は、e-Stat「統計でみる市区町村のすがた」（2023
                 年住宅・土地統計調査）の公表値です。成約価格と地価公示は国土交通省の公開データを使っています。いずれも公表の周期で更新されるもので、いま募集中の部屋の情報ではありません。
@@ -143,19 +140,19 @@ export default function AboutPage() {
               </dd>
             </div>
             <div>
-              <dt className="font-bold text-xs text-slate-500">座標</dt>
+              <dt className="font-bold text-xs text-ink-muted">座標</dt>
               <dd className="leading-relaxed">
                 国土地理院の住所検索APIを用いて住所から求めています。番地まで特定できない場合は町丁目の代表点になります。
               </dd>
             </div>
             <div>
-              <dt className="font-bold text-xs text-slate-500">地域の統計</dt>
+              <dt className="font-bold text-xs text-ink-muted">地域の統計</dt>
               <dd className="leading-relaxed">
                 市区町村ごとの所得統計など、公的に公開されている統計を利用しています。
               </dd>
             </div>
             <div>
-              <dt className="font-bold text-xs text-slate-500">
+              <dt className="font-bold text-xs text-ink-muted">
                 方位・暦の計算
               </dt>
               <dd className="leading-relaxed">
@@ -166,10 +163,10 @@ export default function AboutPage() {
         </section>
 
         <section className="mt-10">
-          <h2 className="text-lg font-bold font-serif border-b border-slate-300 pb-2">
+          <h2 className="text-lg font-bold font-serif border-b border-theme-border pb-2">
             判定について（免責）
           </h2>
-          <ul className="mt-4 text-sm text-slate-700 space-y-2 list-disc pl-5 leading-relaxed">
+          <ul className="mt-4 text-sm text-ink space-y-2 list-disc pl-5 leading-relaxed">
             <li>
               九星気学は伝統的な考え方であり、科学的に効果が確認されたものではありません。判定結果は参考情報としてご利用ください。
             </li>
@@ -186,30 +183,30 @@ export default function AboutPage() {
         </section>
 
         <section className="mt-10">
-          <h2 className="text-lg font-bold font-serif border-b border-slate-300 pb-2">
+          <h2 className="text-lg font-bold font-serif border-b border-theme-border pb-2">
             運営者
           </h2>
-          <dl className="mt-4 text-sm text-slate-700 space-y-2">
+          <dl className="mt-4 text-sm text-ink space-y-2">
             <div className="flex gap-3">
-              <dt className="font-bold text-xs text-slate-500 w-24 shrink-0 pt-0.5">
+              <dt className="font-bold text-xs text-ink-muted w-24 shrink-0 pt-0.5">
                 運営
               </dt>
               <dd>M. Ishibashi</dd>
             </div>
             <div className="flex gap-3">
-              <dt className="font-bold text-xs text-slate-500 w-24 shrink-0 pt-0.5">
+              <dt className="font-bold text-xs text-ink-muted w-24 shrink-0 pt-0.5">
                 サイト名
               </dt>
               <dd>{SITE_NAME}（cloud-palette.com）</dd>
             </div>
             <div className="flex gap-3">
-              <dt className="font-bold text-xs text-slate-500 w-24 shrink-0 pt-0.5">
+              <dt className="font-bold text-xs text-ink-muted w-24 shrink-0 pt-0.5">
                 連絡先
               </dt>
               <dd>
                 <Link
                   href="/contact"
-                  className="font-semibold hover:text-rose-600 underline"
+                  className="font-semibold hover:text-accent underline"
                 >
                   お問い合わせフォーム
                 </Link>
@@ -219,26 +216,26 @@ export default function AboutPage() {
         </section>
 
         <section className="mt-10">
-          <h2 className="text-lg font-bold font-serif border-b border-slate-300 pb-2">
+          <h2 className="text-lg font-bold font-serif border-b border-theme-border pb-2">
             動画
           </h2>
-          <p className="mt-4 text-sm leading-relaxed text-slate-700">
+          <p className="mt-4 text-sm leading-relaxed text-ink">
             運営している YouTube チャンネルです。
           </p>
-          <YouTubeChannelLinks className="mt-4 space-y-2 text-sm text-slate-700" />
+          <YouTubeChannelLinks className="mt-4 space-y-2 text-sm text-ink" />
         </section>
 
         <section className="mt-10">
-          <h2 className="text-lg font-bold font-serif border-b border-slate-300 pb-2">
+          <h2 className="text-lg font-bold font-serif border-b border-theme-border pb-2">
             広告について
           </h2>
-          <p className="mt-4 text-sm leading-relaxed text-slate-700">
+          <p className="mt-4 text-sm leading-relaxed text-ink">
             本サイトでは第三者配信の広告を利用する場合があります。A8.netのアフィリエイトプログラムに参加しており、リンクから商品やサービスを申し込むと紹介料を受け取ることがあります。アフィリエイトの広告枠には「広告」と表示します。紹介料の有無は、方位の判定や記事の結論には影響しません。取り扱いの詳細は
-            <Link href="/privacy" className="underline hover:text-rose-600">
+            <Link href="/privacy" className="underline hover:text-accent">
               プライバシーポリシー
             </Link>
             をご覧ください。ページを公開し検索の対象にするときの考え方は
-            <Link href="/editorial" className="underline hover:text-rose-600">
+            <Link href="/editorial" className="underline hover:text-accent">
               編集方針
             </Link>
             にまとめています。

@@ -455,17 +455,17 @@ function ToolStatus({ message }: { message: ChatMessage }) {
   return (
     <>
       {message.state === "streaming" && (
-        <p className="mt-3 flex items-center gap-2 text-xs text-slate-500">
+        <p className="mt-3 flex items-center gap-2 text-xs text-ink-muted">
           <span
             aria-hidden="true"
-            className="h-2 w-2 animate-pulse rounded-full bg-amber-500"
+            className="h-2 w-2 animate-pulse rounded-full bg-theme-gold"
           />
           必要な情報を確認しています…
         </p>
       )}
       {(message.state !== "streaming" || tools.length > 0) && (
-        <details className="mt-4 rounded-xl border border-stone-200 bg-stone-50/80 px-3 py-2 text-xs text-slate-600">
-          <summary className="cursor-pointer font-medium text-slate-700">
+        <details className="mt-4 rounded-xl border border-theme-border bg-theme-subtle px-3 py-2 text-xs text-ink-muted">
+          <summary className="cursor-pointer font-medium text-ink">
             {tools.length > 0
               ? `確認に使った道具：${tools.length}件`
               : "回答の確認状況"}
@@ -479,8 +479,8 @@ function ToolStatus({ message }: { message: ChatMessage }) {
               </p>
             )}
             {tools.map((call) => (
-              <div key={call.id} className="rounded-lg bg-white p-3">
-                <p className="font-medium text-slate-800">
+              <div key={call.id} className="rounded-lg bg-theme-surface p-3">
+                <p className="font-medium text-ink">
                   {toolLabels[call.tool] ?? "情報を確認"}
                 </p>
                 <p className="mt-1">
@@ -494,7 +494,7 @@ function ToolStatus({ message }: { message: ChatMessage }) {
                     <p className="mt-2 break-all">
                       道具：{call.tool}／所要時間：{call.result.durationMs}ms
                     </p>
-                    <pre className="mt-2 max-h-80 overflow-auto whitespace-pre-wrap break-all rounded bg-slate-50 p-2">
+                    <pre className="mt-2 max-h-80 overflow-auto whitespace-pre-wrap break-all rounded bg-theme-subtle p-2">
                       {JSON.stringify(
                         {
                           input: call.input,
@@ -512,7 +512,7 @@ function ToolStatus({ message }: { message: ChatMessage }) {
             ))}
             {reasons.length > 0 && (
               <div>
-                <p className="font-medium text-slate-700">処理からのお知らせ</p>
+                <p className="font-medium text-ink">処理からのお知らせ</p>
                 <ul className="mt-1 list-disc space-y-1 pl-5">
                   {reasons.map((reason) => (
                     <li key={reason}>{reason}</li>
@@ -547,7 +547,7 @@ function ConversationMessage({
   if (message.role === "user")
     return (
       <article
-        className="ml-auto w-fit max-w-[86%] rounded-2xl rounded-br-md bg-slate-800 px-4 py-3 text-sm leading-relaxed whitespace-pre-wrap text-white sm:max-w-[72%]"
+        className="ml-auto w-fit max-w-[86%] rounded-2xl rounded-br-md bg-accent px-4 py-3 text-sm leading-relaxed whitespace-pre-wrap text-on-accent sm:max-w-[72%]"
         data-chat-role="user"
       >
         <h2 className="sr-only">あなた</h2>
@@ -562,13 +562,13 @@ function ConversationMessage({
       <GuideChatAvatar />
       <div className="min-w-0 flex-1 sm:max-w-[88%] sm:flex-none">
         {showName && (
-          <p className="mb-1 ml-1 text-xs font-semibold text-indigo-700">
-            しるべ
-          </p>
+          <p className="mb-1 ml-1 text-xs font-semibold text-accent">しるべ</p>
         )}
         <article
-          className={`rounded-2xl rounded-tl-md border bg-white/95 p-4 shadow-sm sm:p-5 ${
-            message.state === "error" ? "border-red-200" : "border-stone-200"
+          className={`rounded-2xl rounded-tl-md border bg-theme-surface p-4 shadow-sm sm:p-5 ${
+            message.state === "error"
+              ? "border-theme-gold"
+              : "border-theme-border"
           }`}
         >
           {message.answerSource && (
@@ -579,7 +579,7 @@ function ConversationMessage({
           {message.content ? (
             <AgentAnswer text={message.content} />
           ) : (
-            <p className="text-sm text-slate-600">
+            <p className="text-sm text-ink-muted">
               {message.state === "streaming"
                 ? "回答を考えています…"
                 : "回答本文を表示できませんでした。もう一度お試しください。"}
@@ -2046,20 +2046,20 @@ export function McpExplorer({
 
   function tree(parentId: number | null): React.ReactNode {
     return (
-      <ul className="space-y-3 border-l border-slate-300 pl-3">
+      <ul className="space-y-3 border-l border-theme-border pl-3">
         {calls
           .filter((call) => call.parentId === parentId)
           .map((call) => (
             <li key={call.id}>
-              <div className="rounded-xl border border-slate-200 bg-white/80 p-4">
+              <div className="rounded-xl border border-theme-border bg-theme-surface p-4">
                 <h3 className="break-all font-semibold">
                   {toolLabels[call.tool] ?? call.tool}
                 </h3>
-                <p className="text-xs text-slate-600">
+                <p className="text-xs text-ink-muted">
                   深さ{call.depth}・{call.durationMs}ms
                 </p>
                 <p
-                  className={`mt-2 text-sm ${call.error ? "text-red-800" : "text-slate-800"}`}
+                  className={`mt-2 text-sm ${call.error ? "text-theme-gold" : "text-ink"}`}
                 >
                   {call.summary}
                 </p>
@@ -2137,7 +2137,7 @@ export function McpExplorer({
 
   if (!storageReady || !registeredPeopleReady)
     return (
-      <section className="mt-8 rounded-2xl border border-stone-200 bg-white/70 p-5 text-sm text-slate-600">
+      <section className="mt-8 rounded-2xl border border-theme-border bg-theme-surface p-5 text-sm text-ink-muted">
         保存した相談と登録済みの人物を読み込んでいます…
       </section>
     );
@@ -2145,19 +2145,19 @@ export function McpExplorer({
   return (
     <section className="mt-8 space-y-5">
       {paidApisPaused && (
-        <p role="status" className="rounded-xl bg-amber-50 p-3 text-sm">
+        <p role="status" className="rounded-xl bg-theme-gold-soft p-3 text-sm">
           {PAID_APIS_PAUSED_TEXT}
         </p>
       )}
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           {!agentEnabled && !paidApisPaused && (
-            <p className="text-sm text-slate-600">
+            <p className="text-sm text-ink-muted">
               AI回答は現在無効です。計算の連鎖だけを表示します。
             </p>
           )}
           {remaining !== undefined && (
-            <p className="text-xs text-slate-500">
+            <p className="text-xs text-ink-muted">
               この接続の本日のAI無料枠：残り{remaining}
               回（概算・インスタンス内）
             </p>
@@ -2165,7 +2165,7 @@ export function McpExplorer({
           {persistConversation &&
             saveConversations &&
             (cloudEnabled || cloudStorage === "error") && (
-              <p className="mt-1 text-xs text-slate-500">
+              <p className="mt-1 text-xs text-ink-muted">
                 {cloudStorage === "saving"
                   ? "相談データをアカウントへ保存中…"
                   : cloudStorage === "error"
@@ -2178,7 +2178,7 @@ export function McpExplorer({
           <button
             type="button"
             onClick={startNewChat}
-            className="rounded-full border border-slate-300 bg-white px-4 py-2 text-sm font-medium hover:bg-stone-50"
+            className="rounded-full border border-theme-border bg-theme-surface px-4 py-2 text-sm font-medium hover:bg-theme-accent-soft"
           >
             ＋ 新しいチャット
           </button>
@@ -2186,7 +2186,7 @@ export function McpExplorer({
       </div>
 
       {persistConversation && (
-        <div className="space-y-2 text-sm text-slate-600">
+        <div className="space-y-2 text-sm text-ink-muted">
           <label className="flex items-start gap-2">
             <input
               type="checkbox"
@@ -2222,7 +2222,7 @@ export function McpExplorer({
         </div>
       )}
       {agentEnabled && (
-        <p className="text-sm leading-relaxed text-slate-600">
+        <p className="text-sm leading-relaxed text-ink-muted">
           {mock
             ? "開発用モックです。質問にかかわらず、1990年5月5日生まれ・深谷市・2026年11月の固定例を計算します。外部AIには送信しません。"
             : "送信した質問・会話履歴・過去の相談メモ・必要な人物プロフィールと道具の結果をGoogleの生成AIに送ります。本名・連絡先・詳しい住所は入力しないでください。"}
@@ -2237,7 +2237,7 @@ export function McpExplorer({
       {useAgent ? (
         <>
           {question.trim() && (
-            <p className="text-xs text-slate-600">
+            <p className="text-xs text-ink-muted">
               {profilePreview
                 ? `この質問と一緒に送る相談対象：${profilePreview
                     .map((person) => person.name)
@@ -2260,12 +2260,12 @@ export function McpExplorer({
       ) : (
         <section
           aria-labelledby="ask-profile-heading"
-          className="rounded-2xl border border-amber-200/80 bg-amber-50/70 p-4 sm:p-5"
+          className="rounded-2xl border border-theme-border bg-theme-gold-soft p-4 sm:p-5"
         >
           <h2 id="ask-profile-heading" className="font-semibold">
             計算する人
           </h2>
-          <p className="mt-1 text-xs leading-relaxed text-slate-600">
+          <p className="mt-1 text-xs leading-relaxed text-ink-muted">
             計算のみモードは1人ずつ実行します。
           </p>
           <div className="mt-4 grid gap-3 sm:grid-cols-2">
@@ -2278,7 +2278,7 @@ export function McpExplorer({
                 type="date"
                 min="1900-01-01"
                 max="2100-12-31"
-                className="mt-1 block w-full rounded-lg border border-amber-200 bg-white p-2 font-normal"
+                className="mt-1 block w-full rounded-lg border border-theme-border bg-theme-surface p-2 font-normal"
               />
             </label>
             <label className="text-sm font-medium">
@@ -2296,7 +2296,7 @@ export function McpExplorer({
                 minLength={2}
                 maxLength={80}
                 placeholder="都道府県・市区町村"
-                className="mt-1 block w-full rounded-lg border border-amber-200 bg-white p-2 font-normal"
+                className="mt-1 block w-full rounded-lg border border-theme-border bg-theme-surface p-2 font-normal"
               />
             </label>
           </div>
@@ -2315,7 +2315,7 @@ export function McpExplorer({
       )}
 
       {agentEnabled && billingPaused && !paidApisPaused && (
-        <p role="status" className="rounded-xl bg-amber-50 p-3 text-sm">
+        <p role="status" className="rounded-xl bg-theme-gold-soft p-3 text-sm">
           {AGENT_PAUSED_TEXT}
         </p>
       )}
@@ -2349,7 +2349,7 @@ export function McpExplorer({
       {voiceEnabled && useAgent && !paidApisPaused && (
         <>
           {voiceSignedIn === null ? (
-            <p className="rounded-2xl border border-slate-200 p-4 text-sm">
+            <p className="rounded-2xl border border-theme-border p-4 text-sm">
               音声のログイン状態を確認しています…
             </p>
           ) : (
@@ -2393,7 +2393,7 @@ export function McpExplorer({
               onDelete={deleteConversation}
             />
           )}
-          <div className="flex h-[72dvh] min-h-96 min-w-0 flex-col overflow-hidden rounded-3xl border border-stone-200 bg-white/45 shadow-sm sm:h-[min(76dvh,46rem)] sm:min-h-[32rem]">
+          <div className="flex h-[72dvh] min-h-96 min-w-0 flex-col overflow-hidden rounded-3xl border border-theme-border bg-theme-surface shadow-sm sm:h-[min(76dvh,46rem)] sm:min-h-[32rem]">
             <AskPeoplePanel
               people={people}
               selectedIds={activeConversation?.personIds ?? []}
@@ -2512,7 +2512,7 @@ export function McpExplorer({
             <form
               ref={invitationForm}
               onSubmit={(event) => void submitAgent(event)}
-              className="sticky bottom-0 z-10 shrink-0 rounded-b-3xl border-t border-stone-200 bg-[#faf7f5]/95 p-3 shadow-[0_-8px_24px_rgba(15,23,42,0.06)] backdrop-blur sm:p-4"
+              className="sticky bottom-0 z-10 shrink-0 rounded-b-3xl border-t border-theme-border bg-background p-3 shadow-[0_-8px_24px_rgba(15,23,42,0.06)] backdrop-blur sm:p-4"
             >
               <AnswerChips
                 key={`${activeConversationId}:${lastAssistant?.id ?? "empty"}`}
@@ -2550,7 +2550,7 @@ export function McpExplorer({
                         setQuestion(suggestion);
                         textareaRef.current?.focus();
                       }}
-                      className="shrink-0 rounded-full border border-stone-300 bg-white px-3 py-2 text-left text-xs leading-relaxed hover:bg-stone-50 disabled:opacity-50"
+                      className="shrink-0 rounded-full border border-theme-border bg-theme-surface px-3 py-2 text-left text-xs leading-relaxed hover:bg-theme-accent-soft disabled:opacity-50"
                     >
                       {suggestion}
                     </button>
@@ -2591,18 +2591,18 @@ export function McpExplorer({
                   }}
                   rows={1}
                   placeholder="ボタンに無いことはここに書けます"
-                  className="max-h-40 min-h-10 flex-1 resize-y rounded-2xl border border-stone-300 bg-white px-3 py-2 text-sm leading-relaxed outline-none focus:border-slate-500 disabled:opacity-60"
+                  className="max-h-40 min-h-10 flex-1 resize-y rounded-2xl border border-theme-border bg-theme-surface px-3 py-2 text-sm leading-relaxed outline-none focus:border-accent disabled:opacity-60"
                 />
                 <button
                   type="submit"
                   disabled={running || !question.trim()}
-                  className="min-h-14 shrink-0 rounded-2xl bg-slate-800 px-4 text-sm font-semibold text-white disabled:opacity-40 sm:px-6"
+                  className="min-h-14 shrink-0 rounded-2xl bg-accent px-4 text-sm font-semibold text-on-accent disabled:opacity-40 sm:px-6"
                 >
                   送信
                 </button>
               </div>
               <div className="mt-2 flex flex-wrap items-center justify-between gap-2 px-1">
-                <span className="text-xs text-slate-500">
+                <span className="text-xs text-ink-muted">
                   Enterで送信・Shift+Enterで改行　{question.length}/500文字
                 </span>
                 {running && (
@@ -2621,7 +2621,7 @@ export function McpExplorer({
       ) : (
         <form
           onSubmit={submitCalculation}
-          className="rounded-2xl border border-slate-200 bg-white/80 p-4 sm:p-5"
+          className="rounded-2xl border border-theme-border bg-theme-surface p-4 sm:p-5"
         >
           <label className="mb-4 block text-sm">
             自由文から入力
@@ -2630,7 +2630,7 @@ export function McpExplorer({
               aria-label="自由文から入力"
               value={question}
               maxLength={500}
-              className="mt-1 block w-full rounded-lg border border-slate-300 p-2"
+              className="mt-1 block w-full rounded-lg border border-theme-border p-2"
               onChange={(event) => {
                 setQuestion(event.target.value);
                 const value = extractAgentInput(event.target.value);
@@ -2654,7 +2654,7 @@ export function McpExplorer({
                 type="date"
                 min="1900-01-01"
                 max="2100-12-31"
-                className="mt-1 block w-full rounded-lg border border-slate-300 bg-white p-2"
+                className="mt-1 block w-full rounded-lg border border-theme-border bg-theme-surface p-2"
               />
             </label>
             <label className="text-sm">
@@ -2662,7 +2662,7 @@ export function McpExplorer({
               <select
                 name="depth"
                 defaultValue="3"
-                className="mt-1 block w-full rounded-lg border border-slate-300 bg-white p-2"
+                className="mt-1 block w-full rounded-lg border border-theme-border bg-theme-surface p-2"
               >
                 <option value="3">3：出発地の候補まで</option>
                 <option value="4">4：候補の街からさらに展開</option>
@@ -2671,7 +2671,7 @@ export function McpExplorer({
             <button
               type="submit"
               disabled={!birthDate || municipality.length < 2}
-              className="rounded-lg bg-slate-800 px-5 py-3 text-sm font-semibold text-white disabled:opacity-40 sm:col-span-2"
+              className="rounded-lg bg-accent px-5 py-3 text-sm font-semibold text-on-accent disabled:opacity-40 sm:col-span-2"
             >
               道具を順番に呼び出す
             </button>
@@ -2694,7 +2694,7 @@ export function McpExplorer({
         <div
           aria-hidden="true"
           data-testid="guide-waiting"
-          className="flex items-center gap-3 text-sm text-slate-600"
+          className="flex items-center gap-3 text-sm text-ink-muted"
         >
           <GuideAvatar pose="compass" size="sm" decorative />
           <span>しるべが羅盤で確かめています…</span>
@@ -2706,8 +2706,8 @@ export function McpExplorer({
 
       {!useAgent && <AnswerBlocks blocks={calculationBlocks} />}
       {!useAgent && calculationComplete && (
-        <section className="rounded-2xl border border-stone-200 bg-white/70 p-4">
-          <p className="text-sm font-medium text-slate-800">次に確認するなら</p>
+        <section className="rounded-2xl border border-theme-border bg-theme-surface p-4">
+          <p className="text-sm font-medium text-ink">次に確認するなら</p>
           <div
             className="mt-3 flex gap-2 overflow-x-auto pb-1 sm:flex-wrap"
             aria-label="次の質問の候補"
@@ -2721,24 +2721,24 @@ export function McpExplorer({
                   setQuestion(suggestion);
                   calculationQuestionRef.current?.focus();
                 }}
-                className="shrink-0 rounded-full border border-stone-300 bg-white px-3 py-2 text-left text-xs leading-relaxed hover:bg-stone-50 disabled:opacity-50"
+                className="shrink-0 rounded-full border border-theme-border bg-theme-surface px-3 py-2 text-left text-xs leading-relaxed hover:bg-theme-accent-soft disabled:opacity-50"
               >
                 {suggestion}
               </button>
             ))}
           </div>
-          <p className="mt-2 text-xs text-slate-500">
+          <p className="mt-2 text-xs text-ink-muted">
             選ぶと入力欄に入ります。内容を確認してから編集・送信できます。
           </p>
         </section>
       )}
       {!useAgent && calls.length > 0 && (
-        <details className="rounded-2xl border border-stone-200 bg-white/70 p-5">
+        <details className="rounded-2xl border border-theme-border bg-theme-surface p-5">
           <summary className="cursor-pointer font-semibold">
             計算に使った道具：{calls.length}件
           </summary>
           {calculationReasons.length > 0 && (
-            <ul className="mt-3 list-disc space-y-1 pl-5 text-sm text-slate-600">
+            <ul className="mt-3 list-disc space-y-1 pl-5 text-sm text-ink-muted">
               {calculationReasons.map((reason) => (
                 <li key={reason}>{reason}</li>
               ))}

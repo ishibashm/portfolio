@@ -289,7 +289,7 @@ export default function CityPanel() {
   const viewFlat = flat || !webgl;
   return (
     <div className="mt-6 space-y-5">
-      <p className="rounded-xl border border-stone-300 bg-white/70 p-4 text-sm leading-relaxed">
+      <p className="rounded-xl border border-theme-border bg-theme-surface p-4 text-sm leading-relaxed">
         入力した住所は位置を求めるため国土地理院の住所検索（見つからないときはOpenStreetMap
         Nominatim）へ送られます。表示のため、地点周辺の地図タイル・建物データを国土地理院とPLATEAUの配信サーバーから直接読み込みます。生年月日は判定のためこのサイトの計算（/api/mcp）にだけ送り、保存しません。現在地は「現在地で見る」を押したときだけ使い、保存しません。
       </p>
@@ -317,12 +317,12 @@ export default function CityPanel() {
           e.preventDefault();
           void search();
         }}
-        className="grid gap-4 rounded-xl border border-stone-300 bg-white p-5 sm:grid-cols-2 lg:grid-cols-4"
+        className="grid gap-4 rounded-xl border border-theme-border bg-theme-surface p-5 sm:grid-cols-2 lg:grid-cols-4"
       >
         <label className="sm:col-span-2">
           住所・地名で探す
           <input
-            className="mt-2 w-full rounded border border-stone-400 p-2"
+            className="mt-2 w-full rounded border border-theme-border p-2"
             value={address}
             onChange={(e) => setAddress(e.target.value)}
             placeholder="名古屋駅（愛知県名古屋市中村区名駅1丁目）"
@@ -381,11 +381,11 @@ export default function CityPanel() {
         </fieldset>
         <button
           disabled={busy || !address.trim()}
-          className="rounded bg-slate-800 px-5 py-3 text-white disabled:opacity-50"
+          className="rounded bg-accent px-5 py-3 text-on-accent disabled:opacity-50"
         >
           {busy ? "住所を確認しています…" : "街と方位を見る"}
         </button>
-        <p className="self-center text-sm text-stone-600 sm:col-span-2">
+        <p className="self-center text-sm text-ink-muted sm:col-span-2">
           生年月日が空欄のときは、方位の境界だけを表示します。
         </p>
       </form>
@@ -471,7 +471,7 @@ export default function CityPanel() {
                 type="button"
                 aria-pressed={usePlateau}
                 onClick={() => setUsePlateau((v) => !v)}
-                className="mr-3 rounded border border-stone-400 px-4 py-2"
+                className="mr-3 rounded border border-theme-border px-4 py-2"
               >
                 {usePlateau
                   ? "目安の高さに戻す"
@@ -485,7 +485,7 @@ export default function CityPanel() {
               {plateau}
             </p>
           )}
-          <div className="space-y-1 text-xs text-stone-600">
+          <div className="space-y-1 text-xs text-ink-muted">
             <p>
               <a
                 href="https://maps.gsi.go.jp/development/vt.html"
@@ -538,10 +538,10 @@ export default function CityPanel() {
           </ul>
         </section>
       )}
-      <p className="text-sm leading-relaxed text-stone-600">
+      <p className="text-sm leading-relaxed text-ink-muted">
         高さは建物の種別ごとの目安です。PLATEAU対応地域では実測に近い高さを表示します。地図・建物はデータの更新時期によって現況と異なり、表示範囲や件数にも上限があります。二十四山は真北を基準とした参照目盛りです。
       </p>
-      <p className="text-sm leading-relaxed text-stone-600">
+      <p className="text-sm leading-relaxed text-ink-muted">
         吉凶は九星気学の考え方による参考情報です。契約・費用・通勤など、現実の条件と合わせて検討してください。
       </p>
     </div>
