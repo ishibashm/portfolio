@@ -3844,15 +3844,15 @@ export const SolarTimeClock = () => {
 
   if (!baseTime || !solarData)
     return (
-      <div className="min-h-screen flex items-center justify-center bg-stone-50 text-stone-600 text-sm tracking-widest">
+      <div className="min-h-screen flex items-center justify-center bg-background text-ink text-sm tracking-widest">
         読み込んでいます…
       </div>
     );
 
   return (
-    <div className="min-h-screen flex flex-col items-center bg-gradient-to-br from-[#fdfbf7] via-[#fff5f5] to-[#fef2f2] text-stone-800 font-sans selection:bg-rose-100 pt-0 pb-8 md:pb-16 relative overflow-x-hidden">
+    <div className="min-h-screen flex flex-col items-center bg-background text-ink font-sans pt-0 pb-8 md:pb-16 relative overflow-x-hidden">
       <div
-        className="fixed inset-0 pointer-events-none z-0 opacity-40"
+        className="absolute inset-0 pointer-events-none z-0 opacity-40"
         style={{
           backgroundImage:
             "linear-gradient(rgba(244, 63, 94, 0.08) 1px, transparent 1px), linear-gradient(90deg, rgba(244, 63, 94, 0.08) 1px, transparent 1px)",

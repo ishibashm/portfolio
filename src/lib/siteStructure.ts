@@ -96,6 +96,9 @@ export function isListedInNav(route: CoreRoute): boolean {
   return route.inNav !== false;
 }
 
+export const DASHBOARD_DESCRIPTION =
+  "今日の共通の凶方位と、いまの時間帯の目安を入力なしで表示します。生年月日と出発地・目的地を入れると、行き先が今使えるかを真太陽時で確認できます。本命星別の早見表は「今日の吉方位と時間」へ。占い上の目安です。";
+
 /**
  * 中核。検索に出し、ナビに載せ、広告を出す対象。群ごとに並べる。
  *
@@ -213,8 +216,7 @@ export const CORE_ROUTES: CoreRoute[] = [
   {
     href: "/relocation/dashboard",
     label: "今日の方位と時刻を確かめる",
-    summary:
-      "生年月日と出発地を入れると、今日の八方位の吉凶、時間帯の吉凶、真太陽時を1画面で確かめられます。目的地を地名で指定すると、その方位が今日使えるかを見られます。ログインは不要です。方位の吉凶は占い上の目安です。",
+    summary: DASHBOARD_DESCRIPTION,
     group: "timing",
     inNav: false,
   },

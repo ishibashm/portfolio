@@ -26,6 +26,30 @@ function Script({ data }: { data: unknown }) {
   );
 }
 
+export function WebPageJsonLd({
+  name,
+  description,
+  path,
+}: {
+  name: string;
+  description: string;
+  path: string;
+}) {
+  return (
+    <Script
+      data={{
+        "@context": "https://schema.org",
+        "@type": "WebPage",
+        url: `${BASE}${path}`,
+        name,
+        description,
+        inLanguage: "ja",
+        publisher: { "@id": `${BASE}/#organization` },
+      }}
+    />
+  );
+}
+
 export function ArticleJsonLd({
   type = "Article",
   headline,

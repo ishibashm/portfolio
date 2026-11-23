@@ -1,139 +1,164 @@
-"use client";
-
-import dynamic from "next/dynamic";
 import Link from "next/link";
 import { ActiveProfileBadge } from "@/components/profile/ActiveProfileBadge";
+import GuideCharacter from "@/components/guide/GuideCharacter";
+import { FaqJsonLd, WebPageJsonLd } from "@/components/JsonLd";
+import { buildRelocationDashboardSummary } from "@/lib/relocationDashboardSummary";
+import { TOKYO_LONGITUDE } from "@/lib/todayDirections";
+import { toJapanDateString } from "@/utils/japanDate";
+import DashboardTool from "./DashboardTool";
+import { description, path, title } from "./metadataValues";
 
-/*
-  ホームの「いまの方位と時刻」の節を、そのままここへ移した。
-
-  ホームでは中核ページの札の下（360x640 で 4.5 画面ぶん下）に置いてあり、
-  LazyMount で画面に近づくまで作らないようにしてあっても、開いた人は
-  必ず 1.2MB の JS（lunar-javascript を含む）を配られていた。利用者の
-  指摘は「機能はいろいろなところに組み込まれているから載せなくても
-  いいのでは。重いし使い勝手が良くない」。
-
-  タブの中身は他の頁に無い（タイミング・プロフィールは名前が同じだけで
-  別物）ので、消さずに 1 つの頁として残す。「履歴」タブは 2026-09-28 に
-  外した（全利用者共通の記録で、本人のものではなかった）。
-  サイドバーの項目は「今日の吉方位と時間」（/houi/today）にまとめ、
-  この頁へはそちらの案内と、ホームの道具カードから辿る。
-
-  **部品を直に読むこと。まとめ役の入口を作って、そこから読まないこと。**
-  dynamic import の先に再輸出だけの層を挟むと、束ねられた部品が全部
-  同じチャンクに入る（#392・#396）。
-*/
-const SolarTimeClock = dynamic(
-  () => import("@/components/SolarTimeClock").then((mod) => mod.SolarTimeClock),
+const FAQ = [
   {
-    ssr: false,
-    loading: () => <ClockPlaceholder />,
-  },
-);
-
-function ClockPlaceholder() {
-  return (
-    <div className="w-full h-80 flex items-center justify-center bg-stone-50/80 rounded-2xl border border-slate-200">
-      <div className="flex items-center gap-2 text-slate-500 font-sans text-sm">
-        <div className="w-4 h-4 border-2 border-rose-500 border-t-transparent rounded-full animate-spin" />
-        <span>読み込んでいます…</span>
-      </div>
-    </div>
-  );
-}
-
-/*
-  この頁で分かること。**部品（SolarTimeClock）は ssr:false なので、
-  検索エンジンとまだ読み込みが終わっていない人には、この見出しと
-  下の一覧しか届かない。**何がある頁なのかを、部品が来る前から
-  読める形で置く。中身の説明は部品側の文言と同じ意味で書き、番号や
-  タブの名前には縛らない（並びを変えても嘘にならないように）。
-*/
-const SECTIONS: { title: string; body: string }[] = [
-  {
-    title: "いまの要点",
-    body: "いま良い方位、いまの時間帯の相性、次に動ける時刻、30 日先までに動ける方位を 1 枚にまとめます。",
+    question: "今日、誰にとっても避けたい方位はありますか？",
+    answer:
+      "日盤の五黄殺・暗剣殺・日破は、本命星にかかわらず避けたい方位の目安です。共通の凶方位は入力なしで「今日の要約」に表示します。本命殺などは生年月日の入力後に確認できます。",
   },
   {
-    title: "プロフィール",
-    body: "生年月日・出生地・出発地。使用中のプロフィールと同じ値を読み、ここで直せば他の道具にも反映されます。",
+    question:
+      "いまの刻はいつまでで、次の刻はいつからですか？ 真太陽時とは何ですか？",
+    answer: `刻は約2時間ごとで、要約の終了時刻が次の刻の開始です。東京（東経${TOKYO_LONGITUDE}度）の真太陽時で区切り、日本標準時で表示します。真太陽時は、経度と均時差で標準時を補正した太陽の時刻です。出発地を入れると刻の境目だけが出発地基準になり、年盤・月盤・日盤は日本時間の日付で決まります。`,
   },
   {
-    title: "目的地と 8 方位",
-    body: "地図に目的地を置き、出発地から見た方位の吉凶と 12 か月のヒートマップを見ます。判定は真北で行います。",
+    question: "本命星が分からないときはどうすればよいですか？",
+    answer:
+      "この画面に生年月日を入れると本命星が分かります。「本命星と吉方位を調べる」や「吉方位」の生まれ年表でも確認できます。",
   },
   {
-    title: "時刻の刻",
-    body: "2 時間ごとの刻（十二支・時盤の九星）と、本命星との五行の相性。刻単位の天中殺は使いません。刻の境目だけ、出発地の経度と均時差を補正した真太陽時で切ります。",
+    question: "「今日の吉方位と時間」とはどう違いますか？",
+    answer:
+      "「今日の吉方位と時間」は東京基準の本命星別の早見表です。この画面では、生年月日と出発地・目的地を入れて、いま行き先の方位を使う目安を真太陽時で確認できます。",
   },
   {
-    title: "盤の内訳",
-    body: "年盤・月盤・日盤と本命星・月命星の重ね合わせを、方位ごとに開いて確かめます。",
+    question: "目的地を入れると何が分かりますか？",
+    answer:
+      "出発地から目的地を見た方位を真北基準で判定し、その吉凶と今日使えるかの目安を表示します。12か月の見通しも確認できます。",
   },
   {
-    title: "30 日の見通し",
-    body: "方位ごとに 30 日先までの吉凶を並べ、動ける日の数と候補の地域を見比べます。",
+    question: "引っ越しの日取りは日盤だけで選べますか？",
+    answer:
+      "引っ越しなど長い移動では、日盤に加えて年盤・月盤も合わせて見るのが目安です。日取りはカレンダーや時期の分析で確認できます。",
   },
 ];
 
+const NEXT_LINKS = [
+  ["/houi/today", "今日の吉方位と時間"],
+  ["/blog/todays-lucky-direction-by-hour", "今日の吉方位と時間帯はどう読むか"],
+  ["/guide/honmei", "本命星と吉方位を調べる"],
+];
+
+const timeFormatter = new Intl.DateTimeFormat("ja-JP", {
+  timeZone: "Asia/Tokyo",
+  hour: "2-digit",
+  minute: "2-digit",
+  hourCycle: "h23",
+});
+
+const headingClass = "mb-2 text-lg font-bold text-ink";
+
 export default function DashboardPage() {
+  const { date, common, branch, end } = buildRelocationDashboardSummary(
+    new Date(),
+  );
+  const nextStart = new Date(end);
+  const dayPrefix = toJapanDateString(nextStart) > date ? "翌日 " : "";
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-rose-50/80 via-stone-50 to-amber-50/50 p-4 font-sans text-stone-800 md:p-8">
-      <div className="mx-auto max-w-[1700px] space-y-5">
-        <header>
-          <h1 className="text-xl font-bold">今日の方位と時刻を確かめる</h1>
-          <p className="mt-2 text-sm leading-relaxed text-stone-600">
-            出発地から見た8方位の吉凶と、動き出す時間帯を確かめます。本命星別の早見表は
-            <Link
-              href="/houi/today"
-              className="inline-flex min-h-11 items-center px-1 text-indigo-700 underline"
-            >
-              今日の吉方位と時間
-            </Link>
-            で見られます。
+    <div className="min-h-screen bg-background px-4 py-6 text-ink md:px-8">
+      <div className="mx-auto max-w-[1700px] space-y-6">
+        <WebPageJsonLd path={path} name={title} description={description} />
+        <FaqJsonLd items={FAQ} />
+        <h1 className="text-2xl font-bold">今日の方位と時間を確かめる</h1>
+        <section className="rounded-2xl border border-theme-border bg-theme-surface p-4 sm:p-5">
+          <h2 className={headingClass}>今日の要約</h2>
+          <p className="text-sm text-ink-muted">
+            <time dateTime={date}>{date}</time>（日本時間）
           </p>
-          {/* どのプロフィールで判定しているかを頭に 1 行。他の道具の頁と
-              同じ帯（利用者の指摘、2026-09-12）。この頁だけ無かった。 */}
-          <ActiveProfileBadge purpose="今日の方位と時刻" className="mt-3" />
-        </header>
-
-        {/* SolarTimeClock は自分で min-h-screen と地色を持つ（ホームに
-            埋め込まれていた頃からの作り）。ここでは器を重ねない。 */}
-        <SolarTimeClock />
-
-        <details className="rounded-2xl border border-stone-200 bg-white/80 px-4">
-          <summary className="min-h-11 cursor-pointer py-3 text-sm font-bold text-stone-700">
-            使い方・計算の基準を見る
-          </summary>
-          <p className="mb-3 text-sm leading-relaxed text-stone-600">
-            年盤・月盤・日盤は日本時間の日付で決まります。約2時間ごとの時間帯（刻）だけ、出発地と太陽の動きに合わせた時刻（真太陽時）で区切ります。方位と時間帯は別の判定です。効果を保証するものではありません。
+          <dl className="mt-3 grid gap-3 sm:grid-cols-2">
+            <div>
+              <dt className="font-semibold">全員共通の日盤の凶方位</dt>
+              <dd>
+                {common.length
+                  ? common
+                      .map(({ label, reason }) => `${label}（${reason}）`)
+                      .join("、")
+                  : "今日の目安では、共通の凶方位はありません。"}
+              </dd>
+            </div>
+            <div>
+              <dt className="font-semibold">いまの刻</dt>
+              <dd>
+                {branch}の刻。次の切り替わりは
+                <time dateTime={end}>
+                  {dayPrefix}
+                  {timeFormatter.format(nextStart)}
+                </time>
+                （日本標準時）
+              </dd>
+            </div>
+          </dl>
+          <p className="mt-3 text-sm text-ink-muted">
+            刻は東京の真太陽時で区切ります。方位と刻は占い上の目安です。
           </p>
-          <p className="text-sm leading-relaxed text-stone-600">
-            日ごとの一覧は
-            <Link
-              href="/relocation/timing"
-              className="inline-flex min-h-11 items-center px-1 text-indigo-700 underline"
-            >
-              時期の分析
+        </section>
+        <section>
+          <h2 className={headingClass}>この画面で分かること</h2>
+          <GuideCharacter pose="compass" size="sm">
+            {
+              "ここでは生年月日と出発地・目的地を入れ、行き先が今使えるかを真太陽時で確かめられます。本命星別の早見表は"
+            }
+            <Link href="/houi/today" className="text-accent underline">
+              「今日の吉方位と時間」
             </Link>
-            、 暦から日を選ぶには
-            <Link
-              href="/calendar"
-              className="inline-flex min-h-11 items-center px-1 text-indigo-700 underline"
-            >
-              日取りのカレンダー
-            </Link>
-            へ。
+            {"へ。"}
+          </GuideCharacter>
+        </section>
+        <section>
+          <h2 className={headingClass}>生年月日と場所を入れる</h2>
+          <p className="text-sm text-ink-muted">
+            プロフィールで生年月日と出発地を確認し、地図で目的地を指定できます。
           </p>
-          <dl className="mt-2 grid grid-cols-1 gap-x-6 gap-y-2 text-xs text-stone-600 md:grid-cols-2 xl:grid-cols-3">
-            {SECTIONS.map((s) => (
-              <div key={s.title}>
-                <dt className="font-bold text-stone-700">{s.title}</dt>
-                <dd className="leading-relaxed">{s.body}</dd>
+          <ActiveProfileBadge purpose="今日の方位と時刻" className="my-3" />
+          <DashboardTool />
+        </section>
+        <section>
+          <h2 className={headingClass}>いまの要点</h2>
+          <p className="text-sm text-ink-muted">
+            入力後は道具の「要点」で、いまの方位と刻の相性や次に動ける時刻の目安を確認できます。
+          </p>
+        </section>
+        <section>
+          <h2 className={headingClass}>計算の基準</h2>
+          <p className="text-sm text-ink-muted">
+            年盤・月盤・日盤は日本時間の日付で決まります。刻だけ出発地の経度と均時差を反映した真太陽時で区切り、方位は真北を基準に判定します。占い上の目安であり、効果を保証するものではありません。
+          </p>
+        </section>
+        <section>
+          <h2 className={headingClass}>よくある質問</h2>
+          <dl className="divide-y divide-theme-border rounded-2xl border border-theme-border bg-theme-surface px-4">
+            {FAQ.map(({ question, answer }) => (
+              <div key={question} className="py-3">
+                <dt className="font-semibold">{question}</dt>
+                <dd className="mt-1 text-sm text-ink-muted">{answer}</dd>
               </div>
             ))}
           </dl>
-        </details>
+        </section>
+        <section>
+          <h2 className={headingClass}>次に見る</h2>
+          <ul className="flex flex-wrap gap-x-5">
+            {NEXT_LINKS.map(([href, label]) => (
+              <li key={href}>
+                <Link
+                  href={href}
+                  className="inline-flex min-h-11 items-center text-accent underline"
+                >
+                  {label}
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </section>
       </div>
     </div>
   );
