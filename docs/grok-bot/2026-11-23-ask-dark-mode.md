@@ -1,0 +1,21 @@
+# 「案内役に聞く」のダークモード取りこぼし（2026-11-23）
+
+- 依頼: 本人「これだけダークモードが効いていないかも。確認して」（Pixel 7a・Chrome・ダーク設定のスクショ）。ヘッダーは濃い紺だが、本文の地色がベージュ、文字が黒、「本命星を知る」「引越しの方位と日取り」などの質問カードが白、ステップ（1 選ぶ / 2 入れる / 3 答え）が明るい色のまま。しるべの吹き出しだけは既に暗い。
+- 切り分け: パンくずは「ホーム / 案内役に聞く」。対象は `/ask` ではなく `/annai`（`src/app/annai/page.tsx`）。`/ask` は「しるべと会話で相談する」（AI 会話。停止中は /annai へ案内する）。#1897 のダークモードで、直書きのベージュグラデ（`from-[#faf7f5] via-[#f5efe9] to-[#f0e9e1] text-slate-900`）や `bg-white` / `text-slate-*` / ローズのリンクが残っていた。
+- PR: https://github.com/ishibashm/portfolio/pull/1902 （未マージ。実装は box 上の Codex CLI。ブランチ `fix/annai-ask-dark-mode`）
+  - f2a1227d 案内役に聞く（/annai）と会話ページ（/ask）のダークモード取りこぼしを直す
+- 修正内容:
+  - `/annai` の地色を `bg-background text-ink`、カードを `bg-theme-surface border-theme-border`、選択中ステップと主要ボタンを `bg-accent text-on-accent`、未選択ステップを `bg-theme-surface text-ink-muted` に変更。本文は `text-ink`、パンくずと補足は `text-ink-muted`。ローズのリンクとホバーは勝色へ。入力エラーと注意は金（判定以外に緑と赤は使わない）。道具トレースの成功は勝色、失敗は金。しるべの吹き出しは触っていない。
+  - 共有部品 `AiExportBox` / `AiExportCopyButton`、`/ask` の停止案内と会話 UI（`McpExplorer`、`AskWorkspacePanels`、チップ、保存・リマインドカード、`AskGuidancePanel` など）も同じ方針。
+  - 同じベージュ地色が残っていた小さなページ（プライバシー、利用規約、運営について、お問い合わせ、編集方針、owners、`/houi/3d` と `CityPanel`）も一緒に直した。
+  - 残件: `/calendar`、`/guide`、`/kensho`、`/mcp`、`/houi/pref`、`/houi/[year]/[star]` とその月ページ。`docs/dark-mode.md` に追記した。
+- ローカル確認（`http://localhost:3078`、ライト／ダーク、幅 412px とデスクトップ 1280px）: `/annai` の地色・カード・ステップ・本文がテーマに追従。`/ask` の停止案内も金の淡面と勝色ボタン。コントラストは既存トークンどおり本文 13.93:1 以上（カード上・ダーク）、補足 8.06:1。
+- スクリーンショット（作業マシン `/workspace/ask-dark-fix/`）:
+  - `annai-mobile-light.png` / `annai-mobile-dark.png`
+  - `annai-desktop-light.png` / `annai-desktop-dark.png`
+  - `ask-mobile-light.png` / `ask-mobile-dark.png`
+  - `ask-desktop-light.png` / `ask-desktop-dark.png`
+  - 参考: `privacy-mobile-*.png` / `privacy-desktop-*.png`
+- テスト: 関連 vitest 5 ファイル・43 件が通過。eslint はエラーなし（既存の `react-hooks/set-state-in-effect` 警告のみ）。prettier は `npm run format:staged` のあと通過。
+- CI: check が成功。GitHub Actions run 45097642310（2026-11-23 10:59 開始 → 11:14 完了 JST、所要 14分37秒）。 https://github.com/ishibashm/portfolio/actions/runs/45097642310
+- 本番の設定・DB は変更していない。マージは本人の承認待ち。
