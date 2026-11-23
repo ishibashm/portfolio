@@ -15,7 +15,7 @@
   - 羅針盤のまわりの光の輪（破線の金の円）が 48 秒で 1 回転する。
   - 各星のカードは既存の `motion-reveal` で、スクロールに合わせて順にフェードインする。
   - 動かすのは `transform` と `opacity` だけ。アニメーションは `@media (prefers-reduced-motion: no-preference)` の中だけ。減らす設定では星と輪は止まったまま見え、光の筋は出ない。外部ライブラリや動画ファイルは足していない。飾りはバナー内に閉じ、歩くしるべの領域には出さない。
-- PR: https://github.com/ishibashm/portfolio/pull/1908 （未マージ。同じ PR をこの方向で更新）
+- PR: https://github.com/ishibashm/portfolio/pull/1908
   - 5beaff3 今日の恋愛の目安を、占い雑誌の巻頭頁に近づける
   - c76521e 今日の恋愛の目安に、巻頭のイラストと控えめな動きを添える
 - ローカル確認（`http://127.0.0.1:3088`、ライト／ダーク、幅 390px・1280px・1600px）: 1280px では 3:1 のバナーと 3×3 の見開き。390px と 1600px の右列では低いトリミングでも羅針盤と鶴が見える。見出しはバナーの外で読める。
@@ -25,4 +25,13 @@
   - 動きの短い録画: `motion.mp4`（894×720、約 7.6 秒、約 651KB。光の筋が左から右へ 1 回横切るところと、星のまたたきが見える）
 - テスト: vitest 4 ファイル・46 件が通過（`todayLoveOutlook` / `motionAccents` / `loveFortune` / `nationalWeather`）。eslint と prettier は pre-commit で通過。
 - CI: check が成功。GitHub Actions run 45136331182（2026-11-23 17:09 開始 → 17:24 完了 JST、所要 15分21秒）。 https://github.com/ishibashm/portfolio/actions/runs/45136331182
-- 本番の設定・DB は変更していない。マージはしていない。
+- マージ: 本人が 2026-11-23 18:02 JST に「いいよ」と承認し、18:03:44 JST に `gh pr merge 1908 --squash` でマージした。squash コミットは 9bf4e561a7c4d5331069e9fa52ea98369fe24b0a（今日の恋愛の目安に、巻頭のイラストと控えめな動きを添える (#1908)）。
+- デプロイ: Deploy to GCP Cloud Run (Free Tier) run 45143685760 が成功。2026-11-23 18:03:47 開始 → 18:09:34 完了 JST。 https://github.com/ishibashm/portfolio/actions/runs/45143685760
+- 本番確認（https://cloud-palette.com/、2026-11-23 18:11 JST）:
+  - トップページは HTTP 200。
+  - `/home/love-horoscope-header.webp` は HTTP 200、image/webp、89,866 バイト。
+  - ページ内に「今日の恋愛の目安」と表紙バナーが表示されている。
+- 本番スクリーンショット（作業マシン `/workspace/love-design-v5/`、スマホ幅 390px）:
+  - `prod-mobile-light-love.png` / `prod-mobile-dark-love.png`
+  - 全頁の参考: `prod-mobile-light-view.png` / `prod-mobile-dark-view.png`
+- 本番の設定・DB は変更していない。
