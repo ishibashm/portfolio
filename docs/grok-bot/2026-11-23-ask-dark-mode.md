@@ -2,7 +2,7 @@
 
 - 依頼: 本人「これだけダークモードが効いていないかも。確認して」（Pixel 7a・Chrome・ダーク設定のスクショ）。ヘッダーは濃い紺だが、本文の地色がベージュ、文字が黒、「本命星を知る」「引越しの方位と日取り」などの質問カードが白、ステップ（1 選ぶ / 2 入れる / 3 答え）が明るい色のまま。しるべの吹き出しだけは既に暗い。
 - 切り分け: パンくずは「ホーム / 案内役に聞く」。対象は `/ask` ではなく `/annai`（`src/app/annai/page.tsx`）。`/ask` は「しるべと会話で相談する」（AI 会話。停止中は /annai へ案内する）。#1897 のダークモードで、直書きのベージュグラデ（`from-[#faf7f5] via-[#f5efe9] to-[#f0e9e1] text-slate-900`）や `bg-white` / `text-slate-*` / ローズのリンクが残っていた。
-- PR: https://github.com/ishibashm/portfolio/pull/1902 （未マージ。実装は box 上の Codex CLI。ブランチ `fix/annai-ask-dark-mode`）
+- PR: https://github.com/ishibashm/portfolio/pull/1902 （squash マージ済み。実装は box 上の Codex CLI。ブランチ `fix/annai-ask-dark-mode`）
   - f2a1227d 案内役に聞く（/annai）と会話ページ（/ask）のダークモード取りこぼしを直す
 - 修正内容:
   - `/annai` の地色を `bg-background text-ink`、カードを `bg-theme-surface border-theme-border`、選択中ステップと主要ボタンを `bg-accent text-on-accent`、未選択ステップを `bg-theme-surface text-ink-muted` に変更。本文は `text-ink`、パンくずと補足は `text-ink-muted`。ローズのリンクとホバーは勝色へ。入力エラーと注意は金（判定以外に緑と赤は使わない）。道具トレースの成功は勝色、失敗は金。しるべの吹き出しは触っていない。
@@ -18,4 +18,9 @@
   - 参考: `privacy-mobile-*.png` / `privacy-desktop-*.png`
 - テスト: 関連 vitest 5 ファイル・43 件が通過。eslint はエラーなし（既存の `react-hooks/set-state-in-effect` 警告のみ）。prettier は `npm run format:staged` のあと通過。
 - CI: check が成功。GitHub Actions run 45097642310（2026-11-23 10:59 開始 → 11:14 完了 JST、所要 14分37秒）。 https://github.com/ishibashm/portfolio/actions/runs/45097642310
-- 本番の設定・DB は変更していない。マージは本人の承認待ち。
+- 本番の設定・DB は変更していない。
+- マージとデプロイ（本人が 12:05 JST に「マージして」と承認。先に #1900 のデプロイ完了を待ってから実施）:
+  - squash マージ: 2026-11-23 12:14:30 JST（コミット `42fae9b4`）。master との衝突はなし（リベース不要）。
+  - デプロイ: GitHub Actions run 45104796596 が成功（12:14:33 開始 → 12:20:08 完了 JST、所要 約5分35秒）。 https://github.com/ishibashm/portfolio/actions/runs/45104796596
+  - 本番確認: `https://cloud-palette.com/annai` と `/ask` が 200。HTML に `bg-background` / `text-ink` / `bg-theme-surface` があり、旧ベージュグラデは無い。ダーク（`prefers-color-scheme: dark`、幅 412px）で地色 `#151722`、文字 `#F3EFE8`。
+  - 本番スクショ（作業マシン `/workspace/ask-dark-fix/`）: `prod-annai-mobile-dark.png`、`prod-ask-mobile-dark.png`。

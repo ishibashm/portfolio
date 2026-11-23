@@ -1,7 +1,7 @@
 # しるべのメニュー遷移と停止時の正面ポーズ（2026-11-23）
 
 - 依頼: 本人「しるべのメニューでいくつかとばない、リンク」（07:24 JST）。補足として、不具合は右端の定位置で開いたメニュー（はみ出し・他要素との重なり・ドラッグや pointer イベントに飲まれていないか）。追加要望として、歩いていないときは正面向きの立ち姿、歩くときだけ歩きポーズ。既存の正面素材を使う。マージはしない。
-- PR: https://github.com/ishibashm/portfolio/pull/1900 （未マージ。実装は box 上の Codex CLI。ブランチ `fix/shirube-menu-and-idle-pose`）
+- PR: https://github.com/ishibashm/portfolio/pull/1900 （squash マージ済み。実装は box 上の Codex CLI。ブランチ `fix/shirube-menu-and-idle-pose`）
   - 5cb08ac しるべのメニュー遷移と停止時の正面ポーズを修正
   - 83cd6c2 しるべを定位置の足踏み中も正面向きにする
 - 本番調査（Playwright / Chrome、https://cloud-palette.com。定位置、PC 1280×800 とスマホ 390×844 タッチ。ほかに /、/blog、/houi/today、/relocation/arbitrage、/annai、タブレット、iPhone SE でも配置を計測）:
@@ -18,4 +18,8 @@
   - 本番（修正前）: `prod-desktop-menu.png`、`prod-mobile-menu.png`、各項目の `prod-*-after-*.png`
   - ローカル（修正後）: `local-desktop-idle.png`、`local-desktop-idle-actor.png`、`local-desktop-menu.png`、`local-desktop-menu-actor.png`、同様に `local-mobile-*`、各項目の `local-*-after-*.png`
 - CI: check が成功。GitHub Actions run 45079823112（2026-11-23 07:49 開始 → 07:58 完了 JST、所要 9分20秒）。 https://github.com/ishibashm/portfolio/actions/runs/45079823112
-- 本番の設定・DB は変更していない。マージは本人の承認待ち。
+- 本番の設定・DB は変更していない。
+- マージとデプロイ（本人が 12:05 JST に「マージして」と承認）:
+  - squash マージ: 2026-11-23 12:06:05 JST（コミット `4a38db38`）。
+  - デプロイ: GitHub Actions run 45103946559 が成功（12:06:08 開始 → 12:11:27 完了 JST、所要 5分19秒）。 https://github.com/ishibashm/portfolio/actions/runs/45103946559
+  - 本番確認: トップ `https://cloud-palette.com/` が 200。正面向き素材 `shirube-walk-front-body-*` / `shirube-walk-front-hand-*`（webp / png）が 200 で配信。しるべのチャンク（`3789.44823d34078bacc2.js`）が `/guide/walk` と `front-body` / `front-hand` を参照している。
