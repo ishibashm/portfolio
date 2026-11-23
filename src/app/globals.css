@@ -589,3 +589,110 @@ html:not([data-menu="open"]) [data-menu-icon="close"] {
     }
   }
 }
+
+.weather-map-sea {
+  fill: #152238;
+}
+
+.weather-map-outline,
+.weather-map-markers line,
+.weather-map-markers circle {
+  stroke: var(--wg-gold-decor);
+  stroke-width: 1;
+}
+
+.weather-map-outline {
+  fill: none;
+  stroke-width: 0.75;
+  vector-effect: non-scaling-stroke;
+}
+
+.weather-map-markers line {
+  stroke-opacity: 0.68;
+}
+
+.weather-map-markers circle {
+  fill: var(--wg-accent, #1e3a6e);
+  stroke-width: 1.25;
+}
+
+html.dark .weather-map-markers circle {
+  fill: #152238;
+}
+
+html.dark .weather-map-sea {
+  fill: #101a2b;
+}
+
+html.dark .weather-map-satellite {
+  filter: brightness(0.72) contrast(1.12) saturate(0.85);
+}
+
+html.dark .weather-map-sunny {
+  --weather-map-card-fill: #352c20;
+}
+
+html.dark .weather-map-cloudy {
+  --weather-map-card-fill: #2c303b;
+}
+
+html.dark .weather-map-rainy {
+  --weather-map-card-fill: #233550;
+}
+
+html.dark .weather-map-snowy {
+  --weather-map-card-fill: #233c47;
+}
+
+html.dark .weather-map-unlucky {
+  --weather-map-card-fill: var(--theme-bad-soft);
+  --weather-map-card-ink: var(--theme-bad);
+}
+
+.weather-map-card > rect {
+  stroke: #b6aa8c;
+}
+
+.weather-map-card.weather-map-unlucky > rect {
+  stroke: #be123c;
+  stroke-width: 2;
+}
+
+.weather-map-card.weather-map-heavy-rain > rect {
+  stroke: #245b94;
+  stroke-width: 3;
+}
+
+html.dark .weather-map-card > rect {
+  fill: var(--weather-map-card-fill);
+  stroke: #8e826c;
+}
+
+html.dark .weather-map-card.weather-map-unlucky > rect {
+  stroke: var(--theme-bad);
+}
+
+html.dark .weather-map-card.weather-map-heavy-rain > rect {
+  stroke: var(--wg-accent);
+}
+
+html.dark .weather-map-card > text {
+  fill: var(--weather-map-card-ink, #f3efe8);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .weather-map-markers circle {
+    animation: weather-map-city-glow 4s ease-in-out 2;
+  }
+}
+
+@keyframes weather-map-city-glow {
+  0%,
+  100% {
+    opacity: 1;
+  }
+
+  50% {
+    opacity: 0.72;
+  }
+}

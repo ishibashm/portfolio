@@ -5,6 +5,7 @@ import type { JmaDay } from "@/lib/todayWeather/jma";
 import {
   applyTransform,
   insetBox,
+  mainSatelliteBox,
   mapCities,
   narrowCities,
   narrowCardSize,
@@ -80,16 +81,23 @@ export function formatTemps(
 export type CityDirection = { label: string; unlucky?: string };
 export type CityDirections = Record<number, CityDirection>;
 
-const UNLUCKY_FILL = "#ffe4e6";
 const UNLUCKY_TEXT = "#9f1239";
 
-function cardFill(weather: string, unlucky: boolean) {
-  if (unlucky) return UNLUCKY_FILL;
+const MAP_CARD_STYLES = {
+  sunny: { label: "晴", fill: "#fff3d6" },
+  cloudy: { label: "くもり", fill: "#f0f1ed" },
+  rainy: { label: "雨", fill: "#e2efff" },
+  snowy: { label: "雪", fill: "#e8f4f7" },
+  unlucky: { label: "避けたい方位", fill: "#ffe4e6" },
+} as const;
+
+function mapCardKind(weather: string, unlucky: boolean) {
+  if (unlucky) return "unlucky";
   const text = weather.trim();
-  if (text.startsWith("晴")) return "#fff3d6";
-  if (text.startsWith("雨")) return "#e2efff";
-  if (text.startsWith("雪")) return "#e8f4f7";
-  return "#f0f1ed";
+  if (text.startsWith("晴")) return "sunny";
+  if (text.startsWith("雨")) return "rainy";
+  if (text.startsWith("雪")) return "snowy";
+  return "cloudy";
 }
 
 function directionText(direction: CityDirection | undefined, code: number) {
@@ -151,6 +159,7 @@ export function NationalWeatherMap({
             role="img"
             aria-labelledby={`weather-map-${variant}-title weather-map-${variant}-desc`}
             viewBox={`0 0 ${box.width} ${box.height}`}
+            fontSize={layout.fontSize}
             className={layout.className}
           >
             <title id={`weather-map-${variant}-title`}>
@@ -159,105 +168,77 @@ export function NationalWeatherMap({
             <desc id={`weather-map-${variant}-desc`}>
               全国の代表10都市の今日の天気と気温、起点から見た方位。夕方の発表で今日の気温が無いときは明日の気温を記載します。詳しい内容は続く表に記載しています。
             </desc>
-            <rect width="100%" height="100%" rx="12" fill="#eaf4f5" />
+            <rect
+              width="100%"
+              height="100%"
+              rx="12"
+              className="weather-map-sea"
+            />
             <g transform={`translate(${map.x} ${map.y}) scale(${map.scale})`}>
-              <defs>
-                <filter
-                  id={`land-shadow-${variant}`}
-                  x="-10%"
-                  y="-10%"
-                  width="120%"
-                  height="120%"
-                >
-                  <feDropShadow
-                    dx="0"
-                    dy="3"
-                    stdDeviation="2"
-                    floodColor="#8ca99d"
-                    floodOpacity="0.35"
-                  />
-                </filter>
-              </defs>
-              <path
-                d={paths.main}
-                fill="#e3ede5"
-                stroke="#8ca99d"
-                strokeWidth="1"
-                filter={`url(#land-shadow-${variant})`}
+              <image
+                {...mainSatelliteBox}
+                href="/weather/japan-satellite-main.webp"
+                preserveAspectRatio="none"
+                className="weather-map-satellite"
               />
-              <rect
+              <path d={paths.main} className="weather-map-outline" />
+              <image
                 {...insetBox}
-                rx="8"
-                fill="#eaf4f5"
-                stroke="#8ca99d"
-                strokeWidth="1"
+                href="/weather/japan-satellite-inset.webp"
+                preserveAspectRatio="none"
+                className="weather-map-satellite"
               />
-              <path
-                d={paths.inset}
-                fill="#e3ede5"
-                stroke="#8ca99d"
-                strokeWidth="1"
-              />
+              <rect {...insetBox} className="weather-map-outline" />
+              <path d={paths.inset} className="weather-map-outline" />
             </g>
             <text
               x={map.x + insetBox.x * map.scale}
               y={map.y + insetBox.y * map.scale - 4}
               fontSize={variant === "narrow" ? 14 : 16}
-              fill="#243f39"
+              fill="#fff3d6"
             >
               南西諸島
             </text>
-            {data.cities.map((city) => {
-              const geo = mapCities[city.prefectureCode];
-              const card = layout.cities[city.prefectureCode];
-              if (!geo || !card) return null;
-              const point = applyTransform(project(geo.lon, geo.lat), map);
-              const end = nearestOnCard(point, card, size);
-              return (
-                <g key={city.prefectureCode}>
-                  <line
-                    x1={point.x}
-                    y1={point.y}
-                    x2={end.x}
-                    y2={end.y}
-                    stroke="#49635d"
-                    strokeWidth="1"
-                  />
-                  <circle
-                    cx={point.x}
-                    cy={point.y}
-                    r={layout.circle}
-                    fill="#243f39"
-                  />
-                </g>
-              );
-            })}
+            <g className="weather-map-markers">
+              {data.cities.map((city) => {
+                const geo = mapCities[city.prefectureCode];
+                const card = layout.cities[city.prefectureCode];
+                if (!geo || !card) return null;
+                const point = applyTransform(project(geo.lon, geo.lat), map);
+                const end = nearestOnCard(point, card, size);
+                return (
+                  <g key={city.prefectureCode}>
+                    <line x1={point.x} y1={point.y} x2={end.x} y2={end.y} />
+                    <circle cx={point.x} cy={point.y} r={layout.circle} />
+                  </g>
+                );
+              })}
+            </g>
             {data.cities.map((city) => {
               const position = layout.cities[city.prefectureCode];
               if (!position) return null;
               const direction = directions[city.prefectureCode];
               const unlucky = Boolean(direction?.unlucky);
+              const cardKind = mapCardKind(city.today.weather, unlucky);
               const heavyRain = city.pop !== undefined && city.pop >= 50;
               const emoji = weatherEmoji(city.today.weather);
               const usesTomorrow =
                 !hasTemps(city.today) && hasTemps(city.tomorrow);
               return (
-                <g key={city.prefectureCode}>
+                <g
+                  key={city.prefectureCode}
+                  className={`weather-map-card weather-map-${cardKind}${heavyRain ? " weather-map-heavy-rain" : ""}`}
+                >
                   <rect
                     x={position.x}
                     y={position.y}
                     {...size}
                     rx="8"
-                    fill={cardFill(city.today.weather, unlucky)}
-                    stroke={
-                      heavyRain ? "#245b94" : unlucky ? "#be123c" : "#a0b4aa"
-                    }
-                    strokeWidth={heavyRain ? 3 : unlucky ? 2 : 1}
+                    fill={MAP_CARD_STYLES[cardKind].fill}
                   />
                   <text
                     x={position.x + 8}
                     y={position.y + layout.nameY}
-                    fontSize={layout.fontSize}
                     fontWeight="bold"
                     fill="#172f2a"
                   >
@@ -266,7 +247,11 @@ export function NationalWeatherMap({
                   <text
                     x={position.x + 8}
                     y={position.y + layout.tempY}
-                    fontSize={layout.tempFontSize}
+                    fontSize={
+                      layout.tempFontSize === layout.fontSize
+                        ? undefined
+                        : layout.tempFontSize
+                    }
                     fill="#243f39"
                   >
                     {layout.compactTemp
@@ -295,6 +280,26 @@ export function NationalWeatherMap({
           </svg>
         );
       })}
+      <ul
+        aria-label="天気地図の凡例"
+        className="mt-2 flex flex-wrap gap-x-3 gap-y-1 text-xs text-slate-700 dark:text-ink"
+      >
+        {Object.entries(MAP_CARD_STYLES).map(([kind, { label, fill }]) => (
+          <li
+            key={kind}
+            className={`flex items-center gap-1 weather-map-${kind}`}
+          >
+            <span
+              aria-hidden="true"
+              className="size-3 rounded-sm border border-current"
+              style={{
+                backgroundColor: `var(--weather-map-card-fill, ${fill})`,
+              }}
+            />
+            {label}
+          </li>
+        ))}
+      </ul>
     </>
   );
 }

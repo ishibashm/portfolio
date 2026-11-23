@@ -246,7 +246,14 @@ it("地図と表をサーバー描画し、ホームでクエリ起点を受け�
   expect(Buffer.byteLength(html)).toBeLessThan(40000);
   expect(svg).toContain("今日の全国の天気の地図");
   expect(svg.match(/<circle /g)).toHaveLength(10);
-  expect(Buffer.byteLength(svg)).toBeLessThan(60000);
+  for (const map of svgs) {
+    expect(Buffer.byteLength(map)).toBeLessThan(60000);
+    expect(map).toContain('href="/weather/japan-satellite-main.webp"');
+    expect(map).toContain('href="/weather/japan-satellite-inset.webp"');
+    expect(map).toContain("weather-map-satellite");
+    expect(map).toContain("weather-map-card weather-map-sunny");
+  }
+  expect(html).toContain('aria-label="天気地図の凡例"');
   for (const city of data.cities) expect(html).toContain(city.city);
   expect(html.match(/scope="row"/g)).toHaveLength(20);
   expect(html).toContain("<details");
@@ -267,6 +274,17 @@ it("地図と表をサーバー描画し、ホームでクエリ起点を受け�
   expect(section).not.toContain("<input");
   expect(section).not.toContain("<script");
   expect(section).toContain("Natural Earth");
+  expect(section).toContain("世界衛星モザイク画像）</a>を加工して作成");
+  expect(section).toContain(
+    "https://maps.gsi.go.jp/development/ichiran.html#modis",
+  );
+  expect(section).toContain(
+    "https://www.gsi.go.jp/kikakuchousei/kikakuchousei40182.html",
+  );
+  expect(section).toContain("https://lpdaac.usgs.gov/data_access");
+  expect(section).toContain(
+    "(2015). Source of image data product: MODIS (NASA).",
+  );
   const home = readFileSync("src/app/page.tsx", "utf8");
   expect(home).toContain("searchParams");
   expect(home).toContain("<TodayOverview origin={origin}");
@@ -422,6 +440,33 @@ it("狭い地図の札は重ならず、文字色は背景と十分に区別で�
       expect(
         (luminance(background) + 0.05) / (luminance(foreground) + 0.05),
       ).toBeGreaterThanOrEqual(4.5);
+
+  const css = readFileSync("src/app/globals.css", "utf8");
+  const colorInRule = (selector: string, property: string) => {
+    const rule = css.split(`${selector} {`)[1]?.split("}")[0];
+    const color = rule?.match(
+      new RegExp(`${property}:[^;]*(#[0-9a-f]{6})`),
+    )?.[1];
+    expect(color, `${selector} / ${property}`).toBeDefined();
+    return color!;
+  };
+  const darkInk = colorInRule("html.dark .weather-map-card > text", "fill");
+  const darkPairs = [
+    ...["sunny", "cloudy", "rainy", "snowy"].map((kind) => [
+      darkInk,
+      colorInRule(`html.dark .weather-map-${kind}`, "--weather-map-card-fill"),
+    ]),
+    [
+      colorInRule(":root.dark", "--theme-bad"),
+      colorInRule(":root.dark", "--theme-bad-soft"),
+    ],
+  ];
+  for (const [foreground, background] of darkPairs) {
+    expect(
+      (luminance(foreground) + 0.05) / (luminance(background) + 0.05),
+      `${foreground} / ${background}`,
+    ).toBeGreaterThanOrEqual(4.5);
+  }
 });
 
 it("夕方に今日の気温が無いときは、明日の気温を明日と付けて出す", () => {
