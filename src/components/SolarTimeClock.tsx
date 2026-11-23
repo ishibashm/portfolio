@@ -3852,7 +3852,7 @@ export const SolarTimeClock = () => {
   return (
     <div className="min-h-screen flex flex-col items-center bg-background text-ink font-sans selection:bg-theme-accent-soft pt-0 pb-8 md:pb-16 relative overflow-x-hidden">
       <div
-        className="fixed inset-0 pointer-events-none z-0 opacity-40"
+        className="absolute inset-0 pointer-events-none z-0 opacity-40"
         style={{
           backgroundImage:
             "linear-gradient(rgba(244, 63, 94, 0.08) 1px, transparent 1px), linear-gradient(90deg, rgba(244, 63, 94, 0.08) 1px, transparent 1px)",

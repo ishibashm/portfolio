@@ -226,80 +226,77 @@ export function TodayOverviewCard({
               </div>
             </div>
           </div>
-          <div className="min-w-0 space-y-4">
-            <TodayLoveOutlook
-              items={loveFortune.items}
-              date={loveFortune.date}
-              center={loveFortune.center}
-            />
-            <table className="w-full text-left text-xs">
-              <caption className="pb-1 text-left font-semibold">
-                本命星別の今日の吉方位と、その先の天気
-              </caption>
-              <thead>
-                <tr>
-                  {["本命星", "今日の吉", "吉方位の天気"].map((label) => (
-                    <th
-                      key={label}
-                      scope="col"
-                      className="whitespace-nowrap px-1.5 py-1"
-                    >
-                      {label}
-                    </th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {board.stars.map((star) => {
-                  const weather = luckyWeather(star.lucky, groups);
-                  const love = loveByStar.get(star.star);
-                  return (
-                    <tr
-                      key={star.star}
-                      className="border-t border-slate-200 dark:border-theme-border"
-                    >
-                      <th scope="row" className="whitespace-nowrap px-1.5 py-1">
-                        {love ? (
-                          <Link
-                            href={love.href}
-                            className="underline decoration-slate-300 dark:decoration-theme-border hover:text-accent"
-                          >
-                            {star.name}
-                          </Link>
-                        ) : (
-                          star.name
-                        )}
-                      </th>
-                      <td className="whitespace-nowrap px-1.5 py-1">
-                        {star.lucky.length
-                          ? star.lucky
-                              .map((direction) => DIRECTION_LABELS[direction])
-                              .join("・")
-                          : "なし"}
-                      </td>
-                      <td className="px-1.5 py-1">
-                        {weather.length ? (
-                          weather.map((part) => (
-                            <span
-                              key={part}
-                              className="block whitespace-nowrap"
-                            >
-                              {part}
-                            </span>
-                          ))
-                        ) : (
-                          <span className="text-slate-500 dark:text-ink-muted">
-                            地図の都市なし
-                          </span>
-                        )}
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
         </aside>
+      </div>
+      <div className="space-y-4">
+        <TodayLoveOutlook
+          items={loveFortune.items}
+          date={loveFortune.date}
+          center={loveFortune.center}
+        />
+        <table className="w-full text-left text-xs">
+          <caption className="pb-1 text-left font-semibold">
+            本命星別の今日の吉方位と、その先の天気
+          </caption>
+          <thead>
+            <tr>
+              {["本命星", "今日の吉", "吉方位の天気"].map((label) => (
+                <th
+                  key={label}
+                  scope="col"
+                  className="whitespace-nowrap px-1.5 py-1"
+                >
+                  {label}
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {board.stars.map((star) => {
+              const weather = luckyWeather(star.lucky, groups);
+              const love = loveByStar.get(star.star);
+              return (
+                <tr
+                  key={star.star}
+                  className="border-t border-slate-200 dark:border-theme-border"
+                >
+                  <th scope="row" className="whitespace-nowrap px-1.5 py-1">
+                    {love ? (
+                      <Link
+                        href={love.href}
+                        className="underline decoration-slate-300 dark:decoration-theme-border hover:text-accent"
+                      >
+                        {star.name}
+                      </Link>
+                    ) : (
+                      star.name
+                    )}
+                  </th>
+                  <td className="whitespace-nowrap px-1.5 py-1">
+                    {star.lucky.length
+                      ? star.lucky
+                          .map((direction) => DIRECTION_LABELS[direction])
+                          .join("・")
+                      : "なし"}
+                  </td>
+                  <td className="px-1.5 py-1">
+                    {weather.length ? (
+                      weather.map((part) => (
+                        <span key={part} className="block whitespace-nowrap">
+                          {part}
+                        </span>
+                      ))
+                    ) : (
+                      <span className="text-slate-500 dark:text-ink-muted">
+                        地図の都市なし
+                      </span>
+                    )}
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
       </div>
       {data ? (
         <NationalWeatherTable data={data} directions={directions} />

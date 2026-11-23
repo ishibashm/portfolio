@@ -17,6 +17,8 @@ import {
   type VectorStatus,
 } from "@/utils/ephemerisEngine";
 
+export const TOKYO_LONGITUDE = 139.6917;
+
 function verdicts(center: StarFrequency, star: StarFrequency, date?: Date) {
   const board = generateBoard(center);
   // Only the day layer is read; year/month placeholders do not enter the result.
@@ -54,7 +56,10 @@ function summarize(layer: ReturnType<typeof verdicts>) {
   return { lucky, unlucky, neutral, keyed };
 }
 
-export function buildTodayDirections(now: Date = new Date(), lon = 139.6917) {
+export function buildTodayDirections(
+  now: Date = new Date(),
+  lon = TOKYO_LONGITUDE,
+) {
   const date = jstNoonOf(now);
   const tomorrow = new Date(date.getTime() + 86400000);
   const center = getClassicalDayStar(date);
@@ -114,7 +119,7 @@ export function buildTodayDirections(now: Date = new Date(), lon = 139.6917) {
 export function buildCurrentDirections(
   now = new Date(),
   birthDate?: string,
-  lon = 139.6917,
+  lon = TOKYO_LONGITUDE,
 ) {
   const birth = birthDate ? parseJapanDateTime(birthDate) : null;
   const star =
