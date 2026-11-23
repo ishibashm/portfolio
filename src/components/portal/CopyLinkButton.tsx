@@ -33,7 +33,7 @@ export function CopyLinkButton({ href }: { href: string }) {
     <button
       type="button"
       onClick={() => void copy()}
-      className="ml-2 inline-flex min-h-[24px] items-center rounded-md border border-slate-300 dark:border-theme-border px-2 text-xs font-bold text-slate-700 dark:text-ink hover:bg-slate-100 dark:hover:bg-theme-subtle"
+      className="ml-2 inline-flex min-h-[24px] items-center rounded-md border border-theme-border dark:border-theme-border px-2 text-xs font-bold text-ink dark:text-ink hover:bg-slate-100 dark:hover:bg-theme-subtle"
     >
       {state === "copied"
         ? "コピーしました"

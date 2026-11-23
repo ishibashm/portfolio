@@ -45,7 +45,7 @@ export default async function TodayPage({ searchParams }: Props = {}) {
   });
   const shareUrl = `https://twitter.com/intent/tweet?url=${encodeURIComponent(`${SITE_URL}/houi/today`)}&text=${encodeURIComponent("今日の吉方位と時間別の方位｜本命星別の早見表")}`;
   return (
-    <main className="wg-page px-4 py-10 text-slate-900">
+    <main className="wg-page px-4 py-10 text-ink">
       <BreadcrumbJsonLd
         items={[
           { name: HOUI_BREADCRUMB_LABEL, path: "/houi" },
@@ -146,7 +146,7 @@ export default async function TodayPage({ searchParams }: Props = {}) {
                       {star.hours.map((hour) => (
                         <tr
                           key={hour.branch}
-                          className="border-b border-slate-200 align-top"
+                          className="border-b border-theme-border align-top"
                         >
                           <th scope="row" className="p-2">
                             {hour.branch}
@@ -197,7 +197,7 @@ export default async function TodayPage({ searchParams }: Props = {}) {
                       {getMonthlySummary(year, star.star).map((row) => (
                         <tr
                           key={row.month}
-                          className="border-b border-slate-200 align-top"
+                          className="border-b border-theme-border align-top"
                         >
                           <th scope="row" className="p-2">
                             <Link

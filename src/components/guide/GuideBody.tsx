@@ -24,7 +24,7 @@ function inline(text: string): ReactNode[] {
     if (m.index > last) nodes.push(text.slice(last, m.index));
     if (m[1] !== undefined) {
       nodes.push(
-        <b key={`b${n++}`} className="font-bold text-slate-900">
+        <b key={`b${n++}`} className="font-bold text-ink">
           {m[1]}
         </b>,
       );
@@ -33,7 +33,7 @@ function inline(text: string): ReactNode[] {
         <Link
           key={`l${n++}`}
           href={m[3]}
-          className="font-bold text-rose-600 hover:underline"
+          className="font-bold text-accent hover:underline"
         >
           {m[2]}
         </Link>,
@@ -49,14 +49,14 @@ function Block({ block }: { block: GuideBlock }) {
   switch (block.k) {
     case "h":
       return (
-        <h2 className="text-xl font-bold font-serif border-b border-slate-300 pb-2 mt-12 mb-1 scroll-mt-6">
+        <h2 className="text-xl font-bold font-serif border-b border-theme-border pb-2 mt-12 mb-1 scroll-mt-6">
           {block.t}
         </h2>
       );
 
     case "p":
       return (
-        <p className="mt-4 text-sm leading-relaxed text-slate-700">
+        <p className="mt-4 text-sm leading-relaxed text-ink">
           {inline(block.t)}
         </p>
       );
@@ -67,11 +67,11 @@ function Block({ block }: { block: GuideBlock }) {
           {block.items.map((it, i) => (
             <li
               key={i}
-              className="relative pl-5 text-sm leading-relaxed text-slate-700"
+              className="relative pl-5 text-sm leading-relaxed text-ink"
             >
               <span
                 aria-hidden="true"
-                className="absolute left-0 top-[0.65em] w-1.5 h-1.5 rounded-full bg-rose-400"
+                className="absolute left-0 top-[0.65em] w-1.5 h-1.5 rounded-full bg-accent"
               />
               {inline(it)}
             </li>
@@ -84,10 +84,10 @@ function Block({ block }: { block: GuideBlock }) {
         <ol className="mt-5 space-y-3">
           {block.items.map((it, i) => (
             <li key={i} className="flex gap-3">
-              <span className="shrink-0 w-6 h-6 rounded-full bg-slate-900 text-white text-[11px] font-bold flex items-center justify-center font-mono">
+              <span className="shrink-0 w-6 h-6 rounded-full bg-accent text-on-accent text-[11px] font-bold flex items-center justify-center font-mono">
                 {i + 1}
               </span>
-              <span className="text-sm leading-relaxed text-slate-700 pt-0.5">
+              <span className="text-sm leading-relaxed text-ink pt-0.5">
                 {inline(it)}
               </span>
             </li>
@@ -99,15 +99,15 @@ function Block({ block }: { block: GuideBlock }) {
       return (
         // 列が多い表はスマホで必ずはみ出す。ページ全体を横スクロールさせず、
         // 表の中だけで収める。
-        <div className="mt-5 overflow-x-auto rounded-2xl border border-slate-300 bg-white/90">
+        <div className="mt-5 overflow-x-auto rounded-2xl border border-theme-border bg-theme-surface">
           <table className="w-full text-xs border-collapse">
             <thead>
-              <tr className="bg-stone-100/80">
+              <tr className="bg-theme-subtle">
                 {block.head.map((h, i) => (
                   <th
                     key={i}
                     scope="col"
-                    className="text-left font-bold text-slate-700 px-3 py-2.5 whitespace-nowrap border-b border-slate-300"
+                    className="text-left font-bold text-ink px-3 py-2.5 whitespace-nowrap border-b border-theme-border"
                   >
                     {h}
                   </th>
@@ -116,11 +116,14 @@ function Block({ block }: { block: GuideBlock }) {
             </thead>
             <tbody>
               {block.rows.map((row, r) => (
-                <tr key={r} className="border-b border-slate-200 last:border-0">
+                <tr
+                  key={r}
+                  className="border-b border-theme-border last:border-0"
+                >
                   {row.map((cell, c) => (
                     <td
                       key={c}
-                      className="px-3 py-2.5 align-top text-slate-700 leading-relaxed"
+                      className="px-3 py-2.5 align-top text-ink leading-relaxed"
                     >
                       {inline(cell)}
                     </td>
@@ -134,9 +137,9 @@ function Block({ block }: { block: GuideBlock }) {
 
     case "note":
       return (
-        <div className="mt-5 rounded-2xl border border-amber-300 bg-amber-50/80 p-4">
-          <p className="text-xs font-bold text-amber-900">{block.t}</p>
-          <p className="mt-2 text-xs leading-relaxed text-slate-700">
+        <div className="mt-5 rounded-2xl border border-theme-border bg-theme-gold-soft p-4">
+          <p className="text-xs font-bold text-theme-gold">{block.t}</p>
+          <p className="mt-2 text-xs leading-relaxed text-ink">
             {inline(block.body)}
           </p>
         </div>
@@ -147,7 +150,7 @@ function Block({ block }: { block: GuideBlock }) {
         <div className="mt-8">
           <Link
             href={block.href}
-            className="inline-flex px-5 py-2.5 rounded-full bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs transition-colors"
+            className="inline-flex px-5 py-2.5 rounded-full bg-accent hover:brightness-110 text-on-accent font-bold text-xs"
           >
             {block.label}を開く →
           </Link>

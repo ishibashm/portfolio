@@ -210,21 +210,19 @@ export function MagneticCompass() {
   return (
     <section
       ref={hostRef}
-      className="mt-4 overflow-hidden rounded-3xl border border-stone-200 dark:border-theme-border bg-gradient-to-b from-stone-50 dark:from-theme-subtle to-amber-50/40 dark:to-theme-gold-soft shadow-sm"
+      className="mt-4 overflow-hidden rounded-3xl border border-theme-border dark:border-theme-border bg-theme-subtle shadow-sm"
       aria-label="羅盤（真北と磁北）"
     >
-      <header className="space-y-3 border-b border-stone-200/70 dark:border-theme-border px-5 py-4">
+      <header className="space-y-3 border-b border-theme-border/70 dark:border-theme-border px-5 py-4">
         <p className="flex items-center gap-1.5 text-xs font-bold tracking-wider text-accent">
           <Compass className="h-3.5 w-3.5" aria-hidden />
           羅盤
         </p>
-        <p className="max-w-[70ch] text-xs leading-relaxed text-stone-600 dark:text-ink-muted">
+        <p className="max-w-[70ch] text-xs leading-relaxed text-ink-muted dark:text-ink-muted">
           {LEAD}
         </p>
         {!from && (
-          <p className="text-sm font-bold text-stone-700 dark:text-ink">
-            どこから？
-          </p>
+          <p className="text-sm font-bold text-ink dark:text-ink">どこから？</p>
         )}
         {error && (
           <p role="alert" className="text-sm text-accent">
@@ -236,19 +234,19 @@ export function MagneticCompass() {
             type="button"
             onClick={locate}
             disabled={locating}
-            className="min-h-11 rounded-lg border border-stone-300 dark:border-theme-border bg-white dark:bg-theme-surface px-3 py-2"
+            className="min-h-11 rounded-lg border border-theme-border dark:border-theme-border bg-theme-surface dark:bg-theme-surface px-3 py-2"
           >
             {locating ? "取得中…" : "現在地"}
           </button>
           <label className="block">
-            <span className="block font-bold text-stone-700 dark:text-ink">
+            <span className="block font-bold text-ink dark:text-ink">
               出発地
             </span>
             <select
               value={from}
               disabled={locating}
               onChange={(e) => setFrom(e.target.value)}
-              className="mt-1 min-h-11 rounded-lg border border-stone-300 dark:border-theme-border bg-white dark:bg-theme-surface px-2 py-1.5 text-base sm:text-xs"
+              className="mt-1 min-h-11 rounded-lg border border-theme-border dark:border-theme-border bg-theme-surface dark:bg-theme-surface px-2 py-1.5 text-base sm:text-xs"
             >
               <option value="">選ぶ</option>
               {PREFS.map((p) => (
@@ -259,13 +257,13 @@ export function MagneticCompass() {
             </select>
           </label>
           <label className="block">
-            <span className="block font-bold text-stone-700 dark:text-ink">
+            <span className="block font-bold text-ink dark:text-ink">
               目的地（任意）
             </span>
             <select
               value={to}
               onChange={(e) => setTo(e.target.value)}
-              className="mt-1 min-h-11 rounded-lg border border-stone-300 dark:border-theme-border bg-white dark:bg-theme-surface px-2 py-1.5 text-base sm:text-xs"
+              className="mt-1 min-h-11 rounded-lg border border-theme-border dark:border-theme-border bg-theme-surface dark:bg-theme-surface px-2 py-1.5 text-base sm:text-xs"
             >
               <option value="">選ばない</option>
               {PREFS.filter((p) => p !== from).map((p) => (
@@ -290,7 +288,7 @@ export function MagneticCompass() {
                 className={`min-h-11 min-w-11 rounded-full border px-2.5 py-1 font-semibold ${
                   mapping === m
                     ? "border-stone-800 dark:border-theme-border bg-stone-800 dark:bg-slate-700 text-white"
-                    : "border-stone-300 dark:border-theme-border bg-white dark:bg-theme-surface text-stone-700 dark:text-ink"
+                    : "border-theme-border dark:border-theme-border bg-theme-surface dark:bg-theme-surface text-ink dark:text-ink"
                 }`}
               >
                 {label}
@@ -306,7 +304,7 @@ export function MagneticCompass() {
                 className={`min-h-11 min-w-11 rounded-full border px-2.5 py-1 font-semibold ${
                   view === "3d"
                     ? "border-accent bg-accent text-on-accent"
-                    : "border-stone-300 dark:border-theme-border bg-white dark:bg-theme-surface text-stone-700 dark:text-ink"
+                    : "border-theme-border dark:border-theme-border bg-theme-surface dark:bg-theme-surface text-ink dark:text-ink"
                 }`}
               >
                 立体
@@ -319,7 +317,7 @@ export function MagneticCompass() {
               className={`min-h-11 min-w-11 rounded-full border px-2.5 py-1 font-semibold ${
                 view === "flat"
                   ? "border-accent bg-accent text-on-accent"
-                  : "border-stone-300 dark:border-theme-border bg-white dark:bg-theme-surface text-stone-700 dark:text-ink"
+                  : "border-theme-border dark:border-theme-border bg-theme-surface dark:bg-theme-surface text-ink dark:text-ink"
               }`}
             >
               平面
@@ -340,7 +338,7 @@ export function MagneticCompass() {
         </div>
       )}
 
-      <div className="space-y-2 border-t border-stone-200/70 dark:border-theme-border px-5 py-4 text-sm text-stone-700 dark:text-ink">
+      <div className="space-y-2 border-t border-theme-border/70 dark:border-theme-border px-5 py-4 text-sm text-ink dark:text-ink">
         {model && (
           <p data-testid="declination">
             {model.declinationKnown
@@ -353,10 +351,10 @@ export function MagneticCompass() {
             className={`rounded-2xl border p-3 ${
               t.differs
                 ? "border-amber-300 dark:border-theme-border bg-amber-50 dark:bg-theme-gold-soft"
-                : "border-stone-200 dark:border-theme-border bg-white dark:bg-theme-surface"
+                : "border-theme-border dark:border-theme-border bg-theme-surface dark:bg-theme-surface"
             }`}
           >
-            <p className="font-bold text-stone-800 dark:text-ink">
+            <p className="font-bold text-ink dark:text-ink">
               {from} → {t.place.name}（約 {Math.round(t.distanceKm)} km）
             </p>
             <p className="mt-1 text-xs">

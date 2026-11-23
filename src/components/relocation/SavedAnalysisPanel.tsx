@@ -51,8 +51,8 @@ function snapshot(): string {
 
 const BTN =
   "min-h-[32px] rounded-lg px-3 py-1.5 text-xs font-bold disabled:opacity-40";
-const PRIMARY = `${BTN} bg-stone-800 text-white hover:bg-stone-700`;
-const SECONDARY = `${BTN} border border-stone-300 bg-white text-stone-700 hover:bg-stone-50`;
+const PRIMARY = `${BTN} bg-accent text-on-accent hover:brightness-110`;
+const SECONDARY = `${BTN} border border-theme-border bg-theme-surface text-ink hover:bg-theme-accent-soft`;
 
 function download(name: string, markdown: string) {
   const blob = new Blob([markdown], { type: "text/markdown;charset=utf-8" });
@@ -104,16 +104,16 @@ function AnalysisList({
   if (items.length === 0) return null;
   return (
     <div className="space-y-2">
-      <h4 className="font-bold text-stone-700">{title}</h4>
+      <h4 className="font-bold text-ink">{title}</h4>
       <ul className="space-y-1.5">
         {items.map((a) => (
           <li
             key={a.id}
-            className="rounded-lg border border-stone-200 bg-white p-2"
+            className="rounded-lg border border-theme-border bg-theme-surface p-2"
           >
             <div className="flex flex-wrap items-center gap-2">
-              <span className="font-bold text-stone-800">{a.name}</span>
-              <span className="text-stone-500">
+              <span className="font-bold text-ink">{a.name}</span>
+              <span className="text-ink-muted">
                 {new Date(a.savedAt).toLocaleString("ja-JP", {
                   timeZone: "Asia/Tokyo",
                 })}
@@ -135,16 +135,16 @@ function AnalysisList({
               <button
                 type="button"
                 onClick={() => onDelete(a)}
-                className={`${BTN} border border-rose-200 bg-white text-rose-700 hover:bg-rose-50`}
+                className={`${BTN} border border-theme-border bg-theme-surface text-accent hover:bg-theme-accent-soft`}
               >
                 削除
               </button>
             </div>
             <details className="mt-1">
-              <summary className="cursor-pointer text-stone-600">
+              <summary className="cursor-pointer text-ink-muted">
                 中身を見る
               </summary>
-              <pre className="mt-1 max-h-64 overflow-auto whitespace-pre-wrap rounded bg-stone-50 p-2 text-[12px] text-stone-800">
+              <pre className="mt-1 max-h-64 overflow-auto whitespace-pre-wrap rounded bg-theme-subtle p-2 text-[12px] text-ink">
                 {a.markdown}
               </pre>
             </details>
@@ -277,12 +277,10 @@ export function SavedAnalysisPanel({
   return (
     <section
       aria-label="分析を残す・AI に渡す"
-      className="space-y-3 rounded-2xl border border-stone-200 bg-white/80 p-4 text-xs"
+      className="space-y-3 rounded-2xl border border-theme-border bg-theme-surface p-4 text-xs"
     >
-      <h3 className="text-sm font-bold text-stone-800">
-        この分析を残す・AI に渡す
-      </h3>
-      <p className="leading-relaxed text-stone-600">
+      <h3 className="text-sm font-bold text-ink">この分析を残す・AI に渡す</h3>
+      <p className="leading-relaxed text-ink-muted">
         方位ごとの最良の段階と次に動ける日を、文書（Markdown）にします。生年月日と住所は入りません（本命星と空亡までです）。
       </p>
 
@@ -294,7 +292,7 @@ export function SavedAnalysisPanel({
             value={name}
             placeholder={defaultName}
             onChange={(e) => setName(e.target.value)}
-            className="min-h-[32px] w-56 rounded-lg border border-stone-300 bg-white px-2 text-xs"
+            className="min-h-[32px] w-56 rounded-lg border border-ink-muted bg-theme-surface px-2 text-xs"
           />
         </label>
         <button
@@ -342,28 +340,28 @@ export function SavedAnalysisPanel({
           Markdown で書き出す
         </button>
       </div>
-      {!ready && <p className="text-stone-500">走査したあとに使えます。</p>}
+      {!ready && <p className="text-ink-muted">走査したあとに使えます。</p>}
       {cloud.state === "signedOut" && (
-        <p className="text-stone-500">
+        <p className="text-ink-muted">
           ログインすると、アカウントにも保存できます（ほかの端末でも見られます）。
         </p>
       )}
       {cloud.state === "error" && (
-        <p className="text-stone-500">
+        <p className="text-ink-muted">
           アカウントに保存した分析を読み込めませんでした。この端末への保存は使えます。
         </p>
       )}
       {message && (
-        <p role="status" className="font-bold text-stone-800">
+        <p role="status" className="font-bold text-ink">
           {message}
         </p>
       )}
 
-      <details className="rounded-lg border border-stone-200 bg-stone-50 p-3">
-        <summary className="cursor-pointer font-bold text-stone-700">
+      <details className="rounded-lg border border-theme-border bg-theme-subtle p-3">
+        <summary className="cursor-pointer font-bold text-ink">
           AI に続きを計算させる（MCP）
         </summary>
-        <div className="mt-2 space-y-2 leading-relaxed text-stone-600">
+        <div className="mt-2 space-y-2 leading-relaxed text-ink-muted">
           <p>
             Claude・ChatGPT・Codex など MCP に対応した AI に、次の URL
             を登録すると、AI
@@ -371,7 +369,7 @@ export function SavedAnalysisPanel({
             AI 側の設定（カスタムコネクタ・MCP サーバー）から行います。
           </p>
           <p className="flex flex-wrap items-center gap-2">
-            <code className="break-all rounded bg-white px-2 py-1 text-stone-800">
+            <code className="break-all rounded bg-theme-surface px-2 py-1 text-ink">
               {MCP_URL}
             </code>
             <button

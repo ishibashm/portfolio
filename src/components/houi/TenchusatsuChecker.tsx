@@ -58,7 +58,7 @@ export function TenchusatsuChecker({
   return (
     <section className="space-y-6" aria-label="天中殺と引越しの確認">
       <div className="wg-card p-6" aria-live="polite">
-        <h2 className="text-xl font-bold text-rose-800">
+        <h2 className="text-xl font-bold text-theme-gold">
           {!result
             ? "引越しの可否は、天中殺だけでは決まりません"
             : yearVoid || monthVoid
@@ -129,9 +129,9 @@ export function TenchusatsuChecker({
             setYear(e.target.value.slice(0, 4));
           }}
           aria-describedby="tenchusatsu-help"
-          className="mt-3 rounded-lg border border-rose-200 bg-white p-3"
+          className="mt-3 rounded-lg border border-theme-border bg-theme-surface p-3"
         />
-        <p id="tenchusatsu-help" className="mt-2 text-sm text-stone-600">
+        <p id="tenchusatsu-help" className="mt-2 text-sm text-ink-muted">
           日本標準時・日付のみで計算します。生年月日は保存・送信しません。
         </p>
         {birth && !valid && (
@@ -146,7 +146,7 @@ export function TenchusatsuChecker({
           <p className="mt-2 text-sm">
             色と「天中殺月」の文字が該当月です。年天中殺は月の印とは別です。各月は節入りから次の節入り直前まで（JST）。日付は目安で、境界当日は時刻によって変わります。
           </p>
-          <p className="mt-2 text-sm text-stone-600">
+          <p className="mt-2 text-sm text-ink-muted">
             月別ページの公開範囲外はカレンダー一覧へ進みます。天中殺ではない月も、引越しの吉を保証しません。
           </p>
           <ol className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3">
@@ -154,7 +154,7 @@ export function TenchusatsuChecker({
               <li key={m.slug}>
                 <Link
                   href={m.href}
-                  className={`block rounded-xl border p-3 text-sm ${branches.includes(m.branch) ? "border-rose-300 bg-rose-50 text-rose-900" : "border-stone-200"}`}
+                  className={`block rounded-xl border p-3 text-sm ${branches.includes(m.branch) ? "border-rose-300 bg-theme-gold-soft text-rose-900" : "border-theme-border"}`}
                 >
                   <b>
                     {m.year}年{m.month}月・{m.branch}

@@ -51,11 +51,11 @@ function CandidateButton({
     <button
       type="button"
       onClick={() => onAdopt(candidate.date)}
-      className="rounded-full border border-stone-300 dark:border-theme-border bg-white dark:bg-theme-surface px-2.5 py-1 text-[11px] font-bold text-stone-700 dark:text-ink transition-colors hover:border-accent hover:text-accent"
+      className="rounded-full border border-theme-border dark:border-theme-border bg-theme-surface dark:bg-theme-surface px-2.5 py-1 text-[11px] font-bold text-ink dark:text-ink transition-colors hover:border-accent hover:text-accent"
       title={`${candidate.date} を目標日にする`}
     >
       {candidate.date.slice(5)}
-      <span className="ml-1 font-normal text-stone-500 dark:text-ink-muted">
+      <span className="ml-1 font-normal text-ink-muted dark:text-ink-muted">
         {candidate.daysAway}日{dir}・{TIER_JP[candidate.tier]}
       </span>
     </button>
@@ -139,20 +139,20 @@ export function TargetDateAdvice({
 
   if (!birthDate || lon === null || !Number.isFinite(lon)) {
     return (
-      <p className="mt-2 text-xs text-stone-500 dark:text-ink-muted">
+      <p className="mt-2 text-xs text-ink-muted dark:text-ink-muted">
         生年月日と出発地を入れると、この目標日が方位ごとに何段階かを出します。
       </p>
     );
   }
 
   return (
-    <div className="mt-3 rounded-2xl border border-stone-200 dark:border-theme-border bg-white/70 dark:bg-theme-surface p-4">
+    <div className="mt-3 rounded-2xl border border-theme-border dark:border-theme-border bg-theme-surface/70 dark:bg-theme-surface p-4">
       <div className="flex flex-wrap items-baseline justify-between gap-2">
-        <h3 className="text-xs font-bold text-stone-700 dark:text-ink">
+        <h3 className="text-xs font-bold text-ink dark:text-ink">
           この目標日はどうか
         </h3>
         {loading && (
-          <span className="flex items-center gap-1 text-[10px] text-stone-500 dark:text-ink-muted">
+          <span className="flex items-center gap-1 text-[10px] text-ink-muted dark:text-ink-muted">
             <Loader2 className="h-3 w-3 animate-spin" />
             前後{WINDOW_DAYS}日を確認中
           </span>
@@ -162,7 +162,7 @@ export function TargetDateAdvice({
       {error && <p className="mt-2 text-xs text-accent">{error}</p>}
 
       {result?.target && (
-        <p className="mt-1 text-xs text-stone-600 dark:text-ink-muted">
+        <p className="mt-1 text-xs text-ink-muted dark:text-ink-muted">
           {targetDate}
           {result.target.rokuyo ? `・${plainRokuyo(result.target.rokuyo)}` : ""}
           {result.target.tags.length > 0
@@ -177,7 +177,7 @@ export function TargetDateAdvice({
       )}
 
       {result && !result.targetInRange && !loading && !error && (
-        <p className="mt-2 text-xs text-stone-600 dark:text-ink-muted">
+        <p className="mt-2 text-xs text-ink-muted dark:text-ink-muted">
           この目標日は判定できる範囲の外です。年盤が二度替わる先まで見ると、精度より不確かさが勝つため出していません。
         </p>
       )}
@@ -186,7 +186,7 @@ export function TargetDateAdvice({
         <div className="mt-3 overflow-x-auto">
           <table className="w-full min-w-[520px] text-left text-[11px]">
             <thead>
-              <tr className="text-[10px] text-stone-500 dark:text-ink-muted">
+              <tr className="text-[10px] text-ink-muted dark:text-ink-muted">
                 <th className="pb-1 font-normal">方位</th>
                 <th className="pb-1 font-normal">目標日</th>
                 <th className="pb-1 font-normal">もっと良い日</th>
@@ -199,7 +199,7 @@ export function TargetDateAdvice({
                   key={a.direction}
                   className="border-t border-stone-100 dark:border-theme-border"
                 >
-                  <td className="py-1.5 font-bold text-stone-700 dark:text-ink">
+                  <td className="py-1.5 font-bold text-ink dark:text-ink">
                     {a.directionLabel}
                   </td>
                   <td className="py-1.5">
@@ -211,7 +211,7 @@ export function TargetDateAdvice({
                         {TIER_JP[a.tier as DayTier]}
                       </span>
                     ) : (
-                      <span className="text-stone-400 dark:text-ink-muted">
+                      <span className="text-ink-muted dark:text-ink-muted">
                         —
                       </span>
                     )}
@@ -220,7 +220,7 @@ export function TargetDateAdvice({
                     {a.better ? (
                       <CandidateButton candidate={a.better} onAdopt={onAdopt} />
                     ) : (
-                      <span className="text-stone-400 dark:text-ink-muted">
+                      <span className="text-ink-muted dark:text-ink-muted">
                         この前後には無い
                       </span>
                     )}
@@ -229,7 +229,7 @@ export function TargetDateAdvice({
                     {a.best ? (
                       <CandidateButton candidate={a.best} onAdopt={onAdopt} />
                     ) : (
-                      <span className="text-stone-400 dark:text-ink-muted">
+                      <span className="text-ink-muted dark:text-ink-muted">
                         —
                       </span>
                     )}
@@ -241,7 +241,7 @@ export function TargetDateAdvice({
         </div>
       )}
 
-      <p className="mt-3 text-xs leading-relaxed text-stone-500 dark:text-ink-muted">
+      <p className="mt-3 text-xs leading-relaxed text-ink-muted dark:text-ink-muted">
         日付を押すとその日を目標日にします。天中殺で塞がる日は候補に入れていません（段階が良くても動けない日のため）。全期間を一望したいときは引越し時期を分析する画面へ。
       </p>
     </div>

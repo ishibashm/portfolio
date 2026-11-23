@@ -52,7 +52,7 @@ const LocationPickerInner = dynamic(
   {
     ssr: false,
     loading: () => (
-      <div className="flex h-full w-full items-center justify-center rounded-xl border border-stone-200 dark:border-theme-border bg-stone-50 dark:bg-theme-subtle text-xs text-stone-500 dark:text-ink-muted">
+      <div className="flex h-full w-full items-center justify-center rounded-xl border border-theme-border dark:border-theme-border bg-theme-subtle dark:bg-theme-subtle text-xs text-ink-muted dark:text-ink-muted">
         地図を読み込んでいます…
       </div>
     ),
@@ -113,28 +113,28 @@ export interface PlaceInputProps {
 /** 縮尺ごとの class。構造は同じで、字の大きさと余白だけが違う。 */
 const VARIANT_STYLES = {
   compact: {
-    label: "text-[10px] uppercase font-bold text-stone-500 dark:text-ink-muted",
+    label: "text-[10px] uppercase font-bold text-ink-muted dark:text-ink-muted",
     optionalBadge:
-      "ml-1.5 text-[10px] font-normal text-stone-600 dark:text-ink-muted",
+      "ml-1.5 text-[10px] font-normal text-ink-muted dark:text-ink-muted",
     currentLocation:
       "min-h-11 rounded-lg px-2 text-xs font-semibold text-theme-link hover:bg-theme-link-soft shrink-0",
     input:
-      "w-full px-3 py-2 bg-white dark:bg-theme-surface border border-stone-200 dark:border-theme-border rounded-xl text-xs text-stone-700 dark:text-ink placeholder-ink-muted focus:outline-none focus:border-theme-link",
-    searching: "text-[10px] text-stone-600 dark:text-ink-muted animate-pulse",
+      "w-full px-3 py-2 bg-theme-surface dark:bg-theme-surface border border-theme-border dark:border-theme-border rounded-xl text-xs text-ink dark:text-ink placeholder-ink-muted focus:outline-none focus:border-theme-link",
+    searching: "text-[10px] text-ink-muted dark:text-ink-muted animate-pulse",
     notice: "text-[10px] text-theme-gold",
     resolve:
       "shrink-0 min-h-[36px] px-3 rounded-xl border border-theme-border bg-theme-accent-soft text-xs font-semibold text-accent hover:bg-theme-accent-soft",
     suggestion:
-      "w-full text-left px-2.5 py-1.5 text-xs text-stone-700 dark:text-ink hover:bg-theme-accent-soft transition-colors",
+      "w-full text-left px-2.5 py-1.5 text-xs text-ink dark:text-ink hover:bg-theme-accent-soft transition-colors",
     picked:
-      "flex items-center gap-1.5 text-[10px] text-stone-500 dark:text-ink-muted",
+      "flex items-center gap-1.5 text-[10px] text-ink-muted dark:text-ink-muted",
     pinSize: 10,
-    help: "text-xs text-stone-600 dark:text-ink-muted leading-relaxed",
+    help: "text-xs text-ink-muted dark:text-ink-muted leading-relaxed",
     /* 地図・座標の入口もスマートフォンで押しやすい高さを確保する。 */
     coordsToggle:
-      "inline-flex min-h-11 items-center self-start rounded-lg px-2 text-xs text-stone-600 dark:text-ink-muted hover:bg-stone-100 dark:hover:bg-theme-subtle hover:text-stone-800 dark:hover:text-ink",
+      "inline-flex min-h-11 items-center self-start rounded-lg px-2 text-xs text-ink-muted dark:text-ink-muted hover:bg-stone-100 dark:hover:bg-theme-subtle hover:text-ink dark:hover:text-ink",
     coordInput:
-      "px-2 py-1.5 bg-white dark:bg-theme-surface border border-stone-200 dark:border-theme-border rounded-lg text-[11px] font-mono text-stone-700 dark:text-ink",
+      "px-2 py-1.5 bg-theme-surface dark:bg-theme-surface border border-theme-border dark:border-theme-border rounded-lg text-[11px] font-mono text-ink dark:text-ink",
   },
   form: {
     label: "text-sm font-bold text-slate-800 dark:text-ink",
@@ -142,13 +142,13 @@ const VARIANT_STYLES = {
     currentLocation:
       "min-h-11 rounded-lg px-2 text-xs font-semibold text-theme-link hover:bg-theme-link-soft shrink-0",
     input:
-      "w-full px-3 py-2.5 bg-white dark:bg-theme-surface border border-slate-300 dark:border-theme-border rounded-xl text-sm text-slate-900 dark:text-ink placeholder-ink-muted outline-none focus:border-accent transition-colors",
+      "w-full px-3 py-2.5 bg-theme-surface dark:bg-theme-surface border border-theme-border dark:border-theme-border rounded-xl text-sm text-ink dark:text-ink placeholder-ink-muted outline-none focus:border-accent transition-colors",
     searching: "text-xs text-ink-muted animate-pulse",
     notice: "text-xs text-theme-gold",
     resolve:
       "shrink-0 min-h-[42px] px-3 rounded-xl border border-theme-border bg-theme-accent-soft text-sm font-semibold text-accent hover:bg-theme-accent-soft",
     suggestion:
-      "w-full text-left px-3 py-2 text-sm text-slate-700 dark:text-ink hover:bg-theme-accent-soft transition-colors",
+      "w-full text-left px-3 py-2 text-sm text-ink dark:text-ink hover:bg-theme-accent-soft transition-colors",
     picked:
       "flex items-center gap-1.5 text-xs text-slate-500 dark:text-ink-muted",
     pinSize: 12,
@@ -156,7 +156,7 @@ const VARIANT_STYLES = {
     coordsToggle:
       "inline-flex min-h-11 items-center self-start rounded-lg px-2 text-xs text-slate-600 dark:text-ink-muted hover:bg-slate-100 dark:hover:bg-theme-subtle hover:text-slate-800 dark:hover:text-ink",
     coordInput:
-      "px-2 py-2 bg-white dark:bg-theme-surface border border-slate-300 dark:border-theme-border rounded-lg text-sm font-mono text-slate-700 dark:text-ink",
+      "px-2 py-2 bg-theme-surface dark:bg-theme-surface border border-theme-border dark:border-theme-border rounded-lg text-sm font-mono text-ink dark:text-ink",
   },
 } as const;
 
@@ -439,7 +439,7 @@ export function PlaceInput({
       {notice && <p className={s.notice}>{notice}</p>}
 
       {suggestions.length > 0 && (
-        <ul className="flex flex-col gap-0.5 border border-stone-200 dark:border-theme-border rounded-lg overflow-hidden">
+        <ul className="flex flex-col gap-0.5 border border-theme-border dark:border-theme-border rounded-lg overflow-hidden">
           {suggestions.map((suggestion) => (
             <li key={`${suggestion.name}-${suggestion.lat}-${suggestion.lon}`}>
               <button
@@ -458,7 +458,7 @@ export function PlaceInput({
       <div className={s.picked}>
         <MapPin
           size={s.pinSize}
-          className="text-stone-600 dark:text-ink-muted shrink-0"
+          className="text-ink-muted dark:text-ink-muted shrink-0"
         />
         {/* 呼び出し側が名前を持っているなら、それが正（右の地図など、
             この欄の外で座標が動くことがある。欄の中で最後に選んだ名前を
@@ -474,7 +474,7 @@ export function PlaceInput({
         ) : hasCoords ? (
           <span>設定済み（{formatCoords(lat, lon)}）</span>
         ) : (
-          <span className="text-stone-600 dark:text-ink-muted">
+          <span className="text-ink-muted dark:text-ink-muted">
             {optional ? "未設定でも判定は出ます" : "まだ設定されていません"}
           </span>
         )}

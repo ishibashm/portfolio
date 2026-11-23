@@ -97,12 +97,12 @@ export function OfficialRentSection({
   const cities = [...retail.cities].sort((x, y) => y.yen - x.yen);
 
   return (
-    <section className="rounded-3xl border border-gray-200 dark:border-theme-border bg-white dark:bg-theme-surface p-5 shadow-sm">
-      <h2 className="text-sm font-bold text-stone-800 dark:text-ink">
+    <section className="rounded-3xl border border-theme-border dark:border-theme-border bg-theme-surface dark:bg-theme-surface p-5 shadow-sm">
+      <h2 className="text-sm font-bold text-ink dark:text-ink">
         民営家賃の推移（消費者物価指数・2025年＝100）—{" "}
         {monthLabel(cpi.latestMonth)}まで
       </h2>
-      <p className="mt-0.5 mb-4 text-xs leading-relaxed text-stone-500 dark:text-ink-muted">
+      <p className="mt-0.5 mb-4 text-xs leading-relaxed text-ink-muted dark:text-ink-muted">
         {`総務省が毎月出す消費者物価指数の品目「民営家賃」。同じ質の借家の家賃が、2025年の平均を 100 としてどれだけ動いたかを表す。広さや築年の違う物件が混ざっても動かないので、掲載の中央値より相場の向きを読みやすい。${monthLabel(cpi.latestMonth)}は${summary}。毎月、前月分が出たあとに取り直す。`}
       </p>
 
@@ -155,14 +155,14 @@ export function OfficialRentSection({
 
       <div className={`mt-4 grid gap-3 ${showAreas ? "md:grid-cols-2" : ""}`}>
         {showAreas && (
-          <details className="rounded-xl border border-stone-200 dark:border-theme-border p-3">
-            <summary className="cursor-pointer text-xs font-bold text-stone-700 dark:text-ink">
+          <details className="rounded-xl border border-theme-border dark:border-theme-border p-3">
+            <summary className="cursor-pointer text-xs font-bold text-ink dark:text-ink">
               地域別の前年同月比（{areas.length} 地域・
               {monthLabel(cpi.latestMonth)}）
             </summary>
             <table className="mt-2 w-full text-xs">
               <thead>
-                <tr className="text-left text-stone-500 dark:text-ink-muted">
+                <tr className="text-left text-ink-muted dark:text-ink-muted">
                   <th className="py-1 font-semibold">地域</th>
                   <th className="whitespace-nowrap py-1 pl-3 text-right font-semibold">
                     指数
@@ -192,17 +192,17 @@ export function OfficialRentSection({
           </details>
         )}
 
-        <details className="rounded-xl border border-stone-200 dark:border-theme-border p-3">
-          <summary className="cursor-pointer text-xs font-bold text-stone-700 dark:text-ink">
+        <details className="rounded-xl border border-theme-border dark:border-theme-border p-3">
+          <summary className="cursor-pointer text-xs font-bold text-ink dark:text-ink">
             都市別の家賃の水準（{cities.length} 都市・
             {monthLabel(retail.latestMonth)}）
           </summary>
-          <p className="mt-2 text-xs leading-relaxed text-stone-500 dark:text-ink-muted">
+          <p className="mt-2 text-xs leading-relaxed text-ink-muted dark:text-ink-muted">
             {RETAIL_NOTE}
           </p>
           <table className="mt-2 w-full text-xs">
             <thead>
-              <tr className="text-left text-stone-500 dark:text-ink-muted">
+              <tr className="text-left text-ink-muted dark:text-ink-muted">
                 <th className="py-1 font-semibold">都市</th>
                 <th className="whitespace-nowrap py-1 pl-3 text-right font-semibold">
                   3.3㎡あたり
@@ -240,7 +240,7 @@ export function OfficialRentSection({
         </details>
       </div>
 
-      <p className="mt-4 text-xs leading-relaxed text-stone-500 dark:text-ink-muted">
+      <p className="mt-4 text-xs leading-relaxed text-ink-muted dark:text-ink-muted">
         {`${SOURCE_NOTE}${ESTAT_API_CREDIT}`}
       </p>
     </section>

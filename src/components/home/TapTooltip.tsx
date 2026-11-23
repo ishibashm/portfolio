@@ -31,7 +31,7 @@ export function TapTooltip({
       <div
         id={id}
         role="tooltip"
-        className={`${open ? "block" : "hidden [@media(hover:hover)]:group-hover/tooltip:block"} absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-48 p-2 bg-stone-50 border border-stone-300 text-stone-600 text-xs shadow-2xl z-50 rounded-xl font-sans normal-case leading-relaxed`}
+        className={`${open ? "block" : "hidden [@media(hover:hover)]:group-hover/tooltip:block"} absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-48 p-2 bg-theme-subtle border border-theme-border text-ink-muted text-xs shadow-2xl z-50 rounded-xl font-sans normal-case leading-relaxed`}
       >
         {children}
       </div>

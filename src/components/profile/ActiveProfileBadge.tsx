@@ -181,10 +181,10 @@ export function ActiveProfileBadge({
   const drift = state.drift;
   return (
     <div className={className}>
-      <p className="flex flex-wrap items-center gap-x-2 gap-y-1 rounded-xl border border-stone-200 dark:border-theme-border bg-white/80 dark:bg-theme-surface px-3 py-2 text-xs leading-relaxed text-stone-700 dark:text-ink">
+      <p className="flex flex-wrap items-center gap-x-2 gap-y-1 rounded-xl border border-theme-border dark:border-theme-border bg-theme-surface dark:bg-theme-surface px-3 py-2 text-xs leading-relaxed text-ink dark:text-ink">
         <UserRound className="h-3.5 w-3.5 shrink-0 text-accent" aria-hidden />
         <span>
-          <b className="text-stone-800 dark:text-ink">使用中のプロフィール:</b>{" "}
+          <b className="text-ink dark:text-ink">使用中のプロフィール:</b>{" "}
           {state.line}
           {" — この設定で"}
           {purpose}
@@ -210,7 +210,7 @@ export function ActiveProfileBadge({
             type="button"
             disabled={reverting}
             onClick={() => void revert(drift.preset)}
-            className="inline-flex min-h-[24px] items-center rounded-lg border border-amber-300 dark:border-theme-border bg-white dark:bg-theme-surface px-2 font-bold text-amber-900 dark:text-theme-gold hover:bg-amber-100 dark:hover:bg-theme-gold-soft disabled:opacity-50"
+            className="inline-flex min-h-[24px] items-center rounded-lg border border-amber-300 dark:border-theme-border bg-theme-surface dark:bg-theme-surface px-2 font-bold text-amber-900 dark:text-theme-gold hover:bg-amber-100 dark:hover:bg-theme-gold-soft disabled:opacity-50"
           >
             {reverting ? "戻しています…" : "登録した出発地に戻す"}
           </button>

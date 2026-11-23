@@ -65,7 +65,7 @@ export default async function Page({
   );
 
   return (
-    <div className="min-h-screen bg-[#faf7f5] text-slate-900 font-sans">
+    <div className="min-h-screen bg-background text-ink text-ink font-sans">
       <BreadcrumbJsonLd
         items={[
           { name: HOUI_BREADCRUMB_LABEL, path: "/houi" },
@@ -74,7 +74,7 @@ export default async function Page({
       />
       <article className="max-w-[1700px] mx-auto px-5 py-12">
         <nav aria-label="パンくず" className="text-xs text-slate-500 mb-6">
-          <Link href="/houi" className="underline hover:text-slate-900">
+          <Link href="/houi" className="underline hover:text-ink">
             {HOUI_BREADCRUMB_LABEL}
           </Link>
           <span className="mx-2">/</span>
@@ -83,15 +83,15 @@ export default async function Page({
         <h1 className="text-3xl md:text-4xl font-bold font-serif leading-snug">
           {year}年の吉方位・凶方位
         </h1>
-        <p className="mt-5 text-sm leading-relaxed text-slate-700">
+        <p className="mt-5 text-sm leading-relaxed text-ink">
           {year}年の年盤は、中宮が{STAR_NAMES[summaries[0].centerStar]}
           です。一般的な九星気学にもとづく、本命星別の早見表です。年盤は立春の瞬間に切り替わります。1月から立春までは前年の年盤を使います。
         </p>
         <section className="mt-10">
-          <h2 className="text-xl font-bold font-serif border-b border-slate-300 pb-2">
+          <h2 className="text-xl font-bold font-serif border-b border-theme-border pb-2">
             本命星別の方位
           </h2>
-          <p className="mt-4 text-sm text-slate-700">
+          <p className="mt-4 text-sm text-ink">
             ご自身の本命星を選ぶと、詳しい判定と月ごとの要約を確認できます。算出方法による違いも各ページに載せています。
           </p>
           <ul className="mt-5 grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
@@ -129,7 +129,7 @@ export default async function Page({
                             prefetch={false}
                             key={month}
                             href={`/houi/${year}/${star}/${month}`}
-                            className="underline hover:text-slate-900"
+                            className="underline hover:text-ink"
                           >
                             {month}月
                           </Link>
@@ -143,15 +143,15 @@ export default async function Page({
           </ul>
         </section>
         {hasMonths && (
-          <p className="mt-5 text-sm leading-relaxed text-slate-700">
+          <p className="mt-5 text-sm leading-relaxed text-ink">
             月別ページは各本命星の「月別ページを開く」から選べます。月盤は節入りで切り替わります。引越しなどを検討するときは、年盤と月盤の両方をご確認ください。
           </p>
         )}
         <section className="mt-10">
-          <h2 className="text-xl font-bold font-serif border-b border-slate-300 pb-2">
+          <h2 className="text-xl font-bold font-serif border-b border-theme-border pb-2">
             この一覧の使い方
           </h2>
-          <p className="mt-4 text-sm leading-relaxed text-slate-700">
+          <p className="mt-4 text-sm leading-relaxed text-ink">
             本命星の求め方と、年盤の見方は
             <Link
               href="/guide/honmei"
@@ -183,7 +183,7 @@ export default async function Page({
             </Link>
             で確認できます。
           </p>
-          <p className="mt-3 text-sm leading-relaxed text-slate-700">
+          <p className="mt-3 text-sm leading-relaxed text-ink">
             出発地から見た街と家賃の水準は、
             <Link href="/houi/area" className="underline hover:text-slate-600">
               エリア別の一覧

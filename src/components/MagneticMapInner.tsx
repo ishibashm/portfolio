@@ -467,16 +467,16 @@ export default function MagneticMapInner({
             }}
           >
             <Tooltip className="custom-map-tooltip">
-              <div className="bg-stone-50 text-stone-700 p-2 font-mono text-[10px] border border-stone-200 shadow-xl max-w-[200px]">
-                <div className="text-blue-700 border-b border-stone-200 mb-1 pb-1 uppercase tracking-widest flex justify-between items-center">
+              <div className="bg-theme-subtle text-ink p-2 font-mono text-[10px] border border-theme-border shadow-xl max-w-[200px]">
+                <div className="text-blue-700 border-b border-theme-border mb-1 pb-1 uppercase tracking-widest flex justify-between items-center">
                   <span>{d.dir} Sector</span>
-                  <span className="text-stone-600 font-normal">
+                  <span className="text-ink-muted font-normal">
                     Analysis {dashArray ? "(破線)" : "(実線)"}
                   </span>
                 </div>
                 <div className="flex flex-col gap-1">
                   <div className="flex justify-between gap-4">
-                    <span className="text-stone-600">環境:</span>
+                    <span className="text-ink-muted">環境:</span>
                     <span
                       className={
                         y.includes("NOISE") ||
@@ -490,7 +490,7 @@ export default function MagneticMapInner({
                     </span>
                   </div>
                   <div className="flex justify-between gap-4">
-                    <span className="text-stone-600">個人:</span>
+                    <span className="text-ink-muted">個人:</span>
                     <span
                       className={
                         d.status.includes("HONMEI") || d.status.includes("TEKI")
@@ -501,9 +501,9 @@ export default function MagneticMapInner({
                       {formatLayer(dLayer)}
                     </span>
                   </div>
-                  <div className="mt-1 pt-1 border-t border-stone-200 text-[10px] flex flex-col gap-1">
+                  <div className="mt-1 pt-1 border-t border-theme-border text-[10px] flex flex-col gap-1">
                     <div className="flex gap-2">
-                      <span className="text-stone-600">判定: </span>
+                      <span className="text-ink-muted">判定: </span>
                       <span
                         className={
                           color.includes("10b981") || color.includes("34d399")
@@ -525,7 +525,7 @@ export default function MagneticMapInner({
                         )}
                       </span>
                     </div>
-                    <div className="text-stone-600 font-bold bg-white/80 p-1 border-l-2 border-zinc-600 mt-1">
+                    <div className="text-ink-muted font-bold bg-theme-surface p-1 border-l-2 border-zinc-600 mt-1">
                       {getActionSuggest(
                         isDoyouSatsu ? "NOISE_DOYOU" : d.status,
                       )}
@@ -602,7 +602,7 @@ export default function MagneticMapInner({
 
   if (!mounted) {
     return (
-      <div className="w-full h-full bg-stone-50 flex shadow-inner border border-stone-200 items-center justify-center font-mono text-[10px] text-zinc-800">
+      <div className="w-full h-full bg-theme-subtle flex shadow-inner border border-theme-border items-center justify-center font-mono text-[10px] text-zinc-800">
         地図を準備しています…
       </div>
     );
@@ -615,13 +615,13 @@ export default function MagneticMapInner({
     z-[46] なので地図が前に出て、開いたメニューを覆う（#694 の Android 報告）。
   */
   return (
-    <div className="isolate w-full h-full relative rounded-sm overflow-hidden border border-stone-200">
+    <div className="isolate w-full h-full relative rounded-sm overflow-hidden border border-theme-border">
       <MapContainer
         key="magnetic-map-container"
         center={center}
         zoom={13}
         maxZoom={20}
-        className="w-full h-full bg-stone-50"
+        className="w-full h-full bg-theme-subtle"
         zoomControl={false}
         preferCanvas={true}
       >
@@ -656,7 +656,7 @@ export default function MagneticMapInner({
             type="button"
             onClick={() => setMapMenuOpen((v) => !v)}
             aria-expanded={mapMenuOpen}
-            className="lg:hidden flex items-center px-2.5 py-1.5 rounded border font-mono text-[10px] font-bold bg-white/80 text-stone-700 border-stone-200 hover:bg-white shadow-lg cursor-pointer"
+            className="lg:hidden flex items-center px-2.5 py-1.5 rounded border font-mono text-[10px] font-bold bg-theme-surface text-ink border-theme-border hover:bg-theme-surface shadow-lg cursor-pointer"
           >
             {mapMenuOpen ? "地図 ▴" : "地図 ▾"}
           </button>
@@ -665,7 +665,7 @@ export default function MagneticMapInner({
           >
             <button
               onClick={toggleMapTheme}
-              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded border font-mono text-[10px] font-bold bg-white/80 text-stone-700 border-stone-200 hover:bg-white transition-colors shadow-lg active:scale-95 cursor-pointer"
+              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded border font-mono text-[10px] font-bold bg-theme-surface text-ink border-theme-border hover:bg-theme-surface transition-colors shadow-lg active:scale-95 cursor-pointer"
             >
               {mapTheme === "dark" ? "☀️ ライトマップ" : "🌙 ダークマップ"}
             </button>
@@ -685,7 +685,7 @@ export default function MagneticMapInner({
               className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded border font-mono text-[10px] font-bold transition-colors shadow-lg active:scale-95 cursor-pointer ${
                 showSpots
                   ? "bg-amber-600 text-white border-amber-600 hover:bg-amber-700"
-                  : "bg-white/80 text-stone-700 border-stone-200 hover:bg-white"
+                  : "bg-theme-surface text-ink border-theme-border hover:bg-theme-surface"
               }`}
             >
               ⛩ 名所 {showSpots ? "表示中" : "非表示"}
@@ -706,7 +706,7 @@ export default function MagneticMapInner({
               className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded border font-mono text-[10px] font-bold transition-colors shadow-lg active:scale-95 cursor-pointer ${
                 showStations
                   ? "bg-blue-700 text-white border-blue-700 hover:bg-blue-800"
-                  : "bg-white/80 text-stone-700 border-stone-200 hover:bg-white"
+                  : "bg-theme-surface text-ink border-theme-border hover:bg-theme-surface"
               }`}
             >
               🚉 駅 {showStations ? "表示中" : "非表示"}
@@ -821,7 +821,7 @@ export default function MagneticMapInner({
           ように top-28。top-16 だと 1024〜1280px で座標の札が真北の行に
           被っていた（Playwright の実測。帯の高さは 1024px で 104px）。 */}
       <div className="hidden sm:block absolute top-28 right-4 z-[1000] pointer-events-none">
-        <div className="bg-white/80 md:backdrop-blur-md px-3 py-2 border border-blue-200 rounded-sm shadow-lg flex flex-col gap-1 items-end text-right">
+        <div className="bg-theme-surface md:backdrop-blur-md px-3 py-2 border border-blue-200 rounded-sm shadow-lg flex flex-col gap-1 items-end text-right">
           <div className="flex items-center gap-2 mb-1 justify-end">
             <div className="text-[10px] uppercase font-mono tracking-widest text-emerald-700">
               真北
@@ -834,19 +834,19 @@ export default function MagneticMapInner({
             </div>
             <div className="w-4 border-t-[3px] border-blue-500"></div>
           </div>
-          <div className="text-xs font-mono text-stone-600 mt-1 pt-1 border-t border-stone-200 w-full">
+          <div className="text-xs font-mono text-ink-muted mt-1 pt-1 border-t border-theme-border w-full">
             出発地の偏角（WMM）: {declination > 0 ? "東偏" : "西偏"}
             {Math.abs(declination).toFixed(2)}°
           </div>
-          <div className="text-[10px] text-stone-600 mt-0.5 leading-tight max-w-[220px]">
+          <div className="text-[10px] text-ink-muted mt-0.5 leading-tight max-w-[220px]">
             ※方位の吉凶は真北を基準に判定しています。磁北の表示は、方位磁針で測ったときにどれだけずれるかを示す参考です。
           </div>
         </div>
       </div>
 
       <div className="absolute bottom-4 right-4 z-[1000] pointer-events-none">
-        <div className="bg-white/80 md:backdrop-blur-md px-3 py-2 border border-stone-200 rounded-sm text-[10px] flex flex-col gap-1.5 shadow-xl">
-          <div className="text-stone-600 font-mono uppercase tracking-widest border-b border-stone-200 pb-1 flex justify-between gap-4">
+        <div className="bg-theme-surface md:backdrop-blur-md px-3 py-2 border border-theme-border rounded-sm text-[10px] flex flex-col gap-1.5 shadow-xl">
+          <div className="text-ink-muted font-mono uppercase tracking-widest border-b border-theme-border pb-1 flex justify-between gap-4">
             <span>凡例</span>
             <span className="text-emerald-700">
               {layerModeLabel(parseLayerMode(activeLayerMode))}
@@ -856,13 +856,13 @@ export default function MagneticMapInner({
           <div className="grid grid-cols-2 gap-x-4 gap-y-1">
             <div className="flex items-center gap-1.5">
               <span className="w-2 h-2 rounded-full bg-[#10b981]"></span>
-              <span className="text-stone-600">
+              <span className="text-ink-muted">
                 {directionLabelName("OPTIMAL")}
               </span>
             </div>
             <div className="flex items-center gap-1.5">
               <span className="w-2 h-2 rounded-full bg-[#ef4444]"></span>
-              <span className="text-stone-600">
+              <span className="text-ink-muted">
                 {directionLabelBadge("NOISE_DOYOU")}・
                 {directionLabelBadge("NOISE_GOU")}・
                 {directionLabelBadge("NOISE_ANKEN")}・
@@ -871,31 +871,31 @@ export default function MagneticMapInner({
             </div>
             <div className="flex items-center gap-1.5">
               <span className="w-2 h-2 rounded-full bg-[#3b82f6]"></span>
-              <span className="text-stone-600">
+              <span className="text-ink-muted">
                 {directionLabelName("SAFE")}
               </span>
             </div>
             <div className="flex items-center gap-1.5">
               <span className="w-2 h-2 rounded-full bg-[#d946ef]"></span>
-              <span className="text-stone-600">
+              <span className="text-ink-muted">
                 {directionLabelBadge("NOISE_HONMEI")}・
                 {directionLabelBadge("NOISE_TEKI")}（本命星から）
               </span>
             </div>
             <div className="flex items-center gap-1.5">
               <span className="w-2 h-2 rounded-full bg-[#eab308]"></span>
-              <span className="text-stone-600">
+              <span className="text-ink-muted">
                 {directionLabelName("NOISE_VOID")}
               </span>
             </div>
             <div className="flex items-center gap-1.5">
               <div className="w-3 border-t border-dashed border-zinc-500"></div>
-              <span className="text-stone-600">距離リング</span>
+              <span className="text-ink-muted">距離リング</span>
             </div>
           </div>
 
           {honmeiStar && (
-            <div className="text-[10px] text-purple-700 border-t border-stone-200 pt-1 mt-1 font-mono">
+            <div className="text-[10px] text-purple-700 border-t border-theme-border pt-1 mt-1 font-mono">
               本命星（物理モデル）: {honmeiStar.physical}
             </div>
           )}
@@ -905,19 +905,19 @@ export default function MagneticMapInner({
       {/* UI Overlay - Clicked Position */}
       {clickedPos && (
         <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-[1000] pointer-events-auto">
-          <div className="bg-white/80 md:backdrop-blur-md px-3 py-2 border border-emerald-200 rounded-sm shadow-xl flex flex-col gap-1.5 animate-fade-in-up">
-            <div className="text-[10px] font-mono text-emerald-700 uppercase tracking-widest border-b border-stone-200 pb-1 flex justify-between gap-4">
+          <div className="bg-theme-surface md:backdrop-blur-md px-3 py-2 border border-emerald-200 rounded-sm shadow-xl flex flex-col gap-1.5 animate-fade-in-up">
+            <div className="text-[10px] font-mono text-emerald-700 uppercase tracking-widest border-b border-theme-border pb-1 flex justify-between gap-4">
               <span>選んだ地点の座標</span>
               <button
                 onClick={() => setClickedPos(null)}
                 aria-label="閉じる"
-                className="text-stone-600 hover:text-stone-900"
+                className="text-ink-muted hover:text-ink"
               >
                 ✕
               </button>
             </div>
             <div className="flex items-center gap-3">
-              <div className="flex flex-col text-[10px] font-mono text-stone-600">
+              <div className="flex flex-col text-[10px] font-mono text-ink-muted">
                 <span>緯度: {clickedPos[0].toFixed(5)}</span>
                 <span>経度: {clickedPos[1].toFixed(5)}</span>
               </div>

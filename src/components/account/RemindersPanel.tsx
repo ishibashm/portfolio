@@ -77,14 +77,14 @@ export function RemindersPanel() {
 
   return (
     <section
-      className="rounded-2xl border border-stone-200 bg-white p-5"
+      className="rounded-2xl border border-theme-border bg-theme-surface p-5"
       data-reminders-panel
     >
       <h2 className="flex items-center gap-2 text-sm font-bold">
         <BellRing className="h-4 w-4 text-indigo-500" aria-hidden />
         吉日のお知らせ（メール）
       </h2>
-      <p className="mt-2 text-xs leading-relaxed text-stone-600">
+      <p className="mt-2 text-xs leading-relaxed text-ink-muted">
         ログインに使っているメールアドレスへ送ります。生年月日はメールに書きません。
       </p>
       {state.reminders.length > 0 ? (
@@ -99,7 +99,7 @@ export function RemindersPanel() {
                 {reminder.direction
                   ? `・${DIRECTION_LABELS[reminder.direction as keyof typeof DIRECTION_LABELS] ?? reminder.direction}`
                   : ""}
-                <span className="ml-2 text-xs text-stone-500">
+                <span className="ml-2 text-xs text-ink-muted">
                   {reminder.leadDays === 1
                     ? "前日"
                     : `${reminder.leadDays}日前`}
@@ -109,7 +109,7 @@ export function RemindersPanel() {
               <button
                 type="button"
                 disabled={busy}
-                className="min-h-10 rounded-lg border border-stone-300 px-3 text-xs hover:bg-stone-50 disabled:opacity-50"
+                className="min-h-10 rounded-lg border border-theme-border px-3 text-xs hover:bg-theme-subtle disabled:opacity-50"
                 onClick={() =>
                   remove(
                     `id=${encodeURIComponent(reminder.id)}`,
@@ -123,7 +123,7 @@ export function RemindersPanel() {
           ))}
         </ul>
       ) : (
-        <p className="mt-3 text-sm text-stone-600">
+        <p className="mt-3 text-sm text-ink-muted">
           設定中のお知らせはありません。
         </p>
       )}
@@ -131,7 +131,7 @@ export function RemindersPanel() {
         <button
           type="button"
           disabled={busy}
-          className="mt-4 min-h-10 rounded-lg border border-stone-300 px-3 text-xs hover:bg-stone-50 disabled:opacity-50"
+          className="mt-4 min-h-10 rounded-lg border border-theme-border px-3 text-xs hover:bg-theme-subtle disabled:opacity-50"
           onClick={() =>
             remove(
               "all=1",
@@ -143,7 +143,7 @@ export function RemindersPanel() {
         </button>
       )}
       {message && (
-        <p role="status" className="mt-3 text-xs text-stone-700">
+        <p role="status" className="mt-3 text-xs text-ink">
           {message}
         </p>
       )}

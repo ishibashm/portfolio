@@ -39,7 +39,7 @@ export const metadata: Metadata = {
 
 export default function Page() {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-rose-50/80 via-stone-50 to-amber-50/50 p-4 font-sans text-stone-800 md:p-8">
+    <div className="min-h-screen bg-background text-ink p-4 font-sans text-ink md:p-8">
       {/* 入力欄が主役の頁。横に伸ばしても欄が間延びするだけなので、
           サイトの既定（1700px）ではなく狭く取る。/login と同じ考え方 */}
       <div className="mx-auto max-w-3xl space-y-6">
@@ -48,7 +48,7 @@ export default function Page() {
             <UserRound className="h-5 w-5 text-rose-500" aria-hidden />
             {TITLE}
           </h1>
-          <p className="mt-2 max-w-[70ch] text-xs leading-relaxed text-stone-600">
+          <p className="mt-2 max-w-[70ch] text-xs leading-relaxed text-ink-muted">
             {
               "一度入れておくと、方位の判定・引越しの試算・物件検索で入れ直さずに使えます。ホームの設定バーからでも同じ値を変えられます。"
             }
@@ -59,9 +59,9 @@ export default function Page() {
           何がどこへ行くのかを先に書く。入力を求める頁で、送り先を
           書かずに欄だけ並べない。
         */}
-        <section className="rounded-2xl border border-stone-200 bg-white p-5">
-          <h2 className="text-sm font-bold text-stone-800">入れた内容の扱い</h2>
-          <ul className="mt-3 space-y-2 text-[11px] leading-relaxed text-stone-600">
+        <section className="rounded-2xl border border-theme-border bg-theme-surface p-5">
+          <h2 className="text-sm font-bold text-ink">入れた内容の扱い</h2>
+          <ul className="mt-3 space-y-2 text-[11px] leading-relaxed text-ink-muted">
             <li>
               <b>生年月日・出生地・いま住んでいるところ</b>
               {
@@ -76,7 +76,7 @@ export default function Page() {
             </li>
             <li>
               {"詳しくは "}
-              <Link href="/privacy" className="text-indigo-600 underline">
+              <Link href="/privacy" className="text-accent underline">
                 プライバシーポリシー
               </Link>
               {" をご覧ください。"}
@@ -86,7 +86,7 @@ export default function Page() {
 
         <ProfileForm />
 
-        <p className="text-xs leading-relaxed text-stone-500">
+        <p className="text-xs leading-relaxed text-ink-muted">
           {
             "方位の吉凶は九星気学という古典的な考え方にもとづく参考情報です。医療・健康・法律・投資に関する助言ではありません。引越しは契約・費用・通勤など現実の条件が優先されます。"
           }

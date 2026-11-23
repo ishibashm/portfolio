@@ -374,7 +374,7 @@ export function ProfileForm() {
 
   if (status === "loading") {
     return (
-      <p className="flex items-center gap-2 text-xs text-stone-500">
+      <p className="flex items-center gap-2 text-xs text-ink-muted">
         <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
         保存されている内容を読んでいます。
       </p>
@@ -389,7 +389,7 @@ export function ProfileForm() {
           欄は自分の設定と同じ見た目なので、書いてないと自分の設定を
           直しているつもりになる */}
       {editingPreset && (
-        <div className="rounded-2xl border border-amber-200 bg-amber-50 p-5 text-xs leading-relaxed text-amber-900">
+        <div className="rounded-2xl border border-theme-border bg-theme-gold-soft p-5 text-xs leading-relaxed text-theme-gold">
           <p>
             <b className="text-sm">
               プロフィール「{editingPreset.name}」を直しています。
@@ -408,7 +408,7 @@ export function ProfileForm() {
       )}
 
       {presetMissing && (
-        <div className="rounded-2xl border border-rose-200 bg-rose-50 p-5 text-xs leading-relaxed text-rose-800">
+        <div className="rounded-2xl border border-theme-border bg-theme-gold-soft p-5 text-xs leading-relaxed text-theme-gold">
           <p>
             <b className="text-sm">そのプロフィールが見つかりません。</b>
           </p>
@@ -425,7 +425,7 @@ export function ProfileForm() {
       )}
 
       {welcome && (
-        <p className="rounded-2xl border border-indigo-200 bg-indigo-50 p-5 text-xs leading-relaxed text-indigo-900">
+        <p className="rounded-2xl border border-theme-border bg-theme-accent-soft p-5 text-xs leading-relaxed text-ink">
           <b className="text-sm">ログインできました。</b>
           <br />
           {
@@ -440,28 +440,28 @@ export function ProfileForm() {
           保存すると、この名前で一覧（/account）に入り、使用中になる。
           控えを直しているときは名前は /account で直す（ここでは出さない） */}
       {!editingPreset && (
-        <fieldset className="rounded-2xl border border-stone-200 bg-white p-5">
-          <legend className="px-2 text-sm font-bold text-stone-800">
+        <fieldset className="rounded-2xl border border-theme-border bg-theme-surface p-5">
+          <legend className="px-2 text-sm font-bold text-ink">
             プロフィールの名前
           </legend>
           {isNew && (
-            <p className="mt-1 max-w-[70ch] text-xs leading-relaxed text-indigo-800">
+            <p className="mt-1 max-w-[70ch] text-xs leading-relaxed text-accent">
               {
                 "新しいプロフィールを作ります。保存すると、このプロフィールが使用中になります（前のプロフィールは一覧に残り、いつでも切り替えられます）。"
               }
             </p>
           )}
           <label className="mt-3 flex max-w-xl flex-col gap-1.5">
-            <span className="text-sm font-semibold text-stone-700">名前</span>
+            <span className="text-sm font-semibold text-ink">名前</span>
             <input
               type="text"
               value={profileName}
               onChange={(e) => setProfileName(e.target.value)}
               placeholder={DEFAULT_PROFILE_NAME}
               maxLength={100}
-              className="rounded-xl border border-stone-300 px-3 py-2.5 text-sm text-stone-800 focus:border-indigo-400 focus:outline-none"
+              className="rounded-xl border border-theme-border px-3 py-2.5 text-sm text-ink focus:border-indigo-400 focus:outline-none"
             />
-            <span className="text-[10px] leading-relaxed text-stone-500">
+            <span className="text-[10px] leading-relaxed text-ink-muted">
               {
                 "家族ぶんを足したときに見分けるための名前です。空なら「自分」になります。判定には使いません。"
               }
@@ -471,11 +471,11 @@ export function ProfileForm() {
       )}
 
       {/* 1. 生まれたとき ------------------------------------------- */}
-      <fieldset className="rounded-2xl border border-stone-200 bg-white p-5">
-        <legend className="px-2 text-sm font-bold text-stone-800">
+      <fieldset className="rounded-2xl border border-theme-border bg-theme-surface p-5">
+        <legend className="px-2 text-sm font-bold text-ink">
           1. 生まれたとき
         </legend>
-        <p className="mt-1 max-w-[70ch] text-xs leading-relaxed text-stone-500">
+        <p className="mt-1 max-w-[70ch] text-xs leading-relaxed text-ink-muted">
           {
             "本命星と天中殺がここから決まります。生年月日だけでも道具は動きます。"
           }
@@ -483,9 +483,9 @@ export function ProfileForm() {
 
         <div className="mt-4 grid gap-5 lg:grid-cols-2">
           <label className="flex flex-col gap-1.5">
-            <span className="text-sm font-semibold text-stone-700">
+            <span className="text-sm font-semibold text-ink">
               生年月日
-              <span className="ml-2 text-[10px] font-normal text-rose-600">
+              <span className="ml-2 text-[10px] font-normal text-theme-gold">
                 必須
               </span>
             </span>
@@ -516,9 +516,9 @@ export function ProfileForm() {
                     : "",
                 )
               }
-              className="rounded-xl border border-stone-300 px-3 py-2.5 text-sm text-stone-800 focus:border-indigo-400 focus:outline-none"
+              className="rounded-xl border border-theme-border px-3 py-2.5 text-sm text-ink focus:border-indigo-400 focus:outline-none"
             />
-            <span className="text-[10px] leading-relaxed text-stone-500">
+            <span className="text-[10px] leading-relaxed text-ink-muted">
               {
                 "立春より前に生まれた方は、九星気学では前年の生まれとして数えます。ここには戸籍どおりの日付を入れてください。読み替えは計算側で行います。"
               }
@@ -544,11 +544,11 @@ export function ProfileForm() {
       </fieldset>
 
       {/* 2. いま住んでいるところ ----------------------------------- */}
-      <fieldset className="rounded-2xl border border-stone-200 bg-white p-5">
-        <legend className="px-2 text-sm font-bold text-stone-800">
+      <fieldset className="rounded-2xl border border-theme-border bg-theme-surface p-5">
+        <legend className="px-2 text-sm font-bold text-ink">
           2. いま住んでいるところ
         </legend>
-        <p className="mt-1 max-w-[70ch] text-xs leading-relaxed text-stone-500">
+        <p className="mt-1 max-w-[70ch] text-xs leading-relaxed text-ink-muted">
           {
             "方位はここを起点に測ります。引越しの方位を見るなら、ここが入っていないと何も出ません。"
           }
@@ -574,14 +574,14 @@ export function ProfileForm() {
           控えを直しているときは出さない。目的地は控えの持ち物ではなく
           （この端末だけの値）、ここに出すと控えに入ると誤解される */}
       {!editingPreset && (
-        <fieldset className="rounded-2xl border border-stone-200 bg-white p-5">
-          <legend className="px-2 text-sm font-bold text-stone-800">
+        <fieldset className="rounded-2xl border border-theme-border bg-theme-surface p-5">
+          <legend className="px-2 text-sm font-bold text-ink">
             3. 引越し先の候補
-            <span className="ml-2 text-[10px] font-normal text-stone-400">
+            <span className="ml-2 text-[10px] font-normal text-ink-muted">
               任意
             </span>
           </legend>
-          <p className="mt-1 max-w-[70ch] text-xs leading-relaxed text-stone-500">
+          <p className="mt-1 max-w-[70ch] text-xs leading-relaxed text-ink-muted">
             {
               "決まっていれば入れておくと、試算や時期の分析で入れ直さずに済みます。"
             }
@@ -620,8 +620,8 @@ export function ProfileForm() {
           aria-live="polite"
           className={`flex items-start gap-2 rounded-xl border-2 p-4 text-sm leading-relaxed font-medium ${
             status === "error"
-              ? "border-rose-300 bg-rose-50 text-rose-800"
-              : "border-emerald-300 bg-emerald-50 text-emerald-900"
+              ? "border-theme-border bg-theme-gold-soft text-theme-gold"
+              : "border-theme-border bg-theme-accent-soft text-ink"
           }`}
         >
           {status === "saved" && (
@@ -638,7 +638,7 @@ export function ProfileForm() {
         </p>
       )}
 
-      <div className="space-y-2 text-xs text-stone-600">
+      <div className="space-y-2 text-xs text-ink-muted">
         <label className="flex items-start gap-2">
           <input
             type="checkbox"
@@ -655,14 +655,14 @@ export function ProfileForm() {
         <button
           type="submit"
           disabled={status === "saving"}
-          className="inline-flex cursor-pointer items-center justify-center gap-2 rounded-full bg-indigo-600 px-8 py-3 text-sm font-bold text-white transition-colors hover:bg-indigo-700 disabled:cursor-not-allowed disabled:bg-stone-300"
+          className="inline-flex cursor-pointer items-center justify-center gap-2 rounded-full bg-accent px-8 py-3 text-sm font-bold text-on-accent transition-colors hover:brightness-110 disabled:cursor-not-allowed disabled:bg-stone-300"
         >
           {status === "saving" && (
             <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
           )}
           保存する
         </button>
-        <span className="text-[11px] text-stone-500">
+        <span className="text-[11px] text-ink-muted">
           {editingPreset
             ? synced && personalCloudOptIn
               ? "ログイン中です。この控えはクラウドにも保存されます。"
@@ -676,18 +676,18 @@ export function ProfileForm() {
       {/* 保存できたら、次にどこへ行けばよいかを出す。入れて終わりに
           しない（入力だけして何も起きない画面を作らない） */}
       {status === "saved" && editingPreset && (
-        <div className="rounded-2xl border border-stone-200 bg-stone-50 p-5">
-          <h2 className="text-sm font-bold text-stone-800">次にできること</h2>
+        <div className="rounded-2xl border border-theme-border bg-theme-subtle p-5">
+          <h2 className="text-sm font-bold text-ink">次にできること</h2>
           <ul className="mt-3 space-y-2 text-xs">
             <li>
               <Link
                 href="/account"
-                className="font-semibold text-indigo-600 underline"
+                className="font-semibold text-accent underline"
               >
                 プロフィールの一覧へ戻る
               </Link>
             </li>
-            <li className="text-stone-600">
+            <li className="text-ink-muted">
               {
                 "このプロフィールで判定するには、一覧で「使う」を押してください。"
               }
@@ -697,13 +697,13 @@ export function ProfileForm() {
       )}
 
       {status === "saved" && !editingPreset && canUseTools && (
-        <div className="rounded-2xl border border-stone-200 bg-stone-50 p-5">
-          <h2 className="text-sm font-bold text-stone-800">次にできること</h2>
+        <div className="rounded-2xl border border-theme-border bg-theme-subtle p-5">
+          <h2 className="text-sm font-bold text-ink">次にできること</h2>
           <ul className="mt-3 space-y-2 text-xs">
             <li>
               <Link
                 href="/houi"
-                className="font-semibold text-indigo-600 underline"
+                className="font-semibold text-accent underline"
               >
                 本命星と今年の吉方位を見る
               </Link>
@@ -711,7 +711,7 @@ export function ProfileForm() {
             <li>
               <Link
                 href="/relocation/simulator"
-                className="font-semibold text-indigo-600 underline"
+                className="font-semibold text-accent underline"
               >
                 引越し先を試算する
               </Link>
@@ -719,7 +719,7 @@ export function ProfileForm() {
             <li>
               <Link
                 href="/relocation/arbitrage"
-                className="font-semibold text-indigo-600 underline"
+                className="font-semibold text-accent underline"
               >
                 {coreRouteLabel("/relocation/arbitrage")}
               </Link>
@@ -727,7 +727,7 @@ export function ProfileForm() {
             <li>
               <Link
                 href="/calendar"
-                className="font-semibold text-indigo-600 underline"
+                className="font-semibold text-accent underline"
               >
                 引越しの日取りを選ぶ
               </Link>

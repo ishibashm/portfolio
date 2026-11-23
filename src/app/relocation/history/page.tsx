@@ -28,7 +28,7 @@ import {
 const PastMoveMap = dynamic(() => import("@/components/nba/PastMoveMap"), {
   ssr: false,
   loading: () => (
-    <div className="w-full h-[320px] bg-stone-50/60 border border-stone-200 rounded-3xl flex items-center justify-center font-mono text-xs text-stone-600 backdrop-blur-md">
+    <div className="w-full h-[320px] bg-theme-subtle border border-theme-border rounded-3xl flex items-center justify-center font-mono text-xs text-ink-muted backdrop-blur-md">
       [ INITIALIZING MAP ENGINE... ]
     </div>
   ),
@@ -96,7 +96,7 @@ function getRatingLabel(status: string): {
     case "SAFE":
       return {
         rating: "普通",
-        color: "text-stone-500 border border-stone-200/80 bg-stone-100/80",
+        color: "text-ink-muted border border-theme-border/80 bg-stone-100/80",
       };
     case "WARNING":
       return {
@@ -123,7 +123,7 @@ function getRatingLabel(status: string): {
     default:
       return {
         rating: "普通",
-        color: "text-stone-500 border border-stone-200/80 bg-stone-100/80",
+        color: "text-ink-muted border border-theme-border/80 bg-stone-100/80",
       };
   }
 }
@@ -370,7 +370,7 @@ export default function RelocationHistoryPage() {
   const formatDirectionInfo = directionLabelDetailed;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-rose-50/80 via-stone-50 to-amber-50/50 text-stone-800 relative pb-20 overflow-x-hidden selection:bg-indigo-500/30 selection:text-indigo-700">
+    <div className="min-h-screen bg-background text-ink text-ink relative pb-20 overflow-x-hidden selection:bg-indigo-500/30 selection:text-accent">
       {/* Background Orbs */}
       <div className="absolute top-0 left-1/4 w-96 h-96 bg-indigo-500/5 rounded-full blur-3xl pointer-events-none"></div>
       <div className="absolute bottom-10 right-1/4 w-[500px] h-[500px] bg-purple-500/5 rounded-full blur-3xl pointer-events-none"></div>
@@ -382,24 +382,24 @@ export default function RelocationHistoryPage() {
         <MetaphysicalConfigBar onConfigChange={handleConfigChange} />
 
         {/* Header Block */}
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 border-b border-stone-200/60 pb-8">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 border-b border-theme-border/60 pb-8">
           <div>
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-500/10 text-indigo-600 text-xs font-semibold border border-indigo-500/20 mb-3">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-500/10 text-accent text-xs font-semibold border border-indigo-500/20 mb-3">
               <History className="w-3.5 h-3.5" /> 過去の移動の記録と振り返り
             </div>
-            <h1 className="text-4xl md:text-5xl font-black tracking-tight text-stone-900">
+            <h1 className="text-4xl md:text-5xl font-black tracking-tight text-ink">
               過去の移動履歴{" "}
               <span className="bg-gradient-to-r from-indigo-400 to-purple-400 bg-clip-text text-transparent font-light">
                 History
               </span>
             </h1>
-            <p className="text-sm text-stone-500 mt-2">
+            <p className="text-sm text-ink-muted mt-2">
               過去の引越しや長期旅行の日時と場所を記録し、そのタイミングにおける九星気学の吉凶方位を振り返ります。磁北で見る場合は当時の地磁気偏角で補正します。
             </p>
           </div>
           <button
             onClick={() => setShowAddForm(!showAddForm)}
-            className="flex items-center gap-2 px-5 py-3 rounded-2xl bg-indigo-600 hover:bg-indigo-500 active:scale-95 text-sm font-bold text-white transition-all shadow-lg shadow-indigo-600/20 border border-indigo-500/30"
+            className="flex items-center gap-2 px-5 py-3 rounded-2xl bg-accent hover:bg-indigo-500 active:scale-95 text-sm font-bold text-on-accent transition-all shadow-lg shadow-indigo-600/20 border border-indigo-500/30"
           >
             {showAddForm ? (
               <X className="w-4 h-4" />
@@ -411,8 +411,8 @@ export default function RelocationHistoryPage() {
         </div>
 
         {/* Dynamic Auspice Config Info */}
-        <div className="p-4 rounded-2xl bg-white/40 border border-stone-200/60 backdrop-blur-md mb-8 flex items-center justify-between gap-4 text-xs font-mono">
-          <div className="flex flex-wrap items-center gap-x-6 gap-y-2 text-stone-500">
+        <div className="p-4 rounded-2xl bg-theme-surface/40 border border-theme-border/60 backdrop-blur-md mb-8 flex items-center justify-between gap-4 text-xs font-mono">
+          <div className="flex flex-wrap items-center gap-x-6 gap-y-2 text-ink-muted">
             <div className="flex items-center gap-2">
               <Compass className="w-4 h-4 text-indigo-400" />
               {/*
@@ -422,11 +422,11 @@ export default function RelocationHistoryPage() {
                 変わるのは、方位磁針で測ったときの見え方を添えるかだけ。
               */}
               <span>方位の判定:</span>
-              <span className="px-2 py-0.5 rounded font-bold bg-indigo-500/20 text-indigo-600">
+              <span className="px-2 py-0.5 rounded font-bold bg-indigo-500/20 text-accent">
                 真北
               </span>
               {!useTrueNorth && (
-                <span className="text-stone-600">
+                <span className="text-ink-muted">
                   （方位磁針で測ったときの見え方も添えます）
                 </span>
               )}
@@ -434,14 +434,14 @@ export default function RelocationHistoryPage() {
             <div className="flex items-center gap-2">
               <span>方位盤基準:</span>
               <span
-                className={`px-2 py-0.5 rounded font-bold ${useClassical ? "bg-indigo-500/20 text-indigo-600" : "bg-amber-500/20 text-amber-300"}`}
+                className={`px-2 py-0.5 rounded font-bold ${useClassical ? "bg-indigo-500/20 text-accent" : "bg-amber-500/20 text-amber-300"}`}
               >
                 {useClassical ? "古典暦基準 (立春)" : "物理天体基準 (木星黄経)"}
               </span>
             </div>
             <div className="flex items-center gap-2">
               <span>フィルター:</span>
-              <span className="text-stone-900 font-semibold">
+              <span className="text-ink font-semibold">
                 {directionFilterMode === "composite"
                   ? "総合"
                   : directionFilterMode === "personal_kigaku"
@@ -452,7 +452,7 @@ export default function RelocationHistoryPage() {
               </span>
             </div>
           </div>
-          <span className="text-stone-600 text-[10px] hidden md:inline">
+          <span className="text-ink-muted text-[10px] hidden md:inline">
             ※詳細設定は上部のコントロールバーから変更できます。
           </span>
         </div>
@@ -475,17 +475,17 @@ export default function RelocationHistoryPage() {
                     onSubmit={handleCreate}
                     className="p-6 md:p-8 space-y-6"
                   >
-                    <h3 className="text-lg font-bold text-indigo-600 flex items-center gap-2">
+                    <h3 className="text-lg font-bold text-accent flex items-center gap-2">
                       <Plus className="w-5 h-5" /> 新しい移動履歴を記録
                     </h3>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                       {/* Date Input with Precision selector */}
                       <div className="flex flex-col gap-1.5">
-                        <label className="text-[10px] uppercase font-bold text-stone-500 tracking-wider">
+                        <label className="text-[10px] uppercase font-bold text-ink-muted tracking-wider">
                           日時の精度
                         </label>
-                        <div className="grid grid-cols-4 gap-1 p-1 bg-white/70 border border-stone-200 rounded-xl">
+                        <div className="grid grid-cols-4 gap-1 p-1 bg-theme-surface/70 border border-theme-border rounded-xl">
                           {(["YEAR", "MONTH", "DAY", "HOUR"] as const).map(
                             (p) => (
                               <button
@@ -497,8 +497,8 @@ export default function RelocationHistoryPage() {
                                 }}
                                 className={`py-1.5 rounded-lg text-[10px] font-bold transition-all ${
                                   datePrecision === p
-                                    ? "bg-indigo-500/20 text-indigo-600 border border-indigo-500/30"
-                                    : "text-stone-600 hover:text-stone-700"
+                                    ? "bg-indigo-500/20 text-accent border border-indigo-500/30"
+                                    : "text-ink-muted hover:text-ink"
                                 }`}
                               >
                                 {getPrecisionBadge(p)}
@@ -510,7 +510,7 @@ export default function RelocationHistoryPage() {
 
                       {/* Dynamic Date Input */}
                       <div className="flex flex-col gap-1.5">
-                        <label className="text-[10px] uppercase font-bold text-stone-500 tracking-wider">
+                        <label className="text-[10px] uppercase font-bold text-ink-muted tracking-wider">
                           出発日時
                         </label>
                         <input
@@ -530,7 +530,7 @@ export default function RelocationHistoryPage() {
                           }
                           value={departureDate}
                           onChange={(e) => setDepartureDate(e.target.value)}
-                          className="w-full px-4 py-2.5 bg-white/70 border border-stone-200 rounded-xl text-xs font-mono text-stone-900 placeholder-zinc-500 focus:outline-none focus:border-indigo-500/30 transition-all shadow-inner"
+                          className="w-full px-4 py-2.5 bg-theme-surface/70 border border-theme-border rounded-xl text-xs font-mono text-ink placeholder-zinc-500 focus:outline-none focus:border-indigo-500/30 transition-all shadow-inner"
                           required
                         />
                       </div>
@@ -539,7 +539,7 @@ export default function RelocationHistoryPage() {
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                       {/* Source Location Name */}
                       <div className="flex flex-col gap-1.5">
-                        <label className="text-[10px] uppercase font-bold text-stone-500 tracking-wider">
+                        <label className="text-[10px] uppercase font-bold text-ink-muted tracking-wider">
                           出発地の名称
                         </label>
                         <input
@@ -547,14 +547,14 @@ export default function RelocationHistoryPage() {
                           placeholder="例: 自宅, 広島市..."
                           value={fromName}
                           onChange={(e) => setFromName(e.target.value)}
-                          className="w-full px-4 py-2.5 bg-white/70 border border-stone-200 rounded-xl text-xs font-mono text-stone-900 placeholder-zinc-500 focus:outline-none focus:border-indigo-500/30 transition-all shadow-inner"
+                          className="w-full px-4 py-2.5 bg-theme-surface/70 border border-theme-border rounded-xl text-xs font-mono text-ink placeholder-zinc-500 focus:outline-none focus:border-indigo-500/30 transition-all shadow-inner"
                           required
                         />
                       </div>
 
                       {/* Destination Location Name */}
                       <div className="flex flex-col gap-1.5">
-                        <label className="text-[10px] uppercase font-bold text-stone-500 tracking-wider">
+                        <label className="text-[10px] uppercase font-bold text-ink-muted tracking-wider">
                           目的地の名称
                         </label>
                         <input
@@ -562,14 +562,14 @@ export default function RelocationHistoryPage() {
                           placeholder="例: 新居, 京都市中京区..."
                           value={toName}
                           onChange={(e) => setToName(e.target.value)}
-                          className="w-full px-4 py-2.5 bg-white/70 border border-stone-200 rounded-xl text-xs font-mono text-stone-900 placeholder-zinc-500 focus:outline-none focus:border-indigo-500/30 transition-all shadow-inner"
+                          className="w-full px-4 py-2.5 bg-theme-surface/70 border border-theme-border rounded-xl text-xs font-mono text-ink placeholder-zinc-500 focus:outline-none focus:border-indigo-500/30 transition-all shadow-inner"
                           required
                         />
                       </div>
                     </div>
 
                     {/* Interactive Leaflet Map for geocoding & dragging */}
-                    <div className="p-4 bg-white/70 border border-stone-200/80 rounded-2xl">
+                    <div className="p-4 bg-theme-surface/70 border border-theme-border/80 rounded-2xl">
                       <PastMoveMap
                         fromLat={fromLat}
                         fromLon={fromLon}
@@ -586,7 +586,7 @@ export default function RelocationHistoryPage() {
                           if (name) setToName(name);
                         }}
                       />
-                      <div className="grid grid-cols-2 gap-4 mt-3 text-[10px] font-mono text-stone-600 leading-none">
+                      <div className="grid grid-cols-2 gap-4 mt-3 text-[10px] font-mono text-ink-muted leading-none">
                         <div>
                           出発地座標: {fromLat.toFixed(5)}, {fromLon.toFixed(5)}
                         </div>
@@ -599,7 +599,7 @@ export default function RelocationHistoryPage() {
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                       {/* Classification Selection */}
                       <div className="flex flex-col gap-1.5">
-                        <label className="text-[10px] uppercase font-bold text-stone-500 tracking-wider">
+                        <label className="text-[10px] uppercase font-bold text-ink-muted tracking-wider">
                           目的区分
                         </label>
                         <div className="grid grid-cols-2 gap-2">
@@ -610,8 +610,8 @@ export default function RelocationHistoryPage() {
                               onClick={() => setPurpose(p)}
                               className={`py-2.5 rounded-xl text-xs font-bold transition-all border ${
                                 purpose === p
-                                  ? "bg-indigo-500/20 text-indigo-600 border-indigo-500/40 shadow-[0_0_10px_rgba(99,102,241,0.15)]"
-                                  : "bg-white/70 text-stone-500 border-stone-200 hover:border-stone-300"
+                                  ? "bg-indigo-500/20 text-accent border-indigo-500/40 shadow-[0_0_10px_rgba(99,102,241,0.15)]"
+                                  : "bg-theme-surface/70 text-ink-muted border-theme-border hover:border-theme-border"
                               }`}
                             >
                               {p === "MIGRATION"
@@ -624,7 +624,7 @@ export default function RelocationHistoryPage() {
 
                       {/* Notes input */}
                       <div className="flex flex-col gap-1.5">
-                        <label className="text-[10px] uppercase font-bold text-stone-500 tracking-wider">
+                        <label className="text-[10px] uppercase font-bold text-ink-muted tracking-wider">
                           メモ・備考 (任意)
                         </label>
                         <input
@@ -632,27 +632,27 @@ export default function RelocationHistoryPage() {
                           placeholder="例: 就職に伴う引越し、家族での初詣旅行"
                           value={notes}
                           onChange={(e) => setNotes(e.target.value)}
-                          className="w-full px-4 py-2.5 bg-white/70 border border-stone-200 rounded-xl text-xs font-mono text-stone-900 placeholder-zinc-500 focus:outline-none focus:border-indigo-500/30 transition-all shadow-inner"
+                          className="w-full px-4 py-2.5 bg-theme-surface/70 border border-theme-border rounded-xl text-xs font-mono text-ink placeholder-zinc-500 focus:outline-none focus:border-indigo-500/30 transition-all shadow-inner"
                         />
                       </div>
                     </div>
 
                     {/* Submit Button */}
-                    <div className="flex justify-end gap-3 pt-4 border-t border-stone-200/60">
+                    <div className="flex justify-end gap-3 pt-4 border-t border-theme-border/60">
                       <button
                         type="button"
                         onClick={() => {
                           setShowAddForm(false);
                           resetForm();
                         }}
-                        className="px-4 py-2.5 rounded-xl border border-stone-200 hover:border-stone-300 text-xs font-bold text-stone-500 transition-all active:scale-95"
+                        className="px-4 py-2.5 rounded-xl border border-theme-border hover:border-theme-border text-xs font-bold text-ink-muted transition-all active:scale-95"
                       >
                         キャンセル
                       </button>
                       <button
                         type="submit"
                         disabled={isSubmitting}
-                        className="px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-xs font-bold text-white transition-all active:scale-95 disabled:opacity-50"
+                        className="px-5 py-2.5 rounded-xl bg-accent hover:bg-indigo-500 text-xs font-bold text-on-accent transition-all active:scale-95 disabled:opacity-50"
                       >
                         {isSubmitting ? "保存中..." : "履歴を保存"}
                       </button>
@@ -668,7 +668,7 @@ export default function RelocationHistoryPage() {
                 {[1, 2, 3].map((n) => (
                   <div
                     key={n}
-                    className="h-28 w-full rounded-3xl bg-white/40 border border-stone-200 animate-pulse"
+                    className="h-28 w-full rounded-3xl bg-theme-surface/40 border border-theme-border animate-pulse"
                   ></div>
                 ))}
               </div>
@@ -682,15 +682,15 @@ export default function RelocationHistoryPage() {
                 </p>
               </div>
             ) : historyItems.length === 0 ? (
-              <div className="p-10 rounded-[2.5rem] bg-white/20 border border-dashed border-stone-200 text-center flex flex-col items-center justify-center gap-4">
-                <div className="p-4 bg-white/80 rounded-full border border-stone-200 text-stone-600 shadow-inner">
+              <div className="p-10 rounded-[2.5rem] bg-theme-surface/20 border border-dashed border-theme-border text-center flex flex-col items-center justify-center gap-4">
+                <div className="p-4 bg-theme-surface rounded-full border border-theme-border text-ink-muted shadow-inner">
                   <Compass className="w-8 h-8" />
                 </div>
                 <div className="max-w-sm">
-                  <h4 className="font-bold text-stone-900">
+                  <h4 className="font-bold text-ink">
                     履歴が登録されていません
                   </h4>
-                  <p className="text-xs text-stone-600 mt-1.5 leading-relaxed">
+                  <p className="text-xs text-ink-muted mt-1.5 leading-relaxed">
                     引越しやかつて行った旅行の履歴を追加し、方位やタイミングの吉凶的影響を分析しましょう。右上から追加できます。
                   </p>
                 </div>
@@ -726,7 +726,7 @@ export default function RelocationHistoryPage() {
                       className={`p-5 rounded-[1.75rem] border cursor-pointer transition-all flex flex-col md:flex-row md:items-center justify-between gap-4 backdrop-blur-md group relative overflow-hidden ${
                         isSelected
                           ? "bg-gradient-to-r from-indigo-950/20 to-purple-950/20 border-indigo-500/50 shadow-lg shadow-indigo-600/5"
-                          : "bg-white/30 border-stone-200/80 hover:bg-white/40 hover:border-stone-300/80 shadow-md"
+                          : "bg-theme-surface/30 border-theme-border/80 hover:bg-theme-surface/40 hover:border-theme-border/80 shadow-md"
                       }`}
                     >
                       <div className="flex items-start gap-4">
@@ -739,11 +739,11 @@ export default function RelocationHistoryPage() {
 
                         <div className="flex flex-col">
                           <div className="flex flex-wrap items-center gap-2 mb-1.5">
-                            <span className="text-xs font-mono font-bold text-stone-500 flex items-center gap-1">
-                              <Calendar className="w-3.5 h-3.5 text-stone-600" />{" "}
+                            <span className="text-xs font-mono font-bold text-ink-muted flex items-center gap-1">
+                              <Calendar className="w-3.5 h-3.5 text-ink-muted" />{" "}
                               {displayDate}
                             </span>
-                            <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-stone-100/80 border border-stone-200/80 text-stone-500 leading-none">
+                            <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-stone-100/80 border border-theme-border/80 text-ink-muted leading-none">
                               {getPrecisionBadge(item.datePrecision)}
                             </span>
                             <span
@@ -759,28 +759,28 @@ export default function RelocationHistoryPage() {
                             </span>
                           </div>
 
-                          <h3 className="font-bold text-stone-900 text-base flex items-center gap-1.5 flex-wrap">
-                            <span className="text-indigo-600 font-medium text-sm">
+                          <h3 className="font-bold text-ink text-base flex items-center gap-1.5 flex-wrap">
+                            <span className="text-accent font-medium text-sm">
                               {item.fromName}
                             </span>
-                            <ArrowRight className="w-3.5 h-3.5 text-stone-600 shrink-0" />
+                            <ArrowRight className="w-3.5 h-3.5 text-ink-muted shrink-0" />
                             <span className="text-red-300 font-medium text-sm">
                               {item.toName}
                             </span>
-                            <span className="text-[10px] font-mono text-stone-600 bg-white px-1.5 py-0.5 rounded font-normal shrink-0">
+                            <span className="text-[10px] font-mono text-ink-muted bg-theme-surface px-1.5 py-0.5 rounded font-normal shrink-0">
                               {item.direction} ({item.bearing}°方位)
                             </span>
                           </h3>
                           {item.notes && (
-                            <p className="text-xs text-stone-600 mt-1 leading-relaxed line-clamp-1">
+                            <p className="text-xs text-ink-muted mt-1 leading-relaxed line-clamp-1">
                               {item.notes}
                             </p>
                           )}
                         </div>
                       </div>
 
-                      <div className="flex items-center justify-between md:justify-end gap-4 shrink-0 border-t border-stone-200/60 pt-3 md:pt-0 md:border-t-0">
-                        <span className="text-[10px] text-stone-600 font-mono block md:hidden">
+                      <div className="flex items-center justify-between md:justify-end gap-4 shrink-0 border-t border-theme-border/60 pt-3 md:pt-0 md:border-t-0">
+                        <span className="text-[10px] text-ink-muted font-mono block md:hidden">
                           クリックして詳細を表示
                         </span>
                         <div className="flex items-center gap-2">
@@ -792,7 +792,7 @@ export default function RelocationHistoryPage() {
                             <Trash2 className="w-4 h-4" />
                           </button>
                           <ChevronRight
-                            className={`w-4 h-4 text-stone-600 group-hover:text-stone-500 transition-all shrink-0 ${isSelected ? "rotate-90 text-indigo-400" : ""}`}
+                            className={`w-4 h-4 text-ink-muted group-hover:text-ink-muted transition-all shrink-0 ${isSelected ? "rotate-90 text-indigo-400" : ""}`}
                           />
                         </div>
                       </div>
@@ -812,32 +812,32 @@ export default function RelocationHistoryPage() {
                   initial={{ opacity: 0, x: 20 }}
                   animate={{ opacity: 1, x: 0 }}
                   exit={{ opacity: 0, x: 20 }}
-                  className="p-6 rounded-[2rem] border border-stone-200/80 bg-gradient-to-br from-zinc-900/60 via-zinc-950/80 to-transparent backdrop-blur-md shadow-2xl flex flex-col justify-between space-y-6 sticky top-6"
+                  className="p-6 rounded-[2rem] border border-theme-border/80 bg-gradient-to-br from-zinc-900/60 via-zinc-950/80 to-transparent backdrop-blur-md shadow-2xl flex flex-col justify-between space-y-6 sticky top-6"
                 >
                   <div>
                     {/* Header Details */}
                     <div className="flex justify-between items-start gap-4">
                       <div>
-                        <div className="inline-flex items-center gap-1.5 text-[10px] font-bold text-stone-600 tracking-wider uppercase mb-1">
+                        <div className="inline-flex items-center gap-1.5 text-[10px] font-bold text-ink-muted tracking-wider uppercase mb-1">
                           <MapPin className="w-3 h-3 text-indigo-400" />{" "}
                           方位鑑定詳細
                         </div>
-                        <h2 className="text-xl font-bold text-stone-900">
+                        <h2 className="text-xl font-bold text-ink">
                           {selectedItem.fromName} → {selectedItem.toName}
                         </h2>
                       </div>
                       <button
                         onClick={() => setSelectedItem(null)}
-                        className="p-1 rounded-lg hover:bg-stone-100/80 border border-transparent hover:border-stone-200/80 text-stone-500 transition-all"
+                        className="p-1 rounded-lg hover:bg-stone-100/80 border border-transparent hover:border-theme-border/80 text-ink-muted transition-all"
                       >
                         <X className="w-4 h-4" />
                       </button>
                     </div>
 
                     {/* Auspice Rating Panel */}
-                    <div className="mt-6 p-5 rounded-2xl bg-stone-100/80 border border-stone-200/80 text-center relative overflow-hidden shadow-inner">
+                    <div className="mt-6 p-5 rounded-2xl bg-stone-100/80 border border-theme-border/80 text-center relative overflow-hidden shadow-inner">
                       <div className="absolute top-0 right-0 w-24 h-24 bg-stone-100/80 rounded-full blur-2xl"></div>
-                      <span className="text-[10px] uppercase tracking-widest text-stone-600 font-bold block mb-1">
+                      <span className="text-[10px] uppercase tracking-widest text-ink-muted font-bold block mb-1">
                         総合吉凶評価
                       </span>
                       <span
@@ -845,7 +845,7 @@ export default function RelocationHistoryPage() {
                       >
                         {selectedItem.evaluation.rating}
                       </span>
-                      <span className="text-[10px] text-stone-500 font-mono mt-1.5 block">
+                      <span className="text-[10px] text-ink-muted font-mono mt-1.5 block">
                         評価コード: {selectedItem.evaluation.status}
                       </span>
                       {/* 保存時のスナップショット。上の評価は常に現在の
@@ -858,7 +858,7 @@ export default function RelocationHistoryPage() {
                             selectedItem.judgment.finalStatus !==
                             selectedItem.evaluation.status
                               ? "text-amber-600 font-bold"
-                              : "text-stone-600"
+                              : "text-ink-muted"
                           }`}
                         >
                           保存時の判定: {selectedItem.judgment.finalStatus}
@@ -869,25 +869,25 @@ export default function RelocationHistoryPage() {
                             " ※エンジン改良により現在の評価と異なります"}
                         </span>
                       )}
-                      <p className="text-xs text-stone-500 mt-2 font-medium px-2 leading-relaxed">
+                      <p className="text-xs text-ink-muted mt-2 font-medium px-2 leading-relaxed">
                         {formatDirectionInfo(selectedItem.evaluation.status)}
                       </p>
                     </div>
 
                     {/* Geodesic Vectors breakdown */}
                     <div className="space-y-4 mt-6">
-                      <h4 className="text-[10px] uppercase tracking-wider font-bold text-indigo-600">
+                      <h4 className="text-[10px] uppercase tracking-wider font-bold text-accent">
                         レイヤー別影響分析 (Layer Breakdown)
                       </h4>
 
                       <div className="space-y-2">
                         {/* Year Layer */}
-                        <div className="p-3 bg-white/70 border border-stone-200 rounded-xl flex justify-between items-center text-xs">
+                        <div className="p-3 bg-theme-surface/70 border border-theme-border rounded-xl flex justify-between items-center text-xs">
                           <div className="flex flex-col">
-                            <span className="font-bold text-stone-500">
+                            <span className="font-bold text-ink-muted">
                               年盤レイヤー (Long-term)
                             </span>
-                            <span className="text-[10px] text-stone-600">
+                            <span className="text-[10px] text-ink-muted">
                               約60年〜数年間の引力波
                             </span>
                           </div>
@@ -895,7 +895,7 @@ export default function RelocationHistoryPage() {
                             className={`px-2 py-0.5 rounded text-[10px] font-bold ${
                               selectedItem.evaluation.details.yearLayer ===
                               "N/A"
-                                ? "text-stone-600"
+                                ? "text-ink-muted"
                                 : getRatingLabel(
                                     selectedItem.evaluation.details.yearLayer,
                                   ).color.split(" ")[0]
@@ -910,12 +910,12 @@ export default function RelocationHistoryPage() {
                         </div>
 
                         {/* Month Layer */}
-                        <div className="p-3 bg-white/70 border border-stone-200 rounded-xl flex justify-between items-center text-xs">
+                        <div className="p-3 bg-theme-surface/70 border border-theme-border rounded-xl flex justify-between items-center text-xs">
                           <div className="flex flex-col">
-                            <span className="font-bold text-stone-500">
+                            <span className="font-bold text-ink-muted">
                               月盤レイヤー (Mid-term)
                             </span>
-                            <span className="text-[10px] text-stone-600">
+                            <span className="text-[10px] text-ink-muted">
                               約数ヶ月〜数年間の影響
                             </span>
                           </div>
@@ -923,7 +923,7 @@ export default function RelocationHistoryPage() {
                             className={`px-2 py-0.5 rounded text-[10px] font-bold ${
                               selectedItem.evaluation.details.monthLayer ===
                               "N/A"
-                                ? "text-stone-600"
+                                ? "text-ink-muted"
                                 : getRatingLabel(
                                     selectedItem.evaluation.details.monthLayer,
                                   ).color.split(" ")[0]
@@ -939,19 +939,19 @@ export default function RelocationHistoryPage() {
                         </div>
 
                         {/* Day Layer */}
-                        <div className="p-3 bg-white/70 border border-stone-200 rounded-xl flex justify-between items-center text-xs">
+                        <div className="p-3 bg-theme-surface/70 border border-theme-border rounded-xl flex justify-between items-center text-xs">
                           <div className="flex flex-col">
-                            <span className="font-bold text-stone-500">
+                            <span className="font-bold text-ink-muted">
                               日盤レイヤー (Short-term)
                             </span>
-                            <span className="text-[10px] text-stone-600">
+                            <span className="text-[10px] text-ink-muted">
                               数日〜数週間の短期引力
                             </span>
                           </div>
                           <span
                             className={`px-2 py-0.5 rounded text-[10px] font-bold ${
                               selectedItem.evaluation.details.dayLayer === "N/A"
-                                ? "text-stone-600"
+                                ? "text-ink-muted"
                                 : getRatingLabel(
                                     selectedItem.evaluation.details.dayLayer,
                                   ).color.split(" ")[0]
@@ -968,13 +968,13 @@ export default function RelocationHistoryPage() {
                     </div>
 
                     {/* Metadata Coordinates List */}
-                    <div className="mt-6 p-4 rounded-xl bg-white/80 border border-stone-200/80 text-[10px] font-mono space-y-2">
-                      <div className="text-stone-600 uppercase tracking-widest text-[10px] font-bold border-b border-stone-200 pb-1.5 mb-2">
+                    <div className="mt-6 p-4 rounded-xl bg-theme-surface border border-theme-border/80 text-[10px] font-mono space-y-2">
+                      <div className="text-ink-muted uppercase tracking-widest text-[10px] font-bold border-b border-theme-border pb-1.5 mb-2">
                         移動座標 (Coordinates)
                       </div>
                       <div className="flex justify-between">
-                        <span className="text-stone-600">真方位角:</span>
-                        <span className="text-stone-600 font-bold">
+                        <span className="text-ink-muted">真方位角:</span>
+                        <span className="text-ink-muted font-bold">
                           {selectedItem.bearing}° ({selectedItem.direction}方向)
                         </span>
                       </div>
@@ -982,7 +982,7 @@ export default function RelocationHistoryPage() {
                           判定は真北のままで、現地で測ったときのズレを添える */}
                       {selectedItem.magneticDirection && (
                         <div className="flex justify-between">
-                          <span className="text-stone-600">磁北で測ると:</span>
+                          <span className="text-ink-muted">磁北で測ると:</span>
                           <span className="text-amber-600 font-bold">
                             {selectedItem.magneticBearing}° (
                             {selectedItem.magneticDirection}方向)
@@ -990,15 +990,15 @@ export default function RelocationHistoryPage() {
                         </div>
                       )}
                       <div className="flex justify-between">
-                        <span className="text-stone-600">出発地経緯度:</span>
-                        <span className="text-stone-600">
+                        <span className="text-ink-muted">出発地経緯度:</span>
+                        <span className="text-ink-muted">
                           {selectedItem.fromLat.toFixed(4)},{" "}
                           {selectedItem.fromLon.toFixed(4)}
                         </span>
                       </div>
                       <div className="flex justify-between">
-                        <span className="text-stone-600">目的地経緯度:</span>
-                        <span className="text-stone-600">
+                        <span className="text-ink-muted">目的地経緯度:</span>
+                        <span className="text-ink-muted">
                           {selectedItem.toLat.toFixed(4)},{" "}
                           {selectedItem.toLon.toFixed(4)}
                         </span>
@@ -1006,21 +1006,21 @@ export default function RelocationHistoryPage() {
                     </div>
                   </div>
 
-                  <div className="text-[10px] text-stone-600 leading-relaxed font-normal flex items-start gap-1.5 border-t border-stone-200/60 pt-4">
-                    <Info className="w-3.5 h-3.5 text-stone-500 shrink-0 mt-0.5" />
+                  <div className="text-[10px] text-ink-muted leading-relaxed font-normal flex items-start gap-1.5 border-t border-theme-border/60 pt-4">
+                    <Info className="w-3.5 h-3.5 text-ink-muted shrink-0 mt-0.5" />
                     <span>
                       方位の吉凶は、出発した時点の九星の配置（年盤・月盤・日盤）に基づく伝統的な暦の解釈です。吉方位への移動は運気を後押しするとされ、五大凶殺の方位は避けるべきとされますが、効果を保証するものではありません。
                     </span>
                   </div>
                 </motion.div>
               ) : (
-                <div className="h-full rounded-[2rem] border border-dashed border-stone-200 p-8 text-center flex flex-col items-center justify-center gap-4 text-stone-600 sticky top-6 bg-white/10 min-h-[300px]">
-                  <HelpCircle className="w-8 h-8 text-stone-600 animate-pulse" />
+                <div className="h-full rounded-[2rem] border border-dashed border-theme-border p-8 text-center flex flex-col items-center justify-center gap-4 text-ink-muted sticky top-6 bg-theme-surface/10 min-h-[300px]">
+                  <HelpCircle className="w-8 h-8 text-ink-muted animate-pulse" />
                   <div className="max-w-xs">
-                    <h4 className="font-bold text-stone-500 text-sm">
+                    <h4 className="font-bold text-ink-muted text-sm">
                       詳細鑑定ボード
                     </h4>
-                    <p className="text-xs text-stone-600 mt-2 leading-relaxed">
+                    <p className="text-xs text-ink-muted mt-2 leading-relaxed">
                       タイムラインから特定の移動履歴を選択すると、ここに年盤・月盤・日盤ごとの詳細な方位の吉凶評価が展開されます。
                     </p>
                   </div>

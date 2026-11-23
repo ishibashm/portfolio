@@ -50,7 +50,7 @@ export default async function Home({
           （幅 1800px 前後）では左右に 400px ずつ余っていた。中身の主役は
           下のダッシュボードなので、そこが収まる幅まで広げる。
           本文の行長は段落側の max-w-[70ch] が守る。 */}
-      <header className="relative overflow-hidden w-full max-w-[1700px] bg-theme-surface backdrop-blur-xl border border-slate-300 dark:border-theme-border p-5 md:p-6 rounded-3xl shadow-lg shadow-slate-200/50 dark:shadow-black/20">
+      <header className="relative overflow-hidden w-full max-w-[1700px] bg-theme-surface backdrop-blur-xl border border-theme-border dark:border-theme-border p-5 md:p-6 rounded-3xl shadow-lg shadow-slate-200/50 dark:shadow-black/20">
         {/* 金の羅盤の線画（飾り）。h1 とは重ねず、ラベル行の右上の余白に収まる大きさ。 */}
         <CompassDial className="pointer-events-none absolute -right-5 -top-5 hidden h-28 w-28 opacity-60 sm:block" />
         <div className="grid items-center gap-4 sm:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]">
@@ -127,7 +127,7 @@ export default async function Home({
                 <Link
                   key={r.href}
                   href={r.href}
-                  className="group bg-theme-surface backdrop-blur-xl border border-slate-300 dark:border-theme-border rounded-3xl p-6 shadow-sm hover:shadow-lg hover:border-accent transition-all"
+                  className="group bg-theme-surface backdrop-blur-xl border border-theme-border dark:border-theme-border rounded-3xl p-6 shadow-sm hover:shadow-lg hover:border-accent transition-all"
                 >
                   <h3 className="text-base font-bold text-ink font-serif flex items-center gap-2">
                     {r.label}

@@ -234,18 +234,18 @@ export function HousingStatsByDirection({
 
   return (
     <section className="space-y-2">
-      <h3 className="text-[10px] font-bold uppercase tracking-wider text-stone-500 dark:text-ink-muted">
+      <h3 className="text-[10px] font-bold uppercase tracking-wider text-ink-muted dark:text-ink-muted">
         方位別の家賃相場と空き家率（市区町村の統計）
       </h3>
 
-      <p className="text-xs text-stone-600 dark:text-ink-muted leading-relaxed">
+      <p className="text-xs text-ink-muted dark:text-ink-muted leading-relaxed">
         {
           "国の住宅・土地統計調査から、方位ごとの借家の家賃（円/㎡・月）と空き家率を出しています。個別の物件ではなく街ごとの水準で、各方位から市区町村の一覧へ降りられます。"
         }
       </p>
 
       {loading && (
-        <p className="text-xs text-stone-500 dark:text-ink-muted">
+        <p className="text-xs text-ink-muted dark:text-ink-muted">
           住宅の統計を集計しています…
         </p>
       )}
@@ -255,7 +255,7 @@ export function HousingStatsByDirection({
       )}
 
       {data && !loading && withData.length === 0 && (
-        <p className="text-xs text-stone-500 dark:text-ink-muted leading-relaxed">
+        <p className="text-xs text-ink-muted dark:text-ink-muted leading-relaxed">
           {`この範囲（${data.meta.minKm}〜${data.meta.maxKm}km）には統計のある市区町村がありませんでした。範囲を広げると出ることがあります。`}
         </p>
       )}
@@ -266,18 +266,18 @@ export function HousingStatsByDirection({
             {directions.map((d) => (
               <div
                 key={d.direction}
-                className="bg-white dark:bg-theme-surface border border-stone-200 dark:border-theme-border rounded-lg px-2.5 py-1.5"
+                className="bg-theme-surface dark:bg-theme-surface border border-theme-border dark:border-theme-border rounded-lg px-2.5 py-1.5"
               >
                 <div className="flex items-baseline justify-between">
-                  <span className="text-xs font-bold text-stone-700 dark:text-ink">
+                  <span className="text-xs font-bold text-ink dark:text-ink">
                     {DIRECTION_LABELS[d.direction] ?? d.direction}
                     {verdicts && <TierBadge cell={verdicts[d.direction]} />}
                   </span>
                   <span className="text-right">
-                    <span className="block text-[11px] font-mono text-stone-700 dark:text-ink">
+                    <span className="block text-[11px] font-mono text-ink dark:text-ink">
                       {rentPerSqm(d.medianRentPerSqm)}
                     </span>
-                    <span className="block text-[10px] text-stone-600 dark:text-ink-muted">
+                    <span className="block text-[10px] text-ink-muted dark:text-ink-muted">
                       {d.count === 0
                         ? "統計のある街なし"
                         : `${d.count.toLocaleString()} 市区町村`}
@@ -301,7 +301,7 @@ export function HousingStatsByDirection({
                     </Link>
                   )}
                 {d.count > 0 && (
-                  <p className="mt-0.5 text-xs text-stone-600 dark:text-ink-muted">
+                  <p className="mt-0.5 text-xs text-ink-muted dark:text-ink-muted">
                     {[
                       monthly(d.medianMonthlyRentEstimate),
                       vacancy(d.vacancyRate),
@@ -311,7 +311,7 @@ export function HousingStatsByDirection({
                   </p>
                 )}
                 {d.topMunicipalities.length > 0 && (
-                  <p className="mt-0.5 text-xs text-stone-500 dark:text-ink-muted truncate">
+                  <p className="mt-0.5 text-xs text-ink-muted dark:text-ink-muted truncate">
                     {d.topMunicipalities.join("・")}
                   </p>
                 )}
@@ -336,14 +336,14 @@ export function HousingStatsByDirection({
                         : `この方位の街を見る（${d.municipalities.length}${d.truncated ? "／" + d.count.toLocaleString() : ""}）`}
                     </button>
                     {effectiveOpen === d.direction && onInspectTown && (
-                      <p className="mt-1 text-xs leading-relaxed text-stone-500 dark:text-ink-muted">
+                      <p className="mt-1 text-xs leading-relaxed text-ink-muted dark:text-ink-muted">
                         {
                           "街の名前を押すと、出発地から見たその街の方位と吉凶を、下の「物件URL・住所から候補を検討」の欄に出します。「この街から見た方位」は、その街に移ったあとの方位の頁です。"
                         }
                       </p>
                     )}
                     {effectiveOpen === d.direction && (
-                      <ul className="mt-1 space-y-0.5 border-t border-stone-200 dark:border-theme-border pt-1">
+                      <ul className="mt-1 space-y-0.5 border-t border-theme-border dark:border-theme-border pt-1">
                         {d.municipalities.map((m) => (
                           <li key={m.code} className="text-[10px]">
                             {onInspectTown ? (
@@ -356,7 +356,7 @@ export function HousingStatsByDirection({
                                     name: m.name,
                                   })
                                 }
-                                className="min-h-[24px] font-semibold text-stone-800 dark:text-ink underline hover:text-accent"
+                                className="min-h-[24px] font-semibold text-ink dark:text-ink underline hover:text-accent"
                               >
                                 {m.name}
                               </button>
@@ -364,7 +364,7 @@ export function HousingStatsByDirection({
                               <Link
                                 prefetch={false}
                                 href={`/houi/area/${m.code}`}
-                                className="font-semibold text-stone-800 dark:text-ink underline hover:text-accent"
+                                className="font-semibold text-ink dark:text-ink underline hover:text-accent"
                               >
                                 {m.name}
                               </Link>
@@ -373,10 +373,10 @@ export function HousingStatsByDirection({
                                 余白だけだと「東京都N区010km」と読めて
                                 しまった（実測。名前が数字で終わる街は
                                 実在する） */}
-                            <span className="ml-1 text-stone-400 dark:text-ink-muted">
+                            <span className="ml-1 text-ink-muted dark:text-ink-muted">
                               ／
                             </span>
-                            <span className="ml-1 font-mono text-stone-600 dark:text-ink-muted">
+                            <span className="ml-1 font-mono text-ink-muted dark:text-ink-muted">
                               {[
                                 `${m.distanceKm}km`,
                                 m.rentPerSqm === null
@@ -395,7 +395,7 @@ export function HousingStatsByDirection({
                               <Link
                                 prefetch={false}
                                 href={`/houi/area/${m.code}`}
-                                className="ml-2 inline-flex min-h-[24px] items-center text-stone-500 dark:text-ink-muted underline hover:text-accent"
+                                className="ml-2 inline-flex min-h-[24px] items-center text-ink-muted dark:text-ink-muted underline hover:text-accent"
                               >
                                 この街から見た方位
                               </Link>
@@ -403,7 +403,7 @@ export function HousingStatsByDirection({
                           </li>
                         ))}
                         {d.truncated && (
-                          <li className="text-xs leading-relaxed text-stone-500 dark:text-ink-muted">
+                          <li className="text-xs leading-relaxed text-ink-muted dark:text-ink-muted">
                             {`近い順に ${d.municipalities.length} 件まで出しています（この方位は全部で ${d.count.toLocaleString()} 市区町村）。`}
                           </li>
                         )}
@@ -415,10 +415,10 @@ export function HousingStatsByDirection({
             ))}
           </div>
 
-          <p className="text-xs text-stone-500 dark:text-ink-muted leading-relaxed">
+          <p className="text-xs text-ink-muted dark:text-ink-muted leading-relaxed">
             {`${data.meta.source}${data.meta.dataYear ? `（${data.meta.dataYear} 年調査）` : ""}。家賃は 1 畳当たり家賃を 1 畳 = 1.62㎡ で㎡に直したもの。月額は平均畳数との積で目安。${data.meta.minKm}km 未満の市区町村は方位が定まらないため除いています。`}
           </p>
-          <p className="text-xs text-stone-500 dark:text-ink-muted leading-relaxed">
+          <p className="text-xs text-ink-muted dark:text-ink-muted leading-relaxed">
             {data.meta.credit}
           </p>
         </>
@@ -436,7 +436,7 @@ function TierBadge({ cell }: { cell: DirectionVerdict | undefined }) {
   if (!cell) {
     return (
       <span
-        className="ml-1.5 rounded px-1.5 py-0.5 text-[10px] font-bold text-stone-500 dark:text-ink-muted bg-stone-100 dark:bg-theme-subtle"
+        className="ml-1.5 rounded px-1.5 py-0.5 text-[10px] font-bold text-ink-muted dark:text-ink-muted bg-stone-100 dark:bg-theme-subtle"
         data-tier="none"
       >
         判定なし

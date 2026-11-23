@@ -62,7 +62,7 @@ function Connection({
   return (
     <section
       aria-label={`${connection.clientName} (${connection.id})`}
-      className="space-y-3 rounded border border-stone-300 p-4"
+      className="space-y-3 rounded border border-theme-border p-4"
     >
       <h2 className="font-bold">{connection.clientName}</h2>
       <p className="break-all">接続ID: {connection.id}</p>
@@ -276,7 +276,7 @@ export function McpConnectionsPanel() {
   }, []);
 
   return (
-    <main className="mx-auto max-w-3xl space-y-5 p-5 text-stone-900">
+    <main className="mx-auto max-w-3xl space-y-5 p-5 text-ink">
       <h1 className="text-xl font-bold">AIとの接続を管理する</h1>
       <p>
         権限 read:profiles

@@ -75,7 +75,7 @@ export default function LocationPickerInner({
 
   if (!isMounted) {
     return (
-      <div className="flex h-full w-full items-center justify-center rounded-xl border border-stone-200 dark:border-theme-border bg-stone-50 dark:bg-theme-subtle text-xs text-stone-500 dark:text-ink-muted">
+      <div className="flex h-full w-full items-center justify-center rounded-xl border border-theme-border dark:border-theme-border bg-theme-subtle dark:bg-theme-subtle text-xs text-ink-muted dark:text-ink-muted">
         地図を読み込んでいます…
       </div>
     );
@@ -91,7 +91,7 @@ export default function LocationPickerInner({
     z-[46] なので地図が前に出て、開いたメニューを覆う（#694 の Android 報告）。
   */
   return (
-    <div className="isolate relative h-full w-full overflow-hidden rounded-xl border border-stone-200 dark:border-theme-border">
+    <div className="isolate relative h-full w-full overflow-hidden rounded-xl border border-theme-border dark:border-theme-border">
       <MapContainer
         key="location-picker-map"
         center={initialCenter}
@@ -126,7 +126,7 @@ export default function LocationPickerInner({
         {markerPos && <Marker position={markerPos} keyboard={false} />}
       </MapContainer>
 
-      <div className="pointer-events-none absolute top-2 left-2 z-[1000] max-w-[min(20rem,calc(100%-6rem))] rounded-lg border border-stone-200 dark:border-theme-border bg-white/90 dark:bg-theme-surface px-2.5 py-1.5 text-xs leading-snug font-medium text-stone-700 dark:text-ink shadow-sm backdrop-blur-sm">
+      <div className="pointer-events-none absolute top-2 left-2 z-[1000] max-w-[min(20rem,calc(100%-6rem))] rounded-lg border border-theme-border dark:border-theme-border bg-theme-surface dark:bg-theme-surface px-2.5 py-1.5 text-xs leading-snug font-medium text-ink dark:text-ink shadow-sm backdrop-blur-sm">
         {markerPos
           ? "押した場所が選び直されます"
           : "地図を押すと、その地点になります"}
@@ -138,7 +138,7 @@ export default function LocationPickerInner({
           onClick={() => {
             toggleMapTheme();
           }}
-          className="flex cursor-pointer items-center gap-1 rounded-lg border border-stone-200 dark:border-theme-border bg-white/90 dark:bg-theme-surface px-2.5 py-1.5 text-xs font-medium text-stone-700 dark:text-ink shadow-sm backdrop-blur-sm transition-colors hover:bg-white dark:hover:bg-theme-surface"
+          className="flex cursor-pointer items-center gap-1 rounded-lg border border-theme-border dark:border-theme-border bg-theme-surface dark:bg-theme-surface px-2.5 py-1.5 text-xs font-medium text-ink dark:text-ink shadow-sm backdrop-blur-sm transition-colors hover:bg-theme-surface dark:hover:bg-theme-surface"
         >
           {mapTheme === "dark" ? "☀️ 明るく" : "🌙 暗く"}
         </button>

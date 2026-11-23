@@ -145,8 +145,12 @@ export default function SimulatorMap({
 
   const startPos: [number, number] = useMemo(
     () => [
-      isNaN(startLat) || startLat === null || startLat === undefined ? 35.6895 : (startLat || 35.6895),
-      isNaN(startLon) || startLon === null || startLon === undefined ? 139.6917 : (startLon || 139.6917),
+      isNaN(startLat) || startLat === null || startLat === undefined
+        ? 35.6895
+        : startLat || 35.6895,
+      isNaN(startLon) || startLon === null || startLon === undefined
+        ? 139.6917
+        : startLon || 139.6917,
     ],
     [startLat, startLon],
   );
@@ -156,9 +160,12 @@ export default function SimulatorMap({
     const list: [number, number][] = [startPos];
     steps.forEach((s) => {
       if (
-        s.toLat !== undefined && s.toLon !== undefined &&
-        s.toLat !== null && s.toLon !== null &&
-        !isNaN(s.toLat) && !isNaN(s.toLon)
+        s.toLat !== undefined &&
+        s.toLon !== undefined &&
+        s.toLat !== null &&
+        s.toLon !== null &&
+        !isNaN(s.toLat) &&
+        !isNaN(s.toLon)
       ) {
         list.push([s.toLat, s.toLon]);
       }
@@ -197,7 +204,7 @@ export default function SimulatorMap({
 
   if (!isMounted) {
     return (
-      <div className="w-full h-full min-h-[400px] bg-white/80 border border-stone-200 rounded-3xl flex items-center justify-center font-mono text-xs text-stone-600 backdrop-blur-md">
+      <div className="w-full h-full min-h-[400px] bg-theme-surface border border-theme-border rounded-3xl flex items-center justify-center font-mono text-xs text-ink-muted backdrop-blur-md">
         [ LOADING SIMULATOR MAP ENGINE... ]
       </div>
     );
@@ -227,16 +234,16 @@ export default function SimulatorMap({
               e.key === "Enter" &&
               (e.preventDefault(), handleGeocodeSearch(searchQuery))
             }
-            className="w-full pl-9 pr-20 py-2.5 bg-white/70 border border-stone-200 rounded-2xl text-xs font-mono text-stone-900 placeholder-zinc-500 focus:outline-none focus:border-indigo-200 transition-all backdrop-blur-md"
+            className="w-full pl-9 pr-20 py-2.5 bg-theme-surface/70 border border-theme-border rounded-2xl text-xs font-mono text-ink placeholder-zinc-500 focus:outline-none focus:border-indigo-200 transition-all backdrop-blur-md"
           />
-          <span className="w-4 h-4 text-stone-600 absolute left-3 top-3.5 flex items-center justify-center">
+          <span className="w-4 h-4 text-ink-muted absolute left-3 top-3.5 flex items-center justify-center">
             🔍
           </span>
           <button
             type="button"
             onClick={() => handleGeocodeSearch(searchQuery)}
             disabled={isSearching}
-            className="absolute right-2 top-2 px-3 py-1 bg-indigo-500/20 hover:bg-indigo-500/30 text-indigo-600 text-[10px] font-bold rounded-lg border border-indigo-200 active:scale-95 transition-all"
+            className="absolute right-2 top-2 px-3 py-1 bg-indigo-500/20 hover:bg-indigo-500/30 text-accent text-[10px] font-bold rounded-lg border border-indigo-200 active:scale-95 transition-all"
           >
             {isSearching ? "検索中..." : "検索"}
           </button>
@@ -260,7 +267,7 @@ export default function SimulatorMap({
           className={`self-start px-3 py-1.5 rounded-lg border font-mono text-[10px] font-bold transition-all active:scale-95 ${
             showSpots
               ? "bg-amber-600 text-white border-amber-600 hover:bg-amber-700"
-              : "bg-white/70 text-stone-600 border-stone-200 hover:bg-white"
+              : "bg-theme-surface/70 text-ink-muted border-theme-border hover:bg-theme-surface"
           }`}
         >
           ⛩ 名所 {showSpots ? "表示中" : "非表示"}
@@ -282,14 +289,14 @@ export default function SimulatorMap({
           className={`self-start px-3 py-1.5 rounded-lg border font-mono text-[10px] font-bold transition-all active:scale-95 ${
             showStations
               ? "bg-blue-700 text-white border-blue-700 hover:bg-blue-800"
-              : "bg-white/70 text-stone-600 border-stone-200 hover:bg-white"
+              : "bg-theme-surface/70 text-ink-muted border-theme-border hover:bg-theme-surface"
           }`}
         >
           🚉 駅 {showStations ? "表示中" : "非表示"}
         </button>
       </div>
 
-      <div className="w-full flex-1 min-h-[400px] border border-stone-200 rounded-[2.5rem] overflow-hidden shadow-2xl relative">
+      <div className="w-full flex-1 min-h-[400px] border border-theme-border rounded-[2.5rem] overflow-hidden shadow-2xl relative">
         <MapContainer
           key="relocation-simulator-leaflet"
           center={startPos}
@@ -388,12 +395,18 @@ export default function SimulatorMap({
             const currentPos: [number, number] = [step.toLat, step.toLon];
 
             if (
-              isNaN(prevPos[0]) || isNaN(prevPos[1]) ||
-              isNaN(currentPos[0]) || isNaN(currentPos[1]) ||
-              prevPos[0] === undefined || prevPos[1] === undefined ||
-              currentPos[0] === undefined || currentPos[1] === undefined ||
-              prevPos[0] === null || prevPos[1] === null ||
-              currentPos[0] === null || currentPos[1] === null
+              isNaN(prevPos[0]) ||
+              isNaN(prevPos[1]) ||
+              isNaN(currentPos[0]) ||
+              isNaN(currentPos[1]) ||
+              prevPos[0] === undefined ||
+              prevPos[1] === undefined ||
+              currentPos[0] === undefined ||
+              currentPos[1] === undefined ||
+              prevPos[0] === null ||
+              prevPos[1] === null ||
+              currentPos[0] === null ||
+              currentPos[1] === null
             ) {
               return null;
             }
@@ -439,19 +452,19 @@ export default function SimulatorMap({
             onClick={() => {
               toggleMapTheme();
             }}
-            className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-white/70 text-stone-700 border border-stone-200 hover:bg-white transition-colors shadow-lg text-[10px] font-mono font-bold cursor-pointer"
+            className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-theme-surface/70 text-ink border border-theme-border hover:bg-theme-surface transition-colors shadow-lg text-[10px] font-mono font-bold cursor-pointer"
           >
             {mapTheme === "dark" ? "☀️ ライトマップ" : "🌙 ダークマップ"}
           </button>
         </div>
 
         {/* Legend Overlay HUD */}
-        <div className="absolute bottom-4 left-4 z-[1000] p-3 bg-white/70 border border-stone-200 rounded-2xl backdrop-blur-md flex flex-col gap-1.5 shadow-2xl pointer-events-none text-[10px] font-mono leading-none text-stone-500">
+        <div className="absolute bottom-4 left-4 z-[1000] p-3 bg-theme-surface/70 border border-theme-border rounded-2xl backdrop-blur-md flex flex-col gap-1.5 shadow-2xl pointer-events-none text-[10px] font-mono leading-none text-ink-muted">
           <div className="flex items-center gap-2 font-bold text-amber-600">
             <span className="w-2.5 h-2.5 rounded-full bg-amber-500 shadow-sm shadow-amber-500/50"></span>{" "}
             出発起点 (ゴールド)
           </div>
-          <div className="flex items-center gap-2 font-bold text-indigo-600 mt-0.5">
+          <div className="flex items-center gap-2 font-bold text-accent mt-0.5">
             <span className="w-2.5 h-2.5 rounded-full bg-blue-500 shadow-sm shadow-blue-500/50"></span>{" "}
             経由地 (青)
           </div>
@@ -459,7 +472,7 @@ export default function SimulatorMap({
             <span className="w-2.5 h-2.5 rounded-full bg-red-500 shadow-sm shadow-red-500/50"></span>{" "}
             選択中の目的地 (赤)
           </div>
-          <div className="border-t border-stone-200 my-1"></div>
+          <div className="border-t border-theme-border my-1"></div>
           <div className="flex items-center gap-2">
             <span className="w-4 h-0.5 bg-emerald-500 inline-block"></span> 吉 /
             大吉 方位ベクトル
@@ -473,7 +486,7 @@ export default function SimulatorMap({
             旅行（TRAVEL）ステップ
           </div>
           {detourPolygons.length > 0 && (
-            <div className="flex items-center gap-2 text-indigo-600 font-bold mt-0.5">
+            <div className="flex items-center gap-2 text-accent font-bold mt-0.5">
               <span className="w-3.5 h-2.5 bg-indigo-500/20 border border-dashed border-indigo-200 inline-block"></span>{" "}
               吉方位迂回ゾーン (仮吉方領域)
             </div>

@@ -81,8 +81,8 @@ export function ProfilePicker({
 
   const small = variant === "compact";
   const selectClass = small
-    ? "px-2 py-1.5 bg-white dark:bg-theme-surface border border-stone-200 dark:border-theme-border rounded-lg text-[10px] text-stone-700 dark:text-ink outline-none focus:border-accent"
-    : "bg-white dark:bg-theme-surface border border-slate-300 dark:border-theme-border rounded-xl px-3 py-2 text-sm text-slate-900 dark:text-ink outline-none focus:border-accent";
+    ? "px-2 py-1.5 bg-theme-surface dark:bg-theme-surface border border-theme-border dark:border-theme-border rounded-lg text-[10px] text-ink dark:text-ink outline-none focus:border-accent"
+    : "bg-theme-surface dark:bg-theme-surface border border-theme-border dark:border-theme-border rounded-xl px-3 py-2 text-sm text-ink dark:text-ink outline-none focus:border-accent";
   /* 押し所は 24px 角より小さくしない（WCAG 2.2 の Target Size (Minimum)）。
      実測で 110 × 16px と 61 × 16px だった。字の大きさは変えず、縦に 24px を
      確保して中央に置く */
@@ -100,8 +100,8 @@ export function ProfilePicker({
         <span
           className={
             small
-              ? "text-[10px] font-bold text-stone-600 dark:text-ink-muted"
-              : "text-xs font-bold text-slate-700 dark:text-ink"
+              ? "text-[10px] font-bold text-ink-muted dark:text-ink-muted"
+              : "text-xs font-bold text-ink dark:text-ink"
           }
         >
           使用中のプロフィール

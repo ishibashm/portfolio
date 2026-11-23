@@ -198,12 +198,12 @@ function delta(cur: number, prev: number): { text: string; cls: string } {
   if (prev === 0) {
     return cur > 0
       ? { text: "新規", cls: "text-emerald-600" }
-      : { text: "±0", cls: "text-stone-600" };
+      : { text: "±0", cls: "text-ink-muted" };
   }
   const pct = Math.round(((cur - prev) / prev) * 100);
   if (pct > 0) return { text: `▲ +${pct}%`, cls: "text-emerald-600" };
   if (pct < 0) return { text: `▼ ${pct}%`, cls: "text-rose-500" };
-  return { text: "±0%", cls: "text-stone-600" };
+  return { text: "±0%", cls: "text-ink-muted" };
 }
 
 /** カード内の小さな折れ線。values は古い順。 */
@@ -248,19 +248,19 @@ function KpiCard({
   spark?: number[];
 }) {
   return (
-    <div className="bg-white/90 border border-stone-200 rounded-2xl p-4">
+    <div className="bg-theme-surface border border-theme-border rounded-2xl p-4">
       <div className="flex items-center justify-between gap-2">
-        <span className="text-[10px] font-bold text-stone-600 uppercase tracking-wider">
+        <span className="text-[10px] font-bold text-ink-muted uppercase tracking-wider">
           {label}
         </span>
         <span className="text-stone-300">{icon}</span>
       </div>
-      <div className="mt-1 text-2xl font-black font-mono tracking-tight text-stone-800">
+      <div className="mt-1 text-2xl font-black font-mono tracking-tight text-ink">
         {value}
       </div>
       {sub && (
         <div
-          className={`text-[11px] font-mono mt-0.5 ${subCls ?? "text-stone-600"}`}
+          className={`text-[11px] font-mono mt-0.5 ${subCls ?? "text-ink-muted"}`}
         >
           {sub}
         </div>
@@ -285,7 +285,7 @@ function BarRow({
   return (
     <div className="flex items-center gap-2 py-1 text-xs">
       <span
-        className="w-40 sm:w-48 truncate font-mono text-stone-600"
+        className="w-40 sm:w-48 truncate font-mono text-ink-muted"
         title={label}
       >
         {label}
@@ -296,9 +296,9 @@ function BarRow({
           style={{ width: `${(value / Math.max(1, max)) * 100}%` }}
         />
       </div>
-      <span className="w-12 text-right font-mono text-stone-700">{value}</span>
+      <span className="w-12 text-right font-mono text-ink">{value}</span>
       {extra && (
-        <span className="w-14 text-right font-mono text-[10px] text-stone-600">
+        <span className="w-14 text-right font-mono text-[10px] text-ink-muted">
           {extra}
         </span>
       )}
@@ -330,7 +330,7 @@ function DailyChart({
   const rows = [...daily].reverse();
   if (rows.length < 2) {
     return (
-      <p className="text-sm text-stone-600">
+      <p className="text-sm text-ink-muted">
         まだ推移を描けません（2日分から）。
       </p>
     );
@@ -347,7 +347,7 @@ function DailyChart({
 
   return (
     <div>
-      <div className="flex items-center justify-between text-[10px] font-mono text-stone-600">
+      <div className="flex items-center justify-between text-[10px] font-mono text-ink-muted">
         <span>{max} PV</span>
         <span className="flex items-center gap-3">
           {/* 系列色は lib/chartPalette の決めごとに合わせる（#37）。
@@ -418,7 +418,7 @@ function DailyChart({
           </rect>
         ))}
       </svg>
-      <div className="flex justify-between text-[10px] font-mono text-stone-600">
+      <div className="flex justify-between text-[10px] font-mono text-ink-muted">
         <span>{rows[0].day}</span>
         <span>{rows[rows.length - 1].day}</span>
       </div>
@@ -478,10 +478,8 @@ function IntradayChart({
   return (
     <div className="flex flex-col gap-3">
       <div className="flex flex-wrap items-baseline gap-x-4 gap-y-1 text-xs">
-        <span className="font-mono font-bold text-stone-700">
-          今日 {todaySum} PV
-        </span>
-        <span className="font-mono text-stone-600">
+        <span className="font-mono font-bold text-ink">今日 {todaySum} PV</span>
+        <span className="font-mono text-ink-muted">
           昨日の同じ時刻まで {yesterdaySoFar} PV
         </span>
         <span
@@ -490,7 +488,7 @@ function IntradayChart({
               ? "text-emerald-600"
               : diff < 0
                 ? "text-rose-600"
-                : "text-stone-600"
+                : "text-ink-muted"
           }`}
         >
           {diff > 0 ? `+${diff}` : diff}
@@ -508,7 +506,7 @@ function IntradayChart({
               className="flex flex-col items-center gap-0.5"
               title={`${r.hour}時: 今日 ${r.pv} PV / ${r.uv} UV・昨日 ${prev} PV`}
             >
-              <div className="relative w-full h-16 bg-stone-50 rounded-sm overflow-hidden">
+              <div className="relative w-full h-16 bg-theme-subtle rounded-sm overflow-hidden">
                 {/* 昨日（薄い棒・後ろ） */}
                 <div
                   className="absolute bottom-0 left-0 right-0 bg-stone-200"
@@ -523,7 +521,7 @@ function IntradayChart({
                   />
                 )}
               </div>
-              <div className="text-[10px] font-mono text-stone-600">
+              <div className="text-[10px] font-mono text-ink-muted">
                 {r.hour}
               </div>
               <div
@@ -566,7 +564,7 @@ function WeekdayHeatmap({
   const max = Math.max(1, ...cells.map((c) => c.pv));
 
   if (cells.length === 0) {
-    return <p className="text-sm text-stone-600">まだ記録がありません。</p>;
+    return <p className="text-sm text-ink-muted">まだ記録がありません。</p>;
   }
 
   return (
@@ -576,7 +574,7 @@ function WeekdayHeatmap({
           {Array.from({ length: 24 }, (_, h) => (
             <span
               key={h}
-              className="flex-1 text-center text-[10px] font-mono text-stone-600"
+              className="flex-1 text-center text-[10px] font-mono text-ink-muted"
             >
               {h % 3 === 0 ? h : ""}
             </span>
@@ -584,7 +582,7 @@ function WeekdayHeatmap({
         </div>
         {WEEKDAY_LABELS.map((label, dow) => (
           <div key={dow} className="flex items-center gap-[2px] mb-[2px]">
-            <span className="w-6 text-[10px] font-mono text-stone-500">
+            <span className="w-6 text-[10px] font-mono text-ink-muted">
               {label}
             </span>
             {Array.from({ length: 24 }, (_, h) => {
@@ -624,7 +622,7 @@ function FlagBadge({ on, label }: { on: boolean; label: string }) {
       className={`inline-block px-1.5 py-0.5 rounded text-[10px] font-bold border ${
         on
           ? "bg-emerald-50 text-emerald-700 border-emerald-200"
-          : "bg-stone-50 text-stone-300 border-stone-200"
+          : "bg-theme-subtle text-stone-300 border-theme-border"
       }`}
     >
       {label}
@@ -667,7 +665,7 @@ function ScopeSwitch({
   return (
     <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1">
       <div
-        className="inline-flex rounded-lg border border-stone-300 bg-white p-0.5"
+        className="inline-flex rounded-lg border border-theme-border bg-theme-surface p-0.5"
         role="group"
         aria-label="集計に含める範囲"
       >
@@ -680,7 +678,7 @@ function ScopeSwitch({
             className={`px-3 py-1 rounded-md text-[11px] font-bold transition-colors ${
               includeInternal === o.value
                 ? "bg-stone-800 text-white"
-                : "text-stone-600 hover:bg-stone-100"
+                : "text-ink-muted hover:bg-stone-100"
             }`}
           >
             {o.label}
@@ -689,11 +687,11 @@ function ScopeSwitch({
       </div>
 
       {pending && (
-        <span className="text-[11px] text-stone-500">数え直しています…</span>
+        <span className="text-[11px] text-ink-muted">数え直しています…</span>
       )}
 
       {internal && !pending && (
-        <span className="text-[11px] text-stone-600">
+        <span className="text-[11px] text-ink-muted">
           {internal.included ? (
             <>
               自分の閲覧
@@ -711,7 +709,7 @@ function ScopeSwitch({
       )}
 
       {internal?.since && !pending && (
-        <span className="text-[11px] text-stone-500">
+        <span className="text-[11px] text-ink-muted">
           （見分けられるのは {internal.since}{" "}
           以降。それより前の閲覧は自分のものでも外せません）
         </span>
@@ -784,13 +782,13 @@ function OptOutToggle() {
   };
 
   return (
-    <div className="rounded-2xl border border-stone-200 bg-white p-4 space-y-2">
+    <div className="rounded-2xl border border-theme-border bg-theme-surface p-4 space-y-2">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h2 className="text-sm font-bold text-stone-800">
+          <h2 className="text-sm font-bold text-ink">
             この端末を計測から除外する
           </h2>
-          <p className="text-xs leading-relaxed text-stone-600 mt-1">
+          <p className="text-xs leading-relaxed text-ink-muted mt-1">
             自分の閲覧が数に混ざらないようにします。
             <strong>これから送る分にだけ効きます</strong>
             （既に記録された分は変わりません）。ログインしていなくても効きます。かわりに、別の端末やブラウザでは改めて設定が要ります。
@@ -802,7 +800,7 @@ function OptOutToggle() {
           className={`px-4 py-2 rounded-xl text-xs font-bold whitespace-nowrap ${
             optedOut
               ? "bg-emerald-600 hover:bg-emerald-700 text-white"
-              : "border border-stone-300 bg-white hover:bg-stone-50 text-stone-700"
+              : "border border-theme-border bg-theme-surface hover:bg-theme-subtle text-ink"
           }`}
         >
           {optedOut ? "除外中（解除する）" : "除外する"}
@@ -896,14 +894,14 @@ export default function AdminMetricsPage() {
   const hourMap = new Map(s?.hourly.map((h) => [h.hour, h.pv]) ?? []);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-rose-50/80 via-stone-50 to-amber-50/50 text-stone-800 p-4 md:p-8 font-sans">
+    <div className="min-h-screen bg-background text-ink text-ink p-4 md:p-8 font-sans">
       <div className="max-w-[1700px] mx-auto space-y-5">
         <header className="flex flex-wrap items-end justify-between gap-2">
           <div>
-            <h1 className="text-xl font-bold font-serif text-stone-900">
+            <h1 className="text-xl font-bold font-serif text-ink">
               アクセス状況
             </h1>
-            <p className="text-xs text-stone-500 mt-1">
+            <p className="text-xs text-ink-muted mt-1">
               直近30日。閲覧の記録は匿名で、日をまたいで同じ人を追えません。クローラは除外済み。管理者だけが見られます。
             </p>
             <ScopeSwitch
@@ -918,12 +916,12 @@ export default function AdminMetricsPage() {
                 設計なので、管理ページ同士だけは行き来できるようにする */}
             <a
               href="/admin/blog"
-              className="px-3.5 py-1.5 rounded-xl border border-stone-200 bg-white text-xs font-semibold text-stone-600 hover:bg-stone-50"
+              className="px-3.5 py-1.5 rounded-xl border border-theme-border bg-theme-surface text-xs font-semibold text-ink-muted hover:bg-theme-subtle"
             >
               記事を編集する
             </a>
             {s && (
-              <span className="text-[10px] font-mono text-stone-600 flex items-center gap-1">
+              <span className="text-[10px] font-mono text-ink-muted flex items-center gap-1">
                 <Clock className="w-3 h-3" />
                 最新の閲覧: {relTime(s.latestViewAt)}
               </span>
@@ -935,13 +933,13 @@ export default function AdminMetricsPage() {
         <OptOutToggle />
 
         {error && (
-          <div className="rounded-2xl border border-rose-200 bg-rose-50 p-4 text-sm text-rose-800">
+          <div className="rounded-2xl border border-theme-border bg-theme-gold-soft p-4 text-sm text-theme-gold">
             {error}
           </div>
         )}
 
         {!s && !error && (
-          <div className="flex items-center gap-2 text-stone-600 text-sm p-8 justify-center">
+          <div className="flex items-center gap-2 text-ink-muted text-sm p-8 justify-center">
             <Loader2 className="w-4 h-4 animate-spin" />
             集計しています…
           </div>
@@ -999,9 +997,9 @@ export default function AdminMetricsPage() {
                 金額は lib/operatingCosts に置いてある。未設定のものは
                 そう出す。推測した額を並べると、あとから見た人がそれを
                 実額だと思い込む。 */}
-            <section className="bg-white/90 border border-stone-200 rounded-2xl p-5">
-              <h2 className="text-sm font-bold text-stone-700 mb-3 flex items-center gap-2">
-                <Wallet className="w-4 h-4 text-stone-600" />
+            <section className="bg-theme-surface border border-theme-border rounded-2xl p-5">
+              <h2 className="text-sm font-bold text-ink mb-3 flex items-center gap-2">
+                <Wallet className="w-4 h-4 text-ink-muted" />
                 運用の経費（固定費）
               </h2>
 
@@ -1052,10 +1050,10 @@ export default function AdminMetricsPage() {
                           className="flex items-start justify-between gap-3 py-2"
                         >
                           <div className="min-w-0">
-                            <div className="text-xs font-bold text-stone-700">
+                            <div className="text-xs font-bold text-ink">
                               {c.label}
                             </div>
-                            <div className="text-[10px] text-stone-600 leading-relaxed">
+                            <div className="text-[10px] text-ink-muted leading-relaxed">
                               {c.note}
                             </div>
                           </div>
@@ -1063,7 +1061,7 @@ export default function AdminMetricsPage() {
                             className={`shrink-0 font-mono text-xs ${
                               c.monthlyYen === null
                                 ? "text-amber-600"
-                                : "text-stone-700"
+                                : "text-ink"
                             }`}
                           >
                             {formatYen(c.monthlyYen)}
@@ -1072,7 +1070,7 @@ export default function AdminMetricsPage() {
                       ))}
                     </div>
 
-                    <p className="mt-3 text-xs leading-relaxed text-stone-600">
+                    <p className="mt-3 text-xs leading-relaxed text-ink-muted">
                       金額は <code>src/lib/operatingCosts.ts</code>{" "}
                       に書いてあります。実額が分かったものから埋めてください。
                       <strong className="text-amber-600">
@@ -1086,12 +1084,12 @@ export default function AdminMetricsPage() {
               })()}
             </section>
 
-            <section className="bg-white/90 border border-stone-200 rounded-2xl p-5">
-              <h2 className="text-sm font-bold text-stone-700 mb-1 flex items-center gap-2">
-                <Wallet className="w-4 h-4 text-stone-600" />
+            <section className="bg-theme-surface border border-theme-border rounded-2xl p-5">
+              <h2 className="text-sm font-bold text-ink mb-1 flex items-center gap-2">
+                <Wallet className="w-4 h-4 text-ink-muted" />
                 外部 API の従量（当月）
               </h2>
-              <p className="text-xs text-stone-600 mb-3">
+              <p className="text-xs text-ink-muted mb-3">
                 {s.externalApi.sinceDay} 以降。成功して usage
                 が返った呼び出しを集計。
               </p>
@@ -1136,7 +1134,7 @@ export default function AdminMetricsPage() {
 
               {s.externalApi.status === "ok" &&
               s.externalApi.rows.length === 0 ? (
-                <p className="text-sm text-stone-600">まだ記録がありません。</p>
+                <p className="text-sm text-ink-muted">まだ記録がありません。</p>
               ) : s.externalApi.rows.length > 0 ? (
                 <div className="divide-y divide-stone-100">
                   {s.externalApi.rows.map((row) => (
@@ -1145,13 +1143,13 @@ export default function AdminMetricsPage() {
                       className="grid grid-cols-[minmax(0,1fr)_auto] gap-3 py-2"
                     >
                       <div className="min-w-0">
-                        <div className="text-xs font-bold text-stone-700">
+                        <div className="text-xs font-bold text-ink">
                           {row.model}
                         </div>
-                        <div className="text-[10px] text-stone-600 break-all">
+                        <div className="text-[10px] text-ink-muted break-all">
                           {row.provider} · {row.route}
                         </div>
-                        <div className="text-[10px] text-stone-600">
+                        <div className="text-[10px] text-ink-muted">
                           入力 {row.inputTokens.toLocaleString()} / 出力{" "}
                           {row.outputTokens.toLocaleString()} tokens
                           {row.untrackedCalls > 0 && (
@@ -1162,14 +1160,14 @@ export default function AdminMetricsPage() {
                         </div>
                       </div>
                       <div className="text-right shrink-0">
-                        <div className="font-mono text-xs font-bold text-stone-700">
+                        <div className="font-mono text-xs font-bold text-ink">
                           {row.calls} 回
                         </div>
                         <div
                           className={`font-mono text-[10px] ${
                             row.estimateYen === null
                               ? "text-amber-600"
-                              : "text-stone-500"
+                              : "text-ink-muted"
                           }`}
                         >
                           {formatYen(row.estimateYen, 2)}
@@ -1180,7 +1178,7 @@ export default function AdminMetricsPage() {
                 </div>
               ) : null}
 
-              <p className="mt-3 text-xs leading-relaxed text-stone-600">
+              <p className="mt-3 text-xs leading-relaxed text-ink-muted">
                 単価は <code>src/lib/apiUsage.ts</code>
                 {
                   " に置きます。価格表と円換算を確認できるまでは未設定のままにし、推測額は出しません。"
@@ -1188,12 +1186,12 @@ export default function AdminMetricsPage() {
               </p>
             </section>
 
-            <section className="bg-white/90 border border-stone-200 rounded-2xl p-5">
-              <h2 className="text-sm font-bold text-stone-700 mb-1 flex items-center gap-2">
-                <Wallet className="w-4 h-4 text-stone-600" />
+            <section className="bg-theme-surface border border-theme-border rounded-2xl p-5">
+              <h2 className="text-sm font-bold text-ink mb-1 flex items-center gap-2">
+                <Wallet className="w-4 h-4 text-ink-muted" />
                 GCP 請求実額（当月）
               </h2>
-              <p className="text-xs text-stone-600 mb-3">
+              <p className="text-xs text-ink-muted mb-3">
                 請求月 {s.gcpBilling.invoiceMonth.slice(0, 4)}/
                 {s.gcpBilling.invoiceMonth.slice(4)}。Billing Export の cost
                 から credits を差し引いた対象プロジェクトの実額。
@@ -1242,10 +1240,8 @@ export default function AdminMetricsPage() {
                       key={item.service}
                       className="flex items-center justify-between gap-3 py-2 text-xs"
                     >
-                      <span className="font-bold text-stone-700">
-                        {item.service}
-                      </span>
-                      <span className="font-mono text-stone-600">
+                      <span className="font-bold text-ink">{item.service}</span>
+                      <span className="font-mono text-ink-muted">
                         {formatCurrency(item.amount, s.gcpBilling.currency)}
                       </span>
                     </div>
@@ -1253,7 +1249,7 @@ export default function AdminMetricsPage() {
                 </div>
               )}
 
-              <p className="mt-3 text-xs leading-relaxed text-stone-600">
+              <p className="mt-3 text-xs leading-relaxed text-ink-muted">
                 Cloud Billing API は実額を返さないため、Standard usage cost の
                 BigQuery export を読みます。未設定時は通信せず、0
                 円とは区別します。
@@ -1262,15 +1258,15 @@ export default function AdminMetricsPage() {
 
             {/* ── 中段: 日別と時間帯別 ── */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
-              <section className="lg:col-span-2 bg-white/90 border border-stone-200 rounded-2xl p-5">
-                <h2 className="text-sm font-bold text-stone-700 mb-1">
+              <section className="lg:col-span-2 bg-theme-surface border border-theme-border rounded-2xl p-5">
+                <h2 className="text-sm font-bold text-ink mb-1">
                   日別の PV / UV（30日）
                 </h2>
-                <p className="text-xs text-stone-600 mb-3">
+                <p className="text-xs text-ink-muted mb-3">
                   升目に触れるとその日の値が出ます。
                 </p>
                 {s.daily.length === 0 ? (
-                  <p className="text-sm text-stone-600">
+                  <p className="text-sm text-ink-muted">
                     まだ記録がありません。
                   </p>
                 ) : (
@@ -1278,11 +1274,11 @@ export default function AdminMetricsPage() {
                 )}
               </section>
 
-              <section className="bg-white/90 border border-stone-200 rounded-2xl p-5">
-                <h2 className="text-sm font-bold text-stone-700 mb-1">
+              <section className="bg-theme-surface border border-theme-border rounded-2xl p-5">
+                <h2 className="text-sm font-bold text-ink mb-1">
                   時間帯別（JST・直近7日）
                 </h2>
-                <p className="text-xs text-stone-600 mb-3">
+                <p className="text-xs text-ink-muted mb-3">
                   濃いほど多い。いつ見られているか。
                 </p>
                 <div className="grid grid-cols-6 gap-1">
@@ -1298,10 +1294,10 @@ export default function AdminMetricsPage() {
                         }}
                         title={`${h}時: ${pv} PV`}
                       >
-                        <div className="text-[10px] font-mono text-stone-500">
+                        <div className="text-[10px] font-mono text-ink-muted">
                           {h}時
                         </div>
-                        <div className="text-[11px] font-mono font-bold text-stone-700">
+                        <div className="text-[11px] font-mono font-bold text-ink">
                           {pv}
                         </div>
                       </div>
@@ -1315,11 +1311,11 @@ export default function AdminMetricsPage() {
               今日 1 日の中の動き。上の「時間帯別（直近 7 日）」は
               いつもの傾向で、今日どう増えているかは読めない。
             */}
-            <section className="bg-white/90 border border-stone-200 rounded-2xl p-5">
-              <h2 className="text-sm font-bold text-stone-700 mb-1">
+            <section className="bg-theme-surface border border-theme-border rounded-2xl p-5">
+              <h2 className="text-sm font-bold text-ink mb-1">
                 今日の時間別（JST・昨日と比較）
               </h2>
-              <p className="text-xs text-stone-600 mb-3">
+              <p className="text-xs text-ink-muted mb-3">
                 {
                   "濃い棒が今日、薄い棒が昨日の同じ時刻。下の数字は昨日との差。まだ来ていない時刻は棒を描きません。"
                 }
@@ -1332,11 +1328,11 @@ export default function AdminMetricsPage() {
               />
             </section>
 
-            <section className="bg-white/90 border border-stone-200 rounded-2xl p-5">
-              <h2 className="text-sm font-bold text-stone-700 mb-1">
+            <section className="bg-theme-surface border border-theme-border rounded-2xl p-5">
+              <h2 className="text-sm font-bold text-ink mb-1">
                 曜日 × 時間帯（JST・直近30日）
               </h2>
-              <p className="text-xs text-stone-600 mb-3">
+              <p className="text-xs text-ink-muted mb-3">
                 濃いほど多い。左の 24 枠は 7 日ぶんなので「今」を、こちらは 30
                 日ぶんなので「平日の昼か週末の夜か」を見るためのもの。
               </p>
@@ -1344,12 +1340,12 @@ export default function AdminMetricsPage() {
             </section>
 
             {/* ── ブログの効果検証 ── */}
-            <section className="bg-white/90 border border-stone-200 rounded-2xl p-5">
-              <h2 className="text-sm font-bold text-stone-700 mb-1 flex items-center gap-2">
-                <BookOpen className="w-4 h-4 text-stone-600" />
+            <section className="bg-theme-surface border border-theme-border rounded-2xl p-5">
+              <h2 className="text-sm font-bold text-ink mb-1 flex items-center gap-2">
+                <BookOpen className="w-4 h-4 text-ink-muted" />
                 ブログの効果検証（30日）
               </h2>
-              <p className="text-xs text-stone-600 mb-4">
+              <p className="text-xs text-ink-muted mb-4">
                 記事は読まれているか、読んだ人が道具まで来ているか。
                 <span className="text-amber-600">
                   到達率は同じ日に両方を見た割合です。
@@ -1401,12 +1397,12 @@ export default function AdminMetricsPage() {
                   記事）。内訳は記録の無い日も 0 の行で出す。行が抜けると
                   「記録が無い」と「0 だった」の区別がつかない。 */}
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-5 mb-5">
-                <div className="lg:col-span-2 rounded-xl border border-stone-200 bg-white/60 p-4">
-                  <h3 className="text-xs font-bold text-stone-600 mb-2">
+                <div className="lg:col-span-2 rounded-xl border border-theme-border bg-theme-surface/60 p-4">
+                  <h3 className="text-xs font-bold text-ink-muted mb-2">
                     ブログの日別 PV / UV（30日）
                   </h3>
                   {s.blog.daily.length === 0 ? (
-                    <p className="text-sm text-stone-600">
+                    <p className="text-sm text-ink-muted">
                       まだ記録がありません。
                     </p>
                   ) : (
@@ -1414,13 +1410,13 @@ export default function AdminMetricsPage() {
                   )}
                 </div>
 
-                <div className="rounded-xl border border-stone-200 bg-white/60 p-4 overflow-x-auto">
-                  <h3 className="text-xs font-bold text-stone-600 mb-2">
+                <div className="rounded-xl border border-theme-border bg-theme-surface/60 p-4 overflow-x-auto">
+                  <h3 className="text-xs font-bold text-ink-muted mb-2">
                     直近7日の内訳
                   </h3>
                   <table className="w-full text-[11px] font-mono">
-                    <thead className="text-[10px] text-stone-600">
-                      <tr className="border-b border-stone-200">
+                    <thead className="text-[10px] text-ink-muted">
+                      <tr className="border-b border-theme-border">
                         <th className="py-1 pr-2 text-left font-bold">日付</th>
                         <th className="py-1 px-1.5 text-right font-bold">
                           一覧
@@ -1444,31 +1440,31 @@ export default function AdminMetricsPage() {
                           key={row.day}
                           className="border-b border-stone-100 last:border-0"
                         >
-                          <td className="py-1 pr-2 text-stone-500">
+                          <td className="py-1 pr-2 text-ink-muted">
                             {row.day.slice(5)}
                           </td>
-                          <td className="py-1 px-1.5 text-right text-stone-600">
+                          <td className="py-1 px-1.5 text-right text-ink-muted">
                             {row.index}
                           </td>
                           {s.blog.recentBreakdown.postColumns.map((c) => (
                             <td
                               key={c.slug}
-                              className="py-1 px-1.5 text-right text-stone-700"
+                              className="py-1 px-1.5 text-right text-ink"
                             >
                               {row.posts[c.slug] ?? 0}
                             </td>
                           ))}
-                          <td className="py-1 px-1.5 text-right text-stone-600">
+                          <td className="py-1 px-1.5 text-right text-ink-muted">
                             {row.other}
                           </td>
-                          <td className="py-1 pl-1.5 text-right font-bold text-stone-800">
+                          <td className="py-1 pl-1.5 text-right font-bold text-ink">
                             {row.total}
                           </td>
                         </tr>
                       ))}
                     </tbody>
                   </table>
-                  <p className="mt-2 text-xs text-stone-600 leading-relaxed">
+                  <p className="mt-2 text-xs text-ink-muted leading-relaxed">
                     列は直近7日で読まれた順に3本まで。残りは「他」です。
                   </p>
                 </div>
@@ -1476,11 +1472,11 @@ export default function AdminMetricsPage() {
 
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
                 <div className="lg:col-span-2">
-                  <h3 className="text-xs font-bold text-stone-600 mb-2">
+                  <h3 className="text-xs font-bold text-ink-muted mb-2">
                     記事別
                   </h3>
                   {s.blog.posts.length === 0 ? (
-                    <p className="text-sm text-stone-600">記事がありません。</p>
+                    <p className="text-sm text-ink-muted">記事がありません。</p>
                   ) : (
                     <div className="space-y-1">
                       {s.blog.posts.map((post) => (
@@ -1490,12 +1486,12 @@ export default function AdminMetricsPage() {
                         >
                           <a
                             href={post.path}
-                            className="w-56 xl:w-80 truncate text-stone-600 hover:text-rose-600 hover:underline"
+                            className="w-56 xl:w-80 truncate text-ink-muted hover:text-rose-600 hover:underline"
                             title={`${post.title}（${post.path}）`}
                           >
                             {post.title}
                           </a>
-                          <span className="w-16 text-right font-mono text-[10px] text-stone-600">
+                          <span className="w-16 text-right font-mono text-[10px] text-ink-muted">
                             {post.daysSincePublished}日前
                           </span>
                           <div className="flex-1 h-3 bg-stone-100 rounded overflow-hidden">
@@ -1506,28 +1502,28 @@ export default function AdminMetricsPage() {
                               }}
                             />
                           </div>
-                          <span className="w-10 text-right font-mono text-stone-700">
+                          <span className="w-10 text-right font-mono text-ink">
                             {post.pv}
                           </span>
-                          <span className="w-14 text-right font-mono text-[10px] text-stone-600">
+                          <span className="w-14 text-right font-mono text-[10px] text-ink-muted">
                             UV {post.uv}
                           </span>
                         </div>
                       ))}
                     </div>
                   )}
-                  <p className="mt-2 text-xs text-stone-600">
+                  <p className="mt-2 text-xs text-ink-muted">
                     公開中の記事は PV が 0
                     でも並びます。一覧から消すと「読まれていない」が見えなくなるためです。
                   </p>
                 </div>
 
                 <div>
-                  <h3 className="text-xs font-bold text-stone-600 mb-2">
+                  <h3 className="text-xs font-bold text-ink-muted mb-2">
                     記事への流入元
                   </h3>
                   {s.blog.referrers.length === 0 ? (
-                    <p className="text-sm text-stone-600">
+                    <p className="text-sm text-ink-muted">
                       外部からの流入はまだありません。
                     </p>
                   ) : (
@@ -1540,7 +1536,7 @@ export default function AdminMetricsPage() {
                       />
                     ))
                   )}
-                  <p className="mt-2 text-xs text-stone-600">
+                  <p className="mt-2 text-xs text-ink-muted">
                     サイト内の移動は記録していないので、ここに出るのは外部からの流入だけです。
                   </p>
                 </div>
@@ -1549,12 +1545,12 @@ export default function AdminMetricsPage() {
 
             {/* ── 下段: 内訳 ── */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
-              <section className="bg-white/90 border border-stone-200 rounded-2xl p-5">
-                <h2 className="text-sm font-bold text-stone-700 mb-3">
+              <section className="bg-theme-surface border border-theme-border rounded-2xl p-5">
+                <h2 className="text-sm font-bold text-ink mb-3">
                   よく見られたページ（30日）
                 </h2>
                 {s.topPaths.length === 0 ? (
-                  <p className="text-sm text-stone-600">
+                  <p className="text-sm text-ink-muted">
                     まだ記録がありません。
                   </p>
                 ) : (
@@ -1570,12 +1566,12 @@ export default function AdminMetricsPage() {
                 )}
               </section>
 
-              <section className="bg-white/90 border border-stone-200 rounded-2xl p-5">
-                <h2 className="text-sm font-bold text-stone-700 mb-3">
+              <section className="bg-theme-surface border border-theme-border rounded-2xl p-5">
+                <h2 className="text-sm font-bold text-ink mb-3">
                   参照元（外部サイトのみ・30日）
                 </h2>
                 {s.topReferrers.length === 0 ? (
-                  <p className="text-sm text-stone-600">
+                  <p className="text-sm text-ink-muted">
                     外部サイトからの流入はまだありません。
                   </p>
                 ) : (
@@ -1590,17 +1586,17 @@ export default function AdminMetricsPage() {
                 )}
               </section>
 
-              <section className="bg-white/90 border border-stone-200 rounded-2xl p-5">
-                <h2 className="text-sm font-bold text-stone-700 mb-1 flex items-center gap-1.5">
-                  <Monitor className="w-4 h-4 text-stone-600" />
+              <section className="bg-theme-surface border border-theme-border rounded-2xl p-5">
+                <h2 className="text-sm font-bold text-ink mb-1 flex items-center gap-1.5">
+                  <Monitor className="w-4 h-4 text-ink-muted" />
                   デバイス別（30日）
                 </h2>
-                <p className="text-xs text-stone-600 mb-3">
+                <p className="text-xs text-ink-muted mb-3">
                   UA から PC / スマホ / タブレットの3値だけを記録。UA
                   そのものは保存していません。
                 </p>
                 {s.devices.length === 0 ? (
-                  <p className="text-sm text-stone-600">
+                  <p className="text-sm text-ink-muted">
                     まだ記録がありません。
                   </p>
                 ) : (
@@ -1620,41 +1616,41 @@ export default function AdminMetricsPage() {
                 )}
               </section>
 
-              <section className="bg-white/90 border border-stone-200 rounded-2xl p-5">
-                <h2 className="text-sm font-bold text-stone-700 mb-3">
+              <section className="bg-theme-surface border border-theme-border rounded-2xl p-5">
+                <h2 className="text-sm font-bold text-ink mb-3">
                   登録ユーザーの内訳
                 </h2>
                 <dl className="text-xs space-y-2">
                   <div className="flex justify-between">
-                    <dt className="text-stone-500">
+                    <dt className="text-ink-muted">
                       設定を保存したことのある人（総数）
                     </dt>
                     <dd className="font-mono font-bold">{s.registeredUsers}</dd>
                   </div>
                   <div className="flex justify-between">
-                    <dt className="text-stone-500">うち登録日の記録がある人</dt>
+                    <dt className="text-ink-muted">うち登録日の記録がある人</dt>
                     <dd className="font-mono">
                       {s.registeredUsers - s.newUsers.beforeTracking}
                     </dd>
                   </div>
                   <div className="flex justify-between">
-                    <dt className="text-stone-500">うち記録開始前からいる人</dt>
+                    <dt className="text-ink-muted">うち記録開始前からいる人</dt>
                     <dd className="font-mono">{s.newUsers.beforeTracking}</dd>
                   </div>
                   <div className="flex justify-between">
-                    <dt className="text-stone-500">
+                    <dt className="text-ink-muted">
                       直近7日に設定を保存した人
                     </dt>
                     <dd className="font-mono">{s.usersSaved7d}</dd>
                   </div>
                   <div className="flex justify-between">
-                    <dt className="text-stone-500">
+                    <dt className="text-ink-muted">
                       直近30日に設定を保存した人
                     </dt>
                     <dd className="font-mono">{s.usersSaved30d}</dd>
                   </div>
                 </dl>
-                <p className="text-xs text-stone-600 mt-3 leading-relaxed">
+                <p className="text-xs text-ink-muted mt-3 leading-relaxed">
                   Supabase Auth
                   の全アカウント数ではなく、設定を保存したことのある人の数です。ログイン履歴・プラン・権限のような項目はこのサイトにはありません（データを持たないことを選んでいます）。
                 </p>
@@ -1662,21 +1658,21 @@ export default function AdminMetricsPage() {
             </div>
 
             {/* ── 登録ユーザーの一覧 ── */}
-            <section className="bg-white/90 border border-stone-200 rounded-2xl p-5">
-              <h2 className="text-sm font-bold text-stone-700 mb-1">
+            <section className="bg-theme-surface border border-theme-border rounded-2xl p-5">
+              <h2 className="text-sm font-bold text-ink mb-1">
                 登録ユーザーの一覧
               </h2>
-              <p className="text-xs text-stone-600 mb-3">
+              <p className="text-xs text-ink-muted mb-3">
                 自分以外のアカウントが居るかを確かめるための一覧です。設定の中身（生年月日・座標・APIキー）はサーバが返さず、有無だけをバッジで出します。
               </p>
               {usersError && (
                 <p className="text-sm text-rose-700">{usersError}</p>
               )}
               {!users && !usersError && (
-                <p className="text-sm text-stone-600">読み込んでいます…</p>
+                <p className="text-sm text-ink-muted">読み込んでいます…</p>
               )}
               {users && users.length === 0 && (
-                <p className="text-sm text-stone-600">
+                <p className="text-sm text-ink-muted">
                   設定を保存したユーザーはまだいません。
                 </p>
               )}
@@ -1684,7 +1680,7 @@ export default function AdminMetricsPage() {
                 <div className="overflow-x-auto">
                   <table className="w-full text-xs">
                     <thead>
-                      <tr className="text-left text-[10px] text-stone-600 border-b border-stone-200">
+                      <tr className="text-left text-[10px] text-ink-muted border-b border-theme-border">
                         <th className="py-1.5 pr-3 font-bold">メール</th>
                         <th className="py-1.5 pr-3 font-bold">登録</th>
                         <th className="py-1.5 pr-3 font-bold">最終保存</th>
@@ -1702,11 +1698,11 @@ export default function AdminMetricsPage() {
                           key={u.email}
                           className="border-b border-stone-100 last:border-0"
                         >
-                          <td className="py-1.5 pr-3 font-mono text-stone-700 break-all">
+                          <td className="py-1.5 pr-3 font-mono text-ink break-all">
                             {u.email}
                           </td>
                           <td
-                            className="py-1.5 pr-3 font-mono text-stone-500 whitespace-nowrap"
+                            className="py-1.5 pr-3 font-mono text-ink-muted whitespace-nowrap"
                             title={u.createdAt ?? undefined}
                           >
                             {u.createdAt
@@ -1714,7 +1710,7 @@ export default function AdminMetricsPage() {
                               : "記録開始前"}
                           </td>
                           <td
-                            className="py-1.5 pr-3 font-mono text-stone-500 whitespace-nowrap"
+                            className="py-1.5 pr-3 font-mono text-ink-muted whitespace-nowrap"
                             title={u.updatedAt}
                           >
                             {relTime(u.updatedAt)}
@@ -1736,13 +1732,13 @@ export default function AdminMetricsPage() {
                               />
                             </span>
                           </td>
-                          <td className="py-1.5 pr-2 font-mono text-right text-stone-700">
+                          <td className="py-1.5 pr-2 font-mono text-right text-ink">
                             {u.favorites}
                           </td>
-                          <td className="py-1.5 pr-2 font-mono text-right text-stone-700">
+                          <td className="py-1.5 pr-2 font-mono text-right text-ink">
                             {u.histories}
                           </td>
-                          <td className="py-1.5 font-mono text-right text-stone-700">
+                          <td className="py-1.5 font-mono text-right text-ink">
                             {u.simulations}
                           </td>
                         </tr>

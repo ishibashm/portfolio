@@ -65,7 +65,7 @@ const EMPTY_DRAFT: Draft = {
 };
 
 const inputClass =
-  "w-full px-3 py-2 bg-white border border-stone-200 rounded-xl text-sm text-stone-800 outline-none focus:ring-2 focus:ring-indigo-500";
+  "w-full px-3 py-2 bg-theme-surface border border-theme-border rounded-xl text-sm text-ink outline-none focus:ring-2 focus:ring-accent";
 
 export default function AdminBlogPage() {
   const [posts, setPosts] = useState<AdminPost[] | null>(null);
@@ -208,28 +208,28 @@ export default function AdminBlogPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-rose-50/80 via-stone-50 to-amber-50/50 text-stone-800 p-4 md:p-8 font-sans">
+    <div className="min-h-screen bg-background text-ink text-ink p-4 md:p-8 font-sans">
       <div className="max-w-[1700px] mx-auto space-y-5">
-        <div className="flex flex-wrap items-center justify-between gap-3 bg-white/80 backdrop-blur-xl border border-rose-100/80 p-6 rounded-3xl shadow-xl shadow-rose-100/30">
+        <div className="flex flex-wrap items-center justify-between gap-3 bg-theme-surface backdrop-blur-xl border border-rose-100/80 p-6 rounded-3xl shadow-xl shadow-rose-100/30">
           <div>
-            <h1 className="text-xl font-bold font-serif text-stone-900 flex items-center gap-2">
+            <h1 className="text-xl font-bold font-serif text-ink flex items-center gap-2">
               <PenSquare className="w-5 h-5 text-indigo-500" />
               ブログ記事の編集
             </h1>
-            <p className="text-xs text-stone-500 mt-1">
+            <p className="text-xs text-ink-muted mt-1">
               下書きは公開側（/blog）に出ません。公開のチェックを入れて保存した時点で見えます。
             </p>
           </div>
           <div className="flex items-center gap-2">
             <Link
               href="/admin/metrics"
-              className="px-3.5 py-1.5 rounded-xl border border-stone-200 bg-white text-xs font-semibold text-stone-600 hover:bg-stone-50"
+              className="px-3.5 py-1.5 rounded-xl border border-theme-border bg-theme-surface text-xs font-semibold text-ink-muted hover:bg-theme-subtle"
             >
               効果検証を見る
             </Link>
             <button
               onClick={openNew}
-              className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold"
+              className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-accent hover:brightness-110 text-on-accent text-xs font-semibold"
             >
               <Plus className="w-3.5 h-3.5" />
               新しい記事
@@ -243,23 +243,23 @@ export default function AdminBlogPage() {
           </div>
         )}
         {listError && (
-          <div className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-2.5 text-xs text-rose-800">
+          <div className="rounded-xl border border-theme-border bg-theme-gold-soft px-4 py-2.5 text-xs text-theme-gold">
             {listError}
           </div>
         )}
 
         {draft && (
-          <div className="bg-white/90 border border-stone-200 rounded-3xl p-6 space-y-4 shadow-lg">
-            <h2 className="text-sm font-bold text-stone-700">
+          <div className="bg-theme-surface border border-theme-border rounded-3xl p-6 space-y-4 shadow-lg">
+            <h2 className="text-sm font-bold text-ink">
               {draft.id ? "記事を編集" : "新しい記事"}
             </h2>
             {formError && (
-              <div className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-2.5 text-xs text-rose-800">
+              <div className="rounded-xl border border-theme-border bg-theme-gold-soft px-4 py-2.5 text-xs text-theme-gold">
                 {formError}
               </div>
             )}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <label className="block text-xs font-semibold text-stone-500 space-y-1">
+              <label className="block text-xs font-semibold text-ink-muted space-y-1">
                 タイトル
                 <input
                   className={inputClass}
@@ -269,7 +269,7 @@ export default function AdminBlogPage() {
                   }
                 />
               </label>
-              <label className="block text-xs font-semibold text-stone-500 space-y-1">
+              <label className="block text-xs font-semibold text-ink-muted space-y-1">
                 slug（URL。英小文字・数字・ハイフン）
                 <input
                   className={`${inputClass} font-mono`}
@@ -278,7 +278,7 @@ export default function AdminBlogPage() {
                   placeholder="direction-basics"
                 />
               </label>
-              <label className="block text-xs font-semibold text-stone-500 space-y-1 md:col-span-2">
+              <label className="block text-xs font-semibold text-ink-muted space-y-1 md:col-span-2">
                 要約（一覧と検索結果に出る 1〜2 文）
                 <input
                   className={inputClass}
@@ -288,7 +288,7 @@ export default function AdminBlogPage() {
                   }
                 />
               </label>
-              <label className="block text-xs font-semibold text-stone-500 space-y-1">
+              <label className="block text-xs font-semibold text-ink-muted space-y-1">
                 カテゴリ
                 <input
                   className={inputClass}
@@ -299,7 +299,7 @@ export default function AdminBlogPage() {
                   placeholder="方位の基本"
                 />
               </label>
-              <label className="block text-xs font-semibold text-stone-500 space-y-1">
+              <label className="block text-xs font-semibold text-ink-muted space-y-1">
                 タグ（カンマ区切り）
                 <input
                   className={inputClass}
@@ -308,7 +308,7 @@ export default function AdminBlogPage() {
                   placeholder="方位,引越し"
                 />
               </label>
-              <label className="block text-xs font-semibold text-stone-500 space-y-1">
+              <label className="block text-xs font-semibold text-ink-muted space-y-1">
                 公開日（空なら保存時の日付）
                 <input
                   type="date"
@@ -319,19 +319,19 @@ export default function AdminBlogPage() {
                   }
                 />
               </label>
-              <label className="flex items-center gap-2 text-xs font-semibold text-stone-600 mt-5">
+              <label className="flex items-center gap-2 text-xs font-semibold text-ink-muted mt-5">
                 <input
                   type="checkbox"
                   checked={draft.published}
                   onChange={(e) =>
                     setDraft({ ...draft, published: e.target.checked })
                   }
-                  className="rounded border-stone-300 text-indigo-600 w-4 h-4"
+                  className="rounded border-theme-border text-accent w-4 h-4"
                 />
                 公開する（外すと下書きに戻り、/blog から消えます）
               </label>
             </div>
-            <label className="block text-xs font-semibold text-stone-500 space-y-1">
+            <label className="block text-xs font-semibold text-ink-muted space-y-1">
               本文（Markdown）
               <textarea
                 className={`${inputClass} font-mono min-h-[420px] leading-relaxed`}
@@ -346,14 +346,14 @@ export default function AdminBlogPage() {
                 <button
                   onClick={save}
                   disabled={busy}
-                  className="px-5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 disabled:bg-indigo-300 text-white text-xs font-semibold"
+                  className="px-5 py-2 rounded-xl bg-accent hover:brightness-110 disabled:bg-indigo-300 text-on-accent text-xs font-semibold"
                 >
                   {busy ? "保存中..." : "保存"}
                 </button>
                 <button
                   onClick={() => setDraft(null)}
                   disabled={busy}
-                  className="px-5 py-2 rounded-xl border border-stone-200 bg-white text-xs font-semibold text-stone-600 hover:bg-stone-50"
+                  className="px-5 py-2 rounded-xl border border-theme-border bg-theme-surface text-xs font-semibold text-ink-muted hover:bg-theme-subtle"
                 >
                   閉じる
                 </button>
@@ -362,7 +362,7 @@ export default function AdminBlogPage() {
                 <button
                   onClick={remove}
                   disabled={busy}
-                  className="flex items-center gap-1.5 px-4 py-2 rounded-xl border border-rose-200 bg-white text-xs font-semibold text-rose-600 hover:bg-rose-50"
+                  className="flex items-center gap-1.5 px-4 py-2 rounded-xl border border-theme-border bg-theme-surface text-xs font-semibold text-rose-600 hover:bg-theme-gold-soft"
                 >
                   <Trash2 className="w-3.5 h-3.5" />
                   削除
@@ -372,20 +372,20 @@ export default function AdminBlogPage() {
           </div>
         )}
 
-        <div className="bg-white/90 border border-stone-200 rounded-3xl overflow-hidden shadow-lg">
+        <div className="bg-theme-surface border border-theme-border rounded-3xl overflow-hidden shadow-lg">
           {posts === null ? (
-            <div className="p-10 flex items-center justify-center gap-2 text-stone-600 text-sm">
+            <div className="p-10 flex items-center justify-center gap-2 text-ink-muted text-sm">
               <Loader2 className="w-4 h-4 animate-spin" />
               読み込み中...
             </div>
           ) : posts.length === 0 ? (
-            <div className="p-10 text-center text-stone-600 text-sm">
+            <div className="p-10 text-center text-ink-muted text-sm">
               記事がまだありません。「新しい記事」から作れます。
             </div>
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full text-xs text-left min-w-[720px]">
-                <thead className="whitespace-nowrap text-[10px] text-stone-600 uppercase bg-stone-50 border-b border-stone-200">
+                <thead className="whitespace-nowrap text-[10px] text-ink-muted uppercase bg-theme-subtle border-b border-theme-border">
                   <tr>
                     <th className="px-4 py-2.5 font-bold">タイトル / slug</th>
                     <th className="px-4 py-2.5 font-bold">状態</th>
@@ -403,13 +403,11 @@ export default function AdminBlogPage() {
                     <tr
                       key={p.id}
                       onClick={() => openEdit(p.id)}
-                      className="border-b border-stone-100 hover:bg-stone-50 cursor-pointer"
+                      className="border-b border-stone-100 hover:bg-theme-subtle cursor-pointer"
                     >
                       <td className="px-4 py-3">
-                        <div className="font-bold text-stone-800">
-                          {p.title}
-                        </div>
-                        <div className="font-mono text-[10px] text-stone-600">
+                        <div className="font-bold text-ink">{p.title}</div>
+                        <div className="font-mono text-[10px] text-ink-muted">
                           {p.slug}
                           {p.published && (
                             <Link
@@ -429,18 +427,18 @@ export default function AdminBlogPage() {
                             公開中
                           </span>
                         ) : (
-                          <span className="px-2 py-0.5 rounded-full bg-stone-100 text-stone-500 font-bold text-[10px]">
+                          <span className="px-2 py-0.5 rounded-full bg-stone-100 text-ink-muted font-bold text-[10px]">
                             下書き
                           </span>
                         )}
                       </td>
-                      <td className="px-4 py-3 text-stone-500">
+                      <td className="px-4 py-3 text-ink-muted">
                         {p.category ?? "—"}
                       </td>
-                      <td className="px-4 py-3 font-mono text-stone-500">
+                      <td className="px-4 py-3 font-mono text-ink-muted">
                         {toJapanDateString(new Date(p.publishedAt))}
                       </td>
-                      <td className="px-4 py-3 font-mono text-stone-500">
+                      <td className="px-4 py-3 font-mono text-ink-muted">
                         {toJapanDateString(new Date(p.updatedAt))}
                       </td>
                       <td className="px-4 py-3 text-right">
@@ -452,7 +450,7 @@ export default function AdminBlogPage() {
                             openEdit(p.id);
                           }}
                           disabled={busy}
-                          className="px-3 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-700 disabled:bg-stone-300 text-white text-[11px] font-bold whitespace-nowrap"
+                          className="px-3 py-1.5 rounded-lg bg-accent hover:brightness-110 disabled:bg-stone-300 text-on-accent text-[11px] font-bold whitespace-nowrap"
                         >
                           編集
                         </button>

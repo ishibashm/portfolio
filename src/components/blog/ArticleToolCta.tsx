@@ -24,15 +24,15 @@ export function ArticleToolCta({ tags }: { tags: readonly string[] }) {
     >
       <h2
         id="article-tool-cta"
-        className="font-serif text-base font-bold text-slate-900 dark:text-ink"
+        className="font-serif text-base font-bold text-ink dark:text-ink"
       >
         自分の場合はどうかを、同じ基準で確かめる
       </h2>
-      <p className="mt-2 text-xs leading-relaxed text-slate-700 dark:text-ink max-w-[70ch]">
+      <p className="mt-2 text-xs leading-relaxed text-ink dark:text-ink max-w-[70ch]">
         この記事で説明している判定は、サイト内の道具と同じ計算で出しています。生年月日と今住んでいる場所を一度入れれば、どの道具も同じ設定を読みます。
       </p>
       {tags.some((tag) => ["方位", "距離", "引越し", "家賃"].includes(tag)) && (
-        <p className="mt-2 text-xs leading-relaxed text-slate-700 dark:text-ink max-w-[70ch]">
+        <p className="mt-2 text-xs leading-relaxed text-ink dark:text-ink max-w-[70ch]">
           出発地から見た街の並びは
           <Link href="/houi/area" className="underline hover:text-accent">
             エリア別の解説
@@ -58,7 +58,7 @@ export function ArticleToolCta({ tags }: { tags: readonly string[] }) {
       {tags.includes("天中殺") && (
         <Link
           href="/houi/tenchusatsu"
-          className="mt-4 inline-block rounded-xl border border-theme-border bg-white dark:bg-theme-surface px-4 py-3 text-sm"
+          className="mt-4 inline-block rounded-xl border border-theme-border bg-theme-surface dark:bg-theme-surface px-4 py-3 text-sm"
         >
           生年月日から天中殺を調べる
         </Link>
@@ -76,9 +76,9 @@ export function ArticleToolCta({ tags }: { tags: readonly string[] }) {
           >
             <Link
               href={t.href}
-              className="group block h-full rounded-xl border border-slate-300 dark:border-theme-border bg-white dark:bg-theme-surface p-4 transition-colors hover:border-accent"
+              className="group block h-full rounded-xl border border-theme-border dark:border-theme-border bg-theme-surface dark:bg-theme-surface p-4 transition-colors hover:border-accent"
             >
-              <span className="flex items-center gap-2 font-serif text-sm font-bold text-slate-900 dark:text-ink">
+              <span className="flex items-center gap-2 font-serif text-sm font-bold text-ink dark:text-ink">
                 {t.label}
                 <ArrowRight className="h-4 w-4 text-accent opacity-0 transition-opacity group-hover:opacity-100" />
               </span>

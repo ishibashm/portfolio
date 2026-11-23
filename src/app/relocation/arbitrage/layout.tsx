@@ -34,7 +34,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         決まった日付に開いている方位の街を、家賃の水準と空き家率つきで並べます。いま募集中の部屋の一覧ではありません。未設定のときは東京からの街と家賃を表示します。
       </ToolPageIntro>
       <div className="mx-auto max-w-[1700px] px-4 pt-4 md:px-8">
-        <details className="rounded-2xl border border-slate-200 dark:border-theme-border bg-white/90 dark:bg-theme-surface">
+        <details className="rounded-2xl border border-theme-border dark:border-theme-border bg-theme-surface dark:bg-theme-surface">
           <summary className="cursor-pointer px-5 py-4 text-sm font-bold text-ink">
             このツールの概要と使い方
           </summary>
@@ -54,7 +54,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
               </p>
             </div>
 
-            <div className="space-y-2 border-t border-slate-200 dark:border-theme-border pt-3">
+            <div className="space-y-2 border-t border-theme-border dark:border-theme-border pt-3">
               <h3 className="text-xs font-bold text-ink">
                 使い方の手順と関連ツール
               </h3>
@@ -93,7 +93,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
               </p>
             </div>
 
-            <div className="space-y-1.5 border-t border-slate-200 dark:border-theme-border pt-3">
+            <div className="space-y-1.5 border-t border-theme-border dark:border-theme-border pt-3">
               <h3 className="text-xs font-bold text-ink">
                 家賃水準・空き家率の統計について（方位の判定とは別の公的統計）
               </h3>

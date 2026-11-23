@@ -41,13 +41,13 @@ export function OfficialRentNote({
   if (rents.length === 0) return null;
   return (
     <div
-      className="mt-4 rounded-xl border border-sky-200 bg-sky-50/60 p-4"
+      className="mt-4 rounded-xl border border-theme-border bg-theme-accent-soft p-4"
       data-testid="official-rent"
     >
-      <h3 className="text-xs font-bold text-slate-700">
+      <h3 className="text-xs font-bold text-ink">
         {`${heading}（${monthLabel(month)}、毎月の公的統計）`}
       </h3>
-      <ul className="mt-2 space-y-1 text-xs text-slate-700">
+      <ul className="mt-2 space-y-1 text-xs text-ink">
         {rents.map((r) => (
           <li key={r.areaCode}>
             <b>{r.name}</b>
@@ -55,11 +55,11 @@ export function OfficialRentNote({
           </li>
         ))}
       </ul>
-      <p className="mt-2 text-xs leading-relaxed text-slate-500">{UNIT_NOTE}</p>
-      <p className="mt-1 text-xs leading-relaxed text-slate-500">
+      <p className="mt-2 text-xs leading-relaxed text-ink-muted">{UNIT_NOTE}</p>
+      <p className="mt-1 text-xs leading-relaxed text-ink-muted">
         {SOURCE_NOTE}
       </p>
-      <p className="mt-1 text-xs leading-relaxed text-slate-500">
+      <p className="mt-1 text-xs leading-relaxed text-ink-muted">
         {ESTAT_API_CREDIT}
       </p>
     </div>

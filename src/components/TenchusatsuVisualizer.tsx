@@ -61,15 +61,15 @@ export const TenchusatsuVisualizer: React.FC<TenchusatsuVisualizerProps> = ({
       いて、外側を広げても効かず両端に余白が残っていた。置かれる側が
       列で幅を決める。
     */
-    <div className="bg-white/80 rounded-sm shadow-lg border border-stone-200 p-4 mt-4 w-full h-full">
-      <h3 className="text-xs tracking-widest text-stone-600 mb-4 border-b border-stone-200 pb-2 flex items-center gap-2">
+    <div className="bg-theme-surface rounded-sm shadow-lg border border-theme-border p-4 mt-4 w-full h-full">
+      <h3 className="text-xs tracking-widest text-ink-muted mb-4 border-b border-theme-border pb-2 flex items-center gap-2">
         <span className="text-red-700 blur-[0.5px]">◆</span> 天中殺の周期
       </h3>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {/* Profile */}
-        <div className="bg-white/70 p-3 rounded-sm border border-stone-200 flex flex-col justify-center">
-          <h4 className="font-semibold text-xs text-stone-600 tracking-widest mb-2 border-b border-stone-200 pb-1">
+        <div className="bg-theme-surface/70 p-3 rounded-sm border border-theme-border flex flex-col justify-center">
+          <h4 className="font-semibold text-xs text-ink-muted tracking-widest mb-2 border-b border-theme-border pb-1">
             生まれた日の干支
           </h4>
           {/*
@@ -83,23 +83,23 @@ export const TenchusatsuVisualizer: React.FC<TenchusatsuVisualizerProps> = ({
             */}
           <dl className="space-y-1 text-sm font-mono">
             <div className="flex flex-wrap items-baseline gap-x-2">
-              <dt className="text-stone-600 text-xs whitespace-nowrap">
+              <dt className="text-ink-muted text-xs whitespace-nowrap">
                 生年月日
               </dt>
-              <dd className="text-stone-600 ml-auto whitespace-nowrap">
+              <dd className="text-ink-muted ml-auto whitespace-nowrap">
                 {birthDateStr}
               </dd>
             </div>
             <div className="flex flex-wrap items-baseline gap-x-2">
-              <dt className="text-stone-600 text-xs whitespace-nowrap">
+              <dt className="text-ink-muted text-xs whitespace-nowrap">
                 日干支
               </dt>
-              <dd className="font-bold text-stone-600 ml-auto whitespace-nowrap">
+              <dd className="font-bold text-ink-muted ml-auto whitespace-nowrap">
                 {data.ganZhi}
               </dd>
             </div>
             <div className="flex flex-wrap items-baseline gap-x-2">
-              <dt className="text-stone-600 text-xs whitespace-nowrap">
+              <dt className="text-ink-muted text-xs whitespace-nowrap">
                 天中殺（空亡）
               </dt>
               <dd className="text-red-700 font-bold tracking-widest ml-auto whitespace-nowrap">
@@ -107,7 +107,7 @@ export const TenchusatsuVisualizer: React.FC<TenchusatsuVisualizerProps> = ({
               </dd>
             </div>
           </dl>
-          <div className="mt-3 text-xs text-stone-600 leading-relaxed">
+          <div className="mt-3 text-xs text-ink-muted leading-relaxed">
             日干支から、四柱推命でいう天中殺（空亡）の年を求めています。12
             年のうち 2
             年で、伝統的に大きな決断や移動を控えるのが良いとされる期間です。
@@ -119,7 +119,7 @@ export const TenchusatsuVisualizer: React.FC<TenchusatsuVisualizerProps> = ({
           <div
             className={`p-4 rounded-sm border ${data.isYearTenchusatsu ? "bg-red-50 border-red-200" : "bg-emerald-50 border-emerald-200"} text-center flex flex-col justify-center gap-2 h-full`}
           >
-            <span className="text-xs tracking-widest font-bold text-stone-600">
+            <span className="text-xs tracking-widest font-bold text-ink-muted">
               今年（{currentYear} 年・立春から）
             </span>
             {data.isYearTenchusatsu ? (
@@ -158,7 +158,7 @@ export const TenchusatsuVisualizer: React.FC<TenchusatsuVisualizerProps> = ({
             className={`rounded-sm border px-1 py-1.5 text-center text-[11px] ${
               y.status === "VOID"
                 ? "border-red-200 bg-red-50 text-red-700 font-bold"
-                : "border-stone-200 bg-white/70 text-stone-600"
+                : "border-theme-border bg-theme-surface/70 text-ink-muted"
             } ${y.year === currentYear ? "ring-1 ring-stone-400" : ""}`}
           >
             <div>{y.year}</div>

@@ -64,7 +64,7 @@ export default function TelemetryChart() {
 
   if (phase === "loading")
     return (
-      <div className="text-stone-600 font-mono text-xs">
+      <div className="text-ink-muted font-mono text-xs">
         Loading chart data...
       </div>
     );
@@ -82,13 +82,13 @@ export default function TelemetryChart() {
   */
   if (phase !== "ready") {
     return (
-      <div className="w-full bg-white/80 border border-stone-200 rounded-xl p-6 text-center">
-        <p className="text-sm font-bold text-stone-700 mb-2">
+      <div className="w-full bg-theme-surface border border-theme-border rounded-xl p-6 text-center">
+        <p className="text-sm font-bold text-ink mb-2">
           {phase === "empty"
             ? "まだ記録がありません"
             : "記録を読み込めませんでした"}
         </p>
-        <p className="text-xs text-stone-500 leading-relaxed max-w-[70ch] mx-auto">
+        <p className="text-xs text-ink-muted leading-relaxed max-w-[70ch] mx-auto">
           {phase === "empty"
             ? "この画面は、日ごとの環境（天体の位置・宇宙天気・地磁気）と体調の記録を並べて、引越しの前後で何が変わったかを後から見返すためのものです。記録は夜間の巡回で 1 日 1 件ずつ貯まります。"
             : "時間をおいて開き直してください。直らない場合は記録の巡回が止まっている可能性があります。"}
@@ -102,7 +102,7 @@ export default function TelemetryChart() {
       <div className="flex justify-end mb-2">
         <button
           onClick={exportData}
-          className="px-4 py-2 bg-stone-100 hover:bg-stone-200 text-stone-600 text-[10px] font-mono uppercase tracking-widest rounded-lg border border-stone-300 transition-colors flex items-center gap-2"
+          className="px-4 py-2 bg-stone-100 hover:bg-stone-200 text-ink-muted text-[10px] font-mono uppercase tracking-widest rounded-lg border border-theme-border transition-colors flex items-center gap-2"
         >
           <svg
             xmlns="http://www.w3.org/2000/svg"
@@ -123,8 +123,8 @@ export default function TelemetryChart() {
         </button>
       </div>
       {/* Chart 1: Raw Ephemeris Coordinates */}
-      <div className="w-full h-64 bg-white/80 rounded-xl p-4 border border-stone-200">
-        <h3 className="text-xs text-stone-600 font-bold uppercase tracking-widest mb-4 border-b border-stone-200 pb-2">
+      <div className="w-full h-64 bg-theme-surface rounded-xl p-4 border border-theme-border">
+        <h3 className="text-xs text-ink-muted font-bold uppercase tracking-widest mb-4 border-b border-theme-border pb-2">
           <span className="text-emerald-600 mr-2">🪐</span>
           Raw Ephemeris / 天体黄経 (度数)
         </h3>
@@ -182,8 +182,8 @@ export default function TelemetryChart() {
       </div>
 
       {/* Chart 2: Space Weather */}
-      <div className="w-full h-64 bg-white/80 rounded-xl p-4 border border-stone-200">
-        <h3 className="text-xs text-stone-600 font-bold uppercase tracking-widest mb-4 border-b border-stone-200 pb-2">
+      <div className="w-full h-64 bg-theme-surface rounded-xl p-4 border border-theme-border">
+        <h3 className="text-xs text-ink-muted font-bold uppercase tracking-widest mb-4 border-b border-theme-border pb-2">
           <span className="text-rose-600 mr-2">☀️</span>
           Space Weather / 宇宙天気
         </h3>
@@ -252,8 +252,8 @@ export default function TelemetryChart() {
       </div>
 
       {/* Chart 3: Geomagnetics */}
-      <div className="w-full h-64 bg-white/80 rounded-xl p-4 border border-stone-200">
-        <h3 className="text-xs text-stone-600 font-bold uppercase tracking-widest mb-4 border-b border-stone-200 pb-2">
+      <div className="w-full h-64 bg-theme-surface rounded-xl p-4 border border-theme-border">
+        <h3 className="text-xs text-ink-muted font-bold uppercase tracking-widest mb-4 border-b border-theme-border pb-2">
           <span className="text-blue-600 mr-2">🧲</span>
           Geomagnetic Field / 局所地磁気ベクトル
         </h3>
@@ -336,8 +336,8 @@ export default function TelemetryChart() {
         個人の生体データはホームのプロフィール設定から入力し、その場の判定に使う。
       */}
       {/* Chart 5: Geomancy & Lunar */}
-      <div className="w-full h-64 bg-white/80 rounded-xl p-4 border border-stone-200 relative">
-        <h3 className="text-xs text-stone-600 font-bold uppercase tracking-widest mb-4 border-b border-stone-200 pb-2 flex items-center justify-between">
+      <div className="w-full h-64 bg-theme-surface rounded-xl p-4 border border-theme-border relative">
+        <h3 className="text-xs text-ink-muted font-bold uppercase tracking-widest mb-4 border-b border-theme-border pb-2 flex items-center justify-between">
           <div>
             <span className="text-emerald-500 mr-2">🧭</span>
             Geomancy & Lunar Phase / 気学星・月相

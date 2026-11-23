@@ -74,7 +74,7 @@ import { ActiveProfileBadge } from "@/components/profile/ActiveProfileBadge";
 const SimulatorMap = dynamic(() => import("@/components/nba/SimulatorMap"), {
   ssr: false,
   loading: () => (
-    <div className="w-full h-full min-h-[400px] bg-stone-50/60 dark:bg-theme-subtle border border-stone-200 dark:border-theme-border rounded-[2.5rem] flex items-center justify-center font-mono text-xs text-ink-muted backdrop-blur-md">
+    <div className="w-full h-full min-h-[400px] bg-theme-subtle dark:bg-theme-subtle border border-theme-border dark:border-theme-border rounded-[2.5rem] flex items-center justify-center font-mono text-xs text-ink-muted backdrop-blur-md">
       [ INITIALIZING MAP ENGINE... ]
     </div>
   ),
@@ -686,7 +686,7 @@ export default function RelocationSimulatorPage() {
 
         let mRating = "普通";
         let mColor =
-          "text-ink-muted border-stone-200/80 dark:border-theme-border bg-stone-100/80 dark:bg-theme-subtle";
+          "text-ink-muted border-theme-border/80 dark:border-theme-border bg-stone-100/80 dark:bg-theme-subtle";
         if (mStatus === "OPTIMAL") {
           mRating = "大吉";
           mColor =
@@ -1788,7 +1788,7 @@ export default function RelocationSimulatorPage() {
           <MetaphysicalConfigBar onConfigChange={handleConfigChange} />
 
           {/* Header Block */}
-          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 border-b border-stone-200/60 dark:border-theme-border pb-8">
+          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 border-b border-theme-border/60 dark:border-theme-border pb-8">
             <div>
               {/* ナビ・サイトマップと同じ呼び名にする。英語の副題を足すと、
                 検索から来た人には別のページに見える。 */}
@@ -1817,7 +1817,7 @@ export default function RelocationSimulatorPage() {
                     onChange={(e) =>
                       handleUpdateStep(0, { departureDate: e.target.value })
                     }
-                    className="w-40 rounded-xl border border-stone-200 dark:border-theme-border bg-theme-surface px-3 py-1.5 font-mono text-xs text-ink focus:outline-none focus:border-accent shadow-inner"
+                    className="w-40 rounded-xl border border-theme-border dark:border-theme-border bg-theme-surface px-3 py-1.5 font-mono text-xs text-ink focus:outline-none focus:border-accent shadow-inner"
                   />
                   {steps.length > 1 && (
                     <span className="text-[10px] text-ink-muted">
@@ -1831,7 +1831,7 @@ export default function RelocationSimulatorPage() {
 
             <div className="flex flex-wrap items-center gap-4">
               {/* Overall Quality Score Badge */}
-              <div className="flex items-center gap-4 bg-theme-surface p-4 rounded-3xl border border-stone-200/60 dark:border-theme-border backdrop-blur-md shadow-2xl">
+              <div className="flex items-center gap-4 bg-theme-surface p-4 rounded-3xl border border-theme-border/60 dark:border-theme-border backdrop-blur-md shadow-2xl">
                 <div className="text-center">
                   <span className="text-[10px] uppercase tracking-widest text-ink-muted font-bold block leading-none mb-1.5">
                     計画総合適合度
@@ -1848,9 +1848,9 @@ export default function RelocationSimulatorPage() {
               </div>
 
               {/* Load/Save Controls */}
-              <div className="flex flex-wrap items-center gap-3 bg-theme-surface p-3 rounded-2xl border border-stone-200/60 dark:border-theme-border backdrop-blur-md">
+              <div className="flex flex-wrap items-center gap-3 bg-theme-surface p-3 rounded-2xl border border-theme-border/60 dark:border-theme-border backdrop-blur-md">
                 {currentPlanId && (
-                  <span className="text-[10px] font-mono text-ink-muted px-2 border-r border-stone-200 dark:border-theme-border">
+                  <span className="text-[10px] font-mono text-ink-muted px-2 border-r border-theme-border dark:border-theme-border">
                     ACTIVE: {planName}
                   </span>
                 )}
@@ -1869,7 +1869,7 @@ export default function RelocationSimulatorPage() {
                       e.target.value,
                     );
                   }}
-                  className="px-3 py-1.5 bg-theme-surface border border-stone-200 dark:border-theme-border rounded-xl text-xs font-mono text-ink placeholder-zinc-500 dark:placeholder-ink-muted focus:outline-none focus:border-accent"
+                  className="px-3 py-1.5 bg-theme-surface border border-theme-border dark:border-theme-border rounded-xl text-xs font-mono text-ink placeholder-zinc-500 dark:placeholder-ink-muted focus:outline-none focus:border-accent"
                 />
                 <button
                   onClick={handleSavePlan}
@@ -1913,7 +1913,7 @@ export default function RelocationSimulatorPage() {
                           if (plan) handleLoadPlan(plan);
                         }}
                         value={currentPlanId || ""}
-                        className="bg-theme-surface border border-stone-200 dark:border-theme-border rounded-xl px-3 py-1.5 text-xs text-ink-muted outline-none cursor-pointer max-w-[150px] sm:max-w-none"
+                        className="bg-theme-surface border border-theme-border dark:border-theme-border rounded-xl px-3 py-1.5 text-xs text-ink-muted outline-none cursor-pointer max-w-[150px] sm:max-w-none"
                       >
                         <option value="">-- 選択して読込 --</option>
                         {plans.map((p) => (
@@ -1999,8 +1999,8 @@ export default function RelocationSimulatorPage() {
           <details> を使うのは、畳んでいても中身がマウントされたままに
           なるため。スライダーの値やポータル同期の状態は保持される。
         */}
-          <details className="group rounded-[2.5rem] border border-stone-200/80 dark:border-theme-border bg-theme-surface backdrop-blur-md">
-            <summary className="cursor-pointer select-none list-none p-5 flex items-center justify-between gap-3 text-xs font-bold text-ink-muted hover:text-stone-700 dark:hover:text-ink transition-colors">
+          <details className="group rounded-[2.5rem] border border-theme-border/80 dark:border-theme-border bg-theme-surface backdrop-blur-md">
+            <summary className="cursor-pointer select-none list-none p-5 flex items-center justify-between gap-3 text-xs font-bold text-ink-muted hover:text-ink dark:hover:text-ink transition-colors">
               <span className="flex items-center gap-2">
                 <Sliders className="w-4 h-4 text-ink-muted" />
                 詳細設定（同伴者・当日の体調・方位の基準）
@@ -2014,7 +2014,7 @@ export default function RelocationSimulatorPage() {
             </summary>
             <div className="px-5 pb-5 space-y-6">
               {/* Accompanying Members Config */}
-              <div className="p-5 rounded-3xl bg-theme-surface border border-stone-200/80 dark:border-theme-border shadow-md space-y-4">
+              <div className="p-5 rounded-3xl bg-theme-surface border border-theme-border/80 dark:border-theme-border shadow-md space-y-4">
                 <div className="flex items-center justify-between gap-4">
                   <h3 className="text-xs font-mono font-bold tracking-widest text-ink-muted uppercase flex items-center gap-2">
                     <Users className="w-4 h-4 text-accent" />{" "}
@@ -2068,7 +2068,7 @@ export default function RelocationSimulatorPage() {
                     {members.map((member) => (
                       <div
                         key={member.id}
-                        className="p-3.5 rounded-2xl bg-theme-surface border border-stone-200 dark:border-theme-border flex items-center justify-between gap-3 shadow-inner"
+                        className="p-3.5 rounded-2xl bg-theme-surface border border-theme-border dark:border-theme-border flex items-center justify-between gap-3 shadow-inner"
                       >
                         <div className="flex flex-col gap-1">
                           <span className="text-xs font-bold text-ink">
@@ -2109,8 +2109,8 @@ export default function RelocationSimulatorPage() {
                 )}
               </div>
               {/* Biosignal Simulation Sliders Panel */}
-              <div className="p-6 rounded-[2.5rem] bg-theme-surface border border-stone-200/80 dark:border-theme-border backdrop-blur-md space-y-4 shadow-inner">
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-stone-200/60 dark:border-theme-border pb-3">
+              <div className="p-6 rounded-[2.5rem] bg-theme-surface border border-theme-border/80 dark:border-theme-border backdrop-blur-md space-y-4 shadow-inner">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-theme-border/60 dark:border-theme-border pb-3">
                   <div>
                     <h3 className="text-xs font-mono font-bold tracking-widest text-ink-muted uppercase flex items-center gap-1.5">
                       <Sliders className="w-4 h-4 text-accent animate-pulse" />{" "}
@@ -2125,7 +2125,7 @@ export default function RelocationSimulatorPage() {
                     disabled={isSyncingPortal}
                     className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all border shrink-0 ${
                       isSyncingPortal
-                        ? "bg-stone-100 dark:bg-theme-subtle border-stone-300 dark:border-theme-border text-zinc-550 dark:text-ink-muted cursor-not-allowed"
+                        ? "bg-stone-100 dark:bg-theme-subtle border-theme-border dark:border-theme-border text-zinc-550 dark:text-ink-muted cursor-not-allowed"
                         : "bg-theme-accent-soft border-accent text-accent hover:bg-theme-accent-soft active:scale-95"
                     }`}
                   >
@@ -2185,7 +2185,7 @@ export default function RelocationSimulatorPage() {
 
                 {/* Sync Metadata display */}
                 {(lastSyncTime || portalSpaceWeather) && (
-                  <div className="flex flex-wrap items-center gap-x-6 gap-y-2 text-[10px] font-mono text-ink-muted pt-1 border-t border-stone-200/60 dark:border-theme-border">
+                  <div className="flex flex-wrap items-center gap-x-6 gap-y-2 text-[10px] font-mono text-ink-muted pt-1 border-t border-theme-border/60 dark:border-theme-border">
                     {lastSyncTime && (
                       <span>
                         同期時刻:{" "}
@@ -2226,7 +2226,7 @@ export default function RelocationSimulatorPage() {
                   </div>
                 )}
               </div>
-              <div className="flex items-center gap-4 text-xs p-4 rounded-3xl bg-theme-surface border border-stone-200/60 dark:border-theme-border">
+              <div className="flex items-center gap-4 text-xs p-4 rounded-3xl bg-theme-surface border border-theme-border/60 dark:border-theme-border">
                 {/* Compass Toggle */}
                 <div className="flex items-center justify-between md:justify-start gap-4">
                   <span className="text-ink-muted font-medium">
@@ -2262,7 +2262,7 @@ export default function RelocationSimulatorPage() {
             {/* Left Column: Flow step list editor */}
             <div className="lg:col-span-2 space-y-6">
               {/* Start Location Config */}
-              <div className="p-5 rounded-3xl bg-theme-surface border border-stone-200/80 dark:border-theme-border shadow-md space-y-4">
+              <div className="p-5 rounded-3xl bg-theme-surface border border-theme-border/80 dark:border-theme-border shadow-md space-y-4">
                 <h3 className="text-xs font-mono font-bold tracking-widest text-ink-muted uppercase flex items-center gap-2">
                   <MapPin className="w-4 h-4 text-amber-500 dark:text-theme-gold" />{" "}
                   出発地（いま住んでいる場所）
@@ -2279,7 +2279,7 @@ export default function RelocationSimulatorPage() {
                         setStartName(e.target.value);
                         saveDraft(steps, startLat, startLon, e.target.value);
                       }}
-                      className="w-full px-4 py-2.5 bg-theme-surface border border-stone-200 dark:border-theme-border rounded-xl text-xs font-mono text-ink placeholder-stone-300 dark:placeholder-ink-muted focus:outline-none focus:border-accent shadow-inner"
+                      className="w-full px-4 py-2.5 bg-theme-surface border border-theme-border dark:border-theme-border rounded-xl text-xs font-mono text-ink placeholder-stone-300 dark:placeholder-ink-muted focus:outline-none focus:border-accent shadow-inner"
                     />
                   </div>
                   <div className="grid grid-cols-2 gap-3 text-[10px] font-mono text-ink-muted self-end py-2.5">
@@ -2372,7 +2372,7 @@ export default function RelocationSimulatorPage() {
                               stone-600 が 6.95:1（いずれも実測）。
                             */
                             "bg-theme-accent-soft border-theme-border shadow-lg shadow-accent/12 dark:shadow-black/20"
-                          : "bg-theme-surface border-stone-200/80 dark:border-theme-border hover:bg-white/40 dark:hover:bg-theme-surface hover:border-stone-300/80 dark:hover:border-theme-border shadow-md"
+                          : "bg-theme-surface border-theme-border/80 dark:border-theme-border hover:bg-theme-surface/40 dark:hover:bg-theme-surface hover:border-theme-border/80 dark:hover:border-theme-border shadow-md"
                       }`}
                     >
                       {/* Header line of the Step */}
@@ -2383,7 +2383,7 @@ export default function RelocationSimulatorPage() {
                           >
                             STEP {idx + 1} : {step.evaluation?.rating}
                           </div>
-                          <span className="px-1.5 py-0.5 rounded text-[10px] font-mono font-bold bg-stone-100/80 dark:bg-theme-subtle border border-stone-200/80 dark:border-theme-border text-ink-muted leading-none">
+                          <span className="px-1.5 py-0.5 rounded text-[10px] font-mono font-bold bg-stone-100/80 dark:bg-theme-subtle border border-theme-border/80 dark:border-theme-border text-ink-muted leading-none">
                             {step.purpose === "MIGRATION"
                               ? "長期移住"
                               : "短期旅行"}
@@ -2410,8 +2410,8 @@ export default function RelocationSimulatorPage() {
                             disabled={idx === 0}
                             className={`p-1.5 rounded-lg border transition-all ${
                               idx === 0
-                                ? "border-stone-200/20 dark:border-theme-border text-zinc-750 dark:text-ink cursor-not-allowed opacity-30"
-                                : "bg-stone-100/40 dark:bg-theme-subtle border-stone-300/80 dark:border-theme-border text-ink-muted hover:text-stone-900 dark:hover:text-ink hover:bg-stone-200 dark:hover:bg-theme-subtle"
+                                ? "border-theme-border/20 dark:border-theme-border text-zinc-750 dark:text-ink cursor-not-allowed opacity-30"
+                                : "bg-stone-100/40 dark:bg-theme-subtle border-theme-border/80 dark:border-theme-border text-ink-muted hover:text-ink dark:hover:text-ink hover:bg-stone-200 dark:hover:bg-theme-subtle"
                             }`}
                             title="上に移動"
                           >
@@ -2422,8 +2422,8 @@ export default function RelocationSimulatorPage() {
                             disabled={idx === steps.length - 1}
                             className={`p-1.5 rounded-lg border transition-all ${
                               idx === steps.length - 1
-                                ? "border-stone-200/20 dark:border-theme-border text-zinc-750 dark:text-ink cursor-not-allowed opacity-30"
-                                : "bg-stone-100/40 dark:bg-theme-subtle border-stone-300/80 dark:border-theme-border text-ink-muted hover:text-stone-900 dark:hover:text-ink hover:bg-stone-200 dark:hover:bg-theme-subtle"
+                                ? "border-theme-border/20 dark:border-theme-border text-zinc-750 dark:text-ink cursor-not-allowed opacity-30"
+                                : "bg-stone-100/40 dark:bg-theme-subtle border-theme-border/80 dark:border-theme-border text-ink-muted hover:text-ink dark:hover:text-ink hover:bg-stone-200 dark:hover:bg-theme-subtle"
                             }`}
                             title="下に移動"
                           >
@@ -2510,7 +2510,7 @@ export default function RelocationSimulatorPage() {
                                 departureDate: e.target.value,
                               })
                             }
-                            className="w-full px-3 py-2 bg-theme-surface border border-stone-200 dark:border-theme-border rounded-xl text-xs font-mono text-ink focus:outline-none focus:border-accent shadow-inner"
+                            className="w-full px-3 py-2 bg-theme-surface border border-theme-border dark:border-theme-border rounded-xl text-xs font-mono text-ink focus:outline-none focus:border-accent shadow-inner"
                           />
                         </div>
 
@@ -2526,7 +2526,7 @@ export default function RelocationSimulatorPage() {
                                   .value as SimulatorStep["purpose"],
                               })
                             }
-                            className="w-full px-3 py-2 bg-theme-surface border border-stone-200 dark:border-theme-border rounded-xl text-xs text-ink-muted focus:outline-none focus:border-accent cursor-pointer"
+                            className="w-full px-3 py-2 bg-theme-surface border border-theme-border dark:border-theme-border rounded-xl text-xs text-ink-muted focus:outline-none focus:border-accent cursor-pointer"
                           >
                             <option value="MIGRATION">
                               長期移住 (拠点移動)
@@ -2535,7 +2535,7 @@ export default function RelocationSimulatorPage() {
                           </select>
                         </div>
 
-                        <div className="flex flex-col gap-1.5 col-span-1 sm:col-span-2 md:col-span-3 border-t border-stone-200/60 dark:border-theme-border pt-3">
+                        <div className="flex flex-col gap-1.5 col-span-1 sm:col-span-2 md:col-span-3 border-t border-theme-border/60 dark:border-theme-border pt-3">
                           <label className="text-[10px] uppercase font-bold text-ink-muted">
                             同行する同伴者 (ACCOMPANYING COMPANIONS FOR THIS
                             STEP)
@@ -2556,7 +2556,7 @@ export default function RelocationSimulatorPage() {
                                     className={`flex items-center gap-1.5 px-2.5 py-1 rounded-xl border text-[10px] font-mono cursor-pointer transition-all ${
                                       isSelected
                                         ? "bg-theme-accent-soft border-accent text-accent font-bold"
-                                        : "bg-theme-surface border-stone-200 dark:border-theme-border text-ink-muted hover:border-stone-300 dark:hover:border-theme-border"
+                                        : "bg-theme-surface border-theme-border dark:border-theme-border text-ink-muted hover:border-theme-border dark:hover:border-theme-border"
                                     }`}
                                   >
                                     <input
@@ -2597,7 +2597,7 @@ export default function RelocationSimulatorPage() {
                       同行者の有無に関係なく出す。
                     */}
                       {step.directionNote && (
-                        <div className="border-t border-stone-200/60 dark:border-theme-border pt-3">
+                        <div className="border-t border-theme-border/60 dark:border-theme-border pt-3">
                           <p className="rounded-xl border border-amber-300 dark:border-theme-border bg-amber-50 dark:bg-theme-gold-soft p-2 text-xs leading-relaxed text-amber-800 dark:text-theme-gold">
                             {step.directionNote}
                             <br />
@@ -2616,8 +2616,8 @@ export default function RelocationSimulatorPage() {
 
                       {/* Member Evaluations Matrix Row */}
                       {members.length > 0 && (
-                        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 border-t border-stone-200/60 dark:border-theme-border pt-3">
-                          <div className="p-2 rounded-xl bg-theme-surface border border-stone-200 dark:border-theme-border flex items-center justify-between gap-2 shadow-inner">
+                        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 border-t border-theme-border/60 dark:border-theme-border pt-3">
+                          <div className="p-2 rounded-xl bg-theme-surface border border-theme-border dark:border-theme-border flex items-center justify-between gap-2 shadow-inner">
                             <span className="text-[10px] text-ink-muted font-bold">
                               自分
                             </span>
@@ -2630,7 +2630,7 @@ export default function RelocationSimulatorPage() {
                           {memberEvals.map((mEval) => (
                             <div
                               key={mEval.memberId}
-                              className="p-2 rounded-xl bg-theme-surface border border-stone-200 dark:border-theme-border flex items-center justify-between gap-2 shadow-inner"
+                              className="p-2 rounded-xl bg-theme-surface border border-theme-border dark:border-theme-border flex items-center justify-between gap-2 shadow-inner"
                             >
                               <span className="text-[10px] text-ink-muted font-bold truncate max-w-[65px]">
                                 {mEval.name}
@@ -2646,7 +2646,7 @@ export default function RelocationSimulatorPage() {
                       )}
 
                       {/* Vector / Direction HUD */}
-                      <div className="flex flex-wrap items-center justify-between gap-4 bg-theme-surface p-3 rounded-2xl border border-stone-200 dark:border-theme-border text-xs font-mono text-ink-muted">
+                      <div className="flex flex-wrap items-center justify-between gap-4 bg-theme-surface p-3 rounded-2xl border border-theme-border dark:border-theme-border text-xs font-mono text-ink-muted">
                         <div>
                           出発地:{" "}
                           <span className="text-ink-muted font-bold">
@@ -2679,7 +2679,7 @@ export default function RelocationSimulatorPage() {
                             </span>
                           </div>
                           {step.evaluation && (
-                            <div className="flex items-center gap-1.5 border-l border-stone-200 dark:border-theme-border pl-4">
+                            <div className="flex items-center gap-1.5 border-l border-theme-border dark:border-theme-border pl-4">
                               <span>出発日の段階:</span>
                               <span
                                 className={`font-black ${TIER_TEXT_CLASS[stepDayTier(step.evaluation)]}`}
@@ -2737,7 +2737,7 @@ export default function RelocationSimulatorPage() {
                       {/* Step Specific Ten-Chi-Jin Panel (Advisory UI Integration) */}
                       {isSelected && (
                         <div
-                          className="mt-4 pt-4 border-t border-stone-200/60 dark:border-theme-border"
+                          className="mt-4 pt-4 border-t border-theme-border/60 dark:border-theme-border"
                           onClick={(e) => e.stopPropagation()}
                         >
                           <TenChiJinEvaluation
@@ -2778,7 +2778,7 @@ export default function RelocationSimulatorPage() {
               {/* Add Step button */}
               <button
                 onClick={handleAddStep}
-                className="w-full py-4 border border-dashed border-stone-200 dark:border-theme-border hover:border-accent hover:bg-theme-accent-soft rounded-[2rem] text-xs font-bold text-ink-muted hover:text-accent transition-all flex items-center justify-center gap-2 cursor-pointer"
+                className="w-full py-4 border border-dashed border-theme-border dark:border-theme-border hover:border-accent hover:bg-theme-accent-soft rounded-[2rem] text-xs font-bold text-ink-muted hover:text-accent transition-all flex items-center justify-center gap-2 cursor-pointer"
               >
                 <Plus className="w-4 h-4" /> 移動ステップを追加
               </button>
@@ -2787,7 +2787,7 @@ export default function RelocationSimulatorPage() {
             {/* Right Column: Leaflet Map & Detour Suggestions Drawer */}
             <div className="lg:col-span-1 space-y-6">
               {/* Map Area */}
-              <div className="h-[380px] rounded-3xl overflow-hidden shadow-2xl border border-stone-200 dark:border-theme-border relative bg-stone-50/60 dark:bg-theme-subtle">
+              <div className="h-[380px] rounded-3xl overflow-hidden shadow-2xl border border-theme-border dark:border-theme-border relative bg-theme-subtle dark:bg-theme-subtle">
                 <SimulatorMap
                   startLat={startLat}
                   startLon={startLon}
@@ -2826,7 +2826,7 @@ export default function RelocationSimulatorPage() {
               {/* Active Details Card */}
               {activeStepIndex !== null &&
                 activeStepIndex < evaluatedSteps.length && (
-                  <div className="p-6 rounded-[2rem] border border-stone-200/80 dark:border-theme-border bg-theme-surface backdrop-blur-xl shadow-xl shadow-accent/12 dark:shadow-black/20 space-y-6">
+                  <div className="p-6 rounded-[2rem] border border-theme-border/80 dark:border-theme-border bg-theme-surface backdrop-blur-xl shadow-xl shadow-accent/12 dark:shadow-black/20 space-y-6">
                     <div>
                       <div className="inline-flex items-center gap-1.5 text-[10px] font-bold text-ink-muted tracking-wider uppercase mb-1">
                         <Compass className="w-3.5 h-3.5 text-accent" /> ステップ{" "}
@@ -2839,7 +2839,7 @@ export default function RelocationSimulatorPage() {
                     </div>
 
                     {/* Rating score panel */}
-                    <div className="p-4 rounded-2xl bg-stone-100/80 dark:bg-theme-subtle border border-stone-200/80 dark:border-theme-border text-center relative overflow-hidden shadow-inner">
+                    <div className="p-4 rounded-2xl bg-stone-100/80 dark:bg-theme-subtle border border-theme-border/80 dark:border-theme-border text-center relative overflow-hidden shadow-inner">
                       <span className="text-[10px] uppercase tracking-widest text-ink-muted font-bold block mb-1">
                         ステップ吉凶評価
                       </span>
@@ -2868,7 +2868,7 @@ export default function RelocationSimulatorPage() {
                       if (!step?.evaluation) return null;
                       const tier = stepDayTier(step.evaluation);
                       return (
-                        <div className="p-4 rounded-2xl bg-theme-surface border border-stone-200 dark:border-theme-border flex items-center justify-between gap-3 text-xs font-mono shadow-inner">
+                        <div className="p-4 rounded-2xl bg-theme-surface border border-theme-border dark:border-theme-border flex items-center justify-between gap-3 text-xs font-mono shadow-inner">
                           <div className="flex flex-col gap-1">
                             <span className="text-[10px] text-ink-muted font-bold uppercase leading-none">
                               出発日の段階
@@ -2917,7 +2917,7 @@ export default function RelocationSimulatorPage() {
                       const meta = ev.metaphysical;
 
                       return (
-                        <div className="space-y-4 pt-4 border-t border-stone-200/60 dark:border-theme-border text-xs">
+                        <div className="space-y-4 pt-4 border-t border-theme-border/60 dark:border-theme-border text-xs">
                           <div className="flex items-center justify-between">
                             <h4 className="text-[10px] uppercase tracking-wider font-bold text-accent flex items-center gap-1.5">
                               <Sparkles className="w-3.5 h-3.5 text-accent" />{" "}
@@ -2933,7 +2933,7 @@ export default function RelocationSimulatorPage() {
                           <div className="grid grid-cols-1 gap-3.5">
                             {/* 奇門遁甲 (Qi Men Dun Jia) */}
                             {meta.chineseMetasoft?.qiMenGate && (
-                              <div className="p-3.5 rounded-2xl bg-theme-surface border border-stone-200/80 dark:border-theme-border space-y-2 shadow-inner">
+                              <div className="p-3.5 rounded-2xl bg-theme-surface border border-theme-border/80 dark:border-theme-border space-y-2 shadow-inner">
                                 <div className="flex items-center justify-between">
                                   <span className="text-[10px] font-bold text-ink-muted">
                                     🚪 奇門遁甲 (Qi Men Dun Jia)
@@ -2972,7 +2972,7 @@ export default function RelocationSimulatorPage() {
 
                             {/* 易経 (I-Ching) */}
                             {meta.roxyApi?.ichingCast && (
-                              <div className="p-3.5 rounded-2xl bg-theme-surface border border-stone-200/80 dark:border-theme-border space-y-2 shadow-inner">
+                              <div className="p-3.5 rounded-2xl bg-theme-surface border border-theme-border/80 dark:border-theme-border space-y-2 shadow-inner">
                                 <div className="flex items-center justify-between">
                                   <span className="text-[10px] font-bold text-ink-muted">
                                     ☯ 易経得卦 (I-Ching Hexagram)
@@ -2999,7 +2999,7 @@ export default function RelocationSimulatorPage() {
 
                                 {/* Hexagram visual bar representation */}
                                 {meta.roxyApi.ichingCast.lines && (
-                                  <div className="flex flex-col gap-1 py-1.5 px-3 bg-stone-50/60 dark:bg-theme-subtle rounded-xl border border-stone-200/50 dark:border-theme-border w-fit">
+                                  <div className="flex flex-col gap-1 py-1.5 px-3 bg-theme-subtle dark:bg-theme-subtle rounded-xl border border-theme-border/50 dark:border-theme-border w-fit">
                                     {meta.roxyApi.ichingCast.lines
                                       .slice()
                                       .reverse()
@@ -3050,7 +3050,7 @@ export default function RelocationSimulatorPage() {
 
                             {/* タロット (Tarot Card) */}
                             {meta.divineApi?.tarot && (
-                              <div className="p-3.5 rounded-2xl bg-theme-surface border border-stone-200/80 dark:border-theme-border space-y-1.5 shadow-inner">
+                              <div className="p-3.5 rounded-2xl bg-theme-surface border border-theme-border/80 dark:border-theme-border space-y-1.5 shadow-inner">
                                 <div className="flex items-center justify-between">
                                   <span className="text-[10px] font-bold text-ink-muted">
                                     🃏 タロットカード (Tarot)
@@ -3076,7 +3076,7 @@ export default function RelocationSimulatorPage() {
                                 <p className="text-xs text-ink-muted leading-relaxed font-sans">
                                   {meta.divineApi.tarot.meaning}
                                 </p>
-                                <div className="text-[10px] text-ink-muted font-mono flex items-center justify-between pt-1.5 border-t border-stone-200 dark:border-theme-border">
+                                <div className="text-[10px] text-ink-muted font-mono flex items-center justify-between pt-1.5 border-t border-theme-border dark:border-theme-border">
                                   <span>
                                     リスク寄与度:{" "}
                                     <strong
@@ -3100,7 +3100,7 @@ export default function RelocationSimulatorPage() {
 
                             {/* 紫微斗数 (Zi Wei Dou Shu) */}
                             {meta.ziWeiDouShu?.dailyInsight && (
-                              <div className="p-3.5 rounded-2xl bg-theme-surface border border-stone-200/80 dark:border-theme-border space-y-1.5 shadow-inner">
+                              <div className="p-3.5 rounded-2xl bg-theme-surface border border-theme-border/80 dark:border-theme-border space-y-1.5 shadow-inner">
                                 <span className="text-[10px] font-bold text-ink-muted block">
                                   ⭐ 紫微斗数飛星 (Zi Wei Dou Shu)
                                 </span>
@@ -3115,7 +3115,7 @@ export default function RelocationSimulatorPage() {
                     })()}
 
                     {/* Phased relocation / Detour suggestions HUD */}
-                    <div className="space-y-4 pt-4 border-t border-stone-200/60 dark:border-theme-border">
+                    <div className="space-y-4 pt-4 border-t border-theme-border/60 dark:border-theme-border">
                       <h4 className="text-[10px] uppercase tracking-wider font-bold text-accent">
                         最適化アクションアドバイス
                       </h4>
@@ -3171,7 +3171,7 @@ export default function RelocationSimulatorPage() {
 
                       {/* Timing Recommendations Box */}
                       {timingRecommendations.length > 0 && (
-                        <div className="p-3.5 rounded-xl border border-stone-200 dark:border-theme-border bg-theme-surface space-y-2 shadow-inner">
+                        <div className="p-3.5 rounded-xl border border-theme-border dark:border-theme-border bg-theme-surface space-y-2 shadow-inner">
                           <strong className="block text-[10px] uppercase font-bold text-ink-muted flex items-center gap-1.5">
                             <Clock className="w-3.5 h-3.5 text-accent" />{" "}
                             出発日程の最適化推奨（時間的回避）
@@ -3190,7 +3190,7 @@ export default function RelocationSimulatorPage() {
                                     departureDate: rec.date,
                                   })
                                 }
-                                className="w-full px-3 py-2 bg-stone-50/80 dark:bg-theme-subtle hover:bg-theme-accent-soft border border-stone-200 dark:border-theme-border hover:border-accent rounded-xl text-left text-[10px] text-ink-muted hover:text-accent transition-all flex items-center justify-between cursor-pointer"
+                                className="w-full px-3 py-2 bg-theme-subtle/80 dark:bg-theme-subtle hover:bg-theme-accent-soft border border-theme-border dark:border-theme-border hover:border-accent rounded-xl text-left text-[10px] text-ink-muted hover:text-accent transition-all flex items-center justify-between cursor-pointer"
                               >
                                 <span>
                                   📅 {rec.date}{" "}
@@ -3244,7 +3244,7 @@ export default function RelocationSimulatorPage() {
                       {evaluatedSteps[activeStepIndex].evaluation?.rating ===
                         "普通" &&
                         detourCandidates.length === 0 && (
-                          <div className="p-3.5 rounded-xl border border-stone-200/60 dark:border-theme-border bg-theme-surface text-ink-muted text-[10px] flex gap-2 leading-relaxed">
+                          <div className="p-3.5 rounded-xl border border-theme-border/60 dark:border-theme-border bg-theme-surface text-ink-muted text-[10px] flex gap-2 leading-relaxed">
                             <Info className="w-3.5 h-3.5 shrink-0 mt-0.5 text-ink-muted" />
                             <span>
                               この移動ステップには凶方位との衝突はありません。このままスケジュールを実行して問題ありません。
@@ -3257,7 +3257,7 @@ export default function RelocationSimulatorPage() {
 
               {/* General Guide card if no active step selected */}
               {activeStepIndex === null && (
-                <div className="h-[250px] border border-dashed border-stone-200 dark:border-theme-border rounded-3xl p-8 text-center flex flex-col items-center justify-center gap-3 text-ink-muted bg-theme-surface">
+                <div className="h-[250px] border border-dashed border-theme-border dark:border-theme-border rounded-3xl p-8 text-center flex flex-col items-center justify-center gap-3 text-ink-muted bg-theme-surface">
                   <HelpCircle className="w-8 h-8 text-ink-muted animate-pulse" />
                   <div>
                     <h4 className="font-bold text-ink-muted text-sm">

@@ -72,7 +72,7 @@ function PresetPlaces({ preset }: { preset: ProfilePreset }) {
     preset.birthLabel,
   );
   return (
-    <p className="text-xs text-stone-500">
+    <p className="text-xs text-ink-muted">
       出発地 {base}
       {" ／ 出生地 "}
       {birth}
@@ -140,7 +140,7 @@ export function AccountPanel() {
 
   if (status === "loading") {
     return (
-      <p className="flex items-center gap-2 text-xs text-stone-500">
+      <p className="flex items-center gap-2 text-xs text-ink-muted">
         <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
         登録の内容を読んでいます。
       </p>
@@ -150,17 +150,17 @@ export function AccountPanel() {
   return (
     <div className="space-y-6">
       {/* 1. だれとしてログインしているか ------------------------- */}
-      <section className="rounded-2xl border border-stone-200 bg-white p-5">
-        <h2 className="flex items-center gap-2 text-sm font-bold text-stone-800">
-          <UserRound className="h-4 w-4 text-rose-500" aria-hidden />
+      <section className="rounded-2xl border border-theme-border bg-theme-surface p-5">
+        <h2 className="flex items-center gap-2 text-sm font-bold text-ink">
+          <UserRound className="h-4 w-4 text-accent" aria-hidden />
           アカウント
         </h2>
         {email ? (
           <>
-            <p className="mt-3 break-all text-sm font-semibold text-stone-800">
+            <p className="mt-3 break-all text-sm font-semibold text-ink">
               {email}
             </p>
-            <p className="mt-1 text-xs leading-relaxed text-stone-500">
+            <p className="mt-1 text-xs leading-relaxed text-ink-muted">
               {
                 "登録した内容はこのアカウントに保存されます。別の端末で同じアカウントにログインすると、同じ設定で使えます。"
               }
@@ -176,7 +176,7 @@ export function AccountPanel() {
                    /login への遷移で読み直される作りになっている */
                 window.location.assign("/login");
               }}
-              className="mt-4 inline-flex cursor-pointer items-center gap-2 rounded-full border border-stone-300 px-5 py-2 text-xs font-semibold text-stone-700 transition-colors hover:bg-stone-50 disabled:cursor-not-allowed disabled:opacity-50"
+              className="mt-4 inline-flex cursor-pointer items-center gap-2 rounded-full border border-theme-border px-5 py-2 text-xs font-semibold text-ink transition-colors hover:bg-theme-subtle disabled:cursor-not-allowed disabled:opacity-50"
             >
               {signingOut ? (
                 <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden />
@@ -188,14 +188,14 @@ export function AccountPanel() {
           </>
         ) : (
           <>
-            <p className="mt-3 text-xs leading-relaxed text-stone-600">
+            <p className="mt-3 text-xs leading-relaxed text-ink-muted">
               {
                 "ログインしていません。入力した内容はこの端末にだけ残ります。ログインすると、ほかの端末でも同じ設定が使えます。"
               }
             </p>
             <Link
               href="/login?next=/account"
-              className="mt-4 inline-flex items-center rounded-full bg-indigo-600 px-6 py-2 text-xs font-bold text-white transition-colors hover:bg-indigo-700"
+              className="mt-4 inline-flex items-center rounded-full bg-accent px-6 py-2 text-xs font-bold text-on-accent transition-colors hover:brightness-110"
             >
               ログインする
             </Link>
@@ -205,16 +205,16 @@ export function AccountPanel() {
 
       {/* 2. 使用中のプロフィールの登録内容 ------------------------ */}
       <div className="space-y-2">
-        <h2 className="flex items-center gap-2 text-sm font-bold text-stone-800">
+        <h2 className="flex items-center gap-2 text-sm font-bold text-ink">
           <UserCheck className="h-4 w-4 text-emerald-600" aria-hidden />
           使用中のプロフィール
           {activeId && (
-            <span className="text-xs font-semibold text-stone-600">
+            <span className="text-xs font-semibold text-ink-muted">
               「{presets.find((p) => p.id === activeId)?.name}」
             </span>
           )}
         </h2>
-        <p className="max-w-[70ch] text-xs leading-relaxed text-stone-500">
+        <p className="max-w-[70ch] text-xs leading-relaxed text-ink-muted">
           {
             "方位の判定・引越しの試算・街探しは、すべてこのプロフィールで出しています。"
           }
@@ -223,37 +223,34 @@ export function AccountPanel() {
       </div>
 
       {/* 2-b. 端末にだけ残るもの ------------------------------- */}
-      <section className="rounded-2xl border border-stone-200 bg-white p-5">
+      <section className="rounded-2xl border border-theme-border bg-theme-surface p-5">
         <div className="flex flex-wrap items-baseline justify-between gap-2">
-          <h2 className="text-sm font-bold text-stone-800">
+          <h2 className="text-sm font-bold text-ink">
             引越し先の候補（目的地）
           </h2>
-          <p className="text-xs text-stone-500">この端末にだけ</p>
+          <p className="text-xs text-ink-muted">この端末にだけ</p>
         </div>
         {destination ? (
-          <p className="mt-3 font-mono text-xs break-all text-stone-700">
+          <p className="mt-3 font-mono text-xs break-all text-ink">
             {destination}
           </p>
         ) : (
-          <p className="mt-3 text-xs leading-relaxed text-stone-600">
+          <p className="mt-3 text-xs leading-relaxed text-ink-muted">
             {
               "まだ入れていません。入れておくと、シミュレータ・街探し・時期の分析で同じ場所を打ち直さずに済みます。"
             }
           </p>
         )}
-        <p className="mt-2 max-w-[70ch] text-xs leading-relaxed text-stone-500">
+        <p className="mt-2 max-w-[70ch] text-xs leading-relaxed text-ink-muted">
           {
             "「どこへ引越すつもりか」はアカウントに送っていません。ログインしていても、この端末の中だけに残ります。"
           }
         </p>
       </section>
 
-      <p className="text-xs leading-relaxed text-stone-500">
+      <p className="text-xs leading-relaxed text-ink-muted">
         {"使用中のプロフィールを直すには "}
-        <Link
-          href="/profile"
-          className="font-semibold text-indigo-600 underline"
-        >
+        <Link href="/profile" className="font-semibold text-accent underline">
           プロフィールを編集
         </Link>
         {
@@ -262,23 +259,23 @@ export function AccountPanel() {
       </p>
 
       {/* 3. プロフィールの一覧 ------------------------------------- */}
-      <section className="rounded-2xl border border-stone-200 bg-white p-5">
+      <section className="rounded-2xl border border-theme-border bg-theme-surface p-5">
         <div className="flex flex-wrap items-center justify-between gap-2">
-          <h2 className="text-sm font-bold text-stone-800">
+          <h2 className="text-sm font-bold text-ink">
             プロフィールの一覧
-            <span className="ml-2 text-[11px] font-normal text-stone-500">
+            <span className="ml-2 text-[11px] font-normal text-ink-muted">
               {presets.length} 件
             </span>
           </h2>
           <Link
             href="/profile?new=1"
-            className="inline-flex items-center gap-1 rounded-full bg-indigo-600 px-4 py-1.5 text-[11px] font-bold text-white transition-colors hover:bg-indigo-700"
+            className="inline-flex items-center gap-1 rounded-full bg-accent px-4 py-1.5 text-[11px] font-bold text-on-accent transition-colors hover:brightness-110"
           >
             <Plus className="h-3 w-3" aria-hidden />
             新しいプロフィールを追加
           </Link>
         </div>
-        <p className="mt-1 max-w-[70ch] text-xs leading-relaxed text-stone-500">
+        <p className="mt-1 max-w-[70ch] text-xs leading-relaxed text-ink-muted">
           {
             "家族ぶんなど、複数のプロフィールを持てます。使用中は 1 件で、「使う」で切り替えると、すべての道具がそのプロフィールで判定します。"
           }
@@ -287,14 +284,14 @@ export function AccountPanel() {
         {switchMessage && (
           <p
             role="status"
-            className="mt-3 rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-[11px] leading-relaxed text-emerald-800"
+            className="mt-3 rounded-xl border border-theme-border bg-theme-accent-soft p-3 text-[11px] leading-relaxed text-ink"
           >
             {switchMessage}
           </p>
         )}
 
         {presets.length === 0 ? (
-          <p className="mt-4 rounded-xl border border-stone-200 bg-stone-50 p-3 text-xs leading-relaxed text-stone-600">
+          <p className="mt-4 rounded-xl border border-theme-border bg-theme-subtle p-3 text-xs leading-relaxed text-ink-muted">
             {"まだありません。"}
             <Link href="/profile" className="font-semibold underline">
               プロフィールを登録
@@ -302,7 +299,7 @@ export function AccountPanel() {
             {" すると、ここに並びます。"}
           </p>
         ) : (
-          <ul className="mt-4 divide-y divide-stone-100">
+          <ul className="mt-4 divide-y divide-theme-border">
             {presets.map((preset) => (
               <li key={preset.id} className="py-2.5">
                 {editingId === preset.id ? (
@@ -333,12 +330,12 @@ export function AccountPanel() {
                       autoFocus
                       maxLength={100}
                       aria-label="プロフィールの名前"
-                      className="min-w-0 flex-1 rounded-lg border border-stone-300 px-3 py-1.5 text-xs text-stone-800 focus:border-indigo-400 focus:outline-none"
+                      className="min-w-0 flex-1 rounded-lg border border-theme-border px-3 py-1.5 text-xs text-ink focus:border-indigo-400 focus:outline-none"
                     />
                     <button
                       type="submit"
                       disabled={busyId === preset.id || !editingName.trim()}
-                      className="inline-flex cursor-pointer items-center gap-1 rounded-full bg-indigo-600 px-4 py-1.5 text-[11px] font-bold text-white transition-colors hover:bg-indigo-700 disabled:cursor-not-allowed disabled:bg-stone-300"
+                      className="inline-flex cursor-pointer items-center gap-1 rounded-full bg-accent px-4 py-1.5 text-[11px] font-bold text-on-accent transition-colors hover:brightness-110 disabled:cursor-not-allowed disabled:bg-stone-300"
                     >
                       {busyId === preset.id ? (
                         <Loader2 className="h-3 w-3 animate-spin" aria-hidden />
@@ -350,7 +347,7 @@ export function AccountPanel() {
                     <button
                       type="button"
                       onClick={() => setEditingId(null)}
-                      className="inline-flex cursor-pointer items-center gap-1 text-[11px] font-semibold text-stone-500 hover:text-stone-700"
+                      className="inline-flex cursor-pointer items-center gap-1 text-[11px] font-semibold text-ink-muted hover:text-ink"
                     >
                       <X className="h-3 w-3" aria-hidden />
                       やめる
@@ -359,17 +356,17 @@ export function AccountPanel() {
                 ) : (
                   <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1">
                     <div className="min-w-0">
-                      <p className="flex items-center gap-2 text-xs font-semibold text-stone-800">
+                      <p className="flex items-center gap-2 text-xs font-semibold text-ink">
                         {preset.name}
                         {preset.id === activeId && (
-                          <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-bold text-emerald-800">
+                          <span className="rounded-full bg-theme-accent-soft px-2 py-0.5 text-[10px] font-bold text-accent">
                             使用中
                           </span>
                         )}
                       </p>
                       {/* 中身を出す。名前だけだと、家族ぶんの控えが
                           並んだときにどれがどれだか分からない */}
-                      <p className="text-xs text-stone-500">
+                      <p className="text-xs text-ink-muted">
                         生年月日 {preset.birthDate || "未設定"}
                       </p>
                       <PresetPlaces preset={preset} />
@@ -400,7 +397,7 @@ export function AccountPanel() {
                               `「${preset.name}」を使用中にしました。方位の判定・引越しの試算・街探しは、このプロフィールで出します。`,
                             );
                           }}
-                          className="inline-flex cursor-pointer items-center gap-1 rounded-full bg-emerald-600 px-3 py-1 text-[11px] font-bold text-white transition-colors hover:bg-emerald-700 disabled:cursor-not-allowed disabled:bg-stone-300"
+                          className="inline-flex cursor-pointer items-center gap-1 rounded-full bg-accent px-3 py-1 text-[11px] font-bold text-on-accent transition-colors hover:brightness-110 disabled:cursor-not-allowed disabled:bg-theme-subtle disabled:text-ink-muted"
                         >
                           {busyId === preset.id ? (
                             <Loader2
@@ -419,7 +416,7 @@ export function AccountPanel() {
                           setEditingId(preset.id);
                           setEditingName(preset.name);
                         }}
-                        className="inline-flex cursor-pointer items-center gap-1 rounded-full border border-stone-300 px-3 py-1 text-[11px] font-semibold text-stone-700 transition-colors hover:bg-stone-50"
+                        className="inline-flex cursor-pointer items-center gap-1 rounded-full border border-theme-border px-3 py-1 text-[11px] font-semibold text-ink transition-colors hover:bg-theme-subtle"
                       >
                         <Pencil className="h-3 w-3" aria-hidden />
                         名前
@@ -432,7 +429,7 @@ export function AccountPanel() {
                             ? "/profile"
                             : `/profile?preset=${encodeURIComponent(preset.id)}`
                         }
-                        className="inline-flex items-center gap-1 rounded-full border border-stone-300 px-3 py-1 text-[11px] font-semibold text-stone-700 transition-colors hover:bg-stone-50"
+                        className="inline-flex items-center gap-1 rounded-full border border-theme-border px-3 py-1 text-[11px] font-semibold text-ink transition-colors hover:bg-theme-subtle"
                       >
                         <SlidersHorizontal className="h-3 w-3" aria-hidden />
                         編集
@@ -466,7 +463,7 @@ export function AccountPanel() {
                           setCloudSynced(result.cloudSynced);
                           setBusyId(null);
                         }}
-                        className="inline-flex cursor-pointer items-center gap-1 rounded-full border border-rose-200 px-3 py-1 text-[11px] font-semibold text-rose-700 transition-colors hover:bg-rose-50 disabled:cursor-not-allowed disabled:opacity-50"
+                        className="inline-flex cursor-pointer items-center gap-1 rounded-full border border-theme-border px-3 py-1 text-[11px] font-semibold text-theme-gold transition-colors hover:bg-theme-gold-soft disabled:cursor-not-allowed disabled:opacity-50"
                       >
                         {busyId === preset.id ? (
                           <Loader2
@@ -486,7 +483,7 @@ export function AccountPanel() {
           </ul>
         )}
 
-        <p className="mt-3 text-xs leading-relaxed text-stone-500">
+        <p className="mt-3 text-xs leading-relaxed text-ink-muted">
           {cloudSynced
             ? "アカウントに保存されています（ほかの端末でも同じ一覧になります）。"
             : "この端末にだけ保存されています。ログインすると、ほかの端末でも同じ一覧になります。"}
@@ -494,17 +491,17 @@ export function AccountPanel() {
       </section>
 
       {/* 4. 登録した内容を消す ----------------------------------- */}
-      <section className="rounded-2xl border border-rose-200 bg-rose-50/40 p-5">
-        <h2 className="flex items-center gap-2 text-sm font-bold text-rose-800">
+      <section className="rounded-2xl border border-theme-border bg-theme-gold-soft/40 p-5">
+        <h2 className="flex items-center gap-2 text-sm font-bold text-theme-gold">
           <AlertTriangle className="h-4 w-4" aria-hidden />
           登録した内容を消す
         </h2>
-        <p className="mt-2 max-w-[70ch] text-xs leading-relaxed text-stone-600">
+        <p className="mt-2 max-w-[70ch] text-xs leading-relaxed text-ink-muted">
           {
             "生年月日・出生地・いま住んでいる場所・目的地・プロフィールの一覧・設定バーの好み・保存した候補・登録した地点・残した分析・AI相談の会話・相談メモ・人物プロフィールを、アカウントからもこの端末からも消します。元に戻せません。"
           }
         </p>
-        <p className="mt-2 max-w-[70ch] text-xs leading-relaxed text-stone-600">
+        <p className="mt-2 max-w-[70ch] text-xs leading-relaxed text-ink-muted">
           {
             "Google のアカウントそのものは消えません。消したあとも同じアカウントでログインでき、何も登録していない状態から使い直せます。"
           }
@@ -513,7 +510,7 @@ export function AccountPanel() {
         {deleteMessage ? (
           <p
             role="status"
-            className="mt-4 rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-[11px] leading-relaxed text-emerald-800"
+            className="mt-4 rounded-xl border border-theme-border bg-theme-accent-soft p-3 text-[11px] leading-relaxed text-ink"
           >
             {deleteMessage}
           </p>
@@ -542,7 +539,7 @@ export function AccountPanel() {
                       : "この端末から消しました。アカウント側は消せていません（通信の状態を確かめて、もう一度お試しください）。",
                 );
               }}
-              className="inline-flex cursor-pointer items-center gap-2 rounded-full bg-rose-600 px-6 py-2 text-xs font-bold text-white transition-colors hover:bg-rose-700 disabled:cursor-not-allowed disabled:bg-stone-300"
+              className="inline-flex cursor-pointer items-center gap-2 rounded-full bg-accent px-6 py-2 text-xs font-bold text-on-accent transition-colors hover:brightness-110 disabled:cursor-not-allowed disabled:bg-theme-subtle disabled:text-ink-muted"
             >
               {deleting && (
                 <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden />
@@ -553,7 +550,7 @@ export function AccountPanel() {
               type="button"
               disabled={deleting}
               onClick={() => setConfirmingDelete(false)}
-              className="cursor-pointer text-xs font-semibold text-stone-600 underline disabled:opacity-50"
+              className="cursor-pointer text-xs font-semibold text-ink-muted underline disabled:opacity-50"
             >
               やめる
             </button>
@@ -562,7 +559,7 @@ export function AccountPanel() {
           <button
             type="button"
             onClick={() => setConfirmingDelete(true)}
-            className="mt-4 inline-flex cursor-pointer items-center rounded-full border border-rose-300 px-6 py-2 text-xs font-semibold text-rose-700 transition-colors hover:bg-rose-50"
+            className="mt-4 inline-flex cursor-pointer items-center rounded-full border border-theme-border px-6 py-2 text-xs font-semibold text-theme-gold transition-colors hover:bg-theme-gold-soft"
           >
             登録した内容を消す
           </button>

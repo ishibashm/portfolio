@@ -179,9 +179,9 @@ export function QuickProfileBar() {
   const needsBirthDate = !birthDate;
 
   return (
-    <section className="w-full max-w-[1700px] bg-white/95 dark:bg-theme-surface backdrop-blur-xl border border-slate-300 dark:border-theme-border rounded-3xl shadow-lg shadow-slate-200/50 dark:shadow-black/20 p-6 md:p-8">
+    <section className="w-full max-w-[1700px] bg-theme-surface/95 dark:bg-theme-surface backdrop-blur-xl border border-theme-border dark:border-theme-border rounded-3xl shadow-lg shadow-slate-200/50 dark:shadow-black/20 p-6 md:p-8">
       <div className="flex items-baseline justify-between gap-3 mb-1">
-        <h2 className="text-lg font-bold text-slate-900 dark:text-ink font-serif">
+        <h2 className="text-lg font-bold text-ink dark:text-ink font-serif">
           まずここを入れる
         </h2>
         {saved !== "none" && (
@@ -216,7 +216,7 @@ export function QuickProfileBar() {
       {/* 使用中のプロフィールの切り替え。作る・直す・消すは /profile と
           /account（利用者の指摘、2026-09-12。独自の保存 UI をやめた） */}
       <ProfilePicker
-        className="mb-6 pb-5 border-b border-slate-200 dark:border-theme-border"
+        className="mb-6 pb-5 border-b border-theme-border dark:border-theme-border"
         onApplied={(p) => {
           setBirthDate(p.birthDate);
           setBaseLat(p.baseLat);
@@ -260,7 +260,7 @@ export function QuickProfileBar() {
               touched.current = true;
               setBirthDate(e.target.value);
             }}
-            className="w-full bg-white dark:bg-theme-surface border border-slate-300 dark:border-theme-border rounded-xl px-3 py-2.5 text-sm text-slate-900 dark:text-ink outline-none focus:border-accent transition-colors"
+            className="w-full bg-theme-surface dark:bg-theme-surface border border-theme-border dark:border-theme-border rounded-xl px-3 py-2.5 text-sm text-ink dark:text-ink outline-none focus:border-accent transition-colors"
           />
           <p className="text-xs text-ink-muted leading-relaxed">
             {PROFILE_FIELDS.birthDate.help}
@@ -312,7 +312,7 @@ export function QuickProfileBar() {
         />
       </div>
 
-      <div className="flex flex-wrap items-center justify-end gap-4 mt-6 pt-5 border-t border-slate-200 dark:border-theme-border">
+      <div className="flex flex-wrap items-center justify-end gap-4 mt-6 pt-5 border-t border-theme-border dark:border-theme-border">
         <span className="text-xs text-ink-muted">
           {
             "出生地が未入力のあいだは、天体ライン（太陽・金星・木星）の加点を付けずに判定します"

@@ -44,7 +44,7 @@ const FloorPlanScene = dynamic(
   {
     ssr: false,
     loading: () => (
-      <p className="p-6 text-sm text-stone-500">模型を読み込んでいます…</p>
+      <p className="p-6 text-sm text-ink-muted">模型を読み込んでいます…</p>
     ),
   },
 );
@@ -484,7 +484,7 @@ function NumberField({
   onChange: (v: number) => void;
 }) {
   return (
-    <label className="block text-xs text-stone-600">
+    <label className="block text-xs text-ink-muted">
       {label}
       <input
         type="number"
@@ -494,7 +494,7 @@ function NumberField({
           const v = Number(e.target.value);
           if (Number.isFinite(v)) onChange(v);
         }}
-        className="mt-0.5 w-20 rounded-md border border-stone-300 px-2 py-1 text-sm"
+        className="mt-0.5 w-20 rounded-md border border-theme-border px-2 py-1 text-sm"
       />
     </label>
   );
@@ -553,23 +553,23 @@ export function FloorPlanFengShui({ reading }: { reading: FengShuiReading }) {
     `rounded-full border px-3 py-1 text-xs font-semibold ${
       active
         ? "border-rose-600 bg-rose-600 text-white"
-        : "border-stone-300 bg-white text-stone-700 hover:bg-stone-50"
+        : "border-theme-border bg-theme-surface text-ink hover:bg-theme-subtle"
     }`;
 
   return (
     <section
-      className="mt-6 overflow-hidden rounded-3xl border border-stone-200 bg-white shadow-sm"
+      className="mt-6 overflow-hidden rounded-3xl border border-theme-border bg-theme-surface shadow-sm"
       aria-label="自分の間取りで見る八宅"
     >
-      <header className="border-b border-stone-200/70 px-5 py-4">
+      <header className="border-b border-theme-border/70 px-5 py-4">
         <p className="flex items-center gap-1.5 text-xs font-bold tracking-wider text-rose-600">
           <LayoutDashboard className="h-3.5 w-3.5" aria-hidden />
           自分の間取りで見る
         </p>
-        <h3 className="mt-1 text-lg font-bold text-stone-800">
+        <h3 className="mt-1 text-lg font-bold text-ink">
           {reading.guaName}命で、間取りの部屋がどの区画にあるか
         </h3>
-        <p className="mt-1 max-w-[70ch] text-xs leading-relaxed text-stone-600">
+        <p className="mt-1 max-w-[70ch] text-xs leading-relaxed text-ink-muted">
           {LEAD}
         </p>
       </header>
@@ -655,7 +655,7 @@ export function FloorPlanFengShui({ reading }: { reading: FengShuiReading }) {
             </p>
           )}
           {view === "3d" && result ? (
-            <div className="overflow-hidden rounded-2xl border border-stone-200 bg-gradient-to-b from-stone-50 to-amber-50/40">
+            <div className="overflow-hidden rounded-2xl border border-theme-border bg-theme-subtle">
               <FloorPlanScene
                 result={result}
                 selectedId={selectedId}
@@ -664,7 +664,7 @@ export function FloorPlanFengShui({ reading }: { reading: FengShuiReading }) {
                 perspective={perspective}
                 exportRef={exportRef}
               />
-              <div className="flex flex-wrap items-center gap-2 border-t border-stone-200 bg-white/80 px-3 py-2">
+              <div className="flex flex-wrap items-center gap-2 border-t border-theme-border bg-theme-surface px-3 py-2">
                 <div
                   role="group"
                   aria-label="立体の見せ方"
@@ -713,7 +713,7 @@ export function FloorPlanFengShui({ reading }: { reading: FengShuiReading }) {
                     : "3D モデルを書き出す（.glb）"}
                 </button>
               </div>
-              <p className="px-3 pb-2 text-xs leading-relaxed text-stone-600">
+              <p className="px-3 pb-2 text-xs leading-relaxed text-ink-muted">
                 {EXPORT_NOTE}
               </p>
             </div>
@@ -732,7 +732,7 @@ export function FloorPlanFengShui({ reading }: { reading: FengShuiReading }) {
             />
           )}
           {!result && (
-            <p className="mt-2 text-sm text-stone-600">
+            <p className="mt-2 text-sm text-ink-muted">
               部屋が 1
               つも無いので、区画が出せません。「部屋を描く」で描くか、例に戻してください。
             </p>
@@ -740,8 +740,8 @@ export function FloorPlanFengShui({ reading }: { reading: FengShuiReading }) {
         </div>
 
         <div className="space-y-4 text-sm">
-          <fieldset className="rounded-2xl border border-stone-200 p-3">
-            <legend className="px-1 text-xs font-bold text-stone-700">
+          <fieldset className="rounded-2xl border border-theme-border p-3">
+            <legend className="px-1 text-xs font-bold text-ink">
               方位記号（北）の向き
             </legend>
             <div className="flex items-center gap-2">
@@ -775,13 +775,13 @@ export function FloorPlanFengShui({ reading }: { reading: FengShuiReading }) {
                 </button>
               ))}
             </div>
-            <p className="mt-2 text-xs leading-relaxed text-stone-600">
+            <p className="mt-2 text-xs leading-relaxed text-ink-muted">
               {NORTH_NOTE}
             </p>
           </fieldset>
 
-          <fieldset className="rounded-2xl border border-stone-200 p-3">
-            <legend className="px-1 text-xs font-bold text-stone-700">
+          <fieldset className="rounded-2xl border border-theme-border p-3">
+            <legend className="px-1 text-xs font-bold text-ink">
               家の中心（太極）の取り方
             </legend>
             <div className="flex flex-wrap gap-1">
@@ -797,14 +797,14 @@ export function FloorPlanFengShui({ reading }: { reading: FengShuiReading }) {
                 </button>
               ))}
             </div>
-            <p className="mt-2 text-xs leading-relaxed text-stone-600">
+            <p className="mt-2 text-xs leading-relaxed text-ink-muted">
               L 字のように欠けがある間取りでは、2
               つの取り方で中心が分かれます。図の点線の丸が、もう一方の取り方の中心です。
             </p>
           </fieldset>
 
-          <fieldset className="rounded-2xl border border-stone-200 p-3">
-            <legend className="px-1 text-xs font-bold text-stone-700">
+          <fieldset className="rounded-2xl border border-theme-border p-3">
+            <legend className="px-1 text-xs font-bold text-ink">
               間取り図を下敷きにする
             </legend>
             <label className={`${button(false)} inline-block cursor-pointer`}>
@@ -841,7 +841,7 @@ export function FloorPlanFengShui({ reading }: { reading: FengShuiReading }) {
                 </button>
               </div>
             )}
-            <p className="mt-2 text-xs leading-relaxed text-stone-600">
+            <p className="mt-2 text-xs leading-relaxed text-ink-muted">
               {PRIVACY}
             </p>
           </fieldset>
@@ -855,7 +855,7 @@ export function FloorPlanFengShui({ reading }: { reading: FengShuiReading }) {
                 選んだ部屋
               </legend>
               <div className="flex flex-wrap gap-2">
-                <label className="block text-xs text-stone-600">
+                <label className="block text-xs text-ink-muted">
                   名前
                   <input
                     type="text"
@@ -863,10 +863,10 @@ export function FloorPlanFengShui({ reading }: { reading: FengShuiReading }) {
                     onChange={(e) =>
                       update({ ...selected, name: e.target.value })
                     }
-                    className="mt-0.5 w-32 rounded-md border border-stone-300 px-2 py-1 text-sm"
+                    className="mt-0.5 w-32 rounded-md border border-theme-border px-2 py-1 text-sm"
                   />
                 </label>
-                <label className="block text-xs text-stone-600">
+                <label className="block text-xs text-ink-muted">
                   種類
                   <select
                     value={selected.kind}
@@ -876,7 +876,7 @@ export function FloorPlanFengShui({ reading }: { reading: FengShuiReading }) {
                         kind: e.target.value as PlanRoomKind,
                       })
                     }
-                    className="mt-0.5 block rounded-md border border-stone-300 px-2 py-1 text-sm"
+                    className="mt-0.5 block rounded-md border border-theme-border px-2 py-1 text-sm"
                   >
                     {(Object.keys(ROOM_KIND_LABELS) as PlanRoomKind[]).map(
                       (k) => (
@@ -936,7 +936,7 @@ export function FloorPlanFengShui({ reading }: { reading: FengShuiReading }) {
                   setRooms((rs) => rs.filter((r) => r.id !== selected.id));
                   setSelectedId(null);
                 }}
-                className="mt-3 rounded-full border border-rose-300 bg-white px-3 py-1 text-xs font-semibold text-rose-700 hover:bg-rose-50"
+                className="mt-3 rounded-full border border-rose-300 bg-theme-surface px-3 py-1 text-xs font-semibold text-rose-700 hover:bg-theme-gold-soft"
               >
                 この部屋を消す
               </button>
@@ -946,8 +946,8 @@ export function FloorPlanFengShui({ reading }: { reading: FengShuiReading }) {
       </div>
 
       {result && (
-        <div className="border-t border-stone-200/70 px-5 py-4">
-          <p className="text-sm text-stone-700">
+        <div className="border-t border-theme-border/70 px-5 py-4">
+          <p className="text-sm text-ink">
             当て方のある部屋のうち、<b>{matches}</b> 部屋が当て方に合い、
             <b>{mismatches}</b> 部屋が合いません。
           </p>
@@ -969,14 +969,14 @@ export function FloorPlanFengShui({ reading }: { reading: FengShuiReading }) {
                   className={`w-full rounded-2xl border p-3 text-left ${
                     r.room.id === selectedId
                       ? "border-amber-500 bg-amber-50"
-                      : "border-stone-200 bg-white"
+                      : "border-theme-border bg-theme-surface"
                   }`}
                 >
                   <span className="flex flex-wrap items-center gap-2">
-                    <span className="font-bold text-stone-800">
+                    <span className="font-bold text-ink">
                       {r.room.name || ROOM_KIND_LABELS[r.room.kind]}
                     </span>
-                    <span className="text-xs text-stone-500">
+                    <span className="text-xs text-ink-muted">
                       {ROOM_KIND_LABELS[r.room.kind]}
                     </span>
                     <span
@@ -991,7 +991,7 @@ export function FloorPlanFengShui({ reading }: { reading: FengShuiReading }) {
                         className={`rounded border px-1.5 py-0.5 text-xs font-bold ${
                           r.fit === "match"
                             ? "border-emerald-300 text-emerald-800"
-                            : "border-rose-300 text-rose-800"
+                            : "border-rose-300 text-theme-gold"
                         }`}
                       >
                         {r.fit === "match"
@@ -1000,7 +1000,7 @@ export function FloorPlanFengShui({ reading }: { reading: FengShuiReading }) {
                       </span>
                     )}
                   </span>
-                  <span className="mt-1 block text-xs text-stone-700">
+                  <span className="mt-1 block text-xs text-ink">
                     {r.shares
                       .filter((s) => s.share >= 0.005)
                       .slice(0, 3)
@@ -1011,14 +1011,14 @@ export function FloorPlanFengShui({ reading }: { reading: FengShuiReading }) {
                       .join("・")}
                   </span>
                   {r.rule && (
-                    <span className="mt-1 block text-xs text-stone-500">
+                    <span className="mt-1 block text-xs text-ink-muted">
                       {r.rule}
                     </span>
                   )}
                   {(r.containsCenter || r.sensitive || r.centerDependent) && (
                     <span className="mt-1 flex flex-wrap gap-1 text-xs">
                       {r.containsCenter && (
-                        <span className="rounded bg-stone-100 px-1.5 py-0.5 text-stone-700">
+                        <span className="rounded bg-stone-100 px-1.5 py-0.5 text-ink">
                           太極を含む
                         </span>
                       )}

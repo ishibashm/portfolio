@@ -410,15 +410,15 @@ export function TenChiJinEvaluation({
   // hooks はすべて上で呼び終えているので、ここで返してよい。
   if (!birthDate) {
     return (
-      <div className="bg-white/80 dark:bg-theme-surface border border-stone-200 dark:border-theme-border rounded-[2rem] p-6 backdrop-blur-md shadow-sm">
-        <h3 className="text-sm font-semibold tracking-wider text-stone-600 dark:text-ink-muted flex items-center gap-2">
+      <div className="bg-theme-surface dark:bg-theme-surface border border-theme-border dark:border-theme-border rounded-[2rem] p-6 backdrop-blur-md shadow-sm">
+        <h3 className="text-sm font-semibold tracking-wider text-ink-muted dark:text-ink-muted flex items-center gap-2">
           <BrainCircuit
             size={16}
-            className="text-stone-600 dark:text-ink-muted"
+            className="text-ink-muted dark:text-ink-muted"
           />
           天・地・人の総合評価
         </h3>
-        <p className="mt-3 text-xs leading-relaxed text-stone-500 dark:text-ink-muted">
+        <p className="mt-3 text-xs leading-relaxed text-ink-muted dark:text-ink-muted">
           生年月日が未入力です。人（心身・相性）の評価は本命星の相性から決まるため、生年月日が無いと総合の点は出せません。
         </p>
       </div>
@@ -426,15 +426,15 @@ export function TenChiJinEvaluation({
   }
 
   return (
-    <div className="bg-white dark:bg-theme-surface border border-stone-200 dark:border-theme-border rounded-[2rem] p-6 shadow-sm">
+    <div className="bg-theme-surface dark:bg-theme-surface border border-theme-border dark:border-theme-border rounded-[2rem] p-6 shadow-sm">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6 pb-4 border-b border-stone-200 dark:border-theme-border">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6 pb-4 border-b border-theme-border dark:border-theme-border">
         <div>
-          <h3 className="text-sm font-semibold tracking-wider text-stone-700 dark:text-ink flex items-center gap-2">
+          <h3 className="text-sm font-semibold tracking-wider text-ink dark:text-ink flex items-center gap-2">
             <BrainCircuit size={16} className="text-accent" />
             天・地・人の総合評価
           </h3>
-          <p className="mt-1 text-xs text-stone-500 dark:text-ink-muted">
+          <p className="mt-1 text-xs text-ink-muted dark:text-ink-muted">
             {
               "方位（地）と時期（天）で総合を出し、心身と相性（人）は参考として並べます。"
             }
@@ -442,7 +442,7 @@ export function TenChiJinEvaluation({
         </div>
         <div className="flex items-center gap-3">
           <div className="text-right">
-            <span className="text-[10px] font-mono text-stone-600 dark:text-ink-muted block">
+            <span className="text-[10px] font-mono text-ink-muted dark:text-ink-muted block">
               総合
             </span>
             <div className="flex items-baseline gap-1">
@@ -457,7 +457,7 @@ export function TenChiJinEvaluation({
               >
                 {overallScore}
               </span>
-              <span className="text-stone-600 dark:text-ink-muted text-xs font-mono">
+              <span className="text-ink-muted dark:text-ink-muted text-xs font-mono">
                 /100
               </span>
             </div>
@@ -479,12 +479,12 @@ export function TenChiJinEvaluation({
       {/* 3 Indicators (Ten-Chi-Jin) */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
         {/* 天 - Time */}
-        <div className="bg-white/70 dark:bg-theme-surface border border-stone-200 dark:border-theme-border rounded-xl p-4 flex flex-col justify-between">
+        <div className="bg-theme-surface/70 dark:bg-theme-surface border border-theme-border dark:border-theme-border rounded-xl p-4 flex flex-col justify-between">
           <div className="flex justify-between items-center mb-3">
-            <span className="text-xs font-bold text-stone-500 dark:text-ink-muted flex items-center gap-1.5">
+            <span className="text-xs font-bold text-ink-muted dark:text-ink-muted flex items-center gap-1.5">
               <Calendar
                 size={13}
-                className="text-stone-500 dark:text-ink-muted"
+                className="text-ink-muted dark:text-ink-muted"
               />
               天（時期）
             </span>
@@ -496,7 +496,7 @@ export function TenChiJinEvaluation({
                 />
               )}
               <span
-                className={`text-sm font-mono font-bold ${isTenLow ? "text-red-600 dark:text-theme-bad" : "text-stone-800 dark:text-ink"}`}
+                className={`text-sm font-mono font-bold ${isTenLow ? "text-red-600 dark:text-theme-bad" : "text-ink dark:text-ink"}`}
               >
                 {timeMetrics.score}%
               </span>
@@ -508,7 +508,7 @@ export function TenChiJinEvaluation({
               style={{ width: `${timeMetrics.score}%` }}
             />
           </div>
-          <span className="text-[10px] text-stone-600 dark:text-ink-muted leading-normal font-sans">
+          <span className="text-[10px] text-ink-muted dark:text-ink-muted leading-normal font-sans">
             {timeMetrics.riskFactors.length > 0
               ? `${timeMetrics.riskFactors.slice(0, 2).join("・")}の障りがあります`
               : "土用・逆行などの障りは見当たりません"}
@@ -516,12 +516,12 @@ export function TenChiJinEvaluation({
         </div>
 
         {/* 地 - Space */}
-        <div className="bg-white/70 dark:bg-theme-surface border border-stone-200 dark:border-theme-border rounded-xl p-4 flex flex-col justify-between">
+        <div className="bg-theme-surface/70 dark:bg-theme-surface border border-theme-border dark:border-theme-border rounded-xl p-4 flex flex-col justify-between">
           <div className="flex justify-between items-center mb-3">
-            <span className="text-xs font-bold text-stone-500 dark:text-ink-muted flex items-center gap-1.5">
+            <span className="text-xs font-bold text-ink-muted dark:text-ink-muted flex items-center gap-1.5">
               <Compass
                 size={13}
-                className="text-stone-500 dark:text-ink-muted"
+                className="text-ink-muted dark:text-ink-muted"
               />
               地（方位）
             </span>
@@ -533,7 +533,7 @@ export function TenChiJinEvaluation({
                 />
               )}
               <span
-                className={`text-sm font-mono font-bold ${isChiLow ? "text-red-600 dark:text-theme-bad" : "text-stone-800 dark:text-ink"}`}
+                className={`text-sm font-mono font-bold ${isChiLow ? "text-red-600 dark:text-theme-bad" : "text-ink dark:text-ink"}`}
               >
                 {spaceMetrics.score}%
               </span>
@@ -545,7 +545,7 @@ export function TenChiJinEvaluation({
               style={{ width: `${spaceMetrics.score}%` }}
             />
           </div>
-          <span className="text-[10px] text-stone-600 dark:text-ink-muted leading-normal font-sans">
+          <span className="text-[10px] text-ink-muted dark:text-ink-muted leading-normal font-sans">
             {spaceMetrics.hasSevereClash
               ? `${spaceMetrics.worstClashType}に当たっています`
               : "この方位に大きな凶殺はありません"}
@@ -553,10 +553,10 @@ export function TenChiJinEvaluation({
         </div>
 
         {/* 人 - Human */}
-        <div className="bg-white/70 dark:bg-theme-surface border border-stone-200 dark:border-theme-border rounded-xl p-4 flex flex-col justify-between">
+        <div className="bg-theme-surface/70 dark:bg-theme-surface border border-theme-border dark:border-theme-border rounded-xl p-4 flex flex-col justify-between">
           <div className="flex justify-between items-center mb-3">
-            <span className="text-xs font-bold text-stone-500 dark:text-ink-muted flex items-center gap-1.5">
-              <Heart size={13} className="text-stone-500 dark:text-ink-muted" />
+            <span className="text-xs font-bold text-ink-muted dark:text-ink-muted flex items-center gap-1.5">
+              <Heart size={13} className="text-ink-muted dark:text-ink-muted" />
               人（心身・相性）
             </span>
             <div className="flex items-center gap-1">
@@ -567,7 +567,7 @@ export function TenChiJinEvaluation({
                 />
               )}
               <span
-                className={`text-sm font-mono font-bold ${isJinLow ? "text-red-600 dark:text-theme-bad" : "text-stone-800 dark:text-ink"}`}
+                className={`text-sm font-mono font-bold ${isJinLow ? "text-red-600 dark:text-theme-bad" : "text-ink dark:text-ink"}`}
               >
                 {humanMetrics.score}%
               </span>
@@ -579,7 +579,7 @@ export function TenChiJinEvaluation({
               style={{ width: `${humanMetrics.score}%` }}
             />
           </div>
-          <span className="text-[10px] text-stone-600 dark:text-ink-muted leading-normal font-sans">
+          <span className="text-[10px] text-ink-muted dark:text-ink-muted leading-normal font-sans">
             {members.length > 0
               ? `相性: ${humanMetrics.compatibilityScore}% (同伴者 ${members.length} 名)`
               : "同伴者なし。本人の状態だけで見ています"}
@@ -619,7 +619,7 @@ export function TenChiJinEvaluation({
           {/* Action Trigger Button */}
           {verdict.actionLabel &&
             (onApplyAction || verdict.actionType === "NAVIGATE") && (
-              <div className="mt-2 pt-2 border-t border-stone-200 dark:border-theme-border">
+              <div className="mt-2 pt-2 border-t border-theme-border dark:border-theme-border">
                 <button
                   onClick={() => {
                     if (verdict.actionType === "NAVIGATE") {

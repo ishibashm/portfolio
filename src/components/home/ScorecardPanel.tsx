@@ -123,7 +123,7 @@ const statusBadgeClass = (s: string) => {
   if (s === "WARNING")
     return "text-orange-700 bg-orange-500/10 border-orange-200";
   if (s.startsWith("NOISE_VOID"))
-    return "text-stone-600 bg-stone-100 border-stone-300";
+    return "text-ink-muted bg-stone-100 border-theme-border";
   return "text-red-600 bg-red-500/10 border-red-200";
 };
 
@@ -230,7 +230,7 @@ const getDimensionCellBgColor = (
   if (dimension === "astro") {
     if (score >= 30) return "bg-blue-50 text-blue-700 border border-blue-200";
     if (score > 0) return "bg-blue-50 text-blue-700 border border-blue-200";
-    return "text-stone-600 border border-stone-200";
+    return "text-ink-muted border border-theme-border";
   }
   if (dimension === "timeGate") {
     if (score <= -100)
@@ -238,7 +238,7 @@ const getDimensionCellBgColor = (
     if (score < 0) return "bg-amber-50 text-amber-700 border border-amber-200";
     if (score > 0)
       return "bg-emerald-50 text-emerald-700 border border-emerald-200";
-    return "text-stone-600 border border-stone-200";
+    return "text-ink-muted border border-theme-border";
   }
   return "";
 };
@@ -335,19 +335,19 @@ export default function ScorecardPanel({
               flex の min-width:auto では守られない（実測で 768px 以上の全幅で
               1〜2文字ずつの縦書きのようになっていた）。縦に積む。
             */}
-          <div className="w-full bg-white border border-stone-200 rounded-xl p-4 md:p-6 shadow-lg relative overflow-hidden flex flex-col gap-4">
+          <div className="w-full bg-theme-surface border border-theme-border rounded-xl p-4 md:p-6 shadow-lg relative overflow-hidden flex flex-col gap-4">
             <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/5 rounded-full blur-3xl -mr-10 -mt-10 pointer-events-none"></div>
             <div>
               <h2 className="text-emerald-700 font-mono text-base tracking-[0.1em] font-bold mb-1 uppercase flex items-center gap-2">
                 <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse"></span>
                 5. 総合スコア / 8方位統合評価マトリクス
               </h2>
-              <p className="text-stone-600 text-xs leading-relaxed max-w-xl">
+              <p className="text-ink-muted text-xs leading-relaxed max-w-xl">
                 {
                   "直近 30 日の吉凶の見通しと、各方位の推奨エリア（市区町村の平均所得つき）を 1 か所で見比べる画面です。"
                 }
               </p>
-              <div className="mt-2 text-stone-600 text-xs leading-relaxed flex flex-wrap gap-x-4 gap-y-1">
+              <div className="mt-2 text-ink-muted text-xs leading-relaxed flex flex-wrap gap-x-4 gap-y-1">
                 <span>
                   <strong className="text-emerald-700">🌟 トリプル大吉:</strong>{" "}
                   3つの計算モデル（古典/物理独立/伝統連動）すべてで吉方位となる最も安全な方位。
@@ -361,15 +361,15 @@ export default function ScorecardPanel({
 
             <div className="flex flex-wrap items-center gap-3">
               {/* Prefecture Filter */}
-              <div className="flex items-center gap-1.5 bg-stone-50 px-2 py-1.5 rounded-md border border-stone-200">
-                <span className="text-stone-600 font-mono text-[10px] uppercase tracking-wider">
+              <div className="flex items-center gap-1.5 bg-theme-subtle px-2 py-1.5 rounded-md border border-theme-border">
+                <span className="text-ink-muted font-mono text-[10px] uppercase tracking-wider">
                   対象県:
                 </span>
                 <select
                   aria-label="対象県"
                   value={scorecardPrefecture}
                   onChange={(e) => setScorecardPrefecture(e.target.value)}
-                  className="min-h-[24px] bg-white text-stone-700 border-0 text-[10px] font-mono focus:outline-none focus:ring-0 cursor-pointer"
+                  className="min-h-[24px] bg-theme-surface text-ink border-0 text-[10px] font-mono focus:outline-none focus:ring-0 cursor-pointer"
                 >
                   <option value="base">
                     {scorecardBasePref
@@ -390,7 +390,7 @@ export default function ScorecardPanel({
                 onClick={() => setShowNoiseDirections(!showNoiseDirections)}
                 className={`px-3 py-1.5 text-[10px] font-mono rounded-md border transition-all flex items-center gap-1.5 ${
                   showNoiseDirections
-                    ? "bg-stone-100 text-stone-600 border-stone-300"
+                    ? "bg-stone-100 text-ink-muted border-theme-border"
                     : "bg-emerald-50 text-emerald-700 border-emerald-200"
                 }`}
               >
@@ -403,7 +403,7 @@ export default function ScorecardPanel({
               <button
                 onClick={handleExportForGemini}
                 disabled={isExporting}
-                className="px-4 py-1.5 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-stone-900 font-mono text-[10px] uppercase tracking-widest rounded-md transition-all shadow-[0_0_15px_rgba(16,185,129,0.3)] disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                className="px-4 py-1.5 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-ink font-mono text-[10px] uppercase tracking-widest rounded-md transition-all shadow-[0_0_15px_rgba(16,185,129,0.3)] disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
               >
                 {isExporting ? (
                   <>
@@ -421,7 +421,7 @@ export default function ScorecardPanel({
               <button
                 onClick={handleDownloadUnifiedDataset}
                 disabled={isExporting}
-                className="px-4 py-1.5 bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 text-stone-900 font-mono text-[10px] uppercase tracking-widest rounded-md transition-all shadow-[0_0_15px_rgba(124,58,237,0.3)] disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                className="px-4 py-1.5 bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 text-ink font-mono text-[10px] uppercase tracking-widest rounded-md transition-all shadow-[0_0_15px_rgba(124,58,237,0.3)] disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
               >
                 {isExporting ? (
                   <>
@@ -438,15 +438,15 @@ export default function ScorecardPanel({
           </div>
 
           {scorecardLoading && wealthData.length === 0 ? (
-            <div className="w-full bg-stone-50 border border-stone-200 rounded-xl p-12 flex flex-col items-center justify-center gap-3">
+            <div className="w-full bg-theme-subtle border border-theme-border rounded-xl p-12 flex flex-col items-center justify-center gap-3">
               <Loader2 className="w-8 h-8 text-emerald-700 animate-spin" />
-              <span className="text-[10px] font-mono text-stone-600 tracking-[0.2em] uppercase">
+              <span className="text-[10px] font-mono text-ink-muted tracking-[0.2em] uppercase">
                 読み込んでいます…
               </span>
             </div>
           ) : (
             <div
-              className={`w-full overflow-hidden bg-stone-50 border border-stone-200 rounded-xl shadow-2xl relative transition-opacity duration-300 ${scorecardLoading ? "opacity-65 pointer-events-none" : ""}`}
+              className={`w-full overflow-hidden bg-theme-subtle border border-theme-border rounded-xl shadow-2xl relative transition-opacity duration-300 ${scorecardLoading ? "opacity-65 pointer-events-none" : ""}`}
             >
               {scorecardLoading && (
                 <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-emerald-500 to-transparent animate-pulse z-50"></div>
@@ -490,7 +490,7 @@ export default function ScorecardPanel({
                       <div
                         key={item.direction}
                         onClick={() => setSelectedDirection(item.direction)}
-                        className="p-4 space-y-3 hover:bg-white/80 transition-colors cursor-pointer"
+                        className="p-4 space-y-3 hover:bg-theme-surface transition-colors cursor-pointer"
                       >
                         <div className="flex items-center justify-between gap-2 flex-wrap">
                           {/* 札全体は div の onClick で開く。キーボードから
@@ -498,7 +498,7 @@ export default function ScorecardPanel({
                               （click は div へ泡立つ） */}
                           <button
                             type="button"
-                            className="font-mono font-bold text-stone-700"
+                            className="font-mono font-bold text-ink"
                           >
                             {item.labelJa} ({item.direction})
                           </button>
@@ -519,9 +519,9 @@ export default function ScorecardPanel({
                           {models.map((m) => (
                             <div
                               key={m.label}
-                              className="flex items-center justify-between gap-2 bg-white border border-stone-200 rounded-lg px-2.5 py-1.5"
+                              className="flex items-center justify-between gap-2 bg-theme-surface border border-theme-border rounded-lg px-2.5 py-1.5"
                             >
-                              <span className="text-[10px] text-stone-600">
+                              <span className="text-[10px] text-ink-muted">
                                 {m.label}
                               </span>
                               <span className="flex items-center gap-1.5">
@@ -543,7 +543,7 @@ export default function ScorecardPanel({
                         {/* 3 つの個別判断軸 */}
                         <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 font-mono">
                           <div className="bg-emerald-50 border border-emerald-200 rounded-lg px-2.5 py-1.5">
-                            <div className="text-[10px] text-stone-600">
+                            <div className="text-[10px] text-ink-muted">
                               ① 気学方位
                             </div>
                             <div
@@ -551,46 +551,46 @@ export default function ScorecardPanel({
                             >
                               {directionLabelName(bd.kigaku)}
                             </div>
-                            <div className="text-[10px] text-stone-600">
+                            <div className="text-[10px] text-ink-muted">
                               ベース: {bd.kigakuScore}点
                             </div>
                           </div>
                           <div className="bg-blue-50 border border-blue-200 rounded-lg px-2.5 py-1.5">
-                            <div className="text-[10px] text-stone-600">
+                            <div className="text-[10px] text-ink-muted">
                               ② 天体の線
                             </div>
                             <div
-                              className={`text-[10px] ${bd.astroScore > 0 ? "text-blue-700 font-bold" : "text-stone-600"}`}
+                              className={`text-[10px] ${bd.astroScore > 0 ? "text-blue-700 font-bold" : "text-ink-muted"}`}
                             >
                               {bd.astro.length > 0
                                 ? bd.astro.join(", ")
                                 : "ラインなし"}
                             </div>
-                            <div className="text-[10px] text-stone-600">
+                            <div className="text-[10px] text-ink-muted">
                               加算: +{bd.astroScore}点
                             </div>
                           </div>
                           <div className="bg-amber-50 border border-amber-200 rounded-lg px-2.5 py-1.5">
-                            <div className="text-[10px] text-stone-600">
+                            <div className="text-[10px] text-ink-muted">
                               ③ 時期の補正
                             </div>
                             <div
-                              className={`text-[10px] ${bd.timeGateScore < 0 ? "text-red-600 font-bold" : bd.timeGateScore > 0 ? "text-emerald-700 font-bold" : "text-stone-600"}`}
+                              className={`text-[10px] ${bd.timeGateScore < 0 ? "text-red-600 font-bold" : bd.timeGateScore > 0 ? "text-emerald-700 font-bold" : "text-ink-muted"}`}
                             >
                               {bd.timeGate.length > 0
                                 ? bd.timeGate.join(", ")
                                 : "通常時間"}
                             </div>
-                            <div className="text-[10px] text-stone-600">
+                            <div className="text-[10px] text-ink-muted">
                               調整: {bd.timeGateScore > 0 ? "+" : ""}
                               {bd.timeGateScore}点
                             </div>
                           </div>
                         </div>
 
-                        <div className="text-[10px] text-stone-600 space-y-0.5">
+                        <div className="text-[10px] text-ink-muted space-y-0.5">
                           <div>
-                            <span className="text-stone-600">
+                            <span className="text-ink-muted">
                               30日で動ける日:
                             </span>{" "}
                             <span className="font-mono">
@@ -598,11 +598,11 @@ export default function ScorecardPanel({
                             </span>
                           </div>
                           <div>
-                            <span className="text-stone-600">推奨エリア:</span>{" "}
+                            <span className="text-ink-muted">推奨エリア:</span>{" "}
                             {item.topArea ? (
-                              <span className="text-stone-700 font-bold">
+                              <span className="text-ink font-bold">
                                 {item.topArea.areaName}
-                                <span className="font-mono font-normal text-stone-600">
+                                <span className="font-mono font-normal text-ink-muted">
                                   （所得{" "}
                                   {(
                                     item.topArea.incomePerCapita / 10000
@@ -629,7 +629,7 @@ export default function ScorecardPanel({
                   */}
                 <table className="w-full min-w-[1120px] text-left border-collapse">
                   <thead>
-                    <tr className="border-b border-stone-200 bg-white/80 text-[10px] font-mono text-stone-600 uppercase tracking-wider whitespace-nowrap">
+                    <tr className="border-b border-theme-border bg-theme-surface text-[10px] font-mono text-ink-muted uppercase tracking-wider whitespace-nowrap">
                       <th className="p-3 w-24">方位</th>
                       <th className="p-3 w-20">古典</th>
                       <th className="p-3 w-20">物理独立</th>
@@ -660,11 +660,11 @@ export default function ScorecardPanel({
                           <tr
                             key={item.direction}
                             onClick={() => setSelectedDirection(item.direction)}
-                            className="hover:bg-white/80 transition-colors cursor-pointer group"
+                            className="hover:bg-theme-surface transition-colors cursor-pointer group"
                           >
                             {/* Direction */}
-                            <td className="p-3 font-mono font-bold text-stone-700 flex items-center gap-1.5 whitespace-nowrap">
-                              <span className="text-[10px] text-stone-600">
+                            <td className="p-3 font-mono font-bold text-ink flex items-center gap-1.5 whitespace-nowrap">
+                              <span className="text-[10px] text-ink-muted">
                                 ▶
                               </span>
                               {/* 行は tr の onClick で開く。キーボード用に
@@ -747,53 +747,53 @@ export default function ScorecardPanel({
                               )}
                               {!item.isConsensusClear &&
                                 !item.isDivergenceAlert && (
-                                  <span className="text-stone-600 text-[10px] font-mono">
+                                  <span className="text-ink-muted text-[10px] font-mono">
                                     -
                                   </span>
                                 )}
                             </td>
 
                             {/* ① 気学方位 */}
-                            <td className="p-3 bg-emerald-50 border-x border-stone-200 font-mono">
+                            <td className="p-3 bg-emerald-50 border-x border-theme-border font-mono">
                               <div className="flex flex-col">
                                 <span
                                   className={`font-bold ${kigakuTextClass(bd.kigaku)}`}
                                 >
                                   {directionLabelName(bd.kigaku)}
                                 </span>
-                                <span className="text-[10px] text-stone-600">
+                                <span className="text-[10px] text-ink-muted">
                                   ベース: {bd.kigakuScore}点
                                 </span>
                               </div>
                             </td>
 
                             {/* ② アストロ */}
-                            <td className="p-3 bg-blue-50 border-r border-stone-200 font-mono">
+                            <td className="p-3 bg-blue-50 border-r border-theme-border font-mono">
                               <div className="flex flex-col">
                                 <span
-                                  className={`text-[10px] ${bd.astroScore > 0 ? "text-blue-700 font-bold" : "text-stone-600"}`}
+                                  className={`text-[10px] ${bd.astroScore > 0 ? "text-blue-700 font-bold" : "text-ink-muted"}`}
                                 >
                                   {bd.astro.length > 0
                                     ? bd.astro.join(", ")
                                     : "ラインなし"}
                                 </span>
-                                <span className="text-[10px] text-stone-600">
+                                <span className="text-[10px] text-ink-muted">
                                   加算: +{bd.astroScore}点
                                 </span>
                               </div>
                             </td>
 
                             {/* ③ 時間ゲート */}
-                            <td className="p-3 bg-amber-50 border-r border-stone-200 font-mono">
+                            <td className="p-3 bg-amber-50 border-r border-theme-border font-mono">
                               <div className="flex flex-col">
                                 <span
-                                  className={`text-[10px] ${bd.timeGateScore < 0 ? "text-red-600 font-bold" : bd.timeGateScore > 0 ? "text-emerald-700 font-bold" : "text-stone-600"}`}
+                                  className={`text-[10px] ${bd.timeGateScore < 0 ? "text-red-600 font-bold" : bd.timeGateScore > 0 ? "text-emerald-700 font-bold" : "text-ink-muted"}`}
                                 >
                                   {bd.timeGate.length > 0
                                     ? bd.timeGate.join(", ")
                                     : "通常時間"}
                                 </span>
-                                <span className="text-[10px] text-stone-600 border-t border-stone-200 mt-0.5 pt-0.5">
+                                <span className="text-[10px] text-ink-muted border-t border-theme-border mt-0.5 pt-0.5">
                                   調整: {bd.timeGateScore > 0 ? "+" : ""}
                                   {bd.timeGateScore}点
                                 </span>
@@ -801,7 +801,7 @@ export default function ScorecardPanel({
                             </td>
 
                             {/* 30日で動ける日（凶でない日。SAFE は吉ではない） */}
-                            <td className="p-3 text-center font-mono text-[10px] text-stone-600">
+                            <td className="p-3 text-center font-mono text-[10px] text-ink-muted">
                               {item.luckyDays}日
                             </td>
 
@@ -815,10 +815,10 @@ export default function ScorecardPanel({
                                         存在しないため地域名が空欄・所得が
                                         「NaN万円」になっていた。万円への
                                         換算は移住比較のページと同じ。 */}
-                                  <span className="text-stone-700 font-bold truncate max-w-[180px]">
+                                  <span className="text-ink font-bold truncate max-w-[180px]">
                                     {item.topArea.areaName}
                                   </span>
-                                  <span className="text-[10px] text-stone-600 font-mono mt-0.5">
+                                  <span className="text-[10px] text-ink-muted font-mono mt-0.5">
                                     所得:{" "}
                                     {(
                                       item.topArea.incomePerCapita / 10000
@@ -827,7 +827,7 @@ export default function ScorecardPanel({
                                   </span>
                                 </div>
                               ) : (
-                                <span className="text-stone-600 text-[10px] italic">
+                                <span className="text-ink-muted text-[10px] italic">
                                   データなし
                                 </span>
                               )}
@@ -842,29 +842,29 @@ export default function ScorecardPanel({
           )}
 
           {/* --- MULTI-MODEL GRID SCORECARD (大量パターンスコア表) --- */}
-          <div className="w-full bg-white border border-stone-200 rounded-xl p-4 md:p-6 shadow-lg space-y-4 relative overflow-hidden">
+          <div className="w-full bg-theme-surface border border-theme-border rounded-xl p-4 md:p-6 shadow-lg space-y-4 relative overflow-hidden">
             <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/5 rounded-full blur-3xl -mr-10 -mt-10 pointer-events-none"></div>
 
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
               <div>
-                <h3 className="text-stone-700 font-mono text-sm tracking-[0.1em] font-bold mb-1 uppercase flex items-center gap-2">
+                <h3 className="text-ink font-mono text-sm tracking-[0.1em] font-bold mb-1 uppercase flex items-center gap-2">
                   <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full"></span>
                   多次元吉凶パターンマトリクス (Grid Scorecard)
                 </h3>
-                <p className="text-stone-600 text-xs">
+                <p className="text-ink-muted text-xs">
                   本命星別、または日付別の全方位吉凶パターンを網羅した詳細グリッド表です。
                 </p>
               </div>
 
               <div className="flex flex-wrap items-center gap-2">
                 {/* Grid Selector Toggles */}
-                <div className="flex bg-stone-50 p-1 rounded-md border border-stone-200 text-[10px] font-mono">
+                <div className="flex bg-theme-subtle p-1 rounded-md border border-theme-border text-[10px] font-mono">
                   <button
                     onClick={() => setScorecardActiveGridTab("dates")}
                     className={`inline-flex min-h-[24px] items-center justify-center px-3 py-1 rounded transition-all ${
                       scorecardActiveGridTab === "dates"
-                        ? "bg-emerald-600 text-stone-900 font-bold"
-                        : "text-stone-600 hover:text-stone-700"
+                        ? "bg-emerald-600 text-ink font-bold"
+                        : "text-ink-muted hover:text-ink"
                     }`}
                   >
                     30日カレンダー
@@ -873,8 +873,8 @@ export default function ScorecardPanel({
                     onClick={() => setScorecardActiveGridTab("stars")}
                     className={`inline-flex min-h-[24px] items-center justify-center px-3 py-1 rounded transition-all ${
                       scorecardActiveGridTab === "stars"
-                        ? "bg-emerald-600 text-stone-900 font-bold"
-                        : "text-stone-600 hover:text-stone-700"
+                        ? "bg-emerald-600 text-ink font-bold"
+                        : "text-ink-muted hover:text-ink"
                     }`}
                   >
                     九星本命星別 (当日)
@@ -888,7 +888,7 @@ export default function ScorecardPanel({
                   onChange={(e) =>
                     setGridModelView(e.target.value as typeof gridModelView)
                   }
-                  className="bg-stone-50 text-stone-600 border border-stone-200 rounded-md px-2 py-1 text-[10px] font-mono focus:outline-none cursor-pointer"
+                  className="bg-theme-subtle text-ink-muted border border-theme-border rounded-md px-2 py-1 text-[10px] font-mono focus:outline-none cursor-pointer"
                 >
                   <option value="consensus">合意判定</option>
                   <option value="classical">古典暦モデル</option>
@@ -903,7 +903,7 @@ export default function ScorecardPanel({
                   onChange={(e) =>
                     setGridDimension(e.target.value as typeof gridDimension)
                   }
-                  className="bg-stone-50 text-stone-600 border border-stone-200 rounded-md px-2 py-1 text-[10px] font-mono focus:outline-none cursor-pointer"
+                  className="bg-theme-subtle text-ink-muted border border-theme-border rounded-md px-2 py-1 text-[10px] font-mono focus:outline-none cursor-pointer"
                 >
                   <option value="total">表示軸: 総合スコア</option>
                   <option value="kigaku">表示軸: ①気学方位</option>
@@ -914,7 +914,7 @@ export default function ScorecardPanel({
                 {/* CSV Export Button */}
                 <button
                   onClick={handleExportGridCsv}
-                  className="inline-flex min-h-[24px] items-center justify-center px-3 py-1 bg-stone-100 hover:bg-stone-200 text-stone-600 border border-stone-300 font-mono text-[10px] uppercase tracking-wider rounded transition-all"
+                  className="inline-flex min-h-[24px] items-center justify-center px-3 py-1 bg-stone-100 hover:bg-stone-200 text-ink-muted border border-theme-border font-mono text-[10px] uppercase tracking-wider rounded transition-all"
                 >
                   CSV で書き出す
                 </button>
@@ -922,7 +922,7 @@ export default function ScorecardPanel({
             </div>
 
             {/* Legend for Grid */}
-            <div className="flex flex-wrap gap-3 text-[10px] font-mono text-stone-600 bg-white/80 p-2.5 rounded border border-stone-200">
+            <div className="flex flex-wrap gap-3 text-[10px] font-mono text-ink-muted bg-theme-surface p-2.5 rounded border border-theme-border">
               {/* しきい値を凡例に直書きしない。lib/scoreTier から引く。 */}
               <span className="flex items-center gap-1">
                 <span className="w-2.5 h-2.5 rounded bg-emerald-50 border border-emerald-200"></span>
@@ -949,11 +949,11 @@ export default function ScorecardPanel({
             </div>
 
             {/* Grid Table */}
-            <div className="w-full overflow-hidden bg-stone-50 border border-zinc-850 rounded-lg shadow-inner">
+            <div className="w-full overflow-hidden bg-theme-subtle border border-zinc-850 rounded-lg shadow-inner">
               <div className="overflow-x-auto">
                 <table className="w-full text-center border-collapse">
                   <thead>
-                    <tr className="border-b border-zinc-850 bg-white/80 text-[10px] font-mono text-stone-600 uppercase tracking-wider">
+                    <tr className="border-b border-zinc-850 bg-theme-surface text-[10px] font-mono text-ink-muted uppercase tracking-wider">
                       <th className="p-2.5 text-left w-28">
                         {scorecardActiveGridTab === "dates" ? "日付" : "本命星"}
                       </th>
@@ -995,13 +995,13 @@ export default function ScorecardPanel({
                               ? "text-red-600"
                               : day.weekday === 6
                                 ? "text-blue-700"
-                                : "text-stone-600";
+                                : "text-ink-muted";
                           return (
                             <tr
                               key={day.dateStr}
-                              className="hover:bg-white/80 transition-colors"
+                              className="hover:bg-theme-surface transition-colors"
                             >
-                              <td className="p-2 text-left text-[10px] text-stone-600 border-r border-stone-200 whitespace-nowrap">
+                              <td className="p-2 text-left text-[10px] text-ink-muted border-r border-theme-border whitespace-nowrap">
                                 {day.dateStr}{" "}
                                 <span className={wdayColor}>({wdayJa})</span>
                               </td>
@@ -1187,9 +1187,9 @@ export default function ScorecardPanel({
                           return (
                             <tr
                               key={star.star}
-                              className={`hover:bg-white/80 transition-colors ${isUserStar ? "bg-emerald-50 border-y border-emerald-200" : ""}`}
+                              className={`hover:bg-theme-surface transition-colors ${isUserStar ? "bg-emerald-50 border-y border-emerald-200" : ""}`}
                             >
-                              <td className="p-2 text-left text-[10px] text-stone-600 font-bold border-r border-stone-200 whitespace-nowrap flex items-center gap-1.5">
+                              <td className="p-2 text-left text-[10px] text-ink-muted font-bold border-r border-theme-border whitespace-nowrap flex items-center gap-1.5">
                                 {isUserStar && (
                                   <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse"></span>
                                 )}
@@ -1388,26 +1388,26 @@ export default function ScorecardPanel({
             <div className="fixed inset-0 z-50 overflow-hidden font-sans">
               {/* Backdrop */}
               <div
-                className="absolute inset-0 bg-white/70 backdrop-blur-xs transition-opacity"
+                className="absolute inset-0 bg-theme-surface/70 backdrop-blur-xs transition-opacity"
                 onClick={() => setSelectedDirection(null)}
               ></div>
 
               {/* Drawer Container */}
               <div className="absolute inset-y-0 right-0 max-w-full flex">
-                <div className="w-screen max-w-lg bg-stone-50 border-l border-stone-200 shadow-2xl relative flex flex-col">
+                <div className="w-screen max-w-lg bg-theme-subtle border-l border-theme-border shadow-2xl relative flex flex-col">
                   {/* Close button */}
-                  <div className="flex items-center justify-between p-4 border-b border-stone-200 bg-white/80">
+                  <div className="flex items-center justify-between p-4 border-b border-theme-border bg-theme-surface">
                     <div className="flex items-center gap-2">
                       <span className="text-emerald-700 font-bold font-mono">
                         ▶
                       </span>
-                      <h3 className="text-sm font-bold text-stone-700">
+                      <h3 className="text-sm font-bold text-ink">
                         【方位詳細】 {detail.labelJa} ({detail.direction})
                       </h3>
                     </div>
                     <button
                       onClick={() => setSelectedDirection(null)}
-                      className="text-stone-600 hover:text-stone-900 transition-colors p-1"
+                      className="text-ink-muted hover:text-ink transition-colors p-1"
                     >
                       ✕ 閉じる
                     </button>
@@ -1493,9 +1493,9 @@ export default function ScorecardPanel({
                     })()}
 
                     {/* Status & Score Block */}
-                    <div className="bg-white/80 border border-stone-200 rounded-lg p-4 flex items-center justify-between">
+                    <div className="bg-theme-surface border border-theme-border rounded-lg p-4 flex items-center justify-between">
                       <div className="flex flex-col gap-1">
-                        <span className="text-[10px] text-stone-600 uppercase tracking-widest font-mono">
+                        <span className="text-[10px] text-ink-muted uppercase tracking-widest font-mono">
                           方位の判定
                         </span>
                         <span
@@ -1505,7 +1505,7 @@ export default function ScorecardPanel({
                         </span>
                       </div>
                       <div className="flex flex-col items-end gap-1">
-                        <span className="text-[10px] text-stone-600 uppercase tracking-widest font-mono">
+                        <span className="text-[10px] text-ink-muted uppercase tracking-widest font-mono">
                           点数
                         </span>
                         <span
@@ -1521,18 +1521,18 @@ export default function ScorecardPanel({
                     {/* 30-Day Forecast Calendar */}
                     <div className="space-y-2">
                       <div className="flex justify-between items-center">
-                        <h4 className="text-[11px] font-mono text-stone-600 uppercase tracking-wider flex items-center gap-1.5">
+                        <h4 className="text-[11px] font-mono text-ink-muted uppercase tracking-wider flex items-center gap-1.5">
                           <span>📅 直近 30 日の吉凶</span>
                         </h4>
-                        <span className="text-[10px] text-stone-600 font-mono">
+                        <span className="text-[10px] text-ink-muted font-mono">
                           動ける日（凶でない日）: {detail.luckyDays}日
                         </span>
                       </div>
 
-                      <div className="grid grid-cols-6 gap-1 bg-white/70 p-2 border border-stone-200 rounded-md">
+                      <div className="grid grid-cols-6 gap-1 bg-theme-surface/70 p-2 border border-theme-border rounded-md">
                         {detail.dates.map((d, i) => {
                           let bg =
-                            "bg-white/80 border-stone-200 text-stone-600";
+                            "bg-theme-surface border-theme-border text-ink-muted";
                           if (d.status === "OPTIMAL")
                             bg =
                               "bg-emerald-500/20 border-emerald-200 text-emerald-700";
@@ -1571,7 +1571,7 @@ export default function ScorecardPanel({
 
                     {/* Top 5 Wealth Municipalities */}
                     <div className="space-y-3">
-                      <h4 className="text-[11px] font-mono text-stone-600 uppercase tracking-wider flex items-center gap-1.5 border-b border-stone-200 pb-1.5">
+                      <h4 className="text-[11px] font-mono text-ink-muted uppercase tracking-wider flex items-center gap-1.5 border-b border-theme-border pb-1.5">
                         <span>🏢 平均所得の高い市区町村 5 件</span>
                       </h4>
                       {detail.topAreas.length > 0 ? (
@@ -1579,23 +1579,23 @@ export default function ScorecardPanel({
                           {detail.topAreas.map((area, idx) => (
                             <div
                               key={area.id}
-                              className="bg-white/70 border border-stone-200 rounded p-2.5 flex items-center justify-between text-xs"
+                              className="bg-theme-surface/70 border border-theme-border rounded p-2.5 flex items-center justify-between text-xs"
                             >
                               <div className="flex items-center gap-2">
-                                <span className="text-[10px] font-mono text-stone-600">
+                                <span className="text-[10px] font-mono text-ink-muted">
                                   #{idx + 1}
                                 </span>
                                 <div className="flex flex-col">
-                                  <span className="text-stone-700 font-bold">
+                                  <span className="text-ink font-bold">
                                     {area.areaName}
                                   </span>
-                                  <span className="text-[10px] text-stone-600 font-mono mt-0.5">
+                                  <span className="text-[10px] text-ink-muted font-mono mt-0.5">
                                     コード: {area.areaCode}
                                   </span>
                                 </div>
                               </div>
                               <div className="text-right flex flex-col items-end">
-                                <span className="text-stone-600 font-mono font-bold">
+                                <span className="text-ink-muted font-mono font-bold">
                                   {/* 1 人あたりが無いときに課税所得の総額
                                       （千円）を 1000 で割って出していた。
                                       桁が違ううえ、総額を「一人当たり」と
@@ -1604,7 +1604,7 @@ export default function ScorecardPanel({
                                     ? `${(area.incomePerCapita / 10000).toFixed(1)}万円`
                                     : "—"}
                                 </span>
-                                <span className="text-[10px] text-stone-600 font-sans mt-0.5">
+                                <span className="text-[10px] text-ink-muted font-sans mt-0.5">
                                   一人当たり平均所得
                                 </span>
                               </div>
@@ -1612,7 +1612,7 @@ export default function ScorecardPanel({
                           ))}
                         </div>
                       ) : (
-                        <p className="text-xs text-stone-600 italic">
+                        <p className="text-xs text-ink-muted italic">
                           該当するエリアがありません。
                         </p>
                       )}

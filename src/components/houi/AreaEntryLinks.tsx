@@ -25,10 +25,10 @@ export function AreaEntryLinks({ heading }: { heading: string }) {
 
   return (
     <section className="mt-10">
-      <h2 className="text-xl font-bold font-serif border-b border-slate-300 pb-2">
+      <h2 className="text-xl font-bold font-serif border-b border-theme-border pb-2">
         {heading}
       </h2>
-      <p className="mt-4 text-sm leading-relaxed text-slate-700">
+      <p className="mt-4 text-sm leading-relaxed text-ink">
         方位は<b>今住んでいる場所から見た向き</b>
         で決まるため、同じ吉方位でも出発地が違えば行き先は変わります。いま住んでいる市区町村を選ぶと、そこから見た八方位それぞれにどの街があり家賃相場がいくらかを確認できます。
       </p>
@@ -36,7 +36,7 @@ export function AreaEntryLinks({ heading }: { heading: string }) {
       <div className="mt-5 space-y-3">
         {byPref.map(([pref, list]) => (
           <div key={pref} className="flex flex-wrap items-baseline gap-2">
-            <span className="text-xs font-bold text-slate-500 w-16 shrink-0">
+            <span className="text-xs font-bold text-ink-muted w-16 shrink-0">
               {pref}
             </span>
             {list.map((a) => (
@@ -44,7 +44,7 @@ export function AreaEntryLinks({ heading }: { heading: string }) {
                 prefetch={false}
                 key={a.code}
                 href={`/houi/area/${a.code}`}
-                className="px-3 py-1.5 rounded-full border border-slate-300 bg-white text-xs font-semibold hover:border-rose-400 transition-colors"
+                className="px-3 py-1.5 rounded-full border border-theme-border bg-theme-surface text-xs font-semibold hover:border-accent"
               >
                 {a.city}
               </Link>
@@ -55,7 +55,7 @@ export function AreaEntryLinks({ heading }: { heading: string }) {
 
       <Link
         href="/houi/area"
-        className="mt-5 inline-flex text-xs font-semibold text-rose-600 underline hover:text-rose-700"
+        className="mt-5 inline-flex text-xs font-semibold text-accent underline hover:decoration-2"
       >
         すべての市区町村から選ぶ（{AREAS.length}エリア）
       </Link>

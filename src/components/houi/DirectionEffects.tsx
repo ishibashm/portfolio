@@ -33,30 +33,31 @@ export function DirectionEffects({
 
   return (
     <section className="mt-10">
-      <h2 className="text-xl font-bold font-serif border-b border-slate-300 pb-2">
+      <h2 className="text-xl font-bold font-serif border-b border-theme-border pb-2">
         この方位を取ると何が期待できるか
       </h2>
-      <p className="mt-4 text-xs leading-relaxed text-slate-600">
+      <p className="mt-4 text-xs leading-relaxed text-ink-muted">
         九星気学では、方位そのものよりも
         <b>その方位に回座している星</b>
-        が働きの中身を決めると考えます。同じ「東」でも、回座する星が変われば起きることが変わります。{periodLabel}の並びは次のとおりです。
+        が働きの中身を決めると考えます。同じ「東」でも、回座する星が変われば起きることが変わります。
+        {periodLabel}の並びは次のとおりです。
       </p>
 
       {good.length > 0 && (
         <div className="mt-5 space-y-3">
-          <h3 className="text-sm font-bold text-emerald-800">
+          <h3 className="text-sm font-bold text-theme-good">
             吉方位として使える方位
           </h3>
           {good.map((v) => (
             <div
               key={v.direction}
-              className="rounded-2xl border border-emerald-200 bg-emerald-50/70 p-4"
+              className="rounded-2xl border border-theme-border bg-theme-good-soft p-4"
             >
-              <p className="text-xs leading-relaxed text-emerald-950">
+              <p className="text-xs leading-relaxed text-theme-good">
                 {directionEffectSentence(v.direction, v.star, "good")}
               </p>
               {v.star !== null && (
-                <p className="mt-2 text-xs leading-relaxed text-emerald-800">
+                <p className="mt-2 text-xs leading-relaxed text-theme-good">
                   {elementRelationSentence(personalStar, v.star)}
                 </p>
               )}
@@ -67,16 +68,16 @@ export function DirectionEffects({
 
       {bad.length > 0 && (
         <div className="mt-6 space-y-3">
-          <h3 className="text-sm font-bold text-rose-800">
+          <h3 className="text-sm font-bold text-theme-bad">
             避けたい方位と、その理由
           </h3>
           {bad.map((v) => (
             <div
               key={v.direction}
-              className="rounded-2xl border border-rose-200 bg-rose-50/70 p-4"
+              className="rounded-2xl border border-theme-border bg-theme-bad-soft p-4"
             >
-              <p className="text-xs font-bold text-rose-900">{v.label}</p>
-              <p className="mt-1 text-xs leading-relaxed text-rose-950">
+              <p className="text-xs font-bold text-theme-bad">{v.label}</p>
+              <p className="mt-1 text-xs leading-relaxed text-theme-bad">
                 {directionEffectSentence(v.direction, v.star, "bad")}
               </p>
             </div>
@@ -84,7 +85,7 @@ export function DirectionEffects({
         </div>
       )}
 
-      <p className="mt-5 text-xs leading-relaxed text-slate-500">
+      <p className="mt-5 text-xs leading-relaxed text-ink-muted">
         ここに書いた働きは、後天定位盤における各星の象意にもとづく古典的な考え方です。方位が持つ意味と、そこに回座する星の意味が一致するとき（たとえば
         {STAR_MEANINGS[1].home === "N" ? "北に一白水星" : "定位と同じ配置"}
         ）は、同じ象意が重なるぶん働きが強く出るとされます。

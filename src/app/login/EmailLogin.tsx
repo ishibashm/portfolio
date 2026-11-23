@@ -61,14 +61,14 @@ export function EmailLogin({ next }: { next: string }) {
 
   return (
     <form onSubmit={submit} className="mt-4 w-full" data-email-login>
-      <div className="mb-3 flex items-center gap-3 text-[11px] text-stone-400">
+      <div className="mb-3 flex items-center gap-3 text-[11px] text-ink-muted">
         <span className="h-px flex-1 bg-stone-200" />
         または
         <span className="h-px flex-1 bg-stone-200" />
       </div>
       <label
         htmlFor="login-email"
-        className="block text-xs font-medium text-stone-600"
+        className="block text-xs font-medium text-ink-muted"
       >
         {EMAIL_LOGIN_TEXT.label}
       </label>
@@ -79,7 +79,7 @@ export function EmailLogin({ next }: { next: string }) {
         inputMode="email"
         value={email}
         onChange={(event) => setEmail(event.target.value)}
-        className="mt-1 min-h-11 w-full rounded-xl border border-stone-200 bg-white px-3 text-sm"
+        className="mt-1 min-h-11 w-full rounded-xl border border-theme-border bg-theme-surface px-3 text-sm"
       />
       {error && (
         <p role="alert" className="mt-2 text-xs text-red-600">
@@ -89,7 +89,7 @@ export function EmailLogin({ next }: { next: string }) {
       <button
         type="submit"
         disabled={status === "sending"}
-        className="mt-2 min-h-11 w-full rounded-xl border border-stone-200 bg-white px-6 text-sm font-medium text-stone-800 shadow-sm hover:bg-stone-50 disabled:opacity-50"
+        className="mt-2 min-h-11 w-full rounded-xl border border-theme-border bg-theme-surface px-6 text-sm font-medium text-ink shadow-sm hover:bg-theme-subtle disabled:opacity-50"
       >
         {status === "sending" ? "送っています…" : EMAIL_LOGIN_TEXT.submit}
       </button>

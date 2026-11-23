@@ -204,7 +204,7 @@ function CandidateCard({
 
   return (
     <article
-      className="relative flex flex-col overflow-hidden rounded-2xl border border-stone-200 bg-theme-surface shadow-sm"
+      className="relative flex flex-col overflow-hidden rounded-2xl border border-theme-border bg-theme-surface shadow-sm"
       aria-label={c.title || "候補"}
     >
       <div
@@ -231,7 +231,7 @@ function CandidateCard({
               {tier} {TIER_JP[tier]}
             </span>
           ) : (
-            <span className="shrink-0 rounded-full border border-stone-300 bg-theme-subtle px-2.5 py-1 text-xs font-bold text-ink-muted">
+            <span className="shrink-0 rounded-full border border-theme-border bg-theme-subtle px-2.5 py-1 text-xs font-bold text-ink-muted">
               {c.judgment.tier}
             </span>
           )}
@@ -258,7 +258,7 @@ function CandidateCard({
           unstable) && (
           <ul className="flex flex-wrap gap-1.5 text-xs">
             {c.judgment.blocked && (
-              <li className="rounded-full border border-slate-300 bg-theme-subtle px-2 py-0.5 font-semibold text-ink-muted">
+              <li className="rounded-full border border-theme-border bg-theme-subtle px-2 py-0.5 font-semibold text-ink-muted">
                 天中殺により移動を避ける扱い
               </li>
             )}
@@ -285,7 +285,7 @@ function CandidateCard({
             {details.map(([key, label]) => (
               <div
                 key={key}
-                className="rounded-lg border border-stone-200 px-2 py-1"
+                className="rounded-lg border border-theme-border px-2 py-1"
               >
                 <dt className="inline text-ink-muted">{label} </dt>
                 <dd className="inline font-semibold text-ink">
@@ -303,11 +303,11 @@ function CandidateCard({
         )}
 
         {editing && (
-          <div className="space-y-2 rounded-xl border border-stone-200 p-3">
+          <div className="space-y-2 rounded-xl border border-theme-border p-3">
             <label className="block text-xs font-semibold text-ink-muted">
               タイトル
               <input
-                className="mt-1 block w-full rounded-lg border border-stone-300 p-2 text-sm font-normal"
+                className="mt-1 block w-full rounded-lg border border-theme-border p-2 text-sm font-normal"
                 maxLength={120}
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
@@ -316,7 +316,7 @@ function CandidateCard({
             <label className="block text-xs font-semibold text-ink-muted">
               メモ
               <textarea
-                className="mt-1 block w-full rounded-lg border border-stone-300 p-2 text-sm font-normal"
+                className="mt-1 block w-full rounded-lg border border-theme-border p-2 text-sm font-normal"
                 maxLength={1000}
                 rows={3}
                 value={memo}
@@ -335,7 +335,7 @@ function CandidateCard({
               <button
                 type="button"
                 onClick={() => setEditing(false)}
-                className="rounded-lg border border-stone-300 px-3 py-1.5 text-xs font-semibold text-ink-muted"
+                className="rounded-lg border border-theme-border px-3 py-1.5 text-xs font-semibold text-ink-muted"
               >
                 やめる
               </button>
@@ -388,7 +388,7 @@ function CandidateCard({
           </Link>
           {url && (
             <a
-              className="inline-flex items-center gap-1 rounded-lg border border-stone-300 px-3 py-1.5 text-xs font-semibold text-ink-muted hover:border-stone-500"
+              className="inline-flex items-center gap-1 rounded-lg border border-theme-border px-3 py-1.5 text-xs font-semibold text-ink-muted hover:border-stone-500"
               href={url}
               target="_blank"
               rel="noopener noreferrer"
@@ -402,7 +402,7 @@ function CandidateCard({
             <button
               type="button"
               onClick={() => setEditing(true)}
-              className="inline-flex items-center gap-1 rounded-lg border border-stone-300 px-3 py-1.5 text-xs font-semibold text-ink-muted hover:border-stone-500"
+              className="inline-flex items-center gap-1 rounded-lg border border-theme-border px-3 py-1.5 text-xs font-semibold text-ink-muted hover:border-stone-500"
             >
               <Pencil className="h-3.5 w-3.5" aria-hidden />
               編集
@@ -462,7 +462,7 @@ function EmptyState() {
         {steps.map(([head, body], i) => (
           <li
             key={head}
-            className="rounded-2xl border border-stone-200 bg-theme-subtle p-3"
+            className="rounded-2xl border border-theme-border bg-theme-subtle p-3"
           >
             <span className="flex h-6 w-6 items-center justify-center rounded-full bg-accent text-xs font-bold text-on-accent">
               {i + 1}
@@ -527,7 +527,7 @@ export default function CandidateHistory() {
   return (
     <section className="space-y-4" aria-label="保存した候補の一覧">
       {rows.length > 0 && (
-        <div className="flex flex-wrap items-center gap-2 rounded-2xl border border-stone-200 bg-theme-surface px-4 py-3">
+        <div className="flex flex-wrap items-center gap-2 rounded-2xl border border-theme-border bg-theme-surface px-4 py-3">
           <p className="text-sm font-bold text-ink">
             {rows.length}
             {cursor ? "+" : ""} 件
@@ -553,7 +553,7 @@ export default function CandidateHistory() {
                   className={`rounded-full border px-2.5 py-1 text-xs font-semibold ${
                     sort === o.key
                       ? "border-stone-800 bg-stone-800 text-white"
-                      : "border-stone-300 bg-theme-surface text-ink-muted"
+                      : "border-theme-border bg-theme-surface text-ink-muted"
                   }`}
                 >
                   {o.label}
@@ -564,7 +564,7 @@ export default function CandidateHistory() {
               type="button"
               onClick={() => void load()}
               disabled={busy}
-              className="inline-flex items-center gap-1 rounded-full border border-stone-300 px-2.5 py-1 text-xs font-semibold text-ink-muted disabled:opacity-50"
+              className="inline-flex items-center gap-1 rounded-full border border-theme-border px-2.5 py-1 text-xs font-semibold text-ink-muted disabled:opacity-50"
             >
               <RefreshCw className="h-3.5 w-3.5" aria-hidden />
               読み直す
@@ -608,7 +608,7 @@ export default function CandidateHistory() {
           type="button"
           disabled={busy}
           onClick={() => void load(cursor)}
-          className="mx-auto block rounded-xl border border-stone-300 bg-theme-surface px-4 py-2 text-sm font-semibold text-ink-muted"
+          className="mx-auto block rounded-xl border border-theme-border bg-theme-surface px-4 py-2 text-sm font-semibold text-ink-muted"
         >
           続きを見る
         </button>

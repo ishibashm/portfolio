@@ -27,8 +27,8 @@ const YieldMapInner = dynamic(
   {
     ssr: false,
     loading: () => (
-      <div className="flex h-[420px] w-full items-center justify-center rounded-2xl border border-stone-200 bg-stone-50">
-        <p className="text-xs text-stone-500">地図を読み込んでいます…</p>
+      <div className="flex h-[420px] w-full items-center justify-center rounded-2xl border border-theme-border bg-theme-subtle">
+        <p className="text-xs text-ink-muted">地図を読み込んでいます…</p>
       </div>
     ),
   },

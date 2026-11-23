@@ -43,7 +43,7 @@ export function PortalLinkList({
   if (links.length === 0) return null;
   return (
     <div
-      className={`rounded-2xl border border-slate-300 dark:border-theme-border bg-white/90 dark:bg-theme-surface p-4 ${className}`}
+      className={`rounded-2xl border border-theme-border dark:border-theme-border bg-theme-surface dark:bg-theme-surface p-4 ${className}`}
     >
       <p className="text-xs font-bold text-slate-800 dark:text-ink">
         {cityName}で募集中の部屋を見る

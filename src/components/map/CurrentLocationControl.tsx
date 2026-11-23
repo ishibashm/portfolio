@@ -136,8 +136,8 @@ export function CurrentLocationControl({
                 : follow
                   ? "border-blue-600 bg-blue-600 text-white hover:bg-blue-700"
                   : on
-                    ? "border-blue-300 bg-white text-blue-600 hover:bg-blue-50"
-                    : "border-stone-200 bg-white/80 text-stone-500 hover:bg-white"
+                    ? "border-blue-300 bg-theme-surface text-blue-600 hover:bg-blue-50"
+                    : "border-theme-border bg-theme-surface text-ink-muted hover:bg-theme-surface"
             }`}
           >
             ◎ 現在地 {label}

@@ -48,19 +48,19 @@ export function ZoningLegend({
   );
 
   return (
-    <div className="rounded-2xl border border-stone-200 bg-white p-3">
+    <div className="rounded-2xl border border-theme-border bg-theme-surface p-3">
       <div className="flex flex-wrap items-baseline justify-between gap-2">
         <button
           type="button"
           onClick={() => setOpen((v) => !v)}
           aria-expanded={open}
-          className="flex min-h-11 items-center gap-1.5 text-xs font-bold text-stone-700"
+          className="flex min-h-11 items-center gap-1.5 text-xs font-bold text-ink"
         >
           <span aria-hidden>{open ? "▾" : "▸"}</span>
           <span>用途地域</span>
           {/* たたんでいても、いま何で絞っているかは見えるようにする */}
           {!open && selected && (
-            <span className="text-[10px] font-normal text-indigo-700">
+            <span className="text-[10px] font-normal text-accent">
               {selected}
             </span>
           )}
@@ -69,7 +69,7 @@ export function ZoningLegend({
           <button
             type="button"
             onClick={() => onSelect(null)}
-            className="min-h-11 px-2 text-xs text-indigo-700 underline"
+            className="min-h-11 px-2 text-xs text-accent underline"
           >
             全部を出す
           </button>
@@ -78,7 +78,7 @@ export function ZoningLegend({
 
       {!open ? null : (
         <>
-          <p className="mt-1 text-xs leading-relaxed text-stone-500">
+          <p className="mt-1 text-xs leading-relaxed text-ink-muted">
             押すとその区分だけ残ります。区画を押すと建蔽率・容積率が出ます。
           </p>
 
@@ -99,15 +99,15 @@ export function ZoningLegend({
                     aria-pressed={active}
                     title={ZONING_SUMMARY[name]}
                     className={`flex min-h-11 w-full items-center gap-2 rounded-lg px-1.5 py-1 text-left transition-colors ${
-                      active ? "bg-indigo-50" : "hover:bg-stone-50"
+                      active ? "bg-indigo-50" : "hover:bg-theme-subtle"
                     }`}
                   >
                     {/* 色の札。名前が必ず隣にあるので、色だけで読ませない */}
                     <span
-                      className="h-3 w-3 shrink-0 rounded-[2px] border border-stone-300"
+                      className="h-3 w-3 shrink-0 rounded-[2px] border border-theme-border"
                       style={{ background: ZONING_FILL[name] }}
                     />
-                    <span className="min-w-0 flex-1 text-xs text-stone-700">
+                    <span className="min-w-0 flex-1 text-xs text-ink">
                       {name}
                     </span>
                   </button>
@@ -117,7 +117,7 @@ export function ZoningLegend({
           </ul>
 
           {selected && (
-            <p className="mt-2 border-t border-stone-100 pt-2 text-xs leading-relaxed text-stone-600">
+            <p className="mt-2 border-t border-stone-100 pt-2 text-xs leading-relaxed text-ink-muted">
               {ZONING_SUMMARY[selected]}
             </p>
           )}
@@ -126,7 +126,7 @@ export function ZoningLegend({
             {ZONING_DISCLAIMER.map((line) => (
               <p
                 key={line}
-                className="text-[10px] leading-relaxed text-stone-500"
+                className="text-[10px] leading-relaxed text-ink-muted"
               >
                 {line}
               </p>

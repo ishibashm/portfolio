@@ -60,7 +60,7 @@ function KpiCard({
 }) {
   return (
     <div
-      className="rounded-2xl border border-gray-200 dark:border-theme-border bg-theme-surface p-4 shadow-xs"
+      className="rounded-2xl border border-theme-border dark:border-theme-border bg-theme-surface p-4 shadow-xs"
       title={hint}
     >
       <p className="text-xs font-semibold uppercase tracking-wider text-ink-muted">
@@ -81,7 +81,7 @@ function Section({
   children: React.ReactNode;
 }) {
   return (
-    <section className="rounded-3xl border border-gray-200 dark:border-theme-border bg-theme-surface p-5 shadow-sm">
+    <section className="rounded-3xl border border-theme-border dark:border-theme-border bg-theme-surface p-5 shadow-sm">
       <h2 className="text-sm font-bold text-ink">{title}</h2>
       <p className="mt-0.5 mb-4 text-xs leading-relaxed text-ink-muted">
         {subtitle}
@@ -186,8 +186,8 @@ export default function MarketAnalyticsPage() {
             >
               この 3 つの分析の読み方
             </Link>
-            ：平均ではなく中央値を使う理由、駅徒歩 1
-            分の重みが地域で 6 倍違うこと、生存分析の近似について。
+            ：平均ではなく中央値を使う理由、駅徒歩 1 分の重みが地域で 6
+            倍違うこと、生存分析の近似について。
           </p>
         </header>
 
@@ -259,7 +259,10 @@ export default function MarketAnalyticsPage() {
                     sqm: p.medianSqmRent,
                   }))}
                 >
-                  <CartesianGrid strokeDasharray="3 3" stroke={THEMED_GRID_STROKE} />
+                  <CartesianGrid
+                    strokeDasharray="3 3"
+                    stroke={THEMED_GRID_STROKE}
+                  />
                   <XAxis
                     dataKey="date"
                     tick={{ fontSize: 10, fill: "var(--wg-ink-muted)" }}
@@ -271,7 +274,10 @@ export default function MarketAnalyticsPage() {
                     domain={["auto", "auto"]}
                     unit="円"
                   />
-                  <Tooltip {...THEMED_TOOLTIP_STYLES} formatter={(v) => [`${v}円/㎡`, "㎡単価中央値"]} />
+                  <Tooltip
+                    {...THEMED_TOOLTIP_STYLES}
+                    formatter={(v) => [`${v}円/㎡`, "㎡単価中央値"]}
+                  />
                   <Line
                     dataKey="sqm"
                     name="㎡単価中央値"
@@ -283,8 +289,9 @@ export default function MarketAnalyticsPage() {
               </ResponsiveContainer>
             </div>
           ) : (
-            <p className="rounded-xl bg-stone-50 dark:bg-theme-subtle border border-stone-200 dark:border-theme-border p-3 text-xs leading-relaxed text-ink-muted">
-              蓄積中（現在 {stats.rentIndexSeries.length} 日ぶん）。集計が 5 日ぶん貯まるとチャートが表示されます。
+            <p className="rounded-xl bg-theme-subtle dark:bg-theme-subtle border border-theme-border dark:border-theme-border p-3 text-xs leading-relaxed text-ink-muted">
+              蓄積中（現在 {stats.rentIndexSeries.length} 日ぶん）。集計が 5
+              日ぶん貯まるとチャートが表示されます。
             </p>
           )}
         </Section>
@@ -297,9 +304,19 @@ export default function MarketAnalyticsPage() {
           <div className="h-56">
             <ResponsiveContainer width="100%" height="100%">
               <LineChart data={dailySeries}>
-                <CartesianGrid strokeDasharray="3 3" stroke={THEMED_GRID_STROKE} />
-                <XAxis dataKey="date" tick={{ fontSize: 10, fill: "var(--wg-ink-muted)" }} minTickGap={24} />
-                <YAxis tick={{ fontSize: 10, fill: "var(--wg-ink-muted)" }} width={44} />
+                <CartesianGrid
+                  strokeDasharray="3 3"
+                  stroke={THEMED_GRID_STROKE}
+                />
+                <XAxis
+                  dataKey="date"
+                  tick={{ fontSize: 10, fill: "var(--wg-ink-muted)" }}
+                  minTickGap={24}
+                />
+                <YAxis
+                  tick={{ fontSize: 10, fill: "var(--wg-ink-muted)" }}
+                  width={44}
+                />
                 <Tooltip {...THEMED_TOOLTIP_STYLES} />
                 <Line
                   dataKey="count"
@@ -338,9 +355,16 @@ export default function MarketAnalyticsPage() {
                     tick={{ fontSize: 9, fill: "var(--wg-ink-muted)" }}
                     minTickGap={16}
                   />
-                  <YAxis tick={{ fontSize: 9, fill: "var(--wg-ink-muted)" }} width={44} />
+                  <YAxis
+                    tick={{ fontSize: 9, fill: "var(--wg-ink-muted)" }}
+                    width={44}
+                  />
                   <Tooltip {...THEMED_TOOLTIP_STYLES} />
-                  <Bar dataKey="count" name="件数" fill={THEMED_SERIES.secondary} />
+                  <Bar
+                    dataKey="count"
+                    name="件数"
+                    fill={THEMED_SERIES.secondary}
+                  />
                 </BarChart>
               </ResponsiveContainer>
             </div>
@@ -358,7 +382,10 @@ export default function MarketAnalyticsPage() {
                     tick={{ fontSize: 9, fill: "var(--wg-ink-muted)" }}
                     minTickGap={16}
                   />
-                  <YAxis tick={{ fontSize: 9, fill: "var(--wg-ink-muted)" }} width={44} />
+                  <YAxis
+                    tick={{ fontSize: 9, fill: "var(--wg-ink-muted)" }}
+                    width={44}
+                  />
                   <Tooltip {...THEMED_TOOLTIP_STYLES} />
                   {/* 左裾（割安側）だけ青、割高側は灰。副題の「左裾を
                       拾っている」を色でも示す。isCheap は元から計算して
@@ -367,7 +394,11 @@ export default function MarketAnalyticsPage() {
                     {residualHist.map((b) => (
                       <Cell
                         key={b.label}
-                        fill={b.isCheap ? THEMED_SERIES.secondary : THEMED_SERIES.neutral}
+                        fill={
+                          b.isCheap
+                            ? THEMED_SERIES.secondary
+                            : THEMED_SERIES.neutral
+                        }
                       />
                     ))}
                   </Bar>
@@ -385,7 +416,10 @@ export default function MarketAnalyticsPage() {
           <div className="h-56">
             <ResponsiveContainer width="100%" height="100%">
               <LineChart data={survivalSeries}>
-                <CartesianGrid strokeDasharray="3 3" stroke={THEMED_GRID_STROKE} />
+                <CartesianGrid
+                  strokeDasharray="3 3"
+                  stroke={THEMED_GRID_STROKE}
+                />
                 <XAxis
                   dataKey="day"
                   tick={{ fontSize: 10, fill: "var(--wg-ink-muted)" }}
@@ -403,7 +437,10 @@ export default function MarketAnalyticsPage() {
                   unit="%"
                   domain={[0, 100]}
                 />
-                <Tooltip {...THEMED_TOOLTIP_STYLES} formatter={(v) => [`${v}%`, "残存率"]} />
+                <Tooltip
+                  {...THEMED_TOOLTIP_STYLES}
+                  formatter={(v) => [`${v}%`, "残存率"]}
+                />
                 <Line
                   dataKey="pct"
                   name="残存率"
@@ -435,7 +472,7 @@ export default function MarketAnalyticsPage() {
           <div className="overflow-x-auto">
             <table className="w-full text-[11px]">
               <thead>
-                <tr className="border-b border-gray-200 dark:border-theme-border text-left text-[10px] uppercase tracking-wider text-ink-muted">
+                <tr className="border-b border-theme-border dark:border-theme-border text-left text-[10px] uppercase tracking-wider text-ink-muted">
                   <th className="py-1.5 pr-2">市区町村</th>
                   <th className="py-1.5 pr-2 text-right">掲載数</th>
                   <th className="py-1.5 pr-2 text-right">㎡単価中央値</th>
@@ -454,7 +491,7 @@ export default function MarketAnalyticsPage() {
                 {stats.volatilityRanking.map((m) => (
                   <tr
                     key={m.prefecture + m.municipality}
-                    className="border-b border-gray-100 dark:border-theme-border last:border-0"
+                    className="border-b border-theme-border dark:border-theme-border last:border-0"
                   >
                     <td className="py-1.5 pr-2 font-semibold">
                       {m.prefecture}
@@ -519,9 +556,7 @@ export default function MarketAnalyticsPage() {
                 const entries = Object.entries(profiles).filter(([k]) =>
                   k.startsWith(`${star}|`),
                 );
-                const avg = (
-                  f: (p: (typeof entries)[number][1]) => number,
-                ) =>
+                const avg = (f: (p: (typeof entries)[number][1]) => number) =>
                   entries.length
                     ? entries.reduce((a, [, p]) => a + f(p), 0) / entries.length
                     : 0;
@@ -540,7 +575,7 @@ export default function MarketAnalyticsPage() {
               <div className="overflow-x-auto">
                 <table className="w-full text-[11px]">
                   <thead>
-                    <tr className="border-b border-gray-200 dark:border-theme-border text-left text-[10px] uppercase tracking-wider text-ink-muted">
+                    <tr className="border-b border-theme-border dark:border-theme-border text-left text-[10px] uppercase tracking-wider text-ink-muted">
                       <th className="py-1.5 pr-2">本命星</th>
                       <th className="py-1.5 pr-2 text-right">今年度の三盤吉</th>
                       <th className="py-1.5 pr-2 text-right">9年平均</th>
@@ -551,7 +586,7 @@ export default function MarketAnalyticsPage() {
                     {sorted.map((r) => (
                       <tr
                         key={r.star}
-                        className="border-b border-gray-100 dark:border-theme-border last:border-0"
+                        className="border-b border-theme-border dark:border-theme-border last:border-0"
                       >
                         <td className="py-1.5 pr-2 font-semibold">
                           {
@@ -605,10 +640,12 @@ export default function MarketAnalyticsPage() {
         >
           <ul className="list-disc space-y-1.5 pl-4 text-[11px] leading-relaxed text-ink-muted">
             <li>
-              <b>ヘドニック回帰</b>: log(家賃+管理費) を log(面積)・築年数・駅徒歩分に最小二乗で回帰。県ごとに別モデル。間取り・階数・構造は未投入なので、残差にはそれらの効果も混ざる。「割安」に見える物件には理由があることも多い。
+              <b>ヘドニック回帰</b>: log(家賃+管理費) を
+              log(面積)・築年数・駅徒歩分に最小二乗で回帰。県ごとに別モデル。間取り・階数・構造は未投入なので、残差にはそれらの効果も混ざる。「割安」に見える物件には理由があることも多い。
             </li>
             <li>
-              <b>生存分析</b>: パージ運用で消えた掲載は完全には観測できない。「7日以上巡回で見ない＝終了」という近似を使っており、長期側の推定は保守的でない可能性がある。
+              <b>生存分析</b>:
+              パージ運用で消えた掲載は完全には観測できない。「7日以上巡回で見ない＝終了」という近似を使っており、長期側の推定は保守的でない可能性がある。
             </li>
             <li>
               これは観測データの記述であって、因果関係でも将来の予測でもない。個別の物件判断は

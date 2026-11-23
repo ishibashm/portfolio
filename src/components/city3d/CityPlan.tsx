@@ -29,7 +29,7 @@ export default function CityPlan({
       role="img"
       aria-label="街の平面図。上が真北です。"
       viewBox={`${-extent} ${-extent} ${extent * 2} ${extent * 2}`}
-      className="h-[65vh] min-h-[420px] w-full bg-stone-50"
+      className="h-[65vh] min-h-[420px] w-full bg-theme-subtle"
     >
       <defs>
         <clipPath id={id}>

@@ -77,7 +77,7 @@ export default function FaqPanel({
         ))}
       <div aria-live="polite">
         {(answer || fact) && (
-          <article className="space-y-2 rounded-xl border bg-white dark:bg-theme-surface p-4">
+          <article className="space-y-2 rounded-xl border bg-theme-surface dark:bg-theme-surface p-4">
             <p className="text-sm font-bold">📑 サイトの資料より</p>
             {answer && <h3 className="font-bold">{answer.question}</h3>}
             <p>{answer?.answer ?? fact?.text}</p>

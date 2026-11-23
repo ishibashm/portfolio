@@ -23,7 +23,7 @@ export default function TimingLayout({
   children: React.ReactNode;
 }) {
   return (
-    <>
+    <div className="bg-background text-ink">
       <ToolPageIntro
         guideHref="/guide/choose-date"
         guideLabel="日取りの使い方を読む"
@@ -32,17 +32,17 @@ export default function TimingLayout({
       </ToolPageIntro>
       <div className="mx-auto max-w-[1700px] px-4 pt-4 md:px-8">
         <div className="grid gap-4 md:grid-cols-2">
-          <section className="rounded-2xl border border-stone-200 bg-white p-4 shadow-xs">
-            <h2 className="text-sm font-bold text-stone-800">
+          <section className="rounded-2xl border border-theme-border bg-theme-surface p-4 shadow-xs">
+            <h2 className="text-sm font-bold text-ink">
               引っ越し料金が抑えやすい時期の一般的な傾向
             </h2>
-            <p className="mt-1.5 text-xs leading-relaxed text-stone-600">
+            <p className="mt-1.5 text-xs leading-relaxed text-ink-muted">
               SUUMO引越しの解説では、2〜4月を依頼が集中し料金が上がりやすい繁忙期、5月〜翌1月を比較的安く抑えられる傾向がある通常期としています（出典:{" "}
               <a
                 href="https://hikkoshi.suumo.jp/oyakudachi/788.html"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="font-semibold text-indigo-600 underline hover:text-indigo-800"
+                className="font-semibold text-accent underline hover:text-accent"
               >
                 SUUMO引越し（時期の解説）
               </a>
@@ -51,7 +51,7 @@ export default function TimingLayout({
                 href="https://hikkoshi.suumo.jp/soba/"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="font-semibold text-indigo-600 underline hover:text-indigo-800"
+                className="font-semibold text-accent underline hover:text-accent"
               >
                 SUUMO引越し（費用相場）
               </a>
@@ -60,7 +60,7 @@ export default function TimingLayout({
                 href="https://www.mlit.go.jp/report/press/content/001863859.pdf"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="font-semibold text-indigo-600 underline hover:text-indigo-800"
+                className="font-semibold text-accent underline hover:text-accent"
               >
                 国土交通省（引越時期の分散協力に関する発表資料PDF）
               </a>
@@ -70,27 +70,27 @@ export default function TimingLayout({
                 href="https://hikkoshi-pedia.com/yen/536/"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="font-semibold text-indigo-600 underline hover:text-indigo-800"
+                className="font-semibold text-accent underline hover:text-accent"
               >
                 引越しペディア
               </a>
               ）。
             </p>
-            <p className="mt-1.5 text-xs leading-relaxed text-stone-500">
+            <p className="mt-1.5 text-xs leading-relaxed text-ink-muted">
               実際の引っ越し料金は、地域・日程・荷物量・移動距離・業者などの条件によって変わります（出典:
               上記SUUMO引越し、
               <a
                 href="https://hikkoshizamurai.jp/prices/"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="font-semibold text-indigo-600 underline hover:text-indigo-800"
+                className="font-semibold text-accent underline hover:text-accent"
               >
                 引越し侍
               </a>
               。このページに料金の実測データはありません）。関連するサイト内の説明として、暦と生活の都合の兼ね合いは
               <Link
                 href="/blog/what-is-hidori-for-moving"
-                className="mx-1 font-semibold text-indigo-600 underline hover:text-indigo-800"
+                className="mx-1 font-semibold text-accent underline hover:text-accent"
               >
                 引越しの日取りとは。何を見て、どの順に決めるのか
               </Link>
@@ -98,19 +98,19 @@ export default function TimingLayout({
             </p>
           </section>
 
-          <section className="rounded-2xl border border-stone-200 bg-white p-4 shadow-xs">
-            <h2 className="text-sm font-bold text-stone-800">
+          <section className="rounded-2xl border border-theme-border bg-theme-surface p-4 shadow-xs">
+            <h2 className="text-sm font-bold text-ink">
               方位と時期の確認手順（占い上の目安）
             </h2>
-            <p className="mt-1.5 text-xs leading-relaxed text-stone-600">
+            <p className="mt-1.5 text-xs leading-relaxed text-ink-muted">
               九星気学や天中殺による方位・時期の判定は、伝統的な暦に基づく占い上の目安であり、科学的な効果や料金を保証するものではありません。
             </p>
-            <ol className="mt-2 list-decimal space-y-1 pl-4 text-xs leading-relaxed text-stone-600">
+            <ol className="mt-2 list-decimal space-y-1 pl-4 text-xs leading-relaxed text-ink-muted">
               <li>
                 生年月日・出発地・天中殺の扱いは
                 <Link
                   href="/relocation/arbitrage"
-                  className="mx-1 font-semibold text-indigo-600 underline hover:text-indigo-800"
+                  className="mx-1 font-semibold text-accent underline hover:text-accent"
                 >
                   {coreRouteLabel("/relocation/arbitrage")}
                 </Link>
@@ -126,7 +126,7 @@ export default function TimingLayout({
                 絞った候補日を六曜・天赦日・一粒万倍日などの暦注で確かめるときは
                 <Link
                   href="/calendar"
-                  className="mx-1 font-semibold text-indigo-600 underline hover:text-indigo-800"
+                  className="mx-1 font-semibold text-accent underline hover:text-accent"
                 >
                   日取りカレンダー
                 </Link>
@@ -137,6 +137,6 @@ export default function TimingLayout({
         </div>
       </div>
       {children}
-    </>
+    </div>
   );
 }

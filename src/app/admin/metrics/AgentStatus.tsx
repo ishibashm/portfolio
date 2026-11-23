@@ -23,7 +23,7 @@ export default function AgentStatus() {
     return () => controller.abort();
   }, []);
   return (
-    <section className="rounded-xl border border-stone-200 bg-white p-4 space-y-2 text-sm">
+    <section className="rounded-xl border border-theme-border bg-theme-surface p-4 space-y-2 text-sm">
       <h2 className="font-bold">AI回答の状態</h2>
       <p role="status">
         {error

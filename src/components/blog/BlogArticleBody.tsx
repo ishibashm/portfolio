@@ -41,7 +41,7 @@ const components: Components = {
   h2: ({ children, ...props }) => (
     <h2
       id={headingId(textOf(children))}
-      className={`mt-12 ${MEASURE} scroll-mt-6 border-b border-slate-300 dark:border-theme-border pb-2 font-serif text-2xl font-bold text-slate-900 dark:text-ink`}
+      className={`mt-12 ${MEASURE} scroll-mt-6 border-b border-theme-border dark:border-theme-border pb-2 font-serif text-2xl font-bold text-ink dark:text-ink`}
       {...props}
     >
       {children}
@@ -49,7 +49,7 @@ const components: Components = {
   ),
   h3: ({ children, ...props }) => (
     <h3
-      className={`mt-8 ${MEASURE} font-serif text-lg font-bold text-slate-900 dark:text-ink`}
+      className={`mt-8 ${MEASURE} font-serif text-lg font-bold text-ink dark:text-ink`}
       {...props}
     >
       {children}
@@ -57,7 +57,7 @@ const components: Components = {
   ),
   ul: ({ children, ...props }) => (
     <ul
-      className={`mt-4 ${MEASURE} list-disc space-y-2 pl-6 text-[15px] leading-7 text-slate-700 dark:text-ink`}
+      className={`mt-4 ${MEASURE} list-disc space-y-2 pl-6 text-[15px] leading-7 text-ink dark:text-ink`}
       {...props}
     >
       {children}
@@ -65,7 +65,7 @@ const components: Components = {
   ),
   ol: ({ children, ...props }) => (
     <ol
-      className={`mt-4 ${MEASURE} list-decimal space-y-2 pl-6 text-[15px] leading-7 text-slate-700 dark:text-ink`}
+      className={`mt-4 ${MEASURE} list-decimal space-y-2 pl-6 text-[15px] leading-7 text-ink dark:text-ink`}
       {...props}
     >
       {children}
@@ -101,7 +101,7 @@ const components: Components = {
   // 表のためだけに読み幅を広げると、本文の行長がその表に引きずられる。
   table: ({ children, ...props }) => (
     <div
-      className={`mt-6 ${MEASURE} max-w-full overflow-x-auto overscroll-x-contain rounded-2xl border border-slate-300 dark:border-theme-border bg-white/90 dark:bg-theme-surface [-webkit-overflow-scrolling:touch] [overflow-wrap:normal]`}
+      className={`mt-6 ${MEASURE} max-w-full overflow-x-auto overscroll-x-contain rounded-2xl border border-theme-border dark:border-theme-border bg-theme-surface dark:bg-theme-surface [-webkit-overflow-scrolling:touch] [overflow-wrap:normal]`}
     >
       <table className="min-w-full border-collapse text-sm" {...props}>
         {children}
@@ -115,7 +115,7 @@ const components: Components = {
   ),
   tr: ({ children, ...props }) => (
     <tr
-      className="border-b border-slate-200 dark:border-theme-border last:border-0"
+      className="border-b border-theme-border dark:border-theme-border last:border-0"
       {...props}
     >
       {children}
@@ -123,7 +123,7 @@ const components: Components = {
   ),
   th: ({ children, ...props }) => (
     <th
-      className="min-w-32 whitespace-nowrap px-4 py-3 text-left text-xs font-bold text-slate-700 dark:text-ink"
+      className="min-w-32 whitespace-nowrap px-4 py-3 text-left text-xs font-bold text-ink dark:text-ink"
       {...props}
     >
       {children}
@@ -131,7 +131,7 @@ const components: Components = {
   ),
   td: ({ children, ...props }) => (
     <td
-      className="px-4 py-3 align-top leading-6 text-slate-700 dark:text-ink"
+      className="px-4 py-3 align-top leading-6 text-ink dark:text-ink"
       {...props}
     >
       {children}
@@ -150,7 +150,7 @@ const components: Components = {
   // コードの塊は折り返さず、塊の中だけで横スクロールさせる。
   pre: ({ children, ...props }) => (
     <pre
-      className={`mt-6 ${MEASURE} max-w-full overflow-x-auto rounded-2xl border border-slate-300 dark:border-theme-border bg-theme-subtle p-4 text-[13px] leading-6 text-ink [-webkit-overflow-scrolling:touch] [overflow-wrap:normal] [&_code]:bg-transparent [&_code]:p-0`}
+      className={`mt-6 ${MEASURE} max-w-full overflow-x-auto rounded-2xl border border-theme-border dark:border-theme-border bg-theme-subtle p-4 text-[13px] leading-6 text-ink [-webkit-overflow-scrolling:touch] [overflow-wrap:normal] [&_code]:bg-transparent [&_code]:p-0`}
       {...props}
     >
       {children}
@@ -158,7 +158,7 @@ const components: Components = {
   ),
   hr: ({ ...props }) => (
     <hr
-      className={`my-10 ${MEASURE} border-slate-300 dark:border-theme-border`}
+      className={`my-10 ${MEASURE} border-theme-border dark:border-theme-border`}
       {...props}
     />
   ),
@@ -210,7 +210,7 @@ export function BlogArticleBody({
           {inject}
           <h2
             id={headingId(heading)}
-            className={`mt-12 ${MEASURE} scroll-mt-6 border-b border-slate-300 dark:border-theme-border pb-2 font-serif text-2xl font-bold text-slate-900 dark:text-ink`}
+            className={`mt-12 ${MEASURE} scroll-mt-6 border-b border-theme-border dark:border-theme-border pb-2 font-serif text-2xl font-bold text-ink dark:text-ink`}
             {...props}
           >
             {children}
