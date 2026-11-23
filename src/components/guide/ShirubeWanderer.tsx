@@ -1384,7 +1384,8 @@ export function ShirubeWanderer({
       const needsRaf =
         state.phase === "walking" ||
         state.phase === "hopping" ||
-        state.phase === "stepping";
+        state.phase === "stepping" ||
+        (state.phase === "paused" && state.returningOnBottom);
       if (needsRaf) {
         if (!rafId) {
           // rAF の続きのときは、そのコマの時刻（tick で入れた lastTs）をそのまま使う。
