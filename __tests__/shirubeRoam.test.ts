@@ -985,40 +985,88 @@ describe("しるべのドラッグ", () => {
     expect(exceedsDragThreshold(5, 5)).toBe(true);
   });
 
-  it("仮置きから元の定位置に着地し、既存の帰宅間隔を使う", async () => {
-    const L = await import("@/components/guide/shirubeWanderLogic");
-    const viewport = { width: 390, height: 844 };
-    const { width: actorWidth, height: actorHeight } =
-      getDefaultActorSize(true);
-    const perches = findPerches([], viewport, {
-      rightEdgeMarginPx: L.getHomeRightMarginPx(viewport.width),
-    });
-    const roam = {
-      perches,
-      actorWidth,
-      actorHeight,
-      viewportHeight: viewport.height,
-    };
-    const config = L.getWanderConfig(viewport.width);
-    const bounds = L.getWanderBounds(viewport.width, actorWidth, 16, 2);
-    const home = L.createInitialWanderState(
-      bounds,
-      config,
-      () => 0.5,
-      viewport.height,
-    );
-    const dropped = { ...home, x: 80, y: 320, perchId: "drop" };
-    expect(L.nextAwayDelay(config, () => 0)).toBe(10_000);
-    expect(L.nextAwayDelay(config, () => 1)).toBe(20_000);
-    const returning = L.returnShirubeHome(dropped, roam, config);
-    expect(returning).toMatchObject({
-      x: dropped.x,
-      y: dropped.y,
-      phase: "hopping",
-      hop: { toX: home.x, toY: viewport.height, toPerchId: "bottom" },
-    });
-    expect(L.getHomeX(roam)).toBe(home.x);
-  });
+  it.each([390, 1280])(
+    "%ipx では仮置きから右端の手前に着地し、正面のまま定位置に収まる",
+    async (width) => {
+      const L = await import("@/components/guide/shirubeWanderLogic");
+      const viewport = { width, height: 844 };
+      const { width: actorWidth, height: actorHeight } = getDefaultActorSize(
+        width < 640,
+      );
+      const perches = findPerches([], viewport, {
+        rightEdgeMarginPx: L.getHomeRightMarginPx(viewport.width),
+      });
+      const roam = {
+        perches,
+        actorWidth,
+        actorHeight,
+        viewportHeight: viewport.height,
+      };
+      const config = L.getWanderConfig(viewport.width);
+      const bounds = L.getWanderBounds(
+        width,
+        actorWidth,
+        16,
+        L.getHomeRightMarginPx(width),
+      );
+      const home = L.createInitialWanderState(
+        bounds,
+        config,
+        () => 0.5,
+        viewport.height,
+      );
+      const dropped = { ...home, x: 80, y: 320, perchId: "drop" };
+      expect(L.nextAwayDelay(config, () => 0)).toBe(10_000);
+      expect(L.nextAwayDelay(config, () => 1)).toBe(20_000);
+      let returning = L.returnShirubeHome(dropped, roam, config);
+      const landingX = home.x - config.walkEdgeInsetPx;
+      expect(returning).toMatchObject({
+        x: dropped.x,
+        y: dropped.y,
+        phase: "hopping",
+        hop: { toX: landingX, toY: viewport.height, toPerchId: "bottom" },
+      });
+      expect(L.getHomeX(roam)).toBe(home.x);
+      for (let i = 0; i < 10 && returning.phase === "hopping"; i += 1) {
+        returning = L.stepWanderState(
+          returning,
+          100,
+          bounds,
+          config,
+          () => 0.5,
+          roam,
+        );
+      }
+      expect(returning).toMatchObject({
+        phase: "paused",
+        x: landingX,
+        targetX: home.x,
+        perchId: "bottom",
+        hop: null,
+      });
+      for (let i = 0; i < 30 && returning.x < home.x; i += 1) {
+        returning = L.stepWanderState(
+          returning,
+          16,
+          bounds,
+          config,
+          () => 0.5,
+          roam,
+        );
+        expect(returning.phase).toBe("paused");
+        expect(returning.x).toBeLessThanOrEqual(home.x);
+      }
+      expect(returning).toMatchObject({ phase: "paused", x: home.x });
+      expect(L.isAtHome(returning, roam, config)).toBe(true);
+      expect(
+        L.returnShirubeHome({ ...dropped, x: home.x }, roam, config),
+      ).toMatchObject({
+        phase: "hopping",
+        facing: "left",
+        hop: { toX: landingX },
+      });
+    },
+  );
 
   it("ドロップを表示範囲内に収め、右下のボタンを避ける", () => {
     const size = getDefaultActorSize(true);

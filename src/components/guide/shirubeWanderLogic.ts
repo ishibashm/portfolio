@@ -89,7 +89,7 @@ export interface WanderState {
    * null / undefined は定位置にいる（または戻る途中）。
    */
   homeReturnInMs?: number | null;
-  /** 下端を歩いて帰宅し、歩行を終えてから定位置に収まる */
+  /** 下端の右端手前まで歩くか跳び、正面を向いて定位置に収まる */
   returningOnBottom?: boolean;
 }
 
@@ -394,6 +394,10 @@ function getWalkBounds(
   };
 }
 
+function getHomeHopX(bounds: WanderBounds, config: WanderConfig): number {
+  return Math.max(bounds.minX, getWalkBounds(bounds, config).maxX);
+}
+
 /** 安全な歩行範囲を確保し、床の変化で進行方向が逆になるときは止まる。 */
 function limitWalkTarget(
   x: number,
@@ -642,6 +646,7 @@ export function reconcilePerch(
   state: WanderState,
   roam: RoamContext,
   random: () => number = Math.random,
+  config?: WanderConfig,
 ): WanderState {
   const { perches, actorWidth, actorHeight } = roam;
   if (perches.length === 0) return state;
@@ -650,12 +655,21 @@ export function reconcilePerch(
     const dest = perches.find((p) => p.id === state.hop!.toPerchId);
     if (dest) {
       const destBounds = getPerchBounds(dest, actorWidth);
-      const clampedToX = clampX(state.hop.toX, destBounds);
+      const returning = state.returningOnBottom && dest.kind === "bottom";
+      const clampedToX =
+        returning && config
+          ? getHomeHopX(destBounds, config)
+          : clampX(state.hop.toX, destBounds);
       if (dest.top === state.hop.toY && clampedToX === state.hop.toX) {
         return state;
       }
       return {
         ...state,
+        facing: returning
+          ? clampedToX >= state.hop.fromX
+            ? "right"
+            : "left"
+          : state.facing,
         hop: { ...state.hop, toX: clampedToX, toY: dest.top },
       };
     }
@@ -671,6 +685,7 @@ export function reconcilePerch(
     return {
       ...state,
       facing: toX >= state.x ? "right" : "left",
+      returningOnBottom: false,
       hop,
     };
   }
@@ -977,20 +992,15 @@ function startReturnHome(
     };
   }
   const bottom = roam.perches.find((p) => p.kind === "bottom")!;
-  const hop = planHopToPerch(
-    state.x,
-    state.y,
-    bottom,
-    homeX,
-    roam.actorHeight,
-    {
-      afterFacing: "left",
-    },
-  );
+  const toX = getHomeHopX(getPerchBounds(bottom, roam.actorWidth), config);
+  const hop = planHopToPerch(state.x, state.y, bottom, toX, roam.actorHeight, {
+    afterFacing: "left",
+  });
   return {
     ...state,
     ...back,
-    facing: homeX >= state.x ? "right" : "left",
+    facing: toX >= state.x ? "right" : "left",
+    returningOnBottom: true,
     phase: "hopping",
     remainingMs: 0,
     lastPerchId: currentPerch.id,
@@ -1187,7 +1197,7 @@ export function stepWanderState(
   if (dt === 0) return prev;
 
   // 2D 自由移動モード: まず現在の床と同期する
-  const reconciled = roam ? reconcilePerch(prev, roam, random) : prev;
+  const reconciled = roam ? reconcilePerch(prev, roam, random, config) : prev;
   // 移動の時間までの残りは、その場で過ごしている間だけ減らす
   const relocating =
     reconciled.phase === "walking" ||
@@ -1231,6 +1241,28 @@ export function stepWanderState(
     const pos = evaluateHopPosition(updatedHop);
 
     if (nextElapsed >= updatedHop.durationMs) {
+      const landed: WanderState = {
+        ...synced,
+        x: updatedHop.toX,
+        y: updatedHop.toY,
+        targetX: updatedHop.toX,
+        facing: updatedHop.afterFacing ?? synced.facing,
+        perchId: updatedHop.toPerchId,
+        perchElapsedMs: 0,
+        hop: null,
+      };
+      if (synced.returningOnBottom) {
+        const bottom = roam?.perches.find(
+          (p) => p.kind === "bottom" && p.id === landed.perchId,
+        );
+        if (bottom && roam) {
+          return startHomeSettle(
+            landed,
+            getPerchBounds(bottom, roam.actorWidth).maxX,
+            config,
+          );
+        }
+      }
       const landedPhase = updatedHop.afterPhase ?? "paused";
       const landedDuration =
         updatedHop.afterDurationMs ??
@@ -1240,17 +1272,11 @@ export function stepWanderState(
             random() *
               Math.max(0, (config.maxPauseMs - config.minPauseMs) * 0.4));
       return {
-        ...synced,
-        x: updatedHop.toX,
-        y: updatedHop.toY,
-        targetX: updatedHop.toX,
-        facing: updatedHop.afterFacing ?? synced.facing,
+        ...landed,
         phase: landedPhase,
         remainingMs: landedDuration,
         glancedDuringPause: false,
-        perchId: updatedHop.toPerchId,
-        perchElapsedMs: 0,
-        hop: null,
+        returningOnBottom: false,
       };
     }
 
