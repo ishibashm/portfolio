@@ -186,6 +186,42 @@ describe("記事: この道具で決められること、決められないこ�
     expect(ratio).toBe(`${(((t.tiers.X ?? 0) / total) * 100).toFixed(1)}%`);
   });
 
+  it("本文の幅（〜）の書き方が、表の最小と最大に一致する", () => {
+    /*
+      表の値は上の it.each で engine と照合していたが、**結論と本文に
+      書いた幅は誰も見ていなかった。**「どの方位も凶しかない日が
+      115〜175 日」と書いていたのに、表の六白の行は 176 だった
+      （2026-11-23 に気付いて直した。2026-09-19 の再計算で表だけ
+      更新され、幅が古いまま残ったとみられる）。
+    */
+    const ts = BIRTHS.map((b) => TALLIES.get(b)!);
+    const range = (xs: number[]) => [Math.min(...xs), Math.max(...xs)];
+    const total = 365 * ALL_DIRECTIONS.length;
+
+    const [badMin, badMax] = range(ts.map((t) => t.allBadDays));
+    // 結論の箇条書きと「どの方位も凶」の節の 2 か所。
+    expect(md.split(`**${badMin}〜${badMax} 日**`)).toHaveLength(3);
+
+    const [xMin, xMax] = range(ts.map((t) => ((t.tiers.X ?? 0) / total) * 100));
+    expect(md).toContain(
+      `**大凶（X）が ${Math.floor(xMin)}〜${Math.floor(xMax)}%**`,
+    );
+
+    const goodPct = ts.map(
+      (t) =>
+        (((t.tiers.S ?? 0) + (t.tiers.A ?? 0) + (t.tiers.B ?? 0)) / total) *
+        100,
+    );
+    const [gMin, gMax] = range(goodPct);
+    expect(md).toContain(`**${gMin.toFixed(1)}〜${gMax.toFixed(1)}%**`);
+
+    const [dMin, dMax] = range(ts.map((t) => t.goodDirections.length));
+    expect(md).toContain(`**${dMin}〜${dMax} つだけ**`);
+
+    const [gdMin, gdMax] = range(ts.map((t) => t.goodDays));
+    expect(md).toContain(`**${gdMin} 日の人と ${gdMax} 日の人**`);
+  });
+
   it("2,920 通り（365 日 × 8 方位）という書き方が合っている", () => {
     expect(md).toContain("2,920 通り（365 日 × 8 方位）");
     expect(365 * ALL_DIRECTIONS.length).toBe(2920);
