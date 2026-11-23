@@ -898,7 +898,7 @@ export function createMcpServer(deps?: { rentals?: RentalReader }): McpServer {
     {
       title: "公開記事を探す",
       description:
-        "公開記事の本文節・用語辞典・公開判定方針を順位付きで検索。最大5件。kind・snippet・sectionを返す。記事本文はget_articleで読む。",
+        "queryで公開記事の本文節・用語辞典・判定方針を検索（最大5件）。star（1〜9）指定時はブログの専用・関連記事を検索（query省略可、最大20件）。aspectはhonmei（既定）・getsumei（月命星を明記した記事）・both。relationと各区分の総数を返す。記事本文はget_articleで読む。",
       inputSchema: articleSearchSchema,
       annotations: {
         readOnlyHint: true,

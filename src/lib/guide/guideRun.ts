@@ -69,6 +69,7 @@ export type GuideTownFact = {
 export type GuideArticleFact = {
   title: string;
   url: string;
+  relation?: "dedicated" | "related";
   section?: string;
   description?: string;
   snippet?: string;
@@ -144,7 +145,7 @@ export function planGuide(
       },
       {
         tool: "search_articles",
-        args: { query: "本命星", limit: 3 },
+        args: { limit: 5 },
       },
     ];
   }
@@ -323,6 +324,9 @@ const searchArticlesOutputSchema = z.object({
       title: z.string().min(1),
       url: z.string().min(1),
       slug: z.string().optional(),
+      relation: z.enum(["dedicated", "related"]).optional(),
+      score: z.number().optional(),
+      publishedAt: z.string().optional(),
       section: z.string().optional(),
       description: z.string().optional(),
       snippet: z.string().optional(),
@@ -496,12 +500,14 @@ export async function runGuide(
     }
   }
 
-  function appendArticles(data: z.infer<typeof searchArticlesOutputSchema>) {
-    for (const a of data.articles) {
+  type Article = z.infer<typeof searchArticlesOutputSchema>["articles"][number];
+  function appendArticles(articles: Article[]) {
+    for (const a of articles) {
       if (!isAllowedGuideArticleUrl(a.url)) continue;
       facts.articles.push({
         title: a.title,
         url: a.url.trim(),
+        ...(a.relation ? { relation: a.relation } : {}),
         ...(a.section ? { section: a.section } : {}),
         ...(a.description ? { description: a.description } : {}),
         ...(a.snippet ? { snippet: a.snippet } : {}),
@@ -528,15 +534,37 @@ export async function runGuide(
       }
     }
 
-    const articles = await invoke(
-      "search_articles",
-      plan[1].args,
-      searchArticlesOutputSchema,
-      (d) => `関連記事${d.articles.length}件を取得しました。`,
-    );
-    if (articles) {
-      appendArticles(articles);
+    const stars =
+      facts.honmeiStar !== undefined
+        ? [facts.honmeiStar]
+        : Object.values(facts.honmeiCandidates ?? {});
+    const articles: Article[] = [];
+    for (const star of new Set(stars)) {
+      const result = await invoke(
+        "search_articles",
+        { ...plan[1].args, star },
+        searchArticlesOutputSchema,
+        (d) =>
+          `${STAR_NAMES[star]}の記事${d.articles.length}件を取得しました。`,
+      );
+      if (result) articles.push(...result.articles);
     }
+
+    articles.sort(
+      (a, b) =>
+        Number(b.relation === "dedicated") -
+          Number(a.relation === "dedicated") ||
+        (b.score ?? 0) - (a.score ?? 0) ||
+        (b.publishedAt ?? "").localeCompare(a.publishedAt ?? "") ||
+        (a.slug ?? a.url).localeCompare(b.slug ?? b.url),
+    );
+    const unique = new Map<string, Article>();
+    for (const article of articles) {
+      if (!isAllowedGuideArticleUrl(article.url)) continue;
+      const key = article.slug ?? article.url.trim();
+      if (!unique.has(key)) unique.set(key, article);
+    }
+    appendArticles([...unique.values()]);
 
     return {
       plan,
@@ -780,7 +808,7 @@ export async function runGuide(
     (d) => `記事${d.articles.length}件を取得しました。`,
   );
   if (articles) {
-    appendArticles(articles);
+    appendArticles(articles.articles);
   }
 
   return {

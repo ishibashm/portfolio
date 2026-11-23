@@ -563,7 +563,7 @@ subjectはIPをプロセスごとの乱数鍵でHMAC化し、ログには出さ�
 DBが空・接続失敗ならcontent/blogへ落ちる。DBに非公開記事しか無い場合や、
 該当slugが非公開ならMarkdownで復活させない。DB不調時にはMarkdownの公開状態が
 使われるため、DBだけでの非公開化は障害中のフォールバックへ反映されない。
-search_articlesは最大5件・説明400文字、get_articleは本文4000文字の見出し別の節。
+search_articlesは通常最大5件（星指定は最大20件）・説明400文字、get_articleは本文4000文字の見出し別の節。
 記事取得失敗の詳細ログはこの入口では抑制する。
 
 ホーム上部に軽い質問フォームと例文3つを置く。next/dynamicのチャットは操作時だけ
@@ -839,7 +839,7 @@ AIチャットの補足（2026-10-17）:
 
 ### Q&A 資料検索（2026-10-17）
 
-公開 MCP の道具数は増やさない。search_articles は公開記事の本文節、用語辞典の行、llms.txt と共有する判定方針を文字 bi-gram BM25 と同義語で検索し、既存項目に kind・score・snippet・section を追加する。記事は1記事1件まで返す。get_article は任意の section（見出し完全一致）から4000字を取得できる。
+公開 MCP の道具数は増やさない。search_articles は公開記事の本文節、用語辞典の行、llms.txt と共有する判定方針を文字 bi-gram BM25 と同義語で検索し、既存項目に kind・score・snippet・section を追加する。記事は1記事1件まで返す。star（1〜9）指定時は query を省略でき、aspect（honmei／getsumei／both）でブログ記事を探す。relation は dedicated（専用）／related（関連）を示し、dedicatedCount と relatedCount は limit 適用前の総数を返す。get_article は任意の section（見出し完全一致）から4000字を取得できる。
 索引は既存のDB→Markdown読み取りを共有し、公開資料の内容ハッシュで更新するプロセス内キャッシュ。質問・個人情報は保存しない。内部仕様書・下書きは索引に含めない。記事の記述は個人の暦・方位判定の代用にはしない。
 
 ### 賃貸掲載の読み取り（公開MCP、2026-10-22）

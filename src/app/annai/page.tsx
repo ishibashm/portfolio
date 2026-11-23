@@ -712,9 +712,7 @@ function Step3View({ answer }: { answer: GuideAnswerData }) {
               {/* 記事リンク */}
               {facts.articles.length > 0 && (
                 <div>
-                  <h3 className="text-sm font-bold text-ink">
-                    関連する記事リンク
-                  </h3>
+                  <h3 className="text-sm font-bold text-ink">記事リンク</h3>
                   <ul className="mt-2 space-y-2 text-sm">
                     {facts.articles.map((article, i) => (
                       <li
@@ -727,6 +725,11 @@ function Step3View({ answer }: { answer: GuideAnswerData }) {
                         >
                           {article.title}
                         </a>
+                        {article.relation && (
+                          <span className="ml-2 text-xs text-ink-muted">
+                            {article.relation === "dedicated" ? "専用" : "関連"}
+                          </span>
+                        )}
                         {article.section && (
                           <span className="ml-2 text-xs text-ink-muted">
                             （{article.section}）

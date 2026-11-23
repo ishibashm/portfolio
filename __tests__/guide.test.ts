@@ -513,6 +513,7 @@ describe("runGuide", () => {
             {
               title: "本命星の早見表",
               url: "https://cloud-palette.com/blog/honmei",
+              relation: "related",
             },
             {
               title: "外部の怪しい記事",
@@ -534,9 +535,10 @@ describe("runGuide", () => {
 
     expect(call.mock.calls.map(([name, args]) => [name, args])).toEqual([
       ["get_honmei_star", { birthYear: 1990, bornBeforeSetsubun: false }],
-      ["search_articles", { query: "本命星", limit: 3 }],
+      ["search_articles", { star: 1, limit: 5 }],
     ]);
     expect(res.trace).toHaveLength(2);
+    expect(res.trace[1].args).toEqual({ star: 1, limit: 5 });
     expect(res.trace.every((t) => t.ok)).toBe(true);
     expect(res.facts.honmeiStar).toBe(1);
     // 外部URLは除外されること
@@ -544,7 +546,70 @@ describe("runGuide", () => {
       {
         title: "本命星の早見表",
         url: "https://cloud-palette.com/blog/honmei",
+        relation: "related",
       },
+    ]);
+  });
+
+  it("honmei: 候補の各星を検索し、slug の重複は上位の記事を残す", async () => {
+    const article = (
+      slug: string,
+      score: number,
+      relation = "related",
+      section?: string,
+    ) => ({
+      slug,
+      title: slug,
+      url: `https://cloud-palette.com/blog/${slug}`,
+      relation,
+      score,
+      section,
+    });
+    const call = vi.fn<GuideCaller>(async (tool, args) => {
+      if (tool === "get_honmei_star") {
+        return {
+          birthYear: 1990,
+          candidates: { beforeSetsubun: 2, afterSetsubun: 1 },
+        };
+      }
+      return {
+        articles:
+          args.star === 2
+            ? [
+                article("shared", 25, "related", "二黒土星"),
+                article("before", 40),
+              ]
+            : [
+                article("shared", 100, "related", "一白水星"),
+                article("after", 60, "dedicated"),
+                article("after-related", 80),
+              ],
+      };
+    });
+    const res = await runGuide(
+      { step: 3, kind: "honmei", y: 1990, s: "unknown" },
+      call,
+      { now },
+    );
+    expect(res.trace.slice(1).map(({ args }) => args)).toEqual([
+      { star: 2, limit: 5 },
+      { star: 1, limit: 5 },
+    ]);
+    expect(res.facts.honmeiCandidates).toEqual({
+      beforeSetsubun: 2,
+      afterSetsubun: 1,
+    });
+    expect(
+      res.facts.articles.map(({ title, relation, section }) => [
+        title,
+        relation,
+        section,
+      ]),
+    ).toEqual([
+      ["after", "dedicated", undefined],
+      ["shared", "related", "一白水星"],
+      ["after-related", "related", undefined],
+      ["before", "related", undefined],
     ]);
   });
 
