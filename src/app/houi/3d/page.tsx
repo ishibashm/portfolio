@@ -15,9 +15,9 @@ export const metadata: Metadata = {
 };
 export default function Page() {
   return (
-    <main className="min-h-screen bg-gradient-to-br from-[#faf7f5] via-[#f5efe9] to-[#f0e9e1] text-slate-900">
+    <main className="min-h-screen bg-background text-ink">
       <article className="mx-auto max-w-[1700px] px-5 py-12">
-        <Link href="/houi" className="text-sm text-slate-600 underline">
+        <Link href="/houi" className="text-sm text-ink-muted underline">
           本命星と吉方位の早見表へ
         </Link>
         <h1 className="mt-5 font-serif text-2xl font-bold sm:text-3xl">

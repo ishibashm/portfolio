@@ -160,7 +160,7 @@ export function AskGuidancePanel({
   }
   return (
     <aside
-      className="mt-3 min-w-0 rounded-xl border border-teal-200 bg-teal-50/60 p-3 text-sm"
+      className="mt-3 min-w-0 rounded-xl border border-theme-border bg-theme-accent-soft p-3 text-sm"
       aria-label="計算ページへの案内"
     >
       <p className="font-bold">
@@ -168,7 +168,7 @@ export function AskGuidancePanel({
           ? "続けるために、こちらだけ教えてください"
           : "この条件で計算ページを開けます"}
       </p>
-      <p className="mt-1 text-xs text-slate-600">
+      <p className="mt-1 text-xs text-ink-muted">
         生年月日はリンクに含めません。飛び先では使用中のプロフィールを確認し、未登録なら入力してください。
       </p>
       {!card.links.length && (
@@ -180,7 +180,7 @@ export function AskGuidancePanel({
               <button
                 type="button"
                 disabled={busy}
-                className="rounded-lg border bg-white px-3 py-2"
+                className="rounded-lg border border-theme-border bg-theme-surface px-3 py-2"
                 onClick={() =>
                   reuse({
                     birthDate: profile.birthDate || undefined,
@@ -195,7 +195,7 @@ export function AskGuidancePanel({
             <button
               type="button"
               disabled={busy}
-              className="ml-1 rounded-lg border bg-white px-3 py-2"
+              className="ml-1 rounded-lg border border-theme-border bg-theme-surface px-3 py-2"
               onClick={() => reuse(previous)}
             >
               前の相談の条件を使いますか？
@@ -209,7 +209,7 @@ export function AskGuidancePanel({
                   {Object.entries(GUIDANCE_DIRECTIONS).map(([value, label]) => (
                     <label
                       key={value}
-                      className="rounded-lg border bg-white px-3 py-2"
+                      className="rounded-lg border border-theme-border bg-theme-surface px-3 py-2"
                     >
                       <input
                         type="radio"
@@ -273,7 +273,7 @@ export function AskGuidancePanel({
                         {card.intent === "star" && (
                           <button
                             type="button"
-                            className="rounded-lg border bg-white px-3 py-2"
+                            className="rounded-lg border border-theme-border bg-theme-surface px-3 py-2"
                             onClick={() => {
                               setOwnedBirth(undefined);
                               setRepresentative(true);
@@ -328,7 +328,7 @@ export function AskGuidancePanel({
                     key={candidate.code}
                     type="button"
                     disabled={busy}
-                    className="rounded-lg border bg-white px-3 py-2"
+                    className="rounded-lg border border-theme-border bg-theme-surface px-3 py-2"
                     onClick={() => {
                       setOwnedOrigin({ name: candidate.name });
                       void request(
@@ -350,14 +350,14 @@ export function AskGuidancePanel({
           )}
           <button
             disabled={busy || card.fields.some((field) => !values[field])}
-            className="rounded-lg bg-teal-800 px-4 py-2 text-white"
+            className="rounded-lg bg-accent px-4 py-2 text-on-accent"
           >
             {busy ? "確認中…" : "条件を確認する（AI不要）"}
           </button>
           <button
             type="button"
             disabled
-            className="ml-2 rounded-lg border px-3 py-2 text-slate-400"
+            className="ml-2 rounded-lg border border-theme-border px-3 py-2 text-ink-muted"
           >
             計算ページを開く
           </button>
@@ -374,7 +374,7 @@ export function AskGuidancePanel({
             <a
               key={link.href}
               href={link.href}
-              className="rounded-lg bg-teal-800 px-4 py-2 text-white"
+              className="rounded-lg bg-accent px-4 py-2 text-on-accent"
             >
               {link.label}
             </a>
@@ -393,14 +393,14 @@ export function AskGuidancePanel({
               <p>この条件をこの端末に保存しますか？</p>
               <button
                 type="button"
-                className="rounded-lg border bg-white px-3 py-2"
+                className="rounded-lg border border-theme-border bg-theme-surface px-3 py-2"
                 onClick={chooseSave}
               >
                 保存する
               </button>
               <button
                 type="button"
-                className="rounded-lg border bg-white px-3 py-2"
+                className="rounded-lg border border-theme-border bg-theme-surface px-3 py-2"
                 onClick={() => {
                   writeLocalSettings({ consult_save_choice: "once" });
                   setSaveChoice("once");
@@ -427,7 +427,7 @@ export function AskGuidancePanel({
         </div>
       )}
       {error && (
-        <p role="alert" className="mt-2 text-red-700">
+        <p role="alert" className="mt-2 text-theme-gold">
           {error}
         </p>
       )}

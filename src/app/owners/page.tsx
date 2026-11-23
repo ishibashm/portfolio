@@ -47,10 +47,10 @@ function Section({
 }) {
   return (
     <section className="mt-10">
-      <h2 className="border-b border-slate-300 pb-2 font-serif text-lg font-bold">
+      <h2 className="border-b border-theme-border pb-2 font-serif text-lg font-bold">
         {title}
       </h2>
-      <div className="mt-4 space-y-3 text-sm leading-relaxed text-slate-700">
+      <div className="mt-4 space-y-3 text-sm leading-relaxed text-ink">
         {children}
       </div>
     </section>
@@ -59,10 +59,10 @@ function Section({
 
 export default function OwnersPage() {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#faf7f5] via-[#f5efe9] to-[#f0e9e1] font-sans text-slate-900">
+    <div className="min-h-screen bg-background font-sans text-ink">
       <main className="mx-auto max-w-[1700px] px-5 py-10 md:py-14">
-        <nav className="text-xs text-slate-500">
-          <Link href="/" className="font-bold hover:text-rose-600">
+        <nav className="text-xs text-ink-muted">
+          <Link href="/" className="font-bold hover:text-accent">
             {SITE_NAME}
           </Link>
           <span className="mx-2">/</span>
@@ -72,7 +72,7 @@ export default function OwnersPage() {
         <h1 className="mt-6 font-serif text-3xl font-bold leading-tight md:text-4xl">
           {TITLE}
         </h1>
-        <p className="mt-5 max-w-[70ch] border-l-4 border-rose-300 pl-4 text-sm leading-7 text-slate-600">
+        <p className="mt-5 max-w-[70ch] border-l-4 border-theme-border pl-4 text-sm leading-7 text-ink-muted">
           {DESCRIPTION}
         </p>
 
@@ -102,7 +102,7 @@ export default function OwnersPage() {
                 掲載を検討されている場合は、
                 <Link
                   href="/contact"
-                  className="font-bold text-indigo-600 underline"
+                  className="font-bold text-accent underline"
                 >
                   お問い合わせ
                 </Link>
@@ -150,7 +150,7 @@ export default function OwnersPage() {
           </div>
         </div>
 
-        <div className="mt-12 rounded-2xl border border-stone-200 bg-white/70 p-5 text-xs leading-relaxed text-slate-600">
+        <div className="mt-12 rounded-2xl border border-theme-border bg-theme-surface p-5 text-xs leading-relaxed text-ink-muted">
           このサイトの判定は九星気学と暦の考え方によるもので、
           <b>科学的に効果が確認されたものではありません</b>
           。物件の価値や賃料と方位の吉凶は無関係です。掲載にあたって、方位が良いことを理由に条件を有利に扱うことはありません。

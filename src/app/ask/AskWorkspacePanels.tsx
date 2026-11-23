@@ -47,8 +47,8 @@ function ConversationList({
           key={conversation.id}
           className={`rounded-xl border p-2 ${
             conversation.id === activeConversationId
-              ? "border-amber-300 bg-amber-50"
-              : "border-stone-200 bg-white"
+              ? "border-theme-border bg-theme-gold-soft"
+              : "border-theme-border bg-theme-surface"
           }`}
         >
           {renamingId === conversation.id ? (
@@ -67,13 +67,13 @@ function ConversationList({
                   maxLength={80}
                   value={renameValue}
                   onChange={(event) => setRenameValue(event.target.value)}
-                  className="mt-1 w-full rounded border border-stone-300 bg-white px-2 py-1.5 text-sm"
+                  className="mt-1 w-full rounded border border-theme-border bg-theme-surface px-2 py-1.5 text-sm"
                 />
               </label>
               <div className="mt-2 flex gap-2 text-xs">
                 <button
                   type="submit"
-                  className="rounded bg-slate-800 px-2 py-1 text-white"
+                  className="rounded bg-accent px-2 py-1 text-on-accent"
                 >
                   保存
                 </button>
@@ -98,11 +98,11 @@ function ConversationList({
                 <span className="block truncate text-sm font-medium">
                   {conversation.title}
                 </span>
-                <span className="mt-0.5 block text-xs text-slate-500">
+                <span className="mt-0.5 block text-xs text-ink-muted">
                   {dateLabel(conversation.updatedAt)}
                 </span>
               </button>
-              <div className="mt-2 flex gap-3 text-xs text-slate-600">
+              <div className="mt-2 flex gap-3 text-xs text-ink-muted">
                 <button
                   type="button"
                   onClick={() => {
@@ -123,7 +123,7 @@ function ConversationList({
                     )
                       onDelete(conversation.id);
                   }}
-                  className="text-red-700 underline underline-offset-2"
+                  className="text-accent underline underline-offset-2"
                 >
                   削除
                 </button>
@@ -168,23 +168,23 @@ export function ConversationNavigation({
         <button
           type="button"
           onClick={() => setDrawerOpen(true)}
-          className="rounded-full border border-slate-300 bg-white px-4 py-2 text-sm font-medium"
+          className="rounded-full border border-theme-border bg-theme-surface px-4 py-2 text-sm font-medium"
         >
           相談履歴（{conversations.length}件）
         </button>
         <button
           type="button"
           onClick={onNew}
-          className="rounded-full bg-slate-800 px-4 py-2 text-sm font-medium text-white"
+          className="rounded-full bg-accent px-4 py-2 text-sm font-medium text-on-accent"
         >
           ＋ 新しいチャット
         </button>
       </div>
-      <aside className="hidden max-h-[46rem] min-h-0 overflow-y-auto rounded-2xl border border-stone-200 bg-white/70 p-3 lg:block">
+      <aside className="hidden max-h-[46rem] min-h-0 overflow-y-auto rounded-2xl border border-theme-border bg-theme-surface p-3 lg:block">
         <button
           type="button"
           onClick={onNew}
-          className="w-full rounded-xl bg-slate-800 px-3 py-2 text-sm font-semibold text-white"
+          className="w-full rounded-xl bg-accent px-3 py-2 text-sm font-semibold text-on-accent"
         >
           ＋ 新しいチャット
         </button>
@@ -195,19 +195,19 @@ export function ConversationNavigation({
           role="dialog"
           aria-modal="true"
           aria-label="相談履歴"
-          className="fixed inset-0 z-50 bg-slate-950/35 lg:hidden"
+          className="fixed inset-0 z-50 bg-black/35 lg:hidden"
           onMouseDown={(event) => {
             if (event.target === event.currentTarget) setDrawerOpen(false);
           }}
         >
-          <div className="h-full w-[min(88vw,22rem)] overflow-y-auto bg-[#faf7f5] p-4 shadow-xl">
+          <div className="h-full w-[min(88vw,22rem)] overflow-y-auto bg-background p-4 shadow-xl">
             <div className="flex items-center justify-between gap-3">
               <h2 className="font-semibold">相談履歴</h2>
               <button
                 type="button"
                 onClick={() => setDrawerOpen(false)}
                 aria-label="相談履歴を閉じる"
-                className="rounded-full border border-stone-300 bg-white px-3 py-1"
+                className="rounded-full border border-theme-border bg-theme-surface px-3 py-1"
               >
                 閉じる
               </button>
@@ -218,7 +218,7 @@ export function ConversationNavigation({
                 onNew();
                 setDrawerOpen(false);
               }}
-              className="mt-4 w-full rounded-xl bg-slate-800 px-3 py-2 text-sm font-semibold text-white"
+              className="mt-4 w-full rounded-xl bg-accent px-3 py-2 text-sm font-semibold text-on-accent"
             >
               ＋ 新しいチャット
             </button>
@@ -253,10 +253,8 @@ function ShirubeBubble({ children }: { children: ReactNode }) {
     >
       <GuideChatAvatar />
       <div className="min-w-0 flex-1 sm:max-w-[88%] sm:flex-none">
-        <p className="mb-1 ml-1 text-xs font-semibold text-indigo-700">
-          しるべ
-        </p>
-        <div className="rounded-2xl rounded-tl-md border border-indigo-100 bg-white/95 px-4 py-3 text-sm leading-relaxed text-slate-700 shadow-sm sm:px-5 sm:py-4">
+        <p className="mb-1 ml-1 text-xs font-semibold text-accent">しるべ</p>
+        <div className="rounded-2xl rounded-tl-md border border-theme-border bg-theme-surface px-4 py-3 text-sm leading-relaxed text-ink shadow-sm sm:px-5 sm:py-4">
           {children}
         </div>
       </div>
@@ -273,7 +271,7 @@ type GuideStep =
   | "topic";
 
 const quickReplyClass =
-  "rounded-full border border-indigo-200 bg-white px-3 py-2 text-left text-sm text-slate-700 shadow-sm transition hover:border-indigo-300 hover:bg-indigo-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-500 disabled:opacity-50";
+  "rounded-full border border-theme-border bg-theme-surface px-3 py-2 text-left text-sm text-ink shadow-sm transition hover:border-accent hover:bg-theme-accent-soft focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent disabled:opacity-50";
 
 function personLabel(name: string): string {
   const trimmed = name.trim();
@@ -342,9 +340,9 @@ export function ShirubeGuide({
               >
                 <span className="font-semibold">{person.name}</span>
                 {person.active && (
-                  <span className="ml-1 text-xs text-emerald-700">使用中</span>
+                  <span className="ml-1 text-xs text-accent">使用中</span>
                 )}
-                <span className="mt-0.5 block text-xs text-slate-500">
+                <span className="mt-0.5 block text-xs text-ink-muted">
                   {person.birthDate}
                   {person.residence ? `・${person.residence}` : ""}
                 </span>
@@ -414,12 +412,12 @@ export function ShirubeGuide({
                   }))
                 }
                 placeholder="例：本人、配偶者"
-                className="min-w-0 flex-1 rounded-xl border border-stone-300 bg-white px-3 py-2 text-base outline-none focus:border-indigo-400"
+                className="min-w-0 flex-1 rounded-xl border border-theme-border bg-theme-surface px-3 py-2 text-base outline-none focus:border-accent"
               />
               <button
                 type="submit"
                 disabled={!draft.name.trim()}
-                className="rounded-xl bg-slate-800 px-4 py-2 text-sm font-semibold text-white disabled:opacity-40"
+                className="rounded-xl bg-accent px-4 py-2 text-sm font-semibold text-on-accent disabled:opacity-40"
               >
                 次へ
               </button>
@@ -458,12 +456,12 @@ export function ShirubeGuide({
                   birthDate: event.target.value,
                 }))
               }
-              className="min-w-0 flex-1 rounded-xl border border-stone-300 bg-white px-3 py-2 text-base outline-none focus:border-indigo-400"
+              className="min-w-0 flex-1 rounded-xl border border-theme-border bg-theme-surface px-3 py-2 text-base outline-none focus:border-accent"
             />
             <button
               type="submit"
               disabled={!draft.birthDate}
-              className="rounded-xl bg-slate-800 px-4 py-2 text-sm font-semibold text-white disabled:opacity-40"
+              className="rounded-xl bg-accent px-4 py-2 text-sm font-semibold text-on-accent disabled:opacity-40"
             >
               次へ
             </button>
@@ -498,11 +496,11 @@ export function ShirubeGuide({
                 }))
               }
               placeholder="都道府県・市区町村（分かる範囲）"
-              className="min-w-56 flex-1 rounded-xl border border-stone-300 bg-white px-3 py-2 text-base outline-none focus:border-indigo-400"
+              className="min-w-56 flex-1 rounded-xl border border-theme-border bg-theme-surface px-3 py-2 text-base outline-none focus:border-accent"
             />
             <button
               type="submit"
-              className="rounded-xl bg-slate-800 px-4 py-2 text-sm font-semibold text-white"
+              className="rounded-xl bg-accent px-4 py-2 text-sm font-semibold text-on-accent"
             >
               {draft.birthPlace.trim() ? "次へ" : "スキップ"}
             </button>
@@ -538,11 +536,11 @@ export function ShirubeGuide({
                   }))
                 }
                 placeholder="都道府県・市区町村"
-                className="min-w-0 flex-1 rounded-xl border border-stone-300 bg-white px-3 py-2 text-base outline-none focus:border-indigo-400"
+                className="min-w-0 flex-1 rounded-xl border border-theme-border bg-theme-surface px-3 py-2 text-base outline-none focus:border-accent"
               />
               <button
                 type="submit"
-                className="rounded-xl bg-slate-800 px-4 py-2 text-sm font-semibold text-white"
+                className="rounded-xl bg-accent px-4 py-2 text-sm font-semibold text-on-accent"
               >
                 {draft.residence.trim() ? "登録" : "スキップして登録"}
               </button>
@@ -559,7 +557,7 @@ export function ShirubeGuide({
                   .catch(() => {})
                   .finally(() => setLocating(false));
               }}
-              className="text-xs text-slate-600 underline underline-offset-2 disabled:opacity-50"
+              className="text-xs text-ink-muted underline underline-offset-2 disabled:opacity-50"
             >
               {locating
                 ? "現在地を確認中…"
@@ -577,7 +575,7 @@ export function ShirubeGuide({
                 ? `${selectedPeople.map((person) => personLabel(person.name)).join("、")}について、何を相談しますか？`
                 : "今日は何を相談しますか？"}
             </p>
-            <p className="mt-2 text-xs text-slate-500">
+            <p className="mt-2 text-xs text-ink-muted">
               候補を選ぶと下の入力欄に入ります。内容を確認して「送信」を押すまで、AIの無料枠は使いません。
             </p>
           </ShirubeBubble>
@@ -651,8 +649,8 @@ export function AskPeoplePanel({
 
   return (
     <section aria-label="この会話の相談対象" className="relative">
-      <div className="flex min-h-14 flex-wrap items-center gap-2 border-b border-stone-200 bg-white/75 px-3 py-2 sm:px-4">
-        <span className="text-xs font-semibold text-slate-600">相談対象</span>
+      <div className="flex min-h-14 flex-wrap items-center gap-2 border-b border-theme-border bg-theme-surface px-3 py-2 sm:px-4">
+        <span className="text-xs font-semibold text-ink-muted">相談対象</span>
         {people
           .filter((person) => selectedIds.includes(person.id))
           .map((person) => (
@@ -662,19 +660,19 @@ export function AskPeoplePanel({
               disabled={disabled}
               onClick={() => onToggle(person.id)}
               aria-label={`${person.name}を相談対象から外す`}
-              className="rounded-full border border-indigo-200 bg-indigo-50 px-3 py-1.5 text-xs font-semibold text-indigo-900 disabled:opacity-50"
+              className="rounded-full border border-theme-border bg-theme-accent-soft px-3 py-1.5 text-xs font-semibold text-accent disabled:opacity-50"
             >
               {person.name} <span aria-hidden="true">×</span>
             </button>
           ))}
         {selectedIds.length === 0 && (
-          <span className="text-xs text-slate-500">まだ選んでいません</span>
+          <span className="text-xs text-ink-muted">まだ選んでいません</span>
         )}
         <button
           type="button"
           disabled={disabled}
           onClick={() => setDrawerOpen(true)}
-          className="ml-auto rounded-full border border-stone-300 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-stone-50 disabled:opacity-50"
+          className="ml-auto rounded-full border border-theme-border bg-theme-surface px-3 py-1.5 text-xs font-medium text-ink hover:bg-theme-accent-soft disabled:opacity-50"
         >
           選択・確認
         </button>
@@ -684,7 +682,7 @@ export function AskPeoplePanel({
           role="dialog"
           aria-modal="true"
           aria-labelledby="ask-people-drawer-title"
-          className="fixed inset-0 z-50 bg-slate-950/35"
+          className="fixed inset-0 z-50 bg-black/35"
           onMouseDown={(event) => {
             if (event.target === event.currentTarget) setDrawerOpen(false);
           }}
@@ -692,13 +690,13 @@ export function AskPeoplePanel({
             if (event.key === "Escape") setDrawerOpen(false);
           }}
         >
-          <div className="ml-auto h-full w-[min(94vw,30rem)] overflow-y-auto bg-[#faf7f5] p-4 shadow-2xl sm:p-5">
+          <div className="ml-auto h-full w-[min(94vw,30rem)] overflow-y-auto bg-background p-4 shadow-2xl sm:p-5">
             <div className="flex items-start justify-between gap-3">
               <div>
                 <h2 id="ask-people-drawer-title" className="font-semibold">
                   相談する人
                 </h2>
-                <p className="mt-1 text-xs leading-relaxed text-slate-600">
+                <p className="mt-1 text-xs leading-relaxed text-ink-muted">
                   サイトの使用中・保存済みプロフィールと、同行者もここで選べます。
                 </p>
               </div>
@@ -707,7 +705,7 @@ export function AskPeoplePanel({
                 autoFocus
                 onClick={() => setDrawerOpen(false)}
                 aria-label="相談する人の画面を閉じる"
-                className="rounded-full border border-stone-300 bg-white px-3 py-1.5 text-sm"
+                className="rounded-full border border-theme-border bg-theme-surface px-3 py-1.5 text-sm"
               >
                 閉じる
               </button>
@@ -728,7 +726,7 @@ export function AskPeoplePanel({
                   return (
                     <li
                       key={person.id}
-                      className="rounded-xl border border-stone-200 bg-white p-3"
+                      className="rounded-xl border border-theme-border bg-theme-surface p-3"
                     >
                       <label className="flex items-start gap-2 text-sm">
                         <input
@@ -741,11 +739,11 @@ export function AskPeoplePanel({
                         <span className="min-w-0">
                           <strong>{person.name}</strong>
                           {person.active && (
-                            <span className="ml-2 rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-semibold text-emerald-700">
+                            <span className="ml-2 rounded-full bg-theme-accent-soft px-2 py-0.5 text-[10px] font-semibold text-accent">
                               使用中
                             </span>
                           )}
-                          <span className="mt-1 block text-xs leading-relaxed text-slate-600">
+                          <span className="mt-1 block text-xs leading-relaxed text-ink-muted">
                             {person.birthDate || "生年月日未入力"}
                             {person.residence
                               ? `・現住所 ${person.residence}`
@@ -791,7 +789,7 @@ export function AskPeoplePanel({
                                 )
                                   onDelete(person.id);
                               }}
-                              className="text-red-700 underline underline-offset-2"
+                              className="text-accent underline underline-offset-2"
                             >
                               削除
                             </button>
@@ -803,12 +801,12 @@ export function AskPeoplePanel({
                 })}
               </ul>
             ) : (
-              <p className="mt-5 text-sm text-slate-600">
+              <p className="mt-5 text-sm text-ink-muted">
                 まだ人物が登録されていません。
               </p>
             )}
 
-            <div className="mt-5 border-t border-stone-200 pt-4">
+            <div className="mt-5 border-t border-theme-border pt-4">
               {!editorOpen ? (
                 <button
                   type="button"
@@ -816,7 +814,7 @@ export function AskPeoplePanel({
                     setDraft(emptyPerson);
                     setEditorOpen(true);
                   }}
-                  className="rounded-xl bg-slate-800 px-4 py-2 text-sm font-semibold text-white"
+                  className="rounded-xl bg-accent px-4 py-2 text-sm font-semibold text-on-accent"
                 >
                   ＋ /ask に人物を追加
                 </button>
@@ -837,7 +835,7 @@ export function AskPeoplePanel({
                         }))
                       }
                       placeholder="例：本人、配偶者、長男"
-                      className="mt-1 block w-full rounded-lg border border-amber-200 bg-white p-2 font-normal"
+                      className="mt-1 block w-full rounded-lg border border-theme-border bg-theme-surface p-2 font-normal"
                     />
                   </label>
                   <label className="text-sm font-medium">
@@ -856,7 +854,7 @@ export function AskPeoplePanel({
                           birthDate: event.target.value,
                         }))
                       }
-                      className="mt-1 block w-full rounded-lg border border-amber-200 bg-white p-2 font-normal"
+                      className="mt-1 block w-full rounded-lg border border-theme-border bg-theme-surface p-2 font-normal"
                     />
                   </label>
                   <label className="text-sm font-medium">
@@ -873,7 +871,7 @@ export function AskPeoplePanel({
                         }))
                       }
                       placeholder="都道府県・市区町村（分かる範囲）"
-                      className="mt-1 block w-full rounded-lg border border-amber-200 bg-white p-2 font-normal"
+                      className="mt-1 block w-full rounded-lg border border-theme-border bg-theme-surface p-2 font-normal"
                     />
                   </label>
                   <label className="text-sm font-medium">
@@ -890,14 +888,14 @@ export function AskPeoplePanel({
                         }))
                       }
                       placeholder="都道府県・市区町村"
-                      className="mt-1 block w-full rounded-lg border border-amber-200 bg-white p-2 font-normal"
+                      className="mt-1 block w-full rounded-lg border border-theme-border bg-theme-surface p-2 font-normal"
                     />
                   </label>
                   <div className="flex flex-wrap items-center gap-3 sm:col-span-2">
                     <button
                       type="submit"
                       disabled={disabled}
-                      className="rounded-lg bg-slate-800 px-4 py-2 text-sm font-semibold text-white disabled:opacity-50"
+                      className="rounded-lg bg-accent px-4 py-2 text-sm font-semibold text-on-accent disabled:opacity-50"
                     >
                       {draft.id ? "変更を保存" : "人物を登録"}
                     </button>
@@ -920,7 +918,7 @@ export function AskPeoplePanel({
                         : "現在地から現住所を入力（許可が必要）"}
                     </button>
                     {draft.id && (
-                      <span className="text-xs text-slate-500">
+                      <span className="text-xs text-ink-muted">
                         /ask に登録した人物のみ編集できます。
                       </span>
                     )}
@@ -938,7 +936,7 @@ export function AskPeoplePanel({
                 </form>
               )}
             </div>
-            <p className="mt-5 text-xs text-slate-600">
+            <p className="mt-5 text-xs text-ink-muted">
               この会話の相談対象：{selectedIds.length}人（最大8人）
             </p>
           </div>
@@ -956,11 +954,11 @@ export function AskMemoryPanel({
   onDelete: (id: string) => void;
 }) {
   return (
-    <details className="rounded-2xl border border-stone-200 bg-white/70 p-4 sm:p-5">
+    <details className="rounded-2xl border border-theme-border bg-theme-surface p-4 sm:p-5">
       <summary className="cursor-pointer font-semibold">
         覚えている相談（{memories.length}件）
       </summary>
-      <p className="mt-2 text-xs leading-relaxed text-slate-600">
+      <p className="mt-2 text-xs leading-relaxed text-ink-muted">
         完了した相談の要点を次の会話に引き継ぎます。不要な項目はここで削除できます。
       </p>
       {memories.length ? (
@@ -970,17 +968,17 @@ export function AskMemoryPanel({
             .map((memory) => (
               <li
                 key={memory.id}
-                className="rounded-xl border border-stone-200 bg-white p-3"
+                className="rounded-xl border border-theme-border bg-theme-surface p-3"
               >
                 <p className="text-sm leading-relaxed whitespace-pre-wrap">
                   {memory.text}
                 </p>
-                <div className="mt-2 flex items-center justify-between gap-3 text-xs text-slate-500">
+                <div className="mt-2 flex items-center justify-between gap-3 text-xs text-ink-muted">
                   <span>{dateLabel(memory.updatedAt)}</span>
                   <button
                     type="button"
                     onClick={() => onDelete(memory.id)}
-                    className="text-red-700 underline underline-offset-2"
+                    className="text-accent underline underline-offset-2"
                     aria-label="この相談メモを削除"
                   >
                     削除
@@ -990,7 +988,7 @@ export function AskMemoryPanel({
             ))}
         </ul>
       ) : (
-        <p className="mt-3 text-sm text-slate-600">
+        <p className="mt-3 text-sm text-ink-muted">
           まだ相談メモはありません。回答が完了すると要点が追加されます。
         </p>
       )}

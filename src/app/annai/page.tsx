@@ -72,7 +72,7 @@ function StepIndicator({ current }: { current: 1 | 2 | 3 }) {
         return (
           <li key={item.step} className="flex items-center gap-2">
             {idx > 0 && (
-              <span aria-hidden="true" className="text-slate-400">
+              <span aria-hidden="true" className="text-ink-muted">
                 →
               </span>
             )}
@@ -80,8 +80,8 @@ function StepIndicator({ current }: { current: 1 | 2 | 3 }) {
               aria-current={active ? "step" : undefined}
               className={
                 active
-                  ? "rounded-full bg-slate-900 px-3.5 py-1 font-bold text-white"
-                  : "rounded-full border border-slate-300 bg-white/80 px-3.5 py-1 text-slate-600"
+                  ? "rounded-full bg-accent px-3.5 py-1 font-bold text-on-accent"
+                  : "rounded-full border border-theme-border bg-theme-surface px-3.5 py-1 text-ink-muted"
               }
             >
               {item.label}
@@ -106,12 +106,12 @@ function Step1View() {
             <Link
               key={kind}
               href={`/annai?kind=${kind}`}
-              className="block rounded-2xl border border-slate-300 bg-white p-6 shadow-sm transition-colors hover:border-rose-500"
+              className="block rounded-2xl border border-theme-border bg-theme-surface p-6 shadow-sm transition-colors hover:border-accent hover:bg-theme-accent-soft"
             >
-              <span className="block text-lg font-bold font-serif text-slate-900">
+              <span className="block text-lg font-bold font-serif text-ink">
                 {info.title}
               </span>
-              <span className="mt-2 block text-sm leading-relaxed text-slate-600">
+              <span className="mt-2 block text-sm leading-relaxed text-ink-muted">
                 {info.description}
               </span>
             </Link>
@@ -133,19 +133,19 @@ function Step2View({ query }: { query: GuideQueryStep2 }) {
   return (
     <section
       aria-labelledby="step2-heading"
-      className="mt-8 rounded-2xl border border-slate-300 bg-white p-6 shadow-sm space-y-6"
+      className="mt-8 rounded-2xl border border-theme-border bg-theme-surface p-6 shadow-sm space-y-6"
     >
       <div>
         <h2 id="step2-heading" className="text-lg font-bold font-serif">
           {info.title}
         </h2>
-        <p className="mt-1 text-sm text-slate-600">{info.description}</p>
+        <p className="mt-1 text-sm text-ink-muted">{info.description}</p>
       </div>
 
       {query.kind === "move" && query.error && (
         <p
           role="alert"
-          className="rounded-xl border border-rose-300 bg-rose-50 px-4 py-3 text-sm font-semibold text-rose-800"
+          className="rounded-xl border border-theme-border bg-theme-gold-soft px-4 py-3 text-sm font-semibold text-theme-gold"
         >
           入力を確かめてください。生年月日と出発地の市区町村（2〜40文字）を正しく入力してください。
         </p>
@@ -165,7 +165,7 @@ function Step2View({ query }: { query: GuideQueryStep2 }) {
             <div>
               <label
                 htmlFor="guide-year"
-                className="block text-sm font-bold text-slate-800"
+                className="block text-sm font-bold text-ink"
               >
                 生まれ年（西暦）
               </label>
@@ -173,7 +173,7 @@ function Step2View({ query }: { query: GuideQueryStep2 }) {
                 id="guide-year"
                 name="y"
                 defaultValue={query.y ?? 1990}
-                className="mt-2 w-full max-w-xs rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm"
+                className="mt-2 w-full max-w-xs rounded-xl border border-theme-border bg-theme-surface px-3 py-2 text-sm focus-visible:outline-accent"
               >
                 {years.map((year) => (
                   <option key={year} value={year}>
@@ -184,16 +184,17 @@ function Step2View({ query }: { query: GuideQueryStep2 }) {
             </div>
 
             <fieldset className="space-y-2">
-              <legend className="text-sm font-bold text-slate-800">
+              <legend className="text-sm font-bold text-ink">
                 生まれた日（立春前後）
               </legend>
               {(["after", "before", "unknown"] as const).map((val) => (
                 <label
                   key={val}
-                  className="flex items-center gap-2 text-sm text-slate-800"
+                  className="flex items-center gap-2 text-sm text-ink"
                 >
                   <input
                     type="radio"
+                    className="accent-accent focus-visible:outline-accent"
                     name="s"
                     value={val}
                     defaultChecked={(query.s ?? "after") === val}
@@ -210,7 +211,7 @@ function Step2View({ query }: { query: GuideQueryStep2 }) {
             <div>
               <label
                 htmlFor="guide-birthdate"
-                className="block text-sm font-bold text-slate-800"
+                className="block text-sm font-bold text-ink"
               >
                 生年月日
               </label>
@@ -222,14 +223,14 @@ function Step2View({ query }: { query: GuideQueryStep2 }) {
                 min="1900-01-01"
                 max="2100-12-01"
                 defaultValue={query.b ?? "1990-05-15"}
-                className="mt-2 w-full max-w-xs rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm"
+                className="mt-2 w-full max-w-xs rounded-xl border border-theme-border bg-theme-surface px-3 py-2 text-sm focus-visible:outline-accent"
               />
             </div>
 
             <div>
               <label
                 htmlFor="guide-municipality"
-                className="block text-sm font-bold text-slate-800"
+                className="block text-sm font-bold text-ink"
               >
                 出発地の市区町村
               </label>
@@ -241,30 +242,32 @@ function Step2View({ query }: { query: GuideQueryStep2 }) {
                 required
                 defaultValue={query.m ?? ""}
                 placeholder="例: 新宿区、横浜市中区、札幌市北区"
-                className="mt-2 w-full max-w-md rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm"
+                className="mt-2 w-full max-w-md rounded-xl border border-theme-border bg-theme-surface px-3 py-2 text-sm placeholder:text-ink-muted focus-visible:outline-accent"
               />
-              <p className="mt-1.5 text-xs text-slate-600">
+              <p className="mt-1.5 text-xs text-ink-muted">
                 候補の例:
                 東京都新宿区、神奈川県横浜市中区、大阪府大阪市北区、北海道札幌市北区、福岡県福岡市博多区、長崎県長崎市
               </p>
             </div>
 
             <fieldset className="space-y-2">
-              <legend className="text-sm font-bold text-slate-800">
+              <legend className="text-sm font-bold text-ink">
                 日取りを探す期間
               </legend>
-              <label className="flex items-center gap-2 text-sm text-slate-800">
+              <label className="flex items-center gap-2 text-sm text-ink">
                 <input
                   type="radio"
+                  className="accent-accent focus-visible:outline-accent"
                   name="p"
                   value="30"
                   defaultChecked={query.p === 30}
                 />
                 <span>30日間（標準）</span>
               </label>
-              <label className="flex items-center gap-2 text-sm text-slate-800">
+              <label className="flex items-center gap-2 text-sm text-ink">
                 <input
                   type="radio"
+                  className="accent-accent focus-visible:outline-accent"
                   name="p"
                   value="90"
                   defaultChecked={query.p === 90}
@@ -277,16 +280,15 @@ function Step2View({ query }: { query: GuideQueryStep2 }) {
 
         {query.kind === "read" && (
           <fieldset className="space-y-2.5">
-            <legend className="text-sm font-bold text-slate-800">
-              調べたい話題
-            </legend>
+            <legend className="text-sm font-bold text-ink">調べたい話題</legend>
             {GUIDE_TOPIC_KEYS.map((key, index) => (
               <label
                 key={key}
-                className="flex items-center gap-2 text-sm text-slate-800"
+                className="flex items-center gap-2 text-sm text-ink"
               >
                 <input
                   type="radio"
+                  className="accent-accent focus-visible:outline-accent"
                   name="t"
                   value={key}
                   defaultChecked={query.t ? query.t === key : index === 0}
@@ -300,13 +302,13 @@ function Step2View({ query }: { query: GuideQueryStep2 }) {
         <div className="flex flex-wrap items-center gap-4 pt-2">
           <button
             type="submit"
-            className="rounded-xl bg-slate-900 px-5 py-2.5 text-sm font-bold text-white hover:bg-slate-800"
+            className="rounded-xl bg-accent px-5 py-2.5 text-sm font-bold text-on-accent hover:brightness-110"
           >
             サイトの道具で調べる
           </button>
           <Link
             href="/annai"
-            className="text-sm text-slate-600 underline hover:text-slate-900"
+            className="text-sm text-ink-muted underline hover:text-ink"
           >
             戻る
           </Link>
@@ -321,28 +323,25 @@ function QuestionSummaryBox({ query }: { query: GuideQueryStep3 }) {
   return (
     <section
       aria-labelledby="question-summary-heading"
-      className="rounded-2xl border border-slate-300 bg-white p-5 shadow-sm"
+      className="rounded-2xl border border-theme-border bg-theme-surface p-5 shadow-sm"
     >
-      <h2
-        id="question-summary-heading"
-        className="text-sm font-bold text-slate-700"
-      >
+      <h2 id="question-summary-heading" className="text-sm font-bold text-ink">
         ① 質問の要約
       </h2>
       <dl className="mt-2 grid gap-2 text-sm sm:grid-cols-2">
         <div>
-          <dt className="text-xs text-slate-500">質問の種類</dt>
-          <dd className="font-semibold text-slate-900">{info.title}</dd>
+          <dt className="text-xs text-ink-muted">質問の種類</dt>
+          <dd className="font-semibold text-ink">{info.title}</dd>
         </div>
         {(query.kind === "honmei" || query.kind === "today") && (
           <>
             <div>
-              <dt className="text-xs text-slate-500">生まれ年</dt>
-              <dd className="font-semibold text-slate-900">{query.y}年</dd>
+              <dt className="text-xs text-ink-muted">生まれ年</dt>
+              <dd className="font-semibold text-ink">{query.y}年</dd>
             </div>
             <div>
-              <dt className="text-xs text-slate-500">立春前後</dt>
-              <dd className="font-semibold text-slate-900">
+              <dt className="text-xs text-ink-muted">立春前後</dt>
+              <dd className="font-semibold text-ink">
                 {GUIDE_SETSUBUN_LABELS[query.s]}
               </dd>
             </div>
@@ -351,26 +350,26 @@ function QuestionSummaryBox({ query }: { query: GuideQueryStep3 }) {
         {query.kind === "move" && (
           <>
             <div>
-              <dt className="text-xs text-slate-500">生年月日</dt>
-              <dd className="font-semibold text-slate-900">{query.b}</dd>
+              <dt className="text-xs text-ink-muted">生年月日</dt>
+              <dd className="font-semibold text-ink">{query.b}</dd>
             </div>
             <div>
-              <dt className="text-xs text-slate-500">出発地の市区町村</dt>
-              <dd className="font-semibold text-slate-900">
+              <dt className="text-xs text-ink-muted">出発地の市区町村</dt>
+              <dd className="font-semibold text-ink">
                 {query.m}
                 {query.c ? `（コード: ${query.c}）` : ""}
               </dd>
             </div>
             <div>
-              <dt className="text-xs text-slate-500">走査期間</dt>
-              <dd className="font-semibold text-slate-900">{query.p}日間</dd>
+              <dt className="text-xs text-ink-muted">走査期間</dt>
+              <dd className="font-semibold text-ink">{query.p}日間</dd>
             </div>
           </>
         )}
         {query.kind === "read" && (
           <div>
-            <dt className="text-xs text-slate-500">話題</dt>
-            <dd className="font-semibold text-slate-900">
+            <dt className="text-xs text-ink-muted">話題</dt>
+            <dd className="font-semibold text-ink">
               {GUIDE_TOPICS[query.t].label}
             </dd>
           </div>
@@ -391,9 +390,9 @@ function Step3View({ answer }: { answer: GuideAnswerData }) {
       {/* ② AIの状態の注記 */}
       <section
         aria-labelledby="ai-status-heading"
-        className="rounded-2xl border border-slate-300 bg-white/90 p-4 text-sm text-slate-700"
+        className="rounded-2xl border border-theme-border bg-theme-surface p-4 text-sm text-ink"
       >
-        <h2 id="ai-status-heading" className="text-xs font-bold text-slate-500">
+        <h2 id="ai-status-heading" className="text-xs font-bold text-ink-muted">
           ② AI要約の状態
         </h2>
         <p className="mt-1">{answer.aiNote}</p>
@@ -403,7 +402,7 @@ function Step3View({ answer }: { answer: GuideAnswerData }) {
       {(answer.status === "stopped" || answer.status === "rate_limited") && (
         <section
           role="status"
-          className="rounded-2xl border border-amber-300 bg-amber-50 p-6 text-sm text-slate-900 space-y-3"
+          className="rounded-2xl border border-theme-border bg-theme-gold-soft p-6 text-sm text-ink space-y-3"
         >
           <h2 className="text-base font-bold font-serif">
             {answer.status === "stopped"
@@ -412,7 +411,7 @@ function Step3View({ answer }: { answer: GuideAnswerData }) {
           </h2>
           <p>{answer.message}</p>
           <p>
-            <Link href="/annai" className="font-bold text-rose-700 underline">
+            <Link href="/annai" className="font-bold text-accent underline">
               質問の選択に戻る
             </Link>
           </p>
@@ -426,7 +425,7 @@ function Step3View({ answer }: { answer: GuideAnswerData }) {
         query.kind === "move" && (
           <section
             aria-labelledby="candidates-heading"
-            className="rounded-2xl border border-slate-300 bg-white p-6 shadow-sm space-y-4"
+            className="rounded-2xl border border-theme-border bg-theme-surface p-6 shadow-sm space-y-4"
           >
             <h2
               id="candidates-heading"
@@ -434,7 +433,7 @@ function Step3View({ answer }: { answer: GuideAnswerData }) {
             >
               出発地の市区町村を1つ選んでください
             </h2>
-            <p className="text-sm text-slate-600">
+            <p className="text-sm text-ink-muted">
               「{query.m}」に一致する市区町村が
               {facts.municipalityCandidates.length}
               件見つかりました。どれを出発地にするか選んでください。
@@ -448,7 +447,7 @@ function Step3View({ answer }: { answer: GuideAnswerData }) {
                     <input type="hidden" name="p" value={String(query.p)} />
                     <button
                       type="submit"
-                      className="w-full rounded-xl border border-slate-300 bg-slate-50 px-4 py-3 text-left text-sm font-semibold text-slate-900 hover:border-rose-500 hover:bg-white"
+                      className="w-full rounded-xl border border-theme-border bg-theme-subtle px-4 py-3 text-left text-sm font-semibold text-ink hover:border-accent hover:bg-theme-accent-soft"
                     >
                       {cand.name}（コード: {cand.code}）
                     </button>
@@ -465,7 +464,7 @@ function Step3View({ answer }: { answer: GuideAnswerData }) {
           {/* ③ 結論（照合を通った文だけ） */}
           <section
             aria-labelledby="conclusion-heading"
-            className="rounded-2xl border border-slate-300 bg-white p-6 shadow-sm space-y-3"
+            className="rounded-2xl border border-theme-border bg-theme-surface p-6 shadow-sm space-y-3"
           >
             <h2
               id="conclusion-heading"
@@ -474,21 +473,21 @@ function Step3View({ answer }: { answer: GuideAnswerData }) {
               ③ 結論（道具の結果と照合済みの文）
             </h2>
             {answer.message && (
-              <p className="text-sm font-semibold text-rose-700">
+              <p className="text-sm font-semibold text-theme-gold">
                 {answer.message}
               </p>
             )}
             {facts.candidateNote && (
-              <p className="text-xs text-slate-600">{facts.candidateNote}</p>
+              <p className="text-xs text-ink-muted">{facts.candidateNote}</p>
             )}
             {answer.sentences.length > 0 ? (
-              <div className="space-y-2 text-sm leading-relaxed text-slate-800">
+              <div className="space-y-2 text-sm leading-relaxed text-ink">
                 {answer.sentences.map((sentence, index) => (
                   <p key={index}>{sentence}</p>
                 ))}
               </div>
             ) : (
-              <p className="text-sm text-slate-600">
+              <p className="text-sm text-ink-muted">
                 照合を通った要約文はありません。下の表と道具の記録をご確認ください。
               </p>
             )}
@@ -498,7 +497,7 @@ function Step3View({ answer }: { answer: GuideAnswerData }) {
           {answer.status !== "candidates" && (
             <section
               aria-labelledby="facts-table-heading"
-              className="rounded-2xl border border-slate-300 bg-white p-6 shadow-sm space-y-6"
+              className="rounded-2xl border border-theme-border bg-theme-surface p-6 shadow-sm space-y-6"
             >
               <h2
                 id="facts-table-heading"
@@ -511,10 +510,10 @@ function Step3View({ answer }: { answer: GuideAnswerData }) {
               {(facts.honmeiStar !== undefined ||
                 facts.honmeiCandidates !== undefined) && (
                 <div>
-                  <h3 className="text-sm font-bold text-slate-800">本命星</h3>
+                  <h3 className="text-sm font-bold text-ink">本命星</h3>
                   <table className="mt-2 w-full max-w-md border-collapse text-left text-sm">
                     <thead>
-                      <tr className="border-b border-slate-300">
+                      <tr className="border-b border-theme-border">
                         <th scope="col" className="py-2 pr-4">
                           区分
                         </th>
@@ -529,7 +528,7 @@ function Step3View({ answer }: { answer: GuideAnswerData }) {
                     <tbody>
                       {facts.honmeiStar !== undefined &&
                         !facts.honmeiCandidates && (
-                          <tr className="border-b border-slate-200">
+                          <tr className="border-b border-theme-border">
                             <td className="py-2 pr-4">本命星</td>
                             <td className="py-2 pr-4 font-bold">
                               {facts.honmeiStar}
@@ -541,7 +540,7 @@ function Step3View({ answer }: { answer: GuideAnswerData }) {
                         )}
                       {facts.honmeiCandidates && (
                         <>
-                          <tr className="border-b border-slate-200">
+                          <tr className="border-b border-theme-border">
                             <td className="py-2 pr-4">
                               立春前（1月1日〜2月3日頃）
                             </td>
@@ -554,7 +553,7 @@ function Step3View({ answer }: { answer: GuideAnswerData }) {
                               ] ?? ""}
                             </td>
                           </tr>
-                          <tr className="border-b border-slate-200">
+                          <tr className="border-b border-theme-border">
                             <td className="py-2 pr-4">
                               立春後（2月4日頃以降）
                             </td>
@@ -577,13 +576,13 @@ function Step3View({ answer }: { answer: GuideAnswerData }) {
               {/* 方位ごとの段階と状態 */}
               {facts.directions.length > 0 && (
                 <div>
-                  <h3 className="text-sm font-bold text-slate-800">
+                  <h3 className="text-sm font-bold text-ink">
                     方位ごとの段階・状態
                   </h3>
                   <div className="mt-2 overflow-x-auto">
                     <table className="w-full border-collapse text-left text-sm">
                       <thead>
-                        <tr className="border-b border-slate-300">
+                        <tr className="border-b border-theme-border">
                           <th scope="col" className="py-2 pr-4">
                             方位
                           </th>
@@ -599,7 +598,7 @@ function Step3View({ answer }: { answer: GuideAnswerData }) {
                         {facts.directions.map((dir, i) => (
                           <tr
                             key={`${dir.direction}-${i}`}
-                            className="border-b border-slate-200"
+                            className="border-b border-theme-border"
                           >
                             <td className="py-2 pr-4 font-semibold">
                               {dir.label}
@@ -617,13 +616,11 @@ function Step3View({ answer }: { answer: GuideAnswerData }) {
               {/* 日取りの候補 */}
               {facts.auspiciousDays.length > 0 && (
                 <div>
-                  <h3 className="text-sm font-bold text-slate-800">
-                    日取りの候補
-                  </h3>
+                  <h3 className="text-sm font-bold text-ink">日取りの候補</h3>
                   <div className="mt-2 overflow-x-auto">
                     <table className="w-full border-collapse text-left text-sm">
                       <thead>
-                        <tr className="border-b border-slate-300">
+                        <tr className="border-b border-theme-border">
                           <th scope="col" className="py-2 pr-4">
                             日付
                           </th>
@@ -642,7 +639,7 @@ function Step3View({ answer }: { answer: GuideAnswerData }) {
                         {facts.auspiciousDays.map((day, i) => (
                           <tr
                             key={`${day.date}-${day.label}-${i}`}
-                            className="border-b border-slate-200"
+                            className="border-b border-theme-border"
                           >
                             <td className="py-2 pr-4 font-semibold">
                               {day.date}
@@ -668,13 +665,13 @@ function Step3View({ answer }: { answer: GuideAnswerData }) {
               {/* 近くの街 */}
               {facts.towns.length > 0 && (
                 <div>
-                  <h3 className="text-sm font-bold text-slate-800">
+                  <h3 className="text-sm font-bold text-ink">
                     近くの街（方位別）
                   </h3>
                   <div className="mt-2 overflow-x-auto">
                     <table className="w-full border-collapse text-left text-sm">
                       <thead>
-                        <tr className="border-b border-slate-300">
+                        <tr className="border-b border-theme-border">
                           <th scope="col" className="py-2 pr-4">
                             方位
                           </th>
@@ -690,7 +687,7 @@ function Step3View({ answer }: { answer: GuideAnswerData }) {
                         {facts.towns.map((town, i) => (
                           <tr
                             key={`${town.code}-${i}`}
-                            className="border-b border-slate-200"
+                            className="border-b border-theme-border"
                           >
                             <td className="py-2 pr-4">
                               {town.directionLabel ?? town.direction ?? "-"}
@@ -698,7 +695,7 @@ function Step3View({ answer }: { answer: GuideAnswerData }) {
                             <td className="py-2 pr-4 font-semibold">
                               <Link
                                 href={`/houi/area/${town.code}`}
-                                className="text-rose-700 underline"
+                                className="text-accent underline"
                               >
                                 {town.name}
                               </Link>
@@ -715,23 +712,23 @@ function Step3View({ answer }: { answer: GuideAnswerData }) {
               {/* 記事リンク */}
               {facts.articles.length > 0 && (
                 <div>
-                  <h3 className="text-sm font-bold text-slate-800">
+                  <h3 className="text-sm font-bold text-ink">
                     関連する記事リンク
                   </h3>
                   <ul className="mt-2 space-y-2 text-sm">
                     {facts.articles.map((article, i) => (
                       <li
                         key={`${article.url}-${i}`}
-                        className="rounded-xl border border-slate-200 p-3"
+                        className="rounded-xl border border-theme-border p-3"
                       >
                         <a
                           href={article.url}
-                          className="font-bold text-rose-700 underline"
+                          className="font-bold text-accent underline"
                         >
                           {article.title}
                         </a>
                         {article.section && (
-                          <span className="ml-2 text-xs text-slate-500">
+                          <span className="ml-2 text-xs text-ink-muted">
                             （{article.section}）
                           </span>
                         )}
@@ -746,7 +743,7 @@ function Step3View({ answer }: { answer: GuideAnswerData }) {
           {/* ⑤ 照合結果の集計 */}
           <section
             aria-label="照合結果"
-            className="rounded-2xl border border-slate-300 bg-white/90 p-4 text-sm text-slate-700"
+            className="rounded-2xl border border-theme-border bg-theme-surface p-4 text-sm text-ink"
           >
             <p className="font-semibold">
               照合: 道具の結果と一致した値 {answer.matchedCount}{" "}
@@ -757,41 +754,41 @@ function Step3View({ answer }: { answer: GuideAnswerData }) {
           {/* ⑥ 根拠：呼んだ道具 */}
           <details
             open
-            className="rounded-2xl border border-slate-300 bg-white p-5 shadow-sm"
+            className="rounded-2xl border border-theme-border bg-theme-surface p-5 shadow-sm"
           >
-            <summary className="cursor-pointer text-base font-bold font-serif text-slate-900">
+            <summary className="cursor-pointer text-base font-bold font-serif text-ink">
               根拠：呼んだ道具（{trace.length}回）
             </summary>
             <ol className="mt-4 space-y-3 text-sm">
               {trace.map((item) => (
                 <li
                   key={item.id}
-                  className="rounded-xl border border-slate-200 bg-slate-50 p-3 space-y-1.5"
+                  className="rounded-xl border border-theme-border bg-theme-subtle p-3 space-y-1.5"
                 >
                   <div className="flex flex-wrap items-center gap-2">
-                    <span className="font-bold text-slate-900">
+                    <span className="font-bold text-ink">
                       #{item.id} {item.tool}
                     </span>
-                    <span className="text-xs text-slate-600">
+                    <span className="text-xs text-ink-muted">
                       {item.durationMs}ms
                     </span>
                     <span
                       className={
                         item.ok
-                          ? "rounded bg-emerald-100 px-2 py-0.5 text-xs font-bold text-emerald-800"
-                          : "rounded bg-rose-100 px-2 py-0.5 text-xs font-bold text-rose-800"
+                          ? "rounded bg-theme-accent-soft px-2 py-0.5 text-xs font-bold text-accent"
+                          : "rounded bg-theme-gold-soft px-2 py-0.5 text-xs font-bold text-theme-gold"
                       }
                     >
                       {item.ok ? "成功" : "失敗"}
                     </span>
                   </div>
-                  <div className="text-xs text-slate-700">
+                  <div className="text-xs text-ink">
                     引数:{" "}
-                    <code className="rounded bg-white px-1.5 py-0.5 font-mono text-xs">
+                    <code className="rounded bg-theme-surface px-1.5 py-0.5 font-mono text-xs">
                       {JSON.stringify(item.args)}
                     </code>
                   </div>
-                  <p className="text-xs text-slate-700">{item.summary}</p>
+                  <p className="text-xs text-ink">{item.summary}</p>
                 </li>
               ))}
             </ol>
@@ -805,16 +802,16 @@ function Step3View({ answer }: { answer: GuideAnswerData }) {
             answer,
             generatedAt: new Date(),
           })}
-          className="rounded-2xl border border-slate-300 bg-white p-5 shadow-sm space-y-3"
+          className="rounded-2xl border border-theme-border bg-theme-surface p-5 shadow-sm space-y-3"
         />
       ) : null}
 
       {/* ⑦ 続けて押すボタン（2〜4個）と入力消去 */}
       <nav
         aria-label="次の操作"
-        className="rounded-2xl border border-slate-300 bg-white p-5 shadow-sm space-y-3"
+        className="rounded-2xl border border-theme-border bg-theme-surface p-5 shadow-sm space-y-3"
       >
-        <h2 className="text-sm font-bold text-slate-700">⑦ 続けて調べる</h2>
+        <h2 className="text-sm font-bold text-ink">⑦ 続けて調べる</h2>
         <div className="flex flex-wrap items-center gap-3">
           {answer.followUps.map((item) =>
             "post" in item ? (
@@ -829,7 +826,7 @@ function Step3View({ answer }: { answer: GuideAnswerData }) {
                 ))}
                 <button
                   type="submit"
-                  className="rounded-xl border border-slate-300 bg-slate-50 px-4 py-2.5 text-sm font-semibold text-slate-900 hover:border-rose-500 hover:bg-white"
+                  className="rounded-xl border border-theme-border bg-theme-subtle px-4 py-2.5 text-sm font-semibold text-ink hover:border-accent hover:bg-theme-accent-soft"
                 >
                   {item.label}
                 </button>
@@ -838,7 +835,7 @@ function Step3View({ answer }: { answer: GuideAnswerData }) {
               <Link
                 key={item.href + item.label}
                 href={item.href}
-                className="rounded-xl border border-slate-300 bg-slate-50 px-4 py-2.5 text-sm font-semibold text-slate-900 hover:border-rose-500 hover:bg-white"
+                className="rounded-xl border border-theme-border bg-theme-subtle px-4 py-2.5 text-sm font-semibold text-ink hover:border-accent hover:bg-theme-accent-soft"
               >
                 {item.label}
               </Link>
@@ -848,7 +845,7 @@ function Step3View({ answer }: { answer: GuideAnswerData }) {
             <input type="hidden" name="action" value="clear" />
             <button
               type="submit"
-              className="rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 hover:border-rose-500 hover:text-rose-700"
+              className="rounded-xl border border-theme-border bg-theme-surface px-4 py-2.5 text-sm font-semibold text-ink hover:border-accent hover:text-accent"
             >
               入力を消す
             </button>
@@ -876,9 +873,9 @@ export default async function AnnaiPage(props: PageProps) {
   }
 
   return (
-    <main className="min-h-screen bg-gradient-to-br from-[#faf7f5] via-[#f5efe9] to-[#f0e9e1] text-slate-900">
+    <main className="min-h-screen bg-background text-ink">
       <article className="mx-auto max-w-[1700px] px-5 py-12">
-        <nav aria-label="パンくず" className="mb-4 text-sm text-slate-600">
+        <nav aria-label="パンくず" className="mb-4 text-sm text-ink-muted">
           <Link href="/" className="hover:underline">
             ホーム
           </Link>
@@ -889,7 +886,7 @@ export default async function AnnaiPage(props: PageProps) {
         <h1 className="text-2xl font-bold font-serif sm:text-3xl">
           案内役に聞く
         </h1>
-        <p className="mt-3 text-sm leading-relaxed text-slate-700">
+        <p className="mt-3 text-sm leading-relaxed text-ink">
           質問を選ぶと、案内役がこのサイトの計算道具（MCP）を呼び、その結果だけで答えます。呼んだ道具と結果も下に出します。
         </p>
         <GuideCharacter pose="compass" size="sm" className="mt-4 max-w-xl">
@@ -902,7 +899,7 @@ export default async function AnnaiPage(props: PageProps) {
         {query.step === 2 && <Step2View query={query} />}
         {query.step === 3 && answer && <Step3View answer={answer} />}
 
-        <p className="mt-10 text-sm text-slate-600">
+        <p className="mt-10 text-sm text-ink-muted">
           吉凶は九星気学の考え方による参考情報です。
         </p>
       </article>

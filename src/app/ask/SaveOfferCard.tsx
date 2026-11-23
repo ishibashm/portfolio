@@ -26,31 +26,29 @@ export function SaveOfferCard({
   if (status === "declined")
     return (
       <p
-        className="mt-4 rounded-xl border border-stone-200 bg-stone-50 px-4 py-3 text-sm leading-relaxed text-slate-700"
+        className="mt-4 rounded-xl border border-theme-border bg-theme-subtle px-4 py-3 text-sm leading-relaxed text-ink"
         data-save-offer="declined"
       >
         {SAVE_OFFER_TEXT.declinedReply}
       </p>
     );
   const button =
-    "min-h-12 flex-1 rounded-xl border border-indigo-300 bg-white px-4 py-3 text-sm font-semibold text-indigo-900 hover:bg-indigo-50 disabled:opacity-50";
+    "min-h-12 flex-1 rounded-xl border border-accent bg-theme-surface px-4 py-3 text-sm font-semibold text-accent hover:bg-theme-accent-soft disabled:opacity-50";
   return (
     <section
       aria-labelledby={`save-offer-${card.conversationKey}`}
-      className="mt-4 rounded-2xl border border-indigo-200 bg-indigo-50/60 p-4 sm:p-5"
+      className="mt-4 rounded-2xl border border-theme-border bg-theme-accent-soft p-4 sm:p-5"
       data-save-offer="open"
     >
       <h3
         id={`save-offer-${card.conversationKey}`}
-        className="font-serif text-base font-bold text-indigo-950"
+        className="font-serif text-base font-bold text-accent"
       >
         {card.title}
       </h3>
-      <p className="mt-2 text-sm leading-relaxed text-slate-700">{card.body}</p>
-      <p className="mt-3 text-xs font-semibold text-slate-700">
-        保存される内容
-      </p>
-      <ul className="mt-1 list-disc space-y-1 pl-5 text-xs leading-relaxed text-slate-700">
+      <p className="mt-2 text-sm leading-relaxed text-ink">{card.body}</p>
+      <p className="mt-3 text-xs font-semibold text-ink">保存される内容</p>
+      <ul className="mt-1 list-disc space-y-1 pl-5 text-xs leading-relaxed text-ink">
         {card.fields.map((field) => {
           const count = counts?.[field.key];
           return (
@@ -61,7 +59,7 @@ export function SaveOfferCard({
           );
         })}
       </ul>
-      <p className="mt-3 text-xs leading-relaxed text-slate-600">{card.note}</p>
+      <p className="mt-3 text-xs leading-relaxed text-ink-muted">{card.note}</p>
       <div className="mt-4 flex flex-col gap-2 sm:flex-row">
         <button
           type="button"

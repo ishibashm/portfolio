@@ -19,7 +19,7 @@ export function AiExportBox({
       <h2 id="ai-export-heading" className="text-xl font-bold">
         {heading}
       </h2>
-      <p className="text-sm text-slate-700">
+      <p className="text-sm text-ink">
         計算結果を、お使いの AI
         に貼り付けて続きを相談できます。この文書には生年月日と座標を入れていません。
       </p>
@@ -28,7 +28,7 @@ export function AiExportBox({
         rows={16}
         defaultValue={markdown}
         aria-label="AI に渡す用の文書"
-        className="w-full rounded-lg border border-slate-300 bg-slate-50 p-3 font-mono text-xs text-slate-800"
+        className="w-full rounded-lg border border-theme-border bg-theme-subtle p-3 font-mono text-xs text-ink"
       />
       <AiExportCopyButton text={markdown} />
     </section>
