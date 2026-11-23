@@ -133,7 +133,10 @@ export default async function Home({
                     {r.label}
                     <ArrowRight className="w-4 h-4 text-accent opacity-0 group-hover:opacity-100 transition-opacity" />
                   </h3>
-                  <p className="text-xs text-ink-muted mt-2 leading-relaxed">
+                  <p
+                    className="line-clamp-2 text-xs text-ink-muted mt-2 leading-relaxed"
+                    title={r.summary}
+                  >
                     {r.summary}
                   </p>
                 </Link>

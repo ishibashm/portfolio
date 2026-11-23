@@ -60,9 +60,11 @@ function PostCard({ post }: { post: BlogPostSummary }) {
           {post.title}
         </Link>
       </h3>
-      <p className="mt-3 max-w-[70ch] flex-1 text-sm leading-7 text-slate-600 dark:text-ink-muted">
-        {post.description}
-      </p>
+      <div className="mt-3 max-w-[70ch] flex-1">
+        <p className="line-clamp-3 text-sm leading-7 text-slate-600 dark:text-ink-muted">
+          {post.description}
+        </p>
+      </div>
       <div className="mt-5 flex flex-wrap gap-2">
         {post.tags.map((tag) => (
           <span key={tag} className="text-[11px] text-ink-muted">

@@ -102,37 +102,25 @@ export default function CalendarPage() {
             <b>
               仏滅・赤口を外し、土用は間日以外を外したうえで、大安か天赦日・一粒万倍日が重なる日
             </b>
-            です。暦だけで決まる年間一覧・月別一覧は、生年月日や出発地を入れずにそのまま読めます。
+            です。年別・月別一覧は入力なしで読めます。
           </p>
           <p className="mt-3 text-sm text-slate-700 leading-relaxed">
-            六曜や天赦日・一粒万倍日・九星気学は<b>占い上の目安</b>
-            であり、出来事や効果を保証するものではありません。日の吉は誰にとっても同じですが、五黄殺・暗剣殺・歳破などの凶方位は天赦日でも変わりません。また、引越しの費用や予約の都合は、暦の話とは分けて考えてください。
+            暦や方位の吉凶は<b>占い上の目安</b>
+            であり、出来事や効果を保証するものではありません。五黄殺・暗剣殺・歳破などの凶方位は天赦日でも変わりません。引越しの費用や予約の都合は、暦の話とは分けて考えてください。
           </p>
           <p className="mt-3 text-xs text-slate-600 leading-relaxed">
-            方位ごとの段階評価で先に動ける期間を絞るときは
-            <Link
-              href="/relocation/timing"
-              className="mx-1 font-semibold text-indigo-600 underline hover:text-indigo-700"
-            >
-              引越し時期の分析
-            </Link>
-            、生まれ年から本命星と年の吉方位を引くときは
             <Link
               href="/houi"
               className="mx-1 font-semibold text-rose-600 underline hover:text-rose-700"
             >
               本命星と吉方位の早見表
             </Link>
-            をご覧ください。生年月日と出発地を入れて年盤・月盤・日盤を重ねるツールは、この一覧の下にあります。
           </p>
 
           <div className="mt-6">
             <h3 className="text-sm font-bold font-serif text-slate-800">
               年間の引越し吉日・天赦日一覧
             </h3>
-            <p className="mt-1 text-xs leading-relaxed text-slate-600">
-              1年ぶんの天赦日・一粒万倍日・大安・土用をまとめて見るときは、年間一覧をご覧ください。
-            </p>
             <div className="mt-3 flex flex-wrap gap-2">
               {contentYears().map((year) => (
                 <Link
@@ -152,7 +140,7 @@ export default function CalendarPage() {
               月ごとの引越しに向く日
             </h3>
             <p className="mt-1 text-xs leading-relaxed text-slate-600">
-              生年月日を入れずに読める、月ごとのまとめです。六曜・天赦日・一粒万倍日と土用を突き合わせた候補日と、本命星9つそれぞれの吉方位を載せています。
+              候補日と本命星別の吉方位を掲載しています。
             </p>
             <div className="mt-3 flex flex-wrap gap-2">
               {calendarMonths().map((c) => (
@@ -179,13 +167,10 @@ export default function CalendarPage() {
             すぐ下に置き、走査をやり直さなくても見返せるようにする。 */}
         <FavoriteDaysPanel />
 
-        <section className="mb-10 rounded-3xl border border-slate-300 bg-white/95 p-6 md:p-8 shadow-lg shadow-slate-200/50">
-          <h2 className="text-lg font-bold font-serif">
+        <details className="mb-10 rounded-3xl border border-slate-300 bg-white/95 p-6 md:p-8 shadow-lg shadow-slate-200/50">
+          <summary className="cursor-pointer text-lg font-bold font-serif">
             引越しの日取りの決め方
-          </h2>
-          <p className="mt-3 text-sm text-slate-700 leading-relaxed">
-            日取りは、暦の吉凶だけでは決まりません。方位と組み合わせて絞り込みます。一般的には次の順で見ていきます。
-          </p>
+          </summary>
           <ol className="mt-4 text-sm text-slate-700 leading-relaxed list-decimal pl-5 space-y-2">
             <li>
               <b>自分の本命星</b>を確認する。生まれ年から引けます（
@@ -225,17 +210,7 @@ export default function CalendarPage() {
               {coreRouteLabel("/relocation/arbitrage")}
             </Link>
           </div>
-          <p className="mt-4 text-xs text-slate-500 leading-relaxed">
-            六曜や天赦日は占い上の目安であり、科学的に効果が確認されたものではありません。費用や予約の都合は暦の話とは分けて考え、方位ごとの段階評価で期間から絞るときは
-            <Link
-              href="/relocation/timing"
-              className="mx-1 underline hover:text-rose-600"
-            >
-              引越し時期の分析
-            </Link>
-            もあわせてお使いください。
-          </p>
-        </section>
+        </details>
 
         {/* Calendar Widget
             他のブロックと同じ余白（mt-10）を与えてカードと重ならないようにする。 */}
