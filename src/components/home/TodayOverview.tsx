@@ -227,7 +227,11 @@ export function TodayOverviewCard({
             </div>
           </div>
           <div className="min-w-0 space-y-4">
-            <TodayLoveOutlook items={loveFortune.items} />
+            <TodayLoveOutlook
+              items={loveFortune.items}
+              date={loveFortune.date}
+              center={loveFortune.center}
+            />
             <table className="w-full text-left text-xs">
               <caption className="pb-1 text-left font-semibold">
                 本命星別の今日の吉方位と、その先の天気
