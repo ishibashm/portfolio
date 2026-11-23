@@ -31,6 +31,6 @@
   - 21ea0cb5: run 45161914614 成功（2026-11-23 20:05–20:21 JST、15分49秒）。
   - 26a8a855: run 45275128648 失敗（06:59–07:11 JST、12分45秒）。地図の器の地色を `bg-theme-surface` に替えた検査と、SimulatorMap の行番号ずれ。
   - d87cb3d1: run 45277500320 成功（07:12:58–07:28:31 JST、15分33秒）。https://github.com/ishibashm/portfolio/actions/runs/45277500320
-  - 18a97087: #1911（`fix/home-map-gap`）と同じ `TodayOverview.tsx` を触らないよう、トークンだけの変更を戻した。この画面はもともと `dark:` の変数が付いている。check は再実行中。
+  - 18a97087: run 45280338196 成功（07:30:31–07:47:05 JST、16分34秒）。#1911 と同じファイルを外したあとの check。https://github.com/ishibashm/portfolio/actions/runs/45280338196
 - 他の枝: #1911 のファイル（`src/components/home/TodayOverview.tsx`、`__tests__/nationalWeather.test.tsx`）は最終的にこの枝の差分に含めていない。GlobalSidebar も変更していない。
 - 本番の設定・DB は変更していない。マージは本人の承認待ち。
