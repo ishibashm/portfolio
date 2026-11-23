@@ -71,7 +71,7 @@ describe("PR-B: 検索意図を先頭に置くメタデータ", () => {
       title: `${todayMetadata.title} | Cloud Palette`,
     });
     expect(dashboardMetadata.title).toBe(
-      "生年月日で今日の方位・時間帯を確認｜目的地と真太陽時",
+      "今日の方位と時間｜目的地と出発地の真太陽時で確認",
     );
     expect(dashboardMetadata.openGraph).toMatchObject({
       title: `${dashboardMetadata.title} | Cloud Palette`,
