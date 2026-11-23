@@ -38,10 +38,10 @@ export async function generateMetadata({
 const JUDGMENT_CLASS: Record<FortuneJudgment, string> = {
   吉: "text-emerald-800",
   凶: "text-red-800",
-  平: "text-stone-700",
+  平: "text-ink",
   弱: "text-amber-800",
-  未確認: "text-stone-500",
-  情報: "text-stone-800",
+  未確認: "text-ink-muted",
+  情報: "text-ink",
 };
 
 export default async function FortuneComparePage({
@@ -53,7 +53,7 @@ export default async function FortuneComparePage({
   const compared = fortuneCompareFromQuery(sp);
   const fields = compared.fields;
   return (
-    <main className="wg-page min-h-screen px-4 py-10 text-slate-900">
+    <main className="wg-page min-h-screen px-4 py-10 text-ink">
       <article className="mx-auto max-w-[1700px] space-y-8">
         <header className="max-w-[70ch] space-y-3">
           <p className="text-sm">
@@ -79,7 +79,7 @@ export default async function FortuneComparePage({
             <label className="block text-sm">
               生年月日
               <input
-                className="mt-1 w-full rounded border border-stone-300 bg-white px-2 py-1"
+                className="mt-1 w-full rounded border border-theme-border bg-theme-surface px-2 py-1"
                 type="date"
                 name="birthDate"
                 min="1900-01-01"
@@ -90,7 +90,7 @@ export default async function FortuneComparePage({
             <label className="block text-sm">
               出生時刻（任意・日本時間）
               <input
-                className="mt-1 w-full rounded border border-stone-300 bg-white px-2 py-1"
+                className="mt-1 w-full rounded border border-theme-border bg-theme-surface px-2 py-1"
                 type="time"
                 name="birthTime"
                 defaultValue={fields.birthTime}
@@ -99,7 +99,7 @@ export default async function FortuneComparePage({
             <label className="block text-sm">
               出発地の経度（任意。122〜154）
               <input
-                className="mt-1 w-full rounded border border-stone-300 bg-white px-2 py-1"
+                className="mt-1 w-full rounded border border-theme-border bg-theme-surface px-2 py-1"
                 type="number"
                 name="lon"
                 min={122}
@@ -110,7 +110,7 @@ export default async function FortuneComparePage({
               />
             </label>
           </div>
-          <p className="max-w-[70ch] text-sm text-stone-600">
+          <p className="max-w-[70ch] text-sm text-ink-muted">
             九星の方位には経度が要ります。空欄のときは未確認になり、ほかの都市の経度では埋めません。方位が空欄のときは、その日付の暦注だけを出します。
           </p>
           <div className="grid gap-3 md:grid-cols-2">
@@ -119,14 +119,14 @@ export default async function FortuneComparePage({
               return (
                 <fieldset
                   key={n}
-                  className="rounded border border-stone-200 p-3"
+                  className="rounded border border-theme-border p-3"
                 >
                   <legend className="px-1 text-sm font-bold">{n}件目</legend>
                   <div className="mt-2 grid grid-cols-2 gap-2">
                     <label className="block text-sm">
                       日付
                       <input
-                        className="mt-1 w-full rounded border border-stone-300 bg-white px-2 py-1"
+                        className="mt-1 w-full rounded border border-theme-border bg-theme-surface px-2 py-1"
                         type="date"
                         name={`c${n}date`}
                         min="1900-01-01"
@@ -137,7 +137,7 @@ export default async function FortuneComparePage({
                     <label className="block text-sm">
                       方位
                       <select
-                        className="mt-1 w-full rounded border border-stone-300 bg-white px-2 py-1"
+                        className="mt-1 w-full rounded border border-theme-border bg-theme-surface px-2 py-1"
                         name={`c${n}dir`}
                         defaultValue={candidate.direction}
                       >
@@ -178,7 +178,7 @@ export default async function FortuneComparePage({
                     ? `・${candidate.directionLabel}`
                     : "・方位なし"}
                 </h2>
-                <p className="max-w-[70ch] text-sm text-stone-600">
+                <p className="max-w-[70ch] text-sm text-ink-muted">
                   {compared.result.birth.honmeiStar
                     ? `本命星は${compared.result.birth.honmeiStar}。`
                     : null}
@@ -190,7 +190,7 @@ export default async function FortuneComparePage({
                       {candidate.date}の観点
                     </caption>
                     <thead>
-                      <tr className="border-b border-stone-300 text-left">
+                      <tr className="border-b border-theme-border text-left">
                         <th className="py-2 pr-3">観点</th>
                         <th className="py-2 pr-3">値</th>
                         <th className="py-2 pr-3">判定</th>
@@ -202,7 +202,7 @@ export default async function FortuneComparePage({
                       {candidate.perspectives.map((item) => (
                         <tr
                           key={item.id}
-                          className="border-b border-stone-200 align-top"
+                          className="border-b border-theme-border align-top"
                         >
                           <th className="py-2 pr-3 text-left font-normal">
                             {item.name}
@@ -225,7 +225,7 @@ export default async function FortuneComparePage({
               </section>
             ))
           : null}
-        <p className="max-w-[70ch] text-sm text-stone-600">
+        <p className="max-w-[70ch] text-sm text-ink-muted">
           {FORTUNE_COMPARE_DISCLAIMER}
           クエリ付きのURLは検索対象にしません。入力した生年月日・時刻・経度・日付は、このページの表示以外には保存しません。
         </p>

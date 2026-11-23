@@ -32,18 +32,18 @@ export const metadata: Metadata = {
 
 export default function AppraisalPage() {
   return (
-    <main className="min-h-screen bg-gradient-to-br from-stone-50 via-stone-50 to-blue-50/40 p-4 text-stone-800 md:p-8">
+    <main className="min-h-screen bg-background p-4 text-ink md:p-8">
       <div className="mx-auto max-w-[1700px] space-y-6">
         <header>
-          <h1 className="font-serif text-2xl font-bold text-stone-900">
+          <h1 className="font-serif text-2xl font-bold text-ink">
             この物件は高いか安いか
           </h1>
-          <p className="mt-2 max-w-[70ch] text-sm leading-relaxed text-stone-600">
+          <p className="mt-2 max-w-[70ch] text-sm leading-relaxed text-ink-muted">
             検討中のマンションを入力すると、
             <strong>近所で実際に成立した成約価格</strong>
             の分布のどこにあるかを出します。ポータルに出ている相場は売主の希望額を並べたもので、成立した額ではありません。
           </p>
-          <p className="mt-2 max-w-[70ch] text-xs leading-relaxed text-stone-500">
+          <p className="mt-2 max-w-[70ch] text-xs leading-relaxed text-ink-muted">
             入力した内容は保存していません。この画面を閉じると残りません。方位や日取りの道具の順番は
             <Link href="/guide" className="underline hover:text-rose-600">
               使い方ガイド

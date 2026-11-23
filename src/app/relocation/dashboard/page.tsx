@@ -33,7 +33,7 @@ const SolarTimeClock = dynamic(
 
 function ClockPlaceholder() {
   return (
-    <div className="w-full h-80 flex items-center justify-center bg-stone-50/80 rounded-2xl border border-slate-200">
+    <div className="w-full h-80 flex items-center justify-center bg-theme-subtle/80 rounded-2xl border border-theme-border">
       <div className="flex items-center gap-2 text-slate-500 font-sans text-sm">
         <div className="w-4 h-4 border-2 border-rose-500 border-t-transparent rounded-full animate-spin" />
         <span>読み込んでいます…</span>
@@ -78,15 +78,15 @@ const SECTIONS: { title: string; body: string }[] = [
 
 export default function DashboardPage() {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-rose-50/80 via-stone-50 to-amber-50/50 p-4 font-sans text-stone-800 md:p-8">
+    <div className="min-h-screen bg-background text-ink p-4 font-sans text-ink md:p-8">
       <div className="mx-auto max-w-[1700px] space-y-5">
         <header>
           <h1 className="text-xl font-bold">今日の方位と時刻を確かめる</h1>
-          <p className="mt-2 text-sm leading-relaxed text-stone-600">
+          <p className="mt-2 text-sm leading-relaxed text-ink-muted">
             出発地から見た8方位の吉凶と、動き出す時間帯を確かめます。本命星別の早見表は
             <Link
               href="/houi/today"
-              className="inline-flex min-h-11 items-center px-1 text-indigo-700 underline"
+              className="inline-flex min-h-11 items-center px-1 text-accent underline"
             >
               今日の吉方位と時間
             </Link>
@@ -101,34 +101,34 @@ export default function DashboardPage() {
             埋め込まれていた頃からの作り）。ここでは器を重ねない。 */}
         <SolarTimeClock />
 
-        <details className="rounded-2xl border border-stone-200 bg-white/80 px-4">
-          <summary className="min-h-11 cursor-pointer py-3 text-sm font-bold text-stone-700">
+        <details className="rounded-2xl border border-theme-border bg-theme-surface px-4">
+          <summary className="min-h-11 cursor-pointer py-3 text-sm font-bold text-ink">
             使い方・計算の基準を見る
           </summary>
-          <p className="mb-3 text-sm leading-relaxed text-stone-600">
+          <p className="mb-3 text-sm leading-relaxed text-ink-muted">
             年盤・月盤・日盤は日本時間の日付で決まります。約2時間ごとの時間帯（刻）だけ、出発地と太陽の動きに合わせた時刻（真太陽時）で区切ります。方位と時間帯は別の判定です。効果を保証するものではありません。
           </p>
-          <p className="text-sm leading-relaxed text-stone-600">
+          <p className="text-sm leading-relaxed text-ink-muted">
             日ごとの一覧は
             <Link
               href="/relocation/timing"
-              className="inline-flex min-h-11 items-center px-1 text-indigo-700 underline"
+              className="inline-flex min-h-11 items-center px-1 text-accent underline"
             >
               時期の分析
             </Link>
             、 暦から日を選ぶには
             <Link
               href="/calendar"
-              className="inline-flex min-h-11 items-center px-1 text-indigo-700 underline"
+              className="inline-flex min-h-11 items-center px-1 text-accent underline"
             >
               日取りのカレンダー
             </Link>
             へ。
           </p>
-          <dl className="mt-2 grid grid-cols-1 gap-x-6 gap-y-2 text-xs text-stone-600 md:grid-cols-2 xl:grid-cols-3">
+          <dl className="mt-2 grid grid-cols-1 gap-x-6 gap-y-2 text-xs text-ink-muted md:grid-cols-2 xl:grid-cols-3">
             {SECTIONS.map((s) => (
               <div key={s.title}>
-                <dt className="font-bold text-stone-700">{s.title}</dt>
+                <dt className="font-bold text-ink">{s.title}</dt>
                 <dd className="leading-relaxed">{s.body}</dd>
               </div>
             ))}

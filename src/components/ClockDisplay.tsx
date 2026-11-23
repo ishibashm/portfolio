@@ -105,7 +105,7 @@ export function ClockDisplay({
     if (r.startsWith("友引")) return "text-blue-700 font-bold";
     if (r.startsWith("仏滅") || r.startsWith("赤口"))
       return "text-red-600 font-bold";
-    return "text-stone-600";
+    return "text-ink-muted";
   };
 
   return (
@@ -114,7 +114,7 @@ export function ClockDisplay({
       置く 2 つの塊なので、広げると間が開くだけになる。そうならないよう
       justify-between をやめ、中央に寄せて間隔で並べる。
     */
-    <div className="flex flex-col md:flex-row items-center justify-center gap-10 w-full border border-stone-200 bg-white/70 p-6 rounded-sm md:backdrop-blur-sm relative">
+    <div className="flex flex-col md:flex-row items-center justify-center gap-10 w-full border border-theme-border bg-theme-surface/70 p-6 rounded-sm md:backdrop-blur-sm relative">
       <div className="absolute top-0 left-0 w-2 h-2 border-t border-l border-emerald-500"></div>
       <div className="absolute bottom-0 right-0 w-2 h-2 border-b border-r border-emerald-500"></div>
 
@@ -123,26 +123,26 @@ export function ClockDisplay({
         {/* 以前は "Matrix Phase (地磁気と太陽角による空間位相)" と書いて
             いたが、出しているのは真太陽時で切った 2 時間ごとの刻の十二支
             そのもの（getKimonHour）。地磁気は見ていない。実装のとおりに書く。 */}
-        <div className="text-xs tracking-[0.2em] text-stone-600 mb-1">
+        <div className="text-xs tracking-[0.2em] text-ink-muted mb-1">
           いまの刻
-          <span className="hidden sm:block text-xs tracking-normal text-stone-600 mt-1 font-sans whitespace-nowrap">
+          <span className="hidden sm:block text-xs tracking-normal text-ink-muted mt-1 font-sans whitespace-nowrap">
             （真太陽時で切る 2 時間ごとの十二支）
           </span>
         </div>
         <div className="text-4xl sm:text-5xl font-serif font-thin tracking-widest text-emerald-700 text-glow">
           {kimon?.japanese || "--"}
         </div>
-        <div className="text-xs md:text-sm tracking-widest text-stone-600 font-serif">
+        <div className="text-xs md:text-sm tracking-widest text-ink-muted font-serif">
           {/* 刻（時間）単位の天中殺は使わない（2026-11-02 本人決定） */}
           {kimon ? "の刻" : "--"}
         </div>
       </div>
 
       {/* 2. Lunar Phase & Rokuyo */}
-      <div className="text-center space-y-1 border-x border-stone-200 px-4 w-1/3">
+      <div className="text-center space-y-1 border-x border-theme-border px-4 w-1/3">
         <div className="text-xs tracking-[0.2em] text-purple-700 mb-1">
           六曜・旧暦
-          <span className="hidden sm:block text-xs tracking-normal text-stone-600 mt-1 font-sans whitespace-nowrap">
+          <span className="hidden sm:block text-xs tracking-normal text-ink-muted mt-1 font-sans whitespace-nowrap">
             （日本時間の暦日で引く）
           </span>
         </div>
@@ -151,7 +151,7 @@ export function ClockDisplay({
         >
           {rokuyoName.split(" ")[0]}
         </div>
-        <div className="text-xs tracking-widest text-stone-600 font-mono mt-2">
+        <div className="text-xs tracking-widest text-ink-muted font-mono mt-2">
           {lunarDateString} / {yueXiang}
         </div>
       </div>
@@ -167,15 +167,15 @@ export function ClockDisplay({
           </div>
         </div>
         <div className="text-right">
-          <div className="text-xs tracking-widest text-stone-600">
+          <div className="text-xs tracking-widest text-ink-muted">
             日本標準時
           </div>
-          <div className="text-lg font-mono font-light text-stone-600">
+          <div className="text-lg font-mono font-light text-ink-muted">
             {formatTime(now)}
           </div>
         </div>
         {/* 真太陽時 ＝ 日本標準時 ＋ 均時差 ＋ 経度差。内訳を分で出す。 */}
-        <div className="text-xs font-mono text-stone-600 gap-2 flex justify-end">
+        <div className="text-xs font-mono text-ink-muted gap-2 flex justify-end">
           <span>均時差 {eot.toFixed(1)} 分</span>
           <span>経度差 {longOffset.toFixed(1)} 分</span>
         </div>

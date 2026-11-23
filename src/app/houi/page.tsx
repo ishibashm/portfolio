@@ -135,11 +135,11 @@ export default function Page() {
 
         <section
           aria-labelledby="houi-intro-heading"
-          className="mt-6 rounded-2xl border border-slate-300 dark:border-theme-border bg-theme-surface p-5"
+          className="mt-6 rounded-2xl border border-theme-border dark:border-theme-border bg-theme-surface p-5"
         >
           <h2
             id="houi-intro-heading"
-            className="text-lg font-bold font-serif border-b border-slate-300 dark:border-theme-border pb-2"
+            className="text-lg font-bold font-serif border-b border-theme-border dark:border-theme-border pb-2"
           >
             吉方位の調べ方（先に結論）
           </h2>
@@ -282,7 +282,7 @@ export default function Page() {
         <HonmeiStarLinks year={year} />
 
         <section id="honmei-lookup" className="mt-6 scroll-mt-6">
-          <h2 className="text-xl font-bold font-serif border-b border-slate-300 dark:border-theme-border pb-2">
+          <h2 className="text-xl font-bold font-serif border-b border-theme-border dark:border-theme-border pb-2">
             生まれ年から本命星を調べる
           </h2>
           <p className="mt-3 text-xs leading-relaxed text-ink-muted">
@@ -294,7 +294,7 @@ export default function Page() {
             {STARS.map((s) => (
               <div
                 key={s}
-                className="rounded-2xl border border-slate-300 dark:border-theme-border bg-theme-surface p-4"
+                className="rounded-2xl border border-theme-border dark:border-theme-border bg-theme-surface p-4"
               >
                 <div className="flex flex-wrap items-baseline gap-3">
                   <span className="text-base font-bold font-serif">
@@ -343,7 +343,7 @@ export default function Page() {
             市区町村ページ（1,022 頁）へのサイト内の入口が実質ここだけ
             だったので、読む順序（吉方位を引く → その方位に何があるか）
             どおりの位置に上げる。註は読み終えた人が見ればよい。 */}
-        <section className="mt-10 rounded-2xl border border-slate-300 dark:border-theme-border bg-theme-surface p-5">
+        <section className="mt-10 rounded-2xl border border-theme-border dark:border-theme-border bg-theme-surface p-5">
           <h2 className="text-base font-bold font-serif">
             吉方位が分かったら、その方位に何があるか
           </h2>
@@ -381,7 +381,7 @@ export default function Page() {
                   prefetch={false}
                   key={code}
                   href={`/houi/pref/${code}`}
-                  className="inline-flex px-4 py-2.5 rounded-full border border-slate-400 dark:border-theme-border bg-theme-surface hover:bg-slate-50 dark:hover:bg-theme-subtle text-ink font-bold text-xs transition-colors"
+                  className="inline-flex px-4 py-2.5 rounded-full border border-slate-400 dark:border-theme-border bg-theme-surface hover:bg-theme-subtle dark:hover:bg-theme-subtle text-ink font-bold text-xs transition-colors"
                 >
                   {name}
                 </Link>
@@ -394,7 +394,7 @@ export default function Page() {
           <AdBanner />
         </div>
 
-        <details className="mt-8 rounded-2xl border border-slate-300 dark:border-theme-border bg-theme-surface p-5">
+        <details className="mt-8 rounded-2xl border border-theme-border dark:border-theme-border bg-theme-surface p-5">
           <summary className="cursor-pointer text-sm font-bold">
             算出方法が2種類あります
           </summary>
@@ -421,7 +421,7 @@ export default function Page() {
           として案内する。引き方がそろっているので、続けて読める並びは残す。
         */}
         <section className="mt-10">
-          <h2 className="text-xl font-bold font-serif border-b border-slate-300 dark:border-theme-border pb-2">
+          <h2 className="text-xl font-bold font-serif border-b border-theme-border dark:border-theme-border pb-2">
             風水（八宅）で見る 8 方位
           </h2>
           <p className="text-xs text-ink-muted mt-3 leading-relaxed">
@@ -442,21 +442,21 @@ export default function Page() {
           全国向けで偏角を持てないので、測り方のずれは羅盤で見せる。
         */}
         <section className="mt-10">
-          <h2 className="border-b border-slate-300 dark:border-theme-border pb-2 font-serif text-xl font-bold">
+          <h2 className="border-b border-theme-border dark:border-theme-border pb-2 font-serif text-xl font-bold">
             方位は真北で測ります（方位磁針とのずれ）
           </h2>
           <MagneticCompass />
         </section>
 
         <section className="mt-10">
-          <h2 className="text-xl font-bold font-serif border-b border-slate-300 dark:border-theme-border pb-2">
+          <h2 className="text-xl font-bold font-serif border-b border-theme-border dark:border-theme-border pb-2">
             年ごとの方位一覧
           </h2>
           <div className="mt-4 grid gap-4 sm:grid-cols-3">
             {years.map((y) => (
               <div
                 key={y}
-                className="rounded-2xl border border-slate-300 dark:border-theme-border bg-theme-surface p-4"
+                className="rounded-2xl border border-theme-border dark:border-theme-border bg-theme-surface p-4"
               >
                 <h3 className="font-bold font-serif text-sm mb-2">
                   <Link
@@ -485,7 +485,7 @@ export default function Page() {
           </div>
         </section>
 
-        <details className="mt-10 rounded-2xl border border-slate-300 dark:border-theme-border bg-theme-surface p-5">
+        <details className="mt-10 rounded-2xl border border-theme-border dark:border-theme-border bg-theme-surface p-5">
           <summary className="cursor-pointer text-sm font-bold">
             用語について
           </summary>

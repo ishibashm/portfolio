@@ -55,7 +55,7 @@ function HourTable({
             return (
               <tr
                 key={hour.branch}
-                className={`border-t border-slate-200 dark:border-theme-border align-top ${
+                className={`border-t border-theme-border dark:border-theme-border align-top ${
                   current ? "bg-amber-50 dark:bg-theme-gold-soft" : ""
                 }`}
               >
@@ -135,7 +135,7 @@ export function TodayHoursCard({
   return (
     <section
       aria-labelledby="today-hours-heading"
-      className="w-full max-w-[1700px] space-y-3 rounded-3xl border border-slate-300 dark:border-theme-border bg-white/95 dark:bg-theme-surface p-4 text-slate-900 dark:text-ink shadow-lg shadow-slate-200/50 dark:shadow-black/20 md:space-y-4 md:p-8"
+      className="w-full max-w-[1700px] space-y-3 rounded-3xl border border-theme-border dark:border-theme-border bg-theme-surface/95 dark:bg-theme-surface p-4 text-ink dark:text-ink shadow-lg shadow-slate-200/50 dark:shadow-black/20 md:space-y-4 md:p-8"
     >
       <div>
         <h2 id="today-hours-heading" className="text-xl font-bold">
@@ -166,7 +166,7 @@ export function TodayHoursCard({
                 </li>
               ))
             ) : (
-              <li className="text-slate-700 dark:text-ink">なし</li>
+              <li className="text-ink dark:text-ink">なし</li>
             )}
           </ul>
 
@@ -213,7 +213,7 @@ export function TodayHoursCard({
                 <div
                   key={direction}
                   aria-hidden="true"
-                  className={`rounded-md border px-0.5 py-2 text-xs ${bad ? "border-rose-400 dark:border-theme-border bg-rose-50 dark:bg-theme-bad-soft text-rose-900 dark:text-theme-bad" : lucky ? "border-emerald-400 dark:border-theme-border bg-emerald-50 dark:bg-theme-good-soft text-emerald-900 dark:text-theme-good" : direction === "CENTER" ? "border-amber-300 dark:border-theme-border bg-amber-50 dark:bg-theme-gold-soft" : "border-slate-200 dark:border-theme-border bg-white dark:bg-theme-surface"}`}
+                  className={`rounded-md border px-0.5 py-2 text-xs ${bad ? "border-rose-400 dark:border-theme-border bg-theme-gold-soft dark:bg-theme-bad-soft text-rose-900 dark:text-theme-bad" : lucky ? "border-emerald-400 dark:border-theme-border bg-emerald-50 dark:bg-theme-good-soft text-emerald-900 dark:text-theme-good" : direction === "CENTER" ? "border-amber-300 dark:border-theme-border bg-amber-50 dark:bg-theme-gold-soft" : "border-theme-border dark:border-theme-border bg-theme-surface dark:bg-theme-surface"}`}
                 >
                   <span className="block font-bold">
                     {direction === "CENTER" ? `${current.branch}の刻` : label}
@@ -252,7 +252,7 @@ export function TodayHoursCard({
                     <span className="flex flex-wrap items-center gap-1">
                       今の吉 <LuckyChips items={star.lucky} inline />
                     </span>
-                    <span className="text-slate-700 dark:text-ink">
+                    <span className="text-ink dark:text-ink">
                       追加で避けたい：
                       {list(additionalUnlucky(star.keyed, current.keyed))}
                     </span>

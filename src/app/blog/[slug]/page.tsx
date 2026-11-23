@@ -221,7 +221,7 @@ export default async function BlogPostPage({
               <AdBanner />
             </div>
 
-            <div className="mt-10 border-t border-slate-300 dark:border-theme-border pt-6">
+            <div className="mt-10 border-t border-theme-border dark:border-theme-border pt-6">
               <Link
                 href="/blog"
                 className="text-sm font-bold text-accent hover:underline"
@@ -239,7 +239,7 @@ export default async function BlogPostPage({
                 className="hidden lg:block"
               />
             ) : null}
-            <section className="rounded-2xl border border-slate-300 dark:border-theme-border bg-theme-surface p-5">
+            <section className="rounded-2xl border border-theme-border dark:border-theme-border bg-theme-surface p-5">
               <h2 className="font-serif text-sm font-bold">この記事のタグ</h2>
               <div className="mt-3 flex flex-wrap gap-2">
                 {post.tags.map((tag) => (
@@ -254,7 +254,7 @@ export default async function BlogPostPage({
             </section>
 
             {related.length > 0 && (
-              <section className="rounded-2xl border border-slate-300 dark:border-theme-border bg-theme-surface p-5">
+              <section className="rounded-2xl border border-theme-border dark:border-theme-border bg-theme-surface p-5">
                 <h2 className="font-serif text-sm font-bold">あわせて読む</h2>
                 <div className="mt-3 space-y-3">
                   {related.map((item) => (
@@ -278,7 +278,7 @@ export default async function BlogPostPage({
             {headings.length >= 2 && (
               <nav
                 aria-label="目次"
-                className="rounded-2xl border border-slate-300 dark:border-theme-border bg-theme-surface p-5"
+                className="rounded-2xl border border-theme-border dark:border-theme-border bg-theme-surface p-5"
               >
                 <h2 className="font-serif text-sm font-bold">目次</h2>
                 <ol className="mt-3 space-y-2.5 text-xs leading-5">

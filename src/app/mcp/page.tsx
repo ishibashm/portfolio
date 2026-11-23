@@ -88,7 +88,7 @@ export default async function McpGuidePage() {
 
   return (
     <main className="min-h-screen bg-background text-ink">
-      <article className="mx-auto max-w-[1700px] px-5 py-12 space-y-10">
+      <article className="mx-auto min-w-0 max-w-[1700px] px-5 py-12 space-y-10">
         <nav aria-label="パンくず" className="text-sm text-ink-muted">
           <Link href="/" className="hover:underline">
             ホーム
@@ -112,7 +112,7 @@ export default async function McpGuidePage() {
               <span className="text-xs font-bold text-ink-muted mr-2">
                 公開MCP URL
               </span>
-              <code className="font-mono font-semibold text-ink">
+              <code className="break-all font-mono font-semibold text-ink">
                 {MCP_ENDPOINT_URL}
               </code>
             </div>
@@ -221,12 +221,12 @@ export default async function McpGuidePage() {
             </p>
           </div>
 
-          <div className="grid gap-4 md:grid-cols-2">
-            <div className="rounded-xl border border-theme-border bg-theme-subtle p-4 space-y-2">
+          <div className="grid min-w-0 gap-4 md:grid-cols-2">
+            <div className="min-w-0 rounded-xl border border-theme-border bg-theme-subtle p-4 space-y-2">
               <h3 className="text-base font-bold text-ink">Claude</h3>
               <p className="text-sm leading-relaxed text-ink">
                 設定のコネクタ画面で「カスタムコネクタを追加」を選び、URL に{" "}
-                <code className="rounded bg-theme-surface px-1.5 py-0.5 font-mono text-xs">
+                <code className="break-all rounded bg-theme-surface px-1.5 py-0.5 font-mono text-xs">
                   {MCP_ENDPOINT_URL}
                 </code>{" "}
                 を入力します（Anthropic
@@ -234,52 +234,52 @@ export default async function McpGuidePage() {
               </p>
             </div>
 
-            <div className="rounded-xl border border-theme-border bg-theme-subtle p-4 space-y-2">
+            <div className="min-w-0 rounded-xl border border-theme-border bg-theme-subtle p-4 space-y-2">
               <h3 className="text-base font-bold text-ink">ChatGPT</h3>
               <p className="text-sm leading-relaxed text-ink">
                 開発者モードのカスタムMCPサーバー（コネクタ）追加画面で、URL に{" "}
-                <code className="rounded bg-theme-surface px-1.5 py-0.5 font-mono text-xs">
+                <code className="break-all rounded bg-theme-surface px-1.5 py-0.5 font-mono text-xs">
                   {MCP_ENDPOINT_URL}
                 </code>{" "}
                 を入れ、認証なしを選択して登録します。
               </p>
             </div>
 
-            <div className="rounded-xl border border-theme-border bg-theme-subtle p-4 space-y-2">
+            <div className="min-w-0 rounded-xl border border-theme-border bg-theme-subtle p-4 space-y-2">
               <h3 className="text-base font-bold text-ink">
                 Cursor などのエディタ
               </h3>
               <p className="text-sm leading-relaxed text-ink">
-                <code className="rounded bg-theme-surface px-1.5 py-0.5 font-mono text-xs">
+                <code className="break-all rounded bg-theme-surface px-1.5 py-0.5 font-mono text-xs">
                   mcp.json
                 </code>{" "}
                 に次の設定を追加します。
               </p>
-              <pre className="overflow-x-auto rounded-lg bg-theme-subtle p-3 text-xs text-ink font-mono">
+              <pre className="max-w-full min-w-0 overflow-x-auto rounded-lg bg-theme-subtle p-3 text-xs text-ink font-mono">
                 <code>{CURSOR_MCP_JSON_EXAMPLE}</code>
               </pre>
             </div>
 
-            <div className="rounded-xl border border-theme-border bg-theme-subtle p-4 space-y-2">
+            <div className="min-w-0 rounded-xl border border-theme-border bg-theme-subtle p-4 space-y-2">
               <h3 className="text-base font-bold text-ink">xAI API（Grok）</h3>
               <p className="text-sm leading-relaxed text-ink">
                 Remote MCP Tools の指定で{" "}
-                <code className="rounded bg-theme-surface px-1.5 py-0.5 font-mono text-xs">
+                <code className="break-all rounded bg-theme-surface px-1.5 py-0.5 font-mono text-xs">
                   server_url
                 </code>{" "}
                 に{" "}
-                <code className="rounded bg-theme-surface px-1.5 py-0.5 font-mono text-xs">
+                <code className="break-all rounded bg-theme-surface px-1.5 py-0.5 font-mono text-xs">
                   {MCP_ENDPOINT_URL}
                 </code>{" "}
                 を渡します。
               </p>
-              <pre className="overflow-x-auto rounded-lg bg-theme-subtle p-3 text-xs text-ink font-mono">
+              <pre className="max-w-full min-w-0 overflow-x-auto rounded-lg bg-theme-subtle p-3 text-xs text-ink font-mono">
                 <code>{XAI_API_EXAMPLE}</code>
               </pre>
             </div>
           </div>
 
-          <div className="rounded-xl border border-theme-border bg-theme-subtle p-4 space-y-2">
+          <div className="min-w-0 rounded-xl border border-theme-border bg-theme-subtle p-4 space-y-2">
             <h3 className="text-base font-bold text-ink">
               curl で直接確かめる例（tools/list）
             </h3>
@@ -288,7 +288,7 @@ export default async function McpGuidePage() {
               <code>Accept: application/json, text/event-stream</code> を付けて
               POST します。
             </p>
-            <pre className="overflow-x-auto rounded-lg bg-theme-subtle p-3 text-xs text-ink font-mono">
+            <pre className="max-w-full min-w-0 overflow-x-auto rounded-lg bg-theme-subtle p-3 text-xs text-ink font-mono">
               <code>{CURL_LIST_TOOLS_EXAMPLE}</code>
             </pre>
           </div>

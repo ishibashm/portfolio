@@ -75,30 +75,30 @@ export function EmailUrlChoices({
         return (
           <li
             key={url}
-            className="rounded-lg border border-stone-200 dark:border-theme-border bg-white dark:bg-theme-surface p-3"
+            className="rounded-lg border border-theme-border dark:border-theme-border bg-theme-surface dark:bg-theme-surface p-3"
           >
-            <p className="font-bold text-stone-900 dark:text-ink">
+            <p className="font-bold text-ink dark:text-ink">
               {item?.propertyName || "名称なし"}
             </p>
             {(money || room) && (
-              <p className="text-stone-800 dark:text-ink">
+              <p className="text-ink dark:text-ink">
                 {joined([money, room], " ／ ")}
               </p>
             )}
-            {access && <p className="text-stone-700 dark:text-ink">{access}</p>}
+            {access && <p className="text-ink dark:text-ink">{access}</p>}
             {item?.address && (
-              <p className="text-stone-700 dark:text-ink">{item.address}</p>
+              <p className="text-ink dark:text-ink">{item.address}</p>
             )}
             {initial && (
-              <p className="text-stone-600 dark:text-ink-muted">{initial}</p>
+              <p className="text-ink-muted dark:text-ink-muted">{initial}</p>
             )}
             <div className="mt-2 flex flex-wrap items-center justify-between gap-2">
-              <span className="text-stone-500 dark:text-ink-muted">
+              <span className="text-ink-muted dark:text-ink-muted">
                 {siteName(url)} の物件
               </span>
               <button
                 type="button"
-                className="min-h-[44px] rounded-lg border border-stone-300 dark:border-theme-border bg-white dark:bg-theme-surface px-3 py-1.5 font-bold text-stone-800 dark:text-ink hover:bg-stone-50 dark:hover:bg-theme-subtle"
+                className="min-h-[44px] rounded-lg border border-theme-border dark:border-theme-border bg-theme-surface dark:bg-theme-surface px-3 py-1.5 font-bold text-ink dark:text-ink hover:bg-theme-subtle dark:hover:bg-theme-subtle"
                 onClick={() => onSelect(url)}
               >
                 <span className="sr-only">{url}：</span>この物件を選ぶ

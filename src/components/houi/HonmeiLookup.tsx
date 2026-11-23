@@ -92,10 +92,10 @@ export function HonmeiLookup({ starNames, linkYear }: Props) {
   );
 
   return (
-    <div className="mt-5 rounded-2xl border border-slate-300 dark:border-theme-border bg-white/90 dark:bg-theme-surface p-5">
+    <div className="mt-5 rounded-2xl border border-theme-border dark:border-theme-border bg-theme-surface dark:bg-theme-surface p-5">
       <div className="flex flex-wrap items-end gap-3">
         <label className="block">
-          <span className="block text-xs font-bold text-slate-700 dark:text-ink">
+          <span className="block text-xs font-bold text-ink dark:text-ink">
             生年月日
           </span>
           <input
@@ -104,13 +104,13 @@ export function HonmeiLookup({ starNames, linkYear }: Props) {
             min={`${MIN_BIRTH_YEAR}-01-01`}
             max={`${MAX_BIRTH_YEAR}-12-31`}
             onChange={(e) => void applyDate(e.target.value)}
-            className="mt-1.5 min-h-11 w-44 rounded-lg border border-slate-300 dark:border-theme-border px-3 py-2 text-base sm:text-sm"
+            className="mt-1.5 min-h-11 w-44 rounded-lg border border-theme-border dark:border-theme-border px-3 py-2 text-base sm:text-sm"
           />
         </label>
         <button
           type="button"
           onClick={() => void loadFromProfile()}
-          className="min-h-11 rounded-full border border-slate-300 dark:border-theme-border bg-white dark:bg-theme-surface px-4 py-2 text-xs font-bold text-slate-700 dark:text-ink transition-colors hover:bg-slate-50 dark:hover:bg-theme-subtle"
+          className="min-h-11 rounded-full border border-theme-border dark:border-theme-border bg-theme-surface dark:bg-theme-surface px-4 py-2 text-xs font-bold text-ink dark:text-ink transition-colors hover:bg-theme-subtle dark:hover:bg-theme-subtle"
         >
           プロフィールから読み込む
         </button>
@@ -130,7 +130,7 @@ export function HonmeiLookup({ starNames, linkYear }: Props) {
 
       {result && (
         <section
-          className="mt-4 rounded-xl border border-slate-200 dark:border-theme-border p-4 text-sm"
+          className="mt-4 rounded-xl border border-theme-border dark:border-theme-border p-4 text-sm"
           aria-label="生年月日の干支"
         >
           <h3 className="font-bold">年月日の六十干支</h3>

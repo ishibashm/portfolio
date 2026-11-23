@@ -33,7 +33,7 @@ export function YouTubeFacade({
       <figcaption className="mt-2 text-sm text-slate-600 dark:text-ink-muted">
         ナレーション：VOICEVOX:玄野武宏
       </figcaption>
-      <p className="mt-2 text-sm text-slate-700 dark:text-ink">
+      <p className="mt-2 text-sm text-ink dark:text-ink">
         <a
           href={HOUI_SUMAI_CHANNEL.url}
           target="_blank"

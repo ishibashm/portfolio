@@ -80,9 +80,9 @@ function Section({
   children: React.ReactNode;
 }) {
   return (
-    <section className="rounded-3xl border border-gray-200 bg-white p-5 shadow-sm">
-      <h2 className="text-sm font-bold text-stone-800">{title}</h2>
-      <p className="mt-0.5 mb-4 text-xs leading-relaxed text-stone-600">
+    <section className="rounded-3xl border border-theme-border bg-theme-surface p-5 shadow-sm">
+      <h2 className="text-sm font-bold text-ink">{title}</h2>
+      <p className="mt-0.5 mb-4 text-xs leading-relaxed text-ink-muted">
         {subtitle}
       </p>
       {children}
@@ -107,7 +107,7 @@ function Distribution({
     <div className="space-y-1">
       {buckets.map((b) => (
         <div key={b.x0} className="flex items-center gap-2">
-          <span className="w-24 shrink-0 text-right font-mono text-[10px] text-stone-600">
+          <span className="w-24 shrink-0 text-right font-mono text-[10px] text-ink-muted">
             {format(b.x0)}
           </span>
           <div className="h-3.5 flex-1 overflow-hidden rounded-sm bg-stone-100">
@@ -116,7 +116,7 @@ function Distribution({
               style={{ width: `${(b.count / max) * 100}%` }}
             />
           </div>
-          <span className="w-20 shrink-0 text-right font-mono text-[10px] text-stone-600">
+          <span className="w-20 shrink-0 text-right font-mono text-[10px] text-ink-muted">
             {total > 0 ? `${((b.count / total) * 100).toFixed(1)}%` : "—"}
           </span>
         </div>
@@ -130,15 +130,14 @@ function TableWrap({ children }: { children: React.ReactNode }) {
   return <div className="overflow-x-auto">{children}</div>;
 }
 
-const TH =
-  "px-2 py-1.5 text-left font-semibold text-stone-700 whitespace-nowrap";
-const TD = "px-2 py-1.5 text-stone-700 whitespace-nowrap";
+const TH = "px-2 py-1.5 text-left font-semibold text-ink whitespace-nowrap";
+const TD = "px-2 py-1.5 text-ink whitespace-nowrap";
 const TD_NUM = `${TD} text-right font-mono`;
 
 export default function PurchaseAnalyticsPage() {
   if (!stats.generatedAt) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-rose-50/80 via-stone-50 to-amber-50/50 p-6 font-sans">
+      <div className="min-h-screen bg-background text-ink p-6 font-sans">
         <div className="mx-auto max-w-3xl rounded-3xl border border-amber-200 bg-amber-50 p-8 text-center">
           <h1 className="text-lg font-bold text-amber-900">
             購入の相場分析（準備中）
@@ -148,7 +147,7 @@ export default function PurchaseAnalyticsPage() {
           </p>
           <Link
             href="/relocation/market"
-            className="mt-4 inline-block rounded-full border border-amber-300 bg-white px-4 py-2 text-xs font-bold text-amber-900"
+            className="mt-4 inline-block rounded-full border border-amber-300 bg-theme-surface px-4 py-2 text-xs font-bold text-amber-900"
           >
             家賃相場の分析を見る
           </Link>
@@ -167,12 +166,12 @@ export default function PurchaseAnalyticsPage() {
   });
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-rose-50/80 via-stone-50 to-amber-50/50 p-4 font-sans text-stone-800 md:p-8">
+    <div className="min-h-screen bg-background text-ink p-4 font-sans text-ink md:p-8">
       {/* 幅は 1700px（CLAUDE.md 3 節）。表を並べる画面なので広く使う。 */}
       <div className="mx-auto max-w-[1700px] space-y-5">
-        <header className="rounded-3xl border border-gray-200 bg-white p-6 shadow-sm">
+        <header className="rounded-3xl border border-theme-border bg-theme-surface p-6 shadow-sm">
           <h1 className="text-xl font-bold">購入の相場を分析する</h1>
-          <p className="mt-1 max-w-4xl text-xs leading-relaxed text-stone-600">
+          <p className="mt-1 max-w-4xl text-xs leading-relaxed text-ink-muted">
             国土交通省の不動産情報ライブラリが公開している
             <strong>実際の成約価格</strong>
             を集計しています。売り出し価格（希望額）ではなく、実際に取引が成立した額です。
@@ -194,13 +193,13 @@ export default function PurchaseAnalyticsPage() {
           <div className="mt-4 flex flex-wrap gap-2">
             <Link
               href="/relocation/arbitrage"
-              className="rounded-full border border-indigo-200 bg-indigo-50 px-3 py-1.5 text-[11px] font-bold text-indigo-800 hover:bg-indigo-100"
+              className="rounded-full border border-indigo-200 bg-indigo-50 px-3 py-1.5 text-[11px] font-bold text-accent hover:bg-theme-accent-soft"
             >
               方位別の成約価格を見る（物件スキャナー）
             </Link>
             <Link
               href="/relocation/market"
-              className="rounded-full border border-gray-200 bg-stone-50 px-3 py-1.5 text-[11px] font-bold text-stone-700 hover:bg-stone-100"
+              className="rounded-full border border-theme-border bg-theme-subtle px-3 py-1.5 text-[11px] font-bold text-ink hover:bg-stone-100"
             >
               家賃の相場を見る
             </Link>
@@ -218,12 +217,12 @@ export default function PurchaseAnalyticsPage() {
             ].map((k) => (
               <div
                 key={k.label}
-                className="rounded-2xl border border-gray-200 bg-stone-50 p-3"
+                className="rounded-2xl border border-theme-border bg-theme-subtle p-3"
               >
-                <dt className="text-[10px] font-semibold tracking-wider text-stone-600">
+                <dt className="text-[10px] font-semibold tracking-wider text-ink-muted">
                   {k.label}
                 </dt>
-                <dd className="mt-1 font-mono text-lg font-bold text-stone-800">
+                <dd className="mt-1 font-mono text-lg font-bold text-ink">
                   {k.value}
                 </dd>
               </div>
@@ -238,7 +237,7 @@ export default function PurchaseAnalyticsPage() {
         >
           <TableWrap>
             <table className="w-full min-w-[820px] text-[11px]">
-              <thead className="border-b border-stone-200 bg-stone-50">
+              <thead className="border-b border-theme-border bg-theme-subtle">
                 <tr>
                   <th className={TH}>種類</th>
                   <th className={`${TH} text-right`}>件数</th>
@@ -284,7 +283,7 @@ export default function PurchaseAnalyticsPage() {
           <div className="grid gap-5 lg:grid-cols-2">
             <TableWrap>
               <table className="w-full min-w-[380px] text-[11px]">
-                <thead className="border-b border-stone-200 bg-stone-50">
+                <thead className="border-b border-theme-border bg-theme-subtle">
                   <tr>
                     <th className={TH}>内訳の傾向</th>
                     <th className={`${TH} text-right`}>件数</th>
@@ -304,7 +303,7 @@ export default function PurchaseAnalyticsPage() {
             </TableWrap>
 
             <div>
-              <p className="mb-2 text-xs font-semibold tracking-wider text-stone-600">
+              <p className="mb-2 text-xs font-semibold tracking-wider text-ink-muted">
                 建物比率の分布（0% = 全部が土地代、100% = 全部が建物代）
               </p>
               <Distribution
@@ -323,7 +322,7 @@ export default function PurchaseAnalyticsPage() {
           >
             <TableWrap>
               <table className="w-full text-[11px]">
-                <thead className="border-b border-stone-200 bg-stone-50">
+                <thead className="border-b border-theme-border bg-theme-subtle">
                   <tr>
                     <th className={TH}>築年数</th>
                     <th className={`${TH} text-right`}>件数</th>
@@ -349,7 +348,7 @@ export default function PurchaseAnalyticsPage() {
           >
             <TableWrap>
               <table className="w-full text-[11px]">
-                <thead className="border-b border-stone-200 bg-stone-50">
+                <thead className="border-b border-theme-border bg-theme-subtle">
                   <tr>
                     <th className={TH}>構造</th>
                     <th className={`${TH} text-right`}>件数</th>
@@ -386,7 +385,7 @@ export default function PurchaseAnalyticsPage() {
           title="都道府県別の相場と、地価公示との対比"
           subtitle="成約の㎡単価を、同じ県の地価公示（国が毎年出す標準地の価格）と並べています。件数の多い順。"
         >
-          <div className="mb-4 rounded-2xl border border-stone-200 bg-stone-50 p-3 text-[11px] leading-relaxed text-stone-700">
+          <div className="mb-4 rounded-2xl border border-theme-border bg-theme-subtle p-3 text-[11px] leading-relaxed text-ink">
             <strong>「公示比」は水準の比較ではありません。</strong>
             成約価格は建物込み、地価公示は更地の価格です。割った数字そのものに意味はありませんが、
             <strong>県をまたいだ相対の並び</strong>
@@ -394,7 +393,7 @@ export default function PurchaseAnalyticsPage() {
           </div>
           <TableWrap>
             <table className="w-full min-w-[720px] text-[11px]">
-              <thead className="border-b border-stone-200 bg-stone-50">
+              <thead className="border-b border-theme-border bg-theme-subtle">
                 <tr>
                   <th className={TH}>都道府県</th>
                   <th className={`${TH} text-right`}>成約件数</th>
@@ -431,7 +430,7 @@ export default function PurchaseAnalyticsPage() {
         >
           <TableWrap>
             <table className="w-full min-w-[420px] text-[11px]">
-              <thead className="border-b border-stone-200 bg-stone-50">
+              <thead className="border-b border-theme-border bg-theme-subtle">
                 <tr>
                   <th className={TH}>年</th>
                   <th className={`${TH} text-right`}>成約件数</th>
@@ -451,8 +450,8 @@ export default function PurchaseAnalyticsPage() {
           </TableWrap>
         </Section>
 
-        <nav className="rounded-3xl border border-gray-200 bg-white p-5 text-[11px] shadow-sm">
-          <p className="mb-2 font-bold text-stone-800">関連するページ</p>
+        <nav className="rounded-3xl border border-theme-border bg-theme-surface p-5 text-[11px] shadow-sm">
+          <p className="mb-2 font-bold text-ink">関連するページ</p>
           <ul className="flex flex-wrap gap-2">
             {[
               { href: "/relocation/market", label: "家賃相場を分析する" },
@@ -465,14 +464,14 @@ export default function PurchaseAnalyticsPage() {
               <li key={l.href}>
                 <Link
                   href={l.href}
-                  className="inline-block rounded-full border border-stone-300 bg-white px-3 py-1.5 font-semibold text-stone-700 transition hover:bg-stone-50"
+                  className="inline-block rounded-full border border-theme-border bg-theme-surface px-3 py-1.5 font-semibold text-ink transition hover:bg-theme-subtle"
                 >
                   {l.label}
                 </Link>
               </li>
             ))}
           </ul>
-          <p className="mt-3 leading-relaxed text-stone-600">
+          <p className="mt-3 leading-relaxed text-ink-muted">
             出典:
             国土交通省の不動産情報ライブラリ（成約価格・地価公示）。数字は毎週の集計で更新されます。
           </p>

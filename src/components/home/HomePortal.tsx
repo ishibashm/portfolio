@@ -87,7 +87,7 @@ export function DashboardDateInput({
         );
         setTimeOffsetDays(diffDays);
       }}
-      className="min-h-11 w-full min-w-0 rounded-lg border border-stone-300 bg-white px-3 text-stone-800 text-base focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600 cursor-pointer [color-scheme:light]"
+      className="min-h-11 w-full min-w-0 rounded-lg border border-theme-border bg-theme-surface px-3 text-ink text-base focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600 cursor-pointer [color-scheme:light]"
     />
   );
 }
@@ -149,16 +149,16 @@ function Card({
   children: React.ReactNode;
 }) {
   return (
-    <section className="bg-white border border-stone-200 rounded-xl shadow-sm flex flex-col overflow-hidden">
+    <section className="bg-theme-surface border border-theme-border rounded-xl shadow-sm flex flex-col overflow-hidden">
       <header className="flex items-center justify-between gap-2 px-3 py-2 border-b border-stone-100">
-        <h2 className="flex items-center gap-1.5 text-sm font-bold text-stone-700">
+        <h2 className="flex items-center gap-1.5 text-sm font-bold text-ink">
           <span className={`w-1.5 h-1.5 rounded-full ${accent}`} />
           {title}
         </h2>
         {onDetail && (
           <button
             onClick={onDetail}
-            className="inline-flex min-h-11 shrink-0 items-center px-1 text-sm text-indigo-700 hover:underline"
+            className="inline-flex min-h-11 shrink-0 items-center px-1 text-sm text-accent hover:underline"
           >
             {detailLabel} →
           </button>
@@ -259,14 +259,12 @@ export default function HomePortal({
   return (
     <div className="w-full flex flex-col gap-3 animate-fade-in">
       {/* 一番上の帯。「今どうなのか」を 1 行で答える */}
-      <div className="w-full bg-white border border-stone-200 rounded-xl px-4 py-3 flex flex-wrap items-center gap-x-6 gap-y-2 shadow-sm">
+      <div className="w-full bg-theme-surface border border-theme-border rounded-xl px-4 py-3 flex flex-wrap items-center gap-x-6 gap-y-2 shadow-sm">
         <div className="flex items-baseline gap-2">
-          <span className="text-xs text-stone-600">方位の比較で最上位</span>
+          <span className="text-xs text-ink-muted">方位の比較で最上位</span>
           {best?.rating ? (
             <>
-              <strong className="text-xl font-bold text-stone-700">
-                {best.ja}
-              </strong>
+              <strong className="text-xl font-bold text-ink">{best.ja}</strong>
               <span
                 className={`rounded px-2 py-1 text-sm font-bold ${best.rating.color}`}
               >
@@ -274,25 +272,25 @@ export default function HomePortal({
               </span>
             </>
           ) : (
-            <span className="text-xs text-stone-600">方位を計算中です</span>
+            <span className="text-xs text-ink-muted">方位を計算中です</span>
           )}
         </div>
         <div className="flex items-baseline gap-2">
-          <span className="text-xs text-stone-600">時間帯の判定</span>
+          <span className="text-xs text-ink-muted">時間帯の判定</span>
           {timing?.current ? (
             <strong
               className={`text-sm font-bold ${
-                timing.current.isOptimal ? "text-emerald-700" : "text-stone-600"
+                timing.current.isOptimal ? "text-emerald-700" : "text-ink-muted"
               }`}
             >
               {timing.current.isOptimal ? "動いてよい" : "ふつう"}
             </strong>
           ) : (
-            <span className="text-xs text-stone-600">—</span>
+            <span className="text-xs text-ink-muted">—</span>
           )}
         </div>
         {timing?.current && (
-          <p className="text-sm text-stone-700">
+          <p className="text-sm text-ink">
             この時間帯は
             <strong>{hhmm(timing.current.item.endStandard)}まで</strong>
             <span className="ml-1 text-xs">
@@ -302,13 +300,13 @@ export default function HomePortal({
         )}
         {timing?.next && (
           <div className="flex items-baseline gap-2">
-            <span className="text-[10px] text-stone-600">次に動ける</span>
+            <span className="text-[10px] text-ink-muted">次に動ける</span>
             <strong className="text-sm font-bold text-emerald-700">
               {hhmm(timing.next.item.startStandard)}
             </strong>
           </div>
         )}
-        <div className="ml-auto text-xs text-stone-600">
+        <div className="ml-auto text-xs text-ink-muted">
           基準：{evalJst.year}/{evalJst.month}/{evalJst.day} {hhmm(evalDate)}{" "}
           日本時間
           {profileIsSample ? "・見本" : ""}
@@ -332,10 +330,10 @@ export default function HomePortal({
                   key={d.dir}
                   className="flex items-center justify-between gap-1 text-sm border-b border-stone-100 py-1"
                 >
-                  <span className="font-bold text-stone-600">{d.ja}</span>
+                  <span className="font-bold text-ink-muted">{d.ja}</span>
                   <span
                     className={`text-xs px-1.5 py-0.5 rounded ${
-                      d.rating?.color ?? "text-stone-600"
+                      d.rating?.color ?? "text-ink-muted"
                     }`}
                   >
                     {d.status ? directionLabelShort(d.status) : "—"}
@@ -344,19 +342,19 @@ export default function HomePortal({
               ))}
             </ul>
           ) : (
-            <p className="text-xs text-stone-600 leading-relaxed">
+            <p className="text-xs text-ink-muted leading-relaxed">
               8 方位を計算中です。
             </p>
           )}
           {dateControls && (
-            <details className="mt-3 border-t border-stone-200">
-              <summary className="min-h-11 cursor-pointer content-center rounded-lg text-sm font-bold text-indigo-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600">
+            <details className="mt-3 border-t border-theme-border">
+              <summary className="min-h-11 cursor-pointer content-center rounded-lg text-sm font-bold text-accent focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600">
                 日付を変えて比べる
               </summary>
               <div className="flex flex-col gap-2 pb-1">
                 <label
                   htmlFor="dashboard-summary-date"
-                  className="text-sm text-stone-700"
+                  className="text-sm text-ink"
                 >
                   比較する日付（日本時間）
                 </label>
@@ -376,13 +374,13 @@ export default function HomePortal({
                       key={label}
                       type="button"
                       onClick={() => dateControls.setTimeOffsetDays(change)}
-                      className="min-h-11 rounded-lg border border-stone-300 px-3 text-sm text-stone-700 hover:bg-stone-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600"
+                      className="min-h-11 rounded-lg border border-theme-border px-3 text-sm text-ink hover:bg-theme-subtle focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600"
                     >
                       {label}
                     </button>
                   ))}
                 </div>
-                <p className="text-xs text-stone-600">
+                <p className="text-xs text-ink-muted">
                   上の方位と時間帯が変わります。場所や日付の自動送りは「日付・場所を変更」から開けます。
                 </p>
               </div>
@@ -398,7 +396,7 @@ export default function HomePortal({
         >
           {timing ? (
             <div className="flex flex-col gap-2">
-              <p className="text-xs text-stone-600">
+              <p className="text-xs text-ink-muted">
                 この日は{" "}
                 <strong className="text-emerald-700">
                   {timing.goCount} つ
@@ -406,9 +404,9 @@ export default function HomePortal({
                 の時間帯が「動いてよい」です。
               </p>
               {timing.current && (
-                <div className="text-xs bg-stone-50 border border-stone-200 rounded-lg p-2">
-                  <div className="text-[10px] text-stone-600">いま</div>
-                  <div className="font-bold text-stone-700">
+                <div className="text-xs bg-theme-subtle border border-theme-border rounded-lg p-2">
+                  <div className="text-[10px] text-ink-muted">いま</div>
+                  <div className="font-bold text-ink">
                     {hhmm(timing.current.item.startStandard)}–
                     {hhmm(timing.current.item.endStandard)}{" "}
                     {timing.current.item.japanese}の刻
@@ -425,13 +423,13 @@ export default function HomePortal({
                   </div>
                 </div>
               ) : (
-                <p className="text-xs text-stone-600">
+                <p className="text-xs text-ink-muted">
                   この日はこの先「動いてよい」時間帯がありません。
                 </p>
               )}
             </div>
           ) : (
-            <p className="text-xs text-stone-600">時間帯を計算中です。</p>
+            <p className="text-xs text-ink-muted">時間帯を計算中です。</p>
           )}
         </Card>
 
@@ -447,11 +445,11 @@ export default function HomePortal({
                   key={w.dir}
                   className="flex items-center justify-between text-xs"
                 >
-                  <span className="font-bold text-stone-600">{w.ja}</span>
-                  <span className="text-stone-600">
+                  <span className="font-bold text-ink-muted">{w.ja}</span>
+                  <span className="text-ink-muted">
                     <strong className="text-amber-700">{w.luckyDays}</strong> 日
                     {w.firstDate && (
-                      <span className="text-[10px] text-stone-600 ml-1.5">
+                      <span className="text-[10px] text-ink-muted ml-1.5">
                         最短 {w.firstDate.slice(5)}
                       </span>
                     )}
@@ -460,7 +458,7 @@ export default function HomePortal({
               ))}
             </ul>
           ) : (
-            <p className="text-xs text-stone-600 leading-relaxed">
+            <p className="text-xs text-ink-muted leading-relaxed">
               この 30 日に動ける方位がありません。期間を広げて探してください。
             </p>
           )}
@@ -473,21 +471,21 @@ export default function HomePortal({
         >
           <dl className="grid grid-cols-3 gap-2 text-center">
             <div>
-              <dt className="text-[10px] text-stone-600">地磁気 Kp</dt>
-              <dd className="text-sm font-bold text-stone-700">
+              <dt className="text-[10px] text-ink-muted">地磁気 Kp</dt>
+              <dd className="text-sm font-bold text-ink">
                 {kpIndex !== null ? kpIndex.toFixed(1) : "—"}
               </dd>
             </div>
             <div>
-              <dt className="text-[10px] text-stone-600">気圧</dt>
-              <dd className="text-sm font-bold text-stone-700">
+              <dt className="text-[10px] text-ink-muted">気圧</dt>
+              <dd className="text-sm font-bold text-ink">
                 {pressure ? `${pressure.current.toFixed(0)}` : "—"}
-                <span className="text-[10px] text-stone-600 ml-0.5">hPa</span>
+                <span className="text-[10px] text-ink-muted ml-0.5">hPa</span>
               </dd>
             </div>
             <div>
-              <dt className="text-[10px] text-stone-600">偏角</dt>
-              <dd className="text-sm font-bold text-stone-700">
+              <dt className="text-[10px] text-ink-muted">偏角</dt>
+              <dd className="text-sm font-bold text-ink">
                 {declination !== null ? `${declination.toFixed(1)}°` : "—"}
               </dd>
             </div>
@@ -499,7 +497,7 @@ export default function HomePortal({
             </p>
           )}
           {pressure && (
-            <p className="text-xs text-stone-600 mt-2 leading-relaxed">
+            <p className="text-xs text-ink-muted mt-2 leading-relaxed">
               気圧の出典：
               <a
                 href="https://www.jma.go.jp/bosai/map.html#contents=amedas"
@@ -523,19 +521,15 @@ export default function HomePortal({
           {honmeiStar ? (
             <dl className="flex flex-col gap-1 text-xs">
               <div className="flex justify-between">
-                <dt className="text-stone-600">本命星（暦）</dt>
-                <dd className="font-bold text-stone-700">
-                  {honmeiStar.classical}
-                </dd>
+                <dt className="text-ink-muted">本命星（暦）</dt>
+                <dd className="font-bold text-ink">{honmeiStar.classical}</dd>
               </div>
               <div className="flex justify-between">
-                <dt className="text-stone-600">本命星（物理）</dt>
-                <dd className="font-bold text-stone-700">
-                  {honmeiStar.physical}
-                </dd>
+                <dt className="text-ink-muted">本命星（物理）</dt>
+                <dd className="font-bold text-ink">{honmeiStar.physical}</dd>
               </div>
               <div className="flex justify-between">
-                <dt className="text-stone-600">天中殺</dt>
+                <dt className="text-ink-muted">天中殺</dt>
                 <dd className="font-bold text-red-700">
                   {personalVoidZodiac.length > 0
                     ? personalVoidZodiac.join("・")
@@ -544,7 +538,7 @@ export default function HomePortal({
               </div>
             </dl>
           ) : (
-            <p className="text-xs text-stone-600 leading-relaxed">
+            <p className="text-xs text-ink-muted leading-relaxed">
               生年月日と出発地を入れると、ここに本命星と天中殺が出ます。
             </p>
           )}
@@ -555,7 +549,7 @@ export default function HomePortal({
             <li>
               <Link
                 href="/relocation/arbitrage"
-                className="inline-flex min-h-[24px] items-center text-indigo-700 hover:underline"
+                className="inline-flex min-h-[24px] items-center text-accent hover:underline"
               >
                 {`${coreRouteLabel("/relocation/arbitrage")} →`}
               </Link>
@@ -569,7 +563,7 @@ export default function HomePortal({
               */}
               <Link
                 href="/calendar"
-                className="inline-flex min-h-[24px] items-center text-indigo-700 hover:underline"
+                className="inline-flex min-h-[24px] items-center text-accent hover:underline"
               >
                 引越しの日取りを選ぶ →
               </Link>
@@ -582,7 +576,7 @@ export default function HomePortal({
               */}
               <Link
                 href="/relocation/appraisal"
-                className="inline-flex min-h-[24px] items-center text-indigo-700 hover:underline"
+                className="inline-flex min-h-[24px] items-center text-accent hover:underline"
               >
                 検討中の物件を査定する →
               </Link>
@@ -593,7 +587,7 @@ export default function HomePortal({
             <li>
               <Link
                 href="/houi"
-                className="inline-flex min-h-[24px] items-center text-indigo-700 hover:underline"
+                className="inline-flex min-h-[24px] items-center text-accent hover:underline"
               >
                 方位の読みもの →
               </Link>
@@ -603,7 +597,7 @@ export default function HomePortal({
                   開いていた。本人の引越しの振り返りは /relocation/history */}
               <Link
                 href="/relocation/history"
-                className="inline-flex min-h-[24px] items-center text-indigo-700 hover:underline"
+                className="inline-flex min-h-[24px] items-center text-accent hover:underline"
               >
                 過去の引越しを振り返る →
               </Link>

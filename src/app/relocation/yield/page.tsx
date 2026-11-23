@@ -59,12 +59,10 @@ function Figure({
   note?: string;
 }) {
   return (
-    <div className="rounded-2xl border border-stone-200 bg-white p-4">
-      <p className="text-xs font-bold text-stone-500">{label}</p>
-      <p className="mt-1 font-mono text-2xl font-bold text-stone-900">
-        {value}
-      </p>
-      {note && <p className="mt-1 text-xs text-stone-500">{note}</p>}
+    <div className="rounded-2xl border border-theme-border bg-theme-surface p-4">
+      <p className="text-xs font-bold text-ink-muted">{label}</p>
+      <p className="mt-1 font-mono text-2xl font-bold text-ink">{value}</p>
+      {note && <p className="mt-1 text-xs text-ink-muted">{note}</p>}
     </div>
   );
 }
@@ -80,12 +78,12 @@ export default function YieldPage() {
   /* 集計が一度も走っていないときは、0% と偽らずそう言う。 */
   if (!d || stats.cells.length === 0) {
     return (
-      <main className="min-h-screen bg-stone-50 p-4 md:p-8">
+      <main className="min-h-screen bg-theme-subtle p-4 md:p-8">
         <div className="mx-auto max-w-[1700px]">
-          <h1 className="font-serif text-2xl font-bold text-stone-900">
+          <h1 className="font-serif text-2xl font-bold text-ink">
             表面利回りの地図
           </h1>
-          <p className="mt-3 text-sm text-stone-600">
+          <p className="mt-3 text-sm text-ink-muted">
             集計がまだ走っていません。準備ができ次第ここに出ます。
           </p>
         </div>
@@ -94,18 +92,18 @@ export default function YieldPage() {
   }
 
   return (
-    <main className="min-h-screen bg-gradient-to-br from-stone-50 via-stone-50 to-blue-50/40 p-4 text-stone-800 md:p-8">
+    <main className="min-h-screen bg-background p-4 text-ink md:p-8">
       <div className="mx-auto max-w-[1700px] space-y-6">
         <header>
-          <h1 className="font-serif text-2xl font-bold text-stone-900">
+          <h1 className="font-serif text-2xl font-bold text-ink">
             表面利回りの地図
           </h1>
-          <p className="mt-2 max-w-[70ch] text-sm leading-relaxed text-stone-600">
+          <p className="mt-2 max-w-[70ch] text-sm leading-relaxed text-ink-muted">
             <strong>分母は実際に成立した成約価格です。</strong>
             ポータルに出ている利回りは売主の希望価格を分母にしていることが多く、そのぶん高く見えます。ここでは国土交通省の成約価格（中古マンション）を分母に、自前で集めた賃貸の募集賃料を分子にしています。
           </p>
           {generated && (
-            <p className="mt-2 text-xs font-mono text-stone-500">
+            <p className="mt-2 text-xs font-mono text-ink-muted">
               {generated} 時点／対象年 {stats.source.yearFrom}〜
               {stats.source.yearTo}／賃貸{" "}
               {stats.source.rentalRows.toLocaleString()} 件・成約{" "}
@@ -145,11 +143,9 @@ export default function YieldPage() {
           </div>
 
           {/* 明細 */}
-          <div className="rounded-2xl border border-stone-200 bg-white p-4">
-            <h2 className="text-sm font-bold text-stone-800">
-              都道府県ごとの中央値
-            </h2>
-            <p className="mt-1 text-xs leading-relaxed text-stone-600">
+          <div className="rounded-2xl border border-theme-border bg-theme-surface p-4">
+            <h2 className="text-sm font-bold text-ink">都道府県ごとの中央値</h2>
+            <p className="mt-1 text-xs leading-relaxed text-ink-muted">
               高い順。
               <strong>
                 区画が {MIN_CELLS_FOR_PREFECTURE} 未満の県は「参考」
@@ -158,8 +154,8 @@ export default function YieldPage() {
             </p>
             <div className="mt-3 max-h-[520px] overflow-y-auto">
               <table className="w-full text-sm">
-                <thead className="sticky top-0 bg-white">
-                  <tr className="border-b border-stone-200 text-left text-[11px] text-stone-500">
+                <thead className="sticky top-0 bg-theme-surface">
+                  <tr className="border-b border-theme-border text-left text-[11px] text-ink-muted">
                     <th className="py-1.5 font-semibold">都道府県</th>
                     <th className="py-1.5 text-right font-semibold">利回り</th>
                     <th className="py-1.5 text-right font-semibold">区画</th>
@@ -176,14 +172,14 @@ export default function YieldPage() {
                         <td className="py-1.5">
                           <span className="flex items-center gap-2">
                             <span
-                              className="inline-block h-3 w-3 shrink-0 rounded-sm border border-stone-300"
+                              className="inline-block h-3 w-3 shrink-0 rounded-sm border border-theme-border"
                               style={{
                                 backgroundColor: yieldColor(p.medianYield),
                               }}
                             />
                             {p.prefecture}
                             {!reliable && (
-                              <span className="rounded bg-stone-100 px-1.5 py-0.5 text-[10px] font-bold text-stone-600">
+                              <span className="rounded bg-stone-100 px-1.5 py-0.5 text-[10px] font-bold text-ink-muted">
                                 参考
                               </span>
                             )}
@@ -192,7 +188,7 @@ export default function YieldPage() {
                         <td className="py-1.5 text-right font-mono tabular-nums">
                           {formatYield(p.medianYield)}
                         </td>
-                        <td className="py-1.5 text-right font-mono tabular-nums text-stone-500">
+                        <td className="py-1.5 text-right font-mono tabular-nums text-ink-muted">
                           {p.cells}
                         </td>
                       </tr>
@@ -206,14 +202,14 @@ export default function YieldPage() {
 
         {/* 断り書きは畳まない */}
         <section className="rounded-2xl border border-amber-200 bg-amber-50/60 p-4">
-          <h2 className="text-sm font-bold text-stone-800">
+          <h2 className="text-sm font-bold text-ink">
             この数字で分からないこと
           </h2>
           <ul className="mt-2 space-y-1.5">
             {YIELD_CAVEATS.map((caveat) => (
               <li
                 key={caveat}
-                className="max-w-[70ch] text-[12px] leading-relaxed text-stone-700"
+                className="max-w-[70ch] text-[12px] leading-relaxed text-ink"
               >
                 ・{caveat}
               </li>

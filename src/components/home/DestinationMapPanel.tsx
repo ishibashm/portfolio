@@ -54,7 +54,7 @@ const TacticalMagneticMap = dynamic(
 const LocationPickerInner = dynamic(() => import("../LocationPickerInner"), {
   ssr: false,
   loading: () => (
-    <div className="w-full h-full bg-stone-50 border border-stone-200 flex items-center justify-center font-mono text-xs text-stone-600">
+    <div className="w-full h-full bg-theme-subtle border border-theme-border flex items-center justify-center font-mono text-xs text-ink-muted">
       [ INITIALIZING MAP INTERFACE... ]
     </div>
   ),
@@ -225,26 +225,26 @@ export default function DestinationMapPanel({
     <div className="w-full flex flex-col items-center space-y-8 mt-8">
       <div className="w-full max-w-[1700px] mt-4 grid grid-cols-1 md:grid-cols-2 gap-4 items-start">
         {/* Spatial Targeting */}
-        <div className="bg-white border border-stone-200 rounded-xl p-4 flex flex-col shadow-lg relative overflow-hidden group">
+        <div className="bg-theme-surface border border-theme-border rounded-xl p-4 flex flex-col shadow-lg relative overflow-hidden group">
           <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/5 rounded-full blur-3xl -mr-10 -mt-10 pointer-events-none"></div>
-          <div className="flex items-center gap-2 mb-1 border-b border-stone-200 pb-2">
+          <div className="flex items-center gap-2 mb-1 border-b border-theme-border pb-2">
             <span className="text-emerald-700 animate-pulse">▶</span>
-            <h3 className="text-xs text-stone-600 font-bold uppercase tracking-widest">
+            <h3 className="text-xs text-ink-muted font-bold uppercase tracking-widest">
               目的地の方位を評価する
             </h3>
           </div>
-          <p className="text-xs text-stone-600 mb-4 mt-1">
+          <p className="text-xs text-ink-muted mb-4 mt-1">
             目的地の方位の吉凶を、行動の目的（引越し・療養など）に合わせて評価します。
           </p>
           <div className="flex flex-col gap-3 mt-auto">
             {/* 狭い画面では select が幅を取り、左の説明文が 1 文字ずつに
                       折り返される（375px の実測で幅 42px）。縦に積む。 */}
-            <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2 bg-white/70 p-2 border border-stone-200 rounded-xl">
+            <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2 bg-theme-surface/70 p-2 border border-theme-border rounded-xl">
               <div className="flex flex-col min-w-0">
-                <label className="text-[10px] font-bold text-stone-700">
+                <label className="text-[10px] font-bold text-ink">
                   行動の目的
                 </label>
-                <span className="text-xs text-stone-600">
+                <span className="text-xs text-ink-muted">
                   {ACTION_INTENT_EFFECTS[actionIntent]}
                 </span>
               </div>
@@ -269,15 +269,15 @@ export default function DestinationMapPanel({
               </select>
             </div>
 
-            <div className="flex flex-col gap-2 bg-white/70 p-2 border border-stone-200 rounded-xl mt-1">
+            <div className="flex flex-col gap-2 bg-theme-surface/70 p-2 border border-theme-border rounded-xl mt-1">
               <div className="flex flex-col">
                 <label
                   htmlFor="dashboard-date"
-                  className="text-sm font-bold text-stone-700"
+                  className="text-sm font-bold text-ink"
                 >
                   目標日
                 </label>
-                <span className="text-sm text-stone-600">
+                <span className="text-sm text-ink-muted">
                   上の方位と時間帯にも反映されます（日本時間）
                 </span>
               </div>
@@ -299,7 +299,7 @@ export default function DestinationMapPanel({
             </div>
 
             <div className="flex justify-between items-center mt-1 gap-2 flex-wrap">
-              <div className="flex flex-wrap items-center gap-2 bg-white/70 p-0.5 border border-stone-200 rounded-xl">
+              <div className="flex flex-wrap items-center gap-2 bg-theme-surface/70 p-0.5 border border-theme-border rounded-xl">
                 <button
                   onClick={() => setIsPlaying(!isPlaying)}
                   className={`text-sm inline-flex min-h-11 items-center justify-center px-3 py-0.5 rounded-xl transition-colors border ${isPlaying ? "bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-50 shadow-[0_0_8px_rgba(245,158,11,0.2)]" : "bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-50 shadow-[0_0_8px_rgba(59,130,246,0.2)]"}`}
@@ -311,7 +311,7 @@ export default function DestinationMapPanel({
                   value={playSpeedDays}
                   onChange={(e) => setPlaySpeedDays(Number(e.target.value))}
                   disabled={isPlaying}
-                  className="min-h-11 bg-transparent text-stone-600 text-sm font-mono focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600 cursor-pointer"
+                  className="min-h-11 bg-transparent text-ink-muted text-sm font-mono focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600 cursor-pointer"
                 >
                   <option value={1}>1 日ずつ</option>
                   <option value={7}>1 週ずつ</option>
@@ -322,7 +322,7 @@ export default function DestinationMapPanel({
               <div className="flex gap-2 flex-wrap items-center">
                 <button
                   onClick={() => setTimeOffsetDays((prev) => prev - 1)}
-                  className="text-sm inline-flex min-h-11 items-center justify-center px-3 py-0.5 rounded-xl transition-colors border bg-white/80 text-stone-600 border-stone-200 hover:border-emerald-200 hover:text-emerald-600"
+                  className="text-sm inline-flex min-h-11 items-center justify-center px-3 py-0.5 rounded-xl transition-colors border bg-theme-surface text-ink-muted border-theme-border hover:border-emerald-200 hover:text-emerald-600"
                   title="前の日"
                   aria-label="前の日"
                 >
@@ -330,7 +330,7 @@ export default function DestinationMapPanel({
                 </button>
                 <button
                   onClick={() => setTimeOffsetDays((prev) => prev + 1)}
-                  className="text-sm inline-flex min-h-11 items-center justify-center px-3 py-0.5 rounded-xl transition-colors border bg-white/80 text-stone-600 border-stone-200 hover:border-emerald-200 hover:text-emerald-600"
+                  className="text-sm inline-flex min-h-11 items-center justify-center px-3 py-0.5 rounded-xl transition-colors border bg-theme-surface text-ink-muted border-theme-border hover:border-emerald-200 hover:text-emerald-600"
                   title="次の日"
                   aria-label="次の日"
                 >
@@ -339,46 +339,46 @@ export default function DestinationMapPanel({
                 <div className="w-px h-3 bg-stone-100 my-auto mx-0.5"></div>
                 <button
                   onClick={() => setTimeOffsetDays(0)}
-                  className={`text-sm inline-flex min-h-11 items-center justify-center px-3 py-0.5 rounded-xl transition-colors border ${timeOffsetDays === 0 ? "bg-emerald-50 text-emerald-700 border-emerald-200" : "bg-white/80 text-stone-600 border-stone-200 hover:border-emerald-200 hover:text-emerald-600"}`}
+                  className={`text-sm inline-flex min-h-11 items-center justify-center px-3 py-0.5 rounded-xl transition-colors border ${timeOffsetDays === 0 ? "bg-emerald-50 text-emerald-700 border-emerald-200" : "bg-theme-surface text-ink-muted border-theme-border hover:border-emerald-200 hover:text-emerald-600"}`}
                 >
                   今日
                 </button>
                 <button
                   onClick={() => setTimeOffsetDays(30)}
-                  className={`text-sm inline-flex min-h-11 items-center justify-center px-3 py-0.5 rounded-xl transition-colors border ${timeOffsetDays === 30 ? "bg-emerald-50 text-emerald-700 border-emerald-200" : "bg-white/80 text-stone-600 border-stone-200 hover:border-emerald-200 hover:text-emerald-600"}`}
+                  className={`text-sm inline-flex min-h-11 items-center justify-center px-3 py-0.5 rounded-xl transition-colors border ${timeOffsetDays === 30 ? "bg-emerald-50 text-emerald-700 border-emerald-200" : "bg-theme-surface text-ink-muted border-theme-border hover:border-emerald-200 hover:text-emerald-600"}`}
                 >
                   30日後
                 </button>
                 <button
                   onClick={() => setTimeOffsetDays(90)}
-                  className={`text-sm inline-flex min-h-11 items-center justify-center px-3 py-0.5 rounded-xl transition-colors border ${timeOffsetDays === 90 ? "bg-emerald-50 text-emerald-700 border-emerald-200" : "bg-white/80 text-stone-600 border-stone-200 hover:border-emerald-200 hover:text-emerald-600"}`}
+                  className={`text-sm inline-flex min-h-11 items-center justify-center px-3 py-0.5 rounded-xl transition-colors border ${timeOffsetDays === 90 ? "bg-emerald-50 text-emerald-700 border-emerald-200" : "bg-theme-surface text-ink-muted border-theme-border hover:border-emerald-200 hover:text-emerald-600"}`}
                 >
                   90日後
                 </button>
                 <button
                   onClick={() => setTimeOffsetDays(180)}
-                  className={`text-sm inline-flex min-h-11 items-center justify-center px-3 py-0.5 rounded-xl transition-colors border ${timeOffsetDays === 180 ? "bg-emerald-50 text-emerald-700 border-emerald-200" : "bg-white/80 text-stone-600 border-stone-200 hover:border-emerald-200 hover:text-emerald-600"}`}
+                  className={`text-sm inline-flex min-h-11 items-center justify-center px-3 py-0.5 rounded-xl transition-colors border ${timeOffsetDays === 180 ? "bg-emerald-50 text-emerald-700 border-emerald-200" : "bg-theme-surface text-ink-muted border-theme-border hover:border-emerald-200 hover:text-emerald-600"}`}
                 >
                   180日後
                 </button>
                 <button
                   onClick={() => setTimeOffsetDays(365)}
-                  className={`text-sm inline-flex min-h-11 items-center justify-center px-3 py-0.5 rounded-xl transition-colors border ${timeOffsetDays === 365 ? "bg-emerald-50 text-emerald-700 border-emerald-200" : "bg-white/80 text-stone-600 border-stone-200 hover:border-emerald-200 hover:text-emerald-600"}`}
+                  className={`text-sm inline-flex min-h-11 items-center justify-center px-3 py-0.5 rounded-xl transition-colors border ${timeOffsetDays === 365 ? "bg-emerald-50 text-emerald-700 border-emerald-200" : "bg-theme-surface text-ink-muted border-theme-border hover:border-emerald-200 hover:text-emerald-600"}`}
                 >
                   365日後
                 </button>
               </div>
             </div>
 
-            <div className="flex flex-col gap-1.5 bg-white/70 p-2 border border-stone-200 rounded-xl mt-1">
+            <div className="flex flex-col gap-1.5 bg-theme-surface/70 p-2 border border-theme-border rounded-xl mt-1">
               <div className="flex items-center justify-between">
-                <label className="text-[10px] text-stone-600 uppercase tracking-widest flex items-center gap-1">
+                <label className="text-[10px] text-ink-muted uppercase tracking-widest flex items-center gap-1">
                   目的地座標{" "}
-                  <span className="text-[10px] text-stone-600">緯度/経度</span>
+                  <span className="text-[10px] text-ink-muted">緯度/経度</span>
                 </label>
                 <button
                   onClick={() => setShowMapPicker(!showMapPicker)}
-                  className={`inline-flex min-h-[24px] items-center justify-center text-[10px] px-1.5 py-0.5 rounded border transition-colors ${showMapPicker ? "bg-emerald-500/20 text-emerald-700 border-emerald-200" : "bg-stone-100 text-stone-600 border-stone-300 hover:bg-stone-200"}`}
+                  className={`inline-flex min-h-[24px] items-center justify-center text-[10px] px-1.5 py-0.5 rounded border transition-colors ${showMapPicker ? "bg-emerald-500/20 text-emerald-700 border-emerald-200" : "bg-stone-100 text-ink-muted border-theme-border hover:bg-stone-200"}`}
                 >
                   [ 地図検索 ]
                 </button>
@@ -417,7 +417,7 @@ export default function DestinationMapPanel({
                 />
               </div>
               <details className="w-full relative z-10">
-                <summary className="cursor-pointer text-xs text-stone-600 py-2">
+                <summary className="cursor-pointer text-xs text-ink-muted py-2">
                   座標を直接入れる
                 </summary>
                 {/* 座標や Google マップの URL を貼る口は残す。地図で拾った
@@ -427,7 +427,7 @@ export default function DestinationMapPanel({
                     type="text"
                     aria-label="座標または Google マップの URL"
                     placeholder="座標またはGoogleマップのURLを貼り付け... (例: 35.68, 139.76)"
-                    className="flex-1 bg-white border border-stone-300 focus:border-emerald-200 text-stone-600 text-xs px-2 py-1.5 rounded-xl outline-none transition-colors"
+                    className="flex-1 bg-theme-surface border border-theme-border focus:border-emerald-200 text-ink-muted text-xs px-2 py-1.5 rounded-xl outline-none transition-colors"
                     onChange={(e) => {
                       const val = e.target.value;
                       // Google Mapsの "@lat,lon" と、コピーした単なる "lat,lon" の両方に対応
@@ -453,7 +453,7 @@ export default function DestinationMapPanel({
                         e.target.value ? Number(e.target.value) : null,
                       )
                     }
-                    className="bg-white border border-stone-300 focus:border-emerald-200 text-stone-600 text-sm px-2 py-1 rounded-xl outline-none w-1/3 transition-colors font-mono"
+                    className="bg-theme-surface border border-theme-border focus:border-emerald-200 text-ink-muted text-sm px-2 py-1 rounded-xl outline-none w-1/3 transition-colors font-mono"
                   />
                   <input
                     type="number"
@@ -465,7 +465,7 @@ export default function DestinationMapPanel({
                         e.target.value ? Number(e.target.value) : null,
                       )
                     }
-                    className="bg-white border border-stone-300 focus:border-emerald-200 text-stone-600 text-sm px-2 py-1 rounded-xl outline-none w-1/3 transition-colors font-mono"
+                    className="bg-theme-surface border border-theme-border focus:border-emerald-200 text-ink-muted text-sm px-2 py-1 rounded-xl outline-none w-1/3 transition-colors font-mono"
                   />
                   <input
                     type="number"
@@ -477,7 +477,7 @@ export default function DestinationMapPanel({
                         e.target.value ? Number(e.target.value) : null,
                       )
                     }
-                    className="bg-white border border-stone-300 focus:border-emerald-200 text-stone-600 text-sm px-2 py-1 rounded-xl outline-none w-1/3 transition-colors font-mono"
+                    className="bg-theme-surface border border-theme-border focus:border-emerald-200 text-ink-muted text-sm px-2 py-1 rounded-xl outline-none w-1/3 transition-colors font-mono"
                   />
                 </div>
               </details>
@@ -494,7 +494,7 @@ export default function DestinationMapPanel({
                   いちばん近い自治体」なので、**「〜付近」と書いて断定
                   しない。**遠いときは距離を出す。 */}
               {targetLat !== null && targetLon !== null && (
-                <div className="relative z-10 mt-1 text-[10px] text-stone-600">
+                <div className="relative z-10 mt-1 text-[10px] text-ink-muted">
                   📍{" "}
                   {nearestPlaceLabel(
                     nearestMunicipality(targetLat, targetLon),
@@ -512,7 +512,7 @@ export default function DestinationMapPanel({
                         "座標をコピーしました: " + `${targetLat},${targetLon}`,
                       );
                     }}
-                    className="flex-1 bg-stone-100 text-stone-600 hover:bg-stone-200 hover:text-stone-900 border border-stone-300 text-[10px] uppercase tracking-widest px-2 py-1.5 rounded-xl transition-colors"
+                    className="flex-1 bg-stone-100 text-ink-muted hover:bg-stone-200 hover:text-ink border border-theme-border text-[10px] uppercase tracking-widest px-2 py-1.5 rounded-xl transition-colors"
                   >
                     📋 座標をコピー
                   </button>
@@ -530,7 +530,7 @@ export default function DestinationMapPanel({
                 <div
                   className={`mt-1 text-[10px] font-mono p-1 border rounded-xl flex items-center justify-between gap-2 ${
                     targetVectorStatus.startsWith("NOISE_VOID")
-                      ? "bg-stone-50 border-stone-200 text-stone-600 repeating-linear-gradient-45"
+                      ? "bg-theme-subtle border-theme-border text-ink-muted repeating-linear-gradient-45"
                       : targetVectorStatus.startsWith("NOISE")
                         ? "bg-red-500/10 border-red-200 text-red-600"
                         : targetVectorStatus === "OPTIMAL" ||
@@ -541,13 +541,13 @@ export default function DestinationMapPanel({
                 >
                   <div className="flex items-center gap-2">
                     <span
-                      className={`font-bold border px-1 ${useTrueNorth ? "text-emerald-700 border-emerald-200" : "text-stone-600 border-stone-300"}`}
+                      className={`font-bold border px-1 ${useTrueNorth ? "text-emerald-700 border-emerald-200" : "text-ink-muted border-theme-border"}`}
                       title="真北基準"
                     >
                       真北: {targetDirInfo.trueDirection}
                     </span>
                     <span
-                      className={`font-bold border px-1 ${!useTrueNorth ? "text-emerald-700 border-emerald-200" : "text-stone-600 border-stone-300"}`}
+                      className={`font-bold border px-1 ${!useTrueNorth ? "text-emerald-700 border-emerald-200" : "text-ink-muted border-theme-border"}`}
                       title="磁北基準"
                     >
                       磁北: {targetDirInfo.magneticDirection}
@@ -596,42 +596,42 @@ export default function DestinationMapPanel({
 
         {/* COMMANDER'S BRIEFING HUD (Moved up to side-by-side with targeting) */}
         <div className="flex flex-col gap-4">
-          <div className="bg-white border border-stone-200 p-4 rounded-xl shadow-lg relative overflow-hidden h-full flex flex-col">
+          <div className="bg-theme-surface border border-theme-border p-4 rounded-xl shadow-lg relative overflow-hidden h-full flex flex-col">
             <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500/5 rounded-full blur-3xl -mr-10 -mt-10 pointer-events-none"></div>
-            <div className="flex items-center gap-2 mb-1 border-b border-stone-200 pb-2">
-              <span className="text-stone-600 animate-pulse">◆</span>
-              <h3 className="text-xs text-stone-600 font-bold uppercase tracking-widest">
+            <div className="flex items-center gap-2 mb-1 border-b border-theme-border pb-2">
+              <span className="text-ink-muted animate-pulse">◆</span>
+              <h3 className="text-xs text-ink-muted font-bold uppercase tracking-widest">
                 ゾーン分類{" "}
-                <span className="text-[10px] text-stone-600 font-normal ml-1">
+                <span className="text-[10px] text-ink-muted font-normal ml-1">
                   / 空間分類
                 </span>
               </h3>
             </div>
-            <div className="flex flex-col gap-1.5 mb-2 bg-white/70 p-2.5 rounded-xl border border-stone-200 shadow-inner">
-              <div className="text-[10px] text-stone-600 font-mono flex justify-between items-center border-b border-stone-200 pb-1">
+            <div className="flex flex-col gap-1.5 mb-2 bg-theme-surface/70 p-2.5 rounded-xl border border-theme-border shadow-inner">
+              <div className="text-[10px] text-ink-muted font-mono flex justify-between items-center border-b border-theme-border pb-1">
                 <span>基準地</span>
-                <span className="text-stone-600 font-bold">
+                <span className="text-ink-muted font-bold">
                   {lat?.toFixed(4)}N, {lon?.toFixed(4)}E
                 </span>
               </div>
-              <div className="text-[10px] text-stone-600 font-mono flex justify-between items-center border-b border-stone-200 pb-1">
+              <div className="text-[10px] text-ink-muted font-mono flex justify-between items-center border-b border-theme-border pb-1">
                 <span>目標日</span>
                 <span className="text-emerald-700 font-bold">
                   {jstDateInputValue(evalDate)}{" "}
-                  <span className="text-stone-600 font-normal ml-1">
+                  <span className="text-ink-muted font-normal ml-1">
                     (
                     {timeOffsetDays > 0 ? `+${timeOffsetDays}` : timeOffsetDays}
                     d)
                   </span>
                 </span>
               </div>
-              <div className="text-[10px] text-stone-600 font-mono flex justify-between items-center">
+              <div className="text-[10px] text-ink-muted font-mono flex justify-between items-center">
                 <span>本命星</span>
                 <span className="text-purple-700 font-bold">
                   {honmeiStar
                     ? `本命星 ${useClassicalBoard ? honmeiStar.classical : honmeiStar.physical}`
                     : "未設定"}{" "}
-                  <span className="text-stone-600 font-normal ml-1">
+                  <span className="text-ink-muted font-normal ml-1">
                     ({birthDate.split("T")[0]})
                   </span>
                 </span>
@@ -775,7 +775,7 @@ export default function DestinationMapPanel({
                           classVectors,
                           `暦基準 — ${titleSuffix}`,
                           "(節切り・暦基準)",
-                          "text-stone-600",
+                          "text-ink-muted",
                         )}
                       </div>
                     </div>
@@ -787,11 +787,11 @@ export default function DestinationMapPanel({
         </div>
 
         {/* FULL-WIDTH TREND ANALYTICS SECTION (spans both columns of the grid) */}
-        <div className="w-full max-w-[1700px] md:col-span-2 bg-white/80 backdrop-blur-xl border border-rose-100/80 p-6 rounded-3xl shadow-xl shadow-rose-100/30 space-y-4">
+        <div className="w-full max-w-[1700px] md:col-span-2 bg-theme-surface backdrop-blur-xl border border-rose-100/80 p-6 rounded-3xl shadow-xl shadow-rose-100/30 space-y-4">
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-rose-100/60 pb-4">
             <div className="flex items-center gap-2">
               <span className="text-rose-700 font-bold text-base">◆</span>
-              <h3 className="text-base font-bold font-serif text-stone-900 flex flex-wrap items-center gap-2">
+              <h3 className="text-base font-bold font-serif text-ink flex flex-wrap items-center gap-2">
                 時期の傾向
                 <span className="text-[10px] bg-amber-500/10 text-amber-700 border border-amber-300 px-2.5 py-0.5 rounded-full font-sans font-semibold whitespace-nowrap">
                   ✨ 天道・時空補正可視化済
@@ -801,13 +801,13 @@ export default function DestinationMapPanel({
 
             {/* Range Mode & Multi-Filter Controls */}
             <div className="flex flex-wrap items-center gap-2">
-              <div className="flex items-center gap-1 bg-stone-100 p-1 rounded-xl border border-stone-200/80 text-xs font-semibold">
+              <div className="flex items-center gap-1 bg-stone-100 p-1 rounded-xl border border-theme-border/80 text-xs font-semibold">
                 <button
                   onClick={() => toggleHeatmapMode("30days")}
                   className={`px-3 py-1 rounded-xl transition-all cursor-pointer ${
                     heatmapMode === "30days"
-                      ? "bg-rose-500 text-stone-900 shadow-xs font-bold"
-                      : "text-stone-600 hover:text-stone-900"
+                      ? "bg-theme-gold-soft0 text-ink shadow-xs font-bold"
+                      : "text-ink-muted hover:text-ink"
                   }`}
                 >
                   30日
@@ -816,8 +816,8 @@ export default function DestinationMapPanel({
                   onClick={() => toggleHeatmapMode("12months")}
                   className={`px-3 py-1 rounded-xl transition-all cursor-pointer ${
                     heatmapMode === "12months"
-                      ? "bg-rose-500 text-stone-900 shadow-xs font-bold"
-                      : "text-stone-600 hover:text-stone-900"
+                      ? "bg-theme-gold-soft0 text-ink shadow-xs font-bold"
+                      : "text-ink-muted hover:text-ink"
                   }`}
                 >
                   12ヶ月
@@ -825,7 +825,7 @@ export default function DestinationMapPanel({
               </div>
 
               {/* Multi-combination filtering presets */}
-              <div className="flex items-center gap-1.5 bg-rose-50/60 border border-rose-100 p-1 rounded-xl text-xs font-semibold">
+              <div className="flex items-center gap-1.5 bg-theme-gold-soft/60 border border-rose-100 p-1 rounded-xl text-xs font-semibold">
                 <button
                   onClick={() => {
                     setDirectionFilterMode((prev) =>
@@ -834,8 +834,8 @@ export default function DestinationMapPanel({
                   }}
                   className={`px-3 py-1 rounded-xl transition-all flex items-center gap-1 cursor-pointer ${
                     directionFilterMode === "optimal_only"
-                      ? "bg-gradient-to-r from-amber-400 via-amber-500 to-rose-400 text-stone-900 font-bold shadow-md shadow-amber-200 scale-105"
-                      : "bg-white text-stone-700 hover:bg-stone-50 border border-stone-200/80"
+                      ? "bg-gradient-to-r from-amber-400 via-amber-500 to-rose-400 text-ink font-bold shadow-md shadow-amber-200 scale-105"
+                      : "bg-theme-surface text-ink hover:bg-theme-subtle border border-theme-border/80"
                   }`}
                   title="大吉・吉方位日をゴールド強調表示（他の色も保持）"
                 >
@@ -849,8 +849,8 @@ export default function DestinationMapPanel({
                   }}
                   className={`px-3 py-1 rounded-xl transition-all flex items-center gap-1 cursor-pointer ${
                     directionFilterMode === "exclude_noise"
-                      ? "bg-stone-800 text-stone-900 font-bold shadow-xs"
-                      : "bg-white text-stone-700 hover:bg-stone-50 border border-stone-200/80"
+                      ? "bg-stone-800 text-ink font-bold shadow-xs"
+                      : "bg-theme-surface text-ink hover:bg-theme-subtle border border-theme-border/80"
                   }`}
                   title="五黄・暗剣・歳破などの大凶をグレー（✕）で除外表示。他の判定色はそのまま"
                 >
@@ -861,9 +861,9 @@ export default function DestinationMapPanel({
           </div>
 
           {heatmapMode !== "none" && heatmapData.length > 0 && (
-            <div className="mt-3 bg-white/70 p-4 border border-rose-100/80 rounded-2xl overflow-x-auto shadow-inner space-y-4">
+            <div className="mt-3 bg-theme-surface/70 p-4 border border-rose-100/80 rounded-2xl overflow-x-auto shadow-inner space-y-4">
               {/* Monthly Timeline Player Control Toolbar */}
-              <div className="bg-white/90 border border-stone-200 p-3 rounded-xl flex flex-wrap items-center justify-between gap-3 text-xs font-sans">
+              <div className="bg-theme-surface border border-theme-border p-3 rounded-xl flex flex-wrap items-center justify-between gap-3 text-xs font-sans">
                 <div className="flex items-center gap-2">
                   <button
                     onClick={() => {
@@ -876,8 +876,8 @@ export default function DestinationMapPanel({
                     }}
                     className={`px-3 py-1.5 rounded-xl font-bold transition-all border cursor-pointer ${
                       isPlaying && playSpeedDays === 30
-                        ? "bg-rose-500 text-stone-900 border-rose-600 shadow-md shadow-rose-200 animate-pulse"
-                        : "bg-rose-50 text-rose-700 border-rose-200 hover:bg-rose-100"
+                        ? "bg-theme-gold-soft0 text-ink border-rose-600 shadow-md shadow-rose-200 animate-pulse"
+                        : "bg-theme-gold-soft text-rose-700 border-theme-border hover:bg-rose-100"
                     }`}
                   >
                     {isPlaying && playSpeedDays === 30
@@ -887,21 +887,21 @@ export default function DestinationMapPanel({
 
                   <button
                     onClick={() => setTimeOffsetDays((prev) => prev - 30)}
-                    className="px-2.5 py-1.5 bg-white text-stone-700 border border-stone-200 hover:bg-stone-50 rounded-xl cursor-pointer"
+                    className="px-2.5 py-1.5 bg-theme-surface text-ink border border-theme-border hover:bg-theme-subtle rounded-xl cursor-pointer"
                     title="1ヶ月巻き戻し"
                   >
                     ◀ 前月
                   </button>
                   <button
                     onClick={() => setTimeOffsetDays((prev) => prev + 30)}
-                    className="px-2.5 py-1.5 bg-white text-stone-700 border border-stone-200 hover:bg-stone-50 rounded-xl cursor-pointer"
+                    className="px-2.5 py-1.5 bg-theme-surface text-ink border border-theme-border hover:bg-theme-subtle rounded-xl cursor-pointer"
                     title="1ヶ月コマ送り"
                   >
                     次月 ▶
                   </button>
                   <button
                     onClick={() => setTimeOffsetDays(0)}
-                    className="px-2.5 py-1.5 bg-stone-100 text-stone-600 border border-stone-200 hover:bg-stone-200 rounded-xl cursor-pointer font-bold"
+                    className="px-2.5 py-1.5 bg-stone-100 text-ink-muted border border-theme-border hover:bg-stone-200 rounded-xl cursor-pointer font-bold"
                     title="現在月へリセット"
                   >
                     今月に戻す
@@ -909,14 +909,14 @@ export default function DestinationMapPanel({
                 </div>
 
                 {/* Live Snapshot Header */}
-                <div className="flex items-center gap-2 text-stone-600 bg-white px-3 py-1.5 rounded-xl border border-stone-200 font-medium">
+                <div className="flex items-center gap-2 text-ink-muted bg-theme-surface px-3 py-1.5 rounded-xl border border-theme-border font-medium">
                   <span>
                     📅 表示中:{" "}
                     <strong className="text-rose-700 font-bold">
                       {jstYearMonthLabel(evalDate)}
                     </strong>
                   </span>
-                  <span className="text-stone-600">|</span>
+                  <span className="text-ink-muted">|</span>
                   <span className="text-amber-700 font-bold">
                     ✨ 月の天道:{" "}
                     {(() => {
@@ -944,13 +944,13 @@ export default function DestinationMapPanel({
               {/* 地図との連動状態。
                         ヒートマップは 8 方位を等しく並べているだけなので、
                         地図で選んだ目的地がどの行なのかをここで結び付ける。 */}
-              <div className="bg-white/90 border border-indigo-100 px-3 py-2 rounded-xl flex flex-wrap items-center justify-between gap-2 text-[10px]">
+              <div className="bg-theme-surface border border-indigo-100 px-3 py-2 rounded-xl flex flex-wrap items-center justify-between gap-2 text-[10px]">
                 {targetDirection ? (
-                  <span className="flex items-center gap-1.5 text-stone-600">
+                  <span className="flex items-center gap-1.5 text-ink-muted">
                     <span>📍</span>
                     <span>
                       地図の目的地は{" "}
-                      <strong className="text-indigo-700 font-mono">
+                      <strong className="text-accent font-mono">
                         {targetDirection}
                       </strong>{" "}
                       方位（真北基準）。同じ行に印を付けています。
@@ -964,7 +964,7 @@ export default function DestinationMapPanel({
                 {focusedDirection && (
                   <button
                     onClick={() => setFocusedDirection(null)}
-                    className="px-2 py-1 rounded-xl border border-indigo-200 bg-indigo-50 text-indigo-700 font-semibold hover:bg-indigo-100 transition-colors"
+                    className="px-2 py-1 rounded-xl border border-indigo-200 bg-indigo-50 text-accent font-semibold hover:bg-theme-accent-soft transition-colors"
                     title="地図の強調表示を目的地の方位に戻す"
                   >
                     {focusedDirection} を強調中 — 解除
@@ -976,7 +976,7 @@ export default function DestinationMapPanel({
               <table className="w-full text-center border-collapse">
                 <thead>
                   <tr className="bg-stone-100/80">
-                    <th className="p-2 border border-stone-200 text-[10px] font-mono text-stone-600 font-bold w-10 bg-stone-100 sticky left-0 z-10">
+                    <th className="p-2 border border-theme-border text-[10px] font-mono text-ink-muted font-bold w-10 bg-stone-100 sticky left-0 z-10">
                       方位
                     </th>
                     {heatmapData.map((d, i) => {
@@ -991,12 +991,12 @@ export default function DestinationMapPanel({
                       return (
                         <th
                           key={i}
-                          className={`p-1.5 border border-stone-200 text-[10px] font-mono whitespace-nowrap cursor-pointer hover:bg-rose-50 transition-colors ${
+                          className={`p-1.5 border border-theme-border text-[10px] font-mono whitespace-nowrap cursor-pointer hover:bg-theme-gold-soft transition-colors ${
                             isActiveCol
-                              ? "text-rose-700 bg-rose-50 font-bold border-rose-300"
+                              ? "text-rose-700 bg-theme-gold-soft font-bold border-rose-300"
                               : d.isVoid
-                                ? "text-stone-600 bg-amber-500/10"
-                                : "text-stone-600 bg-white"
+                                ? "text-ink-muted bg-amber-500/10"
+                                : "text-ink-muted bg-theme-surface"
                           }`}
                           onClick={() => setTimeOffsetDays(d.offsetDays)}
                           title={
@@ -1032,10 +1032,10 @@ export default function DestinationMapPanel({
                         }
                       >
                         <td
-                          className={`p-1.5 border border-stone-200 text-[10px] font-mono font-bold sticky left-0 z-10 shadow-xs cursor-pointer transition-colors ${
+                          className={`p-1.5 border border-theme-border text-[10px] font-mono font-bold sticky left-0 z-10 shadow-xs cursor-pointer transition-colors ${
                             highlightDirection === dir
-                              ? "bg-indigo-100 text-indigo-700 border-indigo-300"
-                              : "bg-stone-50 text-stone-800 hover:bg-indigo-50"
+                              ? "bg-indigo-100 text-accent border-indigo-300"
+                              : "bg-theme-subtle text-ink hover:bg-indigo-50"
                           }`}
                           title={
                             targetDirection === dir
@@ -1089,14 +1089,14 @@ export default function DestinationMapPanel({
                           // 凶除外モードでは大凶セルを消さずグレーで「除外済み」と明示する
                           const isExcluded = isExcludeFilter && isMajorNoise;
 
-                          let bgClass = "bg-stone-50/50 text-stone-600";
+                          let bgClass = "bg-theme-subtle/50 text-ink-muted";
                           if (isExcluded) {
                             bgClass =
-                              "bg-stone-300/70 text-stone-600 line-through opacity-70";
+                              "bg-stone-300/70 text-ink-muted line-through opacity-70";
                           } else if (isOptimal) {
                             bgClass = isTendoActive
                               ? "bg-gradient-to-br from-amber-400 via-emerald-400 to-amber-500 text-stone-950 font-bold border-2 border-amber-300 ring-2 ring-amber-400 shadow-md shadow-amber-200/50 scale-105 z-10"
-                              : "bg-emerald-500 text-stone-900 font-bold shadow-xs border border-emerald-400";
+                              : "bg-emerald-500 text-ink font-bold shadow-xs border border-emerald-400";
                           } else if (st === "SAFE") {
                             bgClass = isLuckyFilter
                               ? "bg-blue-100/70 text-blue-700"
@@ -1104,7 +1104,7 @@ export default function DestinationMapPanel({
                           } else if (isMajorNoise) {
                             bgClass = isLuckyFilter
                               ? "bg-rose-100/70 text-rose-700"
-                              : "bg-rose-500 text-stone-900 font-semibold";
+                              : "bg-theme-gold-soft0 text-ink font-semibold";
                           } else if (
                             st?.startsWith("NOISE_HONMEI") ||
                             st?.startsWith("NOISE_TEKI") ||
@@ -1121,7 +1121,7 @@ export default function DestinationMapPanel({
                           } else if (st === "WARNING") {
                             bgClass = isLuckyFilter
                               ? "bg-orange-100/70 text-orange-800"
-                              : "bg-orange-400 text-stone-900 font-medium";
+                              : "bg-orange-400 text-ink font-medium";
                           }
 
                           if (isActiveCol && !isOptimal) {
@@ -1135,7 +1135,7 @@ export default function DestinationMapPanel({
                           return (
                             <td
                               key={i}
-                              className={`p-1 border border-stone-200 cursor-pointer hover:scale-110 transition-all ${bgClass}`}
+                              className={`p-1 border border-theme-border cursor-pointer hover:scale-110 transition-all ${bgClass}`}
                               title={`${d.label} 方位${dir}: ${directionLabelName(st)}${isExcluded ? " ／ 大凶のため除外対象" : ""} ${tendoNote} (クリックで層詳細・根拠表示)`}
                               onClick={() => {
                                 setTimeOffsetDays(d.offsetDays);
@@ -1180,7 +1180,7 @@ export default function DestinationMapPanel({
               </table>
 
               {heatmapMode === "12months" && (
-                <p className="mt-3 text-center text-xs text-stone-600 leading-relaxed">
+                <p className="mt-3 text-center text-xs text-ink-muted leading-relaxed">
                   12ヶ月表示は<b>節入り基準の月</b>
                   （暦の1日ではなく立春・啓蟄などで替わる月）で刻み、「その月の傾向」を見るため
                   <b>日盤を含めずに年盤＋月盤で判定</b>
@@ -1197,39 +1197,39 @@ export default function DestinationMapPanel({
                 取りこぼされていた。
               */}
               {/* Legend Bar */}
-              <div className="flex gap-3 mt-3 text-[10px] font-mono text-stone-600 justify-center flex-wrap">
-                <span className="flex items-center gap-1 bg-white/80 px-1.5 py-0.5 rounded border border-stone-200">
+              <div className="flex gap-3 mt-3 text-[10px] font-mono text-ink-muted justify-center flex-wrap">
+                <span className="flex items-center gap-1 bg-theme-surface px-1.5 py-0.5 rounded border border-theme-border">
                   <span className="text-amber-700 font-bold">✨</span> 天道回座
                 </span>
-                <span className="flex items-center gap-1 bg-white/80 px-1.5 py-0.5 rounded border border-stone-200">
+                <span className="flex items-center gap-1 bg-theme-surface px-1.5 py-0.5 rounded border border-theme-border">
                   <div className="w-2 h-2 bg-emerald-500/80"></div> 大吉
                 </span>
-                <span className="flex items-center gap-1 bg-white/80 px-1.5 py-0.5 rounded border border-stone-200">
-                  <div className="w-2 h-2 bg-blue-500/20 border border-stone-300"></div>{" "}
+                <span className="flex items-center gap-1 bg-theme-surface px-1.5 py-0.5 rounded border border-theme-border">
+                  <div className="w-2 h-2 bg-blue-500/20 border border-theme-border"></div>{" "}
                   平穏
                 </span>
-                <span className="flex items-center gap-1 bg-white/80 px-1.5 py-0.5 rounded border border-stone-200">
+                <span className="flex items-center gap-1 bg-theme-surface px-1.5 py-0.5 rounded border border-theme-border">
                   <div className="w-2 h-2 bg-red-500/80"></div>{" "}
                   五黄・暗剣・破（大凶）
                 </span>
-                <span className="flex items-center gap-1 bg-white/80 px-1.5 py-0.5 rounded border border-stone-200">
+                <span className="flex items-center gap-1 bg-theme-surface px-1.5 py-0.5 rounded border border-theme-border">
                   <div className="w-2 h-2 bg-purple-500/80"></div>{" "}
                   本命・的殺（本命星から）
                 </span>
-                <span className="flex items-center gap-1 bg-white/80 px-1.5 py-0.5 rounded border border-stone-200">
+                <span className="flex items-center gap-1 bg-theme-surface px-1.5 py-0.5 rounded border border-theme-border">
                   <div className="w-2 h-2 bg-amber-500/80"></div> 天中殺方位
                 </span>
-                <span className="flex items-center gap-1 bg-white/80 px-1.5 py-0.5 rounded border border-stone-200">
+                <span className="flex items-center gap-1 bg-theme-surface px-1.5 py-0.5 rounded border border-theme-border">
                   <div className="w-2 h-2 bg-orange-500/80"></div> 注意
                 </span>
                 {directionFilterMode === "exclude_noise" && (
-                  <span className="flex items-center gap-1 bg-white/80 px-1.5 py-0.5 rounded border border-stone-300">
+                  <span className="flex items-center gap-1 bg-theme-surface px-1.5 py-0.5 rounded border border-theme-border">
                     <div className="w-2 h-2 bg-stone-300"></div> ✕ 除外
                     (五黄・暗剣・歳破)
                   </span>
                 )}
                 {directionFilterMode === "optimal_only" && (
-                  <span className="flex items-center gap-1 bg-white/80 px-1.5 py-0.5 rounded border border-amber-300">
+                  <span className="flex items-center gap-1 bg-theme-surface px-1.5 py-0.5 rounded border border-amber-300">
                     🌟 大吉絞込中: 大吉以外は淡色化
                   </span>
                 )}
@@ -1253,35 +1253,35 @@ export default function DestinationMapPanel({
               role="dialog"
               aria-modal="true"
               onClick={() => setSelectedTrendCell(null)}
-              className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-white/70 backdrop-blur-md animate-in fade-in duration-150"
+              className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-theme-surface/70 backdrop-blur-md animate-in fade-in duration-150"
             >
               <div
                 /* 中身を押しても閉じない。押した先が中身か外かで分ける */
                 onClick={(e) => e.stopPropagation()}
-                className="relative w-full max-w-sm bg-white border border-stone-300 rounded-2xl p-5 text-stone-900 shadow-2xl space-y-3.5"
+                className="relative w-full max-w-sm bg-theme-surface border border-theme-border rounded-2xl p-5 text-ink shadow-2xl space-y-3.5"
               >
                 <button
                   onClick={() => setSelectedTrendCell(null)}
                   aria-label="閉じる"
-                  className="absolute top-3.5 right-3.5 text-stone-600 hover:text-stone-900 p-1 text-sm font-bold"
+                  className="absolute top-3.5 right-3.5 text-ink-muted hover:text-ink p-1 text-sm font-bold"
                 >
                   ✕
                 </button>
 
                 <div className="flex items-center gap-3">
                   <div
-                    className={`p-2.5 rounded-xl border ${selectedTrendCell.isTendo ? "bg-amber-500/20 text-amber-700 border-amber-200 shadow-[0_0_12px_rgba(245,158,11,0.3)]" : "bg-indigo-500/20 text-indigo-600 border-indigo-200"}`}
+                    className={`p-2.5 rounded-xl border ${selectedTrendCell.isTendo ? "bg-amber-500/20 text-amber-700 border-amber-200 shadow-[0_0_12px_rgba(245,158,11,0.3)]" : "bg-indigo-500/20 text-accent border-indigo-200"}`}
                   >
                     <span className="text-xl">
                       {selectedTrendCell.isTendo ? "✨" : "🎯"}
                     </span>
                   </div>
                   <div>
-                    <h3 className="font-bold text-sm text-stone-800 flex items-center gap-2">
+                    <h3 className="font-bold text-sm text-ink flex items-center gap-2">
                       {selectedTrendCell.label} 【方位: {selectedTrendCell.dir}
                       】
                     </h3>
-                    <p className="text-xs text-stone-600 font-mono">
+                    <p className="text-xs text-ink-muted font-mono">
                       総合判定:{" "}
                       <strong className="text-emerald-700 font-bold">
                         {directionLabelName(selectedTrendCell.status)}
@@ -1296,7 +1296,7 @@ export default function DestinationMapPanel({
                             入れ直す必要があった。 */}
                 <div className="flex flex-wrap items-center gap-2 bg-indigo-50/70 border border-indigo-100 rounded-xl px-3 py-2">
                   {targetDirection === selectedTrendCell.dir ? (
-                    <span className="text-[10px] text-indigo-700 font-semibold flex items-center gap-1">
+                    <span className="text-[10px] text-accent font-semibold flex items-center gap-1">
                       📍 現在の目的地はこの方位です
                     </span>
                   ) : (
@@ -1304,7 +1304,7 @@ export default function DestinationMapPanel({
                       onClick={() =>
                         moveTargetToDirection(selectedTrendCell.dir)
                       }
-                      className="px-2.5 py-1 rounded-xl text-[10px] font-bold bg-indigo-600 text-white hover:bg-indigo-700 transition-colors"
+                      className="px-2.5 py-1 rounded-xl text-[10px] font-bold bg-accent text-on-accent hover:brightness-110 transition-colors"
                       title={
                         targetLat !== null && targetLon !== null
                           ? "現在の目的地までの距離を保ったまま、この方位へ向きだけ変えます"
@@ -1314,14 +1314,14 @@ export default function DestinationMapPanel({
                       この方位へ目的地を移す
                     </button>
                   )}
-                  <span className="text-[10px] text-stone-600">
+                  <span className="text-[10px] text-ink-muted">
                     {targetLat !== null && targetLon !== null
                       ? "距離は保ったまま向きだけ変わります"
                       : "目的地が未設定のため、出発地から 50km の地点に置きます"}
                   </span>
                 </div>
 
-                <div className="space-y-2.5 text-xs font-mono text-stone-600">
+                <div className="space-y-2.5 text-xs font-mono text-ink-muted">
                   {selectedTrendCell.isTendo && (
                     <div className="bg-amber-50 border border-amber-500/60 p-3 rounded-xl text-amber-700 space-y-1">
                       <div className="font-bold text-amber-700 flex items-center gap-1.5">
@@ -1335,41 +1335,41 @@ export default function DestinationMapPanel({
                     </div>
                   )}
 
-                  <div className="bg-stone-50 p-3 rounded-xl border border-stone-200 space-y-1.5">
-                    <div className="font-bold text-stone-600 border-b border-stone-200 pb-1 text-[10px]">
+                  <div className="bg-theme-subtle p-3 rounded-xl border border-theme-border space-y-1.5">
+                    <div className="font-bold text-ink-muted border-b border-theme-border pb-1 text-[10px]">
                       レイヤー（層）別判定ブレイクダウン
                     </div>
                     <div className="flex justify-between text-[11px]">
-                      <span className="text-stone-600">年盤</span>
-                      <span className="font-semibold text-stone-700">
+                      <span className="text-ink-muted">年盤</span>
+                      <span className="font-semibold text-ink">
                         {selectedTrendCell.raw?.yearLayer?.[
                           selectedTrendCell.dir
                         ] || "SAFE"}
                       </span>
                     </div>
                     <div className="flex justify-between text-[11px]">
-                      <span className="text-stone-600">月盤</span>
-                      <span className="font-semibold text-stone-700">
+                      <span className="text-ink-muted">月盤</span>
+                      <span className="font-semibold text-ink">
                         {selectedTrendCell.raw?.monthLayer?.[
                           selectedTrendCell.dir
                         ] || "SAFE"}
                       </span>
                     </div>
                     <div className="flex justify-between text-[11px]">
-                      <span className="text-stone-600">日盤</span>
-                      <span className="font-semibold text-stone-700">
+                      <span className="text-ink-muted">日盤</span>
+                      <span className="font-semibold text-ink">
                         {selectedTrendCell.raw?.dayLayer?.[
                           selectedTrendCell.dir
                         ] || "SAFE"}
                       </span>
                     </div>
-                    <div className="flex justify-between text-[11px] pt-1 border-t border-stone-200">
-                      <span className="text-stone-600">天道作用:</span>
+                    <div className="flex justify-between text-[11px] pt-1 border-t border-theme-border">
+                      <span className="text-ink-muted">天道作用:</span>
                       <span
                         className={
                           selectedTrendCell.isTendo
                             ? "text-amber-700 font-bold"
-                            : "text-stone-600"
+                            : "text-ink-muted"
                         }
                       >
                         {selectedTrendCell.isTendo
@@ -1382,7 +1382,7 @@ export default function DestinationMapPanel({
 
                 <button
                   onClick={() => setSelectedTrendCell(null)}
-                  className="w-full py-2 bg-indigo-600 hover:bg-indigo-500 text-white font-medium text-xs rounded-xl transition-colors cursor-pointer"
+                  className="w-full py-2 bg-accent hover:bg-indigo-500 text-on-accent font-medium text-xs rounded-xl transition-colors cursor-pointer"
                 >
                   了解
                 </button>
@@ -1396,7 +1396,7 @@ export default function DestinationMapPanel({
       <div className="w-full max-w-[1700px] mt-0">
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-2 w-full gap-2">
           {/* Cyberpunk Filter Selector */}
-          <div className="flex items-center gap-1.5 bg-stone-50 p-1 border border-stone-200 rounded-xl flex-wrap">
+          <div className="flex items-center gap-1.5 bg-theme-subtle p-1 border border-theme-border rounded-xl flex-wrap">
             {/*
               既定は 1 行。いま選んでいる観点だけを出し、7 つのボタンは
               「変える」で開く（地図の帯の「設定」と同じ形。#1338）。
@@ -1410,7 +1410,7 @@ export default function DestinationMapPanel({
               総合判定のまま通る（SolarTimeClock の filterVectors の註）。
               そのときは「総合判定」に添えて出す。
             */}
-            <span className="text-[11px] text-stone-700 px-1">
+            <span className="text-[11px] text-ink px-1">
               観点:{" "}
               <b>
                 {directionFilterModeLabel(
@@ -1424,7 +1424,7 @@ export default function DestinationMapPanel({
               type="button"
               onClick={() => setFilterMenuOpen((v) => !v)}
               aria-expanded={filterMenuOpen}
-              className="inline-flex min-h-[24px] items-center px-2 text-[11px] font-bold rounded-lg border border-stone-300 bg-white hover:bg-stone-100 text-stone-700 cursor-pointer"
+              className="inline-flex min-h-[24px] items-center px-2 text-[11px] font-bold rounded-lg border border-theme-border bg-theme-surface hover:bg-stone-100 text-ink cursor-pointer"
             >
               {filterMenuOpen ? "閉じる ▴" : "変える ▾"}
             </button>
@@ -1435,7 +1435,7 @@ export default function DestinationMapPanel({
                   className={`inline-flex min-h-[24px] items-center justify-center px-2 py-0.5 text-[10px] font-mono rounded-xs transition-all border cursor-pointer ${
                     directionFilterMode === "composite"
                       ? "bg-emerald-50 text-emerald-700 border-emerald-200 shadow-[0_0_5px_rgba(16,185,129,0.2)]"
-                      : "bg-white/80 text-stone-600 border-transparent hover:border-stone-300"
+                      : "bg-theme-surface text-ink-muted border-transparent hover:border-theme-border"
                   }`}
                 >
                   🪐 総合判定
@@ -1447,7 +1447,7 @@ export default function DestinationMapPanel({
                   className={`inline-flex min-h-[24px] items-center justify-center px-2 py-0.5 text-[10px] font-mono rounded-xs transition-all border cursor-pointer ${
                     directionFilterMode === "personal_kigaku_environmental"
                       ? "bg-purple-50 text-purple-700 border-purple-200 shadow-[0_0_5px_rgba(168,85,247,0.2)]"
-                      : "bg-white/80 text-stone-600 border-transparent hover:border-stone-300"
+                      : "bg-theme-surface text-ink-muted border-transparent hover:border-theme-border"
                   }`}
                 >
                   👤+🌍 吉凶+環境
@@ -1456,8 +1456,8 @@ export default function DestinationMapPanel({
                   onClick={() => setDirectionFilterMode("personal_kigaku_bazi")}
                   className={`inline-flex min-h-[24px] items-center justify-center px-2 py-0.5 text-[10px] font-mono rounded-xs transition-all border cursor-pointer ${
                     directionFilterMode === "personal_kigaku_bazi"
-                      ? "bg-indigo-50 text-indigo-600 border-indigo-200 shadow-[0_0_5px_rgba(99,102,241,0.2)]"
-                      : "bg-white/80 text-stone-600 border-transparent hover:border-stone-300"
+                      ? "bg-indigo-50 text-accent border-indigo-200 shadow-[0_0_5px_rgba(99,102,241,0.2)]"
+                      : "bg-theme-surface text-ink-muted border-transparent hover:border-theme-border"
                   }`}
                 >
                   👤+☯ 吉凶+天中殺
@@ -1467,7 +1467,7 @@ export default function DestinationMapPanel({
                   className={`inline-flex min-h-[24px] items-center justify-center px-2 py-0.5 text-[10px] font-mono rounded-xs transition-all border cursor-pointer ${
                     directionFilterMode === "environmental_bazi"
                       ? "bg-amber-50 text-amber-700 border-amber-200 shadow-[0_0_5px_rgba(245,158,11,0.2)]"
-                      : "bg-white/80 text-stone-600 border-transparent hover:border-stone-300"
+                      : "bg-theme-surface text-ink-muted border-transparent hover:border-theme-border"
                   }`}
                 >
                   ☯+🌍 天中殺+環境
@@ -1477,7 +1477,7 @@ export default function DestinationMapPanel({
                   className={`inline-flex min-h-[24px] items-center justify-center px-2 py-0.5 text-[10px] font-mono rounded-xs transition-all border cursor-pointer ${
                     directionFilterMode === "personal_kigaku"
                       ? "bg-purple-50 text-purple-700 border-purple-200 shadow-[0_0_5px_rgba(168,85,247,0.2)]"
-                      : "bg-white/80 text-stone-600 border-transparent hover:border-stone-300"
+                      : "bg-theme-surface text-ink-muted border-transparent hover:border-theme-border"
                   }`}
                 >
                   👤 個人吉凶
@@ -1487,7 +1487,7 @@ export default function DestinationMapPanel({
                   className={`inline-flex min-h-[24px] items-center justify-center px-2 py-0.5 text-[10px] font-mono rounded-xs transition-all border cursor-pointer ${
                     directionFilterMode === "personal_bazi"
                       ? "bg-amber-100 text-amber-800 border-amber-300 shadow-[0_0_5px_rgba(180,83,9,0.2)]"
-                      : "bg-white/80 text-stone-600 border-transparent hover:border-stone-300"
+                      : "bg-theme-surface text-ink-muted border-transparent hover:border-theme-border"
                   }`}
                 >
                   ☯ 個人天中殺
@@ -1496,8 +1496,8 @@ export default function DestinationMapPanel({
                   onClick={() => setDirectionFilterMode("environmental")}
                   className={`inline-flex min-h-[24px] items-center justify-center px-2 py-0.5 text-[10px] font-mono rounded-xs transition-all border cursor-pointer ${
                     directionFilterMode === "environmental"
-                      ? "bg-rose-50 text-rose-700 border-rose-200 shadow-[0_0_5px_rgba(244,63,94,0.2)]"
-                      : "bg-white/80 text-stone-600 border-transparent hover:border-stone-300"
+                      ? "bg-theme-gold-soft text-rose-700 border-theme-border shadow-[0_0_5px_rgba(244,63,94,0.2)]"
+                      : "bg-theme-surface text-ink-muted border-transparent hover:border-theme-border"
                   }`}
                 >
                   🌍 環境方位のみ
@@ -1529,7 +1529,7 @@ export default function DestinationMapPanel({
             )}
             <button
               onClick={() => setUseClassicalBoard(!useClassicalBoard)}
-              className={`px-3 py-1 text-[10px] font-mono uppercase tracking-widest border rounded transition-colors ${useClassicalBoard ? "bg-zinc-500/20 text-stone-600 border-zinc-500/50 hover:bg-zinc-500/30" : "bg-emerald-500/20 text-emerald-700 border-emerald-200 hover:bg-emerald-500/30"}`}
+              className={`px-3 py-1 text-[10px] font-mono uppercase tracking-widest border rounded transition-colors ${useClassicalBoard ? "bg-zinc-500/20 text-ink-muted border-zinc-500/50 hover:bg-zinc-500/30" : "bg-emerald-500/20 text-emerald-700 border-emerald-200 hover:bg-emerald-500/30"}`}
             >
               盤:{" "}
               {useClassicalBoard ? "古典暦モデル" : "物理モデル（木星黄経）"}
@@ -1545,7 +1545,7 @@ export default function DestinationMapPanel({
                 ? "bg-purple-50 border-purple-200 text-purple-700"
                 : directionFilterMode.includes("bazi")
                   ? "bg-amber-50 border-amber-200 text-amber-700"
-                  : "bg-rose-50 border-rose-200 text-rose-700"
+                  : "bg-theme-gold-soft border-theme-border text-rose-700"
             }`}
           >
             <span className="text-xs">⚠️</span>
@@ -1632,44 +1632,44 @@ export default function DestinationMapPanel({
 
       {/* System Manual / Documentation */}
       <div className="w-full max-w-[1700px] mt-4">
-        <details className="bg-white/80 border border-stone-200 rounded-xl p-4 group cursor-pointer">
-          <summary className="text-[10px] sm:text-xs font-mono text-stone-600 uppercase tracking-widest flex items-center gap-2 outline-none">
+        <details className="bg-theme-surface border border-theme-border rounded-xl p-4 group cursor-pointer">
+          <summary className="text-[10px] sm:text-xs font-mono text-ink-muted uppercase tracking-widest flex items-center gap-2 outline-none">
             <span className="text-emerald-700 group-open:rotate-90 transition-transform">
               ▶
             </span>
             判定の決まり（2 つの盤と方位の区分）
           </summary>
-          <div className="mt-4 text-xs sm:text-sm text-stone-600 font-mono leading-relaxed space-y-6 cursor-text">
+          <div className="mt-4 text-xs sm:text-sm text-ink-muted font-mono leading-relaxed space-y-6 cursor-text">
             {/* Model Differences */}
             <div className="space-y-2">
-              <h3 className="text-emerald-700 font-bold border-b border-stone-200 pb-1">
+              <h3 className="text-emerald-700 font-bold border-b border-theme-border pb-1">
                 ■ 2 つの盤の違い（古典／物理）
               </h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
-                <div className="bg-white/80 p-3 border-l-2 border-emerald-500">
+                <div className="bg-theme-surface p-3 border-l-2 border-emerald-500">
                   <div className="text-emerald-700 font-bold mb-1">
                     物理の盤（天体の位置から）
                   </div>
-                  <p className="text-stone-600 text-xs">
+                  <p className="text-ink-muted text-xs">
                     天体の実際の位置（astronomy-engine の VSOP87
                     による天体暦）から方位を割り当てます。木星の黄経や太陽・月の位置を使うため、暦の区切りではなく天体の動きに沿って変わります。
                     <br />
                     <br />
-                    <span className="text-stone-600">
+                    <span className="text-ink-muted">
                       向いている使い方:
                     </span>{" "}
                     日ごとの細かい変化を追いたいとき。暦の区切りで見る古典の盤と見比べたいとき。
                   </p>
                 </div>
-                <div className="bg-white/80 p-3 border-l-2 border-zinc-500">
-                  <div className="text-stone-600 font-bold mb-1">
+                <div className="bg-theme-surface p-3 border-l-2 border-zinc-500">
+                  <div className="text-ink-muted font-bold mb-1">
                     古典の盤（節入りの暦から）
                   </div>
-                  <p className="text-stone-600 text-xs">
+                  <p className="text-ink-muted text-xs">
                     伝統的な九星気学の暦を使います。立春などの二十四節気を区切りにする、規則どおりの盤です。統計に基づくものではありません。
                     <br />
                     <br />
-                    <span className="text-stone-600">推奨用途:</span>{" "}
+                    <span className="text-ink-muted">推奨用途:</span>{" "}
                     引越しや契約など、暦で日を選ぶ場面。このサイトの判定（段階
                     S〜X）はこちらを既定にしています。
                   </p>
@@ -1679,33 +1679,33 @@ export default function DestinationMapPanel({
 
             {/* Zone Differences */}
             <div className="space-y-2">
-              <h3 className="text-emerald-700 font-bold border-b border-stone-200 pb-1">
+              <h3 className="text-emerald-700 font-bold border-b border-theme-border pb-1">
                 ■ 方位の区分（大吉・平穏）
               </h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
-                <div className="bg-white/80 p-3 border-l-2 border-emerald-500">
+                <div className="bg-theme-surface p-3 border-l-2 border-emerald-500">
                   <div className="text-emerald-700 font-bold mb-1 flex items-center gap-2">
                     <span className="w-2 h-2 bg-emerald-500 rounded-full"></span>
                     大吉方位
                   </div>
-                  <p className="text-stone-600 text-xs">
+                  <p className="text-ink-muted text-xs">
                     凶殺が存在しないことに加え、あなたの「本命星」とその方位の星が『相生（互いを生かし合うとされる関係）』になっています。
                     <br />
                     <br />
-                    <span className="text-stone-600">意味:</span>{" "}
+                    <span className="text-ink-muted">意味:</span>{" "}
                     凶殺がないだけでなく、伝統的に運気を後押しするとされる、この判定でいちばんの推奨方位です。
                   </p>
                 </div>
-                <div className="bg-white/80 p-3 border-l-2 border-blue-500">
+                <div className="bg-theme-surface p-3 border-l-2 border-blue-500">
                   <div className="text-blue-700 font-bold mb-1 flex items-center gap-2">
                     <span className="w-2 h-2 bg-blue-500 rounded-full"></span>
                     平穏（凶ではない）
                   </div>
-                  <p className="text-stone-600 text-xs">
+                  <p className="text-ink-muted text-xs">
                     五黄殺、暗剣殺、天中殺といった凶殺が存在しない方位です。
                     <br />
                     <br />
-                    <span className="text-stone-600">意味:</span>{" "}
+                    <span className="text-ink-muted">意味:</span>{" "}
                     暦の上で避けるべき凶殺に当たらない方位です。伝統的に、特に吉とも凶ともされない中立の方位とされます。
                   </p>
                 </div>

@@ -30,7 +30,7 @@ export const SITE_FOOTER_LINKS = [
 
 export function SiteFooter() {
   return (
-    <footer className="border-t border-slate-300/80 dark:border-theme-border px-4 py-6 text-sm">
+    <footer className="border-t border-theme-border/80 dark:border-theme-border px-4 py-6 text-sm">
       <p className="text-center text-xs font-semibold text-slate-600 dark:text-ink-muted">
         © {currentYearInJapan()} {SITE_NAME}. {SITE_TAGLINE}ためのサービスです。
       </p>

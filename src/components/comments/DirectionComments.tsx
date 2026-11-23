@@ -105,10 +105,10 @@ export function DirectionComments({
   const tooLong = trimmed.length > COMMENT_MAX_LENGTH;
 
   return (
-    <section className="mt-10 border-t border-stone-200 dark:border-theme-border pt-6">
+    <section className="mt-10 border-t border-theme-border dark:border-theme-border pt-6">
       {count > 0 && (
         <>
-          <h2 className="text-base font-bold text-stone-800 dark:text-ink">
+          <h2 className="text-base font-bold text-ink dark:text-ink">
             {heading}
             <span className="ml-2 text-xs font-normal text-ink-muted">
               {count}件
@@ -118,20 +118,20 @@ export function DirectionComments({
             {rows!.map((c) => (
               <li
                 key={c.id}
-                className="rounded-2xl border border-stone-200 dark:border-theme-border bg-white/70 dark:bg-theme-surface p-4"
+                className="rounded-2xl border border-theme-border dark:border-theme-border bg-theme-surface/70 dark:bg-theme-surface p-4"
               >
                 <div className="flex items-baseline gap-2">
-                  <span className="text-xs font-bold text-stone-700 dark:text-ink">
+                  <span className="text-xs font-bold text-ink dark:text-ink">
                     {c.displayName}
                   </span>
                   <time
-                    className="text-[11px] text-stone-600 dark:text-ink-muted"
+                    className="text-[11px] text-ink-muted dark:text-ink-muted"
                     dateTime={c.createdAt}
                   >
                     {new Date(c.createdAt).toLocaleDateString("ja-JP")}
                   </time>
                 </div>
-                <p className="mt-2 whitespace-pre-wrap text-sm leading-relaxed text-stone-700 dark:text-ink">
+                <p className="mt-2 whitespace-pre-wrap text-sm leading-relaxed text-ink dark:text-ink">
                   {c.body}
                 </p>
               </li>
@@ -145,7 +145,7 @@ export function DirectionComments({
           {signedIn === false ? (
             <Link
               href="/login"
-              className="inline-block rounded-full border border-stone-300 dark:border-theme-border px-4 py-2 text-xs text-stone-600 dark:text-ink-muted transition hover:bg-stone-100 dark:hover:bg-theme-subtle"
+              className="inline-block rounded-full border border-theme-border dark:border-theme-border px-4 py-2 text-xs text-ink-muted dark:text-ink-muted transition hover:bg-stone-100 dark:hover:bg-theme-subtle"
             >
               ログインして体験を書く
             </Link>
@@ -153,7 +153,7 @@ export function DirectionComments({
             <button
               type="button"
               onClick={() => setOpen(true)}
-              className="rounded-full border border-stone-300 dark:border-theme-border px-4 py-2 text-xs text-stone-600 dark:text-ink-muted transition hover:bg-stone-100 dark:hover:bg-theme-subtle"
+              className="rounded-full border border-theme-border dark:border-theme-border px-4 py-2 text-xs text-ink-muted dark:text-ink-muted transition hover:bg-stone-100 dark:hover:bg-theme-subtle"
             >
               この方位の体験を書く
             </button>
@@ -177,11 +177,11 @@ export function DirectionComments({
               prompt ??
               "いつ、どこからどこへ移って、その後どうだったかを書いてください。"
             }
-            className="w-full rounded-2xl border border-stone-300 dark:border-theme-border p-3 text-sm outline-none focus:ring-2 focus:ring-accent"
+            className="w-full rounded-2xl border border-theme-border dark:border-theme-border p-3 text-sm outline-none focus:ring-2 focus:ring-accent"
           />
           <div className="flex items-center justify-between">
             <span
-              className={`text-[11px] ${tooLong ? "text-accent" : "text-stone-600 dark:text-ink-muted"}`}
+              className={`text-[11px] ${tooLong ? "text-accent" : "text-ink-muted dark:text-ink-muted"}`}
             >
               {trimmed.length} / {COMMENT_MAX_LENGTH}
               {tooShort && `（${COMMENT_MIN_LENGTH}文字以上）`}

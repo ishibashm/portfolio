@@ -116,20 +116,20 @@ export default function PractitionersPage() {
   // 入れ子になるので <div> にする（見た目は同じ）。
   return (
     <div className="mx-auto max-w-[1700px] px-4 py-10">
-      <nav aria-label="パンくず" className="mb-4 text-xs text-stone-500">
+      <nav aria-label="パンくず" className="mb-4 text-xs text-ink-muted">
         <Link href="/" className="hover:text-rose-600">
           ホーム
         </Link>
         <span aria-hidden="true"> / </span>
         <span aria-current="page">九星気学の鑑定士</span>
       </nav>
-      <h1 className="font-serif text-2xl font-bold text-stone-900">
+      <h1 className="font-serif text-2xl font-bold text-ink">
         九星気学の鑑定士
       </h1>
-      <p className="mt-3 text-sm leading-relaxed text-stone-600">
+      <p className="mt-3 text-sm leading-relaxed text-ink-muted">
         このサイトが出せるのは、暦と方位盤から機械的に決まるところまでです。住む人の事情や家の間取りまで含めた判断は、人に相談したほうが早いことがあります。ここでは、引越しの方位と日取りを扱う鑑定士を登録制で掲載しています。
       </p>
-      <p className="mt-2 text-xs leading-relaxed text-stone-500">
+      <p className="mt-2 text-xs leading-relaxed text-ink-muted">
         掲載内容は各鑑定士によるものです。当サイトは掲載の形式だけを確認しており、鑑定の内容や結果を保証するものではありません。依頼の条件・料金は直接ご確認ください。
       </p>
 
@@ -137,7 +137,7 @@ export default function PractitionersPage() {
         <div className="mt-6 flex items-center gap-2">
           <label
             htmlFor="practitioner-area-filter"
-            className="text-xs text-stone-500"
+            className="text-xs text-ink-muted"
           >
             対応地域
           </label>
@@ -145,7 +145,7 @@ export default function PractitionersPage() {
             id="practitioner-area-filter"
             value={area}
             onChange={(e) => setArea(e.target.value)}
-            className="rounded-lg border border-stone-300 px-3 py-1.5 text-sm"
+            className="rounded-lg border border-theme-border px-3 py-1.5 text-sm"
           >
             <option value="">すべて</option>
             {PRACTITIONER_AREAS.map((a) => (
@@ -162,26 +162,26 @@ export default function PractitionersPage() {
           {rows!.map((p) => (
             <li
               key={p.id}
-              className="rounded-2xl border border-stone-200 bg-white p-5"
+              className="rounded-2xl border border-theme-border bg-theme-surface p-5"
             >
               <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
-                <h2 className="text-base font-bold text-stone-800">
+                <h2 className="text-base font-bold text-ink">
                   {p.displayName}
                 </h2>
-                <span className="text-xs text-stone-500">{p.area}</span>
+                <span className="text-xs text-ink-muted">{p.area}</span>
               </div>
-              <p className="mt-1 text-sm text-stone-600">{p.headline}</p>
+              <p className="mt-1 text-sm text-ink-muted">{p.headline}</p>
               <div className="mt-2 flex flex-wrap gap-1">
                 {p.specialties.map((s) => (
                   <span
                     key={s}
-                    className="rounded-full bg-stone-100 px-2 py-0.5 text-[11px] text-stone-600"
+                    className="rounded-full bg-stone-100 px-2 py-0.5 text-[11px] text-ink-muted"
                   >
                     {s}
                   </span>
                 ))}
               </div>
-              <p className="mt-3 whitespace-pre-wrap text-sm leading-relaxed text-stone-700">
+              <p className="mt-3 whitespace-pre-wrap text-sm leading-relaxed text-ink">
                 {p.profile}
               </p>
               {p.websiteUrl && (
@@ -198,22 +198,22 @@ export default function PractitionersPage() {
           ))}
         </ul>
       ) : (
-        <p className="mt-8 rounded-2xl border border-dashed border-stone-300 p-6 text-sm text-stone-500">
+        <p className="mt-8 rounded-2xl border border-dashed border-theme-border p-6 text-sm text-ink-muted">
           掲載を準備しています。鑑定を行っている方の登録をお待ちしています。
         </p>
       )}
 
       <section
         aria-labelledby="practitioner-apply-heading"
-        className="mt-10 border-t border-stone-200 pt-6"
+        className="mt-10 border-t border-theme-border pt-6"
       >
         <h2
           id="practitioner-apply-heading"
-          className="text-base font-bold text-stone-800"
+          className="text-base font-bold text-ink"
         >
           掲載を申し込む
         </h2>
-        <p className="mt-2 text-xs leading-relaxed text-stone-500">
+        <p className="mt-2 text-xs leading-relaxed text-ink-muted">
           掲載は無料です。内容を確認のうえ公開します。公開後に内容を書き換えた場合も、あらためて確認します。
         </p>
 
@@ -228,7 +228,7 @@ export default function PractitionersPage() {
             {signedIn === false ? (
               <Link
                 href="/login"
-                className="inline-block rounded-full border border-stone-300 px-4 py-2 text-xs text-stone-600 transition hover:bg-stone-100"
+                className="inline-block rounded-full border border-theme-border px-4 py-2 text-xs text-ink-muted transition hover:bg-stone-100"
               >
                 ログインして申し込む
               </Link>
@@ -236,7 +236,7 @@ export default function PractitionersPage() {
               <button
                 type="button"
                 onClick={() => setOpen(true)}
-                className="rounded-full border border-stone-300 px-4 py-2 text-xs text-stone-600 transition hover:bg-stone-100"
+                className="rounded-full border border-theme-border px-4 py-2 text-xs text-ink-muted transition hover:bg-stone-100"
               >
                 掲載を申し込む
               </button>
@@ -251,7 +251,7 @@ export default function PractitionersPage() {
                 value={displayName}
                 onChange={(e) => setDisplayName(e.target.value)}
                 maxLength={PRACTITIONER_LIMITS.displayName}
-                className="w-full rounded-xl border border-stone-300 p-2.5 text-sm"
+                className="w-full rounded-xl border border-theme-border p-2.5 text-sm"
               />
             </Field>
 
@@ -261,7 +261,7 @@ export default function PractitionersPage() {
                 onChange={(e) => setHeadline(e.target.value)}
                 maxLength={PRACTITIONER_LIMITS.headline}
                 placeholder="引越しの方位と日取りを20年"
-                className="w-full rounded-xl border border-stone-300 p-2.5 text-sm"
+                className="w-full rounded-xl border border-theme-border p-2.5 text-sm"
               />
             </Field>
 
@@ -269,7 +269,7 @@ export default function PractitionersPage() {
               <select
                 value={formArea}
                 onChange={(e) => setFormArea(e.target.value)}
-                className="w-full rounded-xl border border-stone-300 p-2.5 text-sm"
+                className="w-full rounded-xl border border-theme-border p-2.5 text-sm"
               >
                 {PRACTITIONER_AREAS.map((a) => (
                   <option key={a} value={a}>
@@ -279,7 +279,9 @@ export default function PractitionersPage() {
               </select>
             </Field>
 
-            <Field label={`得意分野（${PRACTITIONER_LIMITS.specialtiesMax}つまで）`}>
+            <Field
+              label={`得意分野（${PRACTITIONER_LIMITS.specialtiesMax}つまで）`}
+            >
               <div className="flex flex-wrap gap-2">
                 {SPECIALTY_CHOICES.map((s) => (
                   <button
@@ -289,7 +291,7 @@ export default function PractitionersPage() {
                     className={`rounded-full border px-3 py-1 text-xs transition ${
                       specialties.includes(s)
                         ? "border-emerald-500 bg-emerald-50 text-emerald-800"
-                        : "border-stone-300 text-stone-600"
+                        : "border-theme-border text-ink-muted"
                     }`}
                   >
                     {s}
@@ -305,10 +307,10 @@ export default function PractitionersPage() {
                 value={profile}
                 onChange={(e) => setProfile(e.target.value)}
                 rows={7}
-                className="w-full rounded-xl border border-stone-300 p-2.5 text-sm"
+                className="w-full rounded-xl border border-theme-border p-2.5 text-sm"
                 placeholder="どんな相談を受けているか、どのくらいの期間やっているか、料金の目安などを書いてください。"
               />
-              <span className="mt-1 block text-[11px] text-stone-600">
+              <span className="mt-1 block text-[11px] text-ink-muted">
                 {profile.trim().length} / {PRACTITIONER_LIMITS.profileMax}
               </span>
             </Field>
@@ -318,12 +320,12 @@ export default function PractitionersPage() {
                 value={websiteUrl}
                 onChange={(e) => setWebsiteUrl(e.target.value)}
                 placeholder="https://example.com"
-                className="w-full rounded-xl border border-stone-300 p-2.5 text-sm"
+                className="w-full rounded-xl border border-theme-border p-2.5 text-sm"
               />
             </Field>
 
             {error && (
-              <p className="rounded-xl bg-rose-50 p-3 text-xs text-rose-700">
+              <p className="rounded-xl bg-theme-gold-soft p-3 text-xs text-rose-700">
                 {error}
               </p>
             )}
@@ -332,7 +334,7 @@ export default function PractitionersPage() {
               <button
                 type="button"
                 onClick={() => setOpen(false)}
-                className="rounded-full px-4 py-2 text-xs text-stone-500"
+                className="rounded-full px-4 py-2 text-xs text-ink-muted"
               >
                 やめる
               </button>
@@ -373,7 +375,7 @@ function Field({
 }) {
   return (
     <label className="block">
-      <span className="mb-1 block text-xs font-bold text-stone-600">
+      <span className="mb-1 block text-xs font-bold text-ink-muted">
         {label}
       </span>
       {children}

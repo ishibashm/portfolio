@@ -33,7 +33,7 @@ import type {
 const InlineMath = dynamic(() => import("../MathFormula"), {
   ssr: false,
   loading: () => (
-    <span className="text-[10px] text-stone-600 font-mono">
+    <span className="text-[10px] text-ink-muted font-mono">
       [ 数式を読込中 ]
     </span>
   ),
@@ -245,9 +245,7 @@ function BoardUseBadge({ inUse }: { inUse: boolean }) {
   return (
     <span
       className={`ml-auto rounded px-1.5 py-0.5 text-[10px] font-bold tracking-normal ${
-        inUse
-          ? "bg-emerald-100 text-emerald-800"
-          : "bg-stone-100 text-stone-700"
+        inUse ? "bg-emerald-100 text-emerald-800" : "bg-stone-100 text-ink"
       }`}
     >
       {inUse ? "いま使っている盤" : "参考"}
@@ -304,7 +302,7 @@ export function ConsultPanel({
     // そのまま渡していた。先頭の !s が既に undefined を受けているので、
     // 実際に来る値に型を合わせるだけ。
     const getColorClass = (s: string | undefined) => {
-      if (!s) return "text-stone-600";
+      if (!s) return "text-ink-muted";
       if (
         s.startsWith("NOISE_DOYOU") ||
         s.startsWith("NOISE_GOU") ||
@@ -319,7 +317,7 @@ export function ConsultPanel({
       )
         return "text-purple-700 font-bold bg-[#a855f7]/10 border-[#a855f7]/30";
       if (s.startsWith("NOISE_VOID"))
-        return "text-stone-600 bg-white border-stone-300";
+        return "text-ink-muted bg-theme-surface border-theme-border";
       if (s === "OPTIMAL")
         return "text-emerald-700 font-bold bg-emerald-50 border-emerald-200 shadow-[0_0_8px_rgba(16,185,129,0.2)]";
       if (s === "OPTIMAL_REGULAR")
@@ -328,19 +326,19 @@ export function ConsultPanel({
     };
 
     const baseClass = isCenter
-      ? "bg-white/80 border-stone-200 text-stone-600"
-      : "bg-white/70 border-stone-200";
+      ? "bg-theme-surface border-theme-border text-ink-muted"
+      : "bg-theme-surface/70 border-theme-border";
     const colorClass = isCenter ? "" : getColorClass(status);
 
     return (
       <div
         className={`p-1 flex flex-col items-center justify-center border rounded-xl transition-all ${baseClass} ${colorClass}`}
       >
-        <span className="text-[10px] text-stone-600 tracking-widest">
+        <span className="text-[10px] text-ink-muted tracking-widest">
           {MATRIX_DIRECTION_JA[dir] ?? dir}
         </span>
         <span
-          className={`text-lg sm:text-xl font-mono font-bold leading-none my-0.5 ${isCenter ? "text-stone-600" : ""}`}
+          className={`text-lg sm:text-xl font-mono font-bold leading-none my-0.5 ${isCenter ? "text-ink-muted" : ""}`}
         >
           {star || "-"}
         </span>
@@ -384,7 +382,7 @@ export function ConsultPanel({
       )
         return "text-purple-700 font-bold";
       if (s === "NOISE_VOID")
-        return "text-stone-600 font-bold drop-shadow-[0_0_3px_rgba(0,0,0,1)] bg-stone-50 px-1 border border-stone-200";
+        return "text-ink-muted font-bold drop-shadow-[0_0_3px_rgba(0,0,0,1)] bg-theme-subtle px-1 border border-theme-border";
       if (s === "NOISE_HA") return "text-rose-700 font-bold";
       if (s === "OPTIMAL")
         return "text-emerald-700 font-bold drop-shadow-[0_0_5px_rgba(16,185,129,0.8)]";
@@ -464,14 +462,14 @@ export function ConsultPanel({
     return (
       <TapTooltip
         label={label}
-        className={`${getColor(status)} border-b border-stone-300 hover:border-current`}
+        className={`${getColor(status)} border-b border-theme-border hover:border-current`}
       >
         <div
-          className={`font-bold mb-1 border-b border-stone-200 pb-1 ${getColor(status)}`}
+          className={`font-bold mb-1 border-b border-theme-border pb-1 ${getColor(status)}`}
         >
           {title}
         </div>
-        <div className="text-stone-600 mb-1 leading-tight">{desc}</div>
+        <div className="text-ink-muted mb-1 leading-tight">{desc}</div>
         {isTendoDir && (
           <div className="text-[10px] text-emerald-700 font-bold mb-1 bg-emerald-50 p-1 border border-emerald-200 rounded-xs">
             {
@@ -494,7 +492,7 @@ export function ConsultPanel({
             currentZodiac,
           );
           return (
-            <div className="text-[7.5px] text-stone-600 font-mono mt-1.5 pt-1.5 border-t border-stone-200 space-y-0.5">
+            <div className="text-[7.5px] text-ink-muted font-mono mt-1.5 pt-1.5 border-t border-theme-border space-y-0.5">
               <div className="flex justify-between">
                 <span>【環境要因】:</span>{" "}
                 <span
@@ -512,7 +510,7 @@ export function ConsultPanel({
                 <span
                   className={
                     br.personal.includes("通常")
-                      ? "text-stone-600"
+                      ? "text-ink-muted"
                       : br.personal.includes("吉")
                         ? "text-emerald-700 font-bold"
                         : "text-purple-700 font-bold"
@@ -540,7 +538,7 @@ export function ConsultPanel({
             このタブには下の 盤の内訳 が残る。
           */}
 
-        <div className="mt-8 flex flex-col gap-4 border-b border-stone-200 pb-4 w-full max-w-[1700px]">
+        <div className="mt-8 flex flex-col gap-4 border-b border-theme-border pb-4 w-full max-w-[1700px]">
           <div className="flex items-center gap-2 mb-2">
             <h2 className="text-[10px] uppercase font-mono tracking-[0.3em] text-purple-700">
               盤の内訳
@@ -549,26 +547,26 @@ export function ConsultPanel({
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-4">
             {/* Birth Imprint Data (Hardware Init) */}
-            <div className="border border-stone-200 bg-white/80 p-4 flex flex-col gap-4 relative overflow-hidden group">
+            <div className="border border-theme-border bg-theme-surface p-4 flex flex-col gap-4 relative overflow-hidden group">
               {/* Decorative background element */}
               <div className="absolute top-0 right-0 w-32 h-32 bg-purple-500/5 rounded-full blur-3xl -mr-10 -mt-10 pointer-events-none"></div>
 
-              <div className="flex flex-col gap-1 border-b border-stone-200 pb-2">
-                <div className="text-[11px] text-stone-600 font-bold uppercase tracking-widest flex items-center gap-2">
+              <div className="flex flex-col gap-1 border-b border-theme-border pb-2">
+                <div className="text-[11px] text-ink-muted font-bold uppercase tracking-widest flex items-center gap-2">
                   <span className="text-purple-700">▶</span> あなたの星{" "}
-                  <span className="text-stone-600 font-normal">
+                  <span className="text-ink-muted font-normal">
                     （本命星・月命星・天中殺）
                   </span>
                 </div>
-                <div className="text-xs text-stone-600 font-sans leading-tight">
+                <div className="text-xs text-ink-muted font-sans leading-tight">
                   生年月日から求めた、あなたの本命星・月命星・天中殺
                 </div>
               </div>
 
               <div className="flex flex-col gap-3 z-10">
-                <div className="bg-white/70 border border-purple-200 p-3 flex flex-col w-full rounded-xl">
+                <div className="bg-theme-surface/70 border border-purple-200 p-3 flex flex-col w-full rounded-xl">
                   <div className="flex justify-between items-center mb-1">
-                    <span className="text-[10px] text-stone-600 uppercase tracking-widest font-bold">
+                    <span className="text-[10px] text-ink-muted uppercase tracking-widest font-bold">
                       本命星
                     </span>
                     <span className="text-[10px] text-purple-700 bg-purple-500/10 px-1 border border-purple-200">
@@ -580,16 +578,16 @@ export function ConsultPanel({
                       <span className="text-2xl font-bold font-mono text-emerald-700 leading-none">
                         {honmeiStar?.physical}
                       </span>
-                      <span className="text-[10px] text-stone-600 mt-1">
+                      <span className="text-[10px] text-ink-muted mt-1">
                         物理
                       </span>
                     </div>
                     <div className="w-px h-8 bg-stone-100"></div>
                     <div className="flex flex-col">
-                      <span className="text-xl font-bold font-mono text-stone-600 leading-none">
+                      <span className="text-xl font-bold font-mono text-ink-muted leading-none">
                         {honmeiStar?.classical}
                       </span>
-                      <span className="text-[10px] text-stone-600 mt-1">
+                      <span className="text-[10px] text-ink-muted mt-1">
                         古典
                       </span>
                     </div>
@@ -597,42 +595,42 @@ export function ConsultPanel({
                 </div>
 
                 <div className="grid grid-cols-3 gap-2">
-                  <div className="bg-white/70 border border-stone-200 p-2 flex flex-col rounded-xl">
-                    <span className="text-[10px] text-stone-600 uppercase tracking-widest mb-1">
+                  <div className="bg-theme-surface/70 border border-theme-border p-2 flex flex-col rounded-xl">
+                    <span className="text-[10px] text-ink-muted uppercase tracking-widest mb-1">
                       生まれた年の星
                     </span>
                     <div className="flex items-baseline gap-1 font-mono">
                       <span className="text-lg text-purple-700 font-bold">
                         {birthEnv?.yearStar}
                       </span>
-                      <span className="text-[10px] text-stone-600">/</span>
-                      <span className="text-sm text-stone-600">
+                      <span className="text-[10px] text-ink-muted">/</span>
+                      <span className="text-sm text-ink-muted">
                         {birthEnv?.classicalYearStar}
                       </span>
                     </div>
-                    <span className="text-[10px] text-stone-600 mt-1">
+                    <span className="text-[10px] text-ink-muted mt-1">
                       物理 / 古典
                     </span>
                   </div>
-                  <div className="bg-white/70 border border-stone-200 p-2 flex flex-col rounded-xl">
-                    <span className="text-[10px] text-stone-600 uppercase tracking-widest mb-1">
+                  <div className="bg-theme-surface/70 border border-theme-border p-2 flex flex-col rounded-xl">
+                    <span className="text-[10px] text-ink-muted uppercase tracking-widest mb-1">
                       生まれた月の星
                     </span>
                     <span className="text-lg font-mono text-amber-700 font-bold">
                       {birthEnv?.monthStar || "--"}
                     </span>
-                    <span className="text-[10px] text-stone-600 mt-1">
+                    <span className="text-[10px] text-ink-muted mt-1">
                       物理
                     </span>
                   </div>
-                  <div className="bg-white/70 border border-stone-200 p-2 flex flex-col rounded-xl">
-                    <span className="text-[10px] text-stone-600 uppercase tracking-widest mb-1">
+                  <div className="bg-theme-surface/70 border border-theme-border p-2 flex flex-col rounded-xl">
+                    <span className="text-[10px] text-ink-muted uppercase tracking-widest mb-1">
                       生まれた日の星
                     </span>
                     <span className="text-lg font-mono text-blue-700 font-bold">
                       {birthEnv?.dayStar || "--"}
                     </span>
-                    <span className="text-[10px] text-stone-600 mt-1">
+                    <span className="text-[10px] text-ink-muted mt-1">
                       物理
                     </span>
                   </div>
@@ -641,14 +639,14 @@ export function ConsultPanel({
 
               {/* Raw Birth Orbital Parameters */}
               {birthEnv?.raw && (
-                <div className="mt-auto pt-3 border-t border-stone-200">
-                  <div className="text-[10px] text-stone-600 uppercase tracking-widest mb-2 flex items-center gap-2">
+                <div className="mt-auto pt-3 border-t border-theme-border">
+                  <div className="text-[10px] text-ink-muted uppercase tracking-widest mb-2 flex items-center gap-2">
                     <span>出生時の天体の黄経</span>
                     <div className="h-px bg-stone-100 grow"></div>
                   </div>
                   <div className="grid grid-cols-3 gap-2">
-                    <div className="bg-stone-50 border border-purple-200 p-2 flex flex-col rounded-xl">
-                      <span className="text-[10px] text-stone-600 uppercase tracking-widest flex items-center justify-between">
+                    <div className="bg-theme-subtle border border-purple-200 p-2 flex flex-col rounded-xl">
+                      <span className="text-[10px] text-ink-muted uppercase tracking-widest flex items-center justify-between">
                         木星{" "}
                         <span className="text-[10px] text-purple-700 border border-purple-200 px-0.5">
                           Y
@@ -658,8 +656,8 @@ export function ConsultPanel({
                         {birthEnv.raw.jupiterLon.toFixed(2)}°
                       </span>
                     </div>
-                    <div className="bg-stone-50 border border-amber-200 p-2 flex flex-col rounded-xl">
-                      <span className="text-[10px] text-stone-600 uppercase tracking-widest flex items-center justify-between">
+                    <div className="bg-theme-subtle border border-amber-200 p-2 flex flex-col rounded-xl">
+                      <span className="text-[10px] text-ink-muted uppercase tracking-widest flex items-center justify-between">
                         月{" "}
                         <span className="text-[10px] text-amber-700 border border-amber-200 px-0.5">
                           M
@@ -669,8 +667,8 @@ export function ConsultPanel({
                         {birthEnv.raw.moonLon.toFixed(2)}°
                       </span>
                     </div>
-                    <div className="bg-stone-50 border border-blue-200 p-2 flex flex-col rounded-xl">
-                      <span className="text-[10px] text-stone-600 uppercase tracking-widest flex items-center justify-between">
+                    <div className="bg-theme-subtle border border-blue-200 p-2 flex flex-col rounded-xl">
+                      <span className="text-[10px] text-ink-muted uppercase tracking-widest flex items-center justify-between">
                         太陽{" "}
                         <span className="text-[10px] text-blue-700 border border-blue-200 px-0.5">
                           D
@@ -686,12 +684,12 @@ export function ConsultPanel({
             </div>
 
             {/* Current Environment Data */}
-            <div className="border border-stone-200 bg-white/80 p-4 flex flex-col gap-4 relative overflow-hidden group">
+            <div className="border border-theme-border bg-theme-surface p-4 flex flex-col gap-4 relative overflow-hidden group">
               {/* Decorative background element */}
               <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/5 rounded-full blur-3xl -mr-10 -mt-10 pointer-events-none"></div>
 
-              <div className="flex flex-col gap-1 border-b border-stone-200 pb-2">
-                <div className="text-[11px] text-stone-600 font-bold uppercase tracking-widest flex items-center justify-between">
+              <div className="flex flex-col gap-1 border-b border-theme-border pb-2">
+                <div className="text-[11px] text-ink-muted font-bold uppercase tracking-widest flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <span className="text-emerald-700">▶</span> いまの盤と天体
                   </div>
@@ -702,49 +700,49 @@ export function ConsultPanel({
                     </span>
                   </div>
                 </div>
-                <div className="text-xs text-stone-600 font-sans leading-tight">
+                <div className="text-xs text-ink-muted font-sans leading-tight">
                   いまの方位盤（年・月・日）と、現在の天体の位置
                 </div>
               </div>
 
               <div className="flex flex-col gap-3 z-10">
                 <div className="grid grid-cols-3 gap-2 mt-1">
-                  <div className="bg-white/70 border border-stone-200 p-3 flex flex-col rounded-xl">
-                    <span className="text-[10px] text-stone-600 uppercase tracking-widest mb-1">
+                  <div className="bg-theme-surface/70 border border-theme-border p-3 flex flex-col rounded-xl">
+                    <span className="text-[10px] text-ink-muted uppercase tracking-widest mb-1">
                       年盤の星
                     </span>
                     <div className="flex items-baseline gap-1 font-mono">
                       <span className="text-2xl text-purple-700 font-bold leading-none">
                         {env?.yearStar}
                       </span>
-                      <span className="text-[10px] text-stone-600">/</span>
-                      <span className="text-base text-stone-600 leading-none">
+                      <span className="text-[10px] text-ink-muted">/</span>
+                      <span className="text-base text-ink-muted leading-none">
                         {env?.classicalYearStar}
                       </span>
                     </div>
-                    <span className="text-[10px] text-stone-600 mt-2">
+                    <span className="text-[10px] text-ink-muted mt-2">
                       物理 / 古典
                     </span>
                   </div>
-                  <div className="bg-white/70 border border-stone-200 p-3 flex flex-col rounded-xl">
-                    <span className="text-[10px] text-stone-600 uppercase tracking-widest mb-1">
+                  <div className="bg-theme-surface/70 border border-theme-border p-3 flex flex-col rounded-xl">
+                    <span className="text-[10px] text-ink-muted uppercase tracking-widest mb-1">
                       月盤の星
                     </span>
                     <span className="text-2xl font-mono text-amber-700 font-bold leading-none">
                       {env?.monthStar || "--"}
                     </span>
-                    <span className="text-[10px] text-stone-600 mt-2">
+                    <span className="text-[10px] text-ink-muted mt-2">
                       物理
                     </span>
                   </div>
-                  <div className="bg-white/70 border border-stone-200 p-3 flex flex-col rounded-xl">
-                    <span className="text-[10px] text-stone-600 uppercase tracking-widest mb-1">
+                  <div className="bg-theme-surface/70 border border-theme-border p-3 flex flex-col rounded-xl">
+                    <span className="text-[10px] text-ink-muted uppercase tracking-widest mb-1">
                       日盤の星
                     </span>
                     <span className="text-2xl font-mono text-blue-700 font-bold leading-none">
                       {env?.dayStar || "--"}
                     </span>
-                    <span className="text-[10px] text-stone-600 mt-2">
+                    <span className="text-[10px] text-ink-muted mt-2">
                       物理
                     </span>
                   </div>
@@ -753,14 +751,14 @@ export function ConsultPanel({
 
               {/* Raw Current Orbital Parameters */}
               {env?.raw && (
-                <div className="mt-auto pt-3 border-t border-stone-200">
-                  <div className="text-[10px] text-stone-600 uppercase tracking-widest mb-2 flex items-center gap-2">
+                <div className="mt-auto pt-3 border-t border-theme-border">
+                  <div className="text-[10px] text-ink-muted uppercase tracking-widest mb-2 flex items-center gap-2">
                     <span>いまの天体の黄経</span>
                     <div className="h-px bg-stone-100 grow"></div>
                   </div>
                   <div className="grid grid-cols-3 gap-2">
-                    <div className="bg-stone-50 border border-purple-200 p-2 flex flex-col rounded-xl">
-                      <span className="text-[10px] text-stone-600 uppercase tracking-widest flex items-center justify-between">
+                    <div className="bg-theme-subtle border border-purple-200 p-2 flex flex-col rounded-xl">
+                      <span className="text-[10px] text-ink-muted uppercase tracking-widest flex items-center justify-between">
                         木星{" "}
                         <span className="text-[10px] text-purple-700 border border-purple-200 px-0.5 animate-pulse">
                           Y
@@ -770,8 +768,8 @@ export function ConsultPanel({
                         {env.raw.jupiterLon.toFixed(2)}°
                       </span>
                     </div>
-                    <div className="bg-stone-50 border border-amber-200 p-2 flex flex-col rounded-xl">
-                      <span className="text-[10px] text-stone-600 uppercase tracking-widest flex items-center justify-between">
+                    <div className="bg-theme-subtle border border-amber-200 p-2 flex flex-col rounded-xl">
+                      <span className="text-[10px] text-ink-muted uppercase tracking-widest flex items-center justify-between">
                         月{" "}
                         <span className="text-[10px] text-amber-700 border border-amber-200 px-0.5 animate-pulse">
                           M
@@ -781,8 +779,8 @@ export function ConsultPanel({
                         {env.raw.moonLon.toFixed(2)}°
                       </span>
                     </div>
-                    <div className="bg-stone-50 border border-blue-200 p-2 flex flex-col rounded-xl">
-                      <span className="text-[10px] text-stone-600 uppercase tracking-widest flex items-center justify-between">
+                    <div className="bg-theme-subtle border border-blue-200 p-2 flex flex-col rounded-xl">
+                      <span className="text-[10px] text-ink-muted uppercase tracking-widest flex items-center justify-between">
                         太陽{" "}
                         <span className="text-[10px] text-blue-700 border border-blue-200 px-0.5 animate-pulse">
                           D
@@ -798,8 +796,8 @@ export function ConsultPanel({
             </div>
           </div>
 
-          <details className="mt-4 mb-4 border border-stone-200 bg-white/80 group">
-            <summary className="p-3 text-[10px] text-stone-600 font-mono uppercase tracking-widest cursor-pointer hover:bg-white/80 flex items-center justify-between list-none">
+          <details className="mt-4 mb-4 border border-theme-border bg-theme-surface group">
+            <summary className="p-3 text-[10px] text-ink-muted font-mono uppercase tracking-widest cursor-pointer hover:bg-theme-surface flex items-center justify-between list-none">
               <div className="flex items-center gap-2">
                 <span className="text-purple-700 animate-pulse">◆</span>
                 方位盤の内訳を開く（年・月・日の盤と本命星の重ね合わせ）
@@ -809,8 +807,8 @@ export function ConsultPanel({
               </span>
             </summary>
 
-            <div className="p-3 border-t border-stone-200 bg-white/70">
-              <div className="mb-4 p-2 bg-white/80 border border-stone-200 text-xs text-stone-600 font-mono leading-relaxed">
+            <div className="p-3 border-t border-theme-border bg-theme-surface/70">
+              <div className="mb-4 p-2 bg-theme-surface border border-theme-border text-xs text-ink-muted font-mono leading-relaxed">
                 <strong>色の読み方</strong>
                 <br />
                 年・月・日の方位盤に、あなたの本命星・月命星を重ねた結果です。
@@ -845,17 +843,17 @@ export function ConsultPanel({
                   }
                 >
                   <div
-                    className={`text-emerald-700 font-bold text-[10px] tracking-widest uppercase border-b border-stone-200 pb-1 flex items-center gap-2 ${!useClassicalBoard ? "drop-shadow-[0_0_5px_rgba(16,185,129,0.5)]" : ""}`}
+                    className={`text-emerald-700 font-bold text-[10px] tracking-widest uppercase border-b border-theme-border pb-1 flex items-center gap-2 ${!useClassicalBoard ? "drop-shadow-[0_0_5px_rgba(16,185,129,0.5)]" : ""}`}
                   >
                     <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse"></span>
                     物理の盤（天体の位置から）
                     <BoardUseBadge inUse={!useClassicalBoard} />
                   </div>
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-[11px] font-mono text-stone-600">
-                    <div className="bg-white/70 border border-purple-200 p-2">
-                      <div className="text-purple-700 font-bold mb-1 border-b border-stone-200 pb-1 flex justify-between">
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-[11px] font-mono text-ink-muted">
+                    <div className="bg-theme-surface/70 border border-purple-200 p-2">
+                      <div className="text-purple-700 font-bold mb-1 border-b border-theme-border pb-1 flex justify-between">
                         <span>物理年盤</span>
-                        <span className="text-[10px] text-stone-600">年盤</span>
+                        <span className="text-[10px] text-ink-muted">年盤</span>
                       </div>
                       {physicalYearBoard && (
                         <div className="grid grid-cols-3 gap-0.5 sm:gap-1 text-center mt-2">
@@ -907,15 +905,15 @@ export function ConsultPanel({
                           )}
                         </div>
                       )}
-                      <div className="mt-2 text-[10px] text-stone-600 leading-tight">
+                      <div className="mt-2 text-[10px] text-ink-muted leading-tight">
                         太陽黄経(立春起点)に基づく真の物理的位相。
                       </div>
                     </div>
 
-                    <div className="bg-white/70 border border-amber-200 p-2">
-                      <div className="text-amber-700 font-bold mb-1 border-b border-stone-200 pb-1 flex justify-between">
+                    <div className="bg-theme-surface/70 border border-amber-200 p-2">
+                      <div className="text-amber-700 font-bold mb-1 border-b border-theme-border pb-1 flex justify-between">
                         <span>物理月盤</span>
-                        <span className="text-[10px] text-stone-600">月盤</span>
+                        <span className="text-[10px] text-ink-muted">月盤</span>
                       </div>
                       {physicalMonthBoard && (
                         <div className="grid grid-cols-3 gap-0.5 sm:gap-1 text-center mt-2">
@@ -967,15 +965,15 @@ export function ConsultPanel({
                           )}
                         </div>
                       )}
-                      <div className="mt-2 text-[10px] text-stone-600 leading-tight">
+                      <div className="mt-2 text-[10px] text-ink-muted leading-tight">
                         太陽と月の相対位相（月相）モデル。
                       </div>
                     </div>
 
-                    <div className="bg-white/70 border border-blue-200 p-2">
-                      <div className="text-blue-700 font-bold mb-1 border-b border-stone-200 pb-1 flex justify-between">
+                    <div className="bg-theme-surface/70 border border-blue-200 p-2">
+                      <div className="text-blue-700 font-bold mb-1 border-b border-theme-border pb-1 flex justify-between">
                         <span>物理日盤</span>
-                        <span className="text-[10px] text-stone-600">日盤</span>
+                        <span className="text-[10px] text-ink-muted">日盤</span>
                       </div>
                       {physicalDayBoard && (
                         <div className="grid grid-cols-3 gap-0.5 sm:gap-1 text-center mt-2">
@@ -1027,7 +1025,7 @@ export function ConsultPanel({
                           )}
                         </div>
                       )}
-                      <div className="mt-2 text-[10px] text-stone-600 leading-tight">
+                      <div className="mt-2 text-[10px] text-ink-muted leading-tight">
                         地球の自転(JD)と至点による物理反転モデル。
                       </div>
                     </div>
@@ -1036,18 +1034,18 @@ export function ConsultPanel({
 
                 {/* Classical Model Section */}
                 <div
-                  className={`transition-all duration-300 mt-4 ${useClassicalBoard ? "rounded-xl ring-1 ring-stone-300 bg-stone-50/60 p-2" : "p-2"}`}
+                  className={`transition-all duration-300 mt-4 ${useClassicalBoard ? "rounded-xl ring-1 ring-stone-300 bg-theme-subtle p-2" : "p-2"}`}
                 >
                   <div
-                    className={`text-stone-600 font-bold text-[10px] tracking-widest uppercase border-b border-stone-200 pb-1 flex items-center gap-2 ${useClassicalBoard ? "drop-shadow-[0_0_5px_rgba(255,255,255,0.3)]" : ""}`}
+                    className={`text-ink-muted font-bold text-[10px] tracking-widest uppercase border-b border-theme-border pb-1 flex items-center gap-2 ${useClassicalBoard ? "drop-shadow-[0_0_5px_rgba(255,255,255,0.3)]" : ""}`}
                   >
                     <span className="w-1.5 h-1.5 bg-zinc-400 rounded-full animate-pulse"></span>
                     古典の盤（節入りの暦から）
                     <BoardUseBadge inUse={useClassicalBoard} />
                   </div>
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-[11px] font-mono text-stone-600 mt-2">
-                    <div className="bg-white/80 border border-stone-200 p-2">
-                      <div className="font-bold mb-1 border-b border-stone-200 pb-1 flex justify-between">
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-[11px] font-mono text-ink-muted mt-2">
+                    <div className="bg-theme-surface border border-theme-border p-2">
+                      <div className="font-bold mb-1 border-b border-theme-border pb-1 flex justify-between">
                         <span>古典年盤</span>
                       </div>
                       {classicalYearBoard && (
@@ -1100,13 +1098,13 @@ export function ConsultPanel({
                           )}
                         </div>
                       )}
-                      <div className="mt-2 text-[10px] text-stone-600 leading-tight">
+                      <div className="mt-2 text-[10px] text-ink-muted leading-tight">
                         一般的な書籍・暦に基づく盤面。
                       </div>
                     </div>
 
-                    <div className="bg-white/80 border border-stone-200 p-2">
-                      <div className="font-bold mb-1 border-b border-stone-200 pb-1 flex justify-between">
+                    <div className="bg-theme-surface border border-theme-border p-2">
+                      <div className="font-bold mb-1 border-b border-theme-border pb-1 flex justify-between">
                         <span>古典月盤</span>
                       </div>
                       {classicalMonthBoard && (
@@ -1159,13 +1157,13 @@ export function ConsultPanel({
                           )}
                         </div>
                       )}
-                      <div className="mt-2 text-[10px] text-stone-600 leading-tight">
+                      <div className="mt-2 text-[10px] text-ink-muted leading-tight">
                         節気ごとのカレンダー切り替え。
                       </div>
                     </div>
 
-                    <div className="bg-white/80 border border-stone-200 p-2">
-                      <div className="font-bold mb-1 border-b border-stone-200 pb-1 flex justify-between">
+                    <div className="bg-theme-surface border border-theme-border p-2">
+                      <div className="font-bold mb-1 border-b border-theme-border pb-1 flex justify-between">
                         <span>古典日盤</span>
                       </div>
                       {classicalDayBoard && (
@@ -1218,7 +1216,7 @@ export function ConsultPanel({
                           )}
                         </div>
                       )}
-                      <div className="mt-2 text-[10px] text-stone-600 leading-tight">
+                      <div className="mt-2 text-[10px] text-ink-muted leading-tight">
                         精密日家九星・隠遁陽遁サイクル。
                       </div>
                     </div>
@@ -1230,17 +1228,17 @@ export function ConsultPanel({
 
           {/* Final Vector Calculation Visualization */}
           {env && layers && (
-            <div className="mt-4 bg-white/70 border border-stone-200 p-3 w-full">
-              <div className="text-emerald-700 font-bold mb-1 border-b border-stone-200 pb-1 text-[10px] tracking-widest uppercase flex flex-col items-start gap-0.5">
+            <div className="mt-4 bg-theme-surface/70 border border-theme-border p-3 w-full">
+              <div className="text-emerald-700 font-bold mb-1 border-b border-theme-border pb-1 text-[10px] tracking-widest uppercase flex flex-col items-start gap-0.5">
                 <span>年・月・日の盤の重ね合わせ</span>
-                <span className="text-stone-600 text-xs font-normal normal-case tracking-normal">
+                <span className="text-ink-muted text-xs font-normal normal-case tracking-normal">
                   {
                     "（重い順: 五黄殺・暗剣殺・破・本命殺・本命的殺 ＞ 天中殺方位 ＞ 月命殺・月命的殺。凶が無ければ吉、吉も無ければ平）"
                   }
                 </span>
               </div>
-              <div className="text-xs text-stone-600 mb-2 leading-relaxed text-justify pr-2 font-sans">
-                <strong className="text-stone-600">判定の決まり:</strong>{" "}
+              <div className="text-xs text-ink-muted mb-2 leading-relaxed text-justify pr-2 font-sans">
+                <strong className="text-ink-muted">判定の決まり:</strong>{" "}
                 {
                   "年盤・月盤・日盤の判定を重ねて最終結果を出します。どれか 1 つの盤でも凶（赤・紫）があれば、他の盤が吉（緑）でも最終結果は凶になります。凶を 1 つでも含む方位は勧めない、という九星気学の一般的な扱いをそのまま実装したものです。"
                 }
@@ -1258,14 +1256,14 @@ export function ConsultPanel({
                   }
                 >
                   <div
-                    className={`text-emerald-700 font-bold text-[10px] tracking-widest uppercase border-b border-stone-200 pb-1 mb-2 flex items-center gap-2 ${!useClassicalBoard ? "drop-shadow-[0_0_5px_rgba(16,185,129,0.5)]" : ""}`}
+                    className={`text-emerald-700 font-bold text-[10px] tracking-widest uppercase border-b border-theme-border pb-1 mb-2 flex items-center gap-2 ${!useClassicalBoard ? "drop-shadow-[0_0_5px_rgba(16,185,129,0.5)]" : ""}`}
                   >
                     <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse"></span>
                     物理の盤（天体の位置から）
                     <BoardUseBadge inUse={!useClassicalBoard} />
                   </div>
                   <table className="w-full text-left font-mono">
-                    <thead className="border-b border-stone-200 text-stone-600 text-[10px] uppercase tracking-wider">
+                    <thead className="border-b border-theme-border text-ink-muted text-[10px] uppercase tracking-wider">
                       <tr>
                         <th className="pb-2 pr-2 font-normal align-bottom">
                           方位
@@ -1273,25 +1271,25 @@ export function ConsultPanel({
                         <th className="pb-2 px-1 font-normal align-bottom">
                           年盤
                           <br />
-                          <span className="text-[10px] text-stone-600 font-sans normal-case leading-tight block mt-1">
+                          <span className="text-[10px] text-ink-muted font-sans normal-case leading-tight block mt-1">
                             【長期的影響】
                           </span>
                         </th>
                         <th className="pb-2 px-1 font-normal align-bottom">
                           月盤
                           <br />
-                          <span className="text-[10px] text-stone-600 font-sans normal-case leading-tight block mt-1">
+                          <span className="text-[10px] text-ink-muted font-sans normal-case leading-tight block mt-1">
                             【中期的影響】
                           </span>
                         </th>
                         <th className="pb-2 px-1 font-normal align-bottom">
                           日盤
                           <br />
-                          <span className="text-[10px] text-stone-600 font-sans normal-case leading-tight block mt-1">
+                          <span className="text-[10px] text-ink-muted font-sans normal-case leading-tight block mt-1">
                             【短期的影響】
                           </span>
                         </th>
-                        <th className="pb-2 pl-2 font-bold text-stone-600 align-bottom">
+                        <th className="pb-2 pl-2 font-bold text-ink-muted align-bottom">
                           統合
                         </th>
                       </tr>
@@ -1309,9 +1307,9 @@ export function ConsultPanel({
                         return (
                           <tr
                             key={dir}
-                            className="hover:bg-white/80 transition-colors"
+                            className="hover:bg-theme-surface transition-colors"
                           >
-                            <td className="py-2.5 pr-2 text-stone-600 font-bold align-middle">
+                            <td className="py-2.5 pr-2 text-ink-muted font-bold align-middle">
                               {dir}
                             </td>
                             <td className="py-2.5 px-1 align-middle">
@@ -1341,7 +1339,7 @@ export function ConsultPanel({
                                 isClassical={false}
                               />
                             </td>
-                            <td className="py-2.5 pl-2 align-middle bg-white/80">
+                            <td className="py-2.5 pl-2 align-middle bg-theme-surface">
                               <TooltipCell
                                 status={final}
                                 board={null}
@@ -1360,17 +1358,17 @@ export function ConsultPanel({
 
                 {/* Classical Model Table */}
                 <div
-                  className={`transition-all duration-300 ${useClassicalBoard ? "rounded-xl ring-1 ring-stone-300 bg-stone-50/60 p-2" : "p-2"}`}
+                  className={`transition-all duration-300 ${useClassicalBoard ? "rounded-xl ring-1 ring-stone-300 bg-theme-subtle p-2" : "p-2"}`}
                 >
                   <div
-                    className={`text-stone-600 font-bold text-[10px] tracking-widest uppercase border-b border-stone-200 pb-1 mb-2 flex items-center gap-2 ${useClassicalBoard ? "drop-shadow-[0_0_5px_rgba(255,255,255,0.3)]" : ""}`}
+                    className={`text-ink-muted font-bold text-[10px] tracking-widest uppercase border-b border-theme-border pb-1 mb-2 flex items-center gap-2 ${useClassicalBoard ? "drop-shadow-[0_0_5px_rgba(255,255,255,0.3)]" : ""}`}
                   >
                     <span className="w-1.5 h-1.5 bg-zinc-400 rounded-full animate-pulse"></span>
                     古典の盤（節入りの暦から）
                     <BoardUseBadge inUse={useClassicalBoard} />
                   </div>
                   <table className="w-full text-left font-mono">
-                    <thead className="border-b border-stone-200 text-stone-600 text-[10px] uppercase tracking-wider">
+                    <thead className="border-b border-theme-border text-ink-muted text-[10px] uppercase tracking-wider">
                       <tr>
                         <th className="pb-2 pr-2 font-normal align-bottom">
                           方位
@@ -1396,7 +1394,7 @@ export function ConsultPanel({
                             【短期的影響】
                           </span>
                         </th>
-                        <th className="pb-2 pl-2 font-bold text-stone-600 align-bottom">
+                        <th className="pb-2 pl-2 font-bold text-ink-muted align-bottom">
                           統合
                         </th>
                       </tr>
@@ -1414,9 +1412,9 @@ export function ConsultPanel({
                         return (
                           <tr
                             key={dir}
-                            className="hover:bg-white/80 transition-colors"
+                            className="hover:bg-theme-surface transition-colors"
                           >
-                            <td className="py-2.5 pr-2 text-stone-600 font-bold align-middle">
+                            <td className="py-2.5 pr-2 text-ink-muted font-bold align-middle">
                               {dir}
                             </td>
                             <td className="py-2.5 px-1 align-middle">
@@ -1446,7 +1444,7 @@ export function ConsultPanel({
                                 isClassical={true}
                               />
                             </td>
-                            <td className="py-2.5 pl-2 align-middle bg-white/80">
+                            <td className="py-2.5 pl-2 align-middle bg-theme-surface">
                               <TooltipCell
                                 status={final}
                                 board={null}
@@ -1467,8 +1465,8 @@ export function ConsultPanel({
           )}
 
           {/* Theory & Model Explanation */}
-          <div className="mt-4 bg-white/80 border border-stone-200 p-3 w-full">
-            <div className="flex items-center justify-between mb-2 border-b border-stone-200 pb-2">
+          <div className="mt-4 bg-theme-surface border border-theme-border p-3 w-full">
+            <div className="flex items-center justify-between mb-2 border-b border-theme-border pb-2">
               <div className="text-blue-700 font-bold text-[10px] tracking-widest uppercase flex items-center gap-2">
                 <span className="w-2 h-2 bg-blue-500 rounded-full md:animate-pulse"></span>
                 天体物理コアロジック (理論と数理モデル)
@@ -1477,7 +1475,7 @@ export function ConsultPanel({
                 onClick={() =>
                   setShowAstrophysicalLogic(!showAstrophysicalLogic)
                 }
-                className="inline-flex min-h-[24px] items-center justify-center text-[10px] font-mono text-stone-600 hover:text-stone-900 bg-stone-50 px-2 py-1 border border-stone-300 hover:border-zinc-500 transition-colors uppercase tracking-widest"
+                className="inline-flex min-h-[24px] items-center justify-center text-[10px] font-mono text-ink-muted hover:text-ink bg-theme-subtle px-2 py-1 border border-theme-border hover:border-zinc-500 transition-colors uppercase tracking-widest"
               >
                 {showAstrophysicalLogic ? "計算式を閉じる" : "計算式を見る"}
               </button>
@@ -1490,14 +1488,14 @@ export function ConsultPanel({
                     <span className="text-[10px] text-purple-700 font-bold border-l-2 border-purple-500 pl-2 bg-purple-50 py-0.5">
                       年盤: 木星の黄経
                     </span>
-                    <p className="text-xs text-stone-600 leading-relaxed">
+                    <p className="text-xs text-ink-muted leading-relaxed">
                       木星の公転周期（約11.86年）を黄経30度ごとの12区画に分け、区画の番号から年盤の星（1〜9）を決めます。木星の黄経が区画の境を越えた瞬間に年盤が切り替わります。太陽黄経による位相反転（陽遁・陰遁）を適用。
                     </p>
-                    <div className="bg-white/70 p-2 border border-stone-200 font-mono text-[10px] shadow-inner overflow-x-auto whitespace-nowrap custom-scrollbar">
+                    <div className="bg-theme-surface/70 p-2 border border-theme-border font-mono text-[10px] shadow-inner overflow-x-auto whitespace-nowrap custom-scrollbar">
                       <InlineMath
                         math={`S_y = 11 - ((\\lfloor L_j / 30 \\rfloor + 8) \\pmod 9)`}
                       />
-                      <div className="mt-1 text-stone-600 border-t border-stone-200 pt-1">
+                      <div className="mt-1 text-ink-muted border-t border-theme-border pt-1">
                         <InlineMath
                           math={`L_j = ${env?.raw?.jupiterLon?.toFixed(2)}^\\circ`}
                         />{" "}
@@ -1509,14 +1507,14 @@ export function ConsultPanel({
                     <span className="text-[10px] text-amber-700 font-bold border-l-2 border-amber-500 pl-2 bg-amber-50 py-0.5">
                       月盤: 太陽黄経と月相
                     </span>
-                    <p className="text-xs text-stone-600 leading-relaxed">
+                    <p className="text-xs text-ink-muted leading-relaxed">
                       月盤の星を、太陽黄経と月相の組み合わせから決めています。
                     </p>
-                    <div className="bg-white/70 p-2 border border-stone-200 font-mono text-[10px] shadow-inner overflow-x-auto whitespace-nowrap custom-scrollbar">
+                    <div className="bg-theme-surface/70 p-2 border border-theme-border font-mono text-[10px] shadow-inner overflow-x-auto whitespace-nowrap custom-scrollbar">
                       <InlineMath
                         math={`S_m = 9 - ((T_s \\times 12 + T_l) \\pmod 9)`}
                       />
-                      <div className="mt-1 text-stone-600 border-t border-stone-200 pt-1">
+                      <div className="mt-1 text-ink-muted border-t border-theme-border pt-1">
                         <InlineMath
                           math={`\\Delta L = ${(((env?.raw?.moonLon ?? 0) - (env?.raw?.sunLon ?? 0) + 360) % 360).toFixed(2)}^\\circ`}
                         />{" "}
@@ -1528,21 +1526,21 @@ export function ConsultPanel({
                     <span className="text-[10px] text-blue-700 font-bold border-l-2 border-blue-500 pl-2 bg-blue-50 py-0.5">
                       日盤: ユリウス日
                     </span>
-                    <p className="text-xs text-stone-600 leading-relaxed">
+                    <p className="text-xs text-ink-muted leading-relaxed">
                       日盤はユリウス日（JD）を基に数え、太陽黄経から求めた夏至・冬至を境に九星の巡り（陽遁/陰遁）を反転させます。
                     </p>
-                    <div className="bg-white/70 p-2 border border-stone-200 font-mono text-[10px] shadow-inner overflow-x-auto whitespace-nowrap custom-scrollbar">
+                    <div className="bg-theme-surface/70 p-2 border border-theme-border font-mono text-[10px] shadow-inner overflow-x-auto whitespace-nowrap custom-scrollbar">
                       <InlineMath
                         math={`S_d = \\begin{cases} 9 - (JD \\% 9) & (\\text{陰遁}) \\\\ (JD \\% 9) + 1 & (\\text{陽遁}) \\end{cases}`}
                       />
-                      <div className="mt-1 text-stone-600 border-t border-stone-200 pt-1 italic">
+                      <div className="mt-1 text-ink-muted border-t border-theme-border pt-1 italic">
                         JD はユリウス日
                       </div>
                     </div>
                   </div>
                 </div>
-                <div className="mt-3 pt-2 border-t border-stone-200 flex flex-col gap-1">
-                  <div className="text-[10px] text-stone-600 italic">
+                <div className="mt-3 pt-2 border-t border-theme-border flex flex-col gap-1">
+                  <div className="text-[10px] text-ink-muted italic">
                     ※
                     天文モードは、九星の切り替わり時刻を実際の天体位置（歳差・摂動を考慮した太陽黄経）から求める計算方法です。古典暦（Classical）との乖離はこの求め方の差で、判定がより当たることを示すものではありません。
                   </div>

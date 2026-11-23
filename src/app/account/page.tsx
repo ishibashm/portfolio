@@ -42,7 +42,7 @@ export const metadata: Metadata = {
 
 export default function Page() {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-rose-50/80 via-stone-50 to-amber-50/50 p-4 font-sans text-stone-800 md:p-8">
+    <div className="min-h-screen bg-background text-ink p-4 font-sans text-ink md:p-8">
       {/* 読むだけの頁。横に伸ばしても一覧が間延びするので、/profile と
           同じ幅に揃える */}
       <div className="mx-auto max-w-3xl space-y-6">
@@ -51,7 +51,7 @@ export default function Page() {
             <UserRound className="h-5 w-5 text-rose-500" aria-hidden />
             {TITLE}
           </h1>
-          <p className="mt-2 max-w-[70ch] text-xs leading-relaxed text-stone-600">
+          <p className="mt-2 max-w-[70ch] text-xs leading-relaxed text-ink-muted">
             {
               "登録した内容と、それがどこに保存されているかを確認できます。変更は「生年月日と場所を登録」から行います。"
             }
@@ -62,10 +62,10 @@ export default function Page() {
 
         <RemindersPanel />
 
-        <footer className="border-t border-stone-200 pt-5 text-[11px] leading-relaxed text-stone-500">
+        <footer className="border-t border-theme-border pt-5 text-[11px] leading-relaxed text-ink-muted">
           <p>
             {"保存する範囲と扱いは "}
-            <Link href="/privacy" className="underline hover:text-stone-700">
+            <Link href="/privacy" className="underline hover:text-ink">
               プライバシーポリシー
             </Link>
             {" に書いています。"}

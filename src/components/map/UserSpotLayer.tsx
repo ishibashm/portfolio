@@ -92,31 +92,31 @@ export function UserSpotLayer({
             <Popup>
               <div className="font-sans text-xs text-gray-900 p-2 min-w-[180px]">
                 <div className="font-bold text-sm">★ {s.name}</div>
-                <div className="text-stone-500 mt-0.5 font-mono text-[10px]">
+                <div className="text-ink-muted mt-0.5 font-mono text-[10px]">
                   {s.lat.toFixed(5)}, {s.lon.toFixed(5)}
                 </div>
                 {from && (
                   <div className="mt-2 space-y-1">
                     <div className="flex justify-between gap-3">
-                      <span className="text-stone-600">出発地から:</span>
+                      <span className="text-ink-muted">出発地から:</span>
                       <span className="font-bold">
                         {from.directionLabel} {Math.round(from.distanceKm)}km
                       </span>
                     </div>
                     {from.cell ? (
                       <div className="flex justify-between gap-3 items-center">
-                        <span className="text-stone-600">この日の段階:</span>
+                        <span className="text-ink-muted">この日の段階:</span>
                         <span
                           className={`px-1.5 py-0.5 rounded border font-bold ${
                             (tier && LIGHT_TIER_BADGE_CLASS[tier]) ??
-                            "bg-stone-100 border-stone-300 text-stone-700"
+                            "bg-stone-100 border-theme-border text-ink"
                           }`}
                         >
                           {(tier && TIER_LABELS[tier]) ?? from.cell.tier}
                         </span>
                       </div>
                     ) : noBoardNote ? (
-                      <div className="text-[10px] text-stone-500">
+                      <div className="text-[10px] text-ink-muted">
                         {noBoardNote}
                       </div>
                     ) : null}
@@ -142,7 +142,7 @@ export function UserSpotLayer({
                   </a>
                 )}
                 {s.memo && (
-                  <div className="mt-1 whitespace-pre-line text-[10px] leading-snug text-stone-700">
+                  <div className="mt-1 whitespace-pre-line text-[10px] leading-snug text-ink">
                     {s.memo}
                   </div>
                 )}
@@ -159,7 +159,7 @@ export function UserSpotLayer({
                   <button
                     type="button"
                     onClick={() => removeUserSpot(s.id)}
-                    className="rounded border border-stone-300 bg-white px-2 py-1 text-[10px] font-bold text-stone-600 hover:bg-stone-100"
+                    className="rounded border border-theme-border bg-theme-surface px-2 py-1 text-[10px] font-bold text-ink-muted hover:bg-stone-100"
                   >
                     削除
                   </button>
@@ -167,7 +167,7 @@ export function UserSpotLayer({
                 {/* #25 でログイン中はクラウドにも保存するようになった。
                     以前ここは「端末だけに保存される」という趣旨の文言で、
                     実装と食い違っていたので直した（2026-09-15）。 */}
-                <div className="text-xs text-stone-500 mt-2 leading-snug">
+                <div className="text-xs text-ink-muted mt-2 leading-snug">
                   {
                     "この端末に保存されています。ログインしていれば、同じ内容が端末をまたいで残ります。"
                   }

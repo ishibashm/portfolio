@@ -142,7 +142,7 @@ export function DirectionTierOverview({
   const total = sorted.reduce((a, r) => a + r.count, 0);
 
   return (
-    <div className="rounded-2xl border border-stone-200 dark:border-theme-border bg-white dark:bg-theme-surface p-4">
+    <div className="rounded-2xl border border-theme-border dark:border-theme-border bg-theme-surface dark:bg-theme-surface p-4">
       {/*
         見出しで開閉できるようにする（利用者の要望）。下に並ぶ
         「スキャン地域と計算方式」などの ArbitrageSidebarSection と
@@ -157,23 +157,23 @@ export function DirectionTierOverview({
         onClick={() => setOpen((v) => !v)}
         className="flex w-full cursor-pointer items-baseline justify-between gap-2 text-left select-none"
       >
-        <h3 className="text-xs font-bold text-stone-700 dark:text-ink">
+        <h3 className="text-xs font-bold text-ink dark:text-ink">
           方位ごとの内訳
         </h3>
         <span className="flex items-center gap-1.5">
-          <span className="text-[10px] text-stone-600 dark:text-ink-muted">
+          <span className="text-[10px] text-ink-muted dark:text-ink-muted">
             {total.toLocaleString()} 市区町村
           </span>
           <ChevronRight
             aria-hidden="true"
-            className={`h-4 w-4 shrink-0 self-center text-stone-500 dark:text-ink-muted transition-transform duration-200 ${
+            className={`h-4 w-4 shrink-0 self-center text-ink-muted dark:text-ink-muted transition-transform duration-200 ${
               open ? "rotate-90" : ""
             }`}
           />
         </span>
       </button>
       <div id={contentId} hidden={!open}>
-        <p className="mt-1 text-xs leading-relaxed text-stone-500 dark:text-ink-muted">
+        <p className="mt-1 text-xs leading-relaxed text-ink-muted dark:text-ink-muted">
           棒の長さがその方位にある市区町村の数、色がその日の段階です。行を押すとその方位だけに絞れます。
         </p>
 
@@ -192,7 +192,7 @@ export function DirectionTierOverview({
           </div>
         )}
         {fengShui && (
-          <p className="mt-1 text-xs leading-relaxed text-stone-500 dark:text-ink-muted">
+          <p className="mt-1 text-xs leading-relaxed text-ink-muted dark:text-ink-muted">
             右端は風水（八宅）の遊星です（{fengShui.guaName}命・{fengShui.group}
             ）。
             <b>気学の段階とは足し合わせていません。</b>
@@ -216,10 +216,10 @@ export function DirectionTierOverview({
                   className={`flex w-full items-center gap-2 rounded-lg px-1.5 py-1 text-left transition-colors ${
                     active
                       ? "bg-theme-accent-soft"
-                      : "hover:bg-stone-50 dark:hover:bg-theme-subtle"
+                      : "hover:bg-theme-subtle dark:hover:bg-theme-subtle"
                   }`}
                 >
-                  <span className="w-6 shrink-0 text-[11px] font-bold text-stone-600 dark:text-ink-muted">
+                  <span className="w-6 shrink-0 text-[11px] font-bold text-ink-muted dark:text-ink-muted">
                     {r.directionLabel}
                   </span>
 
@@ -232,12 +232,12 @@ export function DirectionTierOverview({
                   </span>
 
                   {/* 値は棒の外。中に置くと 0 件や短い棒で溢れる */}
-                  <span className="w-10 shrink-0 text-right font-mono text-[11px] text-stone-600 dark:text-ink-muted">
+                  <span className="w-10 shrink-0 text-right font-mono text-[11px] text-ink-muted dark:text-ink-muted">
                     {r.count.toLocaleString()}
                   </span>
 
                   {/* 段階は必ず文字でも出す。色だけだと S と A を見分けられない */}
-                  <span className="w-14 shrink-0 text-[10px] text-stone-500 dark:text-ink-muted">
+                  <span className="w-14 shrink-0 text-[10px] text-ink-muted dark:text-ink-muted">
                     {tierLabelFor(r)}
                   </span>
 

@@ -99,7 +99,7 @@ export function DayCellPopover({
       ref={ref}
       role="dialog"
       aria-label={`${day.date} の判定`}
-      className="absolute z-30 rounded-xl border border-stone-300 bg-white p-3 text-left shadow-lg"
+      className="absolute z-30 rounded-xl border border-theme-border bg-theme-surface p-3 text-left shadow-lg"
       style={{
         width: POPOVER_WIDTH,
         left: clampPopoverX(x, containerWidth),
@@ -110,13 +110,13 @@ export function DayCellPopover({
       }}
     >
       <div className="flex items-start justify-between gap-2">
-        <div className="text-xs font-bold text-stone-800">
+        <div className="text-xs font-bold text-ink">
           {day.date}（{weekday}）
         </div>
         <button
           onClick={onClose}
           aria-label="閉じる"
-          className="-mt-1 shrink-0 px-1 text-sm leading-none text-stone-500 hover:text-stone-800"
+          className="-mt-1 shrink-0 px-1 text-sm leading-none text-ink-muted hover:text-ink"
         >
           ×
         </button>
@@ -130,18 +130,18 @@ export function DayCellPopover({
           >
             {day.blocked ? "天中殺" : TIER_LABELS[tier]}
           </span>
-          <span className="text-[11px] text-stone-600">
+          <span className="text-[11px] text-ink-muted">
             {directionLabel}へ動く場合
           </span>
         </div>
       )}
 
-      <div className="mt-2 text-[11px] leading-relaxed text-stone-600">
+      <div className="mt-2 text-[11px] leading-relaxed text-ink-muted">
         {plainRokuyo(day.rokuyo)}
         {day.tags.length ? ` / ${day.tags.join("・")}` : ""}
       </div>
       {filteredOut && (
-        <div className="mt-1 text-[11px] text-stone-500">
+        <div className="mt-1 text-[11px] text-ink-muted">
           いまの絞り込みからは外れています。
         </div>
       )}
@@ -149,13 +149,13 @@ export function DayCellPopover({
       <div className="mt-3 flex flex-col gap-1.5">
         <button
           onClick={onShowAll}
-          className="text-left text-[11px] font-semibold text-indigo-600 underline"
+          className="text-left text-[11px] font-semibold text-accent underline"
         >
           この日の全方位を見る
         </button>
         <Link
           href={`/relocation/arbitrage?targetDate=${day.date}&view=overview`}
-          className="text-[11px] font-semibold text-indigo-600 underline"
+          className="text-[11px] font-semibold text-accent underline"
         >
           この日で物件スキャナーを開く
         </Link>

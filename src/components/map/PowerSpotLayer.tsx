@@ -159,14 +159,14 @@ export function PowerSpotLayer({
                     {c.items.map((s) => (
                       <li key={s.id}>
                         {s.name}
-                        <span className="text-stone-500">
+                        <span className="text-ink-muted">
                           （{s.pref}
                           {s.city}・{s.basis}）
                         </span>
                       </li>
                     ))}
                   </ul>
-                  <div className="text-xs text-stone-500 mt-2 leading-snug">
+                  <div className="text-xs text-ink-muted mt-2 leading-snug">
                     {"ズームすると 1 件ずつ選べます。"}
                   </div>
                 </div>
@@ -232,32 +232,32 @@ function SpotMarker({
       <Popup>
         <div className="font-sans text-xs text-gray-900 p-2 min-w-[180px]">
           <div className="font-bold text-sm">{spot.name}</div>
-          <div className="text-stone-600 mt-0.5">
+          <div className="text-ink-muted mt-0.5">
             {spot.pref}
             {spot.city}・{spot.basis}
           </div>
           {from && (
             <div className="mt-2 space-y-1">
               <div className="flex justify-between gap-3">
-                <span className="text-stone-600">出発地から:</span>
+                <span className="text-ink-muted">出発地から:</span>
                 <span className="font-bold">
                   {from.directionLabel} {Math.round(from.distanceKm)}km
                 </span>
               </div>
               {from.cell ? (
                 <div className="flex justify-between gap-3 items-center">
-                  <span className="text-stone-600">この日の段階:</span>
+                  <span className="text-ink-muted">この日の段階:</span>
                   <span
                     className={`px-1.5 py-0.5 rounded border font-bold ${
                       (tier && LIGHT_TIER_BADGE_CLASS[tier]) ??
-                      "bg-stone-100 border-stone-300 text-stone-700"
+                      "bg-stone-100 border-theme-border text-ink"
                     }`}
                   >
                     {(tier && TIER_LABELS[tier]) ?? from.cell.tier}
                   </span>
                 </div>
               ) : noBoardNote ? (
-                <div className="text-[10px] text-stone-500">{noBoardNote}</div>
+                <div className="text-[10px] text-ink-muted">{noBoardNote}</div>
               ) : null}
               {from.unstableNote && (
                 <div className="text-[10px] text-amber-700">
@@ -275,7 +275,7 @@ function SpotMarker({
               この地点を判定へ
             </button>
           )}
-          <div className="text-xs text-stone-500 mt-2 leading-snug">
+          <div className="text-xs text-ink-muted mt-2 leading-snug">
             {
               "一覧は Wikidata（CC0）の指定（一宮・名勝）。所在地は座標から引いた最寄りの市区町村です。"
             }

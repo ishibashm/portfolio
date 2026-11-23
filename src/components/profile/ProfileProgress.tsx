@@ -36,24 +36,22 @@ export function ProfileProgress({
   return (
     <section
       aria-label="登録の進み具合"
-      className="rounded-2xl border border-stone-200 bg-white p-5"
+      className="rounded-2xl border border-theme-border bg-theme-surface p-5"
     >
       <div className="flex flex-wrap items-baseline justify-between gap-2">
-        <h2 className="text-sm font-bold text-stone-800">登録の進み具合</h2>
-        <p className="text-xs text-stone-500">
+        <h2 className="text-sm font-bold text-ink">登録の進み具合</h2>
+        <p className="text-xs text-ink-muted">
           {total} つのうち {done} つが入っています
         </p>
       </div>
 
       {/* 棒は「あと少し」を伝えるためだけのもの。数字は上に出してある */}
       <div
-        className="mt-3 h-1.5 overflow-hidden rounded-full bg-stone-100"
+        className="mt-3 h-1.5 overflow-hidden rounded-full bg-theme-subtle"
         aria-hidden
       >
         <div
-          className={`h-full rounded-full transition-all duration-300 ${
-            ready ? "bg-emerald-500" : "bg-indigo-500"
-          }`}
+          className="h-full rounded-full bg-accent transition-all duration-300"
           style={{ width: `${Math.round((done / total) * 100)}%` }}
         />
       </div>
@@ -63,24 +61,24 @@ export function ProfileProgress({
           <li key={step.key} className="flex items-start gap-2.5">
             {step.done ? (
               <CheckCircle2
-                className="mt-0.5 h-4 w-4 shrink-0 text-emerald-600"
+                className="mt-0.5 h-4 w-4 shrink-0 text-accent"
                 aria-hidden
               />
             ) : (
               <Circle
-                className="mt-0.5 h-4 w-4 shrink-0 text-stone-300"
+                className="mt-0.5 h-4 w-4 shrink-0 text-ink-muted"
                 aria-hidden
               />
             )}
             <div className="min-w-0">
-              <p className="text-xs font-semibold text-stone-800">
+              <p className="text-xs font-semibold text-ink">
                 {step.label}
                 {step.required ? (
-                  <span className="ml-2 text-[10px] font-normal text-rose-600">
+                  <span className="ml-2 text-[10px] font-normal text-theme-gold">
                     必須
                   </span>
                 ) : (
-                  <span className="ml-2 text-[10px] font-normal text-stone-400">
+                  <span className="ml-2 text-[10px] font-normal text-ink-muted">
                     任意
                   </span>
                 )}
@@ -91,7 +89,7 @@ export function ProfileProgress({
               {/* 埋まっているものに「無いと何ができないか」を出しても
                   読む理由が無い。空のものにだけ添える */}
               {!step.done && (
-                <p className="mt-0.5 max-w-[70ch] text-xs leading-relaxed text-stone-500">
+                <p className="mt-0.5 max-w-[70ch] text-xs leading-relaxed text-ink-muted">
                   {step.need}
                 </p>
               )}
@@ -99,7 +97,7 @@ export function ProfileProgress({
                   「何を登録したか」は入力欄を開くまで分からない。座標は
                   桁が多いので等幅で出す（数字の位が縦にそろう） */}
               {step.done && step.value && (
-                <p className="mt-0.5 font-mono text-xs leading-relaxed break-all text-stone-600">
+                <p className="mt-0.5 font-mono text-xs leading-relaxed break-all text-ink-muted">
                   {step.place ? <PlaceValue place={step.place} /> : step.value}
                 </p>
               )}
@@ -111,8 +109,8 @@ export function ProfileProgress({
       <p
         className={`mt-4 rounded-xl border p-3 text-[11px] leading-relaxed ${
           ready
-            ? "border-emerald-200 bg-emerald-50 text-emerald-800"
-            : "border-amber-200 bg-amber-50 text-amber-800"
+            ? "border-theme-border bg-theme-accent-soft text-ink"
+            : "border-theme-border bg-theme-gold-soft text-theme-gold"
         }`}
       >
         {ready

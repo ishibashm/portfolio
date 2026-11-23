@@ -41,7 +41,7 @@ export type BlogSortMode = "category" | "date";
  */
 function PostCard({ post }: { post: BlogPostSummary }) {
   return (
-    <article className="flex flex-col rounded-3xl border border-slate-300 dark:border-theme-border bg-white/90 dark:bg-theme-surface p-6 shadow-sm">
+    <article className="flex flex-col rounded-3xl border border-theme-border dark:border-theme-border bg-theme-surface dark:bg-theme-surface p-6 shadow-sm">
       <BlogCardVideo post={post} />
       {/* カテゴリの札はここには出さない。節の見出しが同じことを
           言っているので、同じ語が節の中で 10 回並ぶだけになる。 */}
@@ -120,9 +120,9 @@ export function BlogIndex({
   const title = blogIndexTitle();
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#faf7f5] dark:from-background via-[#f5efe9] dark:via-background to-[#f0e9e1] dark:to-background text-slate-900 dark:text-ink">
+    <div className="min-h-screen bg-gradient-to-br bg-background text-ink dark:from-background via-[#f5efe9] dark:via-background to-[#f0e9e1] dark:to-background text-ink dark:text-ink">
       <main className="mx-auto max-w-[1700px] px-5 py-12">
-        <div className="flex flex-wrap items-end justify-between gap-5 border-b border-slate-300 dark:border-theme-border pb-8">
+        <div className="flex flex-wrap items-end justify-between gap-5 border-b border-theme-border dark:border-theme-border pb-8">
           <div>
             <div className="flex items-center gap-2 text-xs font-bold tracking-[0.18em] text-accent">
               <BookOpenText className="h-4 w-4" />
@@ -131,7 +131,7 @@ export function BlogIndex({
             <h1 className="mt-4 font-serif text-3xl font-bold tracking-tight md:text-4xl">
               {title}
             </h1>
-            <p className="mt-4 max-w-[70ch] text-sm leading-7 text-slate-700 dark:text-ink">
+            <p className="mt-4 max-w-[70ch] text-sm leading-7 text-ink dark:text-ink">
               {DESCRIPTION}
             </p>
             <GuideCharacter pose="pointing" size="sm" className="mt-5 max-w-xl">
@@ -140,7 +140,7 @@ export function BlogIndex({
           </div>
           <a
             href="/blog/feed.xml"
-            className="inline-flex items-center gap-2 rounded-full border border-slate-300 dark:border-theme-border bg-white dark:bg-theme-surface px-4 py-2 text-xs font-bold text-slate-700 dark:text-ink hover:border-accent"
+            className="inline-flex items-center gap-2 rounded-full border border-theme-border dark:border-theme-border bg-theme-surface dark:bg-theme-surface px-4 py-2 text-xs font-bold text-ink dark:text-ink hover:border-accent"
           >
             <Rss className="h-3.5 w-3.5" /> RSS
           </a>
@@ -164,7 +164,7 @@ export function BlogIndex({
                 className={`rounded-full border px-4 py-2 text-xs font-bold ${
                   on
                     ? "border-accent bg-theme-accent-soft text-accent"
-                    : "border-slate-300 dark:border-theme-border bg-white dark:bg-theme-surface text-slate-700 dark:text-ink hover:border-accent hover:text-accent"
+                    : "border-theme-border dark:border-theme-border bg-theme-surface dark:bg-theme-surface text-ink dark:text-ink hover:border-accent hover:text-accent"
                 }`}
               >
                 {opt.label}
@@ -182,7 +182,7 @@ export function BlogIndex({
               <a
                 key={group.id}
                 href={`#${group.id}`}
-                className="inline-flex items-center gap-2 rounded-full border border-slate-300 dark:border-theme-border bg-white dark:bg-theme-surface px-4 py-2 text-xs font-bold text-slate-700 dark:text-ink hover:border-accent hover:text-accent"
+                className="inline-flex items-center gap-2 rounded-full border border-theme-border dark:border-theme-border bg-theme-surface dark:bg-theme-surface px-4 py-2 text-xs font-bold text-ink dark:text-ink hover:border-accent hover:text-accent"
               >
                 {group.category}
                 <span className="text-[11px] font-normal text-ink-muted">
@@ -205,7 +205,7 @@ export function BlogIndex({
             <section key={group.id} className="mt-12">
               <h2
                 id={group.id}
-                className="scroll-mt-6 border-b border-slate-300 dark:border-theme-border pb-2 font-serif text-xl font-bold"
+                className="scroll-mt-6 border-b border-theme-border dark:border-theme-border pb-2 font-serif text-xl font-bold"
               >
                 {group.category}
                 <span className="ml-3 text-xs font-normal text-ink-muted">

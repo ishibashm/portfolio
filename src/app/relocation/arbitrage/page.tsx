@@ -710,7 +710,7 @@ export default function DirectionTownsPage() {
               <a
                 key={href}
                 href={href}
-                className="inline-flex min-h-[24px] items-center rounded-full border border-stone-300 dark:border-theme-border dark:border-theme-border bg-theme-surface px-3 font-bold text-ink hover:bg-stone-100 dark:hover:bg-theme-subtle dark:hover:bg-theme-subtle"
+                className="inline-flex min-h-[24px] items-center rounded-full border border-theme-border dark:border-theme-border dark:border-theme-border bg-theme-surface px-3 font-bold text-ink hover:bg-stone-100 dark:hover:bg-theme-subtle dark:hover:bg-theme-subtle"
               >
                 {label}
               </a>
@@ -813,7 +813,7 @@ export default function DirectionTownsPage() {
                   const open = event.currentTarget.open;
                   if (open !== state?.detailsOpen) patch({ detailsOpen: open });
                 }}
-                className="rounded-3xl border border-stone-200 dark:border-theme-border dark:border-theme-border bg-theme-surface p-4 space-y-3"
+                className="rounded-3xl border border-theme-border dark:border-theme-border dark:border-theme-border bg-theme-surface p-4 space-y-3"
               >
                 <summary className="cursor-pointer text-sm font-bold">
                   詳しい条件
@@ -836,7 +836,7 @@ export default function DirectionTownsPage() {
                         radius_km: v === null ? "all" : String(v),
                       });
                     }}
-                    className="w-full min-h-[36px] px-3 py-2 bg-theme-surface border border-stone-200 dark:border-theme-border rounded-xl text-xs outline-none focus:border-accent"
+                    className="w-full min-h-[36px] px-3 py-2 bg-theme-surface border border-theme-border dark:border-theme-border rounded-xl text-xs outline-none focus:border-accent"
                   >
                     {RADIUS_OPTIONS.map((o) => (
                       <option
@@ -855,7 +855,7 @@ export default function DirectionTownsPage() {
                     if (isTenchusatsuMode(e.target.value))
                       patch({ tenchusatsuMode: e.target.value });
                   }}
-                  className="w-full min-h-[36px] px-3 py-2 bg-theme-surface border border-stone-200 dark:border-theme-border rounded-xl text-xs outline-none focus:border-accent"
+                  className="w-full min-h-[36px] px-3 py-2 bg-theme-surface border border-theme-border dark:border-theme-border rounded-xl text-xs outline-none focus:border-accent"
                 >
                   {TENCHUSATSU_MODES.map((m) => (
                     <option key={m.id} value={m.id}>
@@ -896,7 +896,7 @@ export default function DirectionTownsPage() {
                 （#1297・#1298）。 */}
             <div
               id="arb-towns-section"
-              className="scroll-mt-4 rounded-3xl border border-stone-200 dark:border-theme-border dark:border-theme-border bg-theme-surface p-4 space-y-3"
+              className="scroll-mt-4 rounded-3xl border border-theme-border dark:border-theme-border dark:border-theme-border bg-theme-surface p-4 space-y-3"
             >
               <div className="flex flex-wrap items-baseline justify-between gap-2">
                 <h2 className="text-sm font-bold text-ink">方位ごとの街</h2>
@@ -956,7 +956,7 @@ export default function DirectionTownsPage() {
                 （畳んだままだと押した結果が見えない）。 */}
             <div
               id="arb-spot-section"
-              className="scroll-mt-4 rounded-3xl border border-stone-200 dark:border-theme-border dark:border-theme-border bg-theme-surface p-4 space-y-3"
+              className="scroll-mt-4 rounded-3xl border border-theme-border dark:border-theme-border dark:border-theme-border bg-theme-surface p-4 space-y-3"
             >
               <h2 className="text-sm font-bold text-ink">
                 物件URL・住所から候補を検討
@@ -1042,7 +1042,7 @@ export default function DirectionTownsPage() {
           {/* 右: 地図。扇形と県塗りは dayKigaku から。物件は描かない。 */}
           <div
             id="candidate-location-map"
-            className="scroll-mt-4 w-full lg:w-[64%] xl:w-[68%] h-[60vh] lg:h-[calc(100vh-220px)] min-h-[420px] lg:min-h-[600px] rounded-3xl overflow-hidden shadow-lg border border-stone-200 dark:border-theme-border dark:border-theme-border relative bg-stone-50 dark:bg-theme-subtle dark:bg-theme-subtle shrink-0"
+            className="scroll-mt-4 w-full lg:w-[64%] xl:w-[68%] h-[60vh] lg:h-[calc(100vh-220px)] min-h-[420px] lg:min-h-[600px] rounded-3xl overflow-hidden shadow-lg border border-theme-border dark:border-theme-border dark:border-theme-border relative bg-theme-subtle dark:bg-theme-subtle dark:bg-theme-subtle shrink-0"
           >
             <ArbitrageMap
               baseLat={hasBaseLocation ? baseLatNum : mapCenter[0]}

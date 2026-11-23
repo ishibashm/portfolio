@@ -31,7 +31,7 @@ export function KigakuBoard({ centerStar }: KigakuBoardProps) {
 
   return (
     <div className="flex flex-col items-center">
-      <div className="grid grid-cols-3 gap-2 p-4 bg-white/80 rounded-xl border border-stone-200 shadow-2xl md:backdrop-blur-xl max-w-[300px]">
+      <div className="grid grid-cols-3 gap-2 p-4 bg-theme-surface rounded-xl border border-theme-border shadow-2xl md:backdrop-blur-xl max-w-[300px]">
         {board.map((star, index) => {
           const isCenter = index === 4;
           const label = directionsJp[index];
@@ -44,19 +44,19 @@ export function KigakuBoard({ centerStar }: KigakuBoardProps) {
                 ${
                   isCenter
                     ? "bg-emerald-50 border-emerald-200 shadow-[0_0_15px_rgba(16,185,129,0.15)]"
-                    : "bg-white/80 border-stone-200 hover:bg-stone-100/80 hover:border-stone-300"
+                    : "bg-theme-surface border-theme-border hover:bg-stone-100/80 hover:border-theme-border"
                 }
               `}
             >
               {/* Direction Label */}
-              <span className="absolute top-1 left-1.5 text-[10px] text-stone-600 uppercase tracking-widest font-light">
+              <span className="absolute top-1 left-1.5 text-[10px] text-ink-muted uppercase tracking-widest font-light">
                 {label}
               </span>
 
               {/* Star Number & Name */}
               <div className="flex flex-col items-center mt-1">
                 <span
-                  className={`text-2xl font-serif ${isCenter ? "text-emerald-600 text-glow" : "text-stone-500"}`}
+                  className={`text-2xl font-serif ${isCenter ? "text-emerald-600 text-glow" : "text-ink-muted"}`}
                 >
                   {star.japanese.substring(2)}{" "}
                   {/* Extract "Ki-Sei", "Kin-Sei" etc? No. "Ippaku Suisei" -> "Suisei"? Use Number? */}
@@ -69,7 +69,7 @@ export function KigakuBoard({ centerStar }: KigakuBoardProps) {
                   {star.japanese.substring(0, 2)}
                 </span>
                 <span
-                  className={`text-[10px] uppercase tracking-widest mt-1 ${isCenter ? "text-emerald-600" : "text-stone-600"}`}
+                  className={`text-[10px] uppercase tracking-widest mt-1 ${isCenter ? "text-emerald-600" : "text-ink-muted"}`}
                 >
                   {star.japanese.substring(2)}
                 </span>
@@ -78,7 +78,7 @@ export function KigakuBoard({ centerStar }: KigakuBoardProps) {
           );
         })}
       </div>
-      <div className="mt-2 text-[10px] text-stone-600 tracking-widest uppercase">
+      <div className="mt-2 text-[10px] text-ink-muted tracking-widest uppercase">
         Luo Shu Layout (South Top)
       </div>
     </div>

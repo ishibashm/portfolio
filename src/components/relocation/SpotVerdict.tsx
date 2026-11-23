@@ -587,13 +587,13 @@ export function SpotVerdict({
       className="space-y-1.5 scroll-mt-20"
     >
       {candidateContext && (
-        <p className="text-xs font-semibold text-stone-700 dark:text-ink">
+        <p className="text-xs font-semibold text-ink dark:text-ink">
           住所か駅名をひとつ入れると、地図にピンを立てて出発地からの方位と吉凶を出します。調べるだけならログイン不要です。候補の保存にはログインが必要です。
         </p>
       )}
       <label
         htmlFor="arb-spot-query"
-        className="text-xs font-semibold text-stone-600 dark:text-ink-muted block"
+        className="text-xs font-semibold text-ink-muted dark:text-ink-muted block"
       >
         住所・駅名・座標から調べる（物件URLも可）
       </label>
@@ -639,13 +639,13 @@ export function SpotVerdict({
       */}
       {candidateContext ? (
         <>
-          <p className="text-xs text-stone-600 dark:text-ink-muted leading-relaxed">
+          <p className="text-xs text-ink-muted dark:text-ink-muted leading-relaxed">
             駅名は同じ名前の駅が別の場所にあることがあります。ピンの位置を確かめてください。
           </p>
-          <p className="text-xs text-stone-600 dark:text-ink-muted leading-relaxed">
+          <p className="text-xs text-ink-muted dark:text-ink-muted leading-relaxed">
             住所検索では国土地理院などの検索サービスに住所を送ります。氏名・連絡先・部屋番号は入れないでください。住所を送らずに地図で場所を指定することもできます。
           </p>
-          <p className="text-xs text-stone-600 dark:text-ink-muted leading-relaxed">
+          <p className="text-xs text-ink-muted dark:text-ink-muted leading-relaxed">
             URLは参照リンクのみで、中身を取得しません。住所または座標を入力し、地図で所在地を確認してください。地図クリックで位置を修正できます。
           </p>
           <ListingEmailPreview onSelect={selectEmail} />
@@ -659,12 +659,12 @@ export function SpotVerdict({
         </>
       ) : (
         <>
-          <p className="text-xs text-stone-600 dark:text-ink-muted leading-relaxed">
+          <p className="text-xs text-ink-muted dark:text-ink-muted leading-relaxed">
             {
               "市区町村名（例: 広島市中区）を入れて「調べる」を押すと、出発地から見た方位とその日の吉凶に加えて、その街の SUUMO の賃貸一覧へのリンクが出ます。URL は要りません。地図をクリックしても入ります。"
             }
           </p>
-          <details className="text-xs text-stone-500 dark:text-ink-muted">
+          <details className="text-xs text-ink-muted dark:text-ink-muted">
             <summary className="cursor-pointer select-none min-h-[24px]">
               物件サイトの URL を貼るとき
             </summary>
@@ -686,7 +686,7 @@ export function SpotVerdict({
         <Link
           href="/relocation/candidates"
           prefetch={false}
-          className="inline-flex min-h-[44px] items-center rounded-lg border border-stone-300 dark:border-theme-border px-3 text-xs font-bold text-stone-700 dark:text-ink hover:bg-stone-50 dark:hover:bg-theme-subtle"
+          className="inline-flex min-h-[44px] items-center rounded-lg border border-theme-border dark:border-theme-border px-3 text-xs font-bold text-ink dark:text-ink hover:bg-theme-subtle dark:hover:bg-theme-subtle"
         >
           保存した候補を見る
         </Link>
@@ -719,16 +719,16 @@ export function SpotVerdict({
       )}
 
       {target && hasBase && direction && (
-        <div className="rounded-xl border border-stone-200 dark:border-theme-border bg-white/80 dark:bg-theme-surface p-2.5 space-y-1.5">
+        <div className="rounded-xl border border-theme-border dark:border-theme-border bg-theme-surface dark:bg-theme-surface p-2.5 space-y-1.5">
           {note && (
-            <p className="text-xs text-stone-500 dark:text-ink-muted leading-snug">
+            <p className="text-xs text-ink-muted dark:text-ink-muted leading-snug">
               {note}
             </p>
           )}
-          <div className="text-[10px] text-stone-500 dark:text-ink-muted leading-snug">
+          <div className="text-[10px] text-ink-muted dark:text-ink-muted leading-snug">
             {nameIsCoordinates && shownNearCity ? (
               <>
-                <span className="font-bold text-stone-700 dark:text-ink">
+                <span className="font-bold text-ink dark:text-ink">
                   {shownNearCity} 付近
                 </span>{" "}
                 <span className="font-mono">{target.name}</span>
@@ -738,14 +738,14 @@ export function SpotVerdict({
             )}
           </div>
           <div className="flex items-center gap-2 flex-wrap">
-            <span className="text-sm font-bold text-stone-800 dark:text-ink">
+            <span className="text-sm font-bold text-ink dark:text-ink">
               {cell?.directionLabel ?? direction}
             </span>
-            <span className="text-xs text-stone-500 dark:text-ink-muted">
+            <span className="text-xs text-ink-muted dark:text-ink-muted">
               真北 {evaluation?.bearingDeg.toFixed(1)}°
             </span>
             {distanceKm !== null && (
-              <span className="text-[10px] font-mono text-stone-500 dark:text-ink-muted">
+              <span className="text-[10px] font-mono text-ink-muted dark:text-ink-muted">
                 約{distanceKm.toFixed(1)}km
               </span>
             )}
@@ -753,13 +753,13 @@ export function SpotVerdict({
               <span
                 className={`px-1.5 py-0.5 rounded border text-[10px] font-bold ${
                   TIER_BADGE_CLASS[cell.tier as DayTier] ??
-                  "bg-stone-100 dark:bg-theme-subtle border-stone-300 dark:border-theme-border text-stone-600 dark:text-ink-muted"
+                  "bg-stone-100 dark:bg-theme-subtle border-theme-border dark:border-theme-border text-ink-muted dark:text-ink-muted"
                 }`}
               >
                 {TIER_LABELS[cell.tier as DayTier] ?? cell.tier}
               </span>
             ) : (
-              <span className="text-[10px] text-stone-500 dark:text-ink-muted">
+              <span className="text-[10px] text-ink-muted dark:text-ink-muted">
                 {kigakuUnavailableReason ?? "条件が揃うと吉凶を出します"}
               </span>
             )}
@@ -825,7 +825,7 @@ export function SpotVerdict({
             <Link
               href="/relocation/purchase"
               prefetch={false}
-              className="inline-flex min-h-[44px] items-center rounded-lg border border-stone-300 dark:border-theme-border px-3 text-xs font-bold text-stone-700 dark:text-ink hover:bg-stone-50 dark:hover:bg-theme-subtle"
+              className="inline-flex min-h-[44px] items-center rounded-lg border border-theme-border dark:border-theme-border px-3 text-xs font-bold text-ink dark:text-ink hover:bg-theme-subtle dark:hover:bg-theme-subtle"
             >
               成約価格・地価を見る（国交省の公開データ）
             </Link>
@@ -841,7 +841,7 @@ export function SpotVerdict({
                 setNote(null);
                 onClearTarget?.();
               }}
-              className="min-h-[24px] text-[10px] font-bold text-stone-500 dark:text-ink-muted hover:underline"
+              className="min-h-[24px] text-[10px] font-bold text-ink-muted dark:text-ink-muted hover:underline"
             >
               × この地点を消す
             </button>
@@ -876,12 +876,12 @@ export function SpotVerdict({
               type="button"
               onClick={() => setShowMark((v) => !v)}
               aria-expanded={showMark}
-              className="min-h-[24px] text-[10px] font-bold text-stone-600 dark:text-ink-muted hover:underline"
+              className="min-h-[24px] text-[10px] font-bold text-ink-muted dark:text-ink-muted hover:underline"
             >
               {showMark ? "物件の印を閉じる" : "物件のページを控える"}
             </button>
             {savedNote && (
-              <span className="text-[10px] text-stone-500 dark:text-ink-muted">
+              <span className="text-[10px] text-ink-muted dark:text-ink-muted">
                 {savedNote}
               </span>
             )}
@@ -891,8 +891,8 @@ export function SpotVerdict({
               押す。**保存の押し口を増やすと、どちらを押せばよいか分からない
               （同じ地点をもう一度保存すれば内容は差し替わる）。 */}
           {showMark && (
-            <div className="mt-2 space-y-1.5 rounded-xl border border-stone-200 dark:border-theme-border bg-stone-50 dark:bg-theme-subtle p-2">
-              <label className="block text-[10px] font-bold text-stone-700 dark:text-ink">
+            <div className="mt-2 space-y-1.5 rounded-xl border border-theme-border dark:border-theme-border bg-theme-subtle dark:bg-theme-subtle p-2">
+              <label className="block text-[10px] font-bold text-ink dark:text-ink">
                 物件のページ（https のみ）
                 <input
                   type="url"
@@ -900,10 +900,10 @@ export function SpotVerdict({
                   value={markUrl}
                   onChange={(e) => setMarkUrl(e.target.value)}
                   placeholder="https://..."
-                  className="mt-0.5 w-full rounded border border-stone-300 dark:border-theme-border px-2 py-1 text-[11px] font-normal"
+                  className="mt-0.5 w-full rounded border border-theme-border dark:border-theme-border px-2 py-1 text-[11px] font-normal"
                 />
               </label>
-              <label className="block text-[10px] font-bold text-stone-700 dark:text-ink">
+              <label className="block text-[10px] font-bold text-ink dark:text-ink">
                 覚え書き
                 <textarea
                   maxLength={candidateContext ? 1000 : 500}
@@ -911,10 +911,10 @@ export function SpotVerdict({
                   onChange={(e) => setMarkMemo(e.target.value)}
                   rows={2}
                   placeholder="2LDK / 8.5万円 / 駅8分 など"
-                  className="mt-0.5 w-full rounded border border-stone-300 dark:border-theme-border px-2 py-1 text-[11px] font-normal"
+                  className="mt-0.5 w-full rounded border border-theme-border dark:border-theme-border px-2 py-1 text-[11px] font-normal"
                 />
               </label>
-              <p className="text-xs leading-relaxed text-stone-500 dark:text-ink-muted">
+              <p className="text-xs leading-relaxed text-ink-muted dark:text-ink-muted">
                 {
                   "こちらから中身を読みに行くことはありません。メモは短い覚え書きにし、掲載本文はコピーしないでください。"
                 }

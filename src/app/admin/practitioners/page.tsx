@@ -97,13 +97,13 @@ export default function AdminPractitionersPage() {
   }
 
   return (
-    <main className="mx-auto max-w-3xl space-y-6 px-4 py-8 text-stone-800">
+    <main className="mx-auto max-w-3xl space-y-6 px-4 py-8 text-ink">
       <header className="space-y-2">
-        <Link href="/admin/blog" className="text-sm text-indigo-700 underline">
+        <Link href="/admin/blog" className="text-sm text-accent underline">
           ブログ管理
         </Link>
         <h1 className="text-2xl font-bold">鑑定士掲載の管理</h1>
-        <p className="text-sm text-stone-600">
+        <p className="text-sm text-ink-muted">
           申請内容を確認して、承認または非公開にしてください。
         </p>
       </header>
@@ -140,14 +140,14 @@ export default function AdminPractitionersPage() {
                 {statuses[status]}（{applications.length}）
               </h2>
               {!applications.length && (
-                <p className="text-sm text-stone-500">申請はありません。</p>
+                <p className="text-sm text-ink-muted">申請はありません。</p>
               )}
               {applications.map((row) => {
                 const website = normalizeWebsiteUrl(row.website_url);
                 return (
                   <article
                     key={row.id}
-                    className="space-y-3 break-words rounded-2xl border border-stone-200 bg-white p-4 sm:p-6"
+                    className="space-y-3 break-words rounded-2xl border border-theme-border bg-theme-surface p-4 sm:p-6"
                   >
                     <h3 className="text-lg font-semibold">
                       {row.display_name}
@@ -173,7 +173,7 @@ export default function AdminPractitionersPage() {
                         href={website}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="block text-sm text-indigo-700 underline"
+                        className="block text-sm text-accent underline"
                       >
                         {website}
                       </a>
@@ -183,7 +183,7 @@ export default function AdminPractitionersPage() {
                         type="button"
                         disabled={busy || status === "approved"}
                         onClick={() => void update(row.id, "approved")}
-                        className="min-h-11 rounded-xl bg-indigo-600 px-5 py-2 text-sm text-white disabled:opacity-40"
+                        className="min-h-11 rounded-xl bg-accent px-5 py-2 text-sm text-on-accent disabled:opacity-40"
                       >
                         承認する
                       </button>
@@ -191,7 +191,7 @@ export default function AdminPractitionersPage() {
                         type="button"
                         disabled={busy || status === "hidden"}
                         onClick={() => void update(row.id, "hidden")}
-                        className="min-h-11 rounded-xl border border-stone-300 px-5 py-2 text-sm disabled:opacity-40"
+                        className="min-h-11 rounded-xl border border-theme-border px-5 py-2 text-sm disabled:opacity-40"
                       >
                         非公開にする
                       </button>

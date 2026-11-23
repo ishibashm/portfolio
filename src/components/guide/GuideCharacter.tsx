@@ -129,12 +129,12 @@ export default function GuideCharacter({
     >
       <GuideAvatar pose={pose} size={size} priority={priority} float={float} />
       <figcaption
-        className={`relative mb-3 min-w-0 flex-1 rounded-2xl border border-[#c9a54a]/60 bg-white dark:bg-theme-surface px-4 py-3 text-left text-sm leading-relaxed text-slate-800 dark:text-ink shadow-sm`}
+        className={`relative mb-3 min-w-0 flex-1 rounded-2xl border border-[#c9a54a]/60 bg-theme-surface dark:bg-theme-surface px-4 py-3 text-left text-sm leading-relaxed text-slate-800 dark:text-ink shadow-sm`}
       >
         {/* 吹き出しの尾。イラストの側へ向ける。 */}
         <span
           aria-hidden="true"
-          className={`absolute bottom-4 h-3 w-3 rotate-45 border-[#c9a54a]/60 bg-white dark:bg-theme-surface ${
+          className={`absolute bottom-4 h-3 w-3 rotate-45 border-[#c9a54a]/60 bg-theme-surface dark:bg-theme-surface ${
             side === "right"
               ? "-right-[7px] border-r border-t"
               : "-left-[7px] border-b border-l"

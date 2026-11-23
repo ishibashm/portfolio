@@ -97,7 +97,7 @@ export default function Page() {
           {FAQ.map(({ question, answer }) => (
             <div key={question} className="mt-4">
               <h3 className="text-sm font-bold">{question}</h3>
-              <p className="mt-2 max-w-[70ch] text-xs leading-relaxed text-slate-700">
+              <p className="mt-2 max-w-[70ch] text-xs leading-relaxed text-ink">
                 {answer}
               </p>
             </div>
@@ -117,7 +117,7 @@ export default function Page() {
         */}
         <section className="mt-10 wg-card p-5">
           <h2 className="text-sm font-bold">九星気学の結果と食い違うとき</h2>
-          <p className="mt-3 max-w-[70ch] text-xs leading-relaxed text-slate-700">
+          <p className="mt-3 max-w-[70ch] text-xs leading-relaxed text-ink">
             {
               "方位の良し悪しは流派によって違います。両方が吉の方位もあれば、片方だけの方位もあります。当サイトは"
             }

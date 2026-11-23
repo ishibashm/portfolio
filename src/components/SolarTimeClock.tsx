@@ -193,7 +193,7 @@ const TenchusatsuVisualizer = dynamic(
 const ConsultPanel = dynamic(() => import("./home/ConsultPanel"), {
   ssr: false,
   loading: () => (
-    <div className="w-full h-40 flex items-center justify-center font-mono text-xs text-stone-600">
+    <div className="w-full h-40 flex items-center justify-center font-mono text-xs text-ink-muted">
       [ 診断ボードを読込中... ]
     </div>
   ),
@@ -208,7 +208,7 @@ const DestinationMapPanel = dynamic(
   {
     ssr: false,
     loading: () => (
-      <div className="w-full h-40 flex items-center justify-center font-mono text-xs text-stone-600">
+      <div className="w-full h-40 flex items-center justify-center font-mono text-xs text-ink-muted">
         [ 地図とヒートマップを読込中... ]
       </div>
     ),
@@ -218,7 +218,7 @@ const DestinationMapPanel = dynamic(
 const ScorecardPanel = dynamic(() => import("./home/ScorecardPanel"), {
   ssr: false,
   loading: () => (
-    <div className="w-full h-40 flex items-center justify-center font-mono text-xs text-stone-600">
+    <div className="w-full h-40 flex items-center justify-center font-mono text-xs text-ink-muted">
       [ 総合スコアを読込中... ]
     </div>
   ),
@@ -3844,13 +3844,13 @@ export const SolarTimeClock = () => {
 
   if (!baseTime || !solarData)
     return (
-      <div className="min-h-screen flex items-center justify-center bg-stone-50 text-stone-600 text-sm tracking-widest">
+      <div className="min-h-screen flex items-center justify-center bg-theme-subtle text-ink-muted text-sm tracking-widest">
         読み込んでいます…
       </div>
     );
 
   return (
-    <div className="min-h-screen flex flex-col items-center bg-gradient-to-br from-[#fdfbf7] via-[#fff5f5] to-[#fef2f2] text-stone-800 font-sans selection:bg-rose-100 pt-0 pb-8 md:pb-16 relative overflow-x-hidden">
+    <div className="min-h-screen flex flex-col items-center bg-background text-ink font-sans selection:bg-theme-accent-soft pt-0 pb-8 md:pb-16 relative overflow-x-hidden">
       <div
         className="fixed inset-0 pointer-events-none z-0 opacity-40"
         style={{
@@ -3862,14 +3862,14 @@ export const SolarTimeClock = () => {
 
       {isGlobalVoid && (
         <div className="w-full max-w-[1700px] px-3 md:px-4 mt-2 animate-fade-in z-50">
-          <div className="bg-white border-2 border-red-200 rounded-md p-3 md:p-4 shadow-[0_0_20px_rgba(239,68,68,0.2)] flex flex-col items-center text-center">
+          <div className="bg-theme-surface border-2 border-red-200 rounded-md p-3 md:p-4 shadow-[0_0_20px_rgba(239,68,68,0.2)] flex flex-col items-center text-center">
             <div className="flex items-center gap-2 mb-2">
               <span className="w-3 h-3 bg-red-500 rounded-full animate-ping"></span>
               <h2 className="text-red-600 font-bold tracking-[0.1em] text-sm md:text-base">
                 いまは天中殺の期間です
               </h2>
             </div>
-            <p className="text-stone-600 text-xs md:text-sm leading-relaxed">
+            <p className="text-ink-muted text-xs md:text-sm leading-relaxed">
               いまは
               <strong>「{isYearVoid ? "年の天中殺" : "月の天中殺"}」</strong>
               にあたります。
@@ -3969,7 +3969,7 @@ export const SolarTimeClock = () => {
           <button
             onClick={() => setShowHowItWorks(!showHowItWorks)}
             aria-expanded={showHowItWorks}
-            className="min-h-11 text-sm text-stone-700 hover:bg-stone-50 border border-stone-200 bg-white rounded-lg px-4 py-2 transition-colors"
+            className="min-h-11 text-sm text-ink hover:bg-theme-subtle border border-theme-border bg-theme-surface rounded-lg px-4 py-2 transition-colors"
           >
             {showHowItWorks
               ? "[-] 閉じる"
@@ -3979,16 +3979,16 @@ export const SolarTimeClock = () => {
 
         {showHowItWorks && (
           <div className="w-full max-w-[1700px] animate-fade-in px-4">
-            <div className="bg-stone-50 border border-stone-200 p-4 sm:p-6 shadow-2xl relative overflow-hidden flex flex-col gap-4 text-justify text-stone-600 text-xs sm:text-sm font-sans leading-relaxed">
+            <div className="bg-theme-subtle border border-theme-border p-4 sm:p-6 shadow-2xl relative overflow-hidden flex flex-col gap-4 text-justify text-ink-muted text-xs sm:text-sm font-sans leading-relaxed">
               <div className="absolute top-0 left-0 w-1 h-full bg-emerald-500/50"></div>
-              <h2 className="text-emerald-700 font-bold uppercase tracking-widest border-b border-stone-200 pb-2 mb-2 font-mono text-[11px] sm:text-xs flex items-center gap-2">
+              <h2 className="text-emerald-700 font-bold uppercase tracking-widest border-b border-theme-border pb-2 mb-2 font-mono text-[11px] sm:text-xs flex items-center gap-2">
                 <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse"></span>
                 方位と日時を決める 4 つの手順
               </h2>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="flex flex-col gap-2">
-                  <strong className="text-stone-700 bg-white px-2 py-1 border border-stone-200 text-[10px] sm:text-[11px] font-mono">
+                  <strong className="text-ink bg-theme-surface px-2 py-1 border border-theme-border text-[10px] sm:text-[11px] font-mono">
                     手順 1: 出発地とあなたの星を決める
                   </strong>
                   <p className="text-xs sm:text-xs">
@@ -3996,7 +3996,7 @@ export const SolarTimeClock = () => {
                   </p>
                 </div>
                 <div className="flex flex-col gap-2">
-                  <strong className="text-stone-700 bg-white px-2 py-1 border border-stone-200 text-[10px] sm:text-[11px] font-mono">
+                  <strong className="text-ink bg-theme-surface px-2 py-1 border border-theme-border text-[10px] sm:text-[11px] font-mono">
                     手順 2: 凶方位を除外する（年・月・日の重ね合わせ）
                   </strong>
                   <p className="text-xs sm:text-xs">
@@ -4006,7 +4006,7 @@ export const SolarTimeClock = () => {
                   </p>
                 </div>
                 <div className="flex flex-col gap-2">
-                  <strong className="text-stone-700 bg-white px-2 py-1 border border-stone-200 text-[10px] sm:text-[11px] font-mono">
+                  <strong className="text-ink bg-theme-surface px-2 py-1 border border-theme-border text-[10px] sm:text-[11px] font-mono">
                     手順 3: 相性の良い方位から目的地を決める
                   </strong>
                   <p className="text-xs sm:text-xs">
@@ -4014,7 +4014,7 @@ export const SolarTimeClock = () => {
                   </p>
                 </div>
                 <div className="flex flex-col gap-2">
-                  <strong className="text-stone-700 bg-white px-2 py-1 border border-stone-200 text-[10px] sm:text-[11px] font-mono">
+                  <strong className="text-ink bg-theme-surface px-2 py-1 border border-theme-border text-[10px] sm:text-[11px] font-mono">
                     手順 4: 動き出す日時を決める（刻）
                   </strong>
                   <p className="text-xs sm:text-xs">
@@ -4037,9 +4037,9 @@ export const SolarTimeClock = () => {
         <nav
           id="dashboard-details"
           aria-label="詳しく見る"
-          className="w-full max-w-[1700px] scroll-mt-4 rounded-2xl border border-stone-200 bg-white/80 p-3"
+          className="w-full max-w-[1700px] scroll-mt-4 rounded-2xl border border-theme-border bg-theme-surface p-3"
         >
-          <h3 className="mb-2 text-xs font-bold text-stone-600">詳しく見る</h3>
+          <h3 className="mb-2 text-xs font-bold text-ink-muted">詳しく見る</h3>
           <div className="flex flex-wrap gap-2">
             {(
               [
@@ -4060,7 +4060,7 @@ export const SolarTimeClock = () => {
                   className={`min-h-[36px] rounded-full px-4 py-1.5 text-xs font-bold transition-colors ${
                     on
                       ? "border border-stone-800 bg-stone-800 text-white"
-                      : "border border-stone-300 bg-white text-stone-700 hover:bg-stone-50"
+                      : "border border-theme-border bg-theme-surface text-ink hover:bg-theme-subtle"
                   }`}
                 >
                   {on ? "▾ " : "▸ "}
@@ -4360,17 +4360,17 @@ export const SolarTimeClock = () => {
           */}
           <Link
             href="/calendar"
-            className="flex flex-col gap-1 bg-white border border-stone-200 rounded-xl px-4 py-3 hover:border-indigo-300 transition-colors sm:flex-row sm:items-center sm:justify-between sm:gap-3"
+            className="flex flex-col gap-1 bg-theme-surface border border-theme-border rounded-xl px-4 py-3 hover:border-indigo-300 transition-colors sm:flex-row sm:items-center sm:justify-between sm:gap-3"
           >
             <span className="flex min-w-0 flex-col">
-              <span className="text-xs font-bold text-stone-700">
+              <span className="text-xs font-bold text-ink">
                 引越しの日取りを選ぶ（暦カレンダー）
               </span>
-              <span className="text-[10px] text-stone-600">
+              <span className="text-[10px] text-ink-muted">
                 天赦日・一粒万倍日・天中殺と、方位の吉凶を月ごとに見ます。
               </span>
             </span>
-            <span className="self-end text-indigo-700 text-xs shrink-0 sm:self-auto">
+            <span className="self-end text-accent text-xs shrink-0 sm:self-auto">
               開く →
             </span>
           </Link>
@@ -4389,7 +4389,7 @@ export const SolarTimeClock = () => {
       <div className="w-full max-w-[1700px] flex justify-center px-4 mt-6 pb-6">
         <button
           onClick={exportMasterTelemetry}
-          className="px-6 py-3 rounded-full border border-slate-300 bg-white text-sm font-bold text-slate-700 transition-colors hover:bg-slate-50 flex items-center gap-2 cursor-pointer"
+          className="px-6 py-3 rounded-full border border-theme-border bg-theme-surface text-sm font-bold text-ink transition-colors hover:bg-theme-subtle flex items-center gap-2 cursor-pointer"
         >
           <svg
             xmlns="http://www.w3.org/2000/svg"

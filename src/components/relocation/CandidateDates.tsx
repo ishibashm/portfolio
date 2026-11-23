@@ -88,7 +88,7 @@ export function CandidateDates({
   }
   return (
     <section
-      className="w-full rounded-2xl border border-stone-200 bg-white p-4"
+      className="w-full rounded-2xl border border-theme-border bg-theme-surface p-4"
       aria-label="引越しの候補日"
     >
       <button
@@ -99,7 +99,7 @@ export function CandidateDates({
       >
         {loading && !stale ? "候補日を計算中…" : "候補日を出す"}
       </button>
-      <p className="mt-2 text-xs text-stone-600">
+      <p className="mt-2 text-xs text-ink-muted">
         今日から60日間で三盤の総合判定と日盤が吉の日を、日付順に最大3件表示します。
       </p>
       {!ready && (

@@ -32,7 +32,7 @@ const FengShuiRoomScene = dynamic(
   {
     ssr: false,
     loading: () => (
-      <p className="p-6 text-sm text-stone-500">間取りを読み込んでいます…</p>
+      <p className="p-6 text-sm text-ink-muted">間取りを読み込んでいます…</p>
     ),
   },
 );
@@ -236,19 +236,19 @@ export function FengShuiRoom({ reading }: { reading: FengShuiReading }) {
   return (
     <section
       ref={hostRef}
-      className="mt-6 overflow-hidden rounded-3xl border border-stone-200 bg-gradient-to-b from-stone-50 to-amber-50/40 shadow-sm"
+      className="mt-6 overflow-hidden rounded-3xl border border-theme-border bg-theme-subtle shadow-sm"
       aria-label="八宅の間取り"
     >
-      <header className="flex flex-wrap items-end justify-between gap-3 border-b border-stone-200/70 px-5 py-4">
+      <header className="flex flex-wrap items-end justify-between gap-3 border-b border-theme-border/70 px-5 py-4">
         <div>
           <p className="flex items-center gap-1.5 text-xs font-bold tracking-wider text-rose-600">
             <Home className="h-3.5 w-3.5" aria-hidden />
             八宅の間取り
           </p>
-          <h3 className="mt-1 text-lg font-bold text-stone-800">
+          <h3 className="mt-1 text-lg font-bold text-ink">
             {reading.guaName}命の家に、置き場所と向きを当ててみる
           </h3>
-          <p className="mt-1 max-w-[70ch] text-xs leading-relaxed text-stone-600">
+          <p className="mt-1 max-w-[70ch] text-xs leading-relaxed text-ink-muted">
             {LEAD}
           </p>
         </div>
@@ -261,7 +261,7 @@ export function FengShuiRoom({ reading }: { reading: FengShuiReading }) {
               className={`rounded-full border px-2.5 py-1 font-semibold ${
                 view === "3d"
                   ? "border-rose-600 bg-rose-600 text-white"
-                  : "border-stone-300 bg-white text-stone-700"
+                  : "border-theme-border bg-theme-surface text-ink"
               }`}
             >
               立体
@@ -274,7 +274,7 @@ export function FengShuiRoom({ reading }: { reading: FengShuiReading }) {
             className={`rounded-full border px-2.5 py-1 font-semibold ${
               view === "flat"
                 ? "border-rose-600 bg-rose-600 text-white"
-                : "border-stone-300 bg-white text-stone-700"
+                : "border-theme-border bg-theme-surface text-ink"
             }`}
           >
             平面
@@ -299,10 +299,10 @@ export function FengShuiRoom({ reading }: { reading: FengShuiReading }) {
         </div>
       )}
 
-      <div className="space-y-3 border-t border-stone-200/70 px-5 py-4 text-sm">
+      <div className="space-y-3 border-t border-theme-border/70 px-5 py-4 text-sm">
         {selectedSector && (
-          <div className="rounded-2xl border border-stone-200 bg-white p-3">
-            <p className="flex items-center gap-2 font-bold text-stone-800">
+          <div className="rounded-2xl border border-theme-border bg-theme-surface p-3">
+            <p className="flex items-center gap-2 font-bold text-ink">
               {selectedSector.label}の区画
               <span
                 className={`rounded px-1.5 py-0.5 text-xs font-bold text-white ${
@@ -311,11 +311,9 @@ export function FengShuiRoom({ reading }: { reading: FengShuiReading }) {
               >
                 {selectedSector.auspicious ? "吉" : "凶"}
               </span>
-              <span className="text-xs text-stone-700">
-                {selectedSector.youxing}
-              </span>
+              <span className="text-xs text-ink">{selectedSector.youxing}</span>
             </p>
-            <p className="mt-1 text-xs text-stone-600">
+            <p className="mt-1 text-xs text-ink-muted">
               {selectedSector.meaning}
             </p>
           </div>
@@ -331,17 +329,17 @@ export function FengShuiRoom({ reading }: { reading: FengShuiReading }) {
                   className={`w-full rounded-2xl border p-3 text-left ${
                     selectedItem?.kind === it.kind
                       ? "border-amber-500 bg-amber-50"
-                      : "border-stone-200 bg-white"
+                      : "border-theme-border bg-theme-surface"
                   }`}
                 >
-                  <span className="flex items-center gap-1.5 font-bold text-stone-800">
-                    <Icon className="h-4 w-4 text-stone-500" aria-hidden />
+                  <span className="flex items-center gap-1.5 font-bold text-ink">
+                    <Icon className="h-4 w-4 text-ink-muted" aria-hidden />
                     {it.name}
                   </span>
-                  <span className="mt-1 block text-xs text-stone-700">
+                  <span className="mt-1 block text-xs text-ink">
                     {describeItem(it)}
                   </span>
-                  <span className="mt-1 block text-xs text-stone-500">
+                  <span className="mt-1 block text-xs text-ink-muted">
                     {it.rule}
                   </span>
                 </button>

@@ -71,18 +71,18 @@ export function YearlyForecast({
   if (!days || months.length === 0) return null;
 
   return (
-    <section className="rounded-2xl border border-stone-200 bg-white p-4">
+    <section className="rounded-2xl border border-theme-border bg-theme-surface p-4">
       <div className="flex flex-wrap items-baseline justify-between gap-2">
-        <h2 className="text-sm font-bold text-stone-800">
+        <h2 className="text-sm font-bold text-ink">
           月ごとの見通し（{directionLabel}）
         </h2>
-        <p className="text-xs text-stone-500">
+        <p className="text-xs text-ink-muted">
           走査した日を月ごとに数えたものです。下のカレンダーと同じ判定です。
         </p>
       </div>
 
       {/* 結論を先に置く。数字はすべて下のカレンダーで数え直せる */}
-      <p className="mt-3 max-w-[70ch] text-sm leading-relaxed text-stone-700">
+      <p className="mt-3 max-w-[70ch] text-sm leading-relaxed text-ink">
         {best ? (
           <>
             この範囲で{directionLabel}へ動ける日がいちばん多いのは
@@ -112,14 +112,14 @@ export function YearlyForecast({
               className={`rounded-xl border p-2.5 ${
                 isBest
                   ? "border-emerald-400 bg-emerald-50/40"
-                  : "border-stone-200"
+                  : "border-theme-border"
               }`}
             >
               <div className="flex items-baseline justify-between gap-1">
-                <span className="text-[11px] font-bold text-stone-700">
+                <span className="text-[11px] font-bold text-ink">
                   {monthLabel(m.year, m.monthOfYear)}
                 </span>
-                <span className="font-mono text-sm font-bold tabular-nums text-stone-900">
+                <span className="font-mono text-sm font-bold tabular-nums text-ink">
                   {m.open}
                 </span>
               </div>
@@ -150,7 +150,7 @@ export function YearlyForecast({
                 ) : null}
               </span>
 
-              <span className="mt-1.5 block text-[10px] leading-snug text-stone-600">
+              <span className="mt-1.5 block text-[10px] leading-snug text-ink-muted">
                 {m.total} 日のうち動ける日 {m.open} 日
               </span>
               {m.counts.BLOCKED > 0 && (
@@ -163,19 +163,19 @@ export function YearlyForecast({
         })}
       </div>
 
-      <ul className="mt-4 space-y-1.5 border-t border-stone-200 pt-3">
-        <li className="max-w-[70ch] text-[11px] leading-relaxed text-stone-600">
+      <ul className="mt-4 space-y-1.5 border-t border-theme-border pt-3">
+        <li className="max-w-[70ch] text-[11px] leading-relaxed text-ink-muted">
           ・「動ける日」は
           {OPEN_TIERS.map((t) => TIER_LABELS[t]).join("・")}
           {
             "の日です。数字は下のカレンダーのマスを数えたものと同じで、月を見てから日を選べます。"
           }
         </li>
-        <li className="max-w-[70ch] text-[11px] leading-relaxed text-stone-600">
+        <li className="max-w-[70ch] text-[11px] leading-relaxed text-ink-muted">
           ・<strong>天中殺の日は動ける日に入れていません。</strong>
           段階が良くても、日そのものが塞がっているものとして数えています。
         </li>
-        <li className="max-w-[70ch] text-[11px] leading-relaxed text-stone-600">
+        <li className="max-w-[70ch] text-[11px] leading-relaxed text-ink-muted">
           {
             "・方位ごとに変わります。上の表で方位を選び直すと、この見通しも切り替わります。"
           }

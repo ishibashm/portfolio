@@ -122,7 +122,7 @@ export function FengShuiLookup() {
                 onChange={(e) =>
                   chooseYear(e.target.value.replace(/[^\d]/g, ""))
                 }
-                className="mt-1.5 w-28 rounded-lg border border-slate-300 px-3 py-2 text-sm"
+                className="mt-1.5 w-28 rounded-lg border border-theme-border px-3 py-2 text-sm"
               />
             </label>
           ) : (
@@ -138,7 +138,7 @@ export function FengShuiLookup() {
         </div>
 
         <div>
-          <span className="block text-xs font-bold text-slate-700">性別</span>
+          <span className="block text-xs font-bold text-ink">性別</span>
           <div className="mt-1.5 flex gap-2">
             {(Object.keys(SEX_LABELS) as Sex[]).map((s) => (
               <button
@@ -149,7 +149,7 @@ export function FengShuiLookup() {
                 className={`rounded-full px-4 py-2 text-xs font-bold transition-colors ${
                   sex === s
                     ? "bg-rose-600 text-white"
-                    : "border border-slate-300 bg-white text-slate-700 hover:bg-slate-50"
+                    : "border border-theme-border bg-theme-surface text-ink hover:bg-theme-subtle"
                 }`}
               >
                 {SEX_LABELS[s]}
@@ -180,7 +180,7 @@ export function FengShuiLookup() {
           <p className="text-sm">
             あなたの本命卦は{" "}
             <b className="font-serif text-base">{reading.guaName}命</b>
-            <span className="ml-2 text-slate-700">（{reading.group}）</span>
+            <span className="ml-2 text-ink">（{reading.group}）</span>
           </p>
 
           {/* 吉凶は色だけで出さない。「吉」「凶」の字と遊星の名前を必ず添える。
@@ -192,7 +192,7 @@ export function FengShuiLookup() {
                 className={`rounded-xl border p-3 ${
                   d.auspicious
                     ? "border-emerald-300 bg-emerald-50"
-                    : "border-rose-300 bg-rose-50"
+                    : "border-rose-300 bg-theme-gold-soft"
                 }`}
               >
                 <div className="flex items-baseline gap-2">
@@ -208,11 +208,11 @@ export function FengShuiLookup() {
                   >
                     {d.auspicious ? "吉" : "凶"}
                   </span>
-                  <span className="text-xs font-bold text-slate-700">
+                  <span className="text-xs font-bold text-ink">
                     {d.youxing}
                   </span>
                 </div>
-                <p className="mt-1.5 text-xs leading-relaxed text-slate-700">
+                <p className="mt-1.5 text-xs leading-relaxed text-ink">
                   {d.meaning}
                 </p>
               </li>
@@ -223,7 +223,7 @@ export function FengShuiLookup() {
         </div>
       )}
 
-      <p className="mt-5 border-t border-slate-200 pt-4 text-xs leading-relaxed text-slate-600">
+      <p className="mt-5 border-t border-theme-border pt-4 text-xs leading-relaxed text-slate-600">
         <b>九星気学の判定とは足し合わせません。</b>
         流派が違うものを足すと、どちらの答えでもない数字になります。両方が吉の方位もあれば、片方だけの方位もあります。どちらを重く見るかは決めていません。
       </p>

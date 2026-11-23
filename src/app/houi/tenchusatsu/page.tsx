@@ -49,7 +49,7 @@ export default function TenchusatsuPage() {
           <h1 className="mt-3 text-2xl font-bold">
             天中殺の引越し・生年月日から時期を確認
           </h1>
-          <p className="mt-2 text-sm text-stone-600">
+          <p className="mt-2 text-sm text-ink-muted">
             {timeline.today}
             （JST）時点。伝統的な暦の見方であり、出来事を予測・保証するものではありません。
           </p>

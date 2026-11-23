@@ -71,7 +71,10 @@ export function PWAInstallPrompt() {
     window.addEventListener("appinstalled", handleAppInstalled);
 
     return () => {
-      window.removeEventListener("beforeinstallprompt", handleBeforeInstallPrompt);
+      window.removeEventListener(
+        "beforeinstallprompt",
+        handleBeforeInstallPrompt,
+      );
       window.removeEventListener("appinstalled", handleAppInstalled);
     };
   }, []);
@@ -102,7 +105,7 @@ export function PWAInstallPrompt() {
       {(deferredPrompt || isIOS) && (
         <button
           onClick={handleInstallClick}
-          className="w-full flex items-center justify-between px-3 py-2.5 rounded-xl bg-theme-accent-soft border border-theme-border text-accent hover:text-stone-900 dark:hover:text-ink hover:border-accent transition-all group cursor-pointer shadow-lg shadow-accent/12 dark:shadow-black/20"
+          className="w-full flex items-center justify-between px-3 py-2.5 rounded-xl bg-theme-accent-soft border border-theme-border text-accent hover:text-ink dark:hover:text-ink hover:border-accent transition-all group cursor-pointer shadow-lg shadow-accent/12 dark:shadow-black/20"
           title="アプリとしてスマホ/PCにインストール"
         >
           <div className="flex items-center gap-2.5">
@@ -110,21 +113,28 @@ export function PWAInstallPrompt() {
               <Smartphone size={16} />
             </div>
             <div className="text-left">
-              <div className="text-xs font-semibold leading-tight">アプリをインストール</div>
-              <div className="text-[10px] text-accent font-mono">iOS / Android / Desktop</div>
+              <div className="text-xs font-semibold leading-tight">
+                アプリをインストール
+              </div>
+              <div className="text-[10px] text-accent font-mono">
+                iOS / Android / Desktop
+              </div>
             </div>
           </div>
-          <Download size={15} className="text-accent group-hover:translate-y-0.5 transition-transform shrink-0" />
+          <Download
+            size={15}
+            className="text-accent group-hover:translate-y-0.5 transition-transform shrink-0"
+          />
         </button>
       )}
 
       {/* iOS Manual Installation Guide Modal */}
       {showIOSModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-white/70 dark:bg-theme-surface backdrop-blur-md animate-in fade-in duration-200">
-          <div className="relative w-full max-w-sm bg-white dark:bg-theme-surface border border-stone-200 dark:border-theme-border rounded-2xl p-6 text-stone-900 dark:text-ink shadow-2xl space-y-4">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-theme-surface/70 dark:bg-theme-surface backdrop-blur-md animate-in fade-in duration-200">
+          <div className="relative w-full max-w-sm bg-theme-surface dark:bg-theme-surface border border-theme-border dark:border-theme-border rounded-2xl p-6 text-ink dark:text-ink shadow-2xl space-y-4">
             <button
               onClick={() => setShowIOSModal(false)}
-              className="absolute top-4 right-4 text-stone-500 dark:text-ink-muted hover:text-stone-900 dark:hover:text-ink p-1"
+              className="absolute top-4 right-4 text-ink-muted dark:text-ink-muted hover:text-ink dark:hover:text-ink p-1"
             >
               <X size={20} />
             </button>
@@ -134,28 +144,47 @@ export function PWAInstallPrompt() {
                 <Smartphone size={24} />
               </div>
               <div>
-                <h3 className="font-bold text-base text-stone-800 dark:text-ink">iOS (iPhone/iPad) でのインストール</h3>
-                <p className="text-xs text-stone-500 dark:text-ink-muted font-mono">ホーム画面に追加してアプリとして使用</p>
+                <h3 className="font-bold text-base text-ink dark:text-ink">
+                  iOS (iPhone/iPad) でのインストール
+                </h3>
+                <p className="text-xs text-ink-muted dark:text-ink-muted font-mono">
+                  ホーム画面に追加してアプリとして使用
+                </p>
               </div>
             </div>
 
-            <div className="space-y-3 pt-2 text-sm text-stone-600 dark:text-ink-muted font-mono">
-              <div className="flex items-start gap-3 bg-white/80 dark:bg-theme-surface p-3 rounded-xl border border-stone-200 dark:border-theme-border">
-                <span className="flex items-center justify-center w-6 h-6 rounded-full bg-theme-accent-soft text-accent text-xs font-bold shrink-0">1</span>
+            <div className="space-y-3 pt-2 text-sm text-ink-muted dark:text-ink-muted font-mono">
+              <div className="flex items-start gap-3 bg-theme-surface dark:bg-theme-surface p-3 rounded-xl border border-theme-border dark:border-theme-border">
+                <span className="flex items-center justify-center w-6 h-6 rounded-full bg-theme-accent-soft text-accent text-xs font-bold shrink-0">
+                  1
+                </span>
                 <div>
-                  Safari ブラウザ下部（または上部）の <span className="inline-flex items-center px-1.5 py-0.5 rounded bg-stone-100 dark:bg-theme-subtle text-accent font-sans"><Share size={14} className="inline mr-1" /> 共有ボタン</span> をタップ
+                  Safari ブラウザ下部（または上部）の{" "}
+                  <span className="inline-flex items-center px-1.5 py-0.5 rounded bg-stone-100 dark:bg-theme-subtle text-accent font-sans">
+                    <Share size={14} className="inline mr-1" /> 共有ボタン
+                  </span>{" "}
+                  をタップ
                 </div>
               </div>
 
-              <div className="flex items-start gap-3 bg-white/80 dark:bg-theme-surface p-3 rounded-xl border border-stone-200 dark:border-theme-border">
-                <span className="flex items-center justify-center w-6 h-6 rounded-full bg-theme-accent-soft text-accent text-xs font-bold shrink-0">2</span>
+              <div className="flex items-start gap-3 bg-theme-surface dark:bg-theme-surface p-3 rounded-xl border border-theme-border dark:border-theme-border">
+                <span className="flex items-center justify-center w-6 h-6 rounded-full bg-theme-accent-soft text-accent text-xs font-bold shrink-0">
+                  2
+                </span>
                 <div>
-                  メニューから <span className="inline-flex items-center px-1.5 py-0.5 rounded bg-stone-100 dark:bg-theme-subtle text-accent font-sans"><PlusSquare size={14} className="inline mr-1" /> ホーム画面に追加</span> を選択
+                  メニューから{" "}
+                  <span className="inline-flex items-center px-1.5 py-0.5 rounded bg-stone-100 dark:bg-theme-subtle text-accent font-sans">
+                    <PlusSquare size={14} className="inline mr-1" />{" "}
+                    ホーム画面に追加
+                  </span>{" "}
+                  を選択
                 </div>
               </div>
 
-              <div className="flex items-start gap-3 bg-white/80 dark:bg-theme-surface p-3 rounded-xl border border-stone-200 dark:border-theme-border">
-                <span className="flex items-center justify-center w-6 h-6 rounded-full bg-theme-accent-soft text-accent text-xs font-bold shrink-0">3</span>
+              <div className="flex items-start gap-3 bg-theme-surface dark:bg-theme-surface p-3 rounded-xl border border-theme-border dark:border-theme-border">
+                <span className="flex items-center justify-center w-6 h-6 rounded-full bg-theme-accent-soft text-accent text-xs font-bold shrink-0">
+                  3
+                </span>
                 <div>
                   右上「追加」をタップすれば、ホーム画面からネイティブアプリとして起動できます。
                 </div>

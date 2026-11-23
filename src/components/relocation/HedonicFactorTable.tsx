@@ -121,7 +121,7 @@ function EffectCell({
         >
           {pct(value)}
         </span>
-        <span className="text-[10px] text-stone-500 dark:text-ink-muted">
+        <span className="text-[10px] text-ink-muted dark:text-ink-muted">
           {yenDelta((median * value) / 100)}
         </span>
       </div>
@@ -174,12 +174,12 @@ export function HedonicFactorTable({
             most && least ? (
               <div
                 key={key}
-                className="rounded-2xl border border-stone-200 dark:border-theme-border bg-stone-50 dark:bg-theme-subtle p-3"
+                className="rounded-2xl border border-theme-border dark:border-theme-border bg-theme-subtle dark:bg-theme-subtle p-3"
               >
-                <p className="text-xs font-bold text-stone-700 dark:text-ink">
+                <p className="text-xs font-bold text-ink dark:text-ink">
                   {LABEL[key].head}と、家賃は
                 </p>
-                <p className="mt-1 text-sm leading-relaxed text-stone-800 dark:text-ink">
+                <p className="mt-1 text-sm leading-relaxed text-ink dark:text-ink">
                   いちばん効く<b>{most.p.prefecture}</b>で{" "}
                   <b
                     className={
@@ -188,12 +188,12 @@ export function HedonicFactorTable({
                   >
                     {pct(most.s[key])}
                   </b>
-                  <span className="text-xs text-stone-500 dark:text-ink-muted">
+                  <span className="text-xs text-ink-muted dark:text-ink-muted">
                     （中央値 {man(most.p.rent.median)} の部屋で{" "}
                     {yenDelta((most.p.rent.median * most.s[key]) / 100)}）
                   </span>
                 </p>
-                <p className="mt-0.5 text-xs text-stone-600 dark:text-ink-muted">
+                <p className="mt-0.5 text-xs text-ink-muted dark:text-ink-muted">
                   いちばん効かない{least.p.prefecture}は {pct(least.s[key])}
                 </p>
               </div>
@@ -216,7 +216,7 @@ export function HedonicFactorTable({
             className={`rounded-full border px-3 py-1 text-xs font-semibold ${
               sort === o.key
                 ? "border-stone-800 dark:border-theme-border bg-stone-800 dark:bg-slate-700 text-white"
-                : "border-stone-300 dark:border-theme-border bg-white dark:bg-theme-surface text-stone-700 dark:text-ink hover:border-stone-500 dark:hover:border-theme-border"
+                : "border-theme-border dark:border-theme-border bg-theme-surface dark:bg-theme-surface text-ink dark:text-ink hover:border-stone-500 dark:hover:border-theme-border"
             }`}
           >
             {o.label}
@@ -227,8 +227,8 @@ export function HedonicFactorTable({
       <div className="overflow-x-auto">
         <table className="w-full text-[11px]">
           <thead>
-            <tr className="border-b border-gray-200 dark:border-theme-border text-left text-stone-600 dark:text-ink-muted">
-              <th className="sticky left-0 bg-white dark:bg-theme-surface py-1.5 pr-3 font-semibold">
+            <tr className="border-b border-theme-border dark:border-theme-border text-left text-ink-muted dark:text-ink-muted">
+              <th className="sticky left-0 bg-theme-surface dark:bg-theme-surface py-1.5 pr-3 font-semibold">
                 県
               </th>
               <th className="whitespace-nowrap py-1.5 pr-3 text-right font-semibold">
@@ -237,7 +237,7 @@ export function HedonicFactorTable({
               {KEYS.map((k) => (
                 <th key={k} className="py-1.5 pr-3 font-semibold">
                   {LABEL[k].head}
-                  <span className="block text-[10px] font-normal text-stone-500 dark:text-ink-muted">
+                  <span className="block text-[10px] font-normal text-ink-muted dark:text-ink-muted">
                     （{LABEL[k].sub}）
                   </span>
                 </th>
@@ -254,11 +254,11 @@ export function HedonicFactorTable({
             {sorted.map(({ p, s }) => (
               <tr
                 key={p.prefecture}
-                className="border-b border-gray-100 dark:border-theme-border last:border-0"
+                className="border-b border-theme-border dark:border-theme-border last:border-0"
               >
-                <td className="sticky left-0 whitespace-nowrap bg-white dark:bg-theme-surface py-2 pr-3">
+                <td className="sticky left-0 whitespace-nowrap bg-theme-surface dark:bg-theme-surface py-2 pr-3">
                   <span className="font-semibold">{p.prefecture}</span>
-                  <span className="block text-[10px] text-stone-500 dark:text-ink-muted">
+                  <span className="block text-[10px] text-ink-muted dark:text-ink-muted">
                     {count(p.n)}
                   </span>
                 </td>
@@ -283,7 +283,7 @@ export function HedonicFactorTable({
                 ) : (
                   <td
                     colSpan={4}
-                    className="py-2 text-right text-stone-600 dark:text-ink-muted"
+                    className="py-2 text-right text-ink-muted dark:text-ink-muted"
                   >
                     標本不足
                   </td>
@@ -293,7 +293,7 @@ export function HedonicFactorTable({
           </tbody>
         </table>
       </div>
-      <p className="text-xs leading-relaxed text-stone-500 dark:text-ink-muted">
+      <p className="text-xs leading-relaxed text-ink-muted dark:text-ink-muted">
         {NOTE}
       </p>
     </div>

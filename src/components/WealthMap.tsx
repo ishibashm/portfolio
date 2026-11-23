@@ -108,7 +108,7 @@ export function WealthMap({
   }, [data]);
 
   return (
-    <div className="w-full h-full relative bg-white rounded-2xl overflow-hidden border border-stone-200">
+    <div className="w-full h-full relative bg-theme-surface rounded-2xl overflow-hidden border border-theme-border">
       <ComposableMap
         projection="geoMercator"
         projectionConfig={{
@@ -222,7 +222,7 @@ export function WealthMap({
           aria-label="拡大"
           onClick={() => zoomBy(2)}
           disabled={k >= MAX_ZOOM}
-          className="flex h-9 w-9 items-center justify-center rounded-lg border border-stone-200 bg-white/90 text-stone-700 shadow hover:bg-white disabled:opacity-40"
+          className="flex h-9 w-9 items-center justify-center rounded-lg border border-theme-border bg-theme-surface text-ink shadow hover:bg-theme-surface disabled:opacity-40"
         >
           <Plus className="h-4 w-4" aria-hidden />
         </button>
@@ -231,7 +231,7 @@ export function WealthMap({
           aria-label="縮小"
           onClick={() => zoomBy(0.5)}
           disabled={k <= 1}
-          className="flex h-9 w-9 items-center justify-center rounded-lg border border-stone-200 bg-white/90 text-stone-700 shadow hover:bg-white disabled:opacity-40"
+          className="flex h-9 w-9 items-center justify-center rounded-lg border border-theme-border bg-theme-surface text-ink shadow hover:bg-theme-surface disabled:opacity-40"
         >
           <Minus className="h-4 w-4" aria-hidden />
         </button>
@@ -239,7 +239,7 @@ export function WealthMap({
           type="button"
           aria-label="出発地へ戻す"
           onClick={() => setView({ center: [baseLon, baseLat], zoom: 4 })}
-          className="flex h-9 w-9 items-center justify-center rounded-lg border border-stone-200 bg-white/90 text-stone-700 shadow hover:bg-white"
+          className="flex h-9 w-9 items-center justify-center rounded-lg border border-theme-border bg-theme-surface text-ink shadow hover:bg-theme-surface"
         >
           <LocateFixed className="h-4 w-4" aria-hidden />
         </button>
@@ -247,13 +247,13 @@ export function WealthMap({
 
       {/* Legend / Tooltip Overlay */}
       {tooltipContent && (
-        <div className="absolute top-4 left-4 bg-white/70 text-stone-900 px-3 py-2 rounded shadow-lg backdrop-blur text-sm pointer-events-none z-10 max-w-sm whitespace-pre-wrap">
+        <div className="absolute top-4 left-4 bg-theme-surface/70 text-ink px-3 py-2 rounded shadow-lg backdrop-blur text-sm pointer-events-none z-10 max-w-sm whitespace-pre-wrap">
           {tooltipContent}
         </div>
       )}
 
-      <div className="absolute bottom-4 right-4 bg-white/70 text-stone-900 px-4 py-3 rounded-xl shadow-lg backdrop-blur text-xs pointer-events-none border border-stone-200 z-10 flex flex-col gap-2">
-        <div className="font-bold border-b border-stone-300 pb-1 mb-1">
+      <div className="absolute bottom-4 right-4 bg-theme-surface/70 text-ink px-4 py-3 rounded-xl shadow-lg backdrop-blur text-xs pointer-events-none border border-theme-border z-10 flex flex-col gap-2">
+        <div className="font-bold border-b border-theme-border pb-1 mb-1">
           一人当たり所得
         </div>
         <div className="flex items-center gap-2">
@@ -270,7 +270,7 @@ export function WealthMap({
           />{" "}
           低い
         </div>
-        <div className="font-bold border-b border-stone-300 pb-1 mb-1 mt-2">
+        <div className="font-bold border-b border-theme-border pb-1 mb-1 mt-2">
           吉凶ステータス
         </div>
         {WEALTH_LEGEND_SAMPLES.map((item) => {
@@ -295,7 +295,7 @@ export function WealthMap({
           );
         })}
         {WEALTH_LEGEND_NOTES.map((note) => (
-          <div key={note} className="text-[10px] text-stone-500 max-w-[13rem]">
+          <div key={note} className="text-[10px] text-ink-muted max-w-[13rem]">
             ※{note}
           </div>
         ))}

@@ -70,7 +70,7 @@ export default function GrokVoice({
   }
   if (loginRequired)
     return (
-      <div className="rounded-2xl border border-slate-200 p-4 text-sm">
+      <div className="rounded-2xl border border-theme-border p-4 text-sm">
         音声で話すにはログインが必要です。{" "}
         <Link
           className="underline underline-offset-2"
@@ -81,7 +81,7 @@ export default function GrokVoice({
       </div>
     );
   return (
-    <div className="space-y-3 rounded-2xl border border-slate-200 p-4">
+    <div className="space-y-3 rounded-2xl border border-theme-border p-4">
       <p className="text-sm">
         Grok
         音声モード：音声・文字起こし・道具の結果をxAIに送信します。このサイトには保存しません。氏名や詳しい住所は話さないでください。

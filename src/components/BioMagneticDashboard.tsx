@@ -40,7 +40,7 @@ export function BioMagneticDashboard({
   pressure = null,
 }: DashboardProps) {
   const getKpColor = (kp: number | null) => {
-    if (kp === null) return "text-stone-600";
+    if (kp === null) return "text-ink-muted";
     if (kp >= 5)
       return "text-red-700 drop-shadow-[0_0_8px_rgba(239,68,68,0.8)]";
     if (kp >= 4)
@@ -106,7 +106,7 @@ export function BioMagneticDashboard({
     */
     <div className="w-full mt-8">
       {/* 1. ENVIRONMENTAL TELEMETRY */}
-      <div className="bg-stone-50 border border-stone-200 p-4 shadow-2xl relative overflow-hidden group flex flex-col h-full">
+      <div className="bg-theme-subtle border border-theme-border p-4 shadow-2xl relative overflow-hidden group flex flex-col h-full">
         {/* HUD Corner Accents */}
         <div className="absolute top-0 left-0 w-2 h-2 border-t-2 border-l-2 border-emerald-200"></div>
         <div className="absolute top-0 right-0 w-2 h-2 border-t-2 border-r-2 border-emerald-200"></div>
@@ -117,9 +117,9 @@ export function BioMagneticDashboard({
           <Zap size={150} className="text-emerald-700" />
         </div>
 
-        <div className="flex items-center gap-2 mb-4 relative z-10 border-b border-stone-200 pb-2">
+        <div className="flex items-center gap-2 mb-4 relative z-10 border-b border-theme-border pb-2">
           <Radio size={14} className="text-emerald-700 md:animate-pulse" />
-          <h2 className="text-[10px] uppercase font-mono tracking-widest text-stone-600 font-bold">
+          <h2 className="text-[10px] uppercase font-mono tracking-widest text-ink-muted font-bold">
             外部環境の実測値
           </h2>
           <div className="ml-auto flex items-center gap-1">
@@ -127,7 +127,7 @@ export function BioMagneticDashboard({
               className={`w-1.5 h-1.5 rounded-full ${hasFeed ? "bg-emerald-500 animate-pulse" : "bg-stone-400"}`}
             ></span>
             <span
-              className={`text-[10px] font-mono tracking-widest ${hasFeed ? "text-emerald-700" : "text-stone-600"}`}
+              className={`text-[10px] font-mono tracking-widest ${hasFeed ? "text-emerald-700" : "text-ink-muted"}`}
             >
               {hasFeed ? "実測" : "計算値のみ"}
             </span>
@@ -138,10 +138,10 @@ export function BioMagneticDashboard({
           {/* KP Index Circular Gauge */}
           {kpIndex !== null && (
             <div
-              className={`${gaugeSpan}flex flex-col p-3 bg-white/70 border border-stone-200 rounded-sm relative overflow-hidden`}
+              className={`${gaugeSpan}flex flex-col p-3 bg-theme-surface/70 border border-theme-border rounded-sm relative overflow-hidden`}
             >
-              <span className="text-[10px] text-stone-600 font-bold uppercase tracking-wider mb-2 flex items-center gap-1">
-                <Orbit size={10} className="text-stone-600" /> 地磁気 Kp（NOAA）
+              <span className="text-[10px] text-ink-muted font-bold uppercase tracking-wider mb-2 flex items-center gap-1">
+                <Orbit size={10} className="text-ink-muted" /> 地磁気 Kp（NOAA）
               </span>
               <div className="flex items-center justify-between">
                 <div className="relative w-14 h-14">
@@ -183,12 +183,12 @@ export function BioMagneticDashboard({
                   {[...Array(9)].map((_, i) => (
                     <div
                       key={i}
-                      className={`h-[2px] w-full rounded-sm ${kpIndex !== null && 9 - i <= kpIndex ? getKpBgColor(kpIndex) : "bg-white"}`}
+                      className={`h-[2px] w-full rounded-sm ${kpIndex !== null && 9 - i <= kpIndex ? getKpBgColor(kpIndex) : "bg-theme-surface"}`}
                     ></div>
                   ))}
                 </div>
               </div>
-              <div className="mt-2 text-[10px] text-stone-600 text-right">
+              <div className="mt-2 text-[10px] text-ink-muted text-right">
                 Kp 指数（0〜9）
               </div>
             </div>
@@ -197,24 +197,24 @@ export function BioMagneticDashboard({
           {/* XRAY FLUX Linear Gauge */}
           {xrayFlux && (
             <div
-              className={`${gaugeSpan}flex flex-col p-3 bg-white/70 border border-stone-200 rounded-sm relative overflow-hidden`}
+              className={`${gaugeSpan}flex flex-col p-3 bg-theme-surface/70 border border-theme-border rounded-sm relative overflow-hidden`}
             >
-              <span className="text-[10px] text-stone-600 font-bold uppercase tracking-wider mb-2 flex items-center gap-1">
-                <Zap size={10} className="text-stone-600" /> 太陽 X 線
+              <span className="text-[10px] text-ink-muted font-bold uppercase tracking-wider mb-2 flex items-center gap-1">
+                <Zap size={10} className="text-ink-muted" /> 太陽 X 線
               </span>
               <div className="flex flex-col grow justify-center gap-2">
                 <div
-                  className={`text-2xl font-bold tracking-tight text-center ${xrayData.type === "M" || xrayData.type === "X" ? "text-red-700 animate-pulse" : "text-stone-600"}`}
+                  className={`text-2xl font-bold tracking-tight text-center ${xrayData.type === "M" || xrayData.type === "X" ? "text-red-700 animate-pulse" : "text-ink-muted"}`}
                 >
                   {xrayFlux || "--"}
                 </div>
-                <div className="w-full relative h-1.5 bg-white rounded-sm overflow-hidden">
+                <div className="w-full relative h-1.5 bg-theme-surface rounded-sm overflow-hidden">
                   <div
                     className={`absolute top-0 left-0 bottom-0 transition-all duration-1000 ${xrayData.type === "X" ? "bg-red-500 shadow-[0_0_8px_rgba(239,68,68,1)]" : xrayData.type === "M" ? "bg-amber-500" : "bg-blue-500"}`}
                     style={{ width: `${xrayPct}%` }}
                   ></div>
                 </div>
-                <div className="flex justify-between text-[10px] text-stone-600 mt-0.5">
+                <div className="flex justify-between text-[10px] text-ink-muted mt-0.5">
                   <span>A</span>
                   <span>B</span>
                   <span>C</span>
@@ -227,7 +227,7 @@ export function BioMagneticDashboard({
 
           {/* 気圧（気象病モデルの入力） */}
           {pressure && (
-            <div className="col-span-2 mt-2 pt-2 border-t border-stone-200">
+            <div className="col-span-2 mt-2 pt-2 border-t border-theme-border">
               <div className="flex items-center gap-1.5 mb-2">
                 <Waves size={12} className="text-sky-700" />
                 <span className="text-[10px] text-sky-700 font-bold uppercase tracking-wider">
@@ -235,18 +235,18 @@ export function BioMagneticDashboard({
                 </span>
               </div>
               <div className="grid grid-cols-3 gap-1">
-                <div className="bg-white/80 p-2 flex flex-col items-center justify-center border-r border-stone-200">
+                <div className="bg-theme-surface p-2 flex flex-col items-center justify-center border-r border-theme-border">
                   <div className="text-[10px] text-sky-700 mb-1 uppercase tracking-widest">
                     現在
                   </div>
-                  <div className="text-sm text-stone-700 font-mono font-bold tracking-tight">
+                  <div className="text-sm text-ink font-mono font-bold tracking-tight">
                     {pressure ? pressure.current.toFixed(1) : "--"}
-                    <span className="text-[10px] text-stone-600 ml-0.5">
+                    <span className="text-[10px] text-ink-muted ml-0.5">
                       hPa
                     </span>
                   </div>
                 </div>
-                <div className="bg-white/80 p-2 flex flex-col items-center justify-center border-r border-stone-200">
+                <div className="bg-theme-surface p-2 flex flex-col items-center justify-center border-r border-theme-border">
                   <div className="text-[10px] text-sky-700 mb-1 uppercase tracking-widest">
                     3時間変化
                   </div>
@@ -256,30 +256,30 @@ export function BioMagneticDashboard({
                         ? "text-red-700"
                         : pressure && pressure.drop < 0
                           ? "text-amber-700"
-                          : "text-stone-700"
+                          : "text-ink"
                     }`}
                   >
                     {pressure
                       ? `${pressure.drop > 0 ? "+" : ""}${pressure.drop.toFixed(1)}`
                       : "--"}
-                    <span className="text-[10px] text-stone-600 ml-0.5">
+                    <span className="text-[10px] text-ink-muted ml-0.5">
                       hPa
                     </span>
                   </div>
                 </div>
-                <div className="bg-white/80 p-2 flex flex-col items-center justify-center">
+                <div className="bg-theme-surface p-2 flex flex-col items-center justify-center">
                   <div className="text-[10px] text-sky-700 mb-1 uppercase tracking-widest">
                     自律神経負荷
                   </div>
-                  <div className="text-sm text-stone-700 font-mono font-bold tracking-tight">
+                  <div className="text-sm text-ink font-mono font-bold tracking-tight">
                     {pressure
                       ? `+${(pressure.drop < 0 ? Math.min(30, Math.abs(pressure.drop) * 3) : 0).toFixed(0)}`
                       : "--"}
-                    <span className="text-[10px] text-stone-600 ml-0.5">%</span>
+                    <span className="text-[10px] text-ink-muted ml-0.5">%</span>
                   </div>
                 </div>
               </div>
-              <p className="text-xs text-stone-600 mt-2 leading-relaxed">
+              <p className="text-xs text-ink-muted mt-2 leading-relaxed">
                 出典：
                 <a
                   href="https://www.jma.go.jp/bosai/map.html#contents=amedas"
@@ -295,7 +295,7 @@ export function BioMagneticDashboard({
           )}
 
           {/* WMM Output Data Matrix */}
-          <div className="col-span-2 mt-2 pt-2 border-t border-stone-200">
+          <div className="col-span-2 mt-2 pt-2 border-t border-theme-border">
             <div className="flex justify-between items-center mb-2">
               <div className="flex items-center gap-1.5">
                 <Compass size={12} className="text-emerald-700" />
@@ -306,48 +306,48 @@ export function BioMagneticDashboard({
               {/* 以前は「V.2020-2025」と版の期間を書いていたが、geomagnetism
                   0.2.0 は wmm-2025 を持ち、2026 年は WMM2025 で計算している。
                   年を書くと次の版でまた嘘になるので、出典だけにする。 */}
-              <span className="text-xs text-stone-600 px-1 py-0.5 bg-white rounded-sm">
+              <span className="text-xs text-ink-muted px-1 py-0.5 bg-theme-surface rounded-sm">
                 出典: NOAA WMM
               </span>
             </div>
 
             <div className="grid grid-cols-3 gap-1 relative">
               {/* HUD Data Brackets */}
-              <div className="absolute top-0 left-0 w-1 h-full border-y border-l border-stone-200 pointer-events-none"></div>
-              <div className="absolute top-0 right-0 w-1 h-full border-y border-r border-stone-200 pointer-events-none"></div>
+              <div className="absolute top-0 left-0 w-1 h-full border-y border-l border-theme-border pointer-events-none"></div>
+              <div className="absolute top-0 right-0 w-1 h-full border-y border-r border-theme-border pointer-events-none"></div>
 
-              <div className="bg-white/80 p-2 flex flex-col items-center justify-center border-r border-stone-200 last:border-0">
+              <div className="bg-theme-surface p-2 flex flex-col items-center justify-center border-r border-theme-border last:border-0">
                 <div className="text-[10px] text-emerald-700 mb-1 uppercase tracking-widest">
                   全磁力 F
                 </div>
-                <div className="text-sm text-stone-700 font-mono font-bold tracking-tight">
+                <div className="text-sm text-ink font-mono font-bold tracking-tight">
                   {magneticF ? `${magneticF.toFixed(0)}` : "計算中"}
-                  <span className="text-[10px] text-stone-600 ml-0.5">nT</span>
+                  <span className="text-[10px] text-ink-muted ml-0.5">nT</span>
                 </div>
               </div>
-              <div className="bg-white/80 p-2 flex flex-col items-center justify-center border-r border-stone-200 last:border-0">
+              <div className="bg-theme-surface p-2 flex flex-col items-center justify-center border-r border-theme-border last:border-0">
                 <div className="text-[10px] text-emerald-700 mb-1 uppercase tracking-widest">
                   偏角 D
                 </div>
-                <div className="text-sm text-stone-700 font-mono font-bold tracking-tight">
+                <div className="text-sm text-ink font-mono font-bold tracking-tight">
                   {magneticD !== null ? `${magneticD.toFixed(2)}` : "--"}
-                  <span className="text-[10px] text-stone-600 ml-0.5">°</span>
+                  <span className="text-[10px] text-ink-muted ml-0.5">°</span>
                 </div>
               </div>
-              <div className="bg-white/80 p-2 flex flex-col items-center justify-center border-r border-stone-200 last:border-0">
+              <div className="bg-theme-surface p-2 flex flex-col items-center justify-center border-r border-theme-border last:border-0">
                 <div className="text-[10px] text-emerald-700 mb-1 uppercase tracking-widest">
                   伏角 I
                 </div>
-                <div className="text-sm text-stone-700 font-mono font-bold tracking-tight">
+                <div className="text-sm text-ink font-mono font-bold tracking-tight">
                   {magneticI !== null ? `${magneticI.toFixed(2)}` : "--"}
-                  <span className="text-[10px] text-stone-600 ml-0.5">°</span>
+                  <span className="text-[10px] text-ink-muted ml-0.5">°</span>
                 </div>
               </div>
             </div>
           </div>
 
           {missing.length > 0 && (
-            <div className="col-span-2 mt-2 pt-2 border-t border-stone-200 text-xs text-stone-600">
+            <div className="col-span-2 mt-2 pt-2 border-t border-theme-border text-xs text-ink-muted">
               取得できていません: {missing.join("・")}
               。取れていない項目は負荷の計算に入っていません。
             </div>

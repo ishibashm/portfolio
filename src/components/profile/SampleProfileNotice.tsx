@@ -57,7 +57,7 @@ export function SampleProfileNotice({
 }) {
   return (
     <p
-      className={`flex flex-wrap items-center gap-x-2 gap-y-1 rounded-xl border border-indigo-200 bg-indigo-50 px-3 py-2 text-[11px] leading-relaxed text-indigo-900 ${className}`}
+      className={`flex flex-wrap items-center gap-x-2 gap-y-1 rounded-xl border border-theme-border bg-theme-accent-soft px-3 py-2 text-[11px] leading-relaxed text-ink ${className}`}
     >
       <UserRound className="h-3.5 w-3.5 shrink-0" aria-hidden />
       <span>
@@ -70,7 +70,7 @@ export function SampleProfileNotice({
       </span>
       <Link
         href="/profile"
-        className="inline-flex min-h-[24px] items-center font-bold underline hover:text-indigo-950"
+        className="inline-flex min-h-[24px] items-center font-bold text-accent underline hover:text-accent"
       >
         自分の生年月日で見る
       </Link>

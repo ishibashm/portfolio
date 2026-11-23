@@ -175,12 +175,12 @@ export function AstroGridCalendar({
   // 各マスのスタイルクラスを決定
   const getBoxStyle = (day: DateScore, isToday: boolean) => {
     if (isTransitioning) {
-      return "bg-stone-100/80 border border-stone-200 animate-pulse cursor-wait";
+      return "bg-stone-100/80 border border-theme-border animate-pulse cursor-wait";
     }
 
     const isLucky = isLuckyDay(day);
     if (luckyOnlyFilter && !isLucky) {
-      return "w-8 h-8 rounded-lg flex flex-col justify-between p-1 transition-all border border-zinc-200/20 dark:border-stone-200 opacity-25 grayscale hover:opacity-50";
+      return "w-8 h-8 rounded-lg flex flex-col justify-between p-1 transition-all border border-zinc-200/20 dark:border-theme-border opacity-25 grayscale hover:opacity-50";
     }
 
     let baseClass =
@@ -247,7 +247,7 @@ export function AstroGridCalendar({
     // 通常 (グレー) の日
     return (
       baseClass +
-      "bg-white/80 text-stone-500 border-stone-200 hover:bg-stone-100/80 hover:scale-110"
+      "bg-theme-surface text-ink-muted border-theme-border hover:bg-stone-100/80 hover:scale-110"
     );
   };
 
@@ -255,17 +255,17 @@ export function AstroGridCalendar({
   const getWeekdayColor = (day: DateScore) => {
     if (day.holiday.isHoliday || day.weekday === 0) return "text-red-600"; // 日曜・祝日: 赤
     if (day.weekday === 6) return "text-blue-600"; // 土曜: 青
-    return "text-stone-600 dark:text-stone-500";
+    return "text-ink-muted dark:text-ink-muted";
   };
 
   return (
     <div className="flex flex-col gap-2 font-sans select-none">
-      <div className="flex items-center justify-between gap-2 flex-wrap bg-white/70 backdrop-blur-md p-3 rounded-2xl border border-rose-100/80 shadow-xs">
-        <div className="text-xs text-stone-900 font-bold tracking-tight flex items-center gap-1.5 font-serif">
+      <div className="flex items-center justify-between gap-2 flex-wrap bg-theme-surface/70 backdrop-blur-md p-3 rounded-2xl border border-rose-100/80 shadow-xs">
+        <div className="text-xs text-ink font-bold tracking-tight flex items-center gap-1.5 font-serif">
           <span className="text-rose-500 font-bold">◆</span>
           <span>吉凶タイムライン・ヒートマップ</span>
           {luckyOnlyFilter && (
-            <span className="text-[10px] bg-rose-500 text-stone-900 px-2 py-0.5 rounded-full font-semibold shadow-xs animate-pulse font-sans">
+            <span className="text-[10px] bg-theme-gold-soft0 text-ink px-2 py-0.5 rounded-full font-semibold shadow-xs animate-pulse font-sans">
               大吉のみ表示中
             </span>
           )}
@@ -273,13 +273,13 @@ export function AstroGridCalendar({
 
         {enableExtendedViews && (
           <div className="flex items-center gap-1.5 flex-wrap text-xs font-semibold">
-            <div className="flex items-center gap-1 bg-stone-100 p-1 rounded-xl border border-stone-200/80">
+            <div className="flex items-center gap-1 bg-stone-100 p-1 rounded-xl border border-theme-border/80">
               <button
                 onClick={() => setRangeMode("7days")}
                 className={`px-2.5 py-1 rounded-lg transition-all ${
                   rangeMode === "7days"
-                    ? "bg-white text-stone-900 shadow-xs font-bold"
-                    : "text-stone-500 hover:text-stone-800"
+                    ? "bg-theme-surface text-ink shadow-xs font-bold"
+                    : "text-ink-muted hover:text-ink"
                 }`}
               >
                 7days
@@ -288,8 +288,8 @@ export function AstroGridCalendar({
                 onClick={() => setRangeMode("30days")}
                 className={`px-2.5 py-1 rounded-lg transition-all ${
                   rangeMode === "30days"
-                    ? "bg-white text-stone-900 shadow-xs font-bold"
-                    : "text-stone-500 hover:text-stone-800"
+                    ? "bg-theme-surface text-ink shadow-xs font-bold"
+                    : "text-ink-muted hover:text-ink"
                 }`}
               >
                 30days
@@ -298,8 +298,8 @@ export function AstroGridCalendar({
                 onClick={() => setRangeMode("12months")}
                 className={`px-2.5 py-1 rounded-lg transition-all ${
                   rangeMode === "12months"
-                    ? "bg-white text-stone-900 shadow-xs font-bold"
-                    : "text-stone-500 hover:text-stone-800"
+                    ? "bg-theme-surface text-ink shadow-xs font-bold"
+                    : "text-ink-muted hover:text-ink"
                 }`}
               >
                 12months
@@ -310,8 +310,8 @@ export function AstroGridCalendar({
               onClick={() => setLuckyOnlyFilter(!luckyOnlyFilter)}
               className={`px-3 py-1 rounded-xl transition-all flex items-center gap-1 cursor-pointer ${
                 luckyOnlyFilter
-                  ? "bg-gradient-to-r from-amber-400 to-rose-400 text-stone-900 font-bold shadow-xs"
-                  : "bg-white text-stone-700 hover:bg-stone-50 border border-stone-200/80"
+                  ? "bg-gradient-to-r from-amber-400 to-rose-400 text-ink font-bold shadow-xs"
+                  : "bg-theme-surface text-ink hover:bg-theme-subtle border border-theme-border/80"
               }`}
               title="大吉・吉方位日のみをハイライト表示"
             >
@@ -322,14 +322,14 @@ export function AstroGridCalendar({
       </div>
 
       {rangeMode !== "7days" && extendedLoading && (
-        <div className="text-[11px] text-stone-600 px-1 py-2">
+        <div className="text-[11px] text-ink-muted px-1 py-2">
           {rangeMode === "12months" ? "12ヶ月分" : "30日分"}の吉凶を計算中…
         </div>
       )}
       {rangeMode !== "7days" &&
         !extendedLoading &&
         displayedDays.length === 0 && (
-          <div className="text-[11px] text-stone-600 px-1 py-2">
+          <div className="text-[11px] text-ink-muted px-1 py-2">
             この期間の吉凶を取得できませんでした。
           </div>
         )}
@@ -422,27 +422,27 @@ export function AstroGridCalendar({
             if (details.doyouPenalty < 0) badFactors.push("DOYOU_SATSU");
 
             return (
-              <div className="space-y-2 border-t border-stone-200 pt-2 mt-2">
+              <div className="space-y-2 border-t border-theme-border pt-2 mt-2">
                 {/* 算出内訳 */}
                 <div>
-                  <div className="text-stone-600 font-bold uppercase text-[10px] tracking-wider mb-0.5">
+                  <div className="text-ink-muted font-bold uppercase text-[10px] tracking-wider mb-0.5">
                     吉凶の内訳式:
                   </div>
-                  <div className="text-[9.5px] font-mono text-stone-600 leading-normal">
+                  <div className="text-[9.5px] font-mono text-ink-muted leading-normal">
                     {parts.join(" ")} = {rawSum}点{clipInfo}
                   </div>
                 </div>
 
                 {/* 凶要素の解説 */}
                 {badFactors.length > 0 && (
-                  <div className="space-y-1 pt-1.5 border-t border-stone-200">
+                  <div className="space-y-1 pt-1.5 border-t border-theme-border">
                     <div className="text-red-600 font-bold text-[10px] tracking-wider mb-0.5">
                       注意すべき凶兆:
                     </div>
                     {badFactors.map((factor) => (
                       <div
                         key={factor}
-                        className="text-stone-500 text-[8.5px] leading-relaxed pl-1.5 border-l border-red-200"
+                        className="text-ink-muted text-[8.5px] leading-relaxed pl-1.5 border-l border-red-200"
                       >
                         {DISASTER_EXPLANATIONS[factor] ||
                           `${directionLabelName(factor)}の影響があります。`}
@@ -498,23 +498,23 @@ export function AstroGridCalendar({
               </div>
 
               {/* ツールチップ (ホバー表示, Leaflet等のポップアップに埋もれないよう超高zIndex) */}
-              <div className="absolute bottom-11 left-1/2 -translate-x-1/2 w-64 bg-white/80 border border-stone-200 rounded-xl p-3.5 shadow-2xl text-[10px] text-stone-600 leading-normal pointer-events-none hidden group-hover:block z-[9999] backdrop-blur-md">
+              <div className="absolute bottom-11 left-1/2 -translate-x-1/2 w-64 bg-theme-surface border border-theme-border rounded-xl p-3.5 shadow-2xl text-[10px] text-ink-muted leading-normal pointer-events-none hidden group-hover:block z-[9999] backdrop-blur-md">
                 {/* 日付ヘッダー */}
-                <div className="font-bold text-stone-900 border-b border-stone-200 pb-1.5 mb-1.5 flex justify-between items-center text-xs">
+                <div className="font-bold text-ink border-b border-theme-border pb-1.5 mb-1.5 flex justify-between items-center text-xs">
                   <span>{tooltipTitle}</span>
                   {isToday && (
-                    <span className="text-[10px] bg-indigo-500/20 text-indigo-600 px-1.5 py-0.5 rounded border border-indigo-200">
+                    <span className="text-[10px] bg-indigo-500/20 text-accent px-1.5 py-0.5 rounded border border-indigo-200">
                       指定日
                     </span>
                   )}
                 </div>
 
                 {/* 暦情報 */}
-                <div className="mb-2 text-stone-600">
-                  <div className="text-stone-600 font-bold uppercase text-[10px] tracking-wider mb-0.5">
+                <div className="mb-2 text-ink-muted">
+                  <div className="text-ink-muted font-bold uppercase text-[10px] tracking-wider mb-0.5">
                     当日の暦注:
                   </div>
-                  <div className="font-semibold text-stone-900">
+                  <div className="font-semibold text-ink">
                     {lucksList || "特別な暦注なし"}
                   </div>
                 </div>
@@ -522,13 +522,13 @@ export function AstroGridCalendar({
                 {/* 吉日解説 */}
                 <div className="space-y-1.5 text-[9.5px]">
                   {day.rokuyo.includes("大安") && (
-                    <div className="flex gap-1 text-stone-500">
+                    <div className="flex gap-1 text-ink-muted">
                       <span className="font-bold text-amber-500">大安:</span>
                       <span>「大いに安し」万事進むに良い吉日</span>
                     </div>
                   )}
                   {day.luckyDays.isIchiryumanbai && (
-                    <div className="flex gap-1 text-stone-500">
+                    <div className="flex gap-1 text-ink-muted">
                       <span className="font-bold text-emerald-600">
                         一粒万倍日:
                       </span>
@@ -536,13 +536,13 @@ export function AstroGridCalendar({
                     </div>
                   )}
                   {day.luckyDays.isTensho && (
-                    <div className="flex gap-1 text-stone-500">
+                    <div className="flex gap-1 text-ink-muted">
                       <span className="font-bold text-yellow-400">天赦日:</span>
                       <span>天が万物の罪を許す、暦上最上の大吉日</span>
                     </div>
                   )}
                   {day.luckyDays.isTendo && (
-                    <div className="flex gap-1 text-stone-500">
+                    <div className="flex gap-1 text-ink-muted">
                       <span className="font-bold text-amber-600">★天道:</span>
                       <span>
                         その月の最大吉方位。すべての人に大吉をもたらす

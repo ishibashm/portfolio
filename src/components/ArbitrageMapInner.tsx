@@ -854,7 +854,7 @@ export default function ArbitrageMapInner({
             position={labelPos}
             icon={L.divIcon({
               className: "custom-div-icon",
-              html: `<div class="px-1.5 py-0.5 rounded bg-white/80 border border-stone-200 text-[10px] font-bold text-center pointer-events-none" style="color: ${color}; text-shadow: 0 0 2px rgba(0,0,0,0.8); white-space: nowrap;">
+              html: `<div class="px-1.5 py-0.5 rounded bg-theme-surface border border-theme-border text-[10px] font-bold text-center pointer-events-none" style="color: ${color}; text-shadow: 0 0 2px rgba(0,0,0,0.8); white-space: nowrap;">
                 ${label}
               </div>`,
               iconSize: [72, 20],
@@ -887,7 +887,7 @@ export default function ArbitrageMapInner({
 
   if (!mounted) {
     return (
-      <div className="w-full h-full bg-stone-100 flex items-center justify-center font-mono text-xs text-stone-500">
+      <div className="w-full h-full bg-stone-100 flex items-center justify-center font-mono text-xs text-ink-muted">
         [ 地図エンジンの初期化中... ]
       </div>
     );
@@ -907,8 +907,8 @@ export default function ArbitrageMapInner({
     <div
       className={
         fullscreen
-          ? "fixed inset-0 z-[2000] bg-white"
-          : "isolate w-full h-full relative rounded-2xl overflow-hidden border border-gray-200 dark:border-stone-200"
+          ? "fixed inset-0 z-[2000] bg-theme-surface"
+          : "isolate w-full h-full relative rounded-2xl overflow-hidden border border-theme-border dark:border-theme-border"
       }
     >
       <MapContainer
@@ -1019,7 +1019,7 @@ export default function ArbitrageMapInner({
         >
           {/* 器の大きさと、操作をたたむかどうか。**この 2 つは常に出す。**
               たたんだときに開き直せなくなるのを避ける。 */}
-          <div className="sticky top-0 z-10 flex gap-0.5 p-0.5 rounded-lg bg-white border border-stone-200 shadow-lg">
+          <div className="sticky top-0 z-10 flex gap-0.5 p-0.5 rounded-lg bg-theme-surface border border-theme-border shadow-lg">
             <button
               onClick={() => {
                 setFullscreen((v) => !v);
@@ -1037,7 +1037,7 @@ export default function ArbitrageMapInner({
                   ? "画面いっぱいの表示をやめる"
                   : "地図を画面いっぱいに広げる"
               }
-              className="min-h-11 min-w-11 px-2.5 py-1.5 rounded-md text-xs font-bold text-stone-700 hover:bg-white transition-colors active:scale-95 cursor-pointer"
+              className="min-h-11 min-w-11 px-2.5 py-1.5 rounded-md text-xs font-bold text-ink hover:bg-theme-surface transition-colors active:scale-95 cursor-pointer"
             >
               {fullscreen ? "⤡ 戻す" : "⛶ 全画面"}
             </button>
@@ -1052,7 +1052,7 @@ export default function ArbitrageMapInner({
               className={`min-h-11 min-w-11 px-2.5 py-1.5 rounded-md text-xs font-bold transition-colors active:scale-95 cursor-pointer ${
                 controlsOpen
                   ? "bg-stone-700 text-white"
-                  : "text-stone-700 hover:bg-white"
+                  : "text-ink hover:bg-theme-surface"
               }`}
             >
               {controlsOpen ? "✕ 設定" : "⚙ 設定"}
@@ -1165,14 +1165,14 @@ export default function ArbitrageMapInner({
                 className={`flex min-h-11 items-center gap-1.5 px-3 py-1.5 rounded-lg border text-xs font-bold transition-colors shadow-lg active:scale-95 cursor-pointer ${
                   zoningOn
                     ? "bg-accent text-on-accent border-accent"
-                    : "bg-white/80 text-stone-700 border-stone-200 hover:bg-white"
+                    : "bg-theme-surface text-ink border-theme-border hover:bg-theme-surface"
                 }`}
               >
                 🏙️ 用途地域
               </button>
               <button
                 onClick={toggleMapTheme}
-                className="flex min-h-11 items-center gap-1.5 px-3 py-1.5 rounded-lg border text-xs font-bold bg-white/80 text-stone-700 border-stone-200 hover:bg-white transition-colors shadow-lg active:scale-95 cursor-pointer"
+                className="flex min-h-11 items-center gap-1.5 px-3 py-1.5 rounded-lg border text-xs font-bold bg-theme-surface text-ink border-theme-border hover:bg-theme-surface transition-colors shadow-lg active:scale-95 cursor-pointer"
               >
                 {mapTheme === "dark" ? "☀️ ライトマップ" : "🌙 ダークマップ"}
               </button>
@@ -1206,8 +1206,8 @@ export default function ArbitrageMapInner({
                   locateFollow
                     ? "bg-blue-600 text-white border-blue-600 hover:bg-blue-700"
                     : locateOn
-                      ? "bg-white text-blue-600 border-blue-300 hover:bg-blue-50"
-                      : "bg-white/80 text-stone-500 border-stone-200 hover:bg-white"
+                      ? "bg-theme-surface text-blue-600 border-blue-300 hover:bg-blue-50"
+                      : "bg-theme-surface text-ink-muted border-theme-border hover:bg-theme-surface"
                 }`}
               >
                 ◎ 現在地{" "}
@@ -1244,7 +1244,7 @@ export default function ArbitrageMapInner({
                   className={`flex min-h-11 items-center gap-1.5 px-3 py-1.5 rounded-lg border text-xs font-bold transition-colors shadow-lg active:scale-95 cursor-pointer ${
                     showSectors
                       ? "bg-accent text-on-accent border-accent hover:brightness-110"
-                      : "bg-white/80 text-stone-500 border-stone-200 hover:bg-white"
+                      : "bg-theme-surface text-ink-muted border-theme-border hover:bg-theme-surface"
                   }`}
                 >
                   🧭 方位 {showSectors ? "表示中" : "非表示"}
@@ -1267,7 +1267,7 @@ export default function ArbitrageMapInner({
                   className={`flex min-h-11 items-center gap-1.5 px-3 py-1.5 rounded-lg border text-xs font-bold transition-colors shadow-lg active:scale-95 cursor-pointer ${
                     showRings
                       ? "bg-stone-600 text-white border-stone-600 hover:bg-stone-700"
-                      : "bg-white/80 text-stone-500 border-stone-200 hover:bg-white"
+                      : "bg-theme-surface text-ink-muted border-theme-border hover:bg-theme-surface"
                   }`}
                 >
                   ◎ 距離 {showRings ? "表示中" : "非表示"}
@@ -1291,7 +1291,7 @@ export default function ArbitrageMapInner({
                 className={`flex min-h-11 items-center gap-1.5 px-3 py-1.5 rounded-lg border text-xs font-bold transition-colors shadow-lg active:scale-95 cursor-pointer ${
                   showSpots
                     ? "bg-amber-600 text-white border-amber-600 hover:bg-amber-700"
-                    : "bg-white/80 text-stone-500 border-stone-200 hover:bg-white"
+                    : "bg-theme-surface text-ink-muted border-theme-border hover:bg-theme-surface"
                 }`}
               >
                 ⛩ 名所 {showSpots ? "表示中" : "非表示"}
@@ -1313,7 +1313,7 @@ export default function ArbitrageMapInner({
                 className={`flex min-h-11 items-center gap-1.5 px-3 py-1.5 rounded-lg border text-xs font-bold transition-colors shadow-lg active:scale-95 cursor-pointer ${
                   showStations
                     ? "bg-blue-700 text-white border-blue-700 hover:bg-blue-800"
-                    : "bg-white/80 text-stone-500 border-stone-200 hover:bg-white"
+                    : "bg-theme-surface text-ink-muted border-theme-border hover:bg-theme-surface"
                 }`}
               >
                 🚉 駅 {showStations ? "表示中" : "非表示"}
@@ -1463,7 +1463,7 @@ export default function ArbitrageMapInner({
                   />
                   天中殺
                 </span>
-                <span className="block w-full text-[10px] text-stone-600">
+                <span className="block w-full text-[10px] text-ink-muted">
                   {prefFilled
                     ? "出発地から見た各県の方位の、選択日の判定。県の中心 1 点で決めた目安で、広い県は県内でも方位が変わります"
                     : "出発地から見た方位の、選択日の判定。扇形の中はどこでも同じ方位です（県境とは関係ありません）"}
@@ -1471,7 +1471,7 @@ export default function ArbitrageMapInner({
               </div>
             ) : (
               /* 何も塗っていないことと、何を入れれば塗られるかを言う。 */
-              <div className="max-w-44 text-[10px] leading-relaxed text-stone-500">
+              <div className="max-w-44 text-[10px] leading-relaxed text-ink-muted">
                 {kigakuUnavailableReason ??
                   "条件が揃うと方位の吉凶で塗り分けます"}
               </div>
@@ -1516,7 +1516,7 @@ export default function ArbitrageMapInner({
                     <span className="font-bold">{spotPinVerdict.tier}</span>
                   )}
                   {spotPinVerdict.blocked && <span>天中殺</span>}
-                  <span className="font-mono text-stone-500">
+                  <span className="font-mono text-ink-muted">
                     約{spotPinVerdict.distanceKm.toFixed(1)}km
                   </span>
                 </div>
@@ -1535,11 +1535,11 @@ export default function ArbitrageMapInner({
           <Marker position={[baseLat, baseLon]} alt="現在地・スキャン起点">
             <Popup>
               <div className="font-sans text-xs text-gray-900 p-1">
-                <div className="font-bold text-indigo-600">
+                <div className="font-bold text-accent">
                   現在地・スキャン起点
                 </div>
                 <div
-                  className="text-[10px] text-stone-600 mt-1 cursor-pointer hover:bg-zinc-100 p-1 rounded-md border border-transparent hover:border-zinc-200 transition-all group flex items-center justify-between"
+                  className="text-[10px] text-ink-muted mt-1 cursor-pointer hover:bg-zinc-100 p-1 rounded-md border border-transparent hover:border-zinc-200 transition-all group flex items-center justify-between"
                   onClick={() => copyCoordinates(baseLat, baseLon, "起点")}
                   title="クリックで座標をコピー"
                 >
@@ -1547,7 +1547,7 @@ export default function ArbitrageMapInner({
                     経度: {baseLon.toFixed(5)} <br />
                     緯度: {baseLat.toFixed(5)}
                   </div>
-                  <Copy className="w-3 h-3 text-stone-600 group-hover:text-stone-800 ml-2" />
+                  <Copy className="w-3 h-3 text-ink-muted group-hover:text-ink ml-2" />
                 </div>
               </div>
             </Popup>
@@ -1624,12 +1624,12 @@ export default function ArbitrageMapInner({
                     info.blocked
                       ? '<b class="text-slate-500">天中殺で移転不可</b>'
                       : `<b>${TIER_JP[info.tier as DayTier] ?? info.tier}</b>`
-                  }<span class="text-xs text-stone-500">（選択日の判定）</span>
-                  <div class="text-xs text-stone-500">県の中心を基準にした方位です。広い県は県内でも方位が変わります（街や地点は個別に判定）</div></div>`
-                : `<div class="text-xs text-stone-500 mt-1">${kigakuUnavailableReason ?? "条件が揃うと方位の吉凶で塗り分けます"}</div>`;
+                  }<span class="text-xs text-ink-muted">（選択日の判定）</span>
+                  <div class="text-xs text-ink-muted">県の中心を基準にした方位です。広い県は県内でも方位が変わります（街や地点は個別に判定）</div></div>`
+                : `<div class="text-xs text-ink-muted mt-1">${kigakuUnavailableReason ?? "条件が揃うと方位の吉凶で塗り分けます"}</div>`;
               layer.bindPopup(
                 `<div class="font-sans text-xs text-gray-900 p-2 min-w-[120px]">
-                  <div class="font-bold text-sm border-b border-gray-100 pb-1 mb-1.5">${prefName}</div>
+                  <div class="font-bold text-sm border-b border-theme-border pb-1 mb-1.5">${prefName}</div>
                   ${kigakuLine}
                 </div>`,
               );
@@ -1719,14 +1719,14 @@ export default function ArbitrageMapInner({
           type="button"
           onClick={() => setLegendOpen((v) => !v)}
           aria-expanded={legendOpen}
-          className="sm:hidden min-h-11 min-w-11 px-2.5 py-1.5 rounded-lg border border-stone-200 bg-white/85 text-xs font-bold text-stone-700 shadow-lg backdrop-blur cursor-pointer"
+          className="sm:hidden min-h-11 min-w-11 px-2.5 py-1.5 rounded-lg border border-theme-border bg-theme-surface/85 text-xs font-bold text-ink shadow-lg backdrop-blur cursor-pointer"
         >
           {legendOpen ? "凡例 ▴" : "凡例 ▾"}
         </button>
         <div className={legendOpen ? "block" : "hidden sm:block"}>
           {dirKigaku ? (
-            <div className="bg-white/80 text-stone-900 px-3.5 py-3 rounded-xl shadow-lg border border-stone-200 backdrop-blur text-[10px] pointer-events-none z-[1000] flex flex-col gap-1.5">
-              <div className="font-bold border-b border-stone-200 pb-1 text-stone-600">
+            <div className="bg-theme-surface text-ink px-3.5 py-3 rounded-xl shadow-lg border border-theme-border backdrop-blur text-[10px] pointer-events-none z-[1000] flex flex-col gap-1.5">
+              <div className="font-bold border-b border-theme-border pb-1 text-ink-muted">
                 方位の吉凶
                 {targetDate
                   ? `（${targetDate.slice(5).replace("-", "/")} 時点）`
@@ -1736,7 +1736,7 @@ export default function ArbitrageMapInner({
                 {(["S", "A", "B", "C", "D", "X"] as const).map((t) => (
                   <div key={t} className="flex items-center gap-1.5">
                     <span
-                      className="w-2.5 h-2.5 rounded-full border border-stone-300"
+                      className="w-2.5 h-2.5 rounded-full border border-theme-border"
                       style={{ background: TIER_FILL[t] }}
                     ></span>
                     <span>
@@ -1746,13 +1746,13 @@ export default function ArbitrageMapInner({
                 ))}
                 <div className="flex items-center gap-1.5">
                   <span
-                    className="w-2.5 h-2.5 rounded-full border border-stone-300"
+                    className="w-2.5 h-2.5 rounded-full border border-theme-border"
                     style={{ background: BLOCKED_FILL }}
                   ></span>
                   <span>天中殺</span>
                 </div>
               </div>
-              <span className="block text-[10px] text-stone-600 max-w-48 leading-relaxed">
+              <span className="block text-[10px] text-ink-muted max-w-48 leading-relaxed">
                 年・月・日の三盤を合成した選択日の判定。扇形と県塗りは同じ段階で塗っています。
               </span>
             </div>
@@ -1766,15 +1766,15 @@ export default function ArbitrageMapInner({
           ここでは、色が何も意味していないことと、何を入れれば出るか
           だけを言う。
         */
-            <div className="max-w-52 bg-white/85 text-stone-900 px-3.5 py-3 rounded-xl shadow-lg border border-stone-200 backdrop-blur text-[10px] pointer-events-none z-[1000] flex flex-col gap-1.5">
-              <div className="font-bold border-b border-stone-200 pb-1 text-stone-600">
+            <div className="max-w-52 bg-theme-surface/85 text-ink px-3.5 py-3 rounded-xl shadow-lg border border-theme-border backdrop-blur text-[10px] pointer-events-none z-[1000] flex flex-col gap-1.5">
+              <div className="font-bold border-b border-theme-border pb-1 text-ink-muted">
                 方位の吉凶は出していません
               </div>
               <div className="flex items-center gap-1.5">
                 <span className="w-2.5 h-2.5 rounded-full bg-[#a8a29e] border border-[#57534e]"></span>
                 <span>判定なし（色に意味はありません）</span>
               </div>
-              <span className="block text-[10px] leading-relaxed text-stone-500">
+              <span className="block text-[10px] leading-relaxed text-ink-muted">
                 {kigakuUnavailableReason ??
                   "生年月日と出発地を入れると、その日の方位の吉凶で塗り分けます。"}
                 本命殺・天中殺は生年月日から決まるため、入力が無い状態では判定しません。

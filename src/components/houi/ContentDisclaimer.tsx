@@ -13,14 +13,14 @@ import { GuideAvatar } from "@/components/guide/GuideCharacter";
  */
 export function ContentDisclaimer() {
   return (
-    <aside className="mt-10 flex items-start gap-3 rounded-2xl border border-slate-200 dark:border-theme-border bg-slate-50 dark:bg-theme-subtle p-5 sm:gap-4">
+    <aside className="mt-10 flex items-start gap-3 rounded-2xl border border-theme-border dark:border-theme-border bg-theme-subtle dark:bg-theme-subtle p-5 sm:gap-4">
       {/*
         案内役のしるべ（docs/guide-character.md）。/houi 配下と暦の頁の末尾に
         出るので、本文より下・lazy。注記の文は別にあるので装飾扱いにする。
       */}
       <GuideAvatar pose="magnifier" size="sm" decorative />
       <div className="min-w-0 flex-1">
-        <h2 className="text-xs font-bold text-slate-700 dark:text-ink">
+        <h2 className="text-xs font-bold text-ink dark:text-ink">
           このページの位置づけ
         </h2>
         <p className="mt-2 text-xs leading-relaxed text-slate-600 dark:text-ink-muted">

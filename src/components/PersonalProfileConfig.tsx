@@ -131,15 +131,15 @@ export function PersonalProfileConfig({
       1700px にしても効かず、画面の両端に余白が残っていた（利用者の指摘）。
       置かれる側（プロフィールのタブ）が列で幅を決める。
     */
-    <div className="w-full h-full mt-4 bg-white/80 border border-stone-200 p-5 rounded-2xl shadow-lg md:backdrop-blur-md relative overflow-hidden group">
+    <div className="w-full h-full mt-4 bg-theme-surface border border-theme-border p-5 rounded-2xl shadow-lg md:backdrop-blur-md relative overflow-hidden group">
       <div className="absolute top-0 right-0 p-2 opacity-10 group-hover:opacity-20 transition-opacity">
-        <Database size={120} className="text-stone-600" />
+        <Database size={120} className="text-ink-muted" />
       </div>
 
-      <div className="flex items-center gap-2 mb-4 relative z-10 border-b border-stone-200 pb-2 justify-between">
+      <div className="flex items-center gap-2 mb-4 relative z-10 border-b border-theme-border pb-2 justify-between">
         <div className="flex items-center gap-2">
           <Database size={14} className="text-blue-700 md:animate-pulse" />
-          <h2 className="text-[10px] uppercase font-mono tracking-widest text-stone-600">
+          <h2 className="text-[10px] uppercase font-mono tracking-widest text-ink-muted">
             初期設定・ベース同期座標
           </h2>
         </div>
@@ -150,7 +150,7 @@ export function PersonalProfileConfig({
                 ? "text-emerald-700"
                 : storageMode.tone === "local"
                   ? "text-amber-700"
-                  : "text-stone-600"
+                  : "text-ink-muted"
             }`}
           >
             <span
@@ -176,9 +176,9 @@ export function PersonalProfileConfig({
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 relative z-10 font-mono text-xs">
         {/* Factory Settings (Birth) */}
         <div className="space-y-4">
-          <div className="flex items-center gap-1.5 mb-2 border-b border-stone-200 pb-1">
-            <CalendarClock size={12} className="text-stone-600" />
-            <span className="text-[10px] text-stone-600 tracking-wider">
+          <div className="flex items-center gap-1.5 mb-2 border-b border-theme-border pb-1">
+            <CalendarClock size={12} className="text-ink-muted" />
+            <span className="text-[10px] text-ink-muted tracking-wider">
               生まれたとき（生年月日・出生地）
             </span>
           </div>
@@ -189,13 +189,13 @@ export function PersonalProfileConfig({
             ここには**入っている値と、そこから出た結果だけ**を出す。
           */}
           <div className="flex flex-col gap-1">
-            <span className="text-[10px] text-stone-600 uppercase">
+            <span className="text-[10px] text-ink-muted uppercase">
               {PROFILE_FIELDS.birthDate.label}
             </span>
-            <span className="text-sm text-stone-700 font-bold">
+            <span className="text-sm text-ink font-bold">
               {birthDate || "未設定"}
             </span>
-            <span className="text-xs text-stone-600 mt-0.5 text-justify">
+            <span className="text-xs text-ink-muted mt-0.5 text-justify">
               {
                 "変えるときは頁の上の「まずここを入れる」から。本命星と天中殺はここから決まります。"
               }
@@ -212,7 +212,7 @@ export function PersonalProfileConfig({
             </div>
             <div className="grid grid-cols-2 gap-2 mt-1">
               <div>
-                <span className="text-[10px] text-stone-600 block mb-0.5">
+                <span className="text-[10px] text-ink-muted block mb-0.5">
                   本命星（物理・天体基準）
                 </span>
                 <span className="text-sm text-emerald-700 font-bold">
@@ -220,15 +220,15 @@ export function PersonalProfileConfig({
                 </span>
               </div>
               <div>
-                <span className="text-[10px] text-stone-600 block mb-0.5">
+                <span className="text-[10px] text-ink-muted block mb-0.5">
                   本命星（古典・暦基準）
                 </span>
-                <span className="text-sm text-stone-600 font-bold">
+                <span className="text-sm text-ink-muted font-bold">
                   {derivedHonmeiStar?.classical || "---"}
                 </span>
               </div>
               <div className="col-span-2 border-t border-blue-200 pt-1 mt-1">
-                <span className="text-[10px] text-stone-600 block mb-0.5">
+                <span className="text-[10px] text-ink-muted block mb-0.5">
                   天中殺
                 </span>
                 <span className="text-xs text-red-700 font-bold tracking-widest">
@@ -243,7 +243,7 @@ export function PersonalProfileConfig({
             <div className="flex flex-col gap-1 mt-2">
               <label
                 htmlFor="profile-void"
-                className="text-[10px] text-stone-600 uppercase"
+                className="text-[10px] text-ink-muted uppercase"
               >
                 天中殺の上書き
               </label>
@@ -251,7 +251,7 @@ export function PersonalProfileConfig({
                 id="profile-void"
                 value={voidZodiacOverride || ""}
                 onChange={(e) => setVoidZodiacOverride?.(e.target.value)}
-                className="bg-white border border-stone-300 text-stone-600 px-2 py-1.5 rounded-xl outline-none focus:border-rose-400 transition-colors w-full uppercase"
+                className="bg-theme-surface border border-theme-border text-ink-muted px-2 py-1.5 rounded-xl outline-none focus:border-rose-400 transition-colors w-full uppercase"
               >
                 <option value="">生年月日から自動計算</option>
                 <option value="戌亥">戌亥</option>
@@ -261,7 +261,7 @@ export function PersonalProfileConfig({
                 <option value="寅卯">寅卯</option>
                 <option value="子丑">子丑</option>
               </select>
-              <span className="text-xs text-stone-600 mt-0.5 text-justify">
+              <span className="text-xs text-ink-muted mt-0.5 text-justify">
                 流派や自覚が自動算出と違うときだけ使います。通常は自動計算のままで構いません。
               </span>
             </div>
@@ -269,11 +269,9 @@ export function PersonalProfileConfig({
 
           {/* 出生地の入力も上へ移した（地名・郵便番号でも入れられる）。 */}
           <div className="flex flex-col gap-1 mt-2">
-            <span className="text-[10px] text-stone-600 uppercase">出生地</span>
-            <span className="text-xs text-stone-700 font-bold">
-              {birthPlaceName}
-            </span>
-            <span className="text-xs text-stone-600 mt-0.5 text-justify">
+            <span className="text-[10px] text-ink-muted uppercase">出生地</span>
+            <span className="text-xs text-ink font-bold">{birthPlaceName}</span>
+            <span className="text-xs text-ink-muted mt-0.5 text-justify">
               {
                 "任意。天体ライン（補助的な判定）に使います。未入力でも方位の吉凶は出ます。変えるときは頁の上から。"
               }
@@ -290,20 +288,18 @@ export function PersonalProfileConfig({
 
         {/* Current Anchor (Base) */}
         <div className="space-y-4">
-          <div className="flex items-center gap-1.5 mb-2 border-b border-stone-200 pb-1">
-            <Crosshair size={12} className="text-stone-600" />
-            <span className="text-[10px] text-stone-600 tracking-wider">
+          <div className="flex items-center gap-1.5 mb-2 border-b border-theme-border pb-1">
+            <Crosshair size={12} className="text-ink-muted" />
+            <span className="text-[10px] text-ink-muted tracking-wider">
               {PROFILE_FIELDS.base.label}
             </span>
           </div>
 
           {/* 現在地の入力も上へ移した（地名・郵便番号でも入れられる）。 */}
           <div className="flex flex-col gap-1 mt-2">
-            <span className="text-[10px] text-stone-600 uppercase">現在地</span>
-            <span className="text-xs text-stone-700 font-bold">
-              {basePlaceName}
-            </span>
-            <span className="text-xs text-stone-600 mt-0.5 text-justify">
+            <span className="text-[10px] text-ink-muted uppercase">現在地</span>
+            <span className="text-xs text-ink font-bold">{basePlaceName}</span>
+            <span className="text-xs text-ink-muted mt-0.5 text-justify">
               {PROFILE_FIELDS.base.help}
             </span>
           </div>
@@ -311,9 +307,9 @@ export function PersonalProfileConfig({
           <div className="mt-4 p-2 bg-blue-50 border border-blue-200 rounded-xl">
             <div className="flex gap-2 items-start">
               <MapPin size={10} className="text-blue-700 mt-0.5 min-w-[10px]" />
-              <p className="text-xs text-stone-600 leading-relaxed text-justify">
+              <p className="text-xs text-ink-muted leading-relaxed text-justify">
                 生年月日・現在地・生まれたところは、
-                <strong className="text-stone-700">
+                <strong className="text-ink">
                   頁の上の「まずここを入れる」
                 </strong>
                 {
@@ -332,7 +328,7 @@ export function PersonalProfileConfig({
           */}
           {/* Timing Optimizer Engine Configuration（詳細設定） */}
           {showAdvanced && (
-            <div className="mt-4 pt-4 border-t border-stone-200">
+            <div className="mt-4 pt-4 border-t border-theme-border">
               <div className="flex items-center gap-1.5 mb-2">
                 <span className="text-[10px] text-purple-700 tracking-wider font-bold">
                   日取りの判定に使う要素
@@ -343,10 +339,10 @@ export function PersonalProfileConfig({
                 {/* 心理学スコアラー */}
                 <div className="flex items-center justify-between">
                   <div className="flex flex-col">
-                    <span className="text-[10px] text-stone-600 font-bold">
+                    <span className="text-[10px] text-ink-muted font-bold">
                       行動心理（月初・月曜・誕生日）
                     </span>
-                    <span className="text-xs text-stone-600">
+                    <span className="text-xs text-ink-muted">
                       月初や月曜、誕生日などのモチベーションブーストを加味します
                     </span>
                   </div>
@@ -366,10 +362,10 @@ export function PersonalProfileConfig({
                 {/* 気学スコアラー */}
                 <div className="flex items-center justify-between">
                   <div className="flex flex-col">
-                    <span className="text-[10px] text-stone-600 font-bold">
+                    <span className="text-[10px] text-ink-muted font-bold">
                       九星気学（五行と本命星）
                     </span>
-                    <span className="text-xs text-stone-600">
+                    <span className="text-xs text-ink-muted">
                       五行の相性（相生・相剋）と本命星から方位の吉凶を判定します
                     </span>
                   </div>
@@ -387,10 +383,10 @@ export function PersonalProfileConfig({
                 {/* 西洋占星術スコアラー */}
                 <div className="flex items-center justify-between">
                   <div className="flex flex-col">
-                    <span className="text-[10px] text-stone-600 font-bold">
+                    <span className="text-[10px] text-ink-muted font-bold">
                       西洋占星術（月星座・ボイドタイム）
                     </span>
-                    <span className="text-xs text-stone-600">
+                    <span className="text-xs text-ink-muted">
                       月星座やボイドタイムによる警告と適性を判定します
                     </span>
                   </div>
@@ -418,7 +414,7 @@ export function PersonalProfileConfig({
             type="button"
             onClick={() => setShowAdvanced(!showAdvanced)}
             aria-expanded={showAdvanced}
-            className="w-full px-4 py-2 rounded-xl text-xs font-bold border border-slate-300 text-slate-600 hover:bg-slate-50 transition-colors cursor-pointer text-left"
+            className="w-full px-4 py-2 rounded-xl text-xs font-bold border border-theme-border text-slate-600 hover:bg-theme-subtle transition-colors cursor-pointer text-left"
           >
             {showAdvanced
               ? "▲ 詳細設定を閉じる"
@@ -431,17 +427,17 @@ export function PersonalProfileConfig({
             並んでいた。同じ頁の他の場所（丸いボタン、slate の主ボタン）と
             揃わず「浮いて見える」と指摘があった。
             主＝slate-900 の丸ボタン、副＝白地に slate の枠、の 2 段。 */}
-        <div className="md:col-span-2 pt-4 flex justify-between gap-3 border-t border-stone-200 mt-2 flex-wrap">
+        <div className="md:col-span-2 pt-4 flex justify-between gap-3 border-t border-theme-border mt-2 flex-wrap">
           <div className="flex gap-2 flex-wrap items-center">
             <button
               onClick={onGetGPS}
-              className="px-4 py-2 rounded-full border border-slate-300 bg-white text-xs font-bold text-slate-700 transition-colors hover:bg-slate-50 cursor-pointer"
+              className="px-4 py-2 rounded-full border border-theme-border bg-theme-surface text-xs font-bold text-ink transition-colors hover:bg-theme-subtle cursor-pointer"
             >
               デバイスの GPS を取得
             </button>
             <button
               onClick={onLoad}
-              className="px-4 py-2 rounded-full border border-slate-300 bg-white text-xs font-bold text-slate-700 transition-colors hover:bg-slate-50 cursor-pointer"
+              className="px-4 py-2 rounded-full border border-theme-border bg-theme-surface text-xs font-bold text-ink transition-colors hover:bg-theme-subtle cursor-pointer"
             >
               画面設定を再読込
             </button>

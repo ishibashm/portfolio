@@ -213,9 +213,9 @@ function Section({
   children: React.ReactNode;
 }) {
   return (
-    <section className="rounded-3xl border border-gray-200 bg-white p-5 shadow-sm">
-      <h2 className="text-sm font-bold text-stone-800">{title}</h2>
-      <p className="mt-0.5 mb-4 text-xs leading-relaxed text-stone-500">
+    <section className="rounded-3xl border border-theme-border bg-theme-surface p-5 shadow-sm">
+      <h2 className="text-sm font-bold text-ink">{title}</h2>
+      <p className="mt-0.5 mb-4 text-xs leading-relaxed text-ink-muted">
         {subtitle}
       </p>
       {children}
@@ -1021,18 +1021,18 @@ export default function TimingAnalyticsPage() {
   const filtering = !isUnfiltered(tierFilter, luckyOnly);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-rose-50/80 via-stone-50 to-amber-50/50 p-4 font-sans text-stone-800 md:p-8">
+    <div className="min-h-screen bg-background p-4 font-sans text-ink md:p-8">
       {/* 上限は max-w-6xl（1152px）だった。日ごと・方位ごとの升目を
           一望する画面なので、幅があるほど一度に見渡せる。
           ホーム（1700px）に揃える。 */}
       <div className="mx-auto max-w-[1700px] space-y-5">
         <header>
           <h1 className="text-xl font-bold">引っ越し時期の全期間分析</h1>
-          <p className="mt-1 text-xs leading-relaxed text-stone-500">
+          <p className="mt-1 text-xs leading-relaxed text-ink-muted">
             過去から未来まで、日ごと・方位ごとの吉凶を一望します。判定は暦から決まる計算なので、何度走らせても同じ答えが返ります。
             <Link
               href="/relocation/arbitrage"
-              className="mx-1 font-semibold text-indigo-600 underline"
+              className="mx-1 font-semibold text-accent underline"
             >
               {coreRouteLabel("/relocation/arbitrage")}
             </Link>
@@ -1041,12 +1041,12 @@ export default function TimingAnalyticsPage() {
           {/* 「時期を選ぶ」道具は 2 本ある。役割の違いを両方の冒頭に
               書かないと、どちらを開けばいいか初見で分からない（導線の
               棚卸しで判明。/calendar 側にも対になる案内がある）。 */}
-          <p className="mt-2 text-xs leading-relaxed text-stone-500">
+          <p className="mt-2 text-xs leading-relaxed text-ink-muted">
             ここは<b>方位ごとの段階評価で候補日を絞る</b>
             画面です。絞った日を六曜・天赦日・一粒万倍日などの暦注で確かめるときは
             <Link
               href="/calendar"
-              className="mx-1 font-semibold text-indigo-600 underline"
+              className="mx-1 font-semibold text-accent underline"
             >
               日取りカレンダー
             </Link>
@@ -1058,14 +1058,14 @@ export default function TimingAnalyticsPage() {
         <ActiveProfileBadge purpose="時期の吉凶" />
 
         {/* 走査範囲 */}
-        <section className="rounded-2xl border border-gray-200 bg-white p-4 shadow-xs">
+        <section className="rounded-2xl border border-theme-border bg-theme-surface p-4 shadow-xs">
           <div className="flex flex-wrap items-end gap-4">
-            <label className="text-[10px] font-semibold text-stone-500">
+            <label className="text-[10px] font-semibold text-ink-muted">
               過去
               <select
                 value={pastMonths}
                 onChange={(e) => setPastMonths(Number(e.target.value))}
-                className="ml-1.5 rounded-lg border border-gray-200 bg-gray-50 px-2 py-1 text-xs"
+                className="ml-1.5 rounded-lg border border-theme-border bg-theme-subtle px-2 py-1 text-xs"
               >
                 {[0, 3, 6, 12].map((m) => (
                   <option key={m} value={m}>
@@ -1074,12 +1074,12 @@ export default function TimingAnalyticsPage() {
                 ))}
               </select>
             </label>
-            <label className="text-[10px] font-semibold text-stone-500">
+            <label className="text-[10px] font-semibold text-ink-muted">
               未来
               <select
                 value={futureMonths}
                 onChange={(e) => setFutureMonths(Number(e.target.value))}
-                className="ml-1.5 rounded-lg border border-gray-200 bg-gray-50 px-2 py-1 text-xs"
+                className="ml-1.5 rounded-lg border border-theme-border bg-theme-subtle px-2 py-1 text-xs"
               >
                 {[6, 12, 18, 24].map((m) => (
                   <option key={m} value={m}>
@@ -1088,7 +1088,7 @@ export default function TimingAnalyticsPage() {
                 ))}
               </select>
             </label>
-            <label className="text-[10px] font-semibold text-stone-500">
+            <label className="text-[10px] font-semibold text-ink-muted">
               方位の判定
               <select
                 value={settings?.directionFilterMode ?? "composite"}
@@ -1102,7 +1102,7 @@ export default function TimingAnalyticsPage() {
                   );
                   setDays(null);
                 }}
-                className="ml-1.5 rounded-lg border border-gray-200 bg-gray-50 px-2 py-1 text-xs"
+                className="ml-1.5 rounded-lg border border-theme-border bg-theme-subtle px-2 py-1 text-xs"
               >
                 {FILTER_MODES.map((m) => (
                   <option key={m.id} value={m.id} title={m.hint}>
@@ -1114,12 +1114,12 @@ export default function TimingAnalyticsPage() {
             <button
               onClick={runScan}
               disabled={busy || !canScan}
-              className="rounded-xl bg-indigo-600 px-4 py-2 text-xs font-bold text-white transition-colors hover:bg-indigo-700 disabled:bg-stone-300"
+              className="rounded-xl bg-accent px-4 py-2 text-xs font-bold text-on-accent transition-colors hover:brightness-110 disabled:bg-stone-300"
             >
               {busy ? "走査中…" : days ? "この範囲で走査" : "走査を始める"}
             </button>
             {profile && (
-              <span className="text-[10px] text-stone-600">
+              <span className="text-[10px] text-ink-muted">
                 本命星 {profile.honmeiStar}・天中殺{" "}
                 {profile.voidZodiacs.join("")}
                 {days && `・${days.length}日を評価`}
@@ -1138,7 +1138,7 @@ export default function TimingAnalyticsPage() {
               の結果です。「この範囲で走査」を押すと出し直します。
             </p>
           )}
-          <p className="mt-2 text-xs leading-relaxed text-stone-600">
+          <p className="mt-2 text-xs leading-relaxed text-ink-muted">
             {modeInfo(settings?.directionFilterMode ?? "composite").hint}
           </p>
           {pastClippedDays !== null && (
@@ -1167,7 +1167,7 @@ export default function TimingAnalyticsPage() {
                   );
                   setDays(null);
                 }}
-                className="ml-1 font-bold text-indigo-700 underline"
+                className="ml-1 font-bold text-accent underline"
               >
                 総合に切り替える
               </button>
@@ -1191,7 +1191,7 @@ export default function TimingAnalyticsPage() {
             />
             <div className="space-y-3">
               {partyMembers.length === 0 && (
-                <p className="text-xs leading-relaxed text-stone-500">
+                <p className="text-xs leading-relaxed text-ink-muted">
                   左で同行者を足すと、ここに「次に全員で動ける日」と月ごとの日数が出ます。
                 </p>
               )}
@@ -1205,7 +1205,7 @@ export default function TimingAnalyticsPage() {
                     type="button"
                     onClick={runScan}
                     disabled={busy || !canScan}
-                    className="mx-1 font-bold text-indigo-700 underline disabled:text-stone-400"
+                    className="mx-1 font-bold text-accent underline disabled:text-ink-muted"
                   >
                     {busy ? "走査中…" : "この範囲で走査し直す"}
                   </button>
@@ -1229,13 +1229,13 @@ export default function TimingAnalyticsPage() {
               */}
               {partyActive && (
                 <div
-                  className="rounded-xl border border-stone-200 bg-white p-2.5"
+                  className="rounded-xl border border-theme-border bg-theme-surface p-2.5"
                   data-party-dates
                 >
-                  <p className="text-xs font-bold text-stone-700">
+                  <p className="text-xs font-bold text-ink">
                     いつなら全員で動けるか（合流先を決める前に）
                   </p>
-                  <p className="mt-0.5 text-xs leading-relaxed text-stone-500">
+                  <p className="mt-0.5 text-xs leading-relaxed text-ink-muted">
                     月ごとに、移動する全員が避けるべき判定に当たらない県が 1
                     つでもある日を数えています。日を選ぶと、その日に全員で動ける方角と県が下に出ます。行き先はそこから決めます。
                   </p>
@@ -1248,7 +1248,7 @@ export default function TimingAnalyticsPage() {
                   <div className="mt-1.5 overflow-x-auto">
                     <table className="w-full text-[11px]">
                       <thead>
-                        <tr className="border-b border-gray-200 text-left text-[10px] tracking-wider text-stone-600">
+                        <tr className="border-b border-theme-border text-left text-[10px] tracking-wider text-ink-muted">
                           <th className="py-1.5 pr-2">月</th>
                           <th className="py-1.5 pr-2 text-right">
                             全員で動ける日数
@@ -1263,7 +1263,7 @@ export default function TimingAnalyticsPage() {
                         {partyOpenByMonth.map((m) => (
                           <tr
                             key={m.month}
-                            className="border-b border-gray-100 last:border-0"
+                            className="border-b border-theme-border last:border-0"
                           >
                             <td className="py-1 pr-2 font-mono">{m.month}</td>
                             <td className="py-1 pr-2 text-right font-mono">
@@ -1278,7 +1278,7 @@ export default function TimingAnalyticsPage() {
                                 <button
                                   type="button"
                                   onClick={() => setSelectedDate(m.first)}
-                                  className="font-semibold text-indigo-600 underline"
+                                  className="font-semibold text-accent underline"
                                 >
                                   {m.first.slice(5)}
                                 </button>
@@ -1298,10 +1298,10 @@ export default function TimingAnalyticsPage() {
               )}
               {partyActive && selectedDate && selectedPartyOpen && (
                 <div
-                  className="rounded-xl border border-stone-200 bg-white p-2.5"
+                  className="rounded-xl border border-theme-border bg-theme-surface p-2.5"
                   data-party-open-on-date
                 >
-                  <p className="text-xs font-bold text-stone-700">
+                  <p className="text-xs font-bold text-ink">
                     {`${selectedDate} に全員で動ける方角と県`}
                   </p>
                   {selectedPartyOpen.length === 0 ? (
@@ -1310,16 +1310,16 @@ export default function TimingAnalyticsPage() {
                     </p>
                   ) : (
                     <>
-                      <p className="mt-0.5 text-xs leading-relaxed text-stone-500">
+                      <p className="mt-0.5 text-xs leading-relaxed text-ink-muted">
                         {`あなたの出発地から見た方角でまとめています。方角を決めてから、その中の県を押してください。押すと合流先に入り、その県に向けた 2 年ぶんの内訳が下に出ます。段階はあなたのその日のもので、並んでいるのは全員が動ける県だけです。`}
                       </p>
                       <ul className="mt-1.5 space-y-2">
                         {partyOpenByDirection.map((group) => (
                           <li key={group.direction}>
-                            <p className="text-xs font-bold text-stone-700">
+                            <p className="text-xs font-bold text-ink">
                               {DIRECTION_LABELS[group.direction] ??
                                 group.direction}
-                              <span className="ml-1.5 font-normal text-stone-500">
+                              <span className="ml-1.5 font-normal text-ink-muted">
                                 {`${group.names.length} 県`}
                                 {group.tier
                                   ? ` / あなたは${TIER_LABELS[group.tier as DayTier] ?? group.tier}`
@@ -1336,11 +1336,11 @@ export default function TimingAnalyticsPage() {
                                     className={`inline-flex min-h-[24px] items-baseline gap-1 rounded-lg border px-2 py-1 text-left text-xs hover:bg-indigo-50 ${
                                       destPref === name
                                         ? "border-indigo-300 bg-indigo-50 text-indigo-900"
-                                        : "border-stone-200 text-stone-700"
+                                        : "border-theme-border text-ink"
                                     }`}
                                   >
                                     <span className="font-bold">{name}</span>
-                                    <span className="text-stone-500">
+                                    <span className="text-ink-muted">
                                       {allTimelines
                                         .filter((m) => !m.stationary)
                                         .map(
@@ -1377,7 +1377,7 @@ export default function TimingAnalyticsPage() {
                 <button
                   type="button"
                   onClick={() => setShowDestBlock(true)}
-                  className="inline-flex min-h-[24px] items-center text-xs font-bold text-indigo-700 underline"
+                  className="inline-flex min-h-[24px] items-center text-xs font-bold text-accent underline"
                   data-party-destination-toggle
                 >
                   合流先が決まっているときはこちら（県を先に選ぶ）
@@ -1385,21 +1385,21 @@ export default function TimingAnalyticsPage() {
               )}
               {(destBlockVisible || !partyActive) && (
                 <div
-                  className="space-y-3 rounded-xl border border-stone-200 bg-stone-50/60 p-2.5"
+                  className="space-y-3 rounded-xl border border-theme-border bg-theme-subtle p-2.5"
                   data-party-destination
                 >
-                  <p className="text-xs font-bold text-stone-700">
+                  <p className="text-xs font-bold text-ink">
                     合流先が決まっているとき（任意）
                   </p>
-                  <p className="text-xs leading-relaxed text-stone-500">
+                  <p className="text-xs leading-relaxed text-ink-muted">
                     県を先に決めると、その県に向けた方位で全員ぶんを重ね、次に全員で動ける日と月ごとの日数を出します。上の「いつなら全員で動けるか」から日を選ぶほうが先です。
                   </p>
-                  <label className="block text-[11px] font-semibold text-stone-600">
+                  <label className="block text-[11px] font-semibold text-ink-muted">
                     合流先（県）
                     <select
                       value={destPref}
                       onChange={(e) => changeDest(e.target.value)}
-                      className="ml-1.5 rounded-lg border border-gray-200 bg-gray-50 px-2 py-1 text-xs font-normal"
+                      className="ml-1.5 rounded-lg border border-theme-border bg-theme-subtle px-2 py-1 text-xs font-normal"
                     >
                       <option value="">選んでください</option>
                       {Object.keys(PREFECTURE_CENTERS).map((name) => (
@@ -1411,7 +1411,7 @@ export default function TimingAnalyticsPage() {
                   </label>
                   {destLeg && destPref && (
                     <p
-                      className="text-xs leading-relaxed text-stone-600"
+                      className="text-xs leading-relaxed text-ink-muted"
                       data-dest-direction
                     >
                       あなたの出発地から{destPref}は
@@ -1443,13 +1443,13 @@ export default function TimingAnalyticsPage() {
               */}
                   {partyCandidates.length > 0 && (
                     <div
-                      className="rounded-xl border border-stone-200 bg-white p-2.5"
+                      className="rounded-xl border border-theme-border bg-theme-surface p-2.5"
                       data-party-candidates
                     >
-                      <p className="text-xs font-bold text-stone-700">
+                      <p className="text-xs font-bold text-ink">
                         どこで合流できるか
                       </p>
-                      <p className="mt-0.5 text-xs leading-relaxed text-stone-500">
+                      <p className="mt-0.5 text-xs leading-relaxed text-ink-muted">
                         今日以降で、移動する全員が避けるべき判定に当たらない日数の多い順です。押すと合流先に入ります。
                       </p>
                       {partyCandidates[0].allClearDays === 0 ? (
@@ -1474,21 +1474,21 @@ export default function TimingAnalyticsPage() {
                               className={`flex min-h-[24px] w-full items-baseline gap-2 rounded-lg px-1.5 py-1 text-left text-xs hover:bg-indigo-50 ${
                                 destPref === c.name
                                   ? "bg-indigo-50 font-bold text-indigo-900"
-                                  : "text-stone-700"
+                                  : "text-ink"
                               }`}
                             >
                               <span className="w-16 shrink-0">{c.name}</span>
                               <span className="w-12 shrink-0 text-right font-bold">
                                 {c.allClearDays} 日
                               </span>
-                              <span className="w-20 shrink-0 text-stone-500">
+                              <span className="w-20 shrink-0 text-ink-muted">
                                 {c.nextAllClearDate ?? "—"}
                               </span>
-                              <span className="truncate text-stone-500">
+                              <span className="truncate text-ink-muted">
                                 {TIER_LABELS[c.bestTier]}
                               </span>
                             </button>
-                            <p className="px-1.5 text-xs leading-relaxed text-stone-500">
+                            <p className="px-1.5 text-xs leading-relaxed text-ink-muted">
                               {c.legs
                                 .filter((l) => l.direction)
                                 .map(
@@ -1509,7 +1509,7 @@ export default function TimingAnalyticsPage() {
                         <button
                           type="button"
                           onClick={() => setShowAllCandidates((v) => !v)}
-                          className="mt-1 inline-flex min-h-[24px] items-center text-xs font-bold text-indigo-700 underline"
+                          className="mt-1 inline-flex min-h-[24px] items-center text-xs font-bold text-accent underline"
                         >
                           {showAllCandidates
                             ? "上位だけ表示"
@@ -1520,7 +1520,7 @@ export default function TimingAnalyticsPage() {
                   )}
                   {partyReport && (
                     <div className="space-y-3" data-party-report>
-                      <p className="text-xs leading-relaxed text-stone-600">
+                      <p className="text-xs leading-relaxed text-ink-muted">
                         {allTimelines
                           .filter((m) => !m.stationary)
                           .map(
@@ -1535,38 +1535,38 @@ export default function TimingAnalyticsPage() {
                             .join("・")}`}
                       </p>
                       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-                        <div className="rounded-xl border border-gray-200 bg-gray-50 p-3">
-                          <div className="text-[11px] text-stone-500">
+                        <div className="rounded-xl border border-theme-border bg-theme-subtle p-3">
+                          <div className="text-[11px] text-ink-muted">
                             次に全員で動ける日
                           </div>
-                          <div className="mt-0.5 font-mono text-sm font-bold text-stone-800">
+                          <div className="mt-0.5 font-mono text-sm font-bold text-ink">
                             {partyReport.nextAllClearDate ?? "範囲内に無し"}
                           </div>
                         </div>
-                        <div className="rounded-xl border border-gray-200 bg-gray-50 p-3">
-                          <div className="text-[11px] text-stone-500">
+                        <div className="rounded-xl border border-theme-border bg-theme-subtle p-3">
+                          <div className="text-[11px] text-ink-muted">
                             全員で動ける日数
                           </div>
-                          <div className="mt-0.5 font-mono text-sm font-bold text-stone-800">
+                          <div className="mt-0.5 font-mono text-sm font-bold text-ink">
                             {partyReport.allClearDays} /{" "}
                             {partyReport.scannedDays}日
                           </div>
                         </div>
-                        <div className="rounded-xl border border-gray-200 bg-gray-50 p-3">
-                          <div className="text-[11px] text-stone-500">
+                        <div className="rounded-xl border border-theme-border bg-theme-subtle p-3">
+                          <div className="text-[11px] text-ink-muted">
                             窓の数
                           </div>
-                          <div className="mt-0.5 font-mono text-sm font-bold text-stone-800">
+                          <div className="mt-0.5 font-mono text-sm font-bold text-ink">
                             {summarizeWindows(partyReport.clearDates)?.count ??
                               0}
                             回
                           </div>
                         </div>
-                        <div className="rounded-xl border border-gray-200 bg-gray-50 p-3">
-                          <div className="text-[11px] text-stone-500">
+                        <div className="rounded-xl border border-theme-border bg-theme-subtle p-3">
+                          <div className="text-[11px] text-ink-muted">
                             窓の平均の長さ
                           </div>
-                          <div className="mt-0.5 font-mono text-sm font-bold text-stone-800">
+                          <div className="mt-0.5 font-mono text-sm font-bold text-ink">
                             {summarizeWindows(partyReport.clearDates)?.avgLen ??
                               "—"}
                             日
@@ -1574,7 +1574,7 @@ export default function TimingAnalyticsPage() {
                         </div>
                       </div>
                       {partyReport.alwaysBlockedBy.length > 0 && (
-                        <p className="rounded-xl border border-rose-200 bg-rose-50 p-2.5 text-xs leading-relaxed text-rose-900">
+                        <p className="rounded-xl border border-theme-border bg-theme-gold-soft p-2.5 text-xs leading-relaxed text-rose-900">
                           {partyReport.alwaysBlockedBy
                             .map(
                               (b) =>
@@ -1598,7 +1598,7 @@ export default function TimingAnalyticsPage() {
                     説明文だけ。数が少ない理由を取り違える材料になるので、
                     モードに合わせて書き分ける。
                   */}
-                      <p className="text-xs leading-relaxed text-stone-500">
+                      <p className="text-xs leading-relaxed text-ink-muted">
                         「全員で動ける日」は、移動する全員が凶なし（C 以上）
                         {partyUsesTenchusatsu
                           ? "で天中殺にも当たらない日"
@@ -1652,7 +1652,7 @@ export default function TimingAnalyticsPage() {
                       <div className="overflow-x-auto">
                         <table className="w-full text-[11px]">
                           <thead>
-                            <tr className="border-b border-gray-200 text-left text-[10px] tracking-wider text-stone-600">
+                            <tr className="border-b border-theme-border text-left text-[10px] tracking-wider text-ink-muted">
                               <th className="py-1.5 pr-2">月</th>
                               <th className="py-1.5 pr-2 text-right">
                                 全員で動ける日数
@@ -1664,7 +1664,7 @@ export default function TimingAnalyticsPage() {
                             {partyMonths.map((m) => (
                               <tr
                                 key={m.month}
-                                className="border-b border-gray-100 last:border-0"
+                                className="border-b border-theme-border last:border-0"
                               >
                                 <td className="py-1 pr-2 font-mono">
                                   {m.month}
@@ -1681,7 +1681,7 @@ export default function TimingAnalyticsPage() {
                                     <button
                                       type="button"
                                       onClick={() => setSelectedDate(m.first)}
-                                      className="font-semibold text-indigo-600 underline"
+                                      className="font-semibold text-accent underline"
                                     >
                                       {m.first.slice(5)}
                                     </button>
@@ -1717,7 +1717,7 @@ export default function TimingAnalyticsPage() {
               <div className="overflow-x-auto" data-solo-dates>
                 <table className="w-full text-[11px]">
                   <thead>
-                    <tr className="border-b border-gray-200 text-left text-[10px] tracking-wider text-stone-600">
+                    <tr className="border-b border-theme-border text-left text-[10px] tracking-wider text-ink-muted">
                       <th className="py-1.5 pr-2">月</th>
                       <th className="py-1.5 pr-2 text-right">
                         凶でない方位がある日数
@@ -1730,7 +1730,7 @@ export default function TimingAnalyticsPage() {
                     {soloOpenByMonth.map((m) => (
                       <tr
                         key={m.month}
-                        className="border-b border-gray-100 last:border-0"
+                        className="border-b border-theme-border last:border-0"
                       >
                         <td className="py-1 pr-2 font-mono">{m.month}</td>
                         <td className="py-1 pr-2 text-right font-mono">
@@ -1745,7 +1745,7 @@ export default function TimingAnalyticsPage() {
                             <button
                               type="button"
                               onClick={() => setSelectedDate(m.first)}
-                              className="font-semibold text-indigo-600 underline"
+                              className="font-semibold text-accent underline"
                             >
                               {m.first.slice(5)}
                             </button>
@@ -1775,7 +1775,7 @@ export default function TimingAnalyticsPage() {
               <div className="overflow-x-auto">
                 <table className="w-full text-[11px]">
                   <thead>
-                    <tr className="border-b border-gray-200 text-left text-[10px] uppercase tracking-wider text-stone-600">
+                    <tr className="border-b border-theme-border text-left text-[10px] uppercase tracking-wider text-ink-muted">
                       <th className="py-1.5 pr-2">方位</th>
                       <th className="py-1.5 pr-2">最良</th>
                       <th className="py-1.5 pr-2 text-right">該当日数</th>
@@ -1791,7 +1791,7 @@ export default function TimingAnalyticsPage() {
                       <tr
                         key={p.dir}
                         onClick={() => setFocusDir(p.dir)}
-                        className={`cursor-pointer border-b border-gray-100 last:border-0 ${
+                        className={`cursor-pointer border-b border-theme-border last:border-0 ${
                           activeDir === p.dir ? "bg-indigo-50/60" : ""
                         }`}
                       >
@@ -1799,7 +1799,7 @@ export default function TimingAnalyticsPage() {
                           {p.label}
                           {destDir === p.dir && destPref && (
                             <span
-                              className="ml-1.5 rounded bg-indigo-100 px-1.5 py-0.5 text-[11px] font-bold text-indigo-800"
+                              className="ml-1.5 rounded bg-indigo-100 px-1.5 py-0.5 text-[11px] font-bold text-accent"
                               data-dest-row
                             >
                               {destPref}へ
@@ -1836,7 +1836,7 @@ export default function TimingAnalyticsPage() {
                             ? `${p.windows.avgGapDays}日`
                             : "—"}
                         </td>
-                        <td className="py-1.5 text-right font-mono text-stone-600">
+                        <td className="py-1.5 text-right font-mono text-ink-muted">
                           {p.blocked}日
                         </td>
                       </tr>
@@ -1969,8 +1969,8 @@ export default function TimingAnalyticsPage() {
               <div className="space-y-2">
                 {/* 段階の絞り込み。段階は既に計算済みなので、ここでやるのは
                     表示を絞ることだけ。判定にも段階の割り当てにも触らない。 */}
-                <div className="flex flex-wrap items-center gap-1.5 rounded-lg border border-stone-200 bg-stone-50/60 p-2">
-                  <span className="mr-1 text-[10px] font-bold text-stone-500">
+                <div className="flex flex-wrap items-center gap-1.5 rounded-lg border border-theme-border bg-theme-subtle p-2">
+                  <span className="mr-1 text-[10px] font-bold text-ink-muted">
                     段階で絞る
                   </span>
                   {DAY_CATEGORIES.map((c) => {
@@ -1984,8 +1984,8 @@ export default function TimingAnalyticsPage() {
                         aria-pressed={on}
                         className={`flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] transition-colors ${
                           on
-                            ? "border-stone-400 bg-white text-stone-700"
-                            : "border-stone-200 bg-transparent text-stone-300"
+                            ? "border-stone-400 bg-theme-surface text-ink"
+                            : "border-theme-border bg-transparent text-stone-300"
                         }`}
                       >
                         <span
@@ -2012,7 +2012,7 @@ export default function TimingAnalyticsPage() {
                     className={`rounded-full border px-2 py-0.5 text-[10px] transition-colors ${
                       luckyOnly
                         ? "border-amber-400 bg-amber-50 text-amber-800"
-                        : "border-stone-200 text-stone-600"
+                        : "border-theme-border text-ink-muted"
                     }`}
                   >
                     天赦日・一粒万倍日のみ
@@ -2024,7 +2024,7 @@ export default function TimingAnalyticsPage() {
                         setTierFilter(allCategories());
                         setLuckyOnly(false);
                       }}
-                      className="ml-auto rounded-full px-2 py-0.5 text-[10px] text-indigo-600 underline"
+                      className="ml-auto rounded-full px-2 py-0.5 text-[10px] text-accent underline"
                     >
                       絞り込みを外す（{matchedCount}日）
                     </button>
@@ -2032,7 +2032,7 @@ export default function TimingAnalyticsPage() {
                 </div>
 
                 {filtering && matchedCount === 0 && (
-                  <p className="rounded-lg bg-stone-100 p-3 text-xs text-stone-500">
+                  <p className="rounded-lg bg-stone-100 p-3 text-xs text-ink-muted">
                     該当なし。選んだ段階の日がこの期間にありません。
                   </p>
                 )}
@@ -2058,7 +2058,7 @@ export default function TimingAnalyticsPage() {
                 >
                   {monthRows.map(({ month, list }) => (
                     <div key={month} className="flex items-center gap-2">
-                      <span className="w-14 shrink-0 font-mono text-[10px] text-stone-600">
+                      <span className="w-14 shrink-0 font-mono text-[10px] text-ink-muted">
                         {month.slice(2)}
                       </span>
                       <div className="flex flex-wrap gap-[2px]">
@@ -2118,7 +2118,7 @@ export default function TimingAnalyticsPage() {
                                   : ""
                               } ${
                                 matched && lucky ? "ring-1 ring-amber-400" : ""
-                              } ${matched ? "" : "border border-dashed border-stone-300"}`}
+                              } ${matched ? "" : "border border-dashed border-theme-border"}`}
                               style={{
                                 background: matched ? fill : "transparent",
                                 opacity: matched ? (past ? 0.28 : 1) : 0.5,
@@ -2160,7 +2160,7 @@ export default function TimingAnalyticsPage() {
                     />
                   )}
                 </div>
-                <div className="flex flex-wrap items-center gap-3 pt-2 text-[10px] text-stone-500">
+                <div className="flex flex-wrap items-center gap-3 pt-2 text-[10px] text-ink-muted">
                   {TIERS.map((t) => (
                     <span key={t} className="flex items-center gap-1">
                       <span
@@ -2200,7 +2200,7 @@ export default function TimingAnalyticsPage() {
                       return (
                         <div
                           key={dir}
-                          className="flex min-w-20 flex-col items-center rounded-xl border border-gray-200 p-2"
+                          className="flex min-w-20 flex-col items-center rounded-xl border border-theme-border p-2"
                         >
                           <span className="text-xs font-bold">
                             {DIRECTION_LABELS[dir]}
@@ -2221,7 +2221,7 @@ export default function TimingAnalyticsPage() {
                   </div>
                   <Link
                     href={`/relocation/arbitrage?targetDate=${selected.date}&view=overview`}
-                    className="mt-3 inline-block text-[11px] font-semibold text-indigo-600 underline"
+                    className="mt-3 inline-block text-[11px] font-semibold text-accent underline"
                   >
                     この日に開いている方位の街を見る
                   </Link>
@@ -2239,7 +2239,7 @@ export default function TimingAnalyticsPage() {
                     : "出発地から見た各県の方位に、選択日の判定を当てて塗り分けています。緑（三盤吉）から赤（五大凶殺）、灰は天中殺。カレンダーのマスを選び直すと塗りが変わります。"
                 }
               >
-                <div className="h-[420px] overflow-hidden rounded-2xl border border-gray-200">
+                <div className="h-[420px] overflow-hidden rounded-2xl border border-theme-border">
                   <ArbitrageMap
                     baseLat={Number(settings!.baseLat)}
                     baseLon={Number(settings!.baseLon)}
@@ -2276,7 +2276,7 @@ export default function TimingAnalyticsPage() {
                 <div className="overflow-x-auto">
                   <table className="w-full text-[11px]">
                     <thead>
-                      <tr className="border-b border-gray-200 text-left text-[10px] uppercase tracking-wider text-stone-600">
+                      <tr className="border-b border-theme-border text-left text-[10px] uppercase tracking-wider text-ink-muted">
                         <th className="py-1.5 pr-2">方位</th>
                         <th className="py-1.5 pr-2 text-right">
                           三盤吉（年換算）
@@ -2294,7 +2294,7 @@ export default function TimingAnalyticsPage() {
                         return (
                           <tr
                             key={p.dir}
-                            className="border-b border-gray-100 last:border-0"
+                            className="border-b border-theme-border last:border-0"
                           >
                             <td className="py-1.5 pr-2 font-semibold">
                               {p.label}
@@ -2331,7 +2331,7 @@ export default function TimingAnalyticsPage() {
               title="読み方と限界"
               subtitle="この分析が何を言っていて、何を言っていないか。"
             >
-              <ul className="list-disc space-y-1.5 pl-4 text-[11px] leading-relaxed text-stone-600">
+              <ul className="list-disc space-y-1.5 pl-4 text-[11px] leading-relaxed text-ink-muted">
                 {/*
                   この画面は「日取りを選ぶ」道具なので、先に日付を決めて
                   から方位を探す読み方をされやすい。**年盤で塞がった方位は
@@ -2348,7 +2348,7 @@ export default function TimingAnalyticsPage() {
                   日も出ないことがあります。理由と実測は
                   <Link
                     href="/blog/direction-or-timing-which-matters"
-                    className="mx-1 font-semibold text-indigo-600 underline"
+                    className="mx-1 font-semibold text-accent underline"
                   >
                     方位と日取りはどちらが重いのか
                   </Link>
@@ -2394,7 +2394,7 @@ export default function TimingAnalyticsPage() {
           来たうえで足りないなら、何が足りないかと次の行き先を出す。
         */}
         {!days && !busy && !error && !settings && (
-          <div className="rounded-3xl border border-stone-200 bg-white p-8 text-center text-xs text-stone-500">
+          <div className="rounded-3xl border border-theme-border bg-theme-surface p-8 text-center text-xs text-ink-muted">
             設定を読み込んでいます…
           </div>
         )}
@@ -2405,16 +2405,16 @@ export default function TimingAnalyticsPage() {
           始める」と同じ引き金で、範囲も上で決まっているものを使う。
         */}
         {!days && !busy && !error && settings && canScan && (
-          <div className="rounded-3xl border border-stone-200 bg-white p-8 text-center">
-            <p className="text-sm font-bold text-stone-700">
+          <div className="rounded-3xl border border-theme-border bg-theme-surface p-8 text-center">
+            <p className="text-sm font-bold text-ink">
               走査を始めると、日ごと・方位ごとの吉凶が出ます
             </p>
-            <p className="mx-auto mt-2 max-w-md text-xs leading-relaxed text-stone-500">
+            <p className="mx-auto mt-2 max-w-md text-xs leading-relaxed text-ink-muted">
               {`上で決めた範囲（過去 ${pastMonths}か月・未来 ${futureMonths}か月）を 1 日ずつ数えます。同行者を足してあれば、同じ範囲でその人たちぶんも数えます。`}
             </p>
             <button
               onClick={runScan}
-              className="mt-4 inline-block rounded-full bg-indigo-600 px-5 py-2 text-xs font-bold text-white transition-colors hover:bg-indigo-700"
+              className="mt-4 inline-block rounded-full bg-accent px-5 py-2 text-xs font-bold text-on-accent transition-colors hover:brightness-110"
             >
               走査を始める
             </button>
@@ -2422,11 +2422,11 @@ export default function TimingAnalyticsPage() {
         )}
 
         {!days && !busy && !error && settings && !canScan && (
-          <div className="rounded-3xl border border-stone-200 bg-white p-8 text-center">
-            <p className="text-sm font-bold text-stone-700">
+          <div className="rounded-3xl border border-theme-border bg-theme-surface p-8 text-center">
+            <p className="text-sm font-bold text-ink">
               {missingLabel}を設定すると、ここに全期間の吉凶が出ます
             </p>
-            <p className="mx-auto mt-2 max-w-md text-xs leading-relaxed text-stone-500">
+            <p className="mx-auto mt-2 max-w-md text-xs leading-relaxed text-ink-muted">
               {`いつ動くのが良いかは、出発地から見た方位と本命星で決まります。どちらも「${coreRouteLabel("/relocation/arbitrage")}」の設定と共有しているので、片方で入れればこちらにも反映されます。`}
             </p>
             <Link

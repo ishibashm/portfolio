@@ -148,7 +148,7 @@ export function CandidateSave({
       <p>候補への方位です。部屋の窓・玄関の向きではありません。</p>
       {/* 次に何をすれば保存できるかを言う。以前は「状態: 位置確認／判定可能／
           保存済み」で、位置確認が「何をする段階か」読めなかった */}
-      <p className="font-semibold text-stone-800 dark:text-ink">
+      <p className="font-semibold text-ink dark:text-ink">
         {saved === content
           ? "この内容で保存済みです。"
           : confirmed
@@ -203,7 +203,7 @@ export function CandidateSave({
       */}
       {onDetailsChange && (
         <details
-          className="rounded-lg border border-stone-200 dark:border-theme-border p-2"
+          className="rounded-lg border border-theme-border dark:border-theme-border p-2"
           open={Object.values(details).some((v) => v != null && v !== "")}
         >
           <summary className="cursor-pointer font-semibold">

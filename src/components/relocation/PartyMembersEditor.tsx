@@ -39,7 +39,7 @@ export interface PartyMembersEditorProps {
 }
 
 const INPUT =
-  "w-full px-2 py-1.5 bg-white dark:bg-stone-50 border border-gray-200 dark:border-stone-200 rounded-lg text-xs outline-none focus:border-indigo-500";
+  "w-full px-2 py-1.5 bg-theme-surface dark:bg-theme-subtle border border-theme-border dark:border-theme-border rounded-lg text-xs text-ink outline-none focus:border-accent";
 
 export function PartyMembersEditor({
   members,
@@ -63,7 +63,7 @@ export function PartyMembersEditor({
     <div className="space-y-3">
       {candidates.length > 0 && (
         <div className="space-y-1">
-          <span className="block text-[11px] font-semibold text-stone-600">
+          <span className="block text-[11px] font-semibold text-ink-muted">
             保存済みプロフィールから追加
           </span>
           <div className="flex flex-wrap gap-1.5">
@@ -72,7 +72,7 @@ export function PartyMembersEditor({
                 key={preset.id}
                 type="button"
                 onClick={() => add(preset)}
-                className="rounded-lg border border-gray-200 bg-gray-50 px-2 py-1 text-[11px] font-semibold text-stone-600 hover:border-indigo-300 dark:border-stone-200 dark:bg-white"
+                className="rounded-lg border border-theme-border bg-theme-subtle px-2 py-1 text-[11px] font-semibold text-ink-muted hover:border-accent dark:border-theme-border dark:bg-theme-surface"
               >
                 ＋ {preset.name}
               </button>
@@ -84,7 +84,7 @@ export function PartyMembersEditor({
       <button
         type="button"
         onClick={() => add()}
-        className="w-full rounded-xl border border-indigo-200 bg-indigo-50 px-3 py-2 text-[11px] font-bold text-indigo-700 transition-colors hover:bg-indigo-100"
+        className="w-full rounded-xl border border-theme-border bg-theme-accent-soft px-3 py-2 text-[11px] font-bold text-accent transition-colors hover:brightness-110"
       >
         ＋ 手入力で同行者を追加
       </button>
@@ -93,7 +93,7 @@ export function PartyMembersEditor({
         <div
           key={member.id}
           data-party-member={member.id}
-          className="space-y-2 rounded-xl border border-gray-200 bg-gray-50 p-3 dark:border-stone-200 dark:bg-white"
+          className="space-y-2 rounded-xl border border-theme-border bg-theme-subtle p-3 dark:border-theme-border dark:bg-theme-surface"
         >
           <div className="flex items-center gap-2">
             <input
@@ -107,14 +107,14 @@ export function PartyMembersEditor({
             <button
               type="button"
               onClick={() => remove(member.id)}
-              className="shrink-0 px-2 py-1 text-[11px] font-semibold text-rose-500 hover:underline"
+              className="shrink-0 px-2 py-1 text-[11px] font-semibold text-ink-muted hover:text-ink hover:underline"
             >
               削除
             </button>
           </div>
 
           <label className="block space-y-1">
-            <span className="block text-[11px] font-semibold text-stone-600">
+            <span className="block text-[11px] font-semibold text-ink-muted">
               生年月日時
             </span>
             <input
@@ -126,7 +126,7 @@ export function PartyMembersEditor({
           </label>
 
           {member.stationary ? (
-            <p className="text-xs leading-relaxed text-stone-500">
+            <p className="text-xs leading-relaxed text-ink-muted">
               移動しない人は方位が発生しないので、出発地は要りません。
             </p>
           ) : (
@@ -148,7 +148,7 @@ export function PartyMembersEditor({
               「比重」が 2 文字で折れていた。行ごと折り返す。 */}
           <div className="flex flex-wrap items-center justify-between gap-x-2 gap-y-1.5">
             <label
-              className="flex cursor-pointer items-center gap-1.5 text-[11px] text-stone-500"
+              className="flex cursor-pointer items-center gap-1.5 text-[11px] text-ink-muted"
               title="既に移転先の側に住んでいて動かない人。方位が発生しないので判定から外し、同居する相手として一覧にだけ残す。"
             >
               <input
@@ -157,7 +157,7 @@ export function PartyMembersEditor({
                 onChange={(e) =>
                   update(member.id, { stationary: e.target.checked })
                 }
-                className="h-3.5 w-3.5 cursor-pointer rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                className="h-3.5 w-3.5 cursor-pointer rounded border-gray-300 text-accent focus:ring-accent"
               />
               移動しない（現地在住）
             </label>
@@ -172,7 +172,7 @@ export function PartyMembersEditor({
               刻みを外した値も打ててしまう。
             */}
             {policy === "weighted" && (
-              <label className="flex items-center gap-1.5 text-[11px] text-stone-500">
+              <label className="flex items-center gap-1.5 text-[11px] text-ink-muted">
                 <span className="whitespace-nowrap">比重</span>
                 <input
                   type="range"
@@ -186,7 +186,7 @@ export function PartyMembersEditor({
                   }
                   className="h-6 w-24 cursor-pointer accent-indigo-600"
                 />
-                <span className="w-8 text-right font-mono text-xs text-stone-700">
+                <span className="w-8 text-right font-mono text-xs text-ink">
                   {member.weight.toFixed(1)}
                 </span>
               </label>
@@ -195,9 +195,9 @@ export function PartyMembersEditor({
         </div>
       ))}
 
-      <div className="grid grid-cols-2 gap-3 border-t border-gray-100 pt-1 dark:border-stone-200">
+      <div className="grid grid-cols-2 gap-3 border-t border-theme-border pt-1 dark:border-theme-border">
         <label className="block space-y-1">
-          <span className="block text-[11px] font-semibold text-stone-600">
+          <span className="block text-[11px] font-semibold text-ink-muted">
             まとめ方
           </span>
           <select
@@ -206,7 +206,7 @@ export function PartyMembersEditor({
               const next = e.target.value;
               if (isPartyPolicy(next)) onPolicyChange(next);
             }}
-            className="w-full cursor-pointer rounded-xl border border-gray-200 bg-gray-50 px-2 py-2 text-xs outline-none focus:border-indigo-500 dark:border-stone-200 dark:bg-white"
+            className="w-full cursor-pointer rounded-xl border border-theme-border bg-theme-subtle px-2 py-2 text-xs text-ink outline-none focus:border-accent dark:border-theme-border dark:bg-theme-surface"
           >
             {PARTY_POLICIES.map((p) => (
               <option key={p.id} value={p.id} title={p.description}>
@@ -218,7 +218,7 @@ export function PartyMembersEditor({
         {children}
       </div>
 
-      <p className="text-xs leading-relaxed text-stone-600">
+      <p className="text-xs leading-relaxed text-ink-muted">
         {PARTY_POLICIES.find((p) => p.id === policy)?.description}
       </p>
     </div>

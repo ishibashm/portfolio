@@ -42,7 +42,7 @@ import type { GlobeSceneData } from "@/components/houi/GlobeScene";
 const GlobeScene = dynamic(() => import("@/components/houi/GlobeScene"), {
   ssr: false,
   loading: () => (
-    <p className="p-6 text-sm text-stone-500">地球儀を読み込んでいます…</p>
+    <p className="p-6 text-sm text-ink-muted">地球儀を読み込んでいます…</p>
   ),
 });
 
@@ -220,23 +220,21 @@ export function GreatCircleGlobe({ areas }: { areas: QuickFindArea[] }) {
   return (
     <section
       ref={hostRef}
-      className="mt-10 overflow-hidden rounded-3xl border border-stone-200 bg-gradient-to-b from-stone-50 to-sky-50/40 shadow-sm"
+      className="mt-10 overflow-hidden rounded-3xl border border-theme-border bg-gradient-to-b from-stone-50 to-sky-50/40 shadow-sm"
       aria-label="地球儀の上の方位"
     >
-      <header className="space-y-3 border-b border-stone-200/70 px-5 py-4">
+      <header className="space-y-3 border-b border-theme-border/70 px-5 py-4">
         <p className="flex items-center gap-1.5 text-xs font-bold tracking-wider text-rose-600">
           <Globe2 className="h-3.5 w-3.5" aria-hidden />
           地球儀で見る方位
         </p>
-        <h2 className="font-serif text-lg font-bold text-stone-800">
+        <h2 className="font-serif text-lg font-bold text-ink">
           遠くの街の方位は、地図の直線ではなく大圏で決まります
         </h2>
-        <p className="max-w-[70ch] text-xs leading-relaxed text-stone-600">
+        <p className="max-w-[70ch] text-xs leading-relaxed text-ink-muted">
           {LEAD}
         </p>
-        {!pref && (
-          <p className="text-sm font-bold text-stone-700">どこから？</p>
-        )}
+        {!pref && <p className="text-sm font-bold text-ink">どこから？</p>}
         {error && (
           <p role="alert" className="text-sm text-rose-700">
             {error}
@@ -247,17 +245,17 @@ export function GreatCircleGlobe({ areas }: { areas: QuickFindArea[] }) {
             type="button"
             onClick={locate}
             disabled={locating}
-            className="min-h-11 rounded-lg border border-stone-300 bg-white px-3 py-2"
+            className="min-h-11 rounded-lg border border-theme-border bg-theme-surface px-3 py-2"
           >
             {locating ? "取得中…" : "現在地"}
           </button>
           <label className="block">
-            <span className="block font-bold text-stone-700">出発地</span>
+            <span className="block font-bold text-ink">出発地</span>
             <select
               value={pref}
               disabled={locating}
               onChange={(e) => setPref(e.target.value)}
-              className="mt-1 rounded-lg border border-stone-300 bg-white px-2 py-1.5"
+              className="mt-1 rounded-lg border border-theme-border bg-theme-surface px-2 py-1.5"
             >
               <option value="">選ぶ</option>
               {PREFS.map((p) => (
@@ -282,7 +280,7 @@ export function GreatCircleGlobe({ areas }: { areas: QuickFindArea[] }) {
                 className={`rounded-full border px-2.5 py-1 font-semibold ${
                   mapping === m
                     ? "border-stone-800 bg-stone-800 text-white"
-                    : "border-stone-300 bg-white text-stone-700"
+                    : "border-theme-border bg-theme-surface text-ink"
                 }`}
               >
                 {label}
@@ -298,7 +296,7 @@ export function GreatCircleGlobe({ areas }: { areas: QuickFindArea[] }) {
                 className={`rounded-full border px-2.5 py-1 font-semibold ${
                   view === "3d"
                     ? "border-rose-600 bg-rose-600 text-white"
-                    : "border-stone-300 bg-white text-stone-700"
+                    : "border-theme-border bg-theme-surface text-ink"
                 }`}
               >
                 地球儀
@@ -311,14 +309,14 @@ export function GreatCircleGlobe({ areas }: { areas: QuickFindArea[] }) {
               className={`rounded-full border px-2.5 py-1 font-semibold ${
                 view === "flat"
                   ? "border-rose-600 bg-rose-600 text-white"
-                  : "border-stone-300 bg-white text-stone-700"
+                  : "border-theme-border bg-theme-surface text-ink"
               }`}
             >
               平面
             </button>
           </div>
         </div>
-        <ul className="flex flex-wrap gap-x-3 gap-y-1 text-xs text-stone-600">
+        <ul className="flex flex-wrap gap-x-3 gap-y-1 text-xs text-ink-muted">
           {COMPASS_DIRECTIONS.map((d) => (
             <li key={d} className="flex items-center gap-1">
               <span
@@ -333,7 +331,7 @@ export function GreatCircleGlobe({ areas }: { areas: QuickFindArea[] }) {
       </header>
 
       {!data ? (
-        <p className="p-6 text-sm text-stone-500">
+        <p className="p-6 text-sm text-ink-muted">
           出発地の県を選ぶと地球儀を表示します。
         </p>
       ) : view === "3d" && inView ? (
@@ -344,7 +342,7 @@ export function GreatCircleGlobe({ areas }: { areas: QuickFindArea[] }) {
         </div>
       )}
 
-      <div className="space-y-2 border-t border-stone-200/70 px-5 py-4 text-sm text-stone-700">
+      <div className="space-y-2 border-t border-theme-border/70 px-5 py-4 text-sm text-ink">
         {data && (
           <p data-testid="globe-summary">
             {`${pref}から見ると、一覧の ${data.cities.length} エリアのうち ${differs.length} エリアが、地図に直線を引くと隣の方位に見えます。`}
@@ -359,7 +357,7 @@ export function GreatCircleGlobe({ areas }: { areas: QuickFindArea[] }) {
             ))}
           </ul>
         )}
-        <p className="text-xs text-stone-500">{RING_NOTE}</p>
+        <p className="text-xs text-ink-muted">{RING_NOTE}</p>
       </div>
     </section>
   );

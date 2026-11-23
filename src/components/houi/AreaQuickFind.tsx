@@ -109,7 +109,7 @@ export function AreaQuickFind({ areas }: { areas: QuickFindArea[] }) {
   return (
     <div className="mt-6 space-y-3">
       {near && (
-        <p className="flex flex-wrap items-center gap-x-2 gap-y-1 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-slate-700">
+        <p className="flex flex-wrap items-center gap-x-2 gap-y-1 rounded-xl border border-theme-border bg-theme-gold-soft px-4 py-3 text-sm text-ink">
           <MapPin className="h-4 w-4 shrink-0 text-rose-500" aria-hidden />
           登録した出発地にいちばん近い市区町村:
           <Link
@@ -142,7 +142,7 @@ export function AreaQuickFind({ areas }: { areas: QuickFindArea[] }) {
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           placeholder="例: 世田谷、札幌市中央区、那覇"
-          className="w-full max-w-md rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm outline-none focus:border-rose-400"
+          className="w-full max-w-md rounded-xl border border-theme-border bg-theme-surface px-3 py-2 text-sm outline-none focus:border-rose-400"
         />
         {query.trim() !== "" && (
           <div className="mt-2" aria-live="polite">
@@ -159,7 +159,7 @@ export function AreaQuickFind({ areas }: { areas: QuickFindArea[] }) {
                       <Link
                         prefetch={false}
                         href={`/houi/area/${a[0]}`}
-                        className="inline-block rounded-full border border-rose-300 bg-white px-3 py-1.5 text-xs font-semibold hover:border-rose-500"
+                        className="inline-block rounded-full border border-rose-300 bg-theme-surface px-3 py-1.5 text-xs font-semibold hover:border-rose-500"
                       >
                         {a[2]}
                       </Link>

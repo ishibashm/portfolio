@@ -52,7 +52,7 @@ export function YieldMapInner({ cells }: YieldMapProps) {
 
   return (
     <div className="relative w-full">
-      <div className="w-full overflow-hidden rounded-2xl border border-stone-200 bg-white">
+      <div className="w-full overflow-hidden rounded-2xl border border-theme-border bg-theme-surface">
         <ComposableMap
           projection="geoMercator"
           projectionConfig={{ scale: 2500, center: [137, 38] }}
@@ -106,23 +106,21 @@ export function YieldMapInner({ cells }: YieldMapProps) {
         目盛りを変えたときに凡例だけ取り残される。
       */}
       <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2">
-        <span className="text-[11px] font-bold text-stone-700">
-          表面利回り（年）
-        </span>
+        <span className="text-[11px] font-bold text-ink">表面利回り（年）</span>
         <div className="flex items-center gap-1">
           {YIELD_LEGEND.map((entry) => (
             <div key={entry.value} className="flex flex-col items-center gap-1">
               <span
-                className="block h-4 w-8 rounded-sm border border-stone-300"
+                className="block h-4 w-8 rounded-sm border border-theme-border"
                 style={{ backgroundColor: entry.color }}
               />
-              <span className="text-[10px] font-mono text-stone-600">
+              <span className="text-[10px] font-mono text-ink-muted">
                 {entry.label}
               </span>
             </div>
           ))}
         </div>
-        <span className="text-[11px] text-stone-500">
+        <span className="text-[11px] text-ink-muted">
           薄いほど低く、濃いほど高い。目盛りは固定なので、週ごとの更新で色の意味は変わりません。
         </span>
       </div>
@@ -131,13 +129,13 @@ export function YieldMapInner({ cells }: YieldMapProps) {
         触れた升目の中身。**片側の件数まで出す。**中央値だけ見せると、
         5 件で出した値と 300 件で出した値の区別がつかない。
       */}
-      <div className="mt-3 min-h-[4.5rem] rounded-xl border border-stone-200 bg-stone-50 p-3">
+      <div className="mt-3 min-h-[4.5rem] rounded-xl border border-theme-border bg-theme-subtle p-3">
         {hovered && hovered.grossYield !== null ? (
           <div className="space-y-1">
-            <p className="text-sm font-bold text-stone-900">
+            <p className="text-sm font-bold text-ink">
               表面利回り {formatYield(hovered.grossYield)}
             </p>
-            <p className="text-xs text-stone-600">
+            <p className="text-xs text-ink-muted">
               賃貸 {hovered.rental?.n ?? 0} 件（
               {Math.round(
                 hovered.rental?.medianPerSqm ?? 0,
@@ -148,12 +146,12 @@ export function YieldMapInner({ cells }: YieldMapProps) {
               ).toLocaleString()}{" "}
               円/㎡）
             </p>
-            <p className="text-xs font-mono text-stone-500">
+            <p className="text-xs font-mono text-ink-muted">
               {hovered.lat.toFixed(3)}, {hovered.lon.toFixed(3)}
             </p>
           </div>
         ) : (
-          <p className="text-xs text-stone-500">
+          <p className="text-xs text-ink-muted">
             升目に触れると、その区画の内訳（賃貸と中古マンションの件数・㎡単価）が出ます。
           </p>
         )}

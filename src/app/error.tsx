@@ -8,6 +8,7 @@ import {
   isChunkLoadError,
   reloadOnceForChunkError,
 } from "@/lib/chunkLoadError";
+import { applyTheme, parseTheme, THEME_STORAGE_KEY } from "@/lib/theme";
 
 /**
  * 頁の中で例外が出たときに出す画面。
@@ -43,6 +44,17 @@ export default function Error({
   reset: () => void;
 }) {
   useEffect(() => {
+    // Next.js のエラー用ドキュメントはルートのテーマスクリプトを
+    // 載せないことがある。ここでも同じ設定を当てて、地色が白のまま
+    // 残らないようにする。
+    try {
+      applyTheme(
+        document.documentElement,
+        parseTheme(localStorage.getItem(THEME_STORAGE_KEY)),
+        window.matchMedia("(prefers-color-scheme: dark)").matches,
+      );
+    } catch {}
+
     // 塊の読み込み失敗なら 1 回だけ読み込み直す。戻ってきたら
     // この useEffect は動かない（画面が作り直されるため）。
     if (reloadOnceForChunkError(error)) return;
@@ -54,17 +66,17 @@ export default function Error({
   const stale = isChunkLoadError(error);
 
   return (
-    <main className="flex min-h-screen items-center justify-center bg-gradient-to-br from-rose-50 via-stone-50 to-amber-50 px-4 py-16 text-stone-800">
-      <section className="w-full max-w-xl rounded-3xl border border-white/80 bg-white/80 p-8 text-center shadow-xl shadow-rose-100/50 backdrop-blur-xl sm:p-12">
-        <p className="font-mono text-sm font-bold tracking-[0.35em] text-rose-500">
+    <main className="flex min-h-screen items-center justify-center bg-background text-ink px-4 py-16 text-ink">
+      <section className="w-full max-w-xl rounded-3xl border border-theme-border bg-theme-surface p-8 text-center shadow-xl shadow-black/20 backdrop-blur-xl sm:p-12">
+        <p className="font-mono text-sm font-bold tracking-[0.35em] text-theme-gold">
           ERROR
         </p>
-        <h1 className="mt-4 font-serif text-3xl font-bold text-stone-900">
+        <h1 className="mt-4 font-serif text-3xl font-bold text-ink">
           {stale
             ? "新しい版が出たため、読み込み直しが必要です"
             : "この画面を表示できませんでした"}
         </h1>
-        <p className="mt-3 text-sm leading-7 text-stone-600">
+        <p className="mt-3 text-sm leading-7 text-ink-muted">
           {stale
             ? "サイトが更新された直後に開くと、古い版の部品を読みに行って表示できないことがあります。読み込み直すと直ります。入力した内容は保存されていれば残ります。"
             : "一時的な不具合の可能性があります。読み込み直しても直らないときは、しばらく経ってからお試しください。"}
@@ -82,20 +94,20 @@ export default function Error({
               clearChunkReloadFlag();
               window.location.reload();
             }}
-            className="cursor-pointer rounded-full bg-stone-900 px-6 py-3 text-sm font-bold text-white transition hover:bg-stone-700"
+            className="cursor-pointer rounded-full bg-accent px-6 py-3 text-sm font-bold text-on-accent transition hover:brightness-110"
           >
             読み込み直す
           </button>
           <button
             type="button"
             onClick={() => reset()}
-            className="cursor-pointer rounded-full border border-stone-300 bg-white px-6 py-3 text-sm font-bold text-stone-700 transition hover:bg-stone-50"
+            className="cursor-pointer rounded-full border border-theme-border bg-theme-surface px-6 py-3 text-sm font-bold text-ink transition hover:bg-theme-subtle"
           >
             もう一度開く
           </button>
           <Link
             href="/"
-            className="rounded-full border border-stone-300 bg-white px-6 py-3 text-sm font-bold text-stone-700 transition hover:bg-stone-50"
+            className="rounded-full border border-theme-border bg-theme-surface px-6 py-3 text-sm font-bold text-ink transition hover:bg-theme-subtle"
           >
             ホームへ戻る
           </Link>
@@ -106,7 +118,7 @@ export default function Error({
             短い識別子。問い合わせをもらったときに、どの例外かを探せる。
           */}
         {error.digest && (
-          <p className="mt-6 font-mono text-xs text-stone-500">
+          <p className="mt-6 font-mono text-xs text-ink-muted">
             識別子: {error.digest}
           </p>
         )}

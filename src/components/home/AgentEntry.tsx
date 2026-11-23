@@ -60,7 +60,7 @@ export function AgentEntry() {
   */
   const questionHref = available ? "/ask" : "/annai";
   return (
-    <section className="w-full max-w-[1700px] rounded-3xl border border-theme-border bg-white dark:bg-theme-surface p-6">
+    <section className="w-full max-w-[1700px] rounded-3xl border border-theme-border bg-theme-surface dark:bg-theme-surface p-6">
       {/* 2026-11-15: 有料AIを止めているので「エージェント」をやめ、案内役の名前にする。
           しるべの指さしは常に出す（JSなしの初回描画でも出る）。 */}
       <h2 className="text-xl font-serif font-bold">しるべに案内してもらう</h2>
@@ -119,7 +119,7 @@ export function AgentEntry() {
         </Link>
       </div>
       {faq && (
-        <div className="mt-4 rounded-xl bg-stone-50 dark:bg-theme-subtle p-4 text-sm">
+        <div className="mt-4 rounded-xl bg-theme-subtle dark:bg-theme-subtle p-4 text-sm">
           <p className="font-bold">AIを使わずに調べられますか？</p>
           <p className="mt-2">
             はい。本命星の早見表や、日付・方位の計算ページはAIを使わずに確認できます。

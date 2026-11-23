@@ -113,7 +113,7 @@ export function AppraisalForm() {
 
   return (
     <div className="space-y-5">
-      <section className="rounded-2xl border border-stone-200 bg-white p-4 space-y-4">
+      <section className="rounded-2xl border border-theme-border bg-theme-surface p-4 space-y-4">
         <PlaceInput
           label="物件の場所"
           lat={lat}
@@ -128,23 +128,21 @@ export function AppraisalForm() {
 
         <div className="grid gap-4 sm:grid-cols-3">
           <label className="block">
-            <span className="text-sm font-bold text-stone-700">
-              専有面積（㎡）
-            </span>
+            <span className="text-sm font-bold text-ink">専有面積（㎡）</span>
             <input
               type="number"
               inputMode="decimal"
               value={areaSqm}
               onChange={(e) => setAreaSqm(e.target.value)}
               placeholder="70"
-              className="mt-1 w-full rounded-xl border border-stone-200 px-3 py-2.5 text-sm focus:border-indigo-300 focus:outline-none"
+              className="mt-1 w-full rounded-xl border border-theme-border px-3 py-2.5 text-sm focus:border-accent focus:outline-none"
             />
           </label>
 
           <label className="block">
-            <span className="text-sm font-bold text-stone-700">
+            <span className="text-sm font-bold text-ink">
               建築年（西暦）
-              <span className="ml-1.5 text-[11px] font-normal text-stone-500">
+              <span className="ml-1.5 text-[11px] font-normal text-ink-muted">
                 任意
               </span>
             </span>
@@ -154,14 +152,14 @@ export function AppraisalForm() {
               value={builtYear}
               onChange={(e) => setBuiltYear(e.target.value)}
               placeholder="2005"
-              className="mt-1 w-full rounded-xl border border-stone-200 px-3 py-2.5 text-sm focus:border-indigo-300 focus:outline-none"
+              className="mt-1 w-full rounded-xl border border-theme-border px-3 py-2.5 text-sm focus:border-accent focus:outline-none"
             />
           </label>
 
           <label className="block">
-            <span className="text-sm font-bold text-stone-700">
+            <span className="text-sm font-bold text-ink">
               売出価格（万円）
-              <span className="ml-1.5 text-[11px] font-normal text-stone-500">
+              <span className="ml-1.5 text-[11px] font-normal text-ink-muted">
                 任意
               </span>
             </span>
@@ -171,12 +169,12 @@ export function AppraisalForm() {
               value={askingMan}
               onChange={(e) => setAskingMan(e.target.value)}
               placeholder="4500"
-              className="mt-1 w-full rounded-xl border border-stone-200 px-3 py-2.5 text-sm focus:border-indigo-300 focus:outline-none"
+              className="mt-1 w-full rounded-xl border border-theme-border px-3 py-2.5 text-sm focus:border-accent focus:outline-none"
             />
           </label>
         </div>
 
-        <p className="max-w-[70ch] text-xs leading-relaxed text-stone-500">
+        <p className="max-w-[70ch] text-xs leading-relaxed text-ink-muted">
           建築年を入れると、近い世代の建物だけで比べます。売出価格を入れると、その価格が近所の成約のどのあたりかを出します。どちらも空のままで相場だけ見られます。
         </p>
 
@@ -184,40 +182,40 @@ export function AppraisalForm() {
           税制の条件。**相場の入力とは分けて置く。**混ぜると「認定があると
           相場が安くなる」と読まれるが、そうではない。相場は相場、税は税。
         */}
-        <fieldset className="rounded-2xl border border-stone-200 bg-stone-50/60 p-4">
-          <legend className="px-1 text-[11px] font-bold text-stone-600">
+        <fieldset className="rounded-2xl border border-theme-border bg-theme-subtle p-4">
+          <legend className="px-1 text-[11px] font-bold text-ink-muted">
             税制の条件（任意）
           </legend>
           <div className="flex flex-wrap gap-x-6 gap-y-2">
-            <label className="flex items-center gap-2 text-sm text-stone-700">
+            <label className="flex items-center gap-2 text-sm text-ink">
               <input
                 type="checkbox"
                 checked={certified}
                 onChange={(e) => setCertified(e.target.checked)}
-                className="h-4 w-4 rounded border-stone-300"
+                className="h-4 w-4 rounded border-theme-border"
               />
               長期優良住宅・低炭素住宅の認定あり
             </label>
-            <label className="flex items-center gap-2 text-sm text-stone-700">
+            <label className="flex items-center gap-2 text-sm text-ink">
               <input
                 type="checkbox"
                 checked={isNewBuild}
                 onChange={(e) => setIsNewBuild(e.target.checked)}
-                className="h-4 w-4 rounded border-stone-300"
+                className="h-4 w-4 rounded border-theme-border"
               />
               新築
             </label>
-            <label className="flex items-center gap-2 text-sm text-stone-700">
+            <label className="flex items-center gap-2 text-sm text-ink">
               <input
                 type="checkbox"
                 checked={childRearing}
                 onChange={(e) => setChildRearing(e.target.checked)}
-                className="h-4 w-4 rounded border-stone-300"
+                className="h-4 w-4 rounded border-theme-border"
               />
               子育て世帯・若者夫婦世帯
             </label>
           </div>
-          <p className="mt-2 max-w-[70ch] text-xs leading-relaxed text-stone-500">
+          <p className="mt-2 max-w-[70ch] text-xs leading-relaxed text-ink-muted">
             <strong>認定されているかは、こちらでは調べられません。</strong>
             国土交通省の成約価格に認定の欄は無く、所管行政庁の認定情報も個別の物件では公開されていません。販売資料か重要事項説明書をご確認ください。書かれていなければ、まず認定なしと考えて差し支えありません（あれば売る側が必ず書きます）。
           </p>
@@ -234,27 +232,27 @@ export function AppraisalForm() {
       </section>
 
       {error && (
-        <p className="rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm text-stone-800">
+        <p className="rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm text-ink">
           {error}
         </p>
       )}
 
       {result && !a && (
-        <section className="rounded-2xl border border-stone-200 bg-white p-4">
-          <h2 className="text-sm font-bold text-stone-800">
+        <section className="rounded-2xl border border-theme-border bg-theme-surface p-4">
+          <h2 className="text-sm font-bold text-ink">
             この場所では出せませんでした
           </h2>
-          <p className="mt-2 max-w-[70ch] text-sm leading-relaxed text-stone-600">
+          <p className="mt-2 max-w-[70ch] text-sm leading-relaxed text-ink-muted">
             条件をいちばん緩めても、比べられる成約が 5 件に届きませんでした。
             <strong>足りないまま出すより、出せないと言うほうがよい</strong>
             と考えています。
           </p>
-          <p className="mt-2 text-xs font-mono text-stone-500">
+          <p className="mt-2 text-xs font-mono text-ink-muted">
             近所（区画 2 つぶんの範囲）にあった中古マンションの成約:{" "}
             {result.candidatesNearby} 件／対象年 {result.years.from}〜
             {result.years.to}
           </p>
-          <p className="mt-2 max-w-[70ch] text-[12px] leading-relaxed text-stone-600">
+          <p className="mt-2 max-w-[70ch] text-[12px] leading-relaxed text-ink-muted">
             {result.candidatesNearby === 0
               ? "この範囲には中古マンションの成約がありません。郊外や、マンションの少ない地域だとこうなります。"
               : "成約はありましたが、面積や築年が離れすぎていました。面積の入力を見直すか、別の物件で試してください。"}
@@ -266,14 +264,14 @@ export function AppraisalForm() {
         <>
           {/* 結論 */}
           {a.asking && (
-            <section className="rounded-2xl border border-stone-200 bg-white p-5">
-              <p className="text-xs font-bold text-stone-500">
+            <section className="rounded-2xl border border-theme-border bg-theme-surface p-5">
+              <p className="text-xs font-bold text-ink-muted">
                 入力した売出価格の位置づけ
               </p>
-              <p className="mt-1 font-serif text-xl font-bold text-stone-900">
+              <p className="mt-1 font-serif text-xl font-bold text-ink">
                 {positionLabel(a.asking.ratioBelow)}
               </p>
-              <p className="mt-2 text-sm text-stone-700">
+              <p className="mt-2 text-sm text-ink">
                 近所の成約 <strong className="font-mono">{a.n}</strong> 件のうち{" "}
                 <strong className="font-mono">
                   {Math.round(a.asking.ratioBelow * 100)}%
@@ -290,34 +288,34 @@ export function AppraisalForm() {
 
           {/* 根拠 */}
           <section className="grid gap-3 sm:grid-cols-3">
-            <div className="rounded-2xl border border-stone-200 bg-white p-4">
-              <p className="text-xs font-bold text-stone-500">
+            <div className="rounded-2xl border border-theme-border bg-theme-surface p-4">
+              <p className="text-xs font-bold text-ink-muted">
                 安いほう（p25）
               </p>
-              <p className="mt-1 font-mono text-xl font-bold text-stone-900">
+              <p className="mt-1 font-mono text-xl font-bold text-ink">
                 {man(a.price.low)}
               </p>
-              <p className="mt-1 text-xs font-mono text-stone-500">
+              <p className="mt-1 text-xs font-mono text-ink-muted">
                 {manPerSqm(a.perSqm.p25)}
               </p>
             </div>
-            <div className="rounded-2xl border-2 border-stone-300 bg-white p-4">
-              <p className="text-xs font-bold text-stone-500">中央値</p>
-              <p className="mt-1 font-mono text-xl font-bold text-stone-900">
+            <div className="rounded-2xl border-2 border-theme-border bg-theme-surface p-4">
+              <p className="text-xs font-bold text-ink-muted">中央値</p>
+              <p className="mt-1 font-mono text-xl font-bold text-ink">
                 {man(a.price.mid)}
               </p>
-              <p className="mt-1 text-xs font-mono text-stone-500">
+              <p className="mt-1 text-xs font-mono text-ink-muted">
                 {manPerSqm(a.perSqm.median)}
               </p>
             </div>
-            <div className="rounded-2xl border border-stone-200 bg-white p-4">
-              <p className="text-xs font-bold text-stone-500">
+            <div className="rounded-2xl border border-theme-border bg-theme-surface p-4">
+              <p className="text-xs font-bold text-ink-muted">
                 高いほう（p75）
               </p>
-              <p className="mt-1 font-mono text-xl font-bold text-stone-900">
+              <p className="mt-1 font-mono text-xl font-bold text-ink">
                 {man(a.price.high)}
               </p>
-              <p className="mt-1 text-xs font-mono text-stone-500">
+              <p className="mt-1 text-xs font-mono text-ink-muted">
                 {manPerSqm(a.perSqm.p75)}
               </p>
             </div>
@@ -329,8 +327,8 @@ export function AppraisalForm() {
             相場、税は税で、別の話。
           */}
           {certified && (
-            <section className="rounded-2xl border border-stone-200 bg-white p-4">
-              <h2 className="text-sm font-bold text-stone-800">
+            <section className="rounded-2xl border border-theme-border bg-theme-surface p-4">
+              <h2 className="text-sm font-bold text-ink">
                 認定住宅の優遇（{BASIS_YEAR} 年入居の場合）
               </h2>
               {(() => {
@@ -340,7 +338,7 @@ export function AppraisalForm() {
                 );
                 if (advantage === null) {
                   return (
-                    <p className="mt-2 text-[12px] text-stone-600">
+                    <p className="mt-2 text-[12px] text-ink-muted">
                       {BASIS_YEAR}{" "}
                       年入居ぶんの表しか持っていないため、出せません。
                     </p>
@@ -348,7 +346,7 @@ export function AppraisalForm() {
                 }
                 return (
                   <>
-                    <dl className="mt-2 space-y-1.5 text-[13px] leading-relaxed text-stone-700">
+                    <dl className="mt-2 space-y-1.5 text-[13px] leading-relaxed text-ink">
                       <div>
                         <dt className="inline font-bold">住宅ローン控除：</dt>
                         <dd className="inline">
@@ -378,11 +376,11 @@ export function AppraisalForm() {
                         </dd>
                       </div>
                     </dl>
-                    <ul className="mt-3 space-y-1.5 border-t border-stone-200 pt-3">
+                    <ul className="mt-3 space-y-1.5 border-t border-theme-border pt-3">
                       {INCENTIVE_DISCLAIMER.map((line) => (
                         <li
                           key={line}
-                          className="max-w-[70ch] text-[11px] leading-relaxed text-stone-600"
+                          className="max-w-[70ch] text-[11px] leading-relaxed text-ink-muted"
                         >
                           ・{line}
                         </li>
@@ -399,10 +397,8 @@ export function AppraisalForm() {
             出した数字が根拠のある数字に見えてしまう。
           */}
           <section className="rounded-2xl border border-amber-200 bg-amber-50/60 p-4">
-            <h2 className="text-sm font-bold text-stone-800">
-              この数字の出どころ
-            </h2>
-            <dl className="mt-2 space-y-1.5 text-[12px] leading-relaxed text-stone-700">
+            <h2 className="text-sm font-bold text-ink">この数字の出どころ</h2>
+            <dl className="mt-2 space-y-1.5 text-[12px] leading-relaxed text-ink">
               <div>
                 <dt className="inline font-bold">比べた成約：</dt>
                 <dd className="inline">
@@ -415,16 +411,16 @@ export function AppraisalForm() {
               </div>
             </dl>
             <ul className="mt-3 space-y-1.5">
-              <li className="max-w-[70ch] text-[12px] leading-relaxed text-stone-700">
+              <li className="max-w-[70ch] text-[12px] leading-relaxed text-ink">
                 ・<strong>時点の補正をしていません。</strong>
                 上の数字は {a.tradeYears.from}〜{a.tradeYears.to}{" "}
                 年の水準で、今日の水準ではありません。
               </li>
-              <li className="max-w-[70ch] text-[12px] leading-relaxed text-stone-700">
+              <li className="max-w-[70ch] text-[12px] leading-relaxed text-ink">
                 ・<strong>階・向き・管理状態は見ていません。</strong>
                 同じ建物でも 2 割は動きます。幅で出しているのはそのためです。
               </li>
-              <li className="max-w-[70ch] text-[12px] leading-relaxed text-stone-700">
+              <li className="max-w-[70ch] text-[12px] leading-relaxed text-ink">
                 ・成約価格は国土交通省の公表値です。売出価格ではないので、
                 <strong>実際に成立した額</strong>で比べています。
               </li>

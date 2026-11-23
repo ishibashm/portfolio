@@ -282,7 +282,7 @@ export function NationalWeatherMap({
       })}
       <ul
         aria-label="天気地図の凡例"
-        className="mt-2 flex flex-wrap gap-x-3 gap-y-1 text-xs text-slate-700 dark:text-ink"
+        className="mt-2 flex flex-wrap gap-x-3 gap-y-1 text-xs text-ink dark:text-ink"
       >
         {Object.entries(MAP_CARD_STYLES).map(([kind, { label, fill }]) => (
           <li
@@ -339,13 +339,13 @@ function WeatherRows({
           return (
             <tr
               key={city.prefectureCode}
-              className="border-t border-slate-200 dark:border-theme-border"
+              className="border-t border-theme-border dark:border-theme-border"
             >
               <th scope="row" className={`${cell} whitespace-nowrap`}>
                 {city.city}
               </th>
               <td
-                className={`${cell} whitespace-nowrap ${unlucky ? "font-bold text-rose-800 dark:text-theme-bad" : ""}`}
+                className={`${cell} whitespace-nowrap ${unlucky ? "font-bold text-theme-gold dark:text-theme-bad" : ""}`}
               >
                 {compact
                   ? (direction?.label ??
@@ -424,7 +424,7 @@ export function NationalWeatherCards({
 }) {
   if (!data)
     return (
-      <p className="text-sm text-slate-700 dark:text-ink">
+      <p className="text-sm text-ink dark:text-ink">
         いま天気を取得できません。時間をおいて開き直してください。
       </p>
     );

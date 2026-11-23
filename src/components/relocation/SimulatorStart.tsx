@@ -193,8 +193,8 @@ export function SimulatorStart({
   }
 
   return (
-    <div className="mx-auto max-w-xl rounded-3xl border border-stone-200 dark:border-theme-border bg-white dark:bg-theme-surface p-6 shadow-sm">
-      <h2 className="text-base font-bold text-stone-800 dark:text-ink">
+    <div className="mx-auto max-w-xl rounded-3xl border border-theme-border dark:border-theme-border bg-theme-surface dark:bg-theme-surface p-6 shadow-sm">
+      <h2 className="text-base font-bold text-ink dark:text-ink">
         4 つ入れると、結果が出ます
       </h2>
       <p className="mt-1 text-xs leading-relaxed text-ink-muted">
@@ -203,22 +203,22 @@ export function SimulatorStart({
 
       <form onSubmit={submit} className="mt-5 space-y-4">
         <label className="block">
-          <span className="mb-1 block text-xs font-bold text-stone-600 dark:text-ink-muted">
+          <span className="mb-1 block text-xs font-bold text-ink-muted dark:text-ink-muted">
             生年月日
           </span>
           <input
             type="date"
             value={birthDate}
             onChange={(e) => setBirthDate(e.target.value)}
-            className="min-h-[44px] w-full rounded-xl border border-stone-300 dark:border-theme-border p-2.5 text-base sm:text-sm"
+            className="min-h-[44px] w-full rounded-xl border border-theme-border dark:border-theme-border p-2.5 text-base sm:text-sm"
           />
-          <span className="mt-1 block text-[11px] text-stone-600 dark:text-ink-muted">
+          <span className="mt-1 block text-[11px] text-ink-muted dark:text-ink-muted">
             本命星と天中殺を出すのに使います。プロフィールには保存しません（この端末の下書きにだけ残ります）。プロフィールに保存済みなら自動で入ります。
           </span>
         </label>
 
         <label className="block">
-          <span className="mb-1 block text-xs font-bold text-stone-600 dark:text-ink-muted">
+          <span className="mb-1 block text-xs font-bold text-ink-muted dark:text-ink-muted">
             いま住んでいる場所
           </span>
           <input
@@ -226,12 +226,12 @@ export function SimulatorStart({
             value={place}
             onChange={(e) => setPlace(e.target.value)}
             placeholder="例: 京都市下京区"
-            className="min-h-[44px] w-full rounded-xl border border-stone-300 dark:border-theme-border p-2.5 text-base sm:text-sm"
+            className="min-h-[44px] w-full rounded-xl border border-theme-border dark:border-theme-border p-2.5 text-base sm:text-sm"
           />
         </label>
 
         <label className="block">
-          <span className="mb-1 block text-xs font-bold text-stone-600 dark:text-ink-muted">
+          <span className="mb-1 block text-xs font-bold text-ink-muted dark:text-ink-muted">
             引越し先
           </span>
           <input
@@ -239,9 +239,9 @@ export function SimulatorStart({
             value={destination}
             onChange={(e) => setDestination(e.target.value)}
             placeholder="例: 名古屋市中区"
-            className="min-h-[44px] w-full rounded-xl border border-stone-300 dark:border-theme-border p-2.5 text-base sm:text-sm"
+            className="min-h-[44px] w-full rounded-xl border border-theme-border dark:border-theme-border p-2.5 text-base sm:text-sm"
           />
-          <span className="mt-1 block text-[11px] text-stone-600 dark:text-ink-muted">
+          <span className="mt-1 block text-[11px] text-ink-muted dark:text-ink-muted">
             {
               "候補が複数あるなら、まず 1 つで試してください。あとから足せます。SUUMO で市区町村を絞った一覧の URL を貼っても、その街として試算します（URL は開きに行きません）。"
             }
@@ -249,14 +249,14 @@ export function SimulatorStart({
         </label>
 
         <label className="block">
-          <span className="mb-1 block text-xs font-bold text-stone-600 dark:text-ink-muted">
+          <span className="mb-1 block text-xs font-bold text-ink-muted dark:text-ink-muted">
             動きたい時期
           </span>
           <input
             type="date"
             value={departureDate}
             onChange={(e) => setDepartureDate(e.target.value)}
-            className="min-h-[44px] w-full rounded-xl border border-stone-300 dark:border-theme-border p-2.5 text-base sm:text-sm"
+            className="min-h-[44px] w-full rounded-xl border border-theme-border dark:border-theme-border p-2.5 text-base sm:text-sm"
           />
         </label>
 
@@ -278,7 +278,7 @@ export function SimulatorStart({
       <button
         type="button"
         onClick={onShowExample}
-        className="mt-4 min-h-[44px] w-full rounded-xl border border-stone-300 dark:border-theme-border px-3 py-2 text-xs font-bold text-stone-700 dark:text-ink hover:bg-stone-50 dark:hover:bg-theme-subtle"
+        className="mt-4 min-h-[44px] w-full rounded-xl border border-theme-border dark:border-theme-border px-3 py-2 text-xs font-bold text-ink dark:text-ink hover:bg-theme-subtle dark:hover:bg-theme-subtle"
       >
         先に例で動きを見る（京都市 → 名古屋市）
       </button>

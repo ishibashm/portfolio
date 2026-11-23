@@ -213,7 +213,7 @@ export default function LoginPage() {
 
         {/* Logged in User Status */}
         {currentUser && (
-          <div className="w-full bg-stone-50 border border-stone-200/80 rounded-xl p-4 mb-6 text-xs text-ink-muted space-y-2">
+          <div className="w-full bg-theme-subtle border border-theme-border/80 rounded-xl p-4 mb-6 text-xs text-ink-muted space-y-2">
             <div>現在ログイン中のアカウント:</div>
             <div className="font-semibold text-ink break-all">
               {currentUser.email}
@@ -259,7 +259,7 @@ export default function LoginPage() {
           <button
             onClick={handleGoogleLogin}
             disabled={loading}
-            className="w-full flex items-center justify-center gap-3 bg-theme-surface text-ink border border-stone-200 px-6 py-2.5 rounded-xl font-medium hover:bg-stone-50 active:scale-[0.98] transition-all duration-200 disabled:opacity-50 disabled:pointer-events-none shadow-md"
+            className="w-full flex items-center justify-center gap-3 bg-theme-surface text-ink border border-theme-border px-6 py-2.5 rounded-xl font-medium hover:bg-theme-subtle active:scale-[0.98] transition-all duration-200 disabled:opacity-50 disabled:pointer-events-none shadow-md"
           >
             <svg
               className="w-4 h-4"

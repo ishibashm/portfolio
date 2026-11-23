@@ -139,18 +139,18 @@ export function LandPriceByDirection({
 
   return (
     <section className="space-y-2">
-      <h3 className="text-[10px] font-bold uppercase tracking-wider text-stone-500 dark:text-ink-muted">
+      <h3 className="text-[10px] font-bold uppercase tracking-wider text-ink-muted dark:text-ink-muted">
         方位別の地価（更地・中央値）
       </h3>
 
-      <p className="text-xs text-stone-600 dark:text-ink-muted leading-relaxed">
+      <p className="text-xs text-ink-muted dark:text-ink-muted leading-relaxed">
         国が毎年出す標準地の価格です。上の成約相場が建物込みの取引額なのに対し、こちらは
         <strong className="font-bold">土地そのものの評価額</strong>
         にあたります。性質が違うので、2 つを割った数字には意味がありません。
       </p>
 
       {loading && (
-        <p className="text-xs text-stone-500 dark:text-ink-muted">
+        <p className="text-xs text-ink-muted dark:text-ink-muted">
           地価を集計しています…
         </p>
       )}
@@ -160,7 +160,7 @@ export function LandPriceByDirection({
       )}
 
       {data && !loading && withPoints.length === 0 && (
-        <p className="text-xs text-stone-500 dark:text-ink-muted leading-relaxed">
+        <p className="text-xs text-ink-muted dark:text-ink-muted leading-relaxed">
           {`この範囲（${data.meta.minKm}〜${data.meta.maxKm}km）には標準地がありませんでした。範囲を広げると出ることがあります。`}
         </p>
       )}
@@ -171,17 +171,17 @@ export function LandPriceByDirection({
             {directions.map((d) => (
               <div
                 key={d.direction}
-                className="bg-white dark:bg-theme-surface border border-stone-200 dark:border-theme-border rounded-lg px-2.5 py-1.5"
+                className="bg-theme-surface dark:bg-theme-surface border border-theme-border dark:border-theme-border rounded-lg px-2.5 py-1.5"
               >
                 <div className="flex items-baseline justify-between">
-                  <span className="text-xs font-bold text-stone-700 dark:text-ink">
+                  <span className="text-xs font-bold text-ink dark:text-ink">
                     {DIRECTION_LABELS[d.direction] ?? d.direction}
                   </span>
                   <span className="text-right">
-                    <span className="block text-[11px] font-mono text-stone-700 dark:text-ink">
+                    <span className="block text-[11px] font-mono text-ink dark:text-ink">
                       {unitManYen(d.medianPricePerSqm)}
                     </span>
-                    <span className="block text-[10px] text-stone-600 dark:text-ink-muted">
+                    <span className="block text-[10px] text-ink-muted dark:text-ink-muted">
                       {d.count === 0
                         ? "標準地なし"
                         : `${d.count.toLocaleString()} 地点`}
@@ -189,7 +189,7 @@ export function LandPriceByDirection({
                   </span>
                 </div>
                 {d.topMunicipalities.length > 0 && (
-                  <p className="mt-0.5 text-xs text-stone-500 dark:text-ink-muted truncate">
+                  <p className="mt-0.5 text-xs text-ink-muted dark:text-ink-muted truncate">
                     {d.topMunicipalities.join("・")}
                   </p>
                 )}
@@ -197,7 +197,7 @@ export function LandPriceByDirection({
             ))}
           </div>
 
-          <p className="text-xs text-stone-500 dark:text-ink-muted leading-relaxed">
+          <p className="text-xs text-ink-muted dark:text-ink-muted leading-relaxed">
             {`出典: ${data.meta.source}。${data.meta.minKm}km 未満の地点は方位が定まらないため除いています。`}
           </p>
         </>

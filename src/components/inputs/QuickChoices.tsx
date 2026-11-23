@@ -5,7 +5,7 @@ import { toJapanDateString } from "@/utils/japanDate";
 import type { MunicipalityPoint } from "@/lib/municipalityCoords";
 
 const chip =
-  "rounded-lg border bg-white dark:bg-theme-surface px-3 py-2 aria-pressed:border-theme-link aria-pressed:bg-theme-link-soft";
+  "rounded-lg border bg-theme-surface dark:bg-theme-surface px-3 py-2 aria-pressed:border-theme-link aria-pressed:bg-theme-link-soft";
 const presets = {
   today: "今日",
   month: "1か月後",
