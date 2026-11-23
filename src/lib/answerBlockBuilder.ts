@@ -157,12 +157,19 @@ export function blocksFromTool(
           typeof a.slug === "string" &&
           /^[a-z0-9][a-z0-9-]{0,119}$/.test(a.slug),
       )
+      .slice(0, 10)
       .map((a) => ({
         title:
           typeof a.section === "string" && a.section
             ? `${a.title}「${a.section}」`.slice(0, 400)
             : a.title,
-        description: a.description,
+        description:
+          a.relation === "dedicated" || a.relation === "related"
+            ? `【${a.relation === "dedicated" ? "専用" : "関連"}】${typeof a.description === "string" ? a.description : ""}`.slice(
+                0,
+                400,
+              )
+            : a.description,
         url:
           a.kind === "glossary"
             ? "/guide/glossary"

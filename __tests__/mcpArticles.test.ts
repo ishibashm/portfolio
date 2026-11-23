@@ -1,5 +1,7 @@
-import { blocksFromTool } from "@/lib/answerBlockBuilder";
 // @vitest-environment node
+import { STAR_NAMES } from "@/lib/kigakuContent";
+import { answerSource } from "@/lib/answerSource";
+import { blocksFromTool } from "@/lib/answerBlockBuilder";
 import { afterEach, expect, it, vi } from "vitest";
 import { searchArticles, getArticle } from "@/lib/mcpArticles";
 import { loadSearchableBlogPosts, loadBlogPost } from "@/lib/blogStore";
@@ -32,6 +34,8 @@ it("公開記事だけ・検索上限・返却フィールド", async () => {
   ]);
   const result = await searchArticles({ query: "方位", limit: 5 });
   expect(result.articles).toHaveLength(5);
+  expect(result).not.toHaveProperty("star");
+  expect(result.articles[0]).not.toHaveProperty("relation");
   expect(result.articles.find((a) => a.slug === "moving-0")).toMatchObject({
     title: article.title,
     slug: "moving-0",
@@ -42,6 +46,154 @@ it("公開記事だけ・検索上限・返却フィールド", async () => {
   });
   await expect(searchArticles({ query: "方位", limit: 6 })).rejects.toThrow();
 });
+it("星指定で専用・関連を順位付けし、limit 適用前の総数を返す", async () => {
+  const posts = [
+    { ...article, slug: "title-only", title: "三碧木星の方位" },
+    { ...article, slug: "single-star-tag", tags: ["三碧木星", "方位"] },
+    {
+      ...article,
+      slug: "other-star-tag",
+      title: "三碧木星",
+      tags: ["九紫火星と方位"],
+    },
+    {
+      ...article,
+      slug: "other-star-title",
+      title: "九紫火星",
+      tags: ["三碧木星"],
+    },
+    {
+      ...article,
+      slug: "overview",
+      body: Object.values(STAR_NAMES)
+        .map((name) => `### ${name}\n方位の解説`)
+        .join("\n"),
+    },
+    { ...article, slug: "body", body: "三碧木星".repeat(8) },
+    { ...article, slug: "description", description: "三碧木星の解説" },
+    {
+      ...article,
+      slug: "description-new",
+      description: "三碧木星の解説",
+      publishedAt: "2026-10-02",
+    },
+    { ...article, slug: "description-z", description: "三碧木星の解説" },
+    { ...article, slug: "draft", title: "三碧木星", draft: true },
+    { ...article, slug: "unpublished", title: "三碧木星", published: false },
+    { ...article, slug: "abbreviated", title: "三碧・五黄殺" },
+  ];
+  // 非公開の DB 行はローダーの契約どおり検索に渡さない。
+  vi.mocked(loadSearchableBlogPosts).mockResolvedValue(
+    posts.filter((post) => !("published" in post) || post.published),
+  );
+  const result = await searchArticles({ star: 3, limit: 20 });
+  expect(result).toMatchObject({
+    star: 3,
+    starName: "三碧木星",
+    dedicatedCount: 2,
+    relatedCount: 7,
+  });
+  expect(result.articles.map(({ slug, relation }) => [slug, relation])).toEqual(
+    [
+      ["single-star-tag", "dedicated"],
+      ["title-only", "dedicated"],
+      ["overview", "related"],
+      ["other-star-title", "related"],
+      ["other-star-tag", "related"],
+      ["body", "related"],
+      ["description-new", "related"],
+      ["description", "related"],
+      ["description-z", "related"],
+    ],
+  );
+  expect(result.articles[2]).toMatchObject({ section: "三碧木星" });
+  const connection = await connectChainClient();
+  try {
+    expect(
+      await connection.call(
+        "search_articles",
+        { star: 3, limit: 20 },
+        new AbortController().signal,
+        5_000,
+      ),
+    ).toEqual(result);
+  } finally {
+    await connection.close();
+  }
+
+  expect(await searchArticles({ star: 3, limit: 1 })).toEqual({
+    ...result,
+    articles: result.articles.slice(0, 1),
+  });
+  expect(
+    (await searchArticles({ star: 5, limit: 20 })).articles.map(
+      ({ slug }) => slug,
+    ),
+  ).toEqual(["overview"]);
+  expect(
+    (
+      await searchArticles({ star: 3, query: "九紫火星", limit: 20 })
+    ).articles.map(({ slug }) => slug),
+  ).toEqual(["overview", "other-star-title", "other-star-tag"]);
+  expect(answerSource([{ tool: "search_articles", output: result }])).toBe(
+    "site",
+  );
+  expect(
+    blocksFromTool("search_articles", {
+      ...result,
+      articles: [...result.articles, ...result.articles],
+    }),
+  ).toMatchObject([
+    {
+      type: "articles",
+      articles: expect.arrayContaining([
+        expect.objectContaining({
+          description: expect.stringContaining("【専用】"),
+        }),
+        expect.objectContaining({
+          description: expect.stringContaining("【関連】"),
+        }),
+      ]),
+    },
+  ]);
+});
+
+it("月命星の明記がある記事に限定し、星名の言及を優先する", async () => {
+  vi.mocked(loadSearchableBlogPosts).mockResolvedValue([
+    { ...article, slug: "honmei", title: "三碧木星と本命星" },
+    { ...article, slug: "getsumei", title: "月命星と三碧木星" },
+    { ...article, slug: "other-star-getsumei", title: "月命星と九紫火星" },
+    { ...article, slug: "overview", body: "### 月命星とは\n月命星の説明" },
+    { ...article, slug: "tag", tags: ["月命星"], body: "三碧木星の解説" },
+    { ...article, slug: "monthly-kill", body: "三碧木星の月命殺" },
+    {
+      ...article,
+      slug: "description-only",
+      description: "月命星",
+      body: "三碧木星",
+    },
+  ]);
+  const result = await searchArticles({
+    star: 3,
+    aspect: "getsumei",
+    limit: 20,
+  });
+  expect(result).toMatchObject({ dedicatedCount: 1, relatedCount: 2 });
+  expect(result.articles.map(({ slug, relation }) => [slug, relation])).toEqual(
+    [
+      ["getsumei", "dedicated"],
+      ["tag", "related"],
+      ["overview", "related"],
+    ],
+  );
+  expect(
+    (await searchArticles({ star: 3, aspect: "both", limit: 20 })).articles,
+  ).toHaveLength(6);
+  await expect(searchArticles({})).rejects.toThrow();
+  await expect(searchArticles({ star: 10 })).rejects.toThrow();
+  await expect(searchArticles({ star: 3, limit: 21 })).rejects.toThrow();
+});
+
 it("draft・存在しないslugを返さない。本文は見出しごとに上限4000文字", async () => {
   vi.mocked(loadBlogPost).mockResolvedValue(undefined);
   expect(await getArticle({ slug: "missing" })).toEqual({ found: false });
