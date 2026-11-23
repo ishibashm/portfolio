@@ -1,11 +1,77 @@
 import Link from "next/link";
 import type { LoveFortuneItem } from "@/lib/loveFortune";
 
+import { DIRECTION_LABELS, type CompassDirection } from "@/utils/directionGeo";
+
+const COMPASS_POINTS = {
+  N: [0, -12],
+  NE: [8.5, -8.5],
+  E: [12, 0],
+  SE: [8.5, 8.5],
+  S: [0, 12],
+  SW: [-8.5, 8.5],
+  W: [-12, 0],
+  NW: [-8.5, -8.5],
+  CENTER: [0, 0],
+} satisfies Record<CompassDirection | "CENTER", [number, number]>;
+
+const SITTING_DIRECTIONS = new Map<string, CompassDirection | "CENTER">(
+  Object.entries(DIRECTION_LABELS).map(([direction, label]) => [
+    label,
+    direction as CompassDirection,
+  ]),
+).set("中宮", "CENTER");
+
+function MiniCompass({
+  luckyHints,
+  sitting,
+  showCaution,
+}: Pick<LoveFortuneItem, "luckyHints" | "sitting"> & { showCaution: boolean }) {
+  const sittingDirection = SITTING_DIRECTIONS.get(sitting);
+  const sittingPoint = sittingDirection && COMPASS_POINTS[sittingDirection];
+
+  return (
+    <svg
+      aria-hidden="true"
+      viewBox="-18 -18 36 36"
+      className="size-9 motion-safe:transition-transform motion-safe:group-hover:scale-105 motion-safe:group-focus-within:scale-105 motion-reduce:transition-none"
+      fill="none"
+    >
+      <g className="stroke-theme-border">
+        <circle r="12" />
+        <path d="M-12 0h24M0 -12v24" />
+      </g>
+      <path d="M0 -18l2 3.5h-4Z" className="fill-current text-theme-gold" />
+      <g className="fill-current text-theme-good">
+        {luckyHints.map(({ direction }) => {
+          const [x, y] = COMPASS_POINTS[direction];
+          return <circle key={direction} cx={x} cy={y} r="1.8" />;
+        })}
+      </g>
+      {sittingPoint && (
+        <circle
+          cx={sittingPoint[0] * 0.65}
+          cy={sittingPoint[1] * 0.65}
+          r="2"
+          className={`fill-current ${showCaution ? "text-theme-bad" : "text-accent"}`}
+        />
+      )}
+    </svg>
+  );
+}
+
 export function TodayLoveOutlook({ items }: { items: LoveFortuneItem[] }) {
+  const luckyItems = items.filter(({ luckyHints }) => luckyHints.length > 0);
+  const firstAction = luckyItems[0]?.action;
+  const sharedAction =
+    firstAction && luckyItems.every(({ action }) => action === firstAction)
+      ? firstAction
+      : undefined;
+
   return (
     <section
       aria-labelledby="today-love-heading"
-      className="overflow-hidden rounded-xl border border-theme-border bg-background text-ink"
+      className="@container overflow-hidden rounded-xl border border-theme-border border-t-2 border-t-theme-gold bg-background text-ink"
     >
       <header className="space-y-2 border-b border-theme-border bg-theme-accent-soft px-3 py-3">
         <h3
@@ -67,52 +133,78 @@ export function TodayLoveOutlook({ items }: { items: LoveFortuneItem[] }) {
           </Link>
         </div>
       </header>
-      <ul className="divide-y divide-theme-border">
+      {sharedAction && (
+        <p className="flex items-center gap-2 border-b border-theme-border bg-theme-gold-soft px-3 py-2 text-xs leading-relaxed">
+          <span
+            aria-hidden="true"
+            className="size-1.5 shrink-0 rotate-45 bg-current text-theme-gold"
+          />
+          吉方位ありの目安：{sharedAction}
+        </p>
+      )}
+      <ul className="grid grid-cols-1 @max-[52rem]:divide-y @max-[52rem]:divide-theme-border @min-[52rem]:grid-cols-3 @min-[52rem]:gap-2 @min-[52rem]:p-2">
         {items.map(
-          ({ star, name, href, sitting, sittingKind, luckyHints, action }) => (
-            <li
-              key={star}
-              className="grid grid-cols-[4.25rem_minmax(0,1fr)] gap-x-2 px-3 py-2"
-            >
-              <div>
-                <Link
-                  href={href}
-                  className="text-sm font-semibold text-accent underline underline-offset-2"
-                >
-                  {name}
-                </Link>
-                <p className="text-xs text-ink-muted">{sitting}に回座</p>
-              </div>
-              <div className="space-y-1">
-                {luckyHints.length ? (
-                  <ul
-                    aria-label="吉方位"
-                    className="flex flex-wrap gap-x-2 gap-y-1"
-                  >
-                    {luckyHints.map(({ direction, label, hint }) => (
-                      <li key={direction} className="flex flex-col items-start">
-                        <span className="rounded-md bg-theme-good-soft px-2 py-0.5 text-base font-bold leading-tight text-theme-good">
-                          {label}
-                        </span>
-                        <span className="text-xs text-ink-muted">{hint}</span>
-                      </li>
-                    ))}
-                  </ul>
-                ) : (
-                  <p className="text-base font-bold text-accent">近場が目安</p>
-                )}
-                <p className="text-xs leading-relaxed text-ink-muted">
-                  {!luckyHints.length && sittingKind === "commonUnlucky" ? (
-                    <span className="rounded bg-theme-bad-soft px-1 text-theme-bad">
-                      {action}
-                    </span>
+          ({ star, name, href, sitting, sittingKind, luckyHints, action }) => {
+            const hasLucky = luckyHints.length > 0;
+            const showCaution = !hasLucky && sittingKind === "commonUnlucky";
+
+            return (
+              <li
+                key={star}
+                className="group grid grid-cols-[2.5rem_minmax(0,1fr)] gap-x-2 bg-theme-surface px-3 py-2 @min-[52rem]:rounded-lg @min-[52rem]:border @min-[52rem]:border-theme-border"
+              >
+                <MiniCompass
+                  luckyHints={luckyHints}
+                  sitting={sitting}
+                  showCaution={showCaution}
+                />
+                <div className="space-y-1.5">
+                  <div className="flex flex-wrap items-baseline justify-between gap-x-2">
+                    <Link
+                      href={href}
+                      className="text-sm font-semibold text-accent underline underline-offset-2"
+                    >
+                      {name}
+                    </Link>
+                    <p className="text-xs text-ink-muted">{sitting}に回座</p>
+                  </div>
+                  {hasLucky ? (
+                    <ul
+                      aria-label="吉方位"
+                      className="grid grid-cols-2 gap-x-2 gap-y-1"
+                    >
+                      {luckyHints.map(({ direction, label, hint }) => (
+                        <li
+                          key={direction}
+                          className="flex flex-col items-start"
+                        >
+                          <span className="rounded-md bg-theme-good-soft px-2 py-0.5 text-base font-bold leading-tight text-theme-good">
+                            {label}
+                          </span>
+                          <span className="text-xs text-ink-muted">{hint}</span>
+                        </li>
+                      ))}
+                    </ul>
                   ) : (
-                    action
+                    <p className="text-base font-bold text-accent">
+                      近場が目安
+                    </p>
                   )}
-                </p>
-              </div>
-            </li>
-          ),
+                  {(!hasLucky || !sharedAction) && (
+                    <p className="text-xs leading-relaxed text-ink-muted">
+                      {showCaution ? (
+                        <span className="rounded-full bg-theme-bad-soft px-2 py-0.5 text-theme-bad">
+                          {action}
+                        </span>
+                      ) : (
+                        action
+                      )}
+                    </p>
+                  )}
+                </div>
+              </li>
+            );
+          },
         )}
       </ul>
     </section>

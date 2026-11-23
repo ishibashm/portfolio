@@ -23,7 +23,11 @@ it("見出し、9星のリンク、回座、吉方位と近場の目安を表示
   expect(html).toContain(">北東に回座</p>");
   expect(html).toContain(">北東</span>");
   expect(html).toContain(">交わり・はじまり</span>");
-  expect(html).toContain(">会合や約束の外出先に</p>");
+  expect(html).toContain("吉方位ありの目安：会合や約束の外出先に</p>");
+  expect(html.match(/会合や約束の外出先に/g)).toHaveLength(1);
+  expect(
+    html.match(/<svg aria-hidden="true" viewBox="-18 -18 36 36"/g),
+  ).toHaveLength(9);
   expect(html.match(/近場が目安/g)).toHaveLength(4);
   expect(html.match(/bg-theme-bad-soft/g)).toHaveLength(1);
   expect(html).toContain("その方位への外出は控え");
@@ -34,6 +38,23 @@ it("翌日も日盤に応じた方位と近場の目安を表示する", () => {
   const html = renderToStaticMarkup(<TodayLoveOutlook items={items} />);
   expect(html).toContain("近場が目安");
   expect(html).toContain('aria-label="吉方位"');
+});
+
+it("吉方位がある星の目安が揃わないときは各行に表示する", () => {
+  const { items } = buildLoveFortune(new Date("2026-11-21T12:00:00+09:00"));
+  const firstLucky = items.findIndex(({ luckyHints }) => luckyHints.length > 0);
+  const differentAction = "別の目安";
+  const html = renderToStaticMarkup(
+    <TodayLoveOutlook
+      items={items.map((item, index) =>
+        index === firstLucky ? { ...item, action: differentAction } : item,
+      )}
+    />,
+  );
+
+  expect(html).not.toContain("吉方位ありの目安：");
+  expect(html).toContain(`>${differentAction}</p>`);
+  expect(html.match(/会合や約束の外出先に/g)).toHaveLength(4);
 });
 
 it("サーバーコンポーネントとして描画する", () => {
