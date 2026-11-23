@@ -270,6 +270,10 @@ it("地図と表をサーバー描画し、ホームでクエリ起点を受け�
   const section = renderToStaticMarkup(await TodayOverview());
   expect(section).toContain("今日の天気と方位");
   expect(section).toContain("今日の恋愛の目安");
+  const boardAsideEnd = section.indexOf("</aside>");
+  const loveHeading = section.indexOf("今日の恋愛の目安");
+  expect(boardAsideEnd).toBeGreaterThan(-1);
+  expect(loveHeading).toBeGreaterThan(boardAsideEnd);
   expect(section).not.toContain("<form");
   expect(section).not.toContain("<input");
   expect(section).not.toContain("<script");
