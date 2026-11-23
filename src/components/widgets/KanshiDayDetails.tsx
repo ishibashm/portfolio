@@ -10,7 +10,7 @@ export function KanshiDayDetails({ date }: { date: string }) {
   return (
     <section
       aria-label="選択日の干支と節気"
-      className="mb-6 rounded-xl border border-stone-200 p-3 text-xs text-stone-700"
+      className="mb-6 rounded-xl border border-theme-border p-3 text-xs text-ink"
     >
       <h4 className="font-bold">六十干支（JST正午）</h4>
       <p className="mt-2">
@@ -18,7 +18,7 @@ export function KanshiDayDetails({ date }: { date: string }) {
         {result.kanshi.day}
       </p>
       {result.boundaryAlternatives && (
-        <p className="mt-2 text-amber-900">
+        <p className="mt-2 text-theme-gold">
           節入り前は年{result.boundaryAlternatives.before.year}・月
           {result.boundaryAlternatives.before.month}、以後は年
           {result.boundaryAlternatives.after.year}・月
@@ -35,7 +35,7 @@ export function KanshiDayDetails({ date }: { date: string }) {
           </li>
         ))}
       </ul>
-      <p className="mt-2 text-stone-500">{KANSHI_BASIS}</p>
+      <p className="mt-2 text-ink-muted">{KANSHI_BASIS}</p>
     </section>
   );
 }

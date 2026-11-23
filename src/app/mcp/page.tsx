@@ -87,9 +87,9 @@ export default async function McpGuidePage() {
   );
 
   return (
-    <main className="min-h-screen bg-gradient-to-br from-[#faf7f5] via-[#f5efe9] to-[#f0e9e1] text-slate-900">
+    <main className="min-h-screen bg-background text-ink">
       <article className="mx-auto max-w-[1700px] px-5 py-12 space-y-10">
-        <nav aria-label="パンくず" className="text-sm text-slate-600">
+        <nav aria-label="パンくず" className="text-sm text-ink-muted">
           <Link href="/" className="hover:underline">
             ホーム
           </Link>
@@ -102,23 +102,23 @@ export default async function McpGuidePage() {
           <h1 className="text-2xl font-bold font-serif sm:text-3xl">
             MCPで使う｜AIアシスタントから方位と暦の計算を呼ぶ
           </h1>
-          <p className="text-sm leading-relaxed text-slate-700 max-w-4xl">
+          <p className="text-sm leading-relaxed text-ink max-w-4xl">
             このサイトの方位・暦・市区町村・記事の計算を、お手元のAIアシスタントやエディタからMCP（Model
             Context
             Protocol）の道具として直接呼び出せます。認証なし・読み取り専用で公開しています。
           </p>
           <div className="flex flex-wrap items-center gap-4 pt-1">
-            <div className="rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm">
-              <span className="text-xs font-bold text-slate-500 mr-2">
+            <div className="rounded-xl border border-theme-border bg-theme-surface px-4 py-2.5 text-sm">
+              <span className="text-xs font-bold text-ink-muted mr-2">
                 公開MCP URL
               </span>
-              <code className="font-mono font-semibold text-slate-900">
+              <code className="font-mono font-semibold text-ink">
                 {MCP_ENDPOINT_URL}
               </code>
             </div>
             <Link
               href="/annai"
-              className="rounded-xl bg-slate-900 px-5 py-2.5 text-sm font-bold text-white hover:bg-slate-800"
+              className="rounded-xl bg-accent px-5 py-2.5 text-sm font-bold text-on-accent hover:brightness-110"
             >
               フォームで試す（案内役 /annai）
             </Link>
@@ -131,16 +131,16 @@ export default async function McpGuidePage() {
         {/* 道具の一覧 */}
         <section
           aria-labelledby="mcp-tools-heading"
-          className="rounded-2xl border border-slate-300 bg-white p-6 shadow-sm space-y-4"
+          className="rounded-2xl border border-theme-border bg-theme-surface p-6 shadow-sm space-y-4"
         >
           <div>
             <h2
               id="mcp-tools-heading"
-              className="text-lg font-bold font-serif text-slate-900"
+              className="text-lg font-bold font-serif text-ink"
             >
               公開している道具の一覧（{catalog.tools.length}個）
             </h2>
-            <p className="mt-1 text-sm text-slate-600">
+            <p className="mt-1 text-sm text-ink-muted">
               MCPサーバー（<code>createMcpServer()</code>）に内部接続して{" "}
               <code>listTools()</code> で取得した一覧です。すべて読み取り専用（
               <code>readOnlyHint: true</code>）で動作します。
@@ -150,7 +150,7 @@ export default async function McpGuidePage() {
           <div className="hidden md:block overflow-x-auto">
             <table className="w-full border-collapse text-left text-sm">
               <thead>
-                <tr className="border-b border-slate-300 text-slate-700">
+                <tr className="border-b border-theme-border text-ink">
                   <th scope="col" className="py-2.5 pr-4">
                     道具名（name）
                   </th>
@@ -166,15 +166,15 @@ export default async function McpGuidePage() {
                 {catalog.tools.map((tool) => (
                   <tr
                     key={tool.name}
-                    className="border-b border-slate-200 align-top"
+                    className="border-b border-theme-border align-top"
                   >
-                    <td className="py-2.5 pr-4 font-mono font-semibold text-slate-900 whitespace-nowrap">
+                    <td className="py-2.5 pr-4 font-mono font-semibold text-ink whitespace-nowrap">
                       {tool.name}
                     </td>
-                    <td className="py-2.5 pr-4 font-semibold text-slate-800 whitespace-nowrap">
+                    <td className="py-2.5 pr-4 font-semibold text-ink whitespace-nowrap">
                       {tool.title || "-"}
                     </td>
-                    <td className="py-2.5 text-slate-700 leading-relaxed">
+                    <td className="py-2.5 text-ink leading-relaxed">
                       {tool.description || "-"}
                     </td>
                   </tr>
@@ -187,15 +187,15 @@ export default async function McpGuidePage() {
             {catalog.tools.map((tool) => (
               <li
                 key={tool.name}
-                className="rounded-xl border border-slate-200 bg-slate-50 p-4 space-y-1.5"
+                className="rounded-xl border border-theme-border bg-theme-subtle p-4 space-y-1.5"
               >
-                <h3 className="font-mono text-sm font-bold text-slate-900 break-all">
+                <h3 className="font-mono text-sm font-bold text-ink break-all">
                   {tool.name}
                 </h3>
-                <p className="text-xs font-semibold text-slate-800">
+                <p className="text-xs font-semibold text-ink">
                   {tool.title || "-"}
                 </p>
-                <p className="text-sm text-slate-700 leading-relaxed">
+                <p className="text-sm text-ink leading-relaxed">
                   {tool.description || "-"}
                 </p>
               </li>
@@ -206,27 +206,27 @@ export default async function McpGuidePage() {
         {/* つなぎ方 */}
         <section
           aria-labelledby="mcp-connect-heading"
-          className="rounded-2xl border border-slate-300 bg-white p-6 shadow-sm space-y-6"
+          className="rounded-2xl border border-theme-border bg-theme-surface p-6 shadow-sm space-y-6"
         >
           <div>
             <h2
               id="mcp-connect-heading"
-              className="text-lg font-bold font-serif text-slate-900"
+              className="text-lg font-bold font-serif text-ink"
             >
               つなぎ方
             </h2>
-            <p className="mt-1 text-sm text-slate-600">
+            <p className="mt-1 text-sm text-ink-muted">
               Streamable
               HTTP（POST、ステートレス、認証なし）で接続できます。手順の画面名やメニュー配置は各社の更新で変わることがあるため、最新の公式案内もあわせてお確かめください。
             </p>
           </div>
 
           <div className="grid gap-4 md:grid-cols-2">
-            <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 space-y-2">
-              <h3 className="text-base font-bold text-slate-900">Claude</h3>
-              <p className="text-sm leading-relaxed text-slate-700">
+            <div className="rounded-xl border border-theme-border bg-theme-subtle p-4 space-y-2">
+              <h3 className="text-base font-bold text-ink">Claude</h3>
+              <p className="text-sm leading-relaxed text-ink">
                 設定のコネクタ画面で「カスタムコネクタを追加」を選び、URL に{" "}
-                <code className="rounded bg-white px-1.5 py-0.5 font-mono text-xs">
+                <code className="rounded bg-theme-surface px-1.5 py-0.5 font-mono text-xs">
                   {MCP_ENDPOINT_URL}
                 </code>{" "}
                 を入力します（Anthropic
@@ -234,63 +234,61 @@ export default async function McpGuidePage() {
               </p>
             </div>
 
-            <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 space-y-2">
-              <h3 className="text-base font-bold text-slate-900">ChatGPT</h3>
-              <p className="text-sm leading-relaxed text-slate-700">
+            <div className="rounded-xl border border-theme-border bg-theme-subtle p-4 space-y-2">
+              <h3 className="text-base font-bold text-ink">ChatGPT</h3>
+              <p className="text-sm leading-relaxed text-ink">
                 開発者モードのカスタムMCPサーバー（コネクタ）追加画面で、URL に{" "}
-                <code className="rounded bg-white px-1.5 py-0.5 font-mono text-xs">
+                <code className="rounded bg-theme-surface px-1.5 py-0.5 font-mono text-xs">
                   {MCP_ENDPOINT_URL}
                 </code>{" "}
                 を入れ、認証なしを選択して登録します。
               </p>
             </div>
 
-            <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 space-y-2">
-              <h3 className="text-base font-bold text-slate-900">
+            <div className="rounded-xl border border-theme-border bg-theme-subtle p-4 space-y-2">
+              <h3 className="text-base font-bold text-ink">
                 Cursor などのエディタ
               </h3>
-              <p className="text-sm leading-relaxed text-slate-700">
-                <code className="rounded bg-white px-1.5 py-0.5 font-mono text-xs">
+              <p className="text-sm leading-relaxed text-ink">
+                <code className="rounded bg-theme-surface px-1.5 py-0.5 font-mono text-xs">
                   mcp.json
                 </code>{" "}
                 に次の設定を追加します。
               </p>
-              <pre className="overflow-x-auto rounded-lg bg-slate-900 p-3 text-xs text-slate-100 font-mono">
+              <pre className="overflow-x-auto rounded-lg bg-theme-subtle p-3 text-xs text-ink font-mono">
                 <code>{CURSOR_MCP_JSON_EXAMPLE}</code>
               </pre>
             </div>
 
-            <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 space-y-2">
-              <h3 className="text-base font-bold text-slate-900">
-                xAI API（Grok）
-              </h3>
-              <p className="text-sm leading-relaxed text-slate-700">
+            <div className="rounded-xl border border-theme-border bg-theme-subtle p-4 space-y-2">
+              <h3 className="text-base font-bold text-ink">xAI API（Grok）</h3>
+              <p className="text-sm leading-relaxed text-ink">
                 Remote MCP Tools の指定で{" "}
-                <code className="rounded bg-white px-1.5 py-0.5 font-mono text-xs">
+                <code className="rounded bg-theme-surface px-1.5 py-0.5 font-mono text-xs">
                   server_url
                 </code>{" "}
                 に{" "}
-                <code className="rounded bg-white px-1.5 py-0.5 font-mono text-xs">
+                <code className="rounded bg-theme-surface px-1.5 py-0.5 font-mono text-xs">
                   {MCP_ENDPOINT_URL}
                 </code>{" "}
                 を渡します。
               </p>
-              <pre className="overflow-x-auto rounded-lg bg-slate-900 p-3 text-xs text-slate-100 font-mono">
+              <pre className="overflow-x-auto rounded-lg bg-theme-subtle p-3 text-xs text-ink font-mono">
                 <code>{XAI_API_EXAMPLE}</code>
               </pre>
             </div>
           </div>
 
-          <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 space-y-2">
-            <h3 className="text-base font-bold text-slate-900">
+          <div className="rounded-xl border border-theme-border bg-theme-subtle p-4 space-y-2">
+            <h3 className="text-base font-bold text-ink">
               curl で直接確かめる例（tools/list）
             </h3>
-            <p className="text-sm text-slate-700">
+            <p className="text-sm text-ink">
               <code>Content-Type: application/json</code> と{" "}
               <code>Accept: application/json, text/event-stream</code> を付けて
               POST します。
             </p>
-            <pre className="overflow-x-auto rounded-lg bg-slate-900 p-3 text-xs text-slate-100 font-mono">
+            <pre className="overflow-x-auto rounded-lg bg-theme-subtle p-3 text-xs text-ink font-mono">
               <code>{CURL_LIST_TOOLS_EXAMPLE}</code>
             </pre>
           </div>
@@ -299,23 +297,23 @@ export default async function McpGuidePage() {
         {/* つないだら最初に聞く文 */}
         <section
           aria-labelledby="mcp-first-prompts-heading"
-          className="rounded-2xl border border-slate-300 bg-white p-6 shadow-sm space-y-4"
+          className="rounded-2xl border border-theme-border bg-theme-surface p-6 shadow-sm space-y-4"
         >
           <div>
             <h2
               id="mcp-first-prompts-heading"
-              className="text-lg font-bold font-serif text-slate-900"
+              className="text-lg font-bold font-serif text-ink"
             >
               つないだら最初に聞く文
             </h2>
-            <p className="mt-1 text-sm text-slate-600">
+            <p className="mt-1 text-sm text-ink-muted">
               つながったら、次のような文から始められます。生年月日が必要な計算では、ご自身の分を会話で伝えてください。
             </p>
           </div>
-          <ol className="list-decimal space-y-2 pl-6 text-sm leading-relaxed text-slate-800">
+          <ol className="list-decimal space-y-2 pl-6 text-sm leading-relaxed text-ink">
             {MCP_FIRST_PROMPTS.map((prompt) => (
               <li key={prompt}>
-                <p className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2">
+                <p className="rounded-lg border border-theme-border bg-theme-subtle px-3 py-2">
                   {prompt}
                 </p>
               </li>
@@ -326,16 +324,16 @@ export default async function McpGuidePage() {
         {/* 回数の上限 */}
         <section
           aria-labelledby="mcp-limits-heading"
-          className="rounded-2xl border border-slate-300 bg-white p-6 shadow-sm space-y-4"
+          className="rounded-2xl border border-theme-border bg-theme-surface p-6 shadow-sm space-y-4"
         >
           <div>
             <h2
               id="mcp-limits-heading"
-              className="text-lg font-bold font-serif text-slate-900"
+              className="text-lg font-bold font-serif text-ink"
             >
               回数の上限とリクエスト制限
             </h2>
-            <p className="mt-1 text-sm text-slate-600">
+            <p className="mt-1 text-sm text-ink-muted">
               公開エンドポイントを安定して運用するため、複数のバケットで呼び出し回数の上限を設けています。
             </p>
           </div>
@@ -343,7 +341,7 @@ export default async function McpGuidePage() {
           <div className="overflow-x-auto">
             <table className="w-full border-collapse text-left text-sm">
               <thead>
-                <tr className="border-b border-slate-300 text-slate-700">
+                <tr className="border-b border-theme-border text-ink">
                   <th scope="col" className="py-2 pr-4">
                     区分
                   </th>
@@ -356,7 +354,7 @@ export default async function McpGuidePage() {
                 </tr>
               </thead>
               <tbody>
-                <tr className="border-b border-slate-200">
+                <tr className="border-b border-theme-border">
                   <td className="py-2 pr-4 font-semibold">
                     接続元IPごと（MCP_PUBLIC_IP_HOURLY_LIMIT / BURST）
                   </td>
@@ -367,7 +365,7 @@ export default async function McpGuidePage() {
                     {formatCount(MCP_PUBLIC_IP_BURST)} 回まで続けて
                   </td>
                 </tr>
-                <tr className="border-b border-slate-200">
+                <tr className="border-b border-theme-border">
                   <td className="py-2 pr-4 font-semibold">
                     サイト全体（MCP_PUBLIC_GLOBAL_HOURLY_LIMIT / BURST）
                   </td>
@@ -378,7 +376,7 @@ export default async function McpGuidePage() {
                     {formatCount(MCP_PUBLIC_GLOBAL_BURST)} 回まで続けて
                   </td>
                 </tr>
-                <tr className="border-b border-slate-200">
+                <tr className="border-b border-theme-border">
                   <td className="py-2 pr-4 font-semibold">
                     MCPセッションごと（MCP_PUBLIC_SESSION_HOURLY_LIMIT / BURST）
                   </td>
@@ -389,7 +387,7 @@ export default async function McpGuidePage() {
                     {formatCount(MCP_PUBLIC_SESSION_BURST)} 回まで続けて
                   </td>
                 </tr>
-                <tr className="border-b border-slate-200">
+                <tr className="border-b border-theme-border">
                   <td className="py-2 pr-4 font-semibold">
                     道具名ごと（MCP_PUBLIC_TOOL_HOURLY_LIMIT / BURST）
                   </td>
@@ -404,7 +402,7 @@ export default async function McpGuidePage() {
             </table>
           </div>
 
-          <ul className="list-disc pl-5 space-y-2 text-sm leading-relaxed text-slate-700">
+          <ul className="list-disc pl-5 space-y-2 text-sm leading-relaxed text-ink">
             <li>
               1回のリクエスト（JSON-RPCバッチを含む）で同時に数える道具名の種類は最大{" "}
               <strong>{MCP_PUBLIC_MAX_TOOL_BUCKETS}個</strong>（
@@ -452,15 +450,15 @@ export default async function McpGuidePage() {
         {/* セキュリティの方針 */}
         <section
           aria-labelledby="mcp-security-heading"
-          className="rounded-2xl border border-slate-300 bg-white p-6 shadow-sm space-y-4"
+          className="rounded-2xl border border-theme-border bg-theme-surface p-6 shadow-sm space-y-4"
         >
           <h2
             id="mcp-security-heading"
-            className="text-lg font-bold font-serif text-slate-900"
+            className="text-lg font-bold font-serif text-ink"
           >
             セキュリティとプライバシーの方針
           </h2>
-          <ul className="list-disc pl-5 space-y-2 text-sm leading-relaxed text-slate-700">
+          <ul className="list-disc pl-5 space-y-2 text-sm leading-relaxed text-ink">
             <li>
               <strong>読み取り専用:</strong>{" "}
               公開している道具はすべて読み取りだけ（書き込み・更新・削除なし）です。
@@ -500,14 +498,14 @@ export default async function McpGuidePage() {
               セキュリティ上の問題を見つけられた場合は{" "}
               <a
                 href="/.well-known/security.txt"
-                className="font-semibold text-rose-700 underline"
+                className="font-semibold text-accent underline"
               >
                 /.well-known/security.txt
               </a>{" "}
               または{" "}
               <Link
                 href="/contact"
-                className="font-semibold text-rose-700 underline"
+                className="font-semibold text-accent underline"
               >
                 お問い合わせ（/contact）
               </Link>{" "}
@@ -516,7 +514,7 @@ export default async function McpGuidePage() {
           </ul>
         </section>
 
-        <p className="text-sm text-slate-600">占いの計算結果は参考情報です。</p>
+        <p className="text-sm text-ink-muted">占いの計算結果は参考情報です。</p>
       </article>
     </main>
   );

@@ -71,7 +71,7 @@ export default function Page() {
   const byslug = new Map(GUIDE_PAGES.map((p) => [p.slug, p]));
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#faf7f5] via-[#f5efe9] to-[#f0e9e1] text-slate-900 font-sans">
+    <div className="min-h-screen bg-background text-ink font-sans">
       <ArticleJsonLd
         headline={GUIDE_INDEX.title}
         description={GUIDE_INDEX.description}
@@ -88,14 +88,14 @@ export default function Page() {
         <h1 className="text-3xl md:text-4xl font-bold font-serif tracking-tight leading-snug">
           {GUIDE_INDEX.title}
         </h1>
-        <p className="mt-5 max-w-[70ch] text-sm leading-relaxed text-slate-700">
+        <p className="mt-5 max-w-[70ch] text-sm leading-relaxed text-ink">
           {GUIDE_INDEX.lead}
         </p>
 
         {/* 決める順序。番号は「この順に決めると手戻りが少ない」という
             実体があるので付けている。 */}
         <section className="mt-12">
-          <h2 className="text-xl font-bold font-serif border-b border-slate-300 pb-2">
+          <h2 className="text-xl font-bold font-serif border-b border-theme-border pb-2">
             決めていく順番
           </h2>
 
@@ -107,7 +107,7 @@ export default function Page() {
                 2 列に折り返すと札の並びと導線がつながらないので、そこでは消す。 */}
             <span
               aria-hidden="true"
-              className="absolute left-4 top-3 bottom-3 w-px bg-slate-300 xl:hidden"
+              className="absolute left-4 top-3 bottom-3 w-px bg-theme-border xl:hidden"
             />
             {FLOW.map((f, i) => {
               const page = byslug.get(f.slug);
@@ -117,31 +117,31 @@ export default function Page() {
                   className="motion-reveal relative pl-14 pb-7 last:pb-0"
                   style={{ ["--i" as string]: i % 2 }}
                 >
-                  <span className="absolute left-0 top-0 w-8 h-8 rounded-full bg-slate-900 text-white text-xs font-bold font-mono flex items-center justify-center ring-4 ring-[#f7f2ec]">
+                  <span className="absolute left-0 top-0 w-8 h-8 rounded-full bg-accent text-on-accent text-xs font-bold font-mono flex items-center justify-center ring-4 ring-background">
                     {i + 1}
                   </span>
-                  <div className="rounded-2xl border border-slate-300 bg-white/90 p-4">
+                  <div className="rounded-2xl border border-theme-border bg-theme-surface p-4">
                     <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
-                      <span className="text-[11px] font-bold text-rose-600 tracking-wide">
+                      <span className="text-[11px] font-bold text-accent tracking-wide">
                         {f.step}
                       </span>
                       <h3 className="text-base font-bold font-serif">
                         {page?.nav}
                       </h3>
                     </div>
-                    <p className="mt-2 text-xs leading-relaxed text-slate-600">
+                    <p className="mt-2 text-xs leading-relaxed text-ink-muted">
                       {f.body}
                     </p>
                     <div className="mt-3 flex flex-wrap gap-2">
                       <Link
                         href={`/guide/${f.slug}`}
-                        className="px-3 py-1.5 rounded-full bg-slate-900 hover:bg-slate-800 text-white text-[11px] font-bold transition-colors"
+                        className="px-3 py-1.5 rounded-full bg-accent hover:brightness-110 text-on-accent text-[11px] font-bold"
                       >
                         使い方を読む
                       </Link>
                       <Link
                         href={f.target.href}
-                        className="px-3 py-1.5 rounded-full border border-slate-300 bg-white text-[11px] font-semibold hover:border-rose-400 transition-colors"
+                        className="px-3 py-1.5 rounded-full border border-theme-border bg-theme-surface text-[11px] font-semibold hover:border-accent"
                       >
                         {f.target.label}を開く
                       </Link>
@@ -154,7 +154,7 @@ export default function Page() {
         </section>
 
         <section className="mt-12">
-          <h2 className="text-xl font-bold font-serif border-b border-slate-300 pb-2">
+          <h2 className="text-xl font-bold font-serif border-b border-theme-border pb-2">
             そのほかのページ
           </h2>
           <div className="mt-5 grid gap-3 sm:grid-cols-2">
@@ -165,12 +165,12 @@ export default function Page() {
                 <Link
                   key={slug}
                   href={`/guide/${slug}`}
-                  className="group rounded-2xl border border-slate-300 bg-white/90 p-4 hover:border-rose-300 transition-colors"
+                  className="group rounded-2xl border border-theme-border bg-theme-surface p-4 hover:border-accent"
                 >
-                  <h3 className="text-sm font-bold font-serif group-hover:text-rose-600 transition-colors">
+                  <h3 className="text-sm font-bold font-serif group-hover:text-accent">
                     {page.nav}
                   </h3>
-                  <p className="mt-2 text-xs leading-relaxed text-slate-600">
+                  <p className="mt-2 text-xs leading-relaxed text-ink-muted">
                     {page.lead}
                   </p>
                 </Link>
@@ -179,72 +179,72 @@ export default function Page() {
           </div>
         </section>
 
-        <section className="mt-10 rounded-2xl border border-amber-300 bg-amber-50/80 p-5">
-          <h2 className="text-sm font-bold text-amber-900">
+        <section className="mt-10 rounded-2xl border border-theme-border bg-theme-gold-soft p-5">
+          <h2 className="text-sm font-bold text-theme-gold">
             はじめてお使いの方へ
           </h2>
-          <p className="mt-2 max-w-[70ch] text-xs leading-relaxed text-slate-700">
+          <p className="mt-2 max-w-[70ch] text-xs leading-relaxed text-ink">
             ログインは不要です。ただし、
             <b>今住んでいる場所</b>と<b>生年月日</b>
             を入れないと方位が決まりません。どの画面から始める場合も、まずこの2つを入力してください。
           </p>
           <Link
             href="/guide/basics"
-            className="mt-4 inline-flex px-5 py-2.5 rounded-full bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs transition-colors"
+            className="mt-4 inline-flex px-5 py-2.5 rounded-full bg-accent hover:brightness-110 text-on-accent font-bold text-xs"
           >
             画面共通の使い方を読む →
           </Link>
         </section>
 
         <section className="mt-12">
-          <h2 className="text-xl font-bold font-serif border-b border-slate-300 pb-2">
+          <h2 className="text-xl font-bold font-serif border-b border-theme-border pb-2">
             地域の解説と記事
           </h2>
-          <p className="mt-4 max-w-[70ch] text-sm leading-relaxed text-slate-700">
+          <p className="mt-4 max-w-[70ch] text-sm leading-relaxed text-ink">
             道具の使い方とは別に、出発地の街や県の解説、用語の背景を読む頁があります。
           </p>
           <div className="mt-5 grid gap-3 sm:grid-cols-2">
             <Link
               href="/houi/area"
-              className="group rounded-2xl border border-slate-300 bg-white/90 p-4 hover:border-rose-300 transition-colors"
+              className="group rounded-2xl border border-theme-border bg-theme-surface p-4 hover:border-accent"
             >
-              <h3 className="text-sm font-bold font-serif group-hover:text-rose-600 transition-colors">
+              <h3 className="text-sm font-bold font-serif group-hover:text-accent">
                 エリア別の方位と家賃相場
               </h3>
-              <p className="mt-2 text-xs leading-relaxed text-slate-600">
+              <p className="mt-2 text-xs leading-relaxed text-ink-muted">
                 いま住んでいる市区町村から、八方位の街と公表統計の家賃水準を見ます。
               </p>
             </Link>
             <Link
               href="/houi/pref"
-              className="group rounded-2xl border border-slate-300 bg-white/90 p-4 hover:border-rose-300 transition-colors"
+              className="group rounded-2xl border border-theme-border bg-theme-surface p-4 hover:border-accent"
             >
-              <h3 className="text-sm font-bold font-serif group-hover:text-rose-600 transition-colors">
+              <h3 className="text-sm font-bold font-serif group-hover:text-accent">
                 都道府県のまとめ
               </h3>
-              <p className="mt-2 text-xs leading-relaxed text-slate-600">
+              <p className="mt-2 text-xs leading-relaxed text-ink-muted">
                 47都道府県の頁へ進み、県の重心から見た方位と相場の傾きを比べます。
               </p>
             </Link>
             <Link
               href="/blog"
-              className="group rounded-2xl border border-slate-300 bg-white/90 p-4 hover:border-rose-300 transition-colors"
+              className="group rounded-2xl border border-theme-border bg-theme-surface p-4 hover:border-accent"
             >
-              <h3 className="text-sm font-bold font-serif group-hover:text-rose-600 transition-colors">
+              <h3 className="text-sm font-bold font-serif group-hover:text-accent">
                 記事
               </h3>
-              <p className="mt-2 text-xs leading-relaxed text-slate-600">
+              <p className="mt-2 text-xs leading-relaxed text-ink-muted">
                 九星気学・方位・天中殺・日取りの考え方を、操作せずに読めます。
               </p>
             </Link>
             <Link
               href="/editorial"
-              className="group rounded-2xl border border-slate-300 bg-white/90 p-4 hover:border-rose-300 transition-colors"
+              className="group rounded-2xl border border-theme-border bg-theme-surface p-4 hover:border-accent"
             >
-              <h3 className="text-sm font-bold font-serif group-hover:text-rose-600 transition-colors">
+              <h3 className="text-sm font-bold font-serif group-hover:text-accent">
                 編集方針
               </h3>
-              <p className="mt-2 text-xs leading-relaxed text-slate-600">
+              <p className="mt-2 text-xs leading-relaxed text-ink-muted">
                 出典、索引に載せる範囲、広告の扱い、訂正の窓口をまとめています。
               </p>
             </Link>
@@ -255,7 +255,7 @@ export default function Page() {
           <AdBanner />
         </div>
 
-        <p className="mt-8 max-w-[70ch] text-xs leading-relaxed text-slate-500">
+        <p className="mt-8 max-w-[70ch] text-xs leading-relaxed text-ink-muted">
           九星気学や六曜は暦の考え方であり、科学的に効果が確認されたものではありません。住まい選びの判断材料のひとつとしてお使いください。
         </p>
       </article>

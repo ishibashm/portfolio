@@ -132,15 +132,15 @@ export default async function Page({
   const bad = verdicts.filter((v) => v.kind === "bad");
 
   const tone = {
-    good: "bg-emerald-50 border-emerald-200 text-emerald-900",
-    neutral: "bg-stone-50 border-stone-200 text-stone-700",
-    bad: "bg-rose-50 border-rose-200 text-rose-900",
+    good: "bg-theme-good-soft border-theme-border text-theme-good",
+    neutral: "bg-theme-subtle border-theme-border text-ink",
+    bad: "bg-theme-bad-soft border-theme-border text-theme-bad",
   } as const;
 
   const path = `/houi/${year}/${star}/${month}`;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#faf7f5] via-[#f5efe9] to-[#f0e9e1] text-slate-900 font-sans">
+    <div className="min-h-screen bg-background text-ink font-sans">
       <ArticleJsonLd
         headline={`${year}年${month}月 ${name}の吉方位・凶方位｜月盤と節入りを確認`}
         description={`${formatDate(start)}から${formatDate(end)}までの月盤における${name}の吉方位、五黄殺・暗剣殺・月破の位置。`}
@@ -157,16 +157,16 @@ export default async function Page({
       />
       {/* 幅は全画面で 1700px に揃える（1/3 と同じ理由）。 */}
       <article className="max-w-[1700px] mx-auto px-5 py-12">
-        <nav className="text-xs text-slate-500 mb-6">
-          <Link href="/houi" className="hover:text-rose-600">
+        <nav className="text-xs text-ink-muted mb-6">
+          <Link href="/houi" className="hover:text-accent">
             {HOUI_BREADCRUMB_LABEL}
           </Link>
           <span className="mx-2">/</span>
-          <Link href={`/houi/${year}`} className="hover:text-rose-600">
+          <Link href={`/houi/${year}`} className="hover:text-accent">
             {year}年
           </Link>
           <span className="mx-2">/</span>
-          <Link href={`/houi/${year}/${star}`} className="hover:text-rose-600">
+          <Link href={`/houi/${year}/${star}`} className="hover:text-accent">
             {year}年 {name}
           </Link>
           <span className="mx-2">/</span>
@@ -177,25 +177,25 @@ export default async function Page({
           {year}年{month}月 {name}の吉方位
         </h1>
 
-        <p className="mt-4 text-xs font-semibold text-slate-500">
+        <p className="mt-4 text-xs font-semibold text-ink-muted">
           対象期間: {formatDate(start)} 〜 {formatDate(end)}
         </p>
 
         {/* モバイル（表示の 8 割）の 1 画面目に結論だけを置く。詳しい判定は下で開く。 */}
         <dl
           data-testid="month-summary"
-          className="mt-4 grid gap-1 rounded-2xl border border-slate-300 bg-white/90 p-4 text-sm"
+          className="mt-4 grid gap-1 rounded-2xl border border-theme-border bg-theme-surface p-4 text-sm"
         >
           <div className="flex gap-2">
-            <dt className="shrink-0 font-bold text-emerald-800">吉方位</dt>
+            <dt className="shrink-0 font-bold text-theme-good">吉方位</dt>
             <dd>{good.length ? good.map((v) => v.jp).join("・") : "なし"}</dd>
           </div>
           <div className="flex gap-2">
-            <dt className="shrink-0 font-bold text-rose-800">凶方位</dt>
+            <dt className="shrink-0 font-bold text-theme-bad">凶方位</dt>
             <dd>{bad.map((v) => `${v.jp}（${v.label}）`).join("、")}</dd>
           </div>
           <div className="flex gap-2">
-            <dt className="shrink-0 font-bold text-amber-800">注意日</dt>
+            <dt className="shrink-0 font-bold text-theme-gold">注意日</dt>
             <dd>
               {formatDate(start)}の節入りより前は前月の盤（{formatDate(end)}
               まで）
@@ -203,7 +203,7 @@ export default async function Page({
           </div>
         </dl>
 
-        <p className="mt-5 text-sm leading-relaxed text-slate-700">
+        <p className="mt-5 text-sm leading-relaxed text-ink">
           この期間の月盤は中宮が{STAR_NAMES[centerStar]}です。
           {name}の方にとっての各方位は次のとおりです。
           {good.length > 0 ? (
@@ -217,8 +217,8 @@ export default async function Page({
           <b>{bad.map((v) => `${v.jp}（${v.label}）`).join("、")}</b>です。
         </p>
 
-        <div className="mt-5 rounded-2xl border border-slate-300 bg-white/90 p-4">
-          <p className="text-xs text-slate-700 leading-relaxed">
+        <div className="mt-5 rounded-2xl border border-theme-border bg-theme-surface p-4">
+          <p className="text-xs text-ink leading-relaxed">
             九星気学の月は暦の1日ではなく<b>節入り</b>で切り替わります。
             {month}月といっても実際には
             <b>
@@ -229,11 +229,11 @@ export default async function Page({
         </div>
 
         <section className="mt-10">
-          <h2 className="text-xl font-bold font-serif border-b border-slate-300 pb-2">
+          <h2 className="text-xl font-bold font-serif border-b border-theme-border pb-2">
             方位ごとの判定
           </h2>
           <details className="mt-5 group">
-            <summary className="cursor-pointer min-h-11 py-2 text-sm font-bold text-rose-700">
+            <summary className="cursor-pointer min-h-11 py-2 text-sm font-bold text-accent">
               8方位の詳しい判定を開く
             </summary>
             <div className="mt-3 grid gap-3 sm:grid-cols-2">
@@ -266,23 +266,23 @@ export default async function Page({
           personalStar={star}
         />
 
-        <section className="mt-10 rounded-2xl border border-amber-200 bg-amber-50 p-5">
-          <h2 className="text-sm font-bold text-amber-900">
+        <section className="mt-10 rounded-2xl border border-theme-border bg-theme-gold-soft p-5">
+          <h2 className="text-sm font-bold text-theme-gold">
             年盤と合わせて見てください
           </h2>
-          <p className="mt-3 text-xs text-amber-900 leading-relaxed">
+          <p className="mt-3 text-xs text-theme-gold leading-relaxed">
             引越しの方位は、年盤と月盤の両方が吉であることを条件にする考え方が一般的です。月盤で吉でも年盤で凶なら避ける、という判断になります。また天中殺は生年月日ごとに決まるため、本命星だけでは分かりません。
           </p>
           <div className="mt-4 flex flex-wrap gap-2">
             <Link
               href={`/houi/${year}/${star}`}
-              className="px-5 py-2.5 rounded-full border border-amber-300 bg-white text-amber-900 font-bold text-xs hover:border-amber-500 transition-colors"
+              className="px-5 py-2.5 rounded-full border border-theme-border bg-theme-surface text-theme-gold font-bold text-xs hover:border-accent"
             >
               {year}年の年盤を見る
             </Link>
             <Link
               href="/relocation/arbitrage"
-              className="px-5 py-2.5 rounded-full bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs transition-colors"
+              className="px-5 py-2.5 rounded-full bg-accent hover:brightness-110 text-on-accent font-bold text-xs"
             >
               出発地と生年月日を入れて物件で確認する
             </Link>
@@ -298,7 +298,7 @@ export default async function Page({
         */}
 
         <section className="mt-10">
-          <h2 className="text-xl font-bold font-serif border-b border-slate-300 pb-2">
+          <h2 className="text-xl font-bold font-serif border-b border-theme-border pb-2">
             {year}年のほかの月
           </h2>
           <div className="mt-4 flex flex-wrap gap-2">
@@ -307,14 +307,14 @@ export default async function Page({
                 prefetch={false}
                 key={m}
                 href={`/houi/${year}/${star}/${m}`}
-                className="px-3 py-1.5 rounded-full border border-slate-300 bg-white text-xs font-semibold hover:border-rose-400 transition-colors"
+                className="px-3 py-1.5 rounded-full border border-theme-border bg-theme-surface text-xs font-semibold hover:border-accent"
               >
                 {m}月
               </Link>
             ))}
           </div>
 
-          <h2 className="text-xl font-bold font-serif border-b border-slate-300 pb-2 mt-8">
+          <h2 className="text-xl font-bold font-serif border-b border-theme-border pb-2 mt-8">
             ほかの本命星（{year}年{month}月）
           </h2>
           <div className="mt-4 flex flex-wrap gap-2">
@@ -323,7 +323,7 @@ export default async function Page({
                 prefetch={false}
                 key={s}
                 href={`/houi/${year}/${s}/${month}`}
-                className="px-3 py-1.5 rounded-full border border-slate-300 bg-white text-xs font-semibold hover:border-rose-400 transition-colors"
+                className="px-3 py-1.5 rounded-full border border-theme-border bg-theme-surface text-xs font-semibold hover:border-accent"
               >
                 {STAR_NAMES[s]}
               </Link>

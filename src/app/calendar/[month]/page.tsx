@@ -152,9 +152,9 @@ export default async function Page({
         ]}
       />
       {/* 幅は全画面で 1700px に揃える（1/3 と同じ理由）。 */}
-      <article className="max-w-[1700px] mx-auto px-5 py-12">
-        <nav className="text-xs text-slate-500 mb-6">
-          <Link href="/calendar" className="hover:text-rose-600">
+      <article className="max-w-[1700px] mx-auto px-5 py-12 bg-background text-ink">
+        <nav className="text-xs text-ink-muted mb-6">
+          <Link href="/calendar" className="hover:text-accent">
             引越しの日取りを選ぶ
           </Link>
           <span className="mx-2">/</span>
@@ -167,7 +167,7 @@ export default async function Page({
           {year}年{month}月の引越しに向く日
         </h1>
 
-        <p className="mt-5 text-sm leading-relaxed text-slate-700">
+        <p className="mt-5 text-sm leading-relaxed text-ink">
           {cal.recommended.length > 0 ? (
             <>
               {year}年{month}月で引越しに向くのは
@@ -175,7 +175,7 @@ export default async function Page({
               です。六曜で避けられる仏滅・赤口を外し、大安あるいは天赦日・一粒万倍日が重なる日を挙げています。天赦日・一粒万倍日の決まり方と、方位の凶を打ち消さない理由は
               <Link
                 href="/blog/tensha-and-ichiryumanbai-for-moving-day"
-                className="underline hover:text-rose-600"
+                className="underline hover:text-accent"
               >
                 天赦日・一粒万倍日は引越しの日取りにどう関係するのか
               </Link>
@@ -201,7 +201,7 @@ export default async function Page({
 
         {/* 中宮の星でその月の色合いが決まる。月ごとに必ず変わる情報なので、
             どの月を見ているのかが文章からも分かるようにする。 */}
-        <p className="mt-4 text-sm leading-relaxed text-slate-700">
+        <p className="mt-4 text-sm leading-relaxed text-ink">
           この期間の中宮は<b>{STAR_NAMES[cal.centerStar]}</b>（
           {STAR_MEANINGS[cal.centerStar]?.keywords}
           ）です。中宮の星は、その月全体に乗る色合いを表すとされます。
@@ -211,7 +211,7 @@ export default async function Page({
         {/* 月ごとに書き分けた説明。中宮・節入り・日取り・方位表から読んだ事実だけ。 */}
         {note ? (
           <p
-            className="mt-4 text-sm leading-relaxed text-slate-700"
+            className="mt-4 text-sm leading-relaxed text-ink"
             data-calendar-month-note={slug}
           >
             {note}
@@ -219,7 +219,7 @@ export default async function Page({
         ) : null}
 
         <section className="mt-10">
-          <h2 className="text-xl font-bold font-serif border-b border-slate-300 pb-2">
+          <h2 className="text-xl font-bold font-serif border-b border-theme-border pb-2">
             引越しに向く日
           </h2>
           {cal.recommended.length > 0 ? (
@@ -227,23 +227,23 @@ export default async function Page({
               {cal.recommended.map((d) => (
                 <div
                   key={d.date}
-                  className="rounded-2xl border border-emerald-200 bg-emerald-50/70 p-4"
+                  className="rounded-2xl border border-theme-border bg-theme-good-soft p-4"
                 >
                   <div className="flex items-baseline justify-between gap-2">
                     <span className="text-lg font-bold font-serif">
                       {month}月{d.day}日（{weekdayLabel(d.weekday)}）
                     </span>
-                    <span className="text-xs font-bold text-emerald-800">
+                    <span className="text-xs font-bold text-theme-good">
                       {d.rokuyo}
                     </span>
                   </div>
                   {d.luckyLabels.length > 0 && (
-                    <p className="mt-2 text-xs text-emerald-900">
+                    <p className="mt-2 text-xs text-theme-good">
                       {d.luckyLabels.join("・")}
                     </p>
                   )}
                   {d.inDoyou && d.isMabi && (
-                    <p className="mt-1 text-xs text-emerald-800">
+                    <p className="mt-1 text-xs text-theme-good">
                       土用の期間ですが間日にあたるため、障りは無いとされます。
                     </p>
                   )}
@@ -251,17 +251,17 @@ export default async function Page({
               ))}
             </div>
           ) : (
-            <p className="mt-4 text-sm text-slate-600">
+            <p className="mt-4 text-sm text-ink-muted">
               この月に条件を満たす日はありません。
             </p>
           )}
         </section>
 
         <section className="mt-10">
-          <h2 className="text-xl font-bold font-serif border-b border-slate-300 pb-2">
+          <h2 className="text-xl font-bold font-serif border-b border-theme-border pb-2">
             本命星ごとの吉方位（{cal.termStart}〜{cal.termEnd}）
           </h2>
-          <p className="mt-4 text-xs leading-relaxed text-slate-600">
+          <p className="mt-4 text-xs leading-relaxed text-ink-muted">
             日取りが決まっても、向きが凶であれば意味がありません。九星気学の月は暦の1日ではなく
             <b>節入り</b>で替わるため、この月盤が効くのは
             <b>
@@ -273,7 +273,7 @@ export default async function Page({
           <div className="mt-5 overflow-x-auto">
             <table className="w-full min-w-[560px] text-left border-collapse text-xs">
               <thead>
-                <tr className="border-b border-slate-300 text-slate-500">
+                <tr className="border-b border-theme-border text-ink-muted">
                   <th className="py-2 pr-3 whitespace-nowrap">本命星</th>
                   <th className="py-2 pr-3 whitespace-nowrap">吉方位</th>
                   <th className="py-2 whitespace-nowrap">避けたい方位</th>
@@ -283,13 +283,13 @@ export default async function Page({
                 {cal.starDirections.map((s) => {
                   const href = houiMonthHref(year, s.star, month);
                   return (
-                    <tr key={s.star} className="border-b border-slate-200">
+                    <tr key={s.star} className="border-b border-theme-border">
                       <td className="py-2 pr-3 font-bold whitespace-nowrap">
                         {href ? (
                           <Link
                             prefetch={false}
                             href={href}
-                            className="hover:text-rose-600 hover:underline"
+                            className="hover:text-accent hover:underline"
                           >
                             {s.starName}
                           </Link>
@@ -297,10 +297,10 @@ export default async function Page({
                           s.starName
                         )}
                       </td>
-                      <td className="py-2 pr-3 text-emerald-800">
+                      <td className="py-2 pr-3 text-theme-good">
                         {directionListLabel(s.good)}
                       </td>
-                      <td className="py-2 text-rose-800">
+                      <td className="py-2 text-theme-bad">
                         {s.bad.map((b) => `${b.jp}（${b.label}）`).join("、") ||
                           "なし"}
                       </td>
@@ -310,9 +310,9 @@ export default async function Page({
               </tbody>
             </table>
           </div>
-          <p className="mt-3 text-xs text-slate-500">
+          <p className="mt-3 text-xs text-ink-muted">
             本命星が分からないときは
-            <Link href="/houi" className="text-rose-600 hover:underline">
+            <Link href="/houi" className="text-accent hover:underline">
               生まれ年から引ける早見表
             </Link>
             をご覧ください。天中殺は生年月日ごとに決まるため、この表には含めていません。
@@ -320,10 +320,10 @@ export default async function Page({
         </section>
 
         <section className="mt-10">
-          <h2 className="text-xl font-bold font-serif border-b border-slate-300 pb-2">
+          <h2 className="text-xl font-bold font-serif border-b border-theme-border pb-2">
             {month}月の暦
           </h2>
-          <p className="mt-3 text-xs text-slate-600">{KANSHI_BASIS}</p>
+          <p className="mt-3 text-xs text-ink-muted">{KANSHI_BASIS}</p>
           <ul className="mt-3 space-y-1 text-sm">
             {cal.solarTerms.map((term) => (
               <li key={term.name}>
@@ -336,7 +336,7 @@ export default async function Page({
           <div className="mt-4 overflow-x-auto">
             <table className="w-full min-w-[520px] text-left border-collapse text-xs">
               <thead>
-                <tr className="border-b border-slate-300 text-slate-500">
+                <tr className="border-b border-theme-border text-ink-muted">
                   <th className="py-2 pr-3 whitespace-nowrap">日</th>
                   <th className="py-2 pr-3 whitespace-nowrap">六曜</th>
                   <th className="py-2 pr-3 whitespace-nowrap">
@@ -349,8 +349,8 @@ export default async function Page({
                 {cal.days.map((d) => (
                   <tr
                     key={d.date}
-                    className={`border-b border-slate-100 ${
-                      d.inDoyou && !d.isMabi ? "bg-amber-50/60" : ""
+                    className={`border-b border-theme-border ${
+                      d.inDoyou && !d.isMabi ? "bg-theme-gold-soft" : ""
                     }`}
                   >
                     <td className="py-1.5 pr-3 whitespace-nowrap">
@@ -362,7 +362,7 @@ export default async function Page({
                     <td className="py-1.5 pr-3 whitespace-nowrap">
                       {d.kanshi.year}／{d.kanshi.month}／{d.kanshi.day}
                     </td>
-                    <td className="py-1.5 text-slate-600">
+                    <td className="py-1.5 text-ink-muted">
                       {[
                         ...d.luckyLabels,
                         d.inDoyou ? (d.isMabi ? "土用（間日）" : "土用") : null,
@@ -377,23 +377,23 @@ export default async function Page({
           </div>
         </section>
 
-        <section className="mt-10 rounded-2xl border border-amber-200 bg-amber-50 p-5">
-          <h2 className="text-sm font-bold text-amber-900">
+        <section className="mt-10 rounded-2xl border border-theme-border bg-theme-gold-soft p-5">
+          <h2 className="text-sm font-bold text-theme-gold">
             自分の生年月日で確かめる
           </h2>
-          <p className="mt-3 text-xs text-amber-900 leading-relaxed">
+          <p className="mt-3 text-xs text-theme-gold leading-relaxed">
             このページは暦だけで決まる情報をまとめたものです。天中殺と本命殺は生年月日で変わり、方位は出発地から見た向きで決まります。日取りと方位を自分の条件で確かめるには、生年月日と現住地を入れてください。
           </p>
           <div className="mt-4 flex flex-wrap gap-2">
             <Link
               href="/calendar"
-              className="px-5 py-2.5 rounded-full bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs transition-colors"
+              className="px-5 py-2.5 rounded-full bg-accent hover:brightness-110 text-on-accent font-bold text-xs"
             >
               生年月日を入れて吉日を出す
             </Link>
             <Link
               href="/relocation/arbitrage"
-              className="px-5 py-2.5 rounded-full border border-amber-300 bg-white text-amber-900 font-bold text-xs hover:border-amber-500 transition-colors"
+              className="px-5 py-2.5 rounded-full border border-theme-border bg-theme-surface text-theme-gold font-bold text-xs hover:border-accent"
             >
               方位から物件を探す
             </Link>
@@ -405,7 +405,7 @@ export default async function Page({
         </div>
 
         <section className="mt-10">
-          <h2 className="text-xl font-bold font-serif border-b border-slate-300 pb-2">
+          <h2 className="text-xl font-bold font-serif border-b border-theme-border pb-2">
             ほかの月
           </h2>
           <div className="mt-4 flex flex-wrap gap-2">
@@ -417,10 +417,10 @@ export default async function Page({
                   prefetch={false}
                   key={s}
                   href={`/calendar/${s}`}
-                  className={`px-3 py-1.5 rounded-full border text-xs font-bold transition-colors ${
+                  className={`px-3 py-1.5 rounded-full border text-xs font-bold ${
                     current
-                      ? "border-rose-400 bg-rose-50 text-rose-700"
-                      : "border-slate-300 bg-white text-slate-700 hover:border-rose-400"
+                      ? "border-accent bg-theme-accent-soft text-accent"
+                      : "border-theme-border bg-theme-surface text-ink hover:border-accent"
                   }`}
                 >
                   {c.year}年{c.month}月
@@ -430,11 +430,11 @@ export default async function Page({
           </div>
           {/* 年の一覧へ。対象外の年（頁が無い）にはリンクしない。 */}
           {parseYear(String(year)) !== null && (
-            <p className="mt-4 text-xs text-slate-600">
+            <p className="mt-4 text-xs text-ink-muted">
               1年ぶんの天赦日・一粒万倍日・土用は
               <Link
                 href={`/calendar/${year}`}
-                className="text-rose-600 hover:underline"
+                className="text-accent hover:underline"
               >
                 {year}年の年間一覧
               </Link>
@@ -445,7 +445,7 @@ export default async function Page({
             {prev ? (
               <Link
                 href={`/calendar/${slugOf(prev)}`}
-                className="text-rose-600 hover:underline"
+                className="text-accent hover:underline"
               >
                 ← {prev.year}年{prev.month}月
               </Link>
@@ -455,7 +455,7 @@ export default async function Page({
             {next && (
               <Link
                 href={`/calendar/${slugOf(next)}`}
-                className="text-rose-600 hover:underline"
+                className="text-accent hover:underline"
               >
                 {next.year}年{next.month}月 →
               </Link>

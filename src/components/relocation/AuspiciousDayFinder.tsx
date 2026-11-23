@@ -37,10 +37,7 @@ import {
   subscribeFavoriteDays,
   toggleFavoriteDay,
 } from "@/lib/favoriteDays";
-import {
-  ALL_DIRECTIONS,
-  DIRECTION_LABELS,
-} from "@/utils/auspiciousDays";
+import { ALL_DIRECTIONS, DIRECTION_LABELS } from "@/utils/auspiciousDays";
 import {
   isTenchusatsuMode,
   DEFAULT_TENCHUSATSU_MODE,
@@ -109,7 +106,7 @@ const ThreeBoardStack = dynamic(
   {
     ssr: false,
     loading: () => (
-      <div className="rounded-3xl border border-stone-200 bg-stone-50 p-6 text-sm text-stone-500">
+      <div className="rounded-3xl border border-theme-border bg-theme-subtle p-6 text-sm text-ink-muted">
         三盤の方位盤を読み込んでいます…
       </div>
     ),
@@ -160,7 +157,7 @@ function toInputCoord(v: unknown): string {
 }
 
 const choiceClass =
-  "rounded-lg border px-3 py-2 text-sm aria-pressed:bg-rose-100 aria-pressed:border-rose-500";
+  "rounded-lg border px-3 py-2 text-sm aria-pressed:bg-theme-accent-soft aria-pressed:border-accent";
 
 export function AuspiciousDayFinder() {
   const [birthDate, setBirthDate] = useState("");
@@ -226,7 +223,10 @@ export function AuspiciousDayFinder() {
       favoriteDayKey(f.date, f.direction),
     ),
   );
-  const [meta, setMeta] = useState<{ honmeiStar?: number; voidZodiacs?: string[] }>({});
+  const [meta, setMeta] = useState<{
+    honmeiStar?: number;
+    voidZodiacs?: string[];
+  }>({});
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -392,7 +392,11 @@ export function AuspiciousDayFinder() {
    * 出発地が分からないとスキャナーは方位を出せないので座標も渡す。
    */
   const scannerHref = (date: string, direction: string) => {
-    const q = new URLSearchParams({ targetDate: date, direction, tenchusatsuMode });
+    const q = new URLSearchParams({
+      targetDate: date,
+      direction,
+      tenchusatsuMode,
+    });
     if (lat) q.set("baseLat", lat);
     if (lon) q.set("baseLon", lon);
     return `/relocation/arbitrage?${q.toString()}`;
@@ -414,12 +418,12 @@ export function AuspiciousDayFinder() {
   };
 
   return (
-    <section className="mb-10 rounded-3xl border border-slate-300 bg-white/95 p-6 md:p-8 shadow-lg shadow-slate-200/50">
+    <section className="mb-10 rounded-3xl border border-theme-border bg-theme-surface p-6 md:p-8 shadow-lg shadow-[color:var(--wg-shadow)]">
       <h2 className="text-lg font-bold font-serif flex items-center gap-2">
-        <CalendarCheck className="w-5 h-5 text-rose-500" />
+        <CalendarCheck className="w-5 h-5 text-accent" />
         三盤に凶が入らない日を出す
       </h2>
-      <p className="mt-3 text-sm text-slate-700 leading-relaxed">
+      <p className="mt-3 text-sm text-ink leading-relaxed">
         年盤・月盤・日盤のどれにも凶が入らない日を、方位ごとに日付で並べます。三盤すべてが吉の日（S）だけでなく、吉が2盤・1盤で残りが平の日（A・B）、すべて平の日（C）も出します。三盤吉だけを見たいときは下の絞り込みで選べます。年盤は立春で切り替わるため、その方位が吉でいられる期限も併せて出します。
       </p>
 
@@ -460,7 +464,7 @@ export function AuspiciousDayFinder() {
               />
               {birthYear && (
                 <>
-                  <p className="text-xs text-slate-600">
+                  <p className="text-xs text-ink-muted">
                     日盤・天中殺の計算に月日も必要です。
                   </p>
                   <MonthDayPicker
@@ -508,6 +512,7 @@ export function AuspiciousDayFinder() {
                 <label htmlFor="ad-lon">現住地の経度</label>
                 <input
                   id="ad-lon"
+                  className="border border-ink-muted bg-theme-surface text-ink focus:border-accent"
                   type="number"
                   step="any"
                   min={-180}
@@ -524,6 +529,7 @@ export function AuspiciousDayFinder() {
                 <label htmlFor="ad-lat">現住地の緯度</label>
                 <input
                   id="ad-lat"
+                  className="border border-ink-muted bg-theme-surface text-ink focus:border-accent"
                   type="number"
                   step="any"
                   min={-90}
@@ -588,7 +594,7 @@ export function AuspiciousDayFinder() {
         <details className="min-w-0 space-y-1">
           <summary>詳しい設定</summary>
           <label
-            className="text-xs font-semibold text-slate-500 block cursor-help"
+            className="text-xs font-semibold text-ink-muted block cursor-help"
             htmlFor="ad-tenchusatsu"
             title="天中殺（算命学）＝空亡（四柱推命）。九星気学には本来無い概念で、どこまで禁止則として扱うかは流派によって異なります。"
           >
@@ -601,7 +607,7 @@ export function AuspiciousDayFinder() {
               profileRevision.current++;
               setTenchusatsuMode(e.target.value);
             }}
-            className="w-full px-3 py-2 bg-white border border-slate-300 rounded-xl text-sm outline-none cursor-pointer focus:border-rose-400"
+            className="w-full px-3 py-2 bg-theme-surface border border-ink-muted rounded-xl text-sm outline-none cursor-pointer focus:border-accent"
           >
             {TENCHUSATSU_MODES.map((m) => (
               <option key={m.id} value={m.id} title={m.description}>
@@ -616,28 +622,28 @@ export function AuspiciousDayFinder() {
         onClick={search}
         disabled={loading || !!missing || resolvingOrigin}
         aria-describedby={missing ? "ad-missing" : undefined}
-        className="mt-5 px-5 py-2.5 rounded-xl bg-rose-500 hover:bg-rose-600 disabled:bg-rose-300 text-white text-sm font-bold transition-colors inline-flex items-center gap-2"
+        className="mt-5 px-5 py-2.5 rounded-xl bg-accent hover:brightness-110 disabled:opacity-50 disabled:hover:brightness-100 text-on-accent text-sm font-bold inline-flex items-center gap-2"
       >
         {loading && <Loader2 className="w-4 h-4 animate-spin" />}
         吉日を出す
       </button>
 
       {missing && (
-        <p id="ad-missing" className="mt-2 text-sm text-slate-600">
+        <p id="ad-missing" className="mt-2 text-sm text-ink-muted">
           {missing}。
         </p>
       )}
 
       {error && (
-        <p className="mt-4 text-sm text-rose-600 bg-rose-50 border border-rose-200 rounded-xl px-3 py-2">
+        <p className="mt-4 text-sm text-theme-gold bg-theme-gold-soft border border-theme-border rounded-xl px-3 py-2">
           {error}
         </p>
       )}
 
       {meta.honmeiStar !== undefined && (
-        <p className="mt-4 text-xs text-slate-500">
-          本命星: <b className="text-slate-700">{meta.honmeiStar}</b> ／ 天中殺の支:{" "}
-          <b className="text-slate-700">{meta.voidZodiacs?.join("・")}</b>
+        <p className="mt-4 text-xs text-ink-muted">
+          本命星: <b className="text-ink">{meta.honmeiStar}</b> ／ 天中殺の支:{" "}
+          <b className="text-ink">{meta.voidZodiacs?.join("・")}</b>
         </p>
       )}
 
@@ -656,7 +662,7 @@ export function AuspiciousDayFinder() {
       {summaries && (
         <div className="mt-5 space-y-5">
           {summaries.every((s) => s.days.length === 0) && (
-            <p className="text-sm text-amber-700 bg-amber-50 border border-amber-200 rounded-xl px-4 py-3">
+            <p className="text-sm text-theme-gold bg-theme-gold-soft border border-theme-border rounded-xl px-4 py-3">
               走査した期間に、三盤のどれにも凶が入らない日はありませんでした。期間を延ばすか、方位を変えて試してください。
             </p>
           )}
@@ -665,13 +671,13 @@ export function AuspiciousDayFinder() {
               引越し業者の予約は土日に偏る、縁起日を優先したい人がいる、
               天中殺の日は結局選べない——この 3 つと、月。 */}
           {summaries.some((s) => s.days.length > 0) && (
-            <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3">
+            <div className="rounded-2xl border border-theme-border bg-theme-subtle px-4 py-3">
               <div className="flex flex-wrap items-center gap-x-5 gap-y-2">
-                <span className="text-xs font-bold text-slate-600">
+                <span className="text-xs font-bold text-ink-muted">
                   絞り込み
                 </span>
 
-                <label className="flex items-center gap-1.5 text-xs text-slate-700">
+                <label className="flex items-center gap-1.5 text-xs text-ink">
                   曜日
                   <select
                     value={filter.weekday}
@@ -681,7 +687,7 @@ export function AuspiciousDayFinder() {
                         weekday: e.target.value as DayFilter["weekday"],
                       })
                     }
-                    className="px-2 py-1 bg-white border border-slate-300 rounded-lg text-xs outline-none cursor-pointer focus:border-rose-400"
+                    className="px-2 py-1 bg-theme-surface border border-ink-muted rounded-lg text-xs outline-none cursor-pointer focus:border-accent"
                   >
                     <option value="all">すべて</option>
                     <option value="weekend">土日だけ</option>
@@ -689,14 +695,14 @@ export function AuspiciousDayFinder() {
                   </select>
                 </label>
 
-                <label className="flex items-center gap-1.5 text-xs text-slate-700">
+                <label className="flex items-center gap-1.5 text-xs text-ink">
                   月
                   <select
                     value={filter.month}
                     onChange={(e) =>
                       setFilter({ ...filter, month: e.target.value })
                     }
-                    className="px-2 py-1 bg-white border border-slate-300 rounded-lg text-xs outline-none cursor-pointer focus:border-rose-400"
+                    className="px-2 py-1 bg-theme-surface border border-ink-muted rounded-lg text-xs outline-none cursor-pointer focus:border-accent"
                   >
                     <option value="all">すべて</option>
                     {/* 候補がある月だけ。無い月を選べると押した瞬間に空になる */}
@@ -708,38 +714,38 @@ export function AuspiciousDayFinder() {
                   </select>
                 </label>
 
-                <label className="flex items-center gap-1.5 text-xs text-slate-700 cursor-pointer">
+                <label className="flex items-center gap-1.5 text-xs text-ink cursor-pointer">
                   <input
                     type="checkbox"
                     checked={filter.luckyOnly}
                     onChange={(e) =>
                       setFilter({ ...filter, luckyOnly: e.target.checked })
                     }
-                    className="accent-rose-500"
+                    className="accent-accent"
                   />
                   縁起日だけ（天赦日・一粒万倍日・大安）
                 </label>
 
-                <label className="flex items-center gap-1.5 text-xs text-slate-700 cursor-pointer">
+                <label className="flex items-center gap-1.5 text-xs text-ink cursor-pointer">
                   <input
                     type="checkbox"
                     checked={filter.hideBlocked}
                     onChange={(e) =>
                       setFilter({ ...filter, hideBlocked: e.target.checked })
                     }
-                    className="accent-rose-500"
+                    className="accent-accent"
                   />
                   天中殺の日を隠す
                 </label>
 
-                <label className="flex items-center gap-1.5 text-xs text-slate-700 cursor-pointer">
+                <label className="flex items-center gap-1.5 text-xs text-ink cursor-pointer">
                   <input
                     type="checkbox"
                     checked={filter.tripleOnly}
                     onChange={(e) =>
                       setFilter({ ...filter, tripleOnly: e.target.checked })
                     }
-                    className="accent-rose-500"
+                    className="accent-accent"
                   />
                   三盤吉（S）だけ
                 </label>
@@ -748,7 +754,7 @@ export function AuspiciousDayFinder() {
                   <button
                     type="button"
                     onClick={() => setFilter(DEFAULT_DAY_FILTER)}
-                    className="text-xs text-rose-700 underline"
+                    className="text-xs text-accent underline"
                   >
                     絞り込みを外す
                   </button>
@@ -762,16 +768,16 @@ export function AuspiciousDayFinder() {
             .map((s) => (
               <div
                 key={s.direction}
-                className="rounded-2xl border border-slate-200 bg-white overflow-hidden"
+                className="rounded-2xl border border-theme-border bg-theme-surface overflow-hidden"
               >
-                <div className="px-4 py-3 bg-slate-50 border-b border-slate-200 flex flex-wrap items-center justify-between gap-2">
+                <div className="px-4 py-3 bg-theme-subtle border-b border-theme-border flex flex-wrap items-center justify-between gap-2">
                   <div className="flex items-baseline gap-3">
-                    <span className="text-base font-bold text-slate-800">
+                    <span className="text-base font-bold text-ink">
                       {s.directionLabel}
                     </span>
-                    <span className="text-sm text-slate-600">
+                    <span className="text-sm text-ink-muted">
                       三盤吉{" "}
-                      <b className="text-rose-600">
+                      <b className="text-theme-good">
                         <CountUp value={s.tripleAuspiciousDays} />
                       </b>{" "}
                       日
@@ -779,7 +785,7 @@ export function AuspiciousDayFinder() {
                         <>
                           {" "}
                           ／ 絞り込み後{" "}
-                          <b className="text-slate-800">
+                          <b className="text-ink">
                             {view(s).matched.length}
                           </b>{" "}
                           日
@@ -789,11 +795,11 @@ export function AuspiciousDayFinder() {
                         <>
                           {" "}
                           ／ 天中殺で不可{" "}
-                          <b className="text-amber-700">
+                          <b className="text-theme-gold">
                             {s.blockedByTenchusatsuDays}
                           </b>{" "}
                           日 ／ 実質{" "}
-                          <b className="text-emerald-700">
+                          <b className="text-theme-good">
                             <CountUp value={s.availableDays} />
                           </b>{" "}
                           日
@@ -805,17 +811,15 @@ export function AuspiciousDayFinder() {
                         <>
                           {" "}
                           ／ 凶なし（吉2盤・吉1盤・平を含む）{" "}
-                          <b className="text-slate-800">{s.noBadDays}</b> 日
+                          <b className="text-ink">{s.noBadDays}</b> 日
                         </>
                       )}
                     </span>
                   </div>
                   {s.window.yearBoardValidUntil && (
-                    <span className="text-xs text-slate-500">
+                    <span className="text-xs text-ink-muted">
                       年盤の期限:{" "}
-                      <b className="text-slate-700">
-                        {s.window.yearBoardValidUntil}
-                      </b>
+                      <b className="text-ink">{s.window.yearBoardValidUntil}</b>
                       {s.window.afterYearBoardStatus && (
                         <>
                           {" "}
@@ -829,7 +833,7 @@ export function AuspiciousDayFinder() {
 
                 <div className="overflow-x-auto">
                   <table className="w-full text-sm">
-                    <thead className="bg-white text-xs text-slate-500 border-b border-slate-200">
+                    <thead className="bg-theme-surface text-xs text-ink-muted border-b border-theme-border">
                       <tr>
                         <th className="px-3 py-2 text-left font-semibold">
                           日付
@@ -858,8 +862,8 @@ export function AuspiciousDayFinder() {
                       {view(s).shown.map((d) => (
                         <tr
                           key={d.date}
-                          className={`border-b border-slate-100 ${
-                            d.blockedByTenchusatsu ? "bg-amber-50/60" : ""
+                          className={`border-b border-theme-border ${
+                            d.blockedByTenchusatsu ? "bg-theme-gold-soft" : ""
                           }`}
                         >
                           <td className="px-3 py-2 font-mono whitespace-nowrap">
@@ -898,20 +902,20 @@ export function AuspiciousDayFinder() {
                                         d.blockedByTenchusatsu,
                                     });
                                   }}
-                                  className="relative mr-1.5 -my-1 rounded p-1 align-middle text-slate-300 hover:text-amber-500"
+                                  className="relative mr-1.5 -my-1 rounded p-1 align-middle text-ink-muted hover:text-theme-gold"
                                 >
                                   {burst?.key ===
                                     favoriteDayKey(d.date, s.direction) && (
                                     <Burst key={burst.n} />
                                   )}
                                   <Star
-                                    className={`h-4 w-4 ${on ? "fill-amber-400 text-amber-500" : ""}`}
+                                    className={`h-4 w-4 ${on ? "fill-theme-gold text-theme-gold" : ""}`}
                                   />
                                 </button>
                               );
                             })()}
                             {d.date}
-                            <span className="text-slate-400">
+                            <span className="text-ink-muted">
                               （{WEEKDAYS[d.weekday]}）
                             </span>
                             <button
@@ -919,7 +923,7 @@ export function AuspiciousDayFinder() {
                               aria-label={`${d.date} の三盤を方位盤で見る`}
                               title="この日の三盤を方位盤で見る"
                               onClick={() => showBoard(d.date)}
-                              className="ml-1.5 -my-1 rounded p-1 align-middle text-slate-300 hover:text-rose-500"
+                              className="ml-1.5 -my-1 rounded p-1 align-middle text-ink-muted hover:text-accent"
                             >
                               <Layers className="h-4 w-4" />
                             </button>
@@ -927,8 +931,8 @@ export function AuspiciousDayFinder() {
                               <span
                                 className={`mt-0.5 ml-7 block w-fit rounded px-1.5 py-0.5 font-sans text-xs font-semibold ${
                                   d.tier === "S"
-                                    ? "bg-rose-50 text-rose-700"
-                                    : "bg-slate-100 text-slate-600"
+                                    ? "bg-theme-good-soft text-theme-good"
+                                    : "bg-theme-subtle text-ink-muted"
                                 }`}
                               >
                                 {d.tier} {TIER_LABELS[d.tier]}
@@ -943,7 +947,7 @@ export function AuspiciousDayFinder() {
                               {d.tags.map((t) => (
                                 <span
                                   key={t}
-                                  className="px-1.5 py-0.5 rounded bg-amber-100 text-amber-800 text-[11px] font-semibold"
+                                  className="px-1.5 py-0.5 rounded bg-theme-gold-soft text-theme-gold text-[11px] font-semibold"
                                 >
                                   {t}
                                 </span>
@@ -952,7 +956,7 @@ export function AuspiciousDayFinder() {
                           </td>
                           <td className="px-3 py-2 text-xs">
                             {d.blockedByTenchusatsu ? (
-                              <span className="text-amber-700 font-semibold">
+                              <span className="text-theme-gold font-semibold">
                                 不可（
                                 {[
                                   d.voidScopes.year && "年",
@@ -964,7 +968,7 @@ export function AuspiciousDayFinder() {
                                 ）
                               </span>
                             ) : (
-                              <span className="text-slate-400">—</span>
+                              <span className="text-ink-muted">—</span>
                             )}
                           </td>
                           <td className="px-3 py-2 text-xs whitespace-nowrap">
@@ -977,7 +981,7 @@ export function AuspiciousDayFinder() {
                             <Link
                               href={scannerHref(d.date, s.direction)}
                               onClick={() => saveWorkingDate(d.date)}
-                              className="inline-flex items-center gap-1 px-2 py-1 rounded-lg border border-rose-200 bg-rose-50 text-rose-700 font-semibold hover:bg-rose-100 transition-colors"
+                              className="inline-flex items-center gap-1 px-2 py-1 rounded-lg border border-theme-border bg-theme-accent-soft text-accent font-semibold hover:border-accent"
                               title={`${d.date} に ${s.directionLabel} へ移る前提で物件を探す`}
                             >
                               この条件で探す
@@ -997,14 +1001,14 @@ export function AuspiciousDayFinder() {
                     onClick={() =>
                       setExpanded({ ...expanded, [s.direction]: true })
                     }
-                    className="w-full px-4 py-2.5 border-t border-slate-200 bg-slate-50 text-xs font-bold text-slate-700 hover:bg-slate-100 transition-colors"
+                    className="w-full px-4 py-2.5 border-t border-theme-border bg-theme-subtle text-xs font-bold text-ink hover:bg-theme-accent-soft"
                   >
                     残り {view(s).hidden} 日を表示
                   </button>
                 )}
 
                 {view(s).matched.length === 0 && (
-                  <p className="px-4 py-3 text-xs text-slate-600">
+                  <p className="px-4 py-3 text-xs text-ink-muted">
                     この絞り込みに当てはまる日がありません。条件をゆるめてください。
                   </p>
                 )}

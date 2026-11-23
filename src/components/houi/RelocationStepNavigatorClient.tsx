@@ -58,12 +58,12 @@ export function RelocationStepNavigatorClient({
   return (
     <section
       aria-labelledby="relocation-steps"
-      className="mt-10 rounded-2xl border border-slate-300 bg-white/90 p-5"
+      className="mt-10 rounded-2xl border border-theme-border bg-theme-surface p-5"
     >
       <h2 id="relocation-steps" className="text-xl font-bold font-serif">
         引越し先を 3 ステップで絞る
       </h2>
-      <p className="mt-1 text-xs text-slate-600">
+      <p className="mt-1 text-xs text-ink-muted">
         方位（九星気学）→ 街と家賃 → 部屋の向き（八宅風水）の順に見ます。2
         つの流派の点数は合算しません。
       </p>
@@ -88,8 +88,8 @@ export function RelocationStepNavigatorClient({
                 aria-pressed={star === s.star}
                 className={`rounded-full border px-3 py-1 text-xs font-semibold ${
                   star === s.star
-                    ? "border-rose-500 bg-rose-50 text-rose-700"
-                    : "border-slate-300 bg-white hover:border-rose-400"
+                    ? "border-accent bg-theme-accent-soft text-accent"
+                    : "border-theme-border bg-theme-surface hover:border-accent"
                 }`}
               >
                 {s.name}
@@ -102,15 +102,15 @@ export function RelocationStepNavigatorClient({
             <p>
               <b>{step.name}</b>の吉方位：
               {step.good.length > 0 ? (
-                <b className="text-emerald-700">
+                <b className="text-theme-good">
                   {step.good.map((d) => DIRECTION_LABELS[d]).join("・")}
                 </b>
               ) : (
-                <b className="text-rose-700">今年は吉方位がありません</b>
+                <b className="text-theme-bad">今年は吉方位がありません</b>
               )}
             </p>
             {step.bad.length > 0 && (
-              <p className="mt-1 text-xs text-slate-600">
+              <p className="mt-1 text-xs text-ink-muted">
                 避ける方位：
                 {step.bad
                   .map((b) => `${DIRECTION_LABELS[b.direction]}（${b.label}）`)
@@ -120,7 +120,7 @@ export function RelocationStepNavigatorClient({
             )}
           </div>
         ) : (
-          <p className="mt-2 text-xs text-slate-600">
+          <p className="mt-2 text-xs text-ink-muted">
             本命星を選んでください。
           </p>
         )}
@@ -131,7 +131,7 @@ export function RelocationStepNavigatorClient({
         <h3 className="text-sm font-bold">
           2. 今の住まいから吉方位にある街と家賃
         </h3>
-        <label className="mt-2 block text-xs text-slate-600">
+        <label className="mt-2 block text-xs text-ink-muted">
           出発地（今住んでいる市区町村）
           <select
             value={origin}
@@ -140,7 +140,7 @@ export function RelocationStepNavigatorClient({
               setAreas(null);
             }}
             disabled={!step || step.good.length === 0}
-            className="mt-1 block w-full max-w-sm rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm"
+            className="mt-1 block w-full max-w-sm rounded-lg border border-ink-muted bg-theme-surface px-3 py-2 text-sm"
           >
             <option value="">選択してください</option>
             {origins.map((o) => (
@@ -151,10 +151,12 @@ export function RelocationStepNavigatorClient({
           </select>
         </label>
         {error && (
-          <p className="mt-2 text-xs text-rose-700">読み込みに失敗しました。</p>
+          <p className="mt-2 text-xs text-theme-gold">
+            読み込みに失敗しました。
+          </p>
         )}
         {areas && areas.length === 0 && (
-          <p className="mt-2 text-xs text-slate-600">
+          <p className="mt-2 text-xs text-ink-muted">
             150km 以内の吉方位に掲載中の街がありません。
           </p>
         )}
@@ -163,20 +165,20 @@ export function RelocationStepNavigatorClient({
             {areas.map((a) => (
               <li
                 key={a.code}
-                className="rounded-xl border border-slate-200 bg-white p-3 text-xs"
+                className="rounded-xl border border-theme-border bg-theme-surface p-3 text-xs"
               >
                 <Link
                   prefetch={false}
                   href={`/houi/area/${a.code}`}
                   rel={a.indexable ? undefined : "nofollow"}
-                  className="font-bold text-rose-600 underline hover:text-rose-700"
+                  className="font-bold text-accent underline hover:decoration-2"
                 >
                   {a.name}
                 </Link>
-                <span className="ml-2 text-slate-500">
+                <span className="ml-2 text-ink-muted">
                   {DIRECTION_LABELS[a.direction]}・{a.distanceKm}km
                 </span>
-                <div className="mt-1 font-mono text-slate-700">
+                <div className="mt-1 font-mono text-ink">
                   家賃中央値 {yen(a.medianRent)}（出発地比{" "}
                   {a.rentDiffPct > 0 ? "+" : ""}
                   {a.rentDiffPct}%）
@@ -192,7 +194,7 @@ export function RelocationStepNavigatorClient({
         <h3 className="text-sm font-bold">
           3. 部屋・玄関の向き（八宅風水の四吉方）
         </h3>
-        <p className="mt-1 text-xs text-slate-600">
+        <p className="mt-1 text-xs text-ink-muted">
           九星気学とは別の流派です。合算はしません。内見時の玄関・寝室の向きの参考に。
         </p>
         {step ? (
@@ -207,7 +209,7 @@ export function RelocationStepNavigatorClient({
             ))}
           </ul>
         ) : (
-          <p className="mt-2 text-xs text-slate-600">
+          <p className="mt-2 text-xs text-ink-muted">
             本命星を選ぶと表示します。
           </p>
         )}
@@ -216,13 +218,13 @@ export function RelocationStepNavigatorClient({
       <div className="mt-6 flex flex-wrap gap-3">
         <Link
           href="/relocation/simulator"
-          className="inline-flex rounded-full bg-rose-600 px-5 py-2.5 text-xs font-bold text-white hover:bg-rose-700"
+          className="inline-flex rounded-full bg-accent px-5 py-2.5 text-xs font-bold text-on-accent hover:brightness-110"
         >
           この条件で引越し先を試算する
         </Link>
         <Link
           href="/relocation/candidates"
-          className="inline-flex rounded-full border border-rose-300 px-5 py-2.5 text-xs font-bold text-rose-700 hover:bg-rose-50"
+          className="inline-flex rounded-full border border-theme-border px-5 py-2.5 text-xs font-bold text-accent hover:bg-theme-accent-soft"
         >
           候補物件を管理する
         </Link>

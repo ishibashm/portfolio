@@ -48,13 +48,13 @@ sRGB の相対輝度から `(明るい色の輝度 + 0.05) / (暗い色の輝度
 - ローカルの本番ビルドでは、ブログ一覧・記事とも既存の Markdown フォールバックを表示した。DB 上のコンテンツとコメントは確認範囲外。
 - `wealth` の実データ、`arbitrage` の物件・地点のポップアップ、`simulator` の入力後の結果は初期状態を中心に確認した。地図の一部の操作パネルとポップアップには明色の面が残る。
 
-今回、`/annai` の地色・カード・ステップ・入力・結果と、`/ask` の停止案内・会話用 UI をテーマ変数に移行した。
+`/annai` の地色・カード・ステップ・入力・結果と、`/ask` の停止案内・会話用 UI をテーマ変数に移行した。
+
+`/mcp`、暦（一覧・年別・月別）、ガイド（一覧・記事）、`/kensho`、都道府県（一覧・県別）、年盤・月盤と、各画面で使うカードや入力欄もテーマ変数に移行した。
 
 ### 配色が残る箇所
 
-- `/calendar`、`/guide`、`/kensho`、`/mcp`、`/houi/pref`、`/houi/[year]/[star]` とその月ページの固定配色。
-
 - 管理画面・アカウントの成功やエラー表示、保存操作の一部（`src/app/admin`、`src/app/account`、`src/components/account`）。
 - テレメトリーの系列と磁気地図のレイヤー・凡例（`TelemetryChart.tsx`、`MagneticMapInner.tsx`）。
-- カレンダーの休日・入力欄や個別ツールのナビゲーション（`src/app/calendar`、`CosmicCalendar.tsx`、`src/app/houi` の個別画面など）。
+- 方位の個別ツールのナビゲーション（`src/app/houi`）。
 - LINE などの外部連携（`LineFriendLink.tsx` など）と、既存のブログ記事の図版。

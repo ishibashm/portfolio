@@ -45,7 +45,7 @@ it("renders badges only for the same direction good in both boards, including Ja
         expect(item.textContent).toContain(
           `年月とも吉：${both.map((v) => v.jp).join("・")}`,
         );
-        expect(item.className).toContain("bg-emerald-50");
+        expect(item.className).toContain("bg-theme-good-soft");
       } else expect(item.textContent).not.toContain("年月とも吉");
     });
   }

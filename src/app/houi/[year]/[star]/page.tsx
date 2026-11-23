@@ -114,16 +114,16 @@ export default async function Page({
     physical.verdicts.map((v) => v.status).join();
 
   const tone = {
-    good: "bg-emerald-50 border-emerald-200 text-emerald-900",
-    neutral: "bg-stone-50 border-stone-200 text-stone-700",
-    bad: "bg-rose-50 border-rose-200 text-rose-900",
+    good: "bg-theme-good-soft border-theme-border text-theme-good",
+    neutral: "bg-theme-subtle border-theme-border text-ink",
+    bad: "bg-theme-bad-soft border-theme-border text-theme-bad",
   } as const;
 
   const path = `/houi/${year}/${star}`;
   const heading = `${year}年 ${name}の吉方位・凶方位【月別】`;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#faf7f5] via-[#f5efe9] to-[#f0e9e1] text-slate-900 font-sans">
+    <div className="min-h-screen bg-background text-ink font-sans">
       <ArticleJsonLd
         headline={heading}
         description={`${year}年 ${name}の吉方位と凶方位（五黄殺・暗剣殺）を月別に確認できます。`}
@@ -139,12 +139,12 @@ export default async function Page({
       />
       {/* 幅は全画面で 1700px に揃える（1/3 と同じ理由）。 */}
       <article className="max-w-[1700px] mx-auto px-5 py-12">
-        <nav className="text-xs text-slate-500 mb-6">
-          <Link href="/houi" className="hover:text-rose-600">
+        <nav className="text-xs text-ink-muted mb-6">
+          <Link href="/houi" className="hover:text-accent">
             {HOUI_BREADCRUMB_LABEL}
           </Link>
           <span className="mx-2">/</span>
-          <Link href={`/houi/${year}`} className="hover:text-rose-600">
+          <Link href={`/houi/${year}`} className="hover:text-accent">
             {year}年
           </Link>
           <span className="mx-2">/</span>
@@ -157,7 +157,7 @@ export default async function Page({
           {heading}
         </h1>
 
-        <p className="mt-5 text-sm leading-relaxed text-slate-700">
+        <p className="mt-5 text-sm leading-relaxed text-ink">
           {year}年の年盤は中宮が{STAR_NAMES[centerStar]}です。
           {name}の方にとって、この年の各方位の扱いは次のとおりです。
           {good.length > 0 ? (
@@ -180,7 +180,7 @@ export default async function Page({
               labels
               className="h-28 w-28 shrink-0"
             />
-            <p className="text-xs leading-relaxed text-slate-600">
+            <p className="text-xs leading-relaxed text-ink-muted">
               金の針は{good[0].jp}を指しています。金の点が{year}
               年の吉方位（{good.map((v) => v.jp).join("・")}）です。
             </p>
@@ -193,14 +193,14 @@ export default async function Page({
         />
 
         <section className="mt-10">
-          <h2 className="text-xl font-bold font-serif border-b border-slate-300 pb-2">
+          <h2 className="text-xl font-bold font-serif border-b border-theme-border pb-2">
             方位ごとの判定
           </h2>
-          <p className="mt-4 text-xs leading-relaxed text-slate-600">
+          <p className="mt-4 text-xs leading-relaxed text-ink-muted">
             五黄殺・暗剣殺は本命星に関係なく盤だけで決まり、立春で切り替わります。決まり方と年ごとの位置は
             <Link
               href="/blog/five-yellow-and-anken-satsu"
-              className="underline hover:text-rose-600"
+              className="underline hover:text-accent"
             >
               五黄殺と暗剣殺とはどの方位で、なぜ引越しで避けるとされるのか
             </Link>
@@ -231,13 +231,13 @@ export default async function Page({
         </section>
 
         <section className="mt-10">
-          <h2 className="text-xl font-bold font-serif border-b border-slate-300 pb-2">
+          <h2 className="text-xl font-bold font-serif border-b border-theme-border pb-2">
             月ごとの吉方位
           </h2>
-          <p className="mt-4 text-sm leading-relaxed text-slate-700">
+          <p className="mt-4 text-sm leading-relaxed text-ink">
             引越しの方位は、年盤と月盤の両方が吉であることを条件にする考え方が一般的です。月ごとの判定は次から確認できます。
           </p>
-          <p className="mt-2 text-xs text-slate-600">
+          <p className="mt-2 text-xs text-ink-muted">
             各月は節入りから始まります。「年月とも吉」は同じ方位が年盤・月盤の両方で吉になる月です。1月の年盤は前年を使います。
           </p>
           <ul className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
@@ -262,21 +262,21 @@ export default async function Page({
               return (
                 <li
                   key={month}
-                  className={`wg-card p-4 ${bothGood.length ? "border-emerald-400 bg-emerald-50" : ""}`}
+                  className={`wg-card p-4 ${bothGood.length ? "border-theme-border bg-theme-good-soft" : ""}`}
                 >
                   <h3 className="font-mono text-sm font-bold">{month}月</h3>
                   {bothGood.length > 0 && (
-                    <p className="mt-2 text-xs font-bold text-emerald-900">
+                    <p className="mt-2 text-xs font-bold text-theme-good">
                       年月とも吉：{bothGood.map((v) => v.jp).join("・")}
                     </p>
                   )}
-                  <p className="mt-2 text-xs text-emerald-900">
+                  <p className="mt-2 text-xs text-theme-good">
                     吉：
                     {monthlyGood.length
                       ? monthlyGood.map((v) => v.jp).join("・")
                       : "なし"}
                   </p>
-                  <p className="mt-1 text-xs leading-relaxed text-rose-900">
+                  <p className="mt-1 text-xs leading-relaxed text-theme-bad">
                     凶：
                     {monthlyBad.length
                       ? monthlyBad
@@ -290,7 +290,7 @@ export default async function Page({
           </ul>
           {monthContentYears().includes(year) && (
             <details className="mt-4">
-              <summary className="cursor-pointer select-none text-xs font-bold text-slate-600 hover:text-slate-900">
+              <summary className="cursor-pointer select-none text-xs font-bold text-ink-muted hover:text-ink">
                 月を選んで開く（1月〜12月）
               </summary>
               <div className="mt-3 flex flex-wrap gap-2">
@@ -299,7 +299,7 @@ export default async function Page({
                     prefetch={false}
                     key={m}
                     href={`/houi/${year}/${star}/${m}`}
-                    className="px-3 py-1.5 rounded-full border border-slate-300 bg-white text-xs font-semibold hover:border-rose-400 transition-colors"
+                    className="px-3 py-1.5 rounded-full border border-theme-border bg-theme-surface text-xs font-semibold hover:border-accent"
                   >
                     {m}月
                   </Link>
@@ -309,11 +309,11 @@ export default async function Page({
           )}
         </section>
 
-        <section className="mt-10 rounded-2xl border border-amber-200 bg-amber-50 p-5">
-          <h2 className="text-sm font-bold text-amber-900">
+        <section className="mt-10 rounded-2xl border border-theme-border bg-theme-gold-soft p-5">
+          <h2 className="text-sm font-bold text-theme-gold">
             この表だけで引越し先を決められない理由
           </h2>
-          <ul className="mt-3 text-xs text-amber-900 leading-relaxed list-disc pl-5 space-y-1.5">
+          <ul className="mt-3 text-xs text-theme-gold leading-relaxed list-disc pl-5 space-y-1.5">
             <li>
               年盤で吉でも、月によっては凶方位になります。実際の移転では
               <b>年盤と月盤の両方</b>を確認してください。
@@ -334,7 +334,7 @@ export default async function Page({
           </ul>
           <Link
             href="/relocation/arbitrage"
-            className="mt-4 inline-flex px-5 py-2.5 rounded-full bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs transition-colors"
+            className="mt-4 inline-flex px-5 py-2.5 rounded-full bg-accent hover:brightness-110 text-on-accent font-bold text-xs"
           >
             出発地と生年月日を入れて実際の物件で確認する
           </Link>
@@ -351,7 +351,7 @@ export default async function Page({
         </div>
 
         <section className="mt-10">
-          <h2 className="text-xl font-bold font-serif border-b border-slate-300 pb-2">
+          <h2 className="text-xl font-bold font-serif border-b border-theme-border pb-2">
             ほかの本命星
           </h2>
           <div className="mt-4 flex flex-wrap gap-2">
@@ -360,14 +360,14 @@ export default async function Page({
                 prefetch={false}
                 key={s}
                 href={`/houi/${year}/${s}`}
-                className="px-3 py-1.5 rounded-full border border-slate-300 bg-white text-xs font-semibold hover:border-rose-400 transition-colors"
+                className="px-3 py-1.5 rounded-full border border-theme-border bg-theme-surface text-xs font-semibold hover:border-accent"
               >
                 {STAR_NAMES[s]}
               </Link>
             ))}
           </div>
 
-          <h2 className="text-xl font-bold font-serif border-b border-slate-300 pb-2 mt-8">
+          <h2 className="text-xl font-bold font-serif border-b border-theme-border pb-2 mt-8">
             ほかの年
           </h2>
           <div className="mt-4 flex flex-wrap gap-2">
@@ -378,7 +378,7 @@ export default async function Page({
                   prefetch={false}
                   key={y}
                   href={`/houi/${y}/${star}`}
-                  className="px-3 py-1.5 rounded-full border border-slate-300 bg-white text-xs font-semibold hover:border-rose-400 transition-colors"
+                  className="px-3 py-1.5 rounded-full border border-theme-border bg-theme-surface text-xs font-semibold hover:border-accent"
                 >
                   {y}年の{name}
                 </Link>
@@ -387,10 +387,10 @@ export default async function Page({
         </section>
 
         <details className="wg-card mt-10 p-5">
-          <summary className="cursor-pointer text-sm font-bold font-serif text-rose-700">
+          <summary className="cursor-pointer text-sm font-bold font-serif text-accent">
             算出方法による違い（古典 vs 物理モデル）
           </summary>
-          <p className="mt-4 text-sm leading-relaxed text-slate-700">
+          <p className="mt-4 text-sm leading-relaxed text-ink">
             上の表は一般的な九星気学（{STAR_NAMES[centerStar]}
             中宮）による判定です。このサイトのスキャナーには、木星の黄経から星を求める独自モデルも用意しており、設定で切り替えられます。同じ
             {year}年でも中宮が
@@ -399,56 +399,56 @@ export default async function Page({
           <div className="mt-4 overflow-x-auto">
             <table className="w-full text-xs border-collapse">
               <thead>
-                <tr className="bg-stone-100">
-                  <th className="border border-slate-300 p-2 text-left font-bold">
+                <tr className="bg-theme-subtle">
+                  <th className="border border-theme-border p-2 text-left font-bold">
                     算出方法
                   </th>
-                  <th className="border border-slate-300 p-2 text-left font-bold">
+                  <th className="border border-theme-border p-2 text-left font-bold">
                     中宮
                   </th>
-                  <th className="border border-slate-300 p-2 text-left font-bold">
+                  <th className="border border-theme-border p-2 text-left font-bold">
                     吉方位
                   </th>
-                  <th className="border border-slate-300 p-2 text-left font-bold">
+                  <th className="border border-theme-border p-2 text-left font-bold">
                     避けるべき方位
                   </th>
                 </tr>
               </thead>
               <tbody>
                 <tr>
-                  <td className="border border-slate-300 p-2 font-semibold">
+                  <td className="border border-theme-border p-2 font-semibold">
                     一般的な九星気学
                   </td>
-                  <td className="border border-slate-300 p-2">
+                  <td className="border border-theme-border p-2">
                     {STAR_NAMES[centerStar]}
                   </td>
-                  <td className="border border-slate-300 p-2">
+                  <td className="border border-theme-border p-2">
                     {good.length ? good.map((v) => v.jp).join("・") : "なし"}
                   </td>
-                  <td className="border border-slate-300 p-2">
+                  <td className="border border-theme-border p-2">
                     {bad.map((v) => `${v.jp}（${v.label}）`).join("、")}
                   </td>
                 </tr>
                 <tr>
-                  <td className="border border-slate-300 p-2 font-semibold">
+                  <td className="border border-theme-border p-2 font-semibold">
                     本サイト独自モデル
                   </td>
-                  <td className="border border-slate-300 p-2">
+                  <td className="border border-theme-border p-2">
                     {STAR_NAMES[physical.centerStar]}
                   </td>
-                  <td className="border border-slate-300 p-2">
+                  <td className="border border-theme-border p-2">
                     {physGood.length
                       ? physGood.map((v) => v.jp).join("・")
                       : "なし"}
                   </td>
-                  <td className="border border-slate-300 p-2">
+                  <td className="border border-theme-border p-2">
                     {physBad.map((v) => `${v.jp}（${v.label}）`).join("、")}
                   </td>
                 </tr>
               </tbody>
             </table>
           </div>
-          <p className="mt-3 text-xs text-slate-600 leading-relaxed">
+          <p className="mt-3 text-xs text-ink-muted leading-relaxed">
             {systemsAgree
               ? "この年・この本命星では、どちらの算出方法でも同じ判定になります。"
               : "この年・この本命星では判定が一致しません。"}

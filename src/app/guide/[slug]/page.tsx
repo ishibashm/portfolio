@@ -71,11 +71,10 @@ export default async function Page({
   const path = `/guide/${page.slug}`;
   const index = GUIDE_PAGES.findIndex((p) => p.slug === page.slug);
   const prev = index > 0 ? GUIDE_PAGES[index - 1] : null;
-  const next =
-    index < GUIDE_PAGES.length - 1 ? GUIDE_PAGES[index + 1] : null;
+  const next = index < GUIDE_PAGES.length - 1 ? GUIDE_PAGES[index + 1] : null;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#faf7f5] via-[#f5efe9] to-[#f0e9e1] text-slate-900 font-sans">
+    <div className="min-h-screen bg-background text-ink font-sans">
       <ArticleJsonLd
         headline={page.title}
         description={page.description}
@@ -102,8 +101,8 @@ export default async function Page({
           指示）。以前は読み幅（820px）で止めていたが、索引だけ広げた
           結果、章に入った瞬間に狭くなるのが不揃いだった。 */}
       <article className="max-w-[1700px] mx-auto px-5 py-12">
-        <nav className="text-xs text-slate-500 mb-6">
-          <Link href="/guide" className="hover:text-rose-600">
+        <nav className="text-xs text-ink-muted mb-6">
+          <Link href="/guide" className="hover:text-accent">
             {GUIDE_INDEX.title}
           </Link>
           <span className="mx-2">/</span>
@@ -113,14 +112,12 @@ export default async function Page({
         <h1 className="text-3xl md:text-4xl font-bold font-serif tracking-tight leading-snug">
           {page.title}
         </h1>
-        <p className="mt-5 text-sm leading-relaxed text-slate-700">
-          {page.lead}
-        </p>
+        <p className="mt-5 text-sm leading-relaxed text-ink">{page.lead}</p>
 
         {page.target && (
           <Link
             href={page.target.href}
-            className="mt-6 inline-flex px-5 py-2.5 rounded-full border border-slate-300 bg-white text-xs font-bold hover:border-rose-400 transition-colors"
+            className="mt-6 inline-flex px-5 py-2.5 rounded-full border border-theme-border bg-theme-surface text-xs font-bold hover:border-accent"
           >
             {page.target.label}を開く →
           </Link>
@@ -133,11 +130,11 @@ export default async function Page({
         </div>
 
         {/* 前後の章。通しで読む人がいるので順路を残す */}
-        <nav className="mt-10 pt-6 border-t border-slate-300 flex flex-wrap gap-3 justify-between">
+        <nav className="mt-10 pt-6 border-t border-theme-border flex flex-wrap gap-3 justify-between">
           {prev ? (
             <Link
               href={`/guide/${prev.slug}`}
-              className="px-4 py-2 rounded-full border border-slate-300 bg-white text-xs font-semibold hover:border-rose-400 transition-colors"
+              className="px-4 py-2 rounded-full border border-theme-border bg-theme-surface text-xs font-semibold hover:border-accent"
             >
               ← {prev.nav}
             </Link>
@@ -147,7 +144,7 @@ export default async function Page({
           {next ? (
             <Link
               href={`/guide/${next.slug}`}
-              className="px-4 py-2 rounded-full border border-slate-300 bg-white text-xs font-semibold hover:border-rose-400 transition-colors"
+              className="px-4 py-2 rounded-full border border-theme-border bg-theme-surface text-xs font-semibold hover:border-accent"
             >
               {next.nav} →
             </Link>
@@ -157,7 +154,10 @@ export default async function Page({
         </nav>
 
         <div className="mt-6">
-          <Link href="/guide" className="text-xs font-bold text-rose-600 hover:underline">
+          <Link
+            href="/guide"
+            className="text-xs font-bold text-accent hover:underline"
+          >
             使い方ガイドの目次へ戻る
           </Link>
         </div>

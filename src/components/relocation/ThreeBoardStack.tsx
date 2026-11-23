@@ -38,7 +38,7 @@ import { supportsWebGL } from "@/lib/webglSupport";
 const ThreeBoardScene = dynamic(() => import("./ThreeBoardScene"), {
   ssr: false,
   loading: () => (
-    <div className="flex h-[420px] items-center justify-center text-sm text-stone-500 md:h-[520px]">
+    <div className="flex h-[420px] items-center justify-center text-sm text-ink-muted md:h-[520px]">
       立体の盤を読み込んでいます…
     </div>
   ),
@@ -313,30 +313,30 @@ export default function ThreeBoardStack({
   return (
     <section
       ref={hostRef}
-      className="overflow-hidden rounded-3xl border border-stone-200 bg-gradient-to-b from-stone-50 to-amber-50/40 shadow-sm"
+      className="overflow-hidden rounded-3xl border border-theme-border bg-theme-surface shadow-sm"
       aria-label="三盤の方位盤"
     >
-      <header className="flex flex-wrap items-end justify-between gap-3 border-b border-stone-200/70 px-5 py-4">
+      <header className="flex flex-wrap items-end justify-between gap-3 border-b border-theme-border px-5 py-4">
         <div>
-          <p className="flex items-center gap-1.5 text-xs font-bold tracking-wider text-rose-600">
+          <p className="flex items-center gap-1.5 text-xs font-bold tracking-wider text-accent">
             <Layers className="h-3.5 w-3.5" aria-hidden />
             三盤の方位盤
           </p>
-          <h3 className="mt-1 text-lg font-bold text-stone-800">
+          <h3 className="mt-1 text-lg font-bold text-ink">
             年盤・月盤・日盤を重ねて見る
           </h3>
-          <p className="mt-1 max-w-[70ch] text-xs leading-relaxed text-stone-600">
+          <p className="mt-1 max-w-[70ch] text-xs leading-relaxed text-ink-muted">
             下から年盤・月盤・日盤。緑は吉、赤は凶、灰は平です。3
             枚とも吉の方位（三盤吉）は光の柱で貫かれ、台座の輪にその日の段階（S〜X）が出ます。扇形を押すと内訳を下に出します。
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2 text-xs">
-          <div className="flex items-center rounded-full border border-stone-300 bg-white">
+          <div className="flex items-center rounded-full border border-theme-border bg-theme-surface">
             <button
               type="button"
               aria-label="前の日"
               onClick={() => onDateChange(shiftDate(date, -1))}
-              className="rounded-l-full px-2 py-1.5 hover:bg-stone-100"
+              className="rounded-l-full px-2 py-1.5 hover:bg-theme-accent-soft"
             >
               <ChevronLeft className="h-4 w-4" aria-hidden />
             </button>
@@ -345,13 +345,13 @@ export default function ThreeBoardStack({
               aria-label="盤の日付"
               value={date}
               onChange={(e) => e.target.value && onDateChange(e.target.value)}
-              className="border-x border-stone-200 bg-transparent px-2 py-1 font-semibold text-stone-800"
+              className="border-x border-theme-border bg-transparent px-2 py-1 font-semibold text-ink"
             />
             <button
               type="button"
               aria-label="次の日"
               onClick={() => onDateChange(shiftDate(date, 1))}
-              className="rounded-r-full px-2 py-1.5 hover:bg-stone-100"
+              className="rounded-r-full px-2 py-1.5 hover:bg-theme-accent-soft"
             >
               <ChevronRight className="h-4 w-4" aria-hidden />
             </button>
@@ -370,8 +370,8 @@ export default function ThreeBoardStack({
                 onClick={() => setMapping(m)}
                 className={`rounded-full border px-2.5 py-1 font-semibold ${
                   mapping === m
-                    ? "border-stone-800 bg-stone-800 text-white"
-                    : "border-stone-300 bg-white text-stone-700"
+                    ? "border-accent bg-accent text-on-accent"
+                    : "border-theme-border bg-theme-surface text-ink"
                 }`}
               >
                 {label}
@@ -392,8 +392,8 @@ export default function ThreeBoardStack({
                 onClick={() => setOrientation(o)}
                 className={`rounded-full border px-2.5 py-1 font-semibold ${
                   orientation === o
-                    ? "border-stone-800 bg-stone-800 text-white"
-                    : "border-stone-300 bg-white text-stone-700"
+                    ? "border-accent bg-accent text-on-accent"
+                    : "border-theme-border bg-theme-surface text-ink"
                 }`}
               >
                 {label}
@@ -408,8 +408,8 @@ export default function ThreeBoardStack({
                 onClick={() => setView("3d")}
                 className={`rounded-full border px-2.5 py-1 font-semibold ${
                   view === "3d"
-                    ? "border-rose-600 bg-rose-600 text-white"
-                    : "border-stone-300 bg-white text-stone-700"
+                    ? "border-accent bg-accent text-on-accent"
+                    : "border-theme-border bg-theme-surface text-ink"
                 }`}
               >
                 立体
@@ -421,8 +421,8 @@ export default function ThreeBoardStack({
               onClick={() => setView("flat")}
               className={`rounded-full border px-2.5 py-1 font-semibold ${
                 view === "flat"
-                  ? "border-rose-600 bg-rose-600 text-white"
-                  : "border-stone-300 bg-white text-stone-700"
+                  ? "border-accent bg-accent text-on-accent"
+                  : "border-theme-border bg-theme-surface text-ink"
               }`}
             >
               平面
@@ -432,7 +432,7 @@ export default function ThreeBoardStack({
                 type="button"
                 aria-pressed={spread}
                 onClick={() => setSpread((s) => !s)}
-                className="rounded-full border border-stone-300 bg-white px-2.5 py-1 font-semibold text-stone-700"
+                className="rounded-full border border-theme-border bg-theme-surface px-2.5 py-1 font-semibold text-ink"
               >
                 {spread ? "重ねる" : "離す"}
               </button>
@@ -443,15 +443,15 @@ export default function ThreeBoardStack({
 
       <div className="relative">
         {!birthDate || !lon ? (
-          <p className="p-6 text-sm text-stone-600">
+          <p className="p-6 text-sm text-ink-muted">
             生年月日と現住地を入れると、その人の盤が出ます。
           </p>
         ) : current?.error ? (
-          <p role="alert" className="p-6 text-sm text-rose-700">
+          <p role="alert" className="p-6 text-sm text-theme-gold">
             {current.error}
           </p>
         ) : !model ? (
-          <p role="status" className="p-6 text-sm text-stone-500">
+          <p role="status" className="p-6 text-sm text-ink-muted">
             盤を読み込んでいます…
           </p>
         ) : view === "3d" && inView ? (
@@ -476,8 +476,8 @@ export default function ThreeBoardStack({
       </div>
 
       {model && (
-        <div className="space-y-3 border-t border-stone-200/70 px-5 py-4">
-          <p className="text-sm text-stone-700">
+        <div className="space-y-3 border-t border-theme-border px-5 py-4">
+          <p className="text-sm text-ink">
             {model.date} の三盤吉（S）:{" "}
             <b>
               {aligned.length > 0
@@ -486,14 +486,14 @@ export default function ThreeBoardStack({
             </b>
           </p>
           {dayBlocked && (
-            <p className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800">
+            <p className="rounded-xl border border-theme-border bg-theme-gold-soft px-3 py-2 text-sm text-theme-gold">
               {DAY_BLOCKED_NOTE}
             </p>
           )}
 
           {selectedCol && (
-            <div className="rounded-2xl border border-stone-200 bg-white p-3">
-              <p className="flex items-center gap-2 text-sm font-bold text-stone-800">
+            <div className="rounded-2xl border border-theme-border bg-theme-surface p-3">
+              <p className="flex items-center gap-2 text-sm font-bold text-ink">
                 {selectedCol.label}
                 <span
                   className={`rounded-full border px-2 py-0.5 text-xs ${
@@ -503,12 +503,12 @@ export default function ThreeBoardStack({
                   {selectedCol.tierLabel}
                 </span>
                 {selectedCol.blocked && (
-                  <span className="rounded-full border border-slate-300 bg-slate-100 px-2 py-0.5 text-xs text-slate-700">
+                  <span className="rounded-full border border-theme-border bg-theme-subtle px-2 py-0.5 text-xs text-ink">
                     天中殺
                   </span>
                 )}
                 {selectedCol.doyouSatsu && (
-                  <span className="rounded-full border border-orange-300 bg-orange-50 px-2 py-0.5 text-xs text-orange-700">
+                  <span className="rounded-full border border-theme-border bg-theme-bad-soft px-2 py-0.5 text-xs text-theme-bad">
                     土用殺
                   </span>
                 )}
@@ -521,17 +521,17 @@ export default function ThreeBoardStack({
                   return (
                     <li
                       key={disc.layer}
-                      className="rounded-xl border border-stone-200 px-3 py-2"
+                      className="rounded-xl border border-theme-border px-3 py-2"
                     >
-                      <span className="text-stone-500">{disc.name}</span>{" "}
-                      <b className="text-stone-800">{STAR_NAMES[s.star]}</b>
+                      <span className="text-ink-muted">{disc.name}</span>{" "}
+                      <b className="text-ink">{STAR_NAMES[s.star]}</b>
                       <span
                         className={`ml-2 font-bold ${
                           s.kind === "good"
-                            ? "text-emerald-700"
+                            ? "text-theme-good"
                             : s.kind === "bad"
-                              ? "text-rose-700"
-                              : "text-stone-500"
+                              ? "text-theme-bad"
+                              : "text-ink-muted"
                         }`}
                       >
                         {s.statusLabel}
@@ -544,12 +544,12 @@ export default function ThreeBoardStack({
           )}
 
           <details className="text-xs">
-            <summary className="cursor-pointer font-semibold text-stone-600">
+            <summary className="cursor-pointer font-semibold text-ink-muted">
               表で見る
             </summary>
             <table className="mt-2 w-full">
               <thead>
-                <tr className="text-left text-stone-500">
+                <tr className="text-left text-ink-muted">
                   <th className="py-1 font-semibold">方位</th>
                   {model.discs.map((d) => (
                     <th key={d.layer} className="py-1 font-semibold">
@@ -561,7 +561,10 @@ export default function ThreeBoardStack({
               </thead>
               <tbody>
                 {model.columns.map((col) => (
-                  <tr key={col.direction} className="border-t border-stone-100">
+                  <tr
+                    key={col.direction}
+                    className="border-t border-theme-border"
+                  >
                     <td className="py-1 font-semibold">{col.label}</td>
                     {model.discs.map((d) => {
                       const s = d.sectors.find(
@@ -579,7 +582,7 @@ export default function ThreeBoardStack({
               </tbody>
             </table>
           </details>
-          <p className="text-xs text-stone-500">
+          <p className="text-xs text-ink-muted">
             {ORIENTATION_NOTE[orientation]}
           </p>
         </div>

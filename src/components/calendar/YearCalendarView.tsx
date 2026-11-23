@@ -51,9 +51,9 @@ export function YearCalendarView({ cal }: { cal: YearlyCalendar }) {
       />
       <FaqJsonLd items={faq} />
       {/* 幅は全画面で 1700px に揃える。 */}
-      <article className="max-w-[1700px] mx-auto px-5 py-12">
-        <nav className="text-xs text-slate-500 mb-6">
-          <Link href="/calendar" className="hover:text-rose-600">
+      <article className="max-w-[1700px] mx-auto px-5 py-12 bg-background text-ink">
+        <nav className="text-xs text-ink-muted mb-6">
+          <Link href="/calendar" className="hover:text-accent">
             引越しの日取りを選ぶ
           </Link>
           <span className="mx-2">/</span>
@@ -64,7 +64,7 @@ export function YearCalendarView({ cal }: { cal: YearlyCalendar }) {
           {eraYearLabel(year)}の天赦日・一粒万倍日と、引越しに向く日
         </h1>
 
-        <p className="mt-5 max-w-[70ch] text-sm leading-relaxed text-slate-700">
+        <p className="mt-5 max-w-[70ch] text-sm leading-relaxed text-ink">
           {year}年の天赦日は<b>{cal.tensha.length}日</b>、一粒万倍日は
           <b>{cal.totals.ichiryumanbai}日</b>、大安は<b>{cal.totals.taian}日</b>
           あります。天赦日のうち、仏滅・赤口と重ならず土用（間日を除く）にも掛からないのは
@@ -79,21 +79,21 @@ export function YearCalendarView({ cal }: { cal: YearlyCalendar }) {
           同じ条件で大安・一粒万倍日まで広げると、引越しに向く日は年間で
           <b>{cal.totals.recommended}日</b>になります。
         </p>
-        <p className="mt-3 max-w-[70ch] text-sm leading-relaxed text-slate-700">
+        <p className="mt-3 max-w-[70ch] text-sm leading-relaxed text-ink">
           このページは、月ごとの頁と同じ計算を1年ぶん並べたものです。日の吉は誰にとっても同じですが、方位は本命星と出発地で変わります。日が決まったら、向きは別に確かめてください。
         </p>
 
         <section className="mt-10">
-          <h2 className="text-xl font-bold font-serif border-b border-slate-300 pb-2">
+          <h2 className="text-xl font-bold font-serif border-b border-theme-border pb-2">
             {year}年の天赦日
           </h2>
-          <p className="mt-4 max-w-[70ch] text-xs leading-relaxed text-slate-600">
+          <p className="mt-4 max-w-[70ch] text-xs leading-relaxed text-ink-muted">
             天赦日は季節（節月）と日の干支の組み合わせで決まり、年に5〜6回あります。暦の上で最上の吉日とされますが、六曜や土用とは別に決まるため、仏滅や土用と重なる年もあります。右端の列は、このサイトの「引越しに向く日」に入るかどうかです。
           </p>
           <div className="mt-4 overflow-x-auto">
             <table className="w-full min-w-[560px] text-left border-collapse text-sm">
               <thead>
-                <tr className="border-b border-slate-300 text-xs text-slate-500">
+                <tr className="border-b border-theme-border text-xs text-ink-muted">
                   <th className="py-2 pr-3 whitespace-nowrap">日付</th>
                   <th className="py-2 pr-3 whitespace-nowrap">六曜</th>
                   <th className="py-2 pr-3 whitespace-nowrap">重なる暦注</th>
@@ -102,14 +102,14 @@ export function YearCalendarView({ cal }: { cal: YearlyCalendar }) {
               </thead>
               <tbody>
                 {cal.tensha.map((t) => (
-                  <tr key={t.day.date} className="border-b border-slate-200">
+                  <tr key={t.day.date} className="border-b border-theme-border">
                     <td className="py-2 pr-3 font-bold whitespace-nowrap">
                       {yearDayLabel(t.day, false)}
                     </td>
                     <td className="py-2 pr-3 whitespace-nowrap">
                       {t.day.rokuyo}
                     </td>
-                    <td className="py-2 pr-3 text-slate-600">
+                    <td className="py-2 pr-3 text-ink-muted">
                       {[
                         ...t.day.luckyLabels.filter((l) => l !== "天赦日"),
                         t.day.inDoyou
@@ -122,7 +122,7 @@ export function YearCalendarView({ cal }: { cal: YearlyCalendar }) {
                         .join("・") || "—"}
                     </td>
                     <td
-                      className={`py-2 ${t.usable ? "text-emerald-800 font-bold" : "text-rose-800"}`}
+                      className={`py-2 ${t.usable ? "text-theme-good font-bold" : "text-theme-bad"}`}
                     >
                       {t.usable ? "入る" : `入らない（${t.reason}）`}
                     </td>
@@ -131,11 +131,11 @@ export function YearCalendarView({ cal }: { cal: YearlyCalendar }) {
               </tbody>
             </table>
           </div>
-          <p className="mt-3 text-xs text-slate-500">
+          <p className="mt-3 text-xs text-ink-muted">
             決まり方と、方位の凶を打ち消さない理由は
             <Link
               href="/blog/tensha-and-ichiryumanbai-for-moving-day"
-              className="text-rose-600 hover:underline"
+              className="text-accent hover:underline"
             >
               天赦日・一粒万倍日は引越しの日取りにどう関係するのか
             </Link>
@@ -144,16 +144,16 @@ export function YearCalendarView({ cal }: { cal: YearlyCalendar }) {
         </section>
 
         <section className="mt-10">
-          <h2 className="text-xl font-bold font-serif border-b border-slate-300 pb-2">
+          <h2 className="text-xl font-bold font-serif border-b border-theme-border pb-2">
             月ごとの引越しに向く日・一粒万倍日・大安
           </h2>
-          <p className="mt-4 max-w-[70ch] text-xs leading-relaxed text-slate-600">
+          <p className="mt-4 max-w-[70ch] text-xs leading-relaxed text-ink-muted">
             「引越しに向く日」は、仏滅・赤口を外し、土用は間日以外を外したうえで、大安か天赦日・一粒万倍日が重なる日です。月の名前から、その月の六曜と干支の一覧、本命星ごとの吉方位へ進めます。
           </p>
           <div className="mt-4 overflow-x-auto">
             <table className="w-full min-w-[720px] text-left border-collapse text-xs">
               <thead>
-                <tr className="border-b border-slate-300 text-slate-500">
+                <tr className="border-b border-theme-border text-ink-muted">
                   <th className="py-2 pr-3 whitespace-nowrap">月</th>
                   <th className="py-2 pr-3">引越しに向く日</th>
                   <th className="py-2 pr-3">一粒万倍日</th>
@@ -166,14 +166,14 @@ export function YearCalendarView({ cal }: { cal: YearlyCalendar }) {
                   return (
                     <tr
                       key={m.month}
-                      className="border-b border-slate-200 align-top"
+                      className="border-b border-theme-border align-top"
                     >
                       <td className="py-2 pr-3 font-bold whitespace-nowrap">
                         {monthPages.has(slug) ? (
                           <Link
                             prefetch={false}
                             href={`/calendar/${slug}`}
-                            className="text-rose-600 hover:underline"
+                            className="text-accent hover:underline"
                           >
                             {m.month}月
                           </Link>
@@ -181,45 +181,43 @@ export function YearCalendarView({ cal }: { cal: YearlyCalendar }) {
                           `${m.month}月`
                         )}
                       </td>
-                      <td className="py-2 pr-3 text-emerald-800">
+                      <td className="py-2 pr-3 text-theme-good">
                         {dayList(m.recommended, (d) =>
                           d.luckyLabels.includes("天赦日") ? "（天赦日）" : "",
                         )}
                       </td>
-                      <td className="py-2 pr-3 text-slate-700">
+                      <td className="py-2 pr-3 text-ink">
                         {dayList(m.ichiryumanbai)}
                       </td>
-                      <td className="py-2 text-slate-700">
-                        {dayList(m.taian)}
-                      </td>
+                      <td className="py-2 text-ink">{dayList(m.taian)}</td>
                     </tr>
                   );
                 })}
               </tbody>
             </table>
           </div>
-          <p className="mt-3 text-xs text-slate-500">
+          <p className="mt-3 text-xs text-ink-muted">
             一粒万倍日と大安の列は暦のままの一覧で、仏滅・赤口や土用と重なる日も含みます。候補にするのは左の「引越しに向く日」の列です。
           </p>
         </section>
 
         <section className="mt-10 grid gap-8 xl:grid-cols-2">
           <div>
-            <h2 className="text-xl font-bold font-serif border-b border-slate-300 pb-2">
+            <h2 className="text-xl font-bold font-serif border-b border-theme-border pb-2">
               {year}年の土用
             </h2>
-            <ul className="mt-4 space-y-1.5 text-sm text-slate-700">
+            <ul className="mt-4 space-y-1.5 text-sm text-ink">
               {cal.doyou.map((p, i) => (
                 <li key={p.start}>
                   <b>{SEASONS[i] ?? ""}の土用</b>：{periodLabel(p)}
                 </li>
               ))}
             </ul>
-            <p className="mt-3 max-w-[70ch] text-xs leading-relaxed text-slate-600">
+            <p className="mt-3 max-w-[70ch] text-xs leading-relaxed text-ink-muted">
               立春・立夏・立秋・立冬の前のおよそ18日間です。土を動かすことや移転を避けるとされ、間日を除いて候補から外しています。期間と方位の凶の違いは
               <Link
                 href="/blog/doyou-and-doyousatsu"
-                className="text-rose-600 hover:underline"
+                className="text-accent hover:underline"
               >
                 土用と土用殺は何が違う？
               </Link>
@@ -227,10 +225,10 @@ export function YearCalendarView({ cal }: { cal: YearlyCalendar }) {
             </p>
           </div>
           <div>
-            <h2 className="text-xl font-bold font-serif border-b border-slate-300 pb-2">
+            <h2 className="text-xl font-bold font-serif border-b border-theme-border pb-2">
               {year}年に、日を選んでも変わらない方位
             </h2>
-            <p className="mt-4 max-w-[70ch] text-sm leading-relaxed text-slate-700">
+            <p className="mt-4 max-w-[70ch] text-sm leading-relaxed text-ink">
               {year}年の年盤は<b>{STAR_NAMES[cal.centerStar]}</b>が中宮です。
               {cal.sharedBad.length > 0 ? (
                 <>
@@ -249,13 +247,13 @@ export function YearCalendarView({ cal }: { cal: YearlyCalendar }) {
             <div className="mt-4 flex flex-wrap gap-2">
               <Link
                 href={`/houi/${year}`}
-                className="px-4 py-2 rounded-full border border-slate-300 bg-white text-slate-800 font-bold text-xs hover:border-rose-400 transition-colors"
+                className="px-4 py-2 rounded-full border border-theme-border bg-theme-surface text-ink font-bold text-xs hover:border-accent"
               >
                 {year}年の吉方位・凶方位を本命星別に見る
               </Link>
               <Link
                 href="/houi/relocation-calendar"
-                className="px-4 py-2 rounded-full border border-slate-300 bg-white text-slate-800 font-bold text-xs hover:border-rose-400 transition-colors"
+                className="px-4 py-2 rounded-full border border-theme-border bg-theme-surface text-ink font-bold text-xs hover:border-accent"
               >
                 生年月日から引越しできる期間を出す
               </Link>
@@ -264,19 +262,17 @@ export function YearCalendarView({ cal }: { cal: YearlyCalendar }) {
         </section>
 
         <section className="mt-10">
-          <h2 className="text-xl font-bold font-serif border-b border-slate-300 pb-2">
+          <h2 className="text-xl font-bold font-serif border-b border-theme-border pb-2">
             よくある質問
           </h2>
           <dl className="mt-4 grid gap-5 xl:grid-cols-2">
             {faq.map((f) => (
               <div
                 key={f.question}
-                className="rounded-2xl border border-slate-200 bg-white p-5"
+                className="rounded-2xl border border-theme-border bg-theme-surface p-5"
               >
-                <dt className="text-sm font-bold text-slate-900">
-                  {f.question}
-                </dt>
-                <dd className="mt-2 text-sm leading-relaxed text-slate-700">
+                <dt className="text-sm font-bold text-ink">{f.question}</dt>
+                <dd className="mt-2 text-sm leading-relaxed text-ink">
                   {f.answer}
                 </dd>
               </div>
@@ -284,23 +280,23 @@ export function YearCalendarView({ cal }: { cal: YearlyCalendar }) {
           </dl>
         </section>
 
-        <section className="mt-10 rounded-2xl border border-amber-200 bg-amber-50 p-5">
-          <h2 className="text-sm font-bold text-amber-900">
+        <section className="mt-10 rounded-2xl border border-theme-border bg-theme-gold-soft p-5">
+          <h2 className="text-sm font-bold text-theme-gold">
             自分の生年月日で確かめる
           </h2>
-          <p className="mt-3 max-w-[70ch] text-xs text-amber-900 leading-relaxed">
+          <p className="mt-3 max-w-[70ch] text-xs text-theme-gold leading-relaxed">
             このページは暦だけで決まる情報をまとめたものです。天中殺と本命殺は生年月日で変わり、方位は出発地から見た向きで決まります。日取りと方位を自分の条件で確かめるには、生年月日と現住地を入れてください。
           </p>
           <div className="mt-4 flex flex-wrap gap-2">
             <Link
               href="/calendar"
-              className="px-5 py-2.5 rounded-full bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs transition-colors"
+              className="px-5 py-2.5 rounded-full bg-accent hover:brightness-110 text-on-accent font-bold text-xs"
             >
               生年月日を入れて吉日を出す
             </Link>
             <Link
               href="/relocation/arbitrage"
-              className="px-5 py-2.5 rounded-full border border-amber-300 bg-white text-amber-900 font-bold text-xs hover:border-amber-500 transition-colors"
+              className="px-5 py-2.5 rounded-full border border-theme-border bg-theme-surface text-theme-gold font-bold text-xs hover:border-accent"
             >
               {coreRouteLabel("/relocation/arbitrage")}
             </Link>
@@ -312,7 +308,7 @@ export function YearCalendarView({ cal }: { cal: YearlyCalendar }) {
         </div>
 
         <section className="mt-10">
-          <h2 className="text-xl font-bold font-serif border-b border-slate-300 pb-2">
+          <h2 className="text-xl font-bold font-serif border-b border-theme-border pb-2">
             ほかの年
           </h2>
           <div className="mt-4 flex flex-wrap gap-2">
@@ -321,10 +317,10 @@ export function YearCalendarView({ cal }: { cal: YearlyCalendar }) {
                 prefetch={false}
                 key={y}
                 href={`/calendar/${y}`}
-                className={`px-3 py-1.5 rounded-full border text-xs font-bold transition-colors ${
+                className={`px-3 py-1.5 rounded-full border text-xs font-bold ${
                   y === year
-                    ? "border-rose-400 bg-rose-50 text-rose-700"
-                    : "border-slate-300 bg-white text-slate-700 hover:border-rose-400"
+                    ? "border-accent bg-theme-accent-soft text-accent"
+                    : "border-theme-border bg-theme-surface text-ink hover:border-accent"
                 }`}
               >
                 {y}年
