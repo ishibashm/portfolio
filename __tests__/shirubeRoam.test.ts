@@ -14,10 +14,13 @@ import {
   createInitialWanderState,
   createSeededRandom,
   evaluateHopPosition,
+  getHomeRightMarginPx,
   getWanderBounds,
   getWanderConfig,
+  isAtHome,
   planHopToPerch,
   reconcilePerch,
+  returnShirubeHome,
   startPointingToward,
   stepWanderState,
   type RoamContext,
@@ -662,6 +665,170 @@ describe("ムーンウォークしない・基本はその場で足踏み", () =
       expect(Math.abs(dx)).toBeLessThanOrEqual(config.maxStepDriftPx);
       if (dx !== 0) expect(dx > 0 ? "right" : "left").toBe(s.facing);
     }
+  });
+});
+
+describe.each([1280, 390])("画面幅 %ipx の端での歩行", (width) => {
+  const { width: actorWidth, height: actorHeight } = getDefaultActorSize(
+    width < 640,
+  );
+  const bounds = getWanderBounds(
+    width,
+    actorWidth,
+    16,
+    getHomeRightMarginPx(width),
+  );
+  const config = getWanderConfig(width);
+  const random = () => 0.99;
+  const base = createInitialWanderState(bounds, config, random, 800);
+  const roam: RoamContext = {
+    perches: [
+      {
+        id: "bottom",
+        kind: "bottom",
+        left: bounds.minX,
+        right: bounds.maxX + actorWidth,
+        top: base.y,
+      },
+    ],
+    actorWidth,
+    actorHeight,
+    viewportHeight: base.y,
+  };
+
+  it.each(["left", "right"] as const)(
+    "%s へ歩くと端の手前で止まる",
+    (facing) => {
+      const edge = facing === "left" ? bounds.minX : bounds.maxX;
+      const dir = facing === "left" ? -1 : 1;
+      const stopX = edge - dir * config.walkEdgeInsetPx;
+      const chooseDirection = facing === "left" ? () => 0.49 : random;
+      let state = stepWanderState(
+        {
+          ...base,
+          x: stopX - dir * config.minStridePx,
+          facing,
+          remainingMs: 0,
+        },
+        16,
+        bounds,
+        config,
+        chooseDirection,
+      );
+      expect(state).toMatchObject({ phase: "walking", targetX: stopX, facing });
+      for (let i = 0; i < 100 && state.phase === "walking"; i += 1) {
+        const next = stepWanderState(state, 250, bounds, config, random);
+        expect(dir * (next.x - state.x)).toBeGreaterThan(0);
+        expect(dir * (edge - next.x)).toBeGreaterThan(0);
+        state = next;
+      }
+      expect(state).toMatchObject({ phase: "paused", x: stopX });
+    },
+  );
+
+  it.each(["left", "right"] as const)(
+    "%s の端と歩行の停止位置からは内側へ向かう",
+    (facing) => {
+      const edge = facing === "left" ? bounds.minX : bounds.maxX;
+      const dir = facing === "left" ? -1 : 1;
+      for (const x of [edge, edge - dir * config.walkEdgeInsetPx]) {
+        const next = stepWanderState(
+          { ...base, x, facing, remainingMs: 0 },
+          16,
+          bounds,
+          config,
+          random,
+        );
+        expect(next).toMatchObject({ phase: "turning", x });
+        expect(dir * (next.targetX - x)).toBeLessThan(0);
+      }
+    },
+  );
+
+  it("床が狭い場合や、床が縮んで進めなくなった場合は歩かない", () => {
+    const narrow = { minX: bounds.minX, maxX: bounds.minX + 10 };
+    const x = narrow.maxX;
+    for (const phase of ["walking", "turning", "paused"] as const) {
+      expect(
+        stepWanderState(
+          {
+            ...base,
+            x,
+            targetX: bounds.maxX,
+            facing: "right",
+            phase,
+            remainingMs: 0,
+          },
+          16,
+          narrow,
+          config,
+          random,
+        ),
+      ).toMatchObject({ x, targetX: x, phase: "paused" });
+    }
+  });
+
+  it("帰宅時は手前で正面に切り替わり、正面のまま定位置に収まる", () => {
+    const stopX = bounds.maxX - config.walkEdgeInsetPx;
+    let state = stepWanderState(
+      {
+        ...base,
+        x: stopX - 40,
+        facing: "left",
+        remainingMs: 0,
+        homeReturnInMs: 1,
+      },
+      16,
+      bounds,
+      config,
+      random,
+      roam,
+    );
+    expect(state).toMatchObject({
+      phase: "turning",
+      facing: "right",
+      targetX: stopX,
+    });
+    state = stepWanderState(
+      state,
+      config.turnBeatMs,
+      bounds,
+      config,
+      random,
+      roam,
+    );
+    expect(state).toMatchObject({
+      phase: "walking",
+      facing: "right",
+      targetX: stopX,
+    });
+    for (let i = 0; i < 30 && state.phase === "walking"; i += 1) {
+      expect(state.x).toBeLessThan(stopX);
+      state = stepWanderState(state, 250, bounds, config, random, roam);
+    }
+    expect(state).toMatchObject({ phase: "paused", x: stopX });
+    for (let i = 0; i < 30 && state.x < bounds.maxX; i += 1) {
+      const next = stepWanderState(state, 16, bounds, config, random, roam);
+      expect(next.phase).toBe("paused");
+      expect(next.x).toBeGreaterThan(state.x);
+      expect(next.x).toBeLessThanOrEqual(bounds.maxX);
+      state = next;
+    }
+    expect(state).toMatchObject({
+      phase: "paused",
+      x: bounds.maxX,
+      homeReturnInMs: null,
+    });
+    expect(isAtHome(state, roam, config)).toBe(true);
+  });
+
+  it("すでに歩行の停止位置にいるときは正面のまま帰宅を始める", () => {
+    const x = bounds.maxX - config.walkEdgeInsetPx;
+    expect(returnShirubeHome({ ...base, x }, roam, config)).toMatchObject({
+      phase: "paused",
+      x,
+      targetX: bounds.maxX,
+    });
   });
 });
 

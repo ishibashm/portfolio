@@ -89,6 +89,8 @@ export interface WanderState {
    * null / undefined は定位置にいる（または戻る途中）。
    */
   homeReturnInMs?: number | null;
+  /** 下端を歩いて帰宅し、歩行を終えてから定位置に収まる */
+  returningOnBottom?: boolean;
 }
 
 export interface RoamContext {
@@ -105,6 +107,8 @@ export interface WanderConfig {
    * 拡大前の足運びを基準にした速度（PC 約 26 / スマホ 約 14）
    */
   speedPxPerSec: number;
+  /** 横向きの足の振りを収めるため、歩行時だけ床の左右に残すすき間（px） */
+  walkEdgeInsetPx: number;
   /** 1 回の移動距離の下限（px） */
   minStridePx: number;
   /** 1 回の移動距離の上限（px） */
@@ -254,6 +258,7 @@ export function getWanderConfig(
       };
   return {
     ...base,
+    walkEdgeInsetPx: isCompact ? 8 : 16,
     // すり足: スマホ 9px/秒・PC 16px/秒（4 コマ 0.96 秒で進む距離に合わせる）
     speedPxPerSec:
       gait === "shuffle" ? (isCompact ? 9 : 16) : base.speedPxPerSec,
@@ -337,6 +342,7 @@ export function startStepping(
     targetX,
     facing,
     phase: "stepping",
+    returningOnBottom: false,
     remainingMs: stepMs,
     glancedDuringPause: false,
     recentActions: pushAction(state.recentActions, "step"),
@@ -378,23 +384,48 @@ export function clampX(x: number, bounds: WanderBounds): number {
   return Math.min(bounds.maxX, Math.max(bounds.minX, x));
 }
 
+function getWalkBounds(
+  bounds: WanderBounds,
+  config: WanderConfig,
+): WanderBounds {
+  return {
+    minX: bounds.minX + config.walkEdgeInsetPx,
+    maxX: bounds.maxX - config.walkEdgeInsetPx,
+  };
+}
+
+/** 安全な歩行範囲を確保し、床の変化で進行方向が逆になるときは止まる。 */
+function limitWalkTarget(
+  x: number,
+  targetX: number,
+  facing: WanderFacing,
+  bounds: WanderBounds,
+  config: WanderConfig,
+): number {
+  const walkBounds = getWalkBounds(bounds, config);
+  if (walkBounds.maxX <= walkBounds.minX) return x;
+  const target = clampX(targetX, walkBounds);
+  return (facing === "right" ? target > x : target < x) ? target : x;
+}
+
 export function pickNextTargetX(
   currentX: number,
   bounds: WanderBounds,
   config: WanderConfig,
   random: () => number = Math.random,
 ): number {
-  const span = bounds.maxX - bounds.minX;
-  if (span <= 8) return bounds.minX;
+  const walkBounds = getWalkBounds(bounds, config);
+  const span = walkBounds.maxX - walkBounds.minX;
+  if (span <= 0) return clampX(currentX, bounds);
 
   const stride =
     config.minStridePx +
     random() * Math.max(0, config.maxStridePx - config.minStridePx);
 
   const canGoLeft =
-    currentX - bounds.minX >= Math.min(config.minStridePx, span * 0.4);
+    currentX - walkBounds.minX >= Math.min(config.minStridePx, span * 0.4);
   const canGoRight =
-    bounds.maxX - currentX >= Math.min(config.minStridePx, span * 0.4);
+    walkBounds.maxX - currentX >= Math.min(config.minStridePx, span * 0.4);
 
   let dir: -1 | 1;
   if (canGoLeft && canGoRight) {
@@ -405,7 +436,7 @@ export function pickNextTargetX(
     dir = 1;
   }
 
-  return clampX(currentX + dir * stride, bounds);
+  return clampX(currentX + dir * stride, walkBounds);
 }
 
 /** 要素の床の上で歩く先を選ぶ。本文を塞がないよう左右 20% の端を優先する。 */
@@ -422,7 +453,8 @@ function pickTargetOnPerch(
   }
   const mid = (bounds.minX + bounds.maxX) * 0.5;
   const preferSide = currentX < mid ? "right" : "left";
-  return pickPerchLandingX(perch, actorWidth, random, preferSide);
+  const targetX = pickPerchLandingX(perch, actorWidth, random, preferSide);
+  return limitWalkTarget(currentX, targetX, preferSide, bounds, config);
 }
 
 export function createInitialWanderState(
@@ -654,6 +686,7 @@ export function reconcilePerch(
       ...state,
       facing: toX >= state.x ? "right" : "left",
       phase: "hopping",
+      returningOnBottom: false,
       remainingMs: 0,
       lastPerchId: state.perchId,
       perchElapsedMs: 0,
@@ -674,6 +707,7 @@ export function reconcilePerch(
       ...state,
       facing: toX >= state.x ? "right" : "left",
       phase: "hopping",
+      returningOnBottom: false,
       remainingMs: 0,
       hop,
     };
@@ -705,6 +739,7 @@ export function startPointingToward(
   roam: RoamContext,
   durationMs = 7000,
 ): WanderState {
+  state = { ...state, returningOnBottom: false };
   const { perches, actorWidth, actorHeight } = roam;
   const targetCenterX = (targetRect.left + targetRect.right) * 0.5;
 
@@ -916,6 +951,7 @@ function startReturnHome(
 ): WanderState {
   const back: Partial<WanderState> = {
     homeReturnInMs: null,
+    returningOnBottom: false,
     glancedDuringPause: false,
     recentActions: pushAction(
       state.recentActions,
@@ -923,13 +959,18 @@ function startReturnHome(
     ),
   };
   if (currentPerch.kind === "bottom") {
-    const facing: WanderFacing = homeX >= state.x ? "right" : "left";
-    const needsTurn = facing !== state.facing;
+    const bounds = getPerchBounds(currentPerch, roam.actorWidth);
+    const targetX = limitWalkTarget(state.x, homeX, "right", bounds, config);
+    if (targetX === state.x) {
+      return startHomeSettle({ ...state, ...back }, homeX, config);
+    }
+    const needsTurn = state.facing !== "right";
     return {
       ...state,
       ...back,
-      targetX: homeX,
-      facing,
+      targetX,
+      facing: "right",
+      returningOnBottom: true,
       phase: needsTurn ? "turning" : "walking",
       remainingMs: needsTurn ? config.turnBeatMs : 0,
       hop: null,
@@ -954,6 +995,24 @@ function startReturnHome(
     remainingMs: 0,
     lastPerchId: currentPerch.id,
     hop,
+  };
+}
+
+/** 最後の数 px は正面の静止ポーズで定位置に寄る。 */
+function startHomeSettle(
+  state: WanderState,
+  homeX: number,
+  config: WanderConfig,
+): WanderState {
+  return {
+    ...state,
+    targetX: homeX,
+    phase: "paused",
+    remainingMs: config.minPauseMs,
+    glancedDuringPause: false,
+    returningOnBottom: state.x !== homeX,
+    homeReturnInMs: null,
+    hop: null,
   };
 }
 
@@ -1075,18 +1134,21 @@ function transitionAfterRelocateChoice(
       config,
       random,
     );
-    const nextFacing: WanderFacing = nextTarget >= state.x ? "right" : "left";
-    const needsTurn = nextFacing !== state.facing;
-    return {
-      ...state,
-      targetX: nextTarget,
-      facing: nextFacing,
-      phase: needsTurn ? "turning" : "walking",
-      remainingMs: needsTurn ? config.turnBeatMs : 0,
-      glancedDuringPause: false,
-      recentActions: nextRecent,
-      hop: null,
-    };
+    if (nextTarget !== state.x) {
+      const nextFacing: WanderFacing = nextTarget > state.x ? "right" : "left";
+      const needsTurn = nextFacing !== state.facing;
+      return {
+        ...state,
+        targetX: nextTarget,
+        facing: nextFacing,
+        returningOnBottom: false,
+        phase: needsTurn ? "turning" : "walking",
+        remainingMs: needsTurn ? config.turnBeatMs : 0,
+        glancedDuringPause: false,
+        recentActions: nextRecent,
+        hop: null,
+      };
+    }
   }
 
   const pauseMs =
@@ -1117,7 +1179,8 @@ export function stepWanderState(
   const isMovingPhase =
     prev.phase === "walking" ||
     prev.phase === "hopping" ||
-    prev.phase === "stepping";
+    prev.phase === "stepping" ||
+    (prev.phase === "paused" && prev.returningOnBottom);
   const dt = isMovingPhase
     ? Math.min(Math.max(0, deltaMs), 250)
     : Math.max(0, deltaMs);
@@ -1127,7 +1190,9 @@ export function stepWanderState(
   const reconciled = roam ? reconcilePerch(prev, roam, random) : prev;
   // 移動の時間までの残りは、その場で過ごしている間だけ減らす
   const relocating =
-    reconciled.phase === "walking" || reconciled.phase === "hopping";
+    reconciled.phase === "walking" ||
+    reconciled.phase === "hopping" ||
+    reconciled.returningOnBottom;
   // 定位置にいる間は「次に出かけるまで」、離れている間は「戻るまで」を数える
   const away = reconciled.homeReturnInMs != null;
   const synced: WanderState = {
@@ -1295,13 +1360,20 @@ export function stepWanderState(
     };
   }
 
-  if (synced.phase === "turning") {
+  const walkTarget = limitWalkTarget(
+    clampedX,
+    synced.returningOnBottom ? activeBounds.maxX : clampedTarget,
+    synced.facing,
+    activeBounds,
+    config,
+  );
+  if (synced.phase === "turning" && walkTarget !== clampedX) {
     const remaining = synced.remainingMs - dt;
     if (remaining > 0) {
       return {
         ...synced,
         x: clampedX,
-        targetX: clampedTarget,
+        targetX: walkTarget,
         remainingMs: remaining,
         perchElapsedMs,
       };
@@ -1309,7 +1381,7 @@ export function stepWanderState(
     return {
       ...synced,
       x: clampedX,
-      targetX: clampedTarget,
+      targetX: walkTarget,
       phase: "walking",
       remainingMs: 0,
       perchElapsedMs,
@@ -1340,6 +1412,15 @@ export function stepWanderState(
   }
 
   if (synced.phase === "paused") {
+    if (synced.returningOnBottom) {
+      const homeX = activeBounds.maxX;
+      const x = Math.min(
+        homeX,
+        clampedX + (config.speedPxPerSec * 3 * dt) / 1000,
+      );
+      return { ...synced, x, targetX: homeX, returningOnBottom: x < homeX };
+    }
+
     const remaining = synced.remainingMs - dt;
 
     // 要素の床に 8 秒以上いたら切り上げて次へ移る
@@ -1397,7 +1478,16 @@ export function stepWanderState(
     }
 
     const nextTarget = pickNextTargetX(clampedX, activeBounds, config, random);
-    const nextFacing: WanderFacing = nextTarget >= clampedX ? "right" : "left";
+    if (nextTarget === clampedX) {
+      return {
+        ...synced,
+        x: clampedX,
+        targetX: clampedX,
+        remainingMs: config.minPauseMs,
+        perchElapsedMs,
+      };
+    }
+    const nextFacing: WanderFacing = nextTarget > clampedX ? "right" : "left";
     const needsTurn = nextFacing !== synced.facing;
 
     return {
@@ -1405,6 +1495,7 @@ export function stepWanderState(
       x: clampedX,
       targetX: nextTarget,
       facing: nextFacing,
+      returningOnBottom: false,
       phase: needsTurn ? "turning" : "walking",
       remainingMs: needsTurn ? config.turnBeatMs : 0,
       glancedDuringPause: false,
@@ -1412,17 +1503,24 @@ export function stepWanderState(
     };
   }
 
-  // walking
-  const distance = clampedTarget - clampedX;
+  // walking（向き直っている間に行き先がなくなった場合もここで止まる）
+  const distance = walkTarget - clampedX;
   const step = (config.speedPxPerSec * dt) / 1000;
 
   if (Math.abs(distance) <= step) {
+    if (synced.returningOnBottom) {
+      return startHomeSettle(
+        { ...synced, x: walkTarget, perchElapsedMs },
+        activeBounds.maxX,
+        config,
+      );
+    }
     if (roam && currentPerch) {
       // 目的地に着いたら、そのまま次の行動（ひと休み・手を振る・別床へジャンプなど）を選ぶ
       const arrived: WanderState = {
         ...synced,
-        x: clampedTarget,
-        targetX: clampedTarget,
+        x: walkTarget,
+        targetX: walkTarget,
         perchElapsedMs,
       };
       // 要素の床で上限超過なら即ジャンプ、それ以外は軽く立ち止まるか greet/sit
@@ -1482,8 +1580,8 @@ export function stepWanderState(
         random() * Math.max(0, config.maxGreetMs - config.minGreetMs);
       return {
         ...synced,
-        x: clampedTarget,
-        targetX: clampedTarget,
+        x: walkTarget,
+        targetX: walkTarget,
         facing: synced.facing,
         phase: "greeting",
         remainingMs: greetMs,
@@ -1495,8 +1593,8 @@ export function stepWanderState(
       random() * Math.max(0, config.maxPauseMs - config.minPauseMs);
     return {
       ...synced,
-      x: clampedTarget,
-      targetX: clampedTarget,
+      x: walkTarget,
+      targetX: walkTarget,
       facing: synced.facing,
       phase: "paused",
       remainingMs: pauseMs,
@@ -1508,7 +1606,7 @@ export function stepWanderState(
   return {
     ...synced,
     x: nextX,
-    targetX: clampedTarget,
+    targetX: walkTarget,
     facing: distance > 0 ? "right" : "left",
     perchElapsedMs,
   };
