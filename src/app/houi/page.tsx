@@ -144,13 +144,12 @@ export default function Page() {
             吉方位の調べ方（先に結論）
           </h2>
           <p className="mt-3 max-w-[70ch] text-sm leading-relaxed text-ink">
-            吉方位の調べ方は、生まれ年から<b>本命星</b>を出し、その年の
-            <b>年盤</b>（引越しでは動く月の<b>月盤</b>
-            も）で相性のよい星がいる方位を候補にし、五黄殺・暗剣殺・歳破や本命殺などの凶方位を除く順です。九星気学の一年は1月1日ではなく
-            <b>立春</b>
-            で切り替わるため、立春前の生まれは前年の星で見ます。ここに書いた吉凶は
-            <b>占い上の目安であり、科学的な効果を保証するものではない</b>
-            ため、引越しの費用や契約、通勤といった事実とは分けて考えます。
+            生まれ年から<b>本命星</b>を調べ、<b>年盤</b>と引越し月の<b>月盤</b>
+            で相性のよい方位を探します。五黄殺・暗剣殺・歳破や本命殺などの方位は候補から外します。
+          </p>
+          <p className="mt-2 max-w-[70ch] text-xs leading-relaxed text-ink">
+            吉凶は<b>占い上の目安であり、科学的な効果を保証するものではない</b>
+            ため、費用や契約、通勤とは分けて考えてください。
           </p>
           {sharedBadText && (
             <p className="mt-2 max-w-[70ch] text-xs leading-relaxed text-ink-muted">
@@ -159,84 +158,119 @@ export default function Page() {
             </p>
           )}
           <p className="mt-3 max-w-[70ch] text-xs leading-relaxed text-ink">
-            無料・入力なしで早見表を見られます。生年月日を入れると、端末内の計算だけで本命星がわかります。今年と今月の吉方位は、本命星別ページで確認できます（
-            {STARS.map((s, idx) => (
-              <span key={s}>
-                {idx > 0 && " / "}
+            無料・入力なしで早見表を見られます。生年月日を入力すると、端末内の計算だけで本命星がわかります。
+            今年と今月の吉方位は、本命星別ページで確認できます。
+          </p>
+          <ul className="mt-2 flex flex-wrap gap-2">
+            {STARS.map((s) => (
+              <li key={s}>
                 <Link
                   prefetch={false}
                   href={`/houi/${year}/${s}`}
-                  className="font-bold text-accent underline hover:text-accent"
+                  className="block rounded-full border border-theme-border px-3 py-1.5 text-xs font-bold text-accent hover:underline"
                 >
                   {STAR_NAMES[s]}
                 </Link>
-              </span>
+              </li>
             ))}
-            ）。
-          </p>
+          </ul>
 
           <h3 className="mt-5 text-sm font-bold font-serif text-ink">
             このサイトでの調べ方の手順（入力なしで確認できます）
           </h3>
           <ol className="mt-2 max-w-[70ch] list-decimal pl-5 space-y-2 text-xs leading-relaxed text-ink">
             <li>
-              <b>下の早見表で生まれ年の本命星を出す：</b>
-              九星気学の一年は立春（2月3日から4日ごろ）で切り替わります。1月1日から立春の前日までの生まれは前年の星となり、立春当日は出生時刻で分かれます。
+              <b>本命星を調べる。</b> 下の早見表で生まれ年を探します。
+              <details className="mt-1 text-ink-muted">
+                <summary className="cursor-pointer font-semibold">
+                  立春の境目
+                </summary>
+                <p>
+                  九星気学の一年は立春（2月3〜4日ごろ）の瞬間に切り替わります。立春前の生まれは前年の星で見ます。立春当日は出生時刻で分かれます。
+                </p>
+              </details>
             </li>
             <li>
-              <b>その年の8方位の判定を見る：</b>星の名前の横にある「{years[0]}
-              年の吉方位を見る」（または本命星のリンク）から年別のページへ進み、8方位それぞれの判定（吉方位・平・五黄殺など）を確認します。
+              <b>年盤を見る。</b> 本命星別ページで8方位の判定を確認します。
             </li>
             <li>
-              <b>実際に動く月の月盤も見る：</b>
-              長く住む移動では、年ページで年盤を見たあと、同じページの「月ごとの吉方位」の一覧で実際に動く月の月盤も確認します。月の区切りは暦の1日ではなく節入りです。年で吉でも月で避けるべき方位になることがあります。
+              <b>月盤も見る。</b> 「月ごとの吉方位」で引越し月を確認します。
+              <details className="mt-1 text-ink-muted">
+                <summary className="cursor-pointer font-semibold">
+                  節入りと月盤の見方
+                </summary>
+                <p>
+                  月盤は節入りで切り替わります。年盤で吉でも、月盤では凶になる方位があります。
+                </p>
+              </details>
             </li>
             <li>
-              <b>凶方位を候補から外す：</b>
-              だれにも共通の凶方位（五黄殺・暗剣殺・歳破。月盤では歳破の代わりに月破）と、自分の本命殺・本命的殺に当たる方位は、占い上は候補から外します。
+              <b>凶方位を外す。</b> 共通の凶と、本命殺・本命的殺を確認します。
+              <details className="mt-1 text-ink-muted">
+                <summary className="cursor-pointer font-semibold">
+                  年盤と月盤の共通の凶
+                </summary>
+                <p>
+                  五黄殺・暗剣殺は年盤と月盤に共通です。年盤の歳破にあたる凶は、月盤では月破です。
+                </p>
+              </details>
             </li>
             <li>
-              <b>今住んでいる場所から真北で向きを見る：</b>
-              方位は今住んでいる場所（出発地）から見ます。このサイトの判定は地図と同じ真北が基準です。方位磁針（磁北）で測ると境目の近くでは隣の方位に見えることがあります。
+              <b>出発地から真北を基準に測る。</b> 今住んでいる場所から見ます。
+              <details className="mt-1 text-ink-muted">
+                <summary className="cursor-pointer font-semibold">
+                  磁北とのずれ
+                </summary>
+                <p>
+                  方位磁針の磁北と地図の真北にはずれがあり、境目では隣の方位に見えることがあります。
+                </p>
+              </details>
             </li>
             <li>
-              <b>その方位の街や動ける日を既存の道具で確かめる：</b>
-              費用や契約の事実は方位の判定とは別に見ます。候補の方位にある街と家賃相場は{" "}
-              <Link
-                href="/houi/area"
-                className="font-bold text-accent underline hover:text-accent"
-              >
-                エリア別の方位と相場
-              </Link>{" "}
-              や{" "}
-              <Link
-                href="/relocation/arbitrage"
-                className="font-bold text-accent underline hover:text-accent"
-              >
-                {coreRouteLabel("/relocation/arbitrage")}
-              </Link>
-              、動く時期の絞り込み（一般的な繁忙期や料金の傾向の案内を含む）は{" "}
-              <Link
-                href="/relocation/timing"
-                className="font-bold text-accent underline hover:text-accent"
-              >
-                {coreRouteLabel("/relocation/timing")}
-              </Link>
-              、六曜・天赦日・一粒万倍日・土用などの日取りは{" "}
-              <Link
-                href="/calendar"
-                className="font-bold text-accent underline hover:text-accent"
-              >
-                {coreRouteLabel("/calendar")}
-              </Link>{" "}
-              で確認できます。詳しい見方は{" "}
-              <Link
-                href="/guide/honmei"
-                className="underline hover:text-accent"
-              >
-                使い方ガイド（本命星と吉方位）
-              </Link>{" "}
-              にまとめています。
+              <b>街と日取りを調べる。</b> 候補の街や動ける日を絞ります。
+              <details className="mt-1 text-ink-muted">
+                <summary className="cursor-pointer font-semibold">
+                  街・時期・日取りの道具とガイド
+                </summary>
+                <p className="mt-1">
+                  候補の街と家賃相場は
+                  <Link
+                    href="/houi/area"
+                    className="font-bold text-accent underline hover:text-accent"
+                  >
+                    エリア別の方位と相場
+                  </Link>{" "}
+                  や{" "}
+                  <Link
+                    href="/relocation/arbitrage"
+                    className="font-bold text-accent underline hover:text-accent"
+                  >
+                    {coreRouteLabel("/relocation/arbitrage")}
+                  </Link>
+                  、動く時期の絞り込み（一般的な繁忙期や料金の傾向の案内を含む）は{" "}
+                  <Link
+                    href="/relocation/timing"
+                    className="font-bold text-accent underline hover:text-accent"
+                  >
+                    {coreRouteLabel("/relocation/timing")}
+                  </Link>
+                  、六曜・天赦日・一粒万倍日・土用などの日取りは{" "}
+                  <Link
+                    href="/calendar"
+                    className="font-bold text-accent underline hover:text-accent"
+                  >
+                    {coreRouteLabel("/calendar")}
+                  </Link>{" "}
+                  で確認できます。詳しい見方は{" "}
+                  <Link
+                    href="/guide/honmei"
+                    className="underline hover:text-accent"
+                  >
+                    使い方ガイド（本命星と吉方位）
+                  </Link>{" "}
+                  にまとめています。
+                </p>
+              </details>
             </li>
           </ol>
         </section>
@@ -253,7 +287,7 @@ export default function Page() {
             生まれ年から本命星を調べる
           </h2>
           <p className="mt-3 text-xs leading-relaxed text-ink-muted">
-            ※年の切り替わりは立春の瞬間（2月3〜4日ごろ）です。1月1日から立春の前日までに生まれた方は前年の本命星となり、立春当日生まれは出生時刻で分かれます。
+            立春前の生まれは前年の欄を見てください。
           </p>
           {/* 9 枚。1 列のままだと器を広げても札が伸びるだけなので、
               広い画面では折り返す。 */}
@@ -361,8 +395,10 @@ export default function Page() {
           <AdBanner />
         </div>
 
-        <section className="mt-8 rounded-2xl border border-slate-300 dark:border-theme-border bg-theme-surface p-5">
-          <h2 className="text-sm font-bold">算出方法が2種類あります</h2>
+        <details className="mt-8 rounded-2xl border border-slate-300 dark:border-theme-border bg-theme-surface p-5">
+          <summary className="cursor-pointer text-sm font-bold">
+            算出方法が2種類あります
+          </summary>
           <p className="mt-3 text-xs text-ink leading-relaxed">
             上の表は<b>一般的な九星気学</b>
             （9年周期）によるものです。このサイトのスキャナーには、木星の黄経から星を求める
@@ -377,7 +413,7 @@ export default function Page() {
             {STAR_NAMES[starForBirthYear(1980, "physical")]}
             になります。
           </p>
-        </section>
+        </details>
 
         {/*
           八宅の道具そのものは /houi/fengshui へ移した。ここに埋めたままだと
@@ -450,8 +486,10 @@ export default function Page() {
           </div>
         </section>
 
-        <section className="mt-10 rounded-2xl border border-slate-300 dark:border-theme-border bg-theme-surface p-5">
-          <h2 className="text-sm font-bold">用語について</h2>
+        <details className="mt-10 rounded-2xl border border-slate-300 dark:border-theme-border bg-theme-surface p-5">
+          <summary className="cursor-pointer text-sm font-bold">
+            用語について
+          </summary>
           <p className="mt-3 text-xs text-ink">
             方位と日取りを確認する順序は、
             <Link href="/guide" className="underline hover:text-accent">
@@ -505,7 +543,7 @@ export default function Page() {
               </dd>
             </div>
           </dl>
-        </section>
+        </details>
 
         <div className="mt-10 rounded-2xl border border-amber-200 dark:border-theme-border bg-amber-50 dark:bg-theme-gold-soft p-5">
           <p className="text-xs text-amber-900 dark:text-theme-gold leading-relaxed">
