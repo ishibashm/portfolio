@@ -8,7 +8,7 @@ import { description, path, title } from "./metadataValues";
 export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
-  alternates: { canonical: path },
+  alternates: { canonical: "/relocation/dashboard" },
   title,
   description,
   openGraph: pageOpenGraph(path, title, description),

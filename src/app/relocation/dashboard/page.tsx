@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { ActiveProfileBadge } from "@/components/profile/ActiveProfileBadge";
 import GuideCharacter from "@/components/guide/GuideCharacter";
 import { FaqJsonLd, WebPageJsonLd } from "@/components/JsonLd";
 import { buildRelocationDashboardSummary } from "@/lib/relocationDashboardSummary";
@@ -117,6 +118,7 @@ export default function DashboardPage() {
           <p className="text-sm text-ink-muted">
             プロフィールで生年月日と出発地を確認し、地図で目的地を指定できます。
           </p>
+          <ActiveProfileBadge purpose="今日の方位と時刻" className="my-3" />
           <DashboardTool />
         </section>
         <section>

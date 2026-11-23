@@ -1,7 +1,6 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import { ActiveProfileBadge } from "@/components/profile/ActiveProfileBadge";
 
 const SolarTimeClock = dynamic(
   () => import("@/components/SolarTimeClock").then((mod) => mod.SolarTimeClock),
@@ -20,10 +19,5 @@ function ClockPlaceholder() {
 }
 
 export default function DashboardTool() {
-  return (
-    <>
-      <ActiveProfileBadge purpose="今日の方位と時刻" className="my-3" />
-      <SolarTimeClock />
-    </>
-  );
+  return <SolarTimeClock />;
 }
