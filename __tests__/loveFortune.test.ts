@@ -57,6 +57,54 @@ describe("本命星別の今日の恋愛の目安", () => {
     }
   });
 
+  it("回座と吉方位の短い目安を方位順に返す", () => {
+    const { items } = buildLoveFortune(fixtureDate);
+    expect(items[8]).toMatchObject({
+      sitting: "西",
+      sittingKind: "commonUnlucky",
+      action: "会合や約束の外出先に",
+      luckyHints: [
+        { direction: "N", label: "北", hint: "発展・音・若さ" },
+        { direction: "S", label: "南", hint: "土台・地道さ" },
+        { direction: "SW", label: "南西", hint: "縁談・結婚" },
+        { direction: "NW", label: "北西", hint: "変化・節目" },
+      ],
+    });
+    expect(items[6]).toMatchObject({
+      sitting: "中宮",
+      sittingKind: "center",
+      action: "会合や約束の外出先に",
+    });
+  });
+
+  it("吉方位がないときは回座の種類に合う行動の目安を返す", () => {
+    const board = buildTodayBoard(fixtureDate);
+    const { items } = buildLoveFortuneFromBoard({
+      ...board,
+      stars: board.stars.map((star) =>
+        star.star === board.center ? { ...star, lucky: [] } : star,
+      ),
+    });
+    expect(items[1]).toMatchObject({
+      sitting: "南",
+      sittingKind: "normal",
+      action: "近場で過ごす、連絡をていねいに",
+      luckyHints: [],
+    });
+    expect(items[4]).toMatchObject({
+      sitting: "東",
+      sittingKind: "commonUnlucky",
+      action: "その方位への外出は控え、近場や家で連絡を",
+      luckyHints: [],
+    });
+    expect(items[6]).toMatchObject({
+      sitting: "中宮",
+      sittingKind: "center",
+      action: "近場や家でのやり取りをていねいに",
+      luckyHints: [],
+    });
+  });
+
   it("点数・順位・誇張・不安を煽る表現を含まず、七赤を恋愛の星と断定しない", () => {
     const forbidden = [
       /[0-9０-９]+[%％点位]/,
@@ -73,8 +121,14 @@ describe("本命星別の今日の恋愛の目安", () => {
     ]) {
       const result = buildLoveFortune(new Date(dateStr));
       for (const item of result.items) {
-        for (const pattern of forbidden) {
-          expect(item.text).not.toMatch(pattern);
+        for (const copy of [
+          item.text,
+          item.action,
+          ...item.luckyHints.map(({ hint }) => hint),
+        ]) {
+          for (const pattern of [...forbidden, /恋愛の星/]) {
+            expect(copy).not.toMatch(pattern);
+          }
         }
       }
       const seven = result.items.find((item) => item.star === 7)!;

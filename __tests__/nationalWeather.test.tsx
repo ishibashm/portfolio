@@ -262,6 +262,7 @@ it("地図と表をサーバー描画し、ホームでクエリ起点を受け�
   );
   const section = renderToStaticMarkup(await TodayOverview());
   expect(section).toContain("今日の天気と方位");
+  expect(section).toContain("今日の恋愛の目安");
   expect(section).not.toContain("<form");
   expect(section).not.toContain("<input");
   expect(section).not.toContain("<script");

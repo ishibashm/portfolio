@@ -6,6 +6,10 @@ export interface LoveFortuneItem {
   star: number;
   name: string;
   lucky: CompassDirection[];
+  sitting: string;
+  sittingKind: SittingKind;
+  action: string;
+  luckyHints: { direction: CompassDirection; label: string; hint: string }[];
   text: string;
   href: string;
 }
@@ -35,10 +39,22 @@ const SITTING_STAR_HINT: Record<number, string> = {
   9: "知性や名誉の象意",
 };
 
-type NoLuckyKind = "center" | "commonUnlucky" | "normal";
+const SHORT_STAR_HINT: Record<number, string> = {
+  1: "交わり・はじまり",
+  2: "土台・地道さ",
+  3: "発展・音・若さ",
+  4: "縁談・結婚",
+  5: "中心",
+  6: "主導・完成",
+  7: "会話・食事",
+  8: "変化・節目",
+  9: "知性・名誉",
+};
+
+type SittingKind = "center" | "commonUnlucky" | "normal";
 
 const NO_LUCKY_TEMPLATES: Record<
-  NoLuckyKind,
+  SittingKind,
   (placeLabel: string, hint: string) => string
 > = {
   center: (placeLabel, hint) =>
@@ -47,6 +63,12 @@ const NO_LUCKY_TEMPLATES: Record<
     `今日は吉方位はなし。${placeLabel}に回座し、${hint}。その方位への外出は控え、近場や家での連絡をていねいにするのが目安です。`,
   normal: (placeLabel, hint) =>
     `今日は吉方位はなし。${placeLabel}に回座し、${hint}。遠出は控え、近場で過ごしたり連絡をていねいにするのが目安です。`,
+};
+
+const NO_LUCKY_ACTION: Record<SittingKind, string> = {
+  center: "近場や家でのやり取りをていねいに",
+  commonUnlucky: "その方位への外出は控え、近場や家で連絡を",
+  normal: "近場で過ごす、連絡をていねいに",
 };
 
 const BOARD_CELLS: readonly (CompassDirection | "CENTER")[] = [
@@ -72,19 +94,11 @@ function buildStarLine(
   star: number,
   lucky: CompassDirection[],
   board: TodayBoard["board"],
-  common: TodayBoard["common"],
+  placeLabel: string,
+  kind: SittingKind,
 ): string {
-  const cell = findSittingCell(star, board);
-  const placeLabel = cell === "CENTER" ? "中宮" : DIRECTION_LABELS[cell];
   if (lucky.length === 0) {
-    const hint = SITTING_STAR_HINT[star] ?? "";
-    const kind: NoLuckyKind =
-      cell === "CENTER"
-        ? "center"
-        : common.some((item) => item.direction === cell)
-          ? "commonUnlucky"
-          : "normal";
-    return NO_LUCKY_TEMPLATES[kind](placeLabel, hint);
+    return NO_LUCKY_TEMPLATES[kind](placeLabel, SITTING_STAR_HINT[star] ?? "");
   }
   const dirParts = lucky.map((direction) => {
     const label = DIRECTION_LABELS[direction];
@@ -106,13 +120,33 @@ export function buildLoveFortuneFromBoard(
     date: board.date,
     center: board.center,
     common: board.common,
-    items: board.stars.map(({ star, lucky }) => ({
-      star,
-      name: STAR_NAMES[star],
-      lucky,
-      text: buildStarLine(star, lucky, board.board, board.common),
-      href: `/houi/${year}/${star}`,
-    })),
+    items: board.stars.map(({ star, lucky }) => {
+      const cell = findSittingCell(star, board.board);
+      const sitting = cell === "CENTER" ? "中宮" : DIRECTION_LABELS[cell];
+      const sittingKind =
+        cell === "CENTER"
+          ? "center"
+          : board.common.some((item) => item.direction === cell)
+            ? "commonUnlucky"
+            : "normal";
+      return {
+        star,
+        name: STAR_NAMES[star],
+        lucky,
+        sitting,
+        sittingKind,
+        action: lucky.length
+          ? "会合や約束の外出先に"
+          : NO_LUCKY_ACTION[sittingKind],
+        luckyHints: lucky.map((direction) => ({
+          direction,
+          label: DIRECTION_LABELS[direction],
+          hint: SHORT_STAR_HINT[board.board[direction]] ?? "",
+        })),
+        text: buildStarLine(star, lucky, board.board, sitting, sittingKind),
+        href: `/houi/${year}/${star}`,
+      };
+    }),
   };
 }
 
