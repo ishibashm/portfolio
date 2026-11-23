@@ -158,8 +158,7 @@ export default function Page() {
             </p>
           )}
           <p className="mt-3 max-w-[70ch] text-xs leading-relaxed text-ink">
-            無料・入力なしで早見表を見られます。生年月日を入力すると、端末内の計算だけで本命星がわかります。
-            今年と今月の吉方位は、本命星別ページで確認できます。
+            無料・入力なしで早見表を見られます。生年月日を入力すると、端末内の計算だけで本命星がわかります。今年と今月の吉方位は、本命星別ページで確認できます。
           </p>
           <ul className="mt-2 flex flex-wrap gap-2">
             {STARS.map((s) => (

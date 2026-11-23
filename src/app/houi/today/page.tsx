@@ -59,17 +59,14 @@ export default async function TodayPage({ searchParams }: Props = {}) {
             今日の吉方位と時間別の方位
           </h1>
           <p className="text-sm leading-relaxed">
-            今日の方位は、本命星ごとの日盤と十二支の刻（約2時間）ごとの時盤で確認できます。明日の方位も掲載しています。
-            これは占い上の目安で、効果を保証するものではありません。
+            今日の方位は、本命星ごとの日盤と十二支の刻（約2時間）ごとの時盤で確認できます。明日の方位も掲載しています。これは占い上の目安で、効果を保証するものではありません。
           </p>
           <details className="wg-card p-3 text-sm">
             <summary className="cursor-pointer font-semibold">
               方位の判定と時間帯の基準
             </summary>
             <p className="mt-2 leading-relaxed">
-              五黄殺・暗剣殺・日破は、本命星にかかわらず凶です。時盤が吉でも日盤の凶を優先します。
-              時間帯は東京（東経139.6917度）の真太陽時で区切り、時刻は日本標準時で表示します。
-              月命星と個人の天中殺は含みません。
+              五黄殺・暗剣殺・日破は、本命星にかかわらず凶です。時盤が吉でも日盤の凶を優先します。時間帯は東京（東経139.6917度）の真太陽時で区切り、時刻は日本標準時で表示します。月命星と個人の天中殺は含みません。
             </p>
           </details>
           <p className="text-sm">
