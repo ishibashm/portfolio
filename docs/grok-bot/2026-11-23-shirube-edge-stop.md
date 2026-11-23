@@ -21,4 +21,9 @@
   - スマホ（停止まで撮れた一連）: `mobile-00-home.png`、`mobile-01-dropped.png`、歩行 `mobile-20-walking.png` … `mobile-32-walking.png`、停止後 `mobile-33-paused.png`、収まったあと `mobile-34-settled.png`
   - 計測の JSON: `shoot-edge.json`、`shoot-mobile-tail.json`
 - CI: check が成功。GitHub Actions run 45105476538（2026-11-23 12:21 開始 → 12:36 完了 JST、所要 15分29秒）。 https://github.com/ishibashm/portfolio/actions/runs/45105476538
-- 本番の設定・DB は変更していない。マージは本人の承認待ち。
+- 本番の設定・DB は変更していない。
+- マージとデプロイ（本人の承認を得て 13:01 JST に squash マージ）:
+  - squash マージ: 2026-11-23 13:01:08 JST（コミット `edf0bd51`、「しるべが画面端の手前で歩行をやめ、正面か折り返しに切り替える (#1903)」）。
+  - デプロイ: GitHub Actions run 45109311887 が成功（13:01:11 開始 → 13:05:15 完了 JST、ジョブ所要 4分2秒）。 https://github.com/ishibashm/portfolio/actions/runs/45109311887
+  - 本番確認（2026-11-23 13:07 頃 JST、`https://cloud-palette.com/houi`、スマホ幅 390×844）: 定位置では正面（右余白 2px）。少し左へ置いて「定位置に戻る」と、右向きに歩いたあと、最後の歩行フレームは右余白 14.5px（制限は余白 2px + 8px ＝ 10px）。その直後に歩行をやめ、正面を向いて定位置（右余白 2px）に収まった。壁ぎりぎりまで歩き続けていない。
+  - スクリーンショット: `/workspace/shirube-wall-fix/prod-mobile-00-home.png`、`prod-mobile-01-dropped.png`、`prod-mobile-02-menu.png`、`prod-mobile-03-turning.png`、歩行の連続 `prod-mobile-04-walking.png` … `prod-mobile-15-walking.png`、停止後 `prod-mobile-16-paused.png` / `prod-mobile-17-paused.png`、収まったあと `prod-mobile-18-settled.png`（各 `-actor` あり）。計測は `prod-shoot.json`。
