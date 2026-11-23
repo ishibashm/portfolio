@@ -184,15 +184,17 @@ export function TodayOverviewCard({
       <div className="grid gap-4 @min-[1100px]:grid-cols-[minmax(0,1fr)_minmax(0,24rem)]">
         <div className="space-y-2">
           {data ? (
-            <NationalWeatherMap data={data} directions={directions} />
+            <>
+              <NationalWeatherMap data={data} directions={directions} />
+              <p className="text-xs text-slate-700 dark:text-ink">
+                避けたい方位は全員に共通。太い青枠は残りの降水確率50%以上。
+              </p>
+            </>
           ) : (
             <p className="text-sm text-slate-700 dark:text-ink">
               いま天気を取得できません。時間をおいて開き直してください。
             </p>
           )}
-          <p className="text-xs text-slate-700 dark:text-ink">
-            札の色は天気（薄黄は晴れ、薄青は雨、水色は雪、灰色はくもり）。赤い札は全員に共通の避けたい方位にある都市。太い青枠は残りの降水確率50%以上。
-          </p>
         </div>
         <aside
           aria-labelledby="today-board-heading"
@@ -394,7 +396,31 @@ export function TodayOverviewCard({
         >
           Natural Earth（パブリックドメイン）
         </a>
+        。衛星画像は
+        <a
+          className="underline"
+          href="https://maps.gsi.go.jp/development/ichiran.html#modis"
+        >
+          地理院タイル（世界衛星モザイク画像）
+        </a>
+        を加工して作成。
+        <a
+          className="underline"
+          href="https://www.gsi.go.jp/kikakuchousei/kikakuchousei40182.html"
+        >
+          国土地理院コンテンツ利用規約
+        </a>
         。方位の吉凶は伝統的な見方で、効果を保証しません。位置情報は使わず、入力も保存しません。
+      </p>
+      <p className="text-xs text-slate-600 dark:text-ink-muted" lang="en">
+        Images on 世界衛星モザイク画像 obtained from site{" "}
+        <a className="underline" href="https://lpdaac.usgs.gov/data_access">
+          https://lpdaac.usgs.gov/data_access
+        </a>{" "}
+        maintained by the NASA Land Processes Distributed Active Archive Center
+        (LP DAAC), USGS/Earth Resources Observation and Science (EROS) Center,
+        Sioux Falls, South Dakota, (2015). Source of image data product: MODIS
+        (NASA).
       </p>
     </section>
   );

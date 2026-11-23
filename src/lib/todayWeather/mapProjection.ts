@@ -1,11 +1,13 @@
 /** 地図生成スクリプトと同じ等距円筒図法。 */
 const scale = 38;
 const longitudeScale = Math.cos((36 * Math.PI) / 180) * scale;
+// 衛星画像の範囲は build_weather_map_satellite.py とそろえる。
+export const mainSatelliteBox = { x: -8, y: 0, width: 648, height: 610 };
 export const insetBox = {
   x: 4,
   y: 4,
-  width: 8.6 * longitudeScale + 8,
-  height: 4.7 * scale + 8,
+  width: 272,
+  height: 186,
 };
 
 export type MapTransform = { x: number; y: number; scale: number };
