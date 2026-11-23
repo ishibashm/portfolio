@@ -1,0 +1,25 @@
+# 今日の恋愛の目安の見やすい表示（2026-11-23）
+
+- 依頼: 本人「今日の恋愛の目安が見にくいのでそれもうまくデザインしてほしい」。対象はホーム（`/`）の「今日の天気と方位」内。実装は `src/components/home/TodayOverview.tsx` と `src/lib/loveFortune.ts`。
+- 見にくさ（本番 https://cloud-palette.com 、2026-11-23 13:04 JST、ライト／ダーク、幅 1280px と 390px）:
+  - 恋愛の目安が独立した見出しになっておらず、表キャプションの「今日の恋愛の目安（各行の下段）」に埋もれていた。
+  - 各本命星の下段が 11px の長い文章（「○○に回座。吉方位は東（発展や音・若さの象意）・……。会合や約束の外出先に向きます。」）で、9星が似た文の壁になっていた。
+  - 方位は「今日の吉」列と下段の長文で重複し、結論（吉方位、または近場が目安）が大きく出ていなかった。
+  - モバイルでは括弧付きの象意で折り返しが多く、天気の情報と混ざって追いにくかった。
+  - ダークモード自体はこの表では既に効いていた（地色は暗く、文字は読める）。
+- PR: https://github.com/ishibashm/portfolio/pull/1904 （未マージ。実装は box 上の Codex CLI。ブランチ `fix/love-outlook-design`、専用クローン `/workspace/cp-love`）
+  - eaa8792f 今日の恋愛の目安を、結論と方位が見やすい表示にする
+- 修正内容:
+  - 日盤の直後に `TodayLoveOutlook` を置き、「今日の恋愛の目安」を独立したセクションにした。
+  - 本命星ごとに吉方位を大きな緑のチップ（短い象意つき）で示す。吉方位がない日は「近場が目安」を大きく出す。行動の目安は短い一行。
+  - 時間帯は各行に書かず、見出し付近の「時間帯は下の今の刻」（`#today-hours-heading`）と「本命星の早見」へ案内する。
+  - 天気の表から下段の長文を外し、本命星・今日の吉・吉方位の天気は残した。
+  - `loveFortune` の既存 `text` 文言は変えていない。表示用に `sitting` / `sittingKind` / `action` / `luckyHints` を追加した。
+  - 配色は紺・金が基本。緑は吉方位、赤は共通の避けたい方位に回座しているときの注意だけ。テーマ変数に寄せ、ダークモード対応。吉凶は断定せず、占い上の参考と明記。
+- ローカル確認（`http://127.0.0.1:3088`、ライト／ダーク、幅 390px・1280px・1600px）: 見出しが独立し、方位チップが一目で追える。幅 1600px では地図の右に並ぶ。ダークでもチップと本文が読める。
+- スクリーンショット（作業マシン `/workspace/love-design/`）:
+  - 変更前（本番）: `before-prod-desktop-light-love.png` / `before-prod-desktop-dark-love.png` / `before-prod-mobile-light-love.png` / `before-prod-mobile-dark-love.png`（full / view もあり）
+  - 変更後（ローカル）: `after-local-desktop-light-love.png` / `after-local-desktop-dark-love.png` / `after-local-mobile-light-love.png` / `after-local-mobile-dark-love.png`、幅 1600px の `after-local-wide-desktop-light-love.png` / `after-local-wide-desktop-light-view.png`
+- テスト: vitest 3 ファイル・28 件が通過（`loveFortune` / `nationalWeather` / 新規 `todayLoveOutlook`）。eslint と prettier は pre-commit で通過。
+- CI: check が成功。GitHub Actions run 45110608430（2026-11-23 13:14 開始 → 13:25 完了 JST、所要 11分1秒）。 https://github.com/ishibashm/portfolio/actions/runs/45110608430
+- 本番の設定・DB は変更していない。マージはしていない。
