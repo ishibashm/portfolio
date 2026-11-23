@@ -73,6 +73,12 @@ function forceDynamicIndexableRoutes(): string[] {
 }
 
 describe("force-dynamic で索引する頁のサイトマップ", () => {
+  it("事前生成の一覧に出ないトップを additionalPaths に足す", async () => {
+    const entries: Array<{ loc: string }> =
+      await sitemapConfig.additionalPaths(sitemapConfig);
+    expect(entries.map((entry) => entry.loc)).toContain("/");
+  });
+
   it("additionalPaths に入っている", async () => {
     const entries: Array<{ loc: string }> =
       await sitemapConfig.additionalPaths(sitemapConfig);

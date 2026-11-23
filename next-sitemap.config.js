@@ -563,6 +563,9 @@ module.exports = {
   additionalPaths: async (config) =>
     Promise.all(
       [
+        /* トップは事前生成の一覧に出ず、本番の sitemap-0.xml から
+           漏れていた（SEO 監査 2026-11-23）。ここで足す。 */
+        "/",
         ...AREA_DATA_PATHS,
         "/houi/tenchusatsu",
         "/houi/relocation-calendar",
