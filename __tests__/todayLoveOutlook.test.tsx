@@ -9,7 +9,9 @@ it("見出し、9星のリンク、回座、吉方位と近場の目安を表示
   const { items } = buildLoveFortune(new Date("2026-11-21T12:00:00+09:00"));
   const html = renderToStaticMarkup(<TodayLoveOutlook items={items} />);
 
-  expect(html).toContain("今日の恋愛の目安");
+  expect(html).toMatch(
+    /<h3 id="today-love-heading"[^>]*>.*今日の恋愛の目安<\/h3>/,
+  );
   expect(html).toContain('aria-labelledby="today-love-heading"');
   expect(html).toContain('href="#today-hours-heading"');
   expect(html).toContain('href="/houi#honmei-lookup"');
@@ -20,6 +22,14 @@ it("見出し、9星のリンク、回座、吉方位と近場の目安を表示
       ),
     );
   }
+  expect(
+    Array.from(
+      html.matchAll(
+        /<span aria-hidden="true" class="font-shippori[^"]*">([一二三四五六七八九])<\/span>/g,
+      ),
+      ([, monogram]) => monogram,
+    ).join(""),
+  ).toBe("一二三四五六七八九");
   expect(html).toContain(">北東に回座</p>");
   expect(html).toContain(">北東</span>");
   expect(html).toContain(">交わり・はじまり</span>");
