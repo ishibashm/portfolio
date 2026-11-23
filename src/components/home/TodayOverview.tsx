@@ -108,8 +108,8 @@ function DayBoard({ board }: { board: TodayBoard }) {
               common
                 ? "border-accent bg-theme-accent-soft text-accent"
                 : cell === "CENTER"
-                  ? "border-amber-300 dark:border-theme-border bg-amber-50 dark:bg-theme-gold-soft text-ink dark:text-ink"
-                  : "border-theme-border dark:border-theme-border bg-theme-surface dark:bg-theme-surface text-ink dark:text-ink"
+                  ? "border-amber-300 dark:border-theme-border bg-amber-50 dark:bg-theme-gold-soft text-slate-900 dark:text-ink"
+                  : "border-slate-200 dark:border-theme-border bg-white dark:bg-theme-surface text-slate-900 dark:text-ink"
             }`}
           >
             <span className="block text-[10px] text-slate-600 dark:text-ink-muted">
@@ -166,7 +166,7 @@ export function TodayOverviewCard({
   return (
     <section
       aria-labelledby="today-overview-heading"
-      className="@container w-full max-w-[1700px] space-y-3 rounded-3xl border border-theme-border dark:border-theme-border bg-theme-surface/95 dark:bg-theme-surface p-4 text-ink dark:text-ink shadow-lg shadow-slate-200/50 dark:shadow-black/20 md:space-y-4 md:p-8"
+      className="@container w-full max-w-[1700px] space-y-3 rounded-3xl border border-slate-300 dark:border-theme-border bg-white/95 dark:bg-theme-surface p-4 text-slate-900 dark:text-ink shadow-lg shadow-slate-200/50 dark:shadow-black/20 md:space-y-4 md:p-8"
     >
       <div>
         <h2 id="today-overview-heading" className="text-xl font-bold">
@@ -186,12 +186,12 @@ export function TodayOverviewCard({
           {data ? (
             <>
               <NationalWeatherMap data={data} directions={directions} />
-              <p className="text-xs text-ink dark:text-ink">
+              <p className="text-xs text-slate-700 dark:text-ink">
                 避けたい方位は全員に共通。太い青枠は残りの降水確率50%以上。
               </p>
             </>
           ) : (
-            <p className="text-sm text-ink dark:text-ink">
+            <p className="text-sm text-slate-700 dark:text-ink">
               いま天気を取得できません。時間をおいて開き直してください。
             </p>
           )}
@@ -218,7 +218,7 @@ export function TodayOverviewCard({
                     </li>
                   ))}
                 </ul>
-                <p className="text-ink dark:text-ink">
+                <p className="text-slate-700 dark:text-ink">
                   {redCities.length
                     ? `地図では${redCities.map((city) => city.city).join("・")}を赤くしています。`
                     : "今日は地図の代表都市に当たりません。"}
@@ -256,7 +256,7 @@ export function TodayOverviewCard({
                   return (
                     <tr
                       key={star.star}
-                      className="border-t border-theme-border dark:border-theme-border"
+                      className="border-t border-slate-200 dark:border-theme-border"
                     >
                       <th scope="row" className="whitespace-nowrap px-1.5 py-1">
                         {love ? (
