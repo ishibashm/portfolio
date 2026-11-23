@@ -876,7 +876,7 @@ export function ShirubeWanderer({
   }, [pathname, presentTip]);
 
   const onPointerDown = (event: ReactPointerEvent<HTMLButtonElement>) => {
-    if (event.button !== 0 || gestureRef.current) return;
+    if (event.button !== 0 || gestureRef.current || menuOpenRef.current) return;
     suppressClickRef.current = false;
     const rect = actorRef.current?.getBoundingClientRect();
     if (!rect) return;
@@ -899,7 +899,6 @@ export function ShirubeWanderer({
       if (!exceedsDragThreshold(dx, dy)) return;
       gesture.started = true;
       suppressClickRef.current = true;
-      if (menuOpenRef.current) closeMenu();
       dismissBubble();
       setDragging(true);
       resumeEngineRef.current?.();
@@ -1687,6 +1686,10 @@ export function ShirubeWanderer({
       ? "paused"
       : activeVisual.state;
   const facing: WanderFacing = isReduced ? restFacing : activeVisual.facing;
+  const moving =
+    visualState === "walking" ||
+    visualState === "hopping" ||
+    visualState === "turning";
 
   // 歩く素材は元絵が右向きなので、左へ歩くときだけ左右反転する
   const flipTransform = facing === "left" ? "scaleX(-1)" : "scaleX(1)";
@@ -1702,7 +1705,7 @@ export function ShirubeWanderer({
   const avatar = (
     <span className="shirube-wander-gait">
       <span className="shirube-wander-shadow" aria-hidden="true" />
-      {gait === "shuffle" ? (
+      {gait === "shuffle" && moving ? (
         <span className="shirube-wander-shuffle">
           <ShirubeShuffleSprite displayHeight={168} />
         </span>

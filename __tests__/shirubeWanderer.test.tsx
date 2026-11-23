@@ -1,5 +1,6 @@
 import { existsSync, readFileSync } from "node:fs";
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { RouterContext } from "next/dist/shared/lib/router-context.shared-runtime";
 import {
   act,
   cleanup,
@@ -43,6 +44,27 @@ function stubMatchMedia(reduce: boolean) {
 
 const menuTrigger = () =>
   screen.getByRole("button", { name: /しるべ。メニューを開く/ });
+
+const wandererCss = readFileSync(
+  "src/components/guide/ShirubeWanderer.css",
+  "utf8",
+);
+
+function expectFrontPose(visible: boolean) {
+  const style = document.createElement("style");
+  style.textContent = wandererCss;
+  document.head.append(style);
+  try {
+    expect(
+      getComputedStyle(screen.getByTestId("shirube-rig-front")).opacity,
+    ).toBe(visible ? "1" : "0");
+    expect(
+      getComputedStyle(screen.getByTestId("shirube-rig-side")).opacity || "1",
+    ).toBe(visible ? "0" : "1");
+  } finally {
+    style.remove();
+  }
+}
 
 function chooseTip() {
   fireEvent.click(menuTrigger());
@@ -165,6 +187,7 @@ describe("ShirubeWanderer", () => {
     const actor = screen.getByTestId("shirube-wanderer-actor");
     expect(stage.getAttribute("data-motion")).toBe("reduced");
     expect(stage.getAttribute("data-state")).toBe("idle");
+    expectFrontPose(true);
     expect(actor.style.transform).toBe("");
     expect(rafSpy).not.toHaveBeenCalled();
   });
@@ -211,6 +234,7 @@ describe("ShirubeWanderer", () => {
     const actor = screen.getByTestId("shirube-wanderer-actor");
     expect(stage.getAttribute("data-motion")).toBe("active");
     expect(stage.getAttribute("data-state")).toBe("stepping");
+    expectFrontPose(true);
     const initialTransform = actor.style.transform;
     expect(initialTransform).toMatch(
       /^translate3d\([\d.-]+px, [\d.-]+px, 0\)$/,
@@ -286,6 +310,85 @@ describe("ShirubeWanderer", () => {
     expect(trigger).toHaveFocus();
   });
 
+  it.each([
+    ["/houi", "今日の方位", "/houi/today"],
+    ["/houi", "方位で街を探す", "/relocation/arbitrage"],
+    ["/houi", "ブログ", "/blog"],
+    ["/houi", "しるべに案内してもらう", "/annai"],
+    ["/blog", "ブログ", "/blog"],
+  ])(
+    "定位置のメニューで %s から「%s」を選ぶと %s へ遷移し、メニューが閉じる",
+    (pathname, name, href) => {
+      vi.useFakeTimers();
+      const push = vi.fn(() => {
+        expect(screen.getByRole("menuitem", { name })).toHaveFocus();
+      });
+      const router = {
+        pathname,
+        asPath: pathname,
+        beforePopState: vi.fn(),
+        prefetch: vi.fn().mockResolvedValue(undefined),
+        push,
+      } as unknown as NonNullable<React.ContextType<typeof RouterContext>>;
+      render(
+        <RouterContext.Provider value={router}>
+          <ShirubeWanderer forceReducedMotion pathnameOverride={pathname} />
+        </RouterContext.Provider>,
+      );
+      const trigger = menuTrigger();
+      fireEvent.click(trigger);
+      const item = screen.getByRole("menuitem", { name });
+      item.focus();
+      fireEvent.click(item);
+      expect(push).toHaveBeenCalledExactlyOnceWith(
+        href,
+        href,
+        expect.objectContaining({ scroll: true }),
+      );
+      expect(item).toHaveFocus();
+      act(() => vi.advanceTimersByTime(0));
+      expect(screen.queryByRole("menu")).toBeNull();
+      expect(trigger).toHaveFocus();
+    },
+  );
+
+  it.each([
+    { width: 1280, height: 800, gap: 4, actorWidth: 82, actorHeight: 168 },
+    { width: 390, height: 844, gap: 2, actorWidth: 41, actorHeight: 84 },
+  ])(
+    "右端の定位置でメニューを画面内に置く ($width × $height)",
+    ({ width, height, gap, actorWidth, actorHeight }) => {
+      vi.stubGlobal("innerWidth", width);
+      vi.stubGlobal("innerHeight", height);
+      const actor = new DOMRect(
+        width - gap - actorWidth,
+        height - actorHeight,
+        actorWidth,
+        actorHeight,
+      );
+      const menuWidth = 216;
+      const menuHeight = 216;
+      const measure = HTMLElement.prototype.getBoundingClientRect;
+      vi.spyOn(
+        HTMLElement.prototype,
+        "getBoundingClientRect",
+      ).mockImplementation(function (this: HTMLElement) {
+        if (this.classList.contains("shirube-wander-hit")) return actor;
+        if (this.classList.contains("shirube-menu")) {
+          return new DOMRect(0, 0, menuWidth, menuHeight);
+        }
+        return measure.call(this);
+      });
+      render(<ShirubeWanderer forceReducedMotion />);
+      fireEvent.click(menuTrigger());
+      const { left, top } = screen.getByRole("menu").style;
+      expect(parseFloat(left)).toBeGreaterThanOrEqual(0);
+      expect(parseFloat(left) + menuWidth).toBeLessThanOrEqual(width);
+      expect(parseFloat(top)).toBeGreaterThanOrEqual(0);
+      expect(parseFloat(top) + menuHeight).toBeLessThan(actor.top);
+    },
+  );
+
   it.each(["menu", "drag"] as const)(
     "%s 中は徘徊と自動案内を止める",
     (interaction) => {
@@ -309,6 +412,7 @@ describe("ShirubeWanderer", () => {
         "data-state",
         "paused",
       );
+      expectFrontPose(true);
       const actor = screen.getByTestId("shirube-wanderer-actor");
       const position = actor.style.transform;
       raf.mockClear();
@@ -359,6 +463,8 @@ describe("ShirubeWanderer", () => {
     fireEvent.click(button, { detail: 1 });
     expect(screen.queryByRole("menu")).toBeNull();
     expect(stage).toHaveAttribute("data-positioned", "true");
+    expect(stage).toHaveAttribute("data-state", "paused");
+    expectFrontPose(true);
     expect(actor.style.transform).toBe("translate3d(120.00px, 80.00px, 0)");
     act(() => vi.advanceTimersByTime(14_999));
     expect(stage).toHaveAttribute("data-positioned", "true");
@@ -497,12 +603,23 @@ describe("正面のしるべとすり足", () => {
     }
   });
 
-  it("gait=shuffle では 4 コマのスプライト（picture + webp/png）に切り替わり、部品分けの絵は出さない", () => {
-    stubMatchMedia(true);
+  it("gait=shuffle でも定位置での足踏み中とメニュー表示中は正面を向く", () => {
+    stubMatchMedia(false);
     render(<ShirubeWanderer gait="shuffle" />);
     const stage = screen.getByTestId("shirube-wanderer");
     expect(stage.getAttribute("data-gait")).toBe("shuffle");
-    expect(screen.queryByTestId("shirube-walk-rig")).toBeNull();
+    expect(stage).toHaveAttribute("data-state", "stepping");
+    expect(screen.queryByTestId("shirube-shuffle-sprite")).toBeNull();
+    expectFrontPose(true);
+
+    fireEvent.click(menuTrigger());
+    expect(stage).toHaveAttribute("data-state", "paused");
+    expect(screen.queryByTestId("shirube-shuffle-sprite")).toBeNull();
+    expectFrontPose(true);
+  });
+
+  it("単体の ShirubeShuffle は既定で飾り扱い、label があれば img として読み上げる", () => {
+    const { rerender } = render(<ShirubeShuffle />);
     const sprite = screen.getByTestId("shirube-shuffle-sprite");
     const pic = sprite.querySelector("picture")!;
     expect(pic).not.toBeNull();
@@ -520,10 +637,7 @@ describe("正面のしるべとすり足", () => {
     );
     expect(existsSync("public/guide/walk/shirube-shuffle-128.webp")).toBe(true);
     expect(existsSync("public/guide/walk/shirube-shuffle-240.webp")).toBe(true);
-  });
 
-  it("単体の ShirubeShuffle は既定で飾り扱い、label があれば img として読み上げる", () => {
-    const { rerender } = render(<ShirubeShuffle />);
     let el = screen.getByTestId("shirube-shuffle");
     expect(el.getAttribute("aria-hidden")).toBe("true");
     expect(el.getAttribute("data-travel")).toBe("false");
@@ -577,18 +691,33 @@ describe("正面のしるべとすり足", () => {
     expect(getWanderConfig(1280, { greet: false }).greetChance).toBe(0);
   });
 
-  it("CSS: 動きを減らす設定と greeting のときに正面を見せ、手は手首を軸に振る", () => {
-    const css = readFileSync(
-      "src/components/guide/ShirubeWanderer.css",
-      "utf8",
-    );
-    expect(css).toMatch(
+  it("CSS: 待機とあいさつは正面、歩行中は横向きにし、手は手首を軸に振る", () => {
+    render(<ShirubeWanderer forceReducedMotion={false} />);
+    const stage = screen.getByTestId("shirube-wanderer");
+    for (const state of [
+      "idle",
+      "paused",
+      "stepping",
+      "greeting",
+      "sitting",
+      "pointing",
+    ]) {
+      stage.setAttribute("data-state", state);
+      expectFrontPose(true);
+    }
+    for (const state of ["walking", "hopping", "turning"]) {
+      stage.setAttribute("data-state", state);
+      expectFrontPose(false);
+    }
+    expect(wandererCss).toMatch(
       /\[data-motion="reduced"\] \.shirube-rig-front\s*{\s*opacity:\s*1/,
     );
-    expect(css).toMatch(/\.shirube-rig-front-hand\s*{\s*transform-origin:/);
-    expect(css).toContain("@keyframes shirube-front-wave");
-    expect(css).toContain("@keyframes shirube-shuffle-steps");
-    expect(css).toMatch(/steps\(4\)/);
+    expect(wandererCss).toMatch(
+      /\.shirube-rig-front-hand\s*{\s*transform-origin:/,
+    );
+    expect(wandererCss).toContain("@keyframes shirube-front-wave");
+    expect(wandererCss).toContain("@keyframes shirube-shuffle-steps");
+    expect(wandererCss).toMatch(/steps\(4\)/);
   });
 });
 
