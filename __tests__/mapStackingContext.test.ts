@@ -36,7 +36,7 @@ const ARBITRAGE_PAGE = read("src/app/relocation/arbitrage/page.tsx");
 
 /** 非全画面の器（className の三項の else 側）を取り出す。 */
 const NON_FULLSCREEN_ROOT = MAP_INNER.match(
-  /\? "fixed inset-0 z-\[2000\] bg-white"\s*\n\s*: "([^"]+)"/,
+  /\? "fixed inset-0 z-\[2000\] bg-theme-surface"\s*\n\s*: "([^"]+)"/,
 )?.[1];
 
 /** GlobalSidebar の 3 つの層を数字で拾う。 */
@@ -68,7 +68,7 @@ describe("地図の器が重ね合わせ文脈になっている", () => {
 
   it("全画面のときは fixed + z-[2000] のまま（isolate を付けない）", () => {
     // 付けると頁の帯より後ろに落ちて、全画面が全画面でなくなる
-    expect(MAP_INNER).toContain('? "fixed inset-0 z-[2000] bg-white"');
+    expect(MAP_INNER).toContain('? "fixed inset-0 z-[2000] bg-theme-surface"');
   });
 
   it("地図の中の札は z-[1000] のままでよい（器の中で閉じているので）", () => {

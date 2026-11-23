@@ -83,8 +83,8 @@ const KNOWN_UNFIXED = [
   "src/components/WealthMap.tsx:192",
   "src/components/nba/PastMoveMap.tsx:227",
   "src/components/nba/PastMoveMap.tsx:241",
-  "src/components/nba/SimulatorMap.tsx:340",
-  "src/components/nba/SimulatorMap.tsx:367",
+  "src/components/nba/SimulatorMap.tsx:347",
+  "src/components/nba/SimulatorMap.tsx:374",
   "src/components/relocation/YieldMapInner.tsx:86",
 ];
 
