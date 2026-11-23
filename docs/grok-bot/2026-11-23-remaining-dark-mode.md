@@ -1,0 +1,22 @@
+# 残っていたページのダークモード取りこぼし（2026-11-23）
+
+- 依頼: 本人「/mcp もダークモードなのに背景色が白い」（19:53 JST、iPad Safari のスクショ。ヘッダーは暗いのに本文の地とカードが白い）。#1902 で残件としていた `/mcp`、`/calendar`、`/guide`、`/kensho`、`/houi/pref`、年盤・月盤を同じ方針で直す。マージはしない。
+- PR: https://github.com/ishibashm/portfolio/pull/1909 （未マージ。実装は box 上の Codex CLI。ブランチ `fix/remaining-dark-mode`）
+  - 21ea0cb5 残っていたページ（/mcp・暦・ガイド・検証・都道府県・年盤月盤）のダークモード取りこぼしを直す
+- 原因: #1897 のダークモードでも、これらのページに直書きのベージュグラデ（`from-[#faf7f5] via-[#f5efe9] to-[#f0e9e1] text-slate-900`）と `bg-white` / `text-slate-*` / ローズのリンクが残っていた。ヘッダーだけが `html.dark` に追従していた。
+- 修正内容:
+  - 対象ページの地色を `bg-background text-ink`、カードを `bg-theme-surface border-theme-border`、本文を `text-ink`、補足を `text-ink-muted`、リンクと主要ボタンを勝色（`text-accent` / `bg-accent text-on-accent`）へ。注意は金、吉凶の判定は `theme-good` / `theme-bad`。緑と赤は判定以外に使わない。
+  - ページ: `/mcp`、`/calendar`、`/calendar/[month]`、`/guide`、`/guide/[slug]`、`/kensho`、`/houi/pref`、`/houi/pref/[code]`、`/houi/[year]/[star]`、`/houi/[year]/[star]/[month]`。
+  - 共有部品: `CosmicCalendar`、`KanshiDayDetails`、`YearCalendarView`、`AuspiciousDayFinder`、`FavoriteDaysPanel`、`SavedAnalysisPanel`、`ThreeBoardStack`、`GuideBody`、`DirectionEffects`、`AreaEntryLinks`、`OfficialRentNote`、`RentOverview`、`RelocationStepNavigatorClient`、`PractitionerStrip`。
+  - `docs/dark-mode.md` の残件から今回のページを外した。管理・アカウント、テレメトリー・磁気地図、方位の個別ツール、外部連携、既存ブログ図版は残件。
+- ローカル確認（`http://localhost:3080`、ライト／ダーク、幅 390px と 820px）: 全ページ 200。ダークの地色は `#151722` 系、文字は `#F3EFE8`。ダークで白い地のカードは無し。`/mcp` のスマホ・タブレットともヘッダーと本文の地が揃う。
+- スクリーンショット（作業マシン `/workspace/dark-mode-2/`。各ページに `*-mobile-light.png` / `*-mobile-dark.png` / `*-tablet-light.png` / `*-tablet-dark.png`）:
+  - `mcp-*`（指摘のページ）
+  - `calendar-*`、`calendar-month-*`（`/calendar/2026-11`）
+  - `guide-*`、`guide-basics-*`（`/guide/basics`）
+  - `kensho-*`
+  - `houi-pref-*`、`houi-pref-13-*`（東京都）
+  - `houi-year-star-*`（`/houi/2026/1`）、`houi-year-star-month-*`（`/houi/2026/1/11`）
+- テスト: `houiYearMonthBadge.test.tsx` の期待値を更新。関連 vitest が通過。eslint はエラーなし（既存の hooks 警告のみ）。prettier は `npm run format:staged` のあと通過。
+- CI: check が成功。GitHub Actions run 45161914614（2026-11-23 20:05 開始 → 20:21 完了 JST、所要 15分46秒）。 https://github.com/ishibashm/portfolio/actions/runs/45161914614
+- 本番の設定・DB は変更していない。マージは本人の承認待ち。
