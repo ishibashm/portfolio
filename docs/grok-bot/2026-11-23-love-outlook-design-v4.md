@@ -1,0 +1,29 @@
+# 今日の恋愛の目安を、占い雑誌の巻頭頁に近づける（2026-11-23）
+
+- 依頼: 本人「さらにもう一超え」（2026-11-23 16:17 JST）。v3（占い雑誌風、3×3 罫線・明朝紋章・二重罫線）を土台に、PR #1908 をもう一段、本物の占い雑誌の巻頭ページに近づける。マージはしていない。作業前に最新 master（#1907、bac3291）を取り込み、すでに乗っていたことを確認した。
+- 提案ツール: Antigravity CLI（`agy` 1.5.14、`gemini-4-neon-xhigh` / Gemini 4 Neon (XHigh)、`--effort xhigh`、`--mode plan` と `--sandbox` の読み取り専用）。v3 のスクショ説明と現行コードをプロンプトにインラインし、ツールなしで具体案を得た。提案全文は作業マシン `/workspace/love-design-v4/agy-proposal-stdout.txt`。実装は Codex CLI（`codex exec -s workspace-write`）。専用クローン `/workspace/cp-love-v2`。
+- 採用した要素:
+  - ヘッダーを号数風にする。肩ラベル `DAILY HOROSCOPE` の横（狭い画面では下）に、日付・曜日（`formatJapaneseDate`）と日盤の中宮の星名を置く。
+  - 各星の漢数字紋章を、五行（一白は水、二黒・五黄・八白は土、三碧・四緑は木、六白・七赤は金、九紫は火）の小さな金線画（自作 SVG、色は金の線のみ）に替える。円形の金枠メダリオンに入れる。金の紋章の四芒星は幾何の線画であり、評価の★ではない。
+  - 金の細い角飾り（四隅の L）とフッターの菱形＋グラデーション罫。薄い紙の質感は `color-mix` のグラデーションと細い縞の CSS だけ。画像や `feTurbulence` は使わない。
+  - 吉方位の数がいちばん多い星に、「今日吉方位が多い星」の小さな印を付ける。最大が 0 より大きく、かつすべて同数ではないときにだけ出す。同数の最大はすべてに付ける。評価や点数にはしない。
+  - 共有の行動帯を二重罫線の直下へ密着させる。羅針盤の外円を薄い金に、星名の下線オフセットとセルの縦余白をわずかに整える。
+- 採用しなかった要素:
+  - しるべを編集長のように添える案。色の役割が紺・金・判定色から広がりうること、1600px では歩くしるべと右端で重なりうること、390px のヘッダーが窮屈になることから見送り。
+  - 五行ごとの色塗り、セル単位のカードや影、セル四隅の飾り、★・冠・順位・セル全体の色分け、常時アニメーション、狭い画面での 2 列やアコーディオン、日付・中宮・事実の印以外の新しい文言。
+- PR: https://github.com/ishibashm/portfolio/pull/1908 （未マージ。同じ PR をこの方向で更新）
+  - 6d2f2cc 今日の恋愛の目安を、ミニ羅針盤つきの指針カードにする
+  - f51aae0 今日の恋愛の目安を、占い雑誌の星占い頁のような組みにする
+  - 5beaff3 今日の恋愛の目安を、占い雑誌の巻頭頁に近づける
+- 修正内容:
+  - `TodayLoveOutlook` に `date` と `center` を渡し、マストヘッドへ出す。`TodayOverview` はその 2 props を渡すだけ。
+  - 五行の金線画メダリオンで漢数字を置き換える。判定ロジックと既存の文言（`loveFortune.ts` を含む）は変えていない。
+  - 動きはホバー時の羅針盤のわずかな拡大のみ（`transform` / `opacity`、`prefers-reduced-motion` 対応）。フォントは既存の Shippori Mincho（`font-shippori`）のみ。
+  - ダークの本文は `text-ink` / `text-ink-muted`。背景 `#151722` に対し ink-muted は約 9.0:1（4.5:1 以上）。
+- ローカル確認（`http://127.0.0.1:3088`、ライト／ダーク、幅 390px・1280px・1600px）: 1280px では 3×3 の見開き。390px と 1600px の右列では 1 列。2026-11-23 の表示では中宮が五黄土星、吉方位がいちばん多い一白水星に事実の印が付く。狭い画面でもヘッダーと印が折り返して読める。
+- スクリーンショット（作業マシン `/workspace/love-design-v4/`）:
+  - `after-local-desktop-light-love.png` / `after-local-desktop-dark-love.png` / `after-local-mobile-light-love.png` / `after-local-mobile-dark-love.png`
+  - 幅 1600px の参考: `after-local-wide-desktop-light-love.png`
+- テスト: vitest 3 ファイル・30 件が通過（日付・中宮の表示、九紫だけに印が付く 2026-11-21 のケース、すべて同数のときは印を出さないこと、五行 SVG を含む）。eslint と prettier は pre-commit で通過。
+- CI: check が成功。GitHub Actions run 45131671803（2026-11-23 16:31 開始 → 16:43 完了 JST、所要 12分51秒）。 https://github.com/ishibashm/portfolio/actions/runs/45131671803
+- 本番の設定・DB は変更していない。マージはしていない。
