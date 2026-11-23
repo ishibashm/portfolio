@@ -1,0 +1,29 @@
+# 残っていた白い地とレイアウト崩れの追記（2026-11-24）
+
+- 依頼: 本人から追加指示（6:34–6:38 JST）。メニュー（選択中の行）は触らない。生年月日と場所の登録（/profile）、アカウントと登録内容（/account）の白い地とカードを直す。使い方ガイドは確認する。全体を自動チェックしてダークなのに白い地を直す。引っ越し時期の全期間分析（/relocation/timing）は、上部は紺・カードは白、見出しから下が白いグラデになり途中で地の色が切り替わるので、ページ全体を同じダークの地とカードにそろえる。色だけでなく横はみ出しや余白の乱れも直す。結果は PR #1909 に入れ、直す前と後のスクショを付ける。マージはしない。
+- PR: https://github.com/ishibashm/portfolio/pull/1909 （未マージ。ブランチ `fix/remaining-dark-mode`）
+  - 21ea0cb5 1回目（/mcp・暦・ガイド・検証・都道府県・年盤月盤）。2026-11-23。
+  - 26a8a855 プロフィール・アカウント・引越し時期分析など、残っていた白い地と途中で切り替わるレイアウトをダークモードにそろえる（2026-11-24 06:56 JST コミット、06:59 ごろ push）
+- 原因:
+  - /profile と /account はページとカードにベージュグラデと `bg-white` が残っており、入力欄だけが `color-scheme: dark` で黒くなっていた。
+  - /relocation/timing は layout の導入部が地色なし（ダークな body が見える）なのにカードが白、page 本体が `min-h-screen bg-gradient-to-br from-rose-50/80 via-stone-50 to-amber-50/50` のため、見出しから下が白いグラデになり途中で切り替わって見えた。
+  - /mcp のコード例（長い URL と curl）が狭い幅でカードを押し広げ、`scrollWidth > clientWidth` になっていた（ヘッダーも一緒に伸びて見えた）。メニュー自体の不具合ではない。
+- 修正内容:
+  - 地色を `bg-background`（#151722）、カードを `bg-theme-surface`、本文を `text-ink`、リンクとボタンを勝色。注意は金の淡面。判定以外の緑・赤は使わない（「登録した内容を消す」の枠も金の注意色）。
+  - /relocation/timing の layout と page を同じ `bg-background` にし、途中の色の切り替わりをなくした。
+  - /mcp はカードと `pre`/`code` に `min-w-0` と折り返しを入れ、狭い幅でも横スクロールがページ全体に広がらないようにした。
+  - 同じ取りこぼしがあった引越し関連（dashboard / purchase / yield / appraisal など）、方位比較、年の方位、エラー画面などもテーマ変数へ。エラー画面は Next.js のエラー用ドキュメントでテーマスクリプトが外れることがあるため、同じ設定を当て直す。
+  - GlobalSidebar とメニューの選択中の見た目は変更していない。
+  - `/guide` は 21ea0cb5 ですでに `bg-background`。「はじめてお使いの方へ」は金の淡面。`/guide/app` というルートは無い。本番がまだベージュに見えるのは、#1909 が未マージのため。
+- 自動チェック（ダーク、幅 390 と 1280、ページを最後まで縦スクロール。写真・衛星・しるべの絵・吉凶の色は除外）:
+  - 確認したルート: 47（動的ルートは代表例 1 つ。ログイン不要の画面を含む）
+  - 直す前（このブランチの 21ea0cb5、未修正の取りこぼしあり）: 明るい地・カードが残ったルート 14、横はみ出し 1（/mcp）、途中で地色が切り替わる検出 0（タイミングは最初の画面内ですでに白と紺が混ざり、平均輝度が閾値をまたいでいた）
+    - 14件: /account, /blog, /blog/sort/date, /houi/2026, /houi/area, /houi/fortune-compare, /houi/tenchusatsu, /profile, /relocation/appraisal, /relocation/dashboard, /relocation/purchase, /relocation/timing, /relocation/wealth, /relocation/yield
+  - 直したあと: 明るい地・カード 0、横はみ出し 0、途中切り替え 0。/blog と /blog/sort/date はローカルでは CMS が無く 500 になるが、エラー画面もダークになることを確認した。
+- スクリーンショット（作業マシン）:
+  - 直す前: `/workspace/dark-mode-2/before/`（とくに `relocation-timing-*-top.png` / `*-mid.png`、`profile-*`、`account-*`）
+  - 直したあと: `/workspace/dark-mode-2/after/`
+  - 1回目のライト／ダーク撮影は `/workspace/dark-mode-2/` 直下に残してある。
+- テスト: 関連 vitest 9 ファイル 69 件成功。eslint はエラー 0（既存の hooks 警告のみ）。`npm run format:staged` のあと pre-commit の prettier 通過。
+- CI: push 後の check 待ち。前回（21ea0cb5）は run 45161914614 が成功済み。
+- 本番の設定・DB は変更していない。マージは本人の承認待ち。
