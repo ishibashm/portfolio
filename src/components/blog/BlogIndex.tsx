@@ -146,8 +146,12 @@ export function BlogIndex({
           </a>
         </div>
 
-        {/* 並べ替え。Link なのでサーバで組み直され、どちらの並びも
-            そのまま読める HTML になる。公開 URL は ?sort=date のまま。 */}
+        {/* 並べ替えは素の <a>。next/link だと /blog から
+            /blog?sort=date が同一パスのクエリ変更としてクライアント
+            遷移し、beforeFiles の rewrite（/blog/sort/date へ）を
+            通らない。URL だけ変わって並びはカテゴリ別のままになる。
+            文書の取り直しなら rewrite が効き、JS なしでも切り替わる。
+            公開 URL は ?sort=date のまま。 */}
         <nav aria-label="並べ替え" className="mt-8 flex flex-wrap gap-2">
           {(
             [
@@ -157,7 +161,7 @@ export function BlogIndex({
           ).map((opt) => {
             const on = sort === opt.mode;
             return (
-              <Link
+              <a
                 key={opt.mode}
                 href={opt.href}
                 aria-current={on ? "page" : undefined}
@@ -168,7 +172,7 @@ export function BlogIndex({
                 }`}
               >
                 {opt.label}
-              </Link>
+              </a>
             );
           })}
         </nav>

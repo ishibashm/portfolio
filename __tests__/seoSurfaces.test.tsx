@@ -62,6 +62,22 @@ describe("公開 URL を変えずに一覧を静的にする", () => {
     const dateMeta = readFileSync("src/app/blog/sort/date/page.tsx", "utf8");
     expect(dateMeta).toContain("blogIndexMetadata");
   });
+
+  it("並べ替えは素の a で、next/link のクライアント遷移にしない", () => {
+    /*
+      /blog?sort=date は beforeFiles の rewrite で /blog/sort/date に
+      振る。next/link のクライアント遷移はこの rewrite を通らず、
+      searchParams を読まない /blog の HTML のままになる。
+    */
+    const src = readFileSync("src/components/blog/BlogIndex.tsx", "utf8");
+    const start = src.indexOf("並べ替えは素の");
+    const end = src.indexOf("上の索引");
+    expect(start).toBeGreaterThan(0);
+    expect(end).toBeGreaterThan(start);
+    const nav = src.slice(start, end);
+    expect(nav).toContain("<a");
+    expect(nav).not.toMatch(/<Link\b/);
+  });
 });
 
 describe("正規でない方位パスは頁でも 404", () => {
