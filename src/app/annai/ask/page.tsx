@@ -139,15 +139,21 @@ export default async function AnnaiAskPage() {
           />
         )}
 
-        <div className="mt-10 flex flex-wrap items-center justify-between gap-3 text-sm text-ink-muted">
-          <p>吉凶は九星気学の考え方による参考情報です。</p>
-          <Link
-            href="/annai/memory"
-            className="text-xs font-semibold text-accent underline hover:text-ink"
-          >
-            記憶を見る・消す
-          </Link>
-        </div>
+        {memoryEnabled ? (
+          <div className="mt-10 flex flex-wrap items-center justify-between gap-3 text-sm text-ink-muted">
+            <p>吉凶は九星気学の考え方による参考情報です。</p>
+            <Link
+              href="/annai/memory"
+              className="text-xs font-semibold text-accent underline hover:text-ink"
+            >
+              記憶を見る・消す
+            </Link>
+          </div>
+        ) : (
+          <p className="mt-10 text-sm text-ink-muted">
+            吉凶は九星気学の考え方による参考情報です。
+          </p>
+        )}
       </article>
     </main>
   );
