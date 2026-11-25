@@ -70,9 +70,11 @@ describe("guideSession: 鍵の検証とラウンドトリップ", () => {
     );
     const sealed = sealGuideSession(s1, KEY_1);
 
-    // 末尾1文字を改ざん
-    const lastChar = sealed.endsWith("A") ? "B" : "A";
-    const tampered = `${sealed.slice(0, -1)}${lastChar}`;
+    // 復号後のバイトを改ざんする（base64url の末尾文字だけだと、
+    // 余ったビットが無視されて同じ平文に戻ることがある）
+    const sealedBytes = Buffer.from(sealed, "base64url");
+    sealedBytes[sealedBytes.length - 1] ^= 0xff;
+    const tampered = sealedBytes.toString("base64url");
     expect(openGuideSession(tampered, KEY_1, NOW)).toEqual({
       status: "invalid",
     });

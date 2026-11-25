@@ -1,7 +1,17 @@
 import type { Metadata } from "next";
+import { cookies } from "next/headers";
 import Link from "next/link";
 import GuideCharacter from "@/components/guide/GuideCharacter";
+import { STAR_NAMES } from "@/lib/kigakuContent";
 import { createInitialFreeAnswerState } from "@/lib/guide/guideFreeform";
+import {
+  GUIDE_MEMORY_COOKIE,
+  GUIDE_MEMORY_TOPIC_LABELS,
+  GUIDE_PREFECTURES,
+  guideMemoryConfig,
+  readMemory,
+  type GuideMemoryPayload,
+} from "@/lib/guide/guideMemory";
 import { guideSessionKey } from "@/lib/guide/guideSession";
 import { workersAiGuideState } from "@/lib/guide/workersAi";
 import { pageOpenGraph } from "@/lib/siteUrl";
@@ -22,10 +32,40 @@ export const metadata: Metadata = {
   openGraph: pageOpenGraph("/annai/ask", PAGE_TITLE, PAGE_DESCRIPTION),
 };
 
+function formatRememberedSummary(memory: GuideMemoryPayload): string {
+  const parts: string[] = [];
+  if (memory.star !== undefined) {
+    parts.push(`本命星${memory.star}（${STAR_NAMES[memory.star] ?? ""}）`);
+  }
+  if (memory.pref !== undefined) {
+    parts.push(GUIDE_PREFECTURES[memory.pref]);
+  }
+  if (memory.topics.length > 0) {
+    parts.push(
+      `話題: ${memory.topics.map((t) => GUIDE_MEMORY_TOPIC_LABELS[t]).join("・")}`,
+    );
+  }
+  if (memory.slugs.length > 0) {
+    parts.push(`読んだ記事${memory.slugs.length}件`);
+  }
+  return parts.length > 0 ? parts.join("・") : "登録あり";
+}
+
 export default async function AnnaiAskPage() {
   const aiState = workersAiGuideState(process.env);
   const sessionKey = guideSessionKey(process.env);
   const enabled = aiState.enabled && sessionKey !== null;
+
+  const memoryEnabled = guideMemoryConfig(process.env).enabled;
+  let remembered: GuideMemoryPayload | null = null;
+  if (memoryEnabled) {
+    const cookieStore = await cookies();
+    const rawCookie = cookieStore.get(GUIDE_MEMORY_COOKIE)?.value;
+    const memRes = await readMemory(rawCookie, { touch: true });
+    if (memRes.status === "ok") {
+      remembered = memRes.memory;
+    }
+  }
 
   return (
     <main className="min-h-screen bg-background text-ink">
@@ -60,6 +100,18 @@ export default async function AnnaiAskPage() {
           記事の内容について気になることを短く聞いてください。個人情報や生年月日は入れないでくださいね。吉凶は参考情報です。
         </GuideCharacter>
 
+        {remembered && (
+          <div className="mt-5 flex flex-wrap items-center justify-between gap-2 rounded-2xl border border-theme-border bg-theme-surface px-4 py-3 text-xs text-ink">
+            <span>覚えている条件: {formatRememberedSummary(remembered)}</span>
+            <Link
+              href="/annai/memory"
+              className="font-semibold text-accent underline hover:text-ink"
+            >
+              記憶を見る・消す
+            </Link>
+          </div>
+        )}
+
         {!enabled ? (
           <section
             role="status"
@@ -81,12 +133,27 @@ export default async function AnnaiAskPage() {
             </p>
           </section>
         ) : (
-          <AskForm initialState={createInitialFreeAnswerState(process.env)} />
+          <AskForm
+            initialState={createInitialFreeAnswerState(process.env)}
+            memoryEnabled={memoryEnabled}
+          />
         )}
 
-        <p className="mt-10 text-sm text-ink-muted">
-          吉凶は九星気学の考え方による参考情報です。
-        </p>
+        {memoryEnabled ? (
+          <div className="mt-10 flex flex-wrap items-center justify-between gap-3 text-sm text-ink-muted">
+            <p>吉凶は九星気学の考え方による参考情報です。</p>
+            <Link
+              href="/annai/memory"
+              className="text-xs font-semibold text-accent underline hover:text-ink"
+            >
+              記憶を見る・消す
+            </Link>
+          </div>
+        ) : (
+          <p className="mt-10 text-sm text-ink-muted">
+            吉凶は九星気学の考え方による参考情報です。
+          </p>
+        )}
       </article>
     </main>
   );

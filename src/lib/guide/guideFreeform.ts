@@ -8,9 +8,19 @@
  */
 
 import { z } from "zod";
+import { STAR_NAMES } from "@/lib/kigakuContent";
 import { withinSignal } from "@/lib/mcpAgent";
 import { untrustedNonce, wrapUntrusted } from "@/lib/untrustedData";
 import { admitFreeQuestion, settleNeurons } from "./guideBudget";
+import {
+  GUIDE_MEMORY_TOPIC_LABELS,
+  GUIDE_PREFECTURES,
+  guideMemoryPrefSchema,
+  guideMemoryStarSchema,
+  guideMemoryTopicSchema,
+  type GuideMemoryTopicKey,
+  type GuidePrefCode,
+} from "./guideMemory";
 import {
   GUIDE_SESSION_MAX_TURNS,
   appendGuideTurn,
@@ -184,12 +194,19 @@ export type FreeAnswerResult = {
   question: string;
 };
 
+export type FreeQuestionConditions = {
+  star?: number;
+  pref?: GuidePrefCode;
+  topics?: GuideMemoryTopicKey[];
+};
+
 export type FreeQuestionInput = {
   question: string;
   sessionSealed?: string;
   formToken?: string;
   honeypot?: string;
   headers: Headers;
+  conditions?: FreeQuestionConditions;
 };
 
 export type FreeQuestionDeps = {
@@ -405,12 +422,72 @@ function isUrlClaim(claim: string): boolean {
   );
 }
 
+type NormalizedFreeformConditions = {
+  star?: number;
+  starName?: string;
+  pref?: GuidePrefCode;
+  prefName?: string;
+  topics?: GuideMemoryTopicKey[];
+  topicLabels?: string[];
+};
+
+function normalizeConditions(
+  raw: FreeQuestionConditions | undefined,
+): NormalizedFreeformConditions | null {
+  if (!raw || typeof raw !== "object") return null;
+  const out: NormalizedFreeformConditions = {};
+
+  if (raw.star !== undefined) {
+    const parsedStar = guideMemoryStarSchema.safeParse(raw.star);
+    if (parsedStar.success) {
+      out.star = parsedStar.data;
+      out.starName = STAR_NAMES[parsedStar.data];
+    }
+  }
+
+  if (raw.pref !== undefined) {
+    const parsedPref = guideMemoryPrefSchema.safeParse(raw.pref);
+    if (parsedPref.success) {
+      out.pref = parsedPref.data;
+      out.prefName = GUIDE_PREFECTURES[parsedPref.data];
+    }
+  }
+
+  if (Array.isArray(raw.topics)) {
+    const topics: GuideMemoryTopicKey[] = [];
+    for (const item of raw.topics) {
+      const parsedTopic = guideMemoryTopicSchema.safeParse(item);
+      if (parsedTopic.success && !topics.includes(parsedTopic.data)) {
+        topics.push(parsedTopic.data);
+        if (topics.length >= 5) break;
+      }
+    }
+    if (topics.length > 0) {
+      out.topics = topics;
+      out.topicLabels = topics.map((t) => GUIDE_MEMORY_TOPIC_LABELS[t]);
+    }
+  }
+
+  if (
+    out.star === undefined &&
+    out.pref === undefined &&
+    (!out.topics || out.topics.length === 0)
+  ) {
+    return null;
+  }
+  return out;
+}
+
 function buildFreeformEvidence(
   toolOutputs: unknown[],
   question: string,
+  conditions?: NormalizedFreeformConditions | null,
 ): Set<string> {
   const baseToolEvidence = collectEvidence(toolOutputs);
-  const fullEvidence = collectEvidence(toolOutputs, { question });
+  const fullEvidence = collectEvidence(toolOutputs, {
+    question,
+    ...(conditions ? { conditions } : {}),
+  });
 
   // 記事の本文・スニペット内に含まれる数値・日付・方位・引用語も根拠として登録する。
   // ただし外部URLが記事本文に紛れていても許可しないよう、URL主張は追加しない。
@@ -446,8 +523,14 @@ export function verifyFreeformText(
   text: string,
   toolOutputs: unknown[],
   question: string,
+  conditions?: FreeQuestionConditions,
 ): { kept: string[]; dropped: string[] } {
-  const evidence = buildFreeformEvidence(toolOutputs, question);
+  const normalizedConditions = normalizeConditions(conditions);
+  const evidence = buildFreeformEvidence(
+    toolOutputs,
+    question,
+    normalizedConditions,
+  );
   const candidates = splitFreeformSentences(text);
   const kept: string[] = [];
   const dropped: string[] = [];
@@ -505,8 +588,14 @@ function buildFirstUserMessage(
   preSearchOutput: unknown,
   session: GuideSessionPayload | null,
   nonce: string,
+  conditions?: NormalizedFreeformConditions | null,
 ): string {
   const parts: string[] = [];
+  if (conditions) {
+    parts.push(
+      `いまの条件（参考データ）:\n${wrapUntrusted(JSON.stringify(conditions), nonce, 1000)}`,
+    );
+  }
   if (session && (session.memo.length > 0 || session.recent.length > 0)) {
     const historyData = {
       memo: session.memo,
@@ -820,12 +909,19 @@ export async function answerFreeQuestion(
     for (const s of preParsed.slugs) allowedSlugs.add(s);
 
     // 7. モデルループ（最大3モデル呼び出し、合計4道具呼び出し）
+    const normalizedConditions = normalizeConditions(input.conditions);
     const nonce = untrustedNonce();
     const messages: WorkersAiMessage[] = [
       { role: "system", content: GUIDE_FREEFORM_SYSTEM_PROMPT },
       {
         role: "user",
-        content: buildFirstUserMessage(question, preOut, activeSession, nonce),
+        content: buildFirstUserMessage(
+          question,
+          preOut,
+          activeSession,
+          nonce,
+          normalizedConditions,
+        ),
       },
     ];
 
@@ -1096,7 +1192,12 @@ export async function answerFreeQuestion(
     }
 
     // 8. 照合（今回の道具出力のみを根拠にする。会話メモは根拠にしない）
-    const verified = verifyFreeformText(finalText, toolOutputs, question);
+    const verified = verifyFreeformText(
+      finalText,
+      toolOutputs,
+      question,
+      input.conditions,
+    );
     const { links, slugs } = collectLinksFromToolOutputs(
       getArticleOutputs,
       searchOutputs,

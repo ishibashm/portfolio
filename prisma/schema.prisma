@@ -1152,6 +1152,22 @@ model AgentUsageDaily {
   @@map("agent_usage_daily")
 }
 
+// 案内役（/annai/memory）の同意した人だけの長期記憶。
+// 識別子はランダム Cookie の HMAC（64 文字）のみで、本体は AES-256-GCM で暗号化する。
+// 定義は prisma/sql/20261125_add_guide_memory.sql と揃える。
+model GuideMemory {
+  idHash         String   @id @map("id_hash") @db.Char(64)
+  payload        Bytes
+  keyVersion     String   @map("key_version")
+  consentVersion String   @map("consent_version")
+  createdAt      DateTime @map("created_at") @db.Timestamptz(3)
+  lastUsedAt     DateTime @map("last_used_at") @db.Timestamptz(3)
+  expiresAt      DateTime @map("expires_at") @db.Timestamptz(3)
+
+  @@index([expiresAt])
+  @@map("guide_memory")
+}
+
 // Shared token buckets: atomic update under a DB transaction, never read-modify-write.
 model McpRateBucket {
   userId    String   @db.Uuid
