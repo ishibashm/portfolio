@@ -44,6 +44,7 @@ BEGIN
     'favorite_days',
     'favorite_properties',
     'geocode_towns',
+    'guide_memory',
     'land_listings',
     'land_price_points',
     'listing_candidate_rates',

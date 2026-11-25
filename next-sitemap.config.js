@@ -532,6 +532,7 @@ module.exports = {
   exclude: [
     "/ask",
     "/annai/ask",
+    "/annai/memory",
     "/houi/3d",
     "/houi/mcp-explorer",
     "/relocation/candidates",

@@ -3,6 +3,7 @@ import { cookies, headers } from "next/headers";
 import Link from "next/link";
 import { AiExportBox } from "@/components/AiExportBox";
 import GuideCharacter from "@/components/guide/GuideCharacter";
+import MemoryConsentForm from "@/components/guide/MemoryConsentForm";
 import { currentYearInJapan, STAR_NAMES } from "@/lib/kigakuContent";
 import { buildAnnaiAiExport } from "@/lib/aiExportPages";
 import {
@@ -23,6 +24,14 @@ import {
   type GuideQueryStep2,
   type GuideQueryStep3,
 } from "@/lib/guide/guideForm";
+import {
+  GUIDE_MEMORY_COOKIE,
+  GUIDE_MEMORY_TOPIC_LABELS,
+  GUIDE_PREFECTURES,
+  guideMemoryConfig,
+  readMemory,
+  type GuideMemoryPayload,
+} from "@/lib/guide/guideMemory";
 import { loadGuideAnswer, type GuideAnswerData } from "@/lib/guide/guidePage";
 import { guideSessionKey } from "@/lib/guide/guideSession";
 import { workersAiGuideState } from "@/lib/guide/workersAi";
@@ -396,8 +405,37 @@ function QuestionSummaryBox({ query }: { query: GuideQueryStep3 }) {
   );
 }
 
-function Step3View({ answer }: { answer: GuideAnswerData }) {
+function formatRememberedSummary(memory: GuideMemoryPayload): string {
+  const parts: string[] = [];
+  if (memory.star !== undefined) {
+    parts.push(`本命星${memory.star}（${STAR_NAMES[memory.star] ?? ""}）`);
+  }
+  if (memory.pref !== undefined) {
+    parts.push(GUIDE_PREFECTURES[memory.pref]);
+  }
+  if (memory.topics.length > 0) {
+    parts.push(
+      `話題: ${memory.topics.map((t) => GUIDE_MEMORY_TOPIC_LABELS[t]).join("・")}`,
+    );
+  }
+  if (memory.slugs.length > 0) {
+    parts.push(`読んだ記事${memory.slugs.length}件`);
+  }
+  return parts.length > 0 ? parts.join("・") : "登録あり";
+}
+
+function Step3View({
+  answer,
+  memoryEnabled = false,
+}: {
+  answer: GuideAnswerData;
+  memoryEnabled?: boolean;
+}) {
   const { query, facts, trace } = answer;
+  const originCode =
+    facts.origin?.code ?? (query.kind === "move" ? query.c : undefined);
+  const prefCandidate = originCode ? originCode.slice(0, 2) : undefined;
+  const saveTopic = query.kind === "read" ? query.t : query.kind;
 
   return (
     <div className="mt-8 space-y-6">
@@ -826,6 +864,15 @@ function Step3View({ answer }: { answer: GuideAnswerData }) {
         />
       ) : null}
 
+      {memoryEnabled && answer.status === "ok" && (
+        <MemoryConsentForm
+          star={facts.honmeiStar}
+          pref={prefCandidate}
+          topic={saveTopic}
+          back="/annai"
+        />
+      )}
+
       {/* ⑦ 続けて押すボタン（2〜4個）と入力消去 */}
       <nav
         aria-label="次の操作"
@@ -887,6 +934,16 @@ export default async function AnnaiPage(props: PageProps) {
     workersAiGuideState(process.env).enabled &&
     guideSessionKey(process.env) !== null;
 
+  const memoryEnabled = guideMemoryConfig(process.env).enabled;
+  let remembered: GuideMemoryPayload | null = null;
+  if (memoryEnabled && query.step === 1) {
+    const memCookieRaw = cookieStore.get(GUIDE_MEMORY_COOKIE)?.value;
+    const memRes = await readMemory(memCookieRaw, { touch: true });
+    if (memRes.status === "ok") {
+      remembered = memRes.memory;
+    }
+  }
+
   let answer: GuideAnswerData | null = null;
   if (query.step === 3) {
     const reqHeaders = await headers();
@@ -918,15 +975,35 @@ export default async function AnnaiPage(props: PageProps) {
           迷ったら、いちばん近い質問を1つ選んでください。道具で計算した結果だけをもとにご案内します。吉凶は参考情報です。
         </GuideCharacter>
 
+        {query.step === 1 && remembered && (
+          <div className="mt-5 flex flex-wrap items-center justify-between gap-2 rounded-2xl border border-theme-border bg-theme-surface px-4 py-3 text-xs text-ink">
+            <span>覚えている条件: {formatRememberedSummary(remembered)}</span>
+            <Link
+              href="/annai/memory"
+              className="font-semibold text-accent underline hover:text-ink"
+            >
+              記憶を見る・消す
+            </Link>
+          </div>
+        )}
+
         <StepIndicator current={query.step} />
 
         {query.step === 1 && <Step1View askEnabled={askEnabled} />}
         {query.step === 2 && <Step2View query={query} />}
-        {query.step === 3 && answer && <Step3View answer={answer} />}
+        {query.step === 3 && answer && (
+          <Step3View answer={answer} memoryEnabled={memoryEnabled} />
+        )}
 
-        <p className="mt-10 text-sm text-ink-muted">
-          吉凶は九星気学の考え方による参考情報です。
-        </p>
+        <div className="mt-10 flex flex-wrap items-center justify-between gap-3 text-sm text-ink-muted">
+          <p>吉凶は九星気学の考え方による参考情報です。</p>
+          <Link
+            href="/annai/memory"
+            className="text-xs font-semibold text-accent underline hover:text-ink"
+          >
+            記憶を見る・消す
+          </Link>
+        </div>
       </article>
     </main>
   );

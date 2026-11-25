@@ -2,14 +2,33 @@
 
 import { useActionState } from "react";
 import Link from "next/link";
+import MemoryConsentForm from "@/components/guide/MemoryConsentForm";
 import type { FreeAnswerResult } from "@/lib/guide/guideFreeform";
 import { askAction } from "./actions";
 
+const BLOG_SLUG_RE =
+  /^(?:https:\/\/cloud-palette\.com)?\/blog\/([a-z0-9][a-z0-9-]{0,119})$/;
+
+function extractAnswerSlugs(links: { url: string }[]): string[] {
+  const slugs: string[] = [];
+  for (const link of links) {
+    const m = BLOG_SLUG_RE.exec(link.url.trim());
+    if (m && m[1] && !slugs.includes(m[1])) {
+      slugs.push(m[1]);
+    }
+  }
+  return slugs;
+}
+
 type AskFormProps = {
   initialState: FreeAnswerResult;
+  memoryEnabled?: boolean;
 };
 
-export default function AskForm({ initialState }: AskFormProps) {
+export default function AskForm({
+  initialState,
+  memoryEnabled = false,
+}: AskFormProps) {
   const [state, formAction, isPending] = useActionState(
     askAction,
     initialState,
@@ -150,6 +169,13 @@ export default function AskForm({ initialState }: AskFormProps) {
             </details>
           )}
         </section>
+      )}
+
+      {memoryEnabled && hasResult && state.links.length > 0 && (
+        <MemoryConsentForm
+          slugs={extractAnswerSlugs(state.links)}
+          back="/annai/ask"
+        />
       )}
 
       {/* 問数カウンタ */}

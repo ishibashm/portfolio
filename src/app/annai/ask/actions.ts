@@ -1,11 +1,17 @@
 "use server";
 
-import { headers } from "next/headers";
+import { cookies, headers } from "next/headers";
 import {
   answerFreeQuestion,
   createInitialFreeAnswerState,
   type FreeAnswerResult,
+  type FreeQuestionConditions,
 } from "@/lib/guide/guideFreeform";
+import {
+  GUIDE_MEMORY_COOKIE,
+  guideMemoryConfig,
+  readMemory,
+} from "@/lib/guide/guideMemory";
 import {
   GUIDE_SESSION_MAX_TURNS,
   guideSessionKey,
@@ -65,11 +71,37 @@ export async function askAction(
   }
 
   const reqHeaders = await headers();
+  let conditions: FreeQuestionConditions | undefined;
+  if (guideMemoryConfig(process.env).enabled) {
+    try {
+      const cookieStore = await cookies();
+      const memCookie = cookieStore.get(GUIDE_MEMORY_COOKIE)?.value;
+      const memRes = await readMemory(memCookie, { touch: true });
+      if (memRes.status === "ok") {
+        const { star, pref, topics } = memRes.memory;
+        if (
+          star !== undefined ||
+          pref !== undefined ||
+          (topics && topics.length > 0)
+        ) {
+          conditions = {
+            ...(star !== undefined ? { star } : {}),
+            ...(pref !== undefined ? { pref } : {}),
+            ...(topics && topics.length > 0 ? { topics } : {}),
+          };
+        }
+      }
+    } catch {
+      conditions = undefined;
+    }
+  }
+
   return answerFreeQuestion({
     question: qStr,
     sessionSealed: sStr || undefined,
     formToken: ftStr,
     honeypot: websiteStr || undefined,
     headers: reqHeaders,
+    ...(conditions ? { conditions } : {}),
   });
 }

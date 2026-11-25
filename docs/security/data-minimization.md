@@ -56,3 +56,10 @@ ASK_DATA_RETENTION_ENABLED=true node scripts/retention/ask-data-retention.mjs --
 - ブラウザの永続保存・バックアップ・外部サービスの保持は、このサーバー清掃と別に扱う。
 
 検証: tsc・lint（エラー0、警告は master と同数）・警告ゲート・Vitest・next build は PR の CI で確認する。
+
+## 2026-11-25 実施分（案内役の同意制長期記憶 `guide_memory`）
+
+- **対象と既定状態**: 案内役（`/annai`・`/annai/ask`・`/annai/memory`）の「次回も条件を覚える」機能。既定はオフ（`GUIDE_MEMORY_ENABLED === "true"` かつ 32 バイト base64 の `GUIDE_MEMORY_KEY` が設定されているときのみ有効）。利用者が未選択のチェックボックスにチェックを入れて「覚える」を押したときだけ書き込む。
+- **保存項目（自由文・個人情報の排除）**: `payload` には zod strict スキーマで検証した `{ v: 1, star?: 1..9, pref?: "01".."47", topics: GuideMemoryTopicKey[] (最大5), slugs: string[] (最大20) }` だけを保持する。質問文・回答文・生年月日・氏名・連絡先・IP アドレスは保存しない。
+- **識別子と暗号化**: ブラウザには 32 バイト乱数の base64url（43 文字）を HttpOnly / Secure / SameSite=Lax Cookie（`annai_mem`, `Path=/annai`, `Max-Age=7776000`）として置く。`GUIDE_MEMORY_KEY` から HKDF-SHA256 で `idKey` と `encKey` を分離導出し、DB 主キー `id_hash` には Cookie ID の HMAC-SHA256（64 文字 hex）のみを保存する（生の Cookie ID は保存しない）。`payload` は AES-256-GCM（12 バイト nonce + 16 バイト tag + 暗号文）で封印し、AAD `["guide-memory-v1", idHash, keyVersion]` により行の付け替えを防ぐ。利用者には `id_hash` 末尾 8 桁のみを記憶 ID として表示・JSON 書き出し（`/annai/memory/export`）する。
+- **保持期間と期限切れ削除**: 有効期限は最終利用日から 90 日（`last_used_at + 90 days`）、ただし最長でも保存開始から 1 年（`created_at + 365 days`）を上限とする。Supabase 無料枠で `pg_cron` が使えない環境でも確実に消えるよう、アプリ側の読み出し・保存・削除のたびに期限切れ行を最大 200 件ずつ削除する（piggyback cleanup）。加えて、`pg_cron` が導入されている環境向けの任意 DDL（`prisma/sql/20261125_guide_memory_cron_optional.sql`）を同梱している。DDL（`prisma/sql/20261125_add_guide_memory.sql`）はすべて未適用で、`ENABLE ROW LEVEL SECURITY` と `REVOKE ALL ON guide_memory FROM anon, authenticated` を含む。
