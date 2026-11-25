@@ -25,9 +25,9 @@ const FAQ = [
       "この画面に生年月日を入れると本命星が分かります。「本命星と吉方位を調べる」や「吉方位」の生まれ年表でも確認できます。",
   },
   {
-    question: "「今日の吉方位と時間」とはどう違いますか？",
+    question: "「今日の吉方位 時間別一覧」とはどう違いますか？",
     answer:
-      "「今日の吉方位と時間」は東京基準の本命星別の早見表です。この画面では、生年月日と出発地・目的地を入れて、いま行き先の方位を使う目安を真太陽時で確認できます。",
+      "「今日の吉方位 時間別一覧」は、十二支の時間帯ごとの方位を本命星別に並べた東京基準の早見表です。この画面は、生年月日と出発地・目的地を入れて、いま行き先の方位を使えるかを出発地の真太陽時で確認するためのものです。",
   },
   {
     question: "目的地を入れると何が分かりますか？",
@@ -42,7 +42,7 @@ const FAQ = [
 ];
 
 const NEXT_LINKS = [
-  ["/houi/today", "今日の吉方位と時間"],
+  ["/houi/today", "今日の吉方位 時間別一覧"],
   ["/blog/todays-lucky-direction-by-hour", "今日の吉方位と時間帯はどう読むか"],
   ["/guide/honmei", "本命星と吉方位を調べる"],
 ];
@@ -68,7 +68,17 @@ export default function DashboardPage() {
       <div className="mx-auto max-w-[1700px] space-y-6">
         <WebPageJsonLd path={path} name={title} description={description} />
         <FaqJsonLd items={FAQ} />
-        <h1 className="text-2xl font-bold">今日の方位と時間を確かめる</h1>
+        <h1 className="text-2xl font-bold">出発地と目的地で方位を確かめる</h1>
+        <p className="rounded-2xl border border-theme-border bg-theme-accent-soft p-4 text-sm leading-relaxed">
+          時間帯ごとの吉方位を一覧で見たい方は、
+          <Link
+            href="/houi/today"
+            className="inline-flex min-h-11 items-center font-bold text-accent underline"
+          >
+            今日の吉方位 時間別一覧
+          </Link>
+          へ。本命星別に、十二支の時間帯ごとの方位を表で見られます。この画面は、出発地から目的地を見た方位が自分にいま使えるかを確かめます。
+        </p>
         <section className="rounded-2xl border border-theme-border bg-theme-surface p-4 sm:p-5">
           <h2 className={headingClass}>今日の要約</h2>
           <p className="text-sm text-ink-muted">
@@ -108,7 +118,7 @@ export default function DashboardPage() {
               "ここでは生年月日と出発地・目的地を入れ、行き先が今使えるかを真太陽時で確かめられます。本命星別の早見表は"
             }
             <Link href="/houi/today" className="text-accent underline">
-              「今日の吉方位と時間」
+              「今日の吉方位 時間別一覧」
             </Link>
             {"へ。"}
           </GuideCharacter>

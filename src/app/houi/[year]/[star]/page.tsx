@@ -68,6 +68,11 @@ function parse(params: { year: string; star: string }) {
   return { year, star };
 }
 
+function joinDirections(names: string[]): string {
+  if (names.length === 2) return `${names[0]}と${names[1]}`;
+  return names.join("・");
+}
+
 export async function generateMetadata({
   params,
 }: {
@@ -121,6 +126,38 @@ export default async function Page({
 
   const path = `/houi/${year}/${star}`;
   const heading = `${year}年 ${name}の吉方位・凶方位【月別】`;
+  const prevYearVerdicts = getYearDirections(
+    year - 1,
+    star,
+    "classical",
+  ).verdicts;
+  const monthRows = MONTHS.map((month) => {
+    const { verdicts: monthly } = getMonthDirections(
+      year,
+      month,
+      star,
+      "classical",
+    );
+    const monthlyGood = monthly.filter((v) => v.kind === "good");
+    const monthlyBad = monthly.filter((v) => v.kind === "bad");
+    const annual = month === 1 ? prevYearVerdicts : verdicts;
+    const bothGood = monthlyGood.filter((v) =>
+      annual.some((a) => a.direction === v.direction && a.kind === "good"),
+    );
+    return {
+      month,
+      monthlyGood,
+      monthlyBad,
+      bothGood,
+      bothText: bothGood.length ? bothGood.map((v) => v.jp).join("・") : "—",
+      goodText: monthlyGood.length
+        ? monthlyGood.map((v) => v.jp).join("・")
+        : "なし",
+      badText: monthlyBad.length
+        ? monthlyBad.map((v) => `${v.jp}（${v.label}）`).join("、")
+        : "なし",
+    };
+  });
 
   return (
     <div className="min-h-screen bg-background text-ink font-sans">
@@ -156,6 +193,91 @@ export default async function Page({
         <h1 className="text-3xl md:text-4xl font-bold font-serif tracking-tight leading-snug">
           {heading}
         </h1>
+
+        <p
+          data-testid="houi-answer"
+          className="mt-5 text-lg font-bold leading-relaxed text-ink"
+        >
+          {good.length > 0
+            ? `${name}の${year}年の吉方位は${joinDirections(good.map((v) => v.jp))}です。`
+            : `${name}の${year}年は、吉方位にあたる方位はありません。`}
+          {bad.length > 0 && (
+            <span className="block mt-1 text-sm font-normal text-ink">
+              避けたい方位は
+              {bad.map((v) => `${v.jp}（${v.label}）`).join("、")}です。
+            </span>
+          )}
+        </p>
+
+        <section aria-labelledby="houi-month-table-heading" className="mt-6">
+          <h2
+            id="houi-month-table-heading"
+            className="text-xl font-bold font-serif border-b border-theme-border pb-2"
+          >
+            {year}年 {name}の月ごとの吉方位・凶方位（早見表）
+          </h2>
+          <div className="mt-3 overflow-x-auto">
+            <table className="w-full min-w-[480px] text-xs border-collapse">
+              <caption className="sr-only">
+                {year}年 {name}の1月から12月までの月別吉方位・凶方位一覧
+              </caption>
+              <thead>
+                <tr className="bg-theme-subtle">
+                  <th
+                    scope="col"
+                    className="border border-theme-border p-2 text-left font-bold whitespace-nowrap"
+                  >
+                    月
+                  </th>
+                  <th
+                    scope="col"
+                    className="border border-theme-border p-2 text-left font-bold whitespace-nowrap"
+                  >
+                    年月とも吉
+                  </th>
+                  <th
+                    scope="col"
+                    className="border border-theme-border p-2 text-left font-bold whitespace-nowrap"
+                  >
+                    吉
+                  </th>
+                  <th
+                    scope="col"
+                    className="border border-theme-border p-2 text-left font-bold"
+                  >
+                    凶
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {monthRows.map((row) => (
+                  <tr
+                    key={row.month}
+                    className={
+                      row.bothGood.length ? "bg-theme-good-soft" : undefined
+                    }
+                  >
+                    <th
+                      scope="row"
+                      className="border border-theme-border p-2 text-left font-mono font-bold whitespace-nowrap"
+                    >
+                      {row.month}月
+                    </th>
+                    <td className="border border-theme-border p-2 font-bold text-theme-good whitespace-nowrap">
+                      {row.bothText}
+                    </td>
+                    <td className="border border-theme-border p-2 text-theme-good whitespace-nowrap">
+                      {row.goodText}
+                    </td>
+                    <td className="border border-theme-border p-2 text-theme-bad">
+                      {row.badText}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </section>
 
         <p className="mt-5 text-sm leading-relaxed text-ink">
           {year}年の年盤は中宮が{STAR_NAMES[centerStar]}です。
@@ -241,25 +363,8 @@ export default async function Page({
             各月は節入りから始まります。「年月とも吉」は同じ方位が年盤・月盤の両方で吉になる月です。1月の年盤は前年を使います。
           </p>
           <ul className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-            {MONTHS.map((month) => {
-              const { verdicts: monthly } = getMonthDirections(
-                year,
-                month,
-                star,
-                "classical",
-              );
-              const monthlyGood = monthly.filter((v) => v.kind === "good");
-              const monthlyBad = monthly.filter((v) => v.kind === "bad");
-              const annual =
-                month === 1
-                  ? getYearDirections(year - 1, star, "classical").verdicts
-                  : verdicts;
-              const bothGood = monthlyGood.filter((v) =>
-                annual.some(
-                  (a) => a.direction === v.direction && a.kind === "good",
-                ),
-              );
-              return (
+            {monthRows.map(
+              ({ month, bothGood, bothText, goodText, badText }) => (
                 <li
                   key={month}
                   className={`wg-card p-4 ${bothGood.length ? "border-theme-border bg-theme-good-soft" : ""}`}
@@ -267,26 +372,16 @@ export default async function Page({
                   <h3 className="font-mono text-sm font-bold">{month}月</h3>
                   {bothGood.length > 0 && (
                     <p className="mt-2 text-xs font-bold text-theme-good">
-                      年月とも吉：{bothGood.map((v) => v.jp).join("・")}
+                      年月とも吉：{bothText}
                     </p>
                   )}
-                  <p className="mt-2 text-xs text-theme-good">
-                    吉：
-                    {monthlyGood.length
-                      ? monthlyGood.map((v) => v.jp).join("・")
-                      : "なし"}
-                  </p>
+                  <p className="mt-2 text-xs text-theme-good">吉：{goodText}</p>
                   <p className="mt-1 text-xs leading-relaxed text-theme-bad">
-                    凶：
-                    {monthlyBad.length
-                      ? monthlyBad
-                          .map((v) => `${v.jp}（${v.label}）`)
-                          .join("、")
-                      : "なし"}
+                    凶：{badText}
                   </p>
                 </li>
-              );
-            })}
+              ),
+            )}
           </ul>
           {monthContentYears().includes(year) && (
             <details className="mt-4">

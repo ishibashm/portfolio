@@ -208,21 +208,24 @@ describe("今日の方位", () => {
     const { default: TodayPage, metadata } =
       await import("@/app/houi/today/page");
     expect(metadata.title).toBe(
-      "今日の方位を時間別に見る｜本命星別の日盤と十二支",
+      "今日の吉方位 時間別一覧｜十二支の時間帯ごとの方位と本命星別の早見表",
     );
     expect(metadata.description).toBe(
-      "本命星を選ぶと、今日と明日の吉方位・避けたい方位と、十二支ごとの時間別の方位が分かります。五黄殺・暗剣殺・日破は全員に凶として表示し、日本時間の日付で更新します。時間帯は東京基準の真太陽時で区切ります。方位の吉凶は占い上の目安です。",
+      "今日の吉方位を時間別の一覧で確認できます。子〜亥の十二支の時間帯ごとに、全員に避けたい方位と本命星ごとの吉方位を、開いてすぐ表で表示します。生まれ年を入れると自分の本命星の方位も出ます。日本時間の日付で更新。方位の吉凶は占い上の目安です。",
     );
+    // 「真太陽時」は検索語から外し、本文（刻の基準）に回した。
+    expect(String(metadata.title)).not.toContain("真太陽時");
+    expect(metadata.description).not.toContain("真太陽時");
     const html = renderToStaticMarkup(await TodayPage());
     for (const phrase of [
-      "今日の方位は、本命星ごとの日盤",
+      "今日の吉方位は、本命星ごとの日盤",
       "時間別の方位",
       "占い上の目安",
       "東京（東経139.6917度）の真太陽時",
     ]) {
       expect(html).toContain(phrase);
     }
-    expect(html.indexOf("今日の方位は、本命星ごとの日盤")).toBeLessThan(
+    expect(html.indexOf("今日の吉方位は、本命星ごとの日盤")).toBeLessThan(
       html.indexOf('name="birthYear"'),
     );
   });

@@ -39,7 +39,7 @@ it("renders the summary, guide, headings, links and matching JSON-LD in the init
     expect(
       [...doc.querySelectorAll("h1, h2")].map((h) => h.textContent),
     ).toEqual([
-      "今日の方位と時間を確かめる",
+      "出発地と目的地で方位を確かめる",
       "今日の要約",
       "この画面で分かること",
       "生年月日と場所を入れる",
@@ -78,7 +78,7 @@ it("renders the summary, guide, headings, links and matching JSON-LD in the init
     expect(webPage).toMatchObject({
       "@type": "WebPage",
       url: `${SITE_URL}/relocation/dashboard`,
-      name: "今日の方位と時間｜目的地と出発地の真太陽時で確認",
+      name: "出発地と目的地で方位を確かめる｜行き先がいま使えるかを判定",
       description: expect.stringContaining("占い上の目安"),
       inLanguage: "ja",
       publisher: { "@id": `${SITE_URL}/#organization` },
@@ -97,7 +97,7 @@ it("renders the summary, guide, headings, links and matching JSON-LD in the init
       "今日、誰にとっても避けたい方位はありますか？",
       "いまの刻はいつまでで、次の刻はいつからですか？ 真太陽時とは何ですか？",
       "本命星が分からないときはどうすればよいですか？",
-      "「今日の吉方位と時間」とはどう違いますか？",
+      "「今日の吉方位 時間別一覧」とはどう違いますか？",
       "目的地を入れると何が分かりますか？",
       "引っ越しの日取りは日盤だけで選べますか？",
     ]);
