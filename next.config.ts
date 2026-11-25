@@ -3,6 +3,14 @@ import type { NextConfig } from "next";
 const nextConfig: NextConfig = {
   output: "standalone",
   poweredByHeader: false,
+  // /annai/ask の質問フォーム（Server Action）。封印した会話メモ（最大8KB）が
+  // 隠し欄と、JSなしの送信で React が付ける直前の状態の両方に載るため、
+  // 8KB×2＋質問と記録の分を見て 32KB にする（アプリ側でも欄ごとに上限を検査する）。
+  experimental: {
+    serverActions: {
+      bodySizeLimit: "32kb",
+    },
+  },
   // Native Node API handlers keep oidc-provider's request/cookie semantics.
   serverExternalPackages: [
     "oidc-provider",

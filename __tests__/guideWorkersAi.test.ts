@@ -7,13 +7,17 @@ import {
   buildGuidePrompt,
   summarizeWithGuideAi,
 } from "@/lib/guide/guideAi";
+import { resetGuideBudgetMemory } from "@/lib/guide/guideBudget";
 import {
+  GLM_MODEL,
   WORKERS_AI_FALLBACK_MODEL,
   WORKERS_AI_PRIMARY_MODEL,
+  callWorkersAiChatMessages,
   redactBirthData,
   reserveWorkersAiCall,
   resetWorkersAiGuideMemory,
   workersAiDailyCap,
+  workersAiNeurons,
   type GuideUsageDb,
 } from "@/lib/guide/workersAi";
 
@@ -61,9 +65,13 @@ function errorResponse(status: number): Response {
 function counterDb(): GuideUsageDb & { calls: number } {
   const db = {
     calls: 0,
-    $queryRaw: vi.fn(async () => {
-      db.calls++;
-      return [{ requests: db.calls }];
+    $queryRaw: vi.fn(async (strings: TemplateStringsArray) => {
+      const sql = strings.join("?");
+      if (sql.includes("RETURNING requests")) {
+        db.calls++;
+        return [{ requests: db.calls }];
+      }
+      return [{ tokens: 60_000 }];
     }),
   };
   return db as unknown as GuideUsageDb & { calls: number };
@@ -81,6 +89,7 @@ function freshHeaders(): Headers {
 
 beforeEach(() => {
   resetWorkersAiGuideMemory();
+  resetGuideBudgetMemory();
 });
 
 afterEach(() => {
@@ -257,7 +266,7 @@ describe("Workers AI 案内役経路", () => {
     expect(h.get("Content-Type")).toBe("application/json");
     const body = JSON.parse(String(init.body));
     expect(body.max_completion_tokens).toBe(256);
-    expect(body.chat_template_kwargs).toEqual({ enable_thinking: false });
+    expect(body.chat_template_kwargs).toBeUndefined();
     expect(body.messages).toHaveLength(2);
     expect(body.messages[0].role).toBe("system");
     expect(body.messages[0].content).toContain("案内役");
@@ -267,7 +276,7 @@ describe("Workers AI 案内役経路", () => {
     expect(body.messages[1].content).not.toContain("birthDate");
   });
 
-  it("予備モデル（gemma）には chat_template_kwargs を付けない", async () => {
+  it("予備モデル（GLM）には chat_template_kwargs を付ける", async () => {
     const fetchFn = vi
       .fn()
       .mockResolvedValueOnce(errorResponse(500))
@@ -281,7 +290,7 @@ describe("Workers AI 案内役経路", () => {
       },
     );
     const body = JSON.parse(String(fetchFn.mock.calls[1][1].body));
-    expect(body.chat_template_kwargs).toBeUndefined();
+    expect(body.chat_template_kwargs).toEqual({ enable_thinking: false });
     expect(body.max_completion_tokens).toBe(256);
   });
 
@@ -322,7 +331,7 @@ describe("Workers AI 案内役経路", () => {
   });
 
   it("GUIDE_AI_DAILY_MAX_CALLS が不正なら呼ばない", async () => {
-    expect(workersAiDailyCap({})).toBe(300);
+    expect(workersAiDailyCap({})).toBe(50);
     expect(workersAiDailyCap({ GUIDE_AI_DAILY_MAX_CALLS: "abc" })).toBe(0);
     expect(workersAiDailyCap({ GUIDE_AI_DAILY_MAX_CALLS: "-1" })).toBe(0);
     expect(workersAiDailyCap({ GUIDE_AI_DAILY_MAX_CALLS: "50" })).toBe(50);
@@ -491,5 +500,123 @@ describe("buildGuidePrompt", () => {
     for (let i = 0; i < 5; i++) {
       expect(begins[i].replace("BEGIN_", "")).toBe(ends[i].replace("END_", ""));
     }
+  });
+});
+
+describe("workersAiNeurons と callWorkersAiChatMessages", () => {
+  it("モデルごとの100万トークン単価でニューロンを計算する", () => {
+    expect(WORKERS_AI_PRIMARY_MODEL).toBe("@cf/google/gemma-4-26b-a4b-it");
+    expect(WORKERS_AI_FALLBACK_MODEL).toBe(GLM_MODEL);
+    expect(
+      workersAiNeurons(WORKERS_AI_PRIMARY_MODEL, 1_000_000, 1_000_000),
+    ).toBeCloseTo(9091 + 27273, 5);
+    expect(
+      workersAiNeurons(WORKERS_AI_FALLBACK_MODEL, 1_000_000, 1_000_000),
+    ).toBeCloseTo(5500 + 36400, 5);
+  });
+
+  it("OpenAI形式と旧形式の両方の tool_calls を読み取り、壊れた JSON 引数は null にする", async () => {
+    const fetchFn = vi
+      .fn()
+      .mockResolvedValueOnce(
+        new Response(
+          JSON.stringify({
+            success: true,
+            result: {
+              choices: [
+                {
+                  message: {
+                    content: "",
+                    tool_calls: [
+                      {
+                        id: "tc_1",
+                        function: {
+                          name: "search_articles",
+                          arguments: '{"query":"五黄殺","limit":3}',
+                        },
+                      },
+                      {
+                        function: {
+                          name: "get_article",
+                          arguments: "{broken-json",
+                        },
+                      },
+                    ],
+                  },
+                },
+              ],
+              usage: { prompt_tokens: 200, completion_tokens: 40 },
+            },
+          }),
+          { status: 200 },
+        ),
+      )
+      .mockResolvedValueOnce(
+        new Response(
+          JSON.stringify({
+            success: true,
+            result: {
+              tool_calls: [
+                {
+                  name: "search_articles",
+                  arguments: { query: "立春", limit: 2 },
+                },
+              ],
+            },
+          }),
+          { status: 200 },
+        ),
+      );
+
+    const r1 = await callWorkersAiChatMessages({
+      accountId: ACCOUNT_ID,
+      token: TOKEN,
+      model: WORKERS_AI_PRIMARY_MODEL,
+      messages: [{ role: "user", content: "五黄殺とは" }],
+      tools: [
+        {
+          type: "function",
+          function: {
+            name: "search_articles",
+            description: "検索",
+            parameters: { type: "object" },
+          },
+        },
+      ],
+      fetchFn: fetchFn as unknown as typeof fetch,
+    });
+    expect(r1.toolCalls).toEqual([
+      {
+        id: "tc_1",
+        name: "search_articles",
+        arguments: { query: "五黄殺", limit: 3 },
+      },
+      {
+        id: "call_2",
+        name: "get_article",
+        arguments: null,
+      },
+    ]);
+    const sentBody1 = JSON.parse(String(fetchFn.mock.calls[0][1].body));
+    expect(sentBody1.tool_choice).toBe("auto");
+    expect(sentBody1.max_completion_tokens).toBe(512);
+    expect(sentBody1.chat_template_kwargs).toBeUndefined();
+
+    const r2 = await callWorkersAiChatMessages({
+      accountId: ACCOUNT_ID,
+      token: TOKEN,
+      model: WORKERS_AI_FALLBACK_MODEL,
+      messages: [{ role: "user", content: "立春とは" }],
+      fetchFn: fetchFn as unknown as typeof fetch,
+    });
+    expect(r2.toolCalls).toEqual([
+      {
+        id: "call_1",
+        name: "search_articles",
+        arguments: { query: "立春", limit: 2 },
+      },
+    ]);
+    const sentBody2 = JSON.parse(String(fetchFn.mock.calls[1][1].body));
+    expect(sentBody2.chat_template_kwargs).toEqual({ enable_thinking: false });
   });
 });

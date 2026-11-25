@@ -36,7 +36,7 @@ import {
 } from "@/lib/guide/guideVerify";
 
 describe("guideTools", () => {
-  it("GUIDE_TOOLS に賃貸の道具・記憶の道具が含まれず、7つの許可道具だけを持つ", () => {
+  it("GUIDE_TOOLS に賃貸の道具・記憶の道具が含まれず、8つの許可道具だけを持つ", () => {
     expect(GUIDE_TOOLS).toEqual([
       "get_honmei_star",
       "judge_directions",
@@ -44,6 +44,7 @@ describe("guideTools", () => {
       "search_municipality",
       "area_directions",
       "search_articles",
+      "get_article",
       "get_today_directions",
     ]);
     const list = GUIDE_TOOLS as readonly string[];

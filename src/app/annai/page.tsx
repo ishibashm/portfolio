@@ -24,6 +24,8 @@ import {
   type GuideQueryStep3,
 } from "@/lib/guide/guideForm";
 import { loadGuideAnswer, type GuideAnswerData } from "@/lib/guide/guidePage";
+import { guideSessionKey } from "@/lib/guide/guideSession";
+import { workersAiGuideState } from "@/lib/guide/workersAi";
 
 export const dynamic = "force-dynamic";
 
@@ -93,7 +95,7 @@ function StepIndicator({ current }: { current: 1 | 2 | 3 }) {
   );
 }
 
-function Step1View() {
+function Step1View({ askEnabled }: { askEnabled: boolean }) {
   return (
     <section aria-labelledby="step1-heading" className="mt-8 space-y-4">
       <h2 id="step1-heading" className="text-lg font-bold font-serif">
@@ -118,6 +120,21 @@ function Step1View() {
           );
         })}
       </div>
+      {askEnabled && (
+        <div className="pt-2">
+          <Link
+            href="/annai/ask"
+            className="block rounded-2xl border border-theme-border bg-theme-surface p-5 shadow-sm transition-colors hover:border-accent hover:bg-theme-accent-soft"
+          >
+            <span className="block text-base font-bold font-serif text-ink">
+              自由に質問する（記事から答えます）
+            </span>
+            <span className="mt-1 block text-sm leading-relaxed text-ink-muted">
+              九星気学や方位の考え方について、このサイトの公開記事を根拠に案内役AIが短くお答えします。
+            </span>
+          </Link>
+        </div>
+      )}
     </section>
   );
 }
@@ -865,6 +882,11 @@ export default async function AnnaiPage(props: PageProps) {
   const moveCookieRaw = cookieStore.get(ANNAI_MOVE_COOKIE)?.value;
   const query = parseGuideQuery(sp, new Date(), moveCookieRaw);
 
+  // AIの自由質問が使えるときだけ入口を出す（既定はオフ）
+  const askEnabled =
+    workersAiGuideState(process.env).enabled &&
+    guideSessionKey(process.env) !== null;
+
   let answer: GuideAnswerData | null = null;
   if (query.step === 3) {
     const reqHeaders = await headers();
@@ -898,7 +920,7 @@ export default async function AnnaiPage(props: PageProps) {
 
         <StepIndicator current={query.step} />
 
-        {query.step === 1 && <Step1View />}
+        {query.step === 1 && <Step1View askEnabled={askEnabled} />}
         {query.step === 2 && <Step2View query={query} />}
         {query.step === 3 && answer && <Step3View answer={answer} />}
 

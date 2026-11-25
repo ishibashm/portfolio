@@ -6,6 +6,7 @@ import { chainLlmState } from "@/lib/mcpAgentConfig";
 import { paidApisDisabled } from "@/lib/paidApis";
 import { wrapUntrusted } from "@/lib/untrustedData";
 import { checkGuideAiSentences, narrowGuideOutputs } from "./guideAiCheck";
+import { admitSummary, settleNeurons } from "./guideBudget";
 import type { GuideFacts } from "./guideRun";
 import { collectEvidence, verifySentences } from "./guideVerify";
 import {
@@ -19,7 +20,9 @@ import {
   takeWorkersAiIpToken,
   workersAiDailyCap,
   workersAiGuideState,
+  workersAiNeurons,
   type GuideUsageDb,
+  type WorkersAiChatResult,
 } from "./workersAi";
 
 export const GUIDE_AI_PAUSED_TEXT =
@@ -366,6 +369,13 @@ async function summarizeWithWorkersAi(
     });
     if (!reserved) return guideAiResult("failed");
 
+    const ticket = await admitSummary({
+      at,
+      db: deps.usageDb,
+      env,
+    });
+    if (!ticket) return guideAiResult("failed");
+
     const material = guideAiMaterial(input);
     const prompt = buildGuidePrompt(redactBirthData(material.outputs));
     const call = (model: string) =>
@@ -380,11 +390,38 @@ async function summarizeWithWorkersAi(
       });
 
     let text: string;
+    let usedNeurons = 0;
+    let hasUsage = false;
+    const addUsage = (res: WorkersAiChatResult) => {
+      if (
+        typeof res.promptTokens === "number" ||
+        typeof res.completionTokens === "number"
+      ) {
+        hasUsage = true;
+        usedNeurons += workersAiNeurons(
+          res.model,
+          res.promptTokens,
+          res.completionTokens,
+        );
+      }
+    };
     try {
-      text = (await withinSignal(call(WORKERS_AI_PRIMARY_MODEL), signal)).text;
-    } catch {
-      if (signal.aborted) return guideAiResult("failed");
-      text = (await withinSignal(call(WORKERS_AI_FALLBACK_MODEL), signal)).text;
+      try {
+        const res = await withinSignal(call(WORKERS_AI_PRIMARY_MODEL), signal);
+        addUsage(res);
+        text = res.text;
+      } catch {
+        if (signal.aborted) return guideAiResult("failed");
+        const res = await withinSignal(call(WORKERS_AI_FALLBACK_MODEL), signal);
+        addUsage(res);
+        text = res.text;
+      }
+    } finally {
+      await settleNeurons(
+        ticket,
+        hasUsage ? usedNeurons : ticket.reservedNeurons,
+        deps.usageDb,
+      );
     }
 
     const verified = verifyGuideAiText(text, material.evidence, input.facts);
