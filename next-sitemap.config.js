@@ -584,6 +584,8 @@ module.exports = {
            force-dynamic なので事前生成の一覧には出ない。 */
         "/houi/fortune-compare",
         "/annai",
+        /* 吉方位取りプランナー。クエリ無しは索引、クエリ付きは頁側で noindex。 */
+        "/houi/planner",
       ].map((loc) => config.transform(config, loc)),
     ),
 };
