@@ -81,6 +81,7 @@ describe("サイドバーに出す今日の吉方位（2026-11-20）", () => {
     expect(listed[0]?.href).toBe("/houi/today");
     expect(listed.map((r) => r.href)).toEqual([
       "/houi/today",
+      "/houi/planner",
       "/calendar",
       "/houi/relocation-calendar",
       "/relocation/timing",

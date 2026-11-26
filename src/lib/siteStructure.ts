@@ -186,6 +186,13 @@ export const CORE_ROUTES: CoreRoute[] = [
     group: "timing",
   },
   {
+    href: "/houi/planner",
+    label: "吉方位取りを計画する",
+    summary:
+      "本命星と出発地をボタンで選ぶと、日帰り・1〜2泊・長期それぞれで、これからの吉方位の日と行き先を一覧できる。",
+    group: "timing",
+  },
+  {
     href: "/calendar",
     label: "引越しの日取りを選ぶ",
     summary:
