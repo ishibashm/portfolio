@@ -20,11 +20,15 @@
  * 行き先は近い街から遠い街までばらけるように選ぶだけで、距離は表示のみ。
  */
 import { DIRECTION_UNSTABLE_KM } from "@/lib/directionDistance";
-import type { CompassDirection } from "@/lib/kigakuContent";
+import { haLabelForLayer, directionLabelName } from "@/lib/directionLabels";
+import { kigakuMonthRange, type CompassDirection } from "@/lib/kigakuContent";
 import {
+  findAuspiciousDaysAllDirections,
   findPurposeDaysAllDirections,
+  judgeDayAllDirections,
   type PurposeDay,
 } from "@/utils/auspiciousDays";
+import { TIER_ORDER, type DayTier } from "@/utils/dayTier";
 import {
   bearingBetween,
   directionFromBearing,
@@ -36,17 +40,32 @@ import { DEFAULT_TENCHUSATSU_MODE } from "@/utils/tenchusatsuPolicy";
 import {
   PURPOSE_BOARDS,
   PURPOSE_LABELS,
+  gradeForPurpose,
   type BoardName,
+  type TripPurpose,
 } from "@/utils/tripPurpose";
 
-export type PlannerPurpose = "daytrip" | "short_stay";
+export type PlannerPurpose = "daytrip" | "short_stay" | "long_stay";
 export const PLANNER_PURPOSES: readonly PlannerPurpose[] = [
   "daytrip",
   "short_stay",
+  "long_stay",
 ];
+/** 画面用。長期は既存の relocation（年盤＋月盤）と同じ盤を使う。 */
+export const PLANNER_PURPOSE_LABELS: Record<PlannerPurpose, string> = {
+  daytrip: PURPOSE_LABELS.daytrip,
+  short_stay: PURPOSE_LABELS.short_stay,
+  long_stay: "長期（3泊以上・移転／年盤＋月盤）",
+};
+export function tripPurposeOf(purpose: PlannerPurpose): TripPurpose {
+  return purpose === "long_stay" ? "relocation" : purpose;
+}
 export const PLANNER_WEEKS = [4, 8, 12] as const;
 export type PlannerWeeks = (typeof PLANNER_WEEKS)[number];
 export const DEFAULT_PLANNER_WEEKS: PlannerWeeks = 8;
+export const PLANNER_MONTHS = [3, 6, 12] as const;
+export type PlannerMonths = (typeof PLANNER_MONTHS)[number];
+export const DEFAULT_PLANNER_MONTHS: PlannerMonths = 6;
 
 /** 行き先の市区町村を拾う範囲。houi/area・area_directions と同じ上限。 */
 export const DESTINATION_MAX_KM = 150;
@@ -64,6 +83,7 @@ export interface PlannerQuery {
   star: StarFrequency | null;
   purpose: PlannerPurpose;
   weeks: PlannerWeeks;
+  months: PlannerMonths;
   from: string | undefined;
 }
 
@@ -88,23 +108,142 @@ export function parsePlannerQuery(query: Query): PlannerQuery {
   const weeks = (PLANNER_WEEKS as readonly number[]).includes(rawWeeks)
     ? (rawWeeks as PlannerWeeks)
     : DEFAULT_PLANNER_WEEKS;
+  const rawMonths = Number(single(query.months));
+  const months = (PLANNER_MONTHS as readonly number[]).includes(rawMonths)
+    ? (rawMonths as PlannerMonths)
+    : DEFAULT_PLANNER_MONTHS;
   const rawFrom = single(query.from)?.trim();
-  return { star, purpose, weeks, from: rawFrom ? rawFrom : undefined };
+  return {
+    star,
+    purpose,
+    weeks,
+    months,
+    from: rawFrom ? rawFrom : undefined,
+  };
 }
 
 export function plannerHref(params: {
   star?: number | null;
   purpose?: PlannerPurpose;
   weeks?: number;
+  months?: number;
   from?: string;
 }): string {
   const sp = new URLSearchParams();
   if (params.star) sp.set("star", String(params.star));
   if (params.purpose) sp.set("purpose", params.purpose);
-  if (params.weeks) sp.set("weeks", String(params.weeks));
+  if (params.purpose === "long_stay") {
+    if (params.months) sp.set("months", String(params.months));
+  } else if (params.weeks) {
+    sp.set("weeks", String(params.weeks));
+  }
   if (params.from) sp.set("from", params.from);
   const qs = sp.toString();
   return qs ? `/houi/planner?${qs}` : "/houi/planner";
+}
+
+function shiftYearMonth(year: number, month: number, delta: number) {
+  const i = year * 12 + (month - 1) + delta;
+  return { year: Math.floor(i / 12), month: (i % 12) + 1 };
+}
+
+/** 開始日の N か月後の同じ日（日本時間）。月末は先の月の末日に合わせる。 */
+export function addJapanMonths(start: Date, months: number): Date {
+  const [y, m, d] = toJapanDateString(start).split("-").map(Number);
+  const { year, month } = shiftYearMonth(y, m, months);
+  const last = new Date(Date.UTC(year, month, 0)).getUTCDate();
+  return new Date(Date.UTC(year, month - 1, Math.min(d, last), 3));
+}
+
+/**
+ * その日が属する節入り月（既存の kigakuMonthRange）。
+ * 暦月の 1 日は、まだ前の節に属することがある。
+ */
+export function kigakuTermOf(date: string): {
+  year: number;
+  month: number;
+  start: string;
+  end: string;
+} {
+  const [y, m] = date.split("-").map(Number);
+  for (const delta of [0, -1, 1, -2, 2]) {
+    const ym = shiftYearMonth(y, m, delta);
+    const range = kigakuMonthRange(ym.year, ym.month);
+    const start = toJapanDateString(range.start);
+    const end = toJapanDateString(range.end);
+    if (date >= start && date <= end) {
+      return { year: ym.year, month: ym.month, start, end };
+    }
+  }
+  const range = kigakuMonthRange(y, m);
+  return {
+    year: y,
+    month: m,
+    start: toJapanDateString(range.start),
+    end: toJapanDateString(range.end),
+  };
+}
+
+export function termLabel(year: number, month: number): string {
+  return `${year}年${month}月節`;
+}
+
+/** 長期の段階表示。TIER_LABELS の「三盤吉」は三盤の話なので使わない。 */
+export const LONG_STAY_TIER_LABELS: Record<DayTier, string> = {
+  S: "年盤・月盤とも吉",
+  A: "吉2盤・凶なし",
+  B: "吉1盤・凶なし",
+  C: "凶なし（平）",
+  D: "軽い凶のみ",
+  X: "五大凶殺あり",
+};
+
+export function layerStatusLabel(
+  status: string | undefined,
+  layer: "year" | "month",
+): string {
+  if (!status) return "—";
+  if (status === "NOISE_HA") return haLabelForLayer(layer);
+  if (status === "SAFE") return "平";
+  return directionLabelName(status);
+}
+
+/** from〜to に重なる節入り月を、開始日の早い順で返す。 */
+export function termsInRange(
+  from: string,
+  to: string,
+): {
+  year: number;
+  month: number;
+  start: string;
+  end: string;
+  label: string;
+}[] {
+  const out: {
+    year: number;
+    month: number;
+    start: string;
+    end: string;
+    label: string;
+  }[] = [];
+  let cursor = from;
+  for (let i = 0; i < 24 && cursor <= to; i++) {
+    const t = kigakuTermOf(cursor);
+    out.push({ ...t, label: termLabel(t.year, t.month) });
+    cursor = nextDateString(t.end);
+  }
+  return out;
+}
+
+function noonOfJapanDate(date: string): Date {
+  const [y, m, d] = date.split("-").map(Number);
+  return new Date(Date.UTC(y, m - 1, d, 3));
+}
+
+function clampDate(date: string, from: string, to: string): string {
+  if (date < from) return from;
+  if (date > to) return to;
+  return date;
 }
 
 function compactDate(date: string): string {
@@ -167,12 +306,34 @@ export interface PlannerSpot {
   distanceKm: number;
 }
 
+export interface PlannerTerm {
+  year: number;
+  month: number;
+  label: string;
+  start: string;
+  end: string;
+  /** gradeForPurpose(..., "relocation")。S は年盤・月盤とも吉。 */
+  tier: DayTier;
+  yearStatus: string;
+  monthStatus: string;
+  /** 年盤・月盤が吉の日数（天中殺で塞がれない日） */
+  available: number;
+  days: PurposeDay[];
+  /** その節の、三盤吉の出発日 */
+  departureDays: PurposeDay[];
+}
+
 export interface PlannerDirection {
   direction: CompassDirection;
   label: string;
   totalAvailable: number;
   nextDate: string | null;
   days: PurposeDay[];
+  /** 長期だけ。節入り月ごとのまとめ。短期は空。 */
+  terms: PlannerTerm[];
+  /** 長期だけ。三盤吉の出発日（先頭 cap 件）。短期は空。 */
+  departureDays: PurposeDay[];
+  yearBoardValidUntil: string | null;
   destinations: PlannerDestination[];
   spots: PlannerSpot[];
 }
@@ -184,7 +345,13 @@ export interface KichihouiPlan {
   purposeLabel: string;
   boardsUsed: BoardName[];
   usesTenchusatsu: boolean;
-  soonest: { date: string; direction: CompassDirection; label: string } | null;
+  soonest: {
+    date: string;
+    direction: CompassDirection;
+    label: string;
+    /** 三盤吉の出発日なら true。長期で年盤・月盤のみの日なら false。 */
+    triple: boolean;
+  } | null;
   directions: PlannerDirection[];
 }
 
@@ -229,44 +396,106 @@ export function spreadPick<T>(sorted: readonly T[], count: number): T[] {
   return picked;
 }
 
+function buildLongStayTerms(
+  from: string,
+  to: string,
+  base: Parameters<typeof judgeDayAllDirections>[1],
+  days: PurposeDay[],
+  departureDates: Set<string>,
+  cap: number,
+  direction: CompassDirection,
+): PlannerTerm[] {
+  return termsInRange(from, to).map((t) => {
+    const rep = noonOfJapanDate(clampDate(t.start, from, to));
+    const verdict = judgeDayAllDirections(rep, base)[direction];
+    const inTerm = days.filter((d) => d.date >= t.start && d.date <= t.end);
+    const departures = inTerm.filter((d) => departureDates.has(d.date));
+    return {
+      ...t,
+      tier: gradeForPurpose(verdict, "relocation"),
+      yearStatus: verdict.yearLayer,
+      monthStatus: verdict.monthLayer,
+      available: inTerm.length,
+      days: inTerm.slice(0, cap),
+      departureDays: departures.slice(0, cap),
+    };
+  });
+}
+
 export function buildKichihouiPlan(input: {
   star: StarFrequency;
   voidZodiacs?: string[];
   purpose: PlannerPurpose;
   origin: { lat: number; lon: number; name: string };
   start: Date;
-  weeks: PlannerWeeks;
+  weeks?: PlannerWeeks;
+  months?: PlannerMonths;
   areas: readonly PlannerPoint[];
   spots: readonly PlannerSpotInput[];
   maxDaysPerDirection?: number;
 }): KichihouiPlan {
-  const end = new Date(input.start.getTime() + (input.weeks * 7 - 1) * DAY_MS);
+  const trip = tripPurposeOf(input.purpose);
+  const end =
+    input.purpose === "long_stay"
+      ? addJapanMonths(input.start, input.months ?? DEFAULT_PLANNER_MONTHS)
+      : new Date(
+          input.start.getTime() +
+            ((input.weeks ?? DEFAULT_PLANNER_WEEKS) * 7 - 1) * DAY_MS,
+        );
   const voidZodiacs = input.voidZodiacs ?? [];
-  const summaries = findPurposeDaysAllDirections(
-    input.start,
-    end,
-    {
-      honmeiStar: input.star,
-      voidZodiacs,
-      lon: input.origin.lon,
-      tenchusatsuMode: DEFAULT_TENCHUSATSU_MODE,
-      involuntaryMove: false,
-    },
-    input.purpose,
-  );
+  const base = {
+    honmeiStar: input.star,
+    voidZodiacs,
+    lon: input.origin.lon,
+    tenchusatsuMode: DEFAULT_TENCHUSATSU_MODE,
+    involuntaryMove: false as const,
+  };
+  const summaries = findPurposeDaysAllDirections(input.start, end, base, trip);
   const cap = input.maxDaysPerDirection ?? DEFAULT_DAYS_PER_DIRECTION;
+  const tripleByDirection = new Map<string, Set<string>>();
+  if (input.purpose === "long_stay") {
+    for (const s of findAuspiciousDaysAllDirections(
+      input.start,
+      end,
+      base,
+      "triple",
+    )) {
+      tripleByDirection.set(
+        s.direction,
+        new Set(
+          s.days.filter((d) => !d.blockedByTenchusatsu).map((d) => d.date),
+        ),
+      );
+    }
+  }
   const areas = place(input.origin, input.areas, DESTINATION_MAX_KM);
   const spots = place(input.origin, input.spots, SPOT_MAX_KM);
 
   const directions: PlannerDirection[] = summaries.map((s) => {
     const direction = s.direction as CompassDirection;
     const available = s.days.filter((d) => !d.blockedByTenchusatsu);
+    const departureDates = tripleByDirection.get(s.direction) ?? new Set();
+    const departureDays = available.filter((d) => departureDates.has(d.date));
     return {
       direction,
       label: s.directionLabel,
       totalAvailable: available.length,
       nextDate: available[0]?.date ?? null,
       days: available.slice(0, cap),
+      terms:
+        input.purpose === "long_stay"
+          ? buildLongStayTerms(
+              toJapanDateString(input.start),
+              toJapanDateString(end),
+              base,
+              available,
+              departureDates,
+              cap,
+              direction,
+            )
+          : [],
+      departureDays: departureDays.slice(0, cap),
+      yearBoardValidUntil: s.window?.yearBoardValidUntil ?? null,
       destinations: spreadPick(
         areas.filter((a) => a.direction === direction),
         DESTINATIONS_PER_DIRECTION,
@@ -288,7 +517,13 @@ export function buildKichihouiPlan(input: {
     };
   });
 
+  const bestTierRank = (d: PlannerDirection) => {
+    if (d.terms.length === 0) return 99;
+    return Math.min(...d.terms.map((t) => TIER_ORDER.indexOf(t.tier)));
+  };
   directions.sort((a, b) => {
+    const tierDiff = bestTierRank(a) - bestTierRank(b);
+    if (tierDiff !== 0) return tierDiff;
     if (a.nextDate && b.nextDate) {
       return (
         a.nextDate.localeCompare(b.nextDate) ||
@@ -300,20 +535,34 @@ export function buildKichihouiPlan(input: {
     return 0;
   });
 
+  const firstTriple = directions.reduce<(typeof directions)[number] | null>(
+    (best, d) => {
+      const date = d.departureDays[0]?.date;
+      if (!date) return best;
+      if (!best || date < best.departureDays[0].date) return d;
+      return best;
+    },
+    null,
+  );
   const first = directions[0];
+  const soonestFrom = firstTriple ?? first;
+  const soonestDate = firstTriple
+    ? firstTriple.departureDays[0].date
+    : first?.nextDate;
   return {
     from: toJapanDateString(input.start),
     to: toJapanDateString(end),
     purpose: input.purpose,
-    purposeLabel: PURPOSE_LABELS[input.purpose],
-    boardsUsed: [...PURPOSE_BOARDS[input.purpose]],
+    purposeLabel: PLANNER_PURPOSE_LABELS[input.purpose],
+    boardsUsed: [...PURPOSE_BOARDS[trip]],
     usesTenchusatsu: voidZodiacs.length > 0,
     soonest:
-      first?.nextDate != null
+      soonestDate != null && soonestFrom
         ? {
-            date: first.nextDate,
-            direction: first.direction,
-            label: first.label,
+            date: soonestDate,
+            direction: soonestFrom.direction,
+            label: soonestFrom.label,
+            triple: Boolean(firstTriple),
           }
         : null,
     directions,
