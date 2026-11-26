@@ -8,8 +8,11 @@ import {
   googleCalendarUrl,
   parsePlannerQuery,
   plannerHref,
+  LONG_STAY_TIER_LABELS,
+  PLANNER_MONTHS,
   PLANNER_PURPOSES,
   PLANNER_WEEKS,
+  layerStatusLabel,
   type PlannerDirection,
   type PlannerPurpose,
 } from "@/lib/kichihouiPlanner";
@@ -24,15 +27,17 @@ import type { StarFrequency } from "@/utils/ephemerisEngine";
 const PATH = "/houi/planner";
 const TITLE = "吉方位取りプランナー｜これから行ける吉方位の日と行き先";
 const DESCRIPTION =
-  "本命星と出発地をボタンで選ぶと、日帰り・1〜2泊それぞれで吉方位になる日と、その方位にある市区町村・一宮を一覧にします。方位の吉凶は占い上の目安です。";
+  "本命星と出発地をボタンで選ぶと、日帰り・1〜2泊・長期（3泊以上・移転）それぞれで吉方位になる日と、その方位にある市区町村・一宮を一覧にします。方位の吉凶は占い上の目安です。";
 
 const PURPOSE_BUTTON: Record<PlannerPurpose, string> = {
   daytrip: "日帰り（日盤）",
   short_stay: "1〜2泊（月盤＋日盤）",
+  long_stay: "長期（3泊以上・移転／年盤＋月盤）",
 };
 const PURPOSE_SHORT: Record<PlannerPurpose, string> = {
   daytrip: "日帰り",
   short_stay: "1〜2泊",
+  long_stay: "長期",
 };
 const BOARD_LABELS: Record<string, string> = {
   year: "年盤",
@@ -130,6 +135,7 @@ export default async function KichihouiPlannerPage({
     star: parsed.star,
     purpose: parsed.purpose,
     weeks: parsed.weeks,
+    months: parsed.months,
     from: resolved.fromKey,
   };
   const plan = star
@@ -171,7 +177,7 @@ export default async function KichihouiPlannerPage({
             吉方位取りプランナー
           </h1>
           <p className="text-sm leading-relaxed">
-            本命星・用事・出発地をボタンで選ぶと、これからの期間で吉方位になる日を方位ごとに並べ、その方位にある市区町村と一宮・名勝を添えます。日付ごとにGoogleカレンダーへ追加できます。方位の吉凶は占い上の目安で、効果を保証するものではありません。
+            本命星・用事・出発地をボタンで選ぶと、これからの期間で吉方位になる日を方位ごとに並べ、その方位にある市区町村と一宮・名勝を添えます。長期は節入り月ごとのまとめと、三盤がそろって吉の出発日を出します。日付ごとにGoogleカレンダーへ追加できます。方位の吉凶は占い上の目安で、効果を保証するものではありません。
           </p>
         </header>
 
@@ -243,16 +249,27 @@ export default async function KichihouiPlannerPage({
           <div className="space-y-2">
             <p className="text-sm font-bold">4. 期間</p>
             <div className="flex flex-wrap gap-2">
-              {PLANNER_WEEKS.map((w) => (
-                <Link
-                  key={w}
-                  href={plannerHref({ ...keep, weeks: w })}
-                  aria-current={parsed.weeks === w ? "true" : undefined}
-                  className={choiceClass(parsed.weeks === w)}
-                >
-                  これから{w}週
-                </Link>
-              ))}
+              {parsed.purpose === "long_stay"
+                ? PLANNER_MONTHS.map((m) => (
+                    <Link
+                      key={m}
+                      href={plannerHref({ ...keep, months: m })}
+                      aria-current={parsed.months === m ? "true" : undefined}
+                      className={choiceClass(parsed.months === m)}
+                    >
+                      これから{m}か月
+                    </Link>
+                  ))
+                : PLANNER_WEEKS.map((w) => (
+                    <Link
+                      key={w}
+                      href={plannerHref({ ...keep, weeks: w })}
+                      aria-current={parsed.weeks === w ? "true" : undefined}
+                      className={choiceClass(parsed.weeks === w)}
+                    >
+                      これから{w}週
+                    </Link>
+                  ))}
             </div>
           </div>
         </section>
@@ -276,7 +293,13 @@ export default async function KichihouiPlannerPage({
                 <>
                   <p className="text-xl font-bold text-rose-700 dark:text-rose-300">
                     {longDateLabel(plan.soonest.date)}・{plan.soonest.label}（
-                    {PURPOSE_SHORT[plan.purpose]}）
+                    {PURPOSE_SHORT[plan.purpose]}
+                    {plan.purpose === "long_stay"
+                      ? plan.soonest.triple
+                        ? "・三盤吉の出発日"
+                        : "・年盤・月盤が吉の日"
+                      : ""}
+                    ）
                   </p>
                   {soonestDir.destinations.length > 0 && (
                     <p className="text-sm">
@@ -289,6 +312,10 @@ export default async function KichihouiPlannerPage({
                     </p>
                   )}
                 </>
+              ) : plan.purpose === "long_stay" ? (
+                <p className="text-sm">
+                  この期間に、年盤と月盤がともに吉の日はありませんでした。下の方位カードで、節入り月ごとの段階を確認できます。期間を延ばすか、本命星を変えると候補が出ることがあります。
+                </p>
               ) : (
                 <p className="text-sm">
                   この期間に吉になる日はありませんでした。期間を延ばすか、用事を切り替えてください。
@@ -324,6 +351,8 @@ export default async function KichihouiPlannerPage({
                   使った盤：
                   {plan.boardsUsed.map((b) => BOARD_LABELS[b] ?? b).join("＋")}
                   。用事の盤がすべて吉の日だけを拾っています（五黄殺・暗剣殺・本命殺・的殺・破などが入る日は出ません）。
+                  {plan.purpose === "long_stay" &&
+                    " 長期の「おすすめの出発日」は、それに加えて日盤も吉の日（三盤吉）です。月ごとの区切りは節入り（既存の月盤の期間）です。"}
                 </li>
                 <li>
                   方位は真北基準・伝統区分（四正30度・四隅60度）です。出発地から5km未満の街は方位が定まらないので除き、市区町村は150km以内、一宮・名勝は300km以内から近い〜遠いがばらけるように選んでいます。距離で吉凶は変えていません。
@@ -388,50 +417,64 @@ function DirectionCard({
         {d.label}
         <span className="text-xs font-normal">吉の日 {d.totalAvailable}日</span>
       </h3>
-      {d.days.length === 0 ? (
-        <p className="text-sm">この期間に吉になる日はありません。</p>
-      ) : (
-        <ul className="space-y-1 text-sm">
-          {d.days.map((day) => (
-            <li key={day.date} className="flex flex-wrap items-center gap-x-2">
-              <time dateTime={day.date} className="font-bold">
-                {dateLabel(day.date)}
-              </time>
-              <span className="text-xs">{plainRokuyo(day.rokuyo)}</span>
-              {day.tags
-                .filter((t) => t !== plainRokuyo(day.rokuyo))
-                .slice(0, 2)
-                .map((t) => (
-                  <span
-                    key={t}
-                    className="text-xs text-rose-700 dark:text-rose-300"
-                  >
-                    {t}
-                  </span>
-                ))}
-              {day.inTenchusatsu && (
-                <span className="text-xs">天中殺（弱め）</span>
-              )}
-              <a
-                href={googleCalendarUrl({
-                  date: day.date,
-                  title: `吉方位取り：${d.label}（${PURPOSE_SHORT[purpose]}）`,
-                  details: `行き先の例：${examples || "—"}\n${shareUrl}`,
-                })}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="ml-auto text-xs text-rose-600 underline"
-              >
-                カレンダーに追加
-              </a>
+      {d.terms.length > 0 ? (
+        <ol className="space-y-3 text-sm">
+          {d.terms.map((term) => (
+            <li key={`${term.year}-${term.month}`}>
+              <p className="font-bold">
+                {term.label}
+                <span className="ml-1 text-xs font-normal">
+                  {dateLabel(term.start)}〜{dateLabel(term.end)}・
+                  {LONG_STAY_TIER_LABELS[term.tier]}
+                  {term.available > 0 ? `・とも吉の日 ${term.available}日` : ""}
+                </span>
+              </p>
+              <p className="text-xs text-slate-600 dark:text-slate-300">
+                年盤：{layerStatusLabel(term.yearStatus, "year")}／月盤：
+                {layerStatusLabel(term.monthStatus, "month")}
+              </p>
+              {term.departureDays.length > 0 ? (
+                <div className="mt-1">
+                  <p className="text-xs font-bold">
+                    おすすめの出発日（三盤吉）
+                  </p>
+                  <DayList
+                    days={term.departureDays}
+                    directionLabel={d.label}
+                    purpose={purpose}
+                    shareUrl={shareUrl}
+                    examples={examples}
+                    remaining={0}
+                  />
+                </div>
+              ) : term.tier === "S" ? (
+                <p className="mt-1 text-xs text-slate-600 dark:text-slate-300">
+                  この節に、三盤がそろって吉の出発日はありません。
+                </p>
+              ) : null}
             </li>
           ))}
-          {d.totalAvailable > d.days.length && (
+          {d.yearBoardValidUntil && (
             <li className="text-xs text-slate-600 dark:text-slate-300">
-              ほか{d.totalAvailable - d.days.length}日
+              年盤の期限：
+              <time dateTime={d.yearBoardValidUntil}>
+                {dateLabel(d.yearBoardValidUntil)}
+              </time>
+              まで（立春で年盤が変わります）
             </li>
           )}
-        </ul>
+        </ol>
+      ) : d.days.length === 0 ? (
+        <p className="text-sm">この期間に吉になる日はありません。</p>
+      ) : (
+        <DayList
+          days={d.days}
+          directionLabel={d.label}
+          purpose={purpose}
+          shareUrl={shareUrl}
+          examples={examples}
+          remaining={d.totalAvailable - d.days.length}
+        />
       )}
       {d.destinations.length > 0 && (
         <div className="text-sm">
@@ -464,5 +507,63 @@ function DirectionCard({
         </div>
       )}
     </section>
+  );
+}
+
+function DayList({
+  days,
+  directionLabel,
+  purpose,
+  shareUrl,
+  examples,
+  remaining,
+}: {
+  days: PlannerDirection["days"];
+  directionLabel: string;
+  purpose: PlannerPurpose;
+  shareUrl: string;
+  examples: string;
+  remaining: number;
+}) {
+  return (
+    <ul className="space-y-1 text-sm">
+      {days.map((day) => (
+        <li key={day.date} className="flex flex-wrap items-center gap-x-2">
+          <time dateTime={day.date} className="font-bold">
+            {dateLabel(day.date)}
+          </time>
+          <span className="text-xs">{plainRokuyo(day.rokuyo)}</span>
+          {day.tags
+            .filter((t) => t !== plainRokuyo(day.rokuyo))
+            .slice(0, 2)
+            .map((t) => (
+              <span
+                key={t}
+                className="text-xs text-rose-700 dark:text-rose-300"
+              >
+                {t}
+              </span>
+            ))}
+          {day.inTenchusatsu && <span className="text-xs">天中殺（弱め）</span>}
+          <a
+            href={googleCalendarUrl({
+              date: day.date,
+              title: `吉方位取り：${directionLabel}（${PURPOSE_SHORT[purpose]}）`,
+              details: `行き先の例：${examples || "—"}\n${shareUrl}`,
+            })}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="ml-auto text-xs text-rose-600 underline"
+          >
+            カレンダーに追加
+          </a>
+        </li>
+      ))}
+      {remaining > 0 && (
+        <li className="text-xs text-slate-600 dark:text-slate-300">
+          ほか{remaining}日
+        </li>
+      )}
+    </ul>
   );
 }
