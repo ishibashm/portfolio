@@ -681,12 +681,20 @@ export default async function Page({
                   九星気学は伝統的な考え方であり、科学的に効果が確認されたものではありません。
                 </li>
               </ul>
-              <Link
-                href={`/relocation/arbitrage?baseLat=${area.lat}&baseLon=${area.lon}&radiusKm=all&prefecture=${encodeURIComponent(area.pref)}`}
-                className="mt-4 inline-flex px-5 py-2.5 rounded-full bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs transition-colors"
-              >
-                {area.full}を出発地にして物件を探す
-              </Link>
+              <div className="mt-4 flex flex-wrap gap-2">
+                <Link
+                  href={`/houi/planner?from=${area.code}`}
+                  className="inline-flex px-5 py-2.5 rounded-full bg-rose-700 hover:bg-rose-800 text-white font-bold text-xs transition-colors"
+                >
+                  {area.full}から吉方位取りを計画する
+                </Link>
+                <Link
+                  href={`/relocation/arbitrage?baseLat=${area.lat}&baseLon=${area.lon}&radiusKm=all&prefecture=${encodeURIComponent(area.pref)}`}
+                  className="inline-flex px-5 py-2.5 rounded-full bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs transition-colors"
+                >
+                  {area.full}を出発地にして物件を探す
+                </Link>
+              </div>
             </section>
 
             {/* 方位別の一覧は 5〜150km で切ってあるので、同一市内の区や県内の遠い市は
