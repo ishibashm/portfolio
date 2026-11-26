@@ -13,6 +13,7 @@ export const GUIDE_TOOLS = [
   "search_municipality",
   "area_directions",
   "search_articles",
+  "get_article",
   "get_today_directions",
 ] as const;
 
