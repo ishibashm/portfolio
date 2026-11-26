@@ -50,20 +50,35 @@ function propName(p: ts.ObjectLiteralElementLike): string | null {
   return null;
 }
 
-/** ファイル中の `canonical: "..."`（文字列リテラルのもの）を全部返す */
+/**
+ * ファイル中の `canonical: "..."` を全部返す。
+ * 題と同じく、`const PATH = "/houi/planner"` のような定数もたどる。
+ * リテラルだけ見ると、定数に出した頁が中核ルートに入ったときに落ちる。
+ */
 function canonicalsIn(file: string): string[] {
+  const sf = parse(file);
+  const consts = new Map<string, ts.Expression>();
+  const collect = (n: ts.Node) => {
+    if (ts.isVariableDeclaration(n) && ts.isIdentifier(n.name) && n.initializer)
+      consts.set(n.name.text, n.initializer);
+    ts.forEachChild(n, collect);
+  };
+  collect(sf);
+  const textOf = (init: ts.Expression): string | null => {
+    if (ts.isStringLiteralLike(init)) return init.text;
+    if (ts.isIdentifier(init) && consts.has(init.text))
+      return textOf(consts.get(init.text)!);
+    return null;
+  };
   const out: string[] = [];
   const visit = (n: ts.Node) => {
-    if (
-      ts.isPropertyAssignment(n) &&
-      propName(n) === "canonical" &&
-      ts.isStringLiteralLike(n.initializer)
-    ) {
-      out.push(n.initializer.text);
+    if (ts.isPropertyAssignment(n) && propName(n) === "canonical") {
+      const text = textOf(n.initializer);
+      if (text !== null) out.push(text);
     }
     ts.forEachChild(n, visit);
   };
-  visit(parse(file));
+  visit(sf);
   return out;
 }
 
