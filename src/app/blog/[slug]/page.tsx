@@ -32,6 +32,7 @@ import { isAgentLogSlug } from "@/lib/agentLog";
 import { isOffThemeBlogSlug } from "@/lib/offThemeBlog";
 import { NOINDEX_ROBOTS } from "@/lib/siteStructure";
 import { extractHeadings } from "@/lib/blogToc";
+import { primaryPageFor } from "@/lib/articlePrimaryPage";
 
 /**
  * DB に入れた記事は、ビルド時には存在しない。焼き切らずに受ける。
@@ -120,6 +121,7 @@ export default async function BlogPostPage({
   */
   const faq = extractFaq(post.body, post.title);
   const affiliate = offersForPath(path)[0];
+  const primaryPage = primaryPageFor(post.slug);
 
   return (
     <div className="min-h-screen bg-background text-ink">
@@ -178,6 +180,22 @@ export default async function BlogPostPage({
             <p className="mt-5 border-l-4 border-theme-border pl-4 text-sm leading-7 text-ink-muted">
               {post.description}
             </p>
+
+            {primaryPage && (
+              <p
+                data-testid="primary-page-notice"
+                className="mt-5 rounded-2xl border border-theme-border bg-theme-accent-soft p-4 text-sm leading-relaxed"
+              >
+                {primaryPage.lead}
+                <Link
+                  href={primaryPage.href}
+                  className="inline-flex min-h-11 items-center font-bold text-accent underline"
+                >
+                  {primaryPage.label}
+                </Link>
+                へ。この記事は、その表の読み方を説明します。
+              </p>
+            )}
 
             {heroImage && (
               <BlogHero

@@ -65,13 +65,13 @@ describe("PR-B: 検索意図を先頭に置くメタデータ", () => {
       description: areaMetadata.description,
     });
     expect(todayMetadata.title).toBe(
-      "今日の方位を時間別に見る｜本命星別の日盤と十二支",
+      "今日の吉方位 時間別一覧｜十二支の時間帯ごとの方位と本命星別の早見表",
     );
     expect(todayMetadata.openGraph).toMatchObject({
       title: `${todayMetadata.title} | Cloud Palette`,
     });
     expect(dashboardMetadata.title).toBe(
-      "今日の方位と時間｜目的地と出発地の真太陽時で確認",
+      "出発地と目的地で方位を確かめる｜行き先がいま使えるかを判定",
     );
     expect(dashboardMetadata.openGraph).toMatchObject({
       title: `${dashboardMetadata.title} | Cloud Palette`,
