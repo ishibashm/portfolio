@@ -228,7 +228,11 @@ export default async function TodayPage({ searchParams }: Props = {}) {
           ))}
         </section>
         <p className="text-sm text-slate-600">
-          引越しなど長期の移動は、年盤・月盤も合わせて確認してください。
+          引越しなど長期の移動は、年盤・月盤も合わせて
+          <Link href="/houi/planner" className="text-rose-600 underline">
+            吉方位取りプランナー
+          </Link>
+          で確認できます。
         </p>
         <p className="text-sm">
           日盤と時間帯の表の関係、刻の境目が地域でずれる理由は
@@ -245,6 +249,7 @@ export default async function TodayPage({ searchParams }: Props = {}) {
           aria-label="日取りと共有"
           className="wg-card flex flex-wrap gap-4 p-5 text-sm text-rose-700 underline"
         >
+          <Link href="/houi/planner">吉方位取りを計画する</Link>
           <Link href="/calendar">カレンダーで日取りを見る</Link>
           <a href={shareUrl} target="_blank" rel="noopener noreferrer">
             Xで共有する
