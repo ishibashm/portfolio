@@ -8,12 +8,15 @@ import {
   googleCalendarUrl,
   parsePlannerQuery,
   plannerHref,
+  plannerPeriodInput,
+  plannerTierLabel,
   LONG_STAY_TIER_LABELS,
   PLANNER_MONTHS,
   PLANNER_PURPOSES,
   PLANNER_WEEKS,
   layerStatusLabel,
   type PlannerDirection,
+  type PlannerNoBadDay,
   type PlannerPurpose,
 } from "@/lib/kichihouiPlanner";
 import { buildBase } from "@/lib/mcpDirections";
@@ -22,6 +25,7 @@ import { plainRokuyo } from "@/lib/rokuyoLabel";
 import { pageOpenGraph, SITE_URL } from "@/lib/siteUrl";
 import { CITY_ORIGINS, TOKYO_ORIGIN } from "@/lib/todayWeather/origin";
 import { getRegisteredProfile } from "@/lib/todayWeather/registeredOrigin";
+import { TIER_LABELS, type DayTier } from "@/utils/dayTier";
 import type { StarFrequency } from "@/utils/ephemerisEngine";
 
 const PATH = "/houi/planner";
@@ -145,7 +149,7 @@ export default async function KichihouiPlannerPage({
         purpose: parsed.purpose,
         origin: resolved.origin,
         start: new Date(),
-        weeks: parsed.weeks,
+        ...plannerPeriodInput(parsed),
         areas: AREAS,
         spots: await loadPowerSpots(),
       })
@@ -312,6 +316,17 @@ export default async function KichihouiPlannerPage({
                     </p>
                   )}
                 </>
+              ) : plan.soonestNoBad ? (
+                <>
+                  <p className="text-xs text-slate-600 dark:text-slate-300">
+                    すべて吉の日はありませんが、凶の入らない日があります。
+                  </p>
+                  <p className="text-xl font-bold text-rose-700 dark:text-rose-300">
+                    {longDateLabel(plan.soonestNoBad.date)}・
+                    {plan.soonestNoBad.label}（{PURPOSE_SHORT[plan.purpose]}・
+                    {plannerTierLabel(plan.purpose, plan.soonestNoBad.tier)}）
+                  </p>
+                </>
               ) : plan.purpose === "long_stay" ? (
                 <p className="text-sm">
                   この期間に、年盤と月盤がともに吉の日はありませんでした。下の方位カードで、節入り月ごとの段階を確認できます。期間を延ばすか、本命星を変えると候補が出ることがあります。
@@ -350,7 +365,7 @@ export default async function KichihouiPlannerPage({
                 <li>
                   使った盤：
                   {plan.boardsUsed.map((b) => BOARD_LABELS[b] ?? b).join("＋")}
-                  。用事の盤がすべて吉の日だけを拾っています（五黄殺・暗剣殺・本命殺・的殺・破などが入る日は出ません）。
+                  。用事の盤がすべて吉の日を先に、凶の入らない日（吉が一部の日・平の日）も段階つきで出しています（五黄殺・暗剣殺・本命殺・的殺・破などが入る日は出ません）。
                   {plan.purpose === "long_stay" &&
                     " 長期の「おすすめの出発日」は、それに加えて日盤も吉の日（三盤吉）です。月ごとの区切りは節入り（既存の月盤の期間）です。"}
                 </li>
@@ -415,7 +430,12 @@ function DirectionCard({
         className="flex flex-wrap items-baseline gap-2 text-lg font-bold"
       >
         {d.label}
-        <span className="text-xs font-normal">吉の日 {d.totalAvailable}日</span>
+        <span className="text-xs font-normal">
+          吉の日 {d.totalAvailable}日
+          {d.noBadAvailable > d.totalAvailable
+            ? `／凶なし（一部吉・平を含む） ${d.noBadAvailable}日`
+            : ""}
+        </span>
       </h3>
       {d.terms.length > 0 ? (
         <ol className="space-y-3 text-sm">
@@ -445,6 +465,22 @@ function DirectionCard({
                     shareUrl={shareUrl}
                     examples={examples}
                     remaining={0}
+                    tierLabel={(tier) => TIER_LABELS[tier]}
+                  />
+                </div>
+              ) : term.noBadDays.length > 0 ? (
+                <div className="mt-1">
+                  <p className="text-xs font-bold">
+                    凶の入らない出発日（三盤で凶なし）
+                  </p>
+                  <DayList
+                    days={term.noBadDays}
+                    directionLabel={d.label}
+                    purpose={purpose}
+                    shareUrl={shareUrl}
+                    examples={examples}
+                    remaining={term.noBadAvailable - term.noBadDays.length}
+                    tierLabel={(tier) => TIER_LABELS[tier]}
                   />
                 </div>
               ) : term.tier === "S" ? (
@@ -464,16 +500,17 @@ function DirectionCard({
             </li>
           )}
         </ol>
-      ) : d.days.length === 0 ? (
-        <p className="text-sm">この期間に吉になる日はありません。</p>
+      ) : d.noBadAvailable === 0 ? (
+        <p className="text-sm">この期間に、凶の入らない日はありません。</p>
       ) : (
         <DayList
-          days={d.days}
+          days={d.noBadDays}
           directionLabel={d.label}
           purpose={purpose}
           shareUrl={shareUrl}
           examples={examples}
-          remaining={d.totalAvailable - d.days.length}
+          remaining={d.noBadAvailable - d.noBadDays.length}
+          tierLabel={(tier) => plannerTierLabel(purpose, tier)}
         />
       )}
       {d.destinations.length > 0 && (
@@ -517,13 +554,18 @@ function DayList({
   shareUrl,
   examples,
   remaining,
+  tierLabel,
 }: {
-  days: PlannerDirection["days"];
+  days: readonly Pick<
+    PlannerNoBadDay,
+    "date" | "tier" | "rokuyo" | "tags" | "inTenchusatsu"
+  >[];
   directionLabel: string;
   purpose: PlannerPurpose;
   shareUrl: string;
   examples: string;
   remaining: number;
+  tierLabel?: (tier: DayTier) => string;
 }) {
   return (
     <ul className="space-y-1 text-sm">
@@ -532,6 +574,7 @@ function DayList({
           <time dateTime={day.date} className="font-bold">
             {dateLabel(day.date)}
           </time>
+          {tierLabel && <span className="text-xs">{tierLabel(day.tier)}</span>}
           <span className="text-xs">{plainRokuyo(day.rokuyo)}</span>
           {day.tags
             .filter((t) => t !== plainRokuyo(day.rokuyo))
