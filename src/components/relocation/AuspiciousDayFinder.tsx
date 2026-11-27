@@ -508,42 +508,56 @@ export function AuspiciousDayFinder() {
           <details onToggle={(e) => setShowCoords(e.currentTarget.open)}>
             <summary>座標を直接入れる</summary>
             {showCoords && (
-              <>
-                <label htmlFor="ad-lon">現住地の経度</label>
-                <input
-                  id="ad-lon"
-                  className="border border-ink-muted bg-theme-surface text-ink focus:border-accent"
-                  type="number"
-                  step="any"
-                  min={-180}
-                  max={180}
-                  value={lon}
-                  onChange={(e) => {
-                    profileRevision.current++;
-                    originRequest.current++;
-                    setResolvingOrigin(false);
-                    setLon(e.target.value);
-                    setBaseLabel("");
-                  }}
-                />
-                <label htmlFor="ad-lat">現住地の緯度</label>
-                <input
-                  id="ad-lat"
-                  className="border border-ink-muted bg-theme-surface text-ink focus:border-accent"
-                  type="number"
-                  step="any"
-                  min={-90}
-                  max={90}
-                  value={lat}
-                  onChange={(e) => {
-                    profileRevision.current++;
-                    originRequest.current++;
-                    setResolvingOrigin(false);
-                    setLat(e.target.value);
-                    setBaseLabel("");
-                  }}
-                />
-              </>
+              <div className="mt-2 grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div className="min-w-0 space-y-1">
+                  <label
+                    htmlFor="ad-lon"
+                    className="text-xs font-semibold text-ink-muted block"
+                  >
+                    現住地の経度
+                  </label>
+                  <input
+                    id="ad-lon"
+                    className="w-full px-3 py-2 bg-theme-surface border border-ink-muted rounded-xl text-sm outline-none focus:border-accent text-ink"
+                    type="number"
+                    step="any"
+                    min={-180}
+                    max={180}
+                    value={lon}
+                    onChange={(e) => {
+                      profileRevision.current++;
+                      originRequest.current++;
+                      setResolvingOrigin(false);
+                      setLon(e.target.value);
+                      setBaseLabel("");
+                    }}
+                  />
+                </div>
+                <div className="min-w-0 space-y-1">
+                  <label
+                    htmlFor="ad-lat"
+                    className="text-xs font-semibold text-ink-muted block"
+                  >
+                    現住地の緯度
+                  </label>
+                  <input
+                    id="ad-lat"
+                    className="w-full px-3 py-2 bg-theme-surface border border-ink-muted rounded-xl text-sm outline-none focus:border-accent text-ink"
+                    type="number"
+                    step="any"
+                    min={-90}
+                    max={90}
+                    value={lat}
+                    onChange={(e) => {
+                      profileRevision.current++;
+                      originRequest.current++;
+                      setResolvingOrigin(false);
+                      setLat(e.target.value);
+                      setBaseLabel("");
+                    }}
+                  />
+                </div>
+              </div>
             )}
           </details>
         </div>
