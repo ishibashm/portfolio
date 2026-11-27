@@ -37,6 +37,7 @@ import {
 } from "@/utils/directionGeo";
 import type { StarFrequency } from "@/utils/ephemerisEngine";
 import { toJapanDateString } from "@/utils/japanDate";
+import { Lru } from "@/utils/lru";
 import { DEFAULT_TENCHUSATSU_MODE } from "@/utils/tenchusatsuPolicy";
 import {
   PURPOSE_BOARDS,
@@ -180,16 +181,27 @@ export function addJapanMonths(start: Date, months: number): Date {
   return new Date(Date.UTC(year, month - 1, Math.min(d, last), 3));
 }
 
-/**
- * その日が属する節入り月（既存の kigakuMonthRange）。
- * 暦月の 1 日は、まだ前の節に属することがある。
- */
-export function kigakuTermOf(date: string): {
+type KigakuTerm = {
   year: number;
   month: number;
   start: string;
   end: string;
-} {
+};
+
+type KigakuTermRangeItem = KigakuTerm & {
+  label: string;
+};
+
+const kigakuTermCache = new Lru<string, KigakuTerm>(2000);
+const termsInRangeCache = new Lru<string, KigakuTermRangeItem[]>(500);
+
+/**
+ * その日が属する節入り月（既存の kigakuMonthRange）。
+ * 暦月の 1 日は、まだ前の節に属することがある。
+ */
+export function kigakuTermOf(date: string): KigakuTerm {
+  const hit = kigakuTermCache.get(date);
+  if (hit) return { ...hit };
   const [y, m] = date.split("-").map(Number);
   for (const delta of [0, -1, 1, -2, 2]) {
     const ym = shiftYearMonth(y, m, delta);
@@ -197,16 +209,20 @@ export function kigakuTermOf(date: string): {
     const start = toJapanDateString(range.start);
     const end = toJapanDateString(range.end);
     if (date >= start && date <= end) {
-      return { year: ym.year, month: ym.month, start, end };
+      const result: KigakuTerm = { year: ym.year, month: ym.month, start, end };
+      kigakuTermCache.set(date, result);
+      return { ...result };
     }
   }
   const range = kigakuMonthRange(y, m);
-  return {
+  const result: KigakuTerm = {
     year: y,
     month: m,
     start: toJapanDateString(range.start),
     end: toJapanDateString(range.end),
   };
+  kigakuTermCache.set(date, result);
+  return { ...result };
 }
 
 export function termLabel(year: number, month: number): string {
@@ -234,30 +250,19 @@ export function layerStatusLabel(
 }
 
 /** from〜to に重なる節入り月を、開始日の早い順で返す。 */
-export function termsInRange(
-  from: string,
-  to: string,
-): {
-  year: number;
-  month: number;
-  start: string;
-  end: string;
-  label: string;
-}[] {
-  const out: {
-    year: number;
-    month: number;
-    start: string;
-    end: string;
-    label: string;
-  }[] = [];
+export function termsInRange(from: string, to: string): KigakuTermRangeItem[] {
+  const key = `${from}|${to}`;
+  const hit = termsInRangeCache.get(key);
+  if (hit) return hit.map((item) => ({ ...item }));
+  const out: KigakuTermRangeItem[] = [];
   let cursor = from;
   for (let i = 0; i < 24 && cursor <= to; i++) {
     const t = kigakuTermOf(cursor);
     out.push({ ...t, label: termLabel(t.year, t.month) });
     cursor = nextDateString(t.end);
   }
-  return out;
+  termsInRangeCache.set(key, out);
+  return out.map((item) => ({ ...item }));
 }
 
 function noonOfJapanDate(date: string): Date {
@@ -678,4 +683,42 @@ export function buildKichihouiPlan(input: {
     soonestNoBad,
     directions,
   };
+}
+
+const planCache = new Lru<string, KichihouiPlan>(200);
+
+export function clearKichihouiPlanCache(): void {
+  planCache.clear();
+  kigakuTermCache.clear();
+  termsInRangeCache.clear();
+}
+
+export function cachedBuildKichihouiPlan(
+  input: Parameters<typeof buildKichihouiPlan>[0],
+): KichihouiPlan {
+  const startDate = toJapanDateString(input.start);
+  const key = JSON.stringify({
+    star: input.star,
+    voidZodiacs: input.voidZodiacs,
+    purpose: input.purpose,
+    origin: {
+      lat: input.origin.lat,
+      lon: input.origin.lon,
+      name: input.origin.name,
+    },
+    weeks: input.weeks,
+    months: input.months,
+    maxDaysPerDirection: input.maxDaysPerDirection,
+    startDate,
+    areas: input.areas.length,
+    spots: input.spots.length,
+  });
+  const hit = planCache.get(key);
+  if (hit) return hit;
+  const plan = buildKichihouiPlan({
+    ...input,
+    start: noonOfJapanDate(startDate),
+  });
+  planCache.set(key, plan);
+  return plan;
 }
