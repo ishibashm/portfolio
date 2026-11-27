@@ -942,17 +942,20 @@ export interface PurposeSummary {
 }
 
 /**
- * 用事の盤だけで吉の日（gradeForPurpose が S）を 8 方位ぶん拾う。
+ * 用事の盤だけで吉の日（gradeForPurpose が S）または凶の入らない日（S〜C）を 8 方位ぶん拾う。
  *
  * 三盤吉の走査（findAuspiciousDaysAllDirections）はそのまま残し、
- * purpose を指定した MCP 呼び出しだけがこちらを使う。天中殺は用事の盤の
- * 範囲だけで評価し（voidScopesForPurpose）、時刻単位は見ない。
+ * purpose を指定した MCP 呼び出しは既定（"triple"）で S のみを拾う。
+ * 2026-11-27 利用者の指摘「プランナーでは0日だったけど、あるよ」を受け、
+ * scope="noBad" を指定すると NO_BAD_TIERS（S・A・B・C）を拾えるようにした。
+ * 天中殺は用事の盤の範囲だけで評価し（voidScopesForPurpose）、時刻単位は見ない。
  */
 export function findPurposeDaysAllDirections(
   from: Date,
   to: Date,
   p: Omit<AuspiciousDayParams, "direction">,
   purpose: TripPurpose,
+  scope: DayScope = "triple",
 ): PurposeSummary[] {
   const perDirection: Record<string, PurposeDay[]> = {};
   for (const dir of ALL_DIRECTIONS) perDirection[dir] = [];
@@ -977,7 +980,7 @@ export function findPurposeDaysAllDirections(
     for (const dir of ALL_DIRECTIONS) {
       const v = all[dir];
       const tier = gradeForPurpose(v, purpose);
-      if (tier !== "S") continue;
+      if (scope === "triple" ? tier !== "S" : !NO_BAD_TIERS.has(tier)) continue;
       perDirection[dir].push({
         date: v.date,
         tier,

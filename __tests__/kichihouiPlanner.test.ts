@@ -10,6 +10,7 @@ import {
   termsInRange,
   parsePlannerQuery,
   plannerHref,
+  plannerPeriodInput,
   spreadPick,
   tripPurposeOf,
   type PlannerSpotInput,
@@ -19,6 +20,7 @@ import {
   findPurposeDaysAllDirections,
   judgeDayAllDirections,
 } from "@/utils/auspiciousDays";
+import { TIER_ORDER } from "@/utils/dayTier";
 import { gradeForPurpose } from "@/utils/tripPurpose";
 import {
   bearingBetween,
@@ -399,4 +401,106 @@ describe("buildKichihouiPlan long_stay 月ごとの段階（吉の日が 0 で�
     expect(LONG_STAY_TIER_LABELS.S).toBe("年盤・月盤とも吉");
     expect(LONG_STAY_TIER_LABELS.S).not.toContain("三盤");
   });
+});
+
+describe("名古屋・西・長期12か月（0日になっていた不具合）", () => {
+  const NAGOYA = { lat: 35.1609, lon: 136.9057, name: "名古屋市中区" };
+  const NOV_27 = new Date("2026-11-27T12:00:00+09:00");
+
+  it("plannerPeriodInput が months を引き継ぎ、12か月指定で plan.to が 2027-11-27 になる", () => {
+    expect(plannerPeriodInput({ weeks: 8, months: 12 })).toEqual({
+      weeks: 8,
+      months: 12,
+    });
+    const parsed = parsePlannerQuery({
+      purpose: "long_stay",
+      months: "12",
+    });
+    const plan = buildKichihouiPlan({
+      star: 1,
+      purpose: parsed.purpose,
+      origin: NAGOYA,
+      start: NOV_27,
+      ...plannerPeriodInput(parsed),
+      areas: [],
+      spots: [],
+    });
+    expect(plan.to).toBe("2027-11-27");
+  }, 120_000);
+
+  it("一白水星・長期12か月: 西は吉の日 0 でも凶なしの日が段階順・日付順で出る", () => {
+    const plan = buildKichihouiPlan({
+      star: 1,
+      purpose: "long_stay",
+      origin: NAGOYA,
+      start: NOV_27,
+      months: 12,
+      areas: [],
+      spots: [],
+    });
+    const west = plan.directions.find((d) => d.direction === "W")!;
+    expect(west.totalAvailable).toBe(0);
+    expect(west.noBadAvailable).toBeGreaterThan(0);
+    expect(west.noBadDays.length).toBeGreaterThan(0);
+    for (const day of west.noBadDays) {
+      expect(["S", "A", "B", "C"]).toContain(day.tier);
+    }
+    for (let i = 1; i < west.noBadDays.length; i++) {
+      const prev = west.noBadDays[i - 1];
+      const curr = west.noBadDays[i];
+      const prevRank = TIER_ORDER.indexOf(prev.tier);
+      const currRank = TIER_ORDER.indexOf(curr.tier);
+      expect(
+        prevRank < currRank ||
+          (prevRank === currRank && prev.date <= curr.date),
+      ).toBe(true);
+    }
+  }, 120_000);
+
+  it("六白金星・長期12か月: 西は months: 12 で吉の日が出るが months: 6 では 0 日", () => {
+    const plan12 = buildKichihouiPlan({
+      star: 6,
+      purpose: "long_stay",
+      origin: NAGOYA,
+      start: NOV_27,
+      months: 12,
+      areas: [],
+      spots: [],
+    });
+    const west12 = plan12.directions.find((d) => d.direction === "W")!;
+    expect(west12.totalAvailable).toBeGreaterThan(0);
+
+    const plan6 = buildKichihouiPlan({
+      star: 6,
+      purpose: "long_stay",
+      origin: NAGOYA,
+      start: NOV_27,
+      months: 6,
+      areas: [],
+      spots: [],
+    });
+    const west6 = plan6.directions.find((d) => d.direction === "W")!;
+    expect(west6.totalAvailable).toBe(0);
+  }, 120_000);
+
+  it("findPurposeDaysAllDirections の既定 scope は引き続き tier S のみ返す", () => {
+    const end = new Date(NOV_27.getTime() + 14 * 24 * 60 * 60 * 1000);
+    const summaries = findPurposeDaysAllDirections(
+      NOV_27,
+      end,
+      {
+        honmeiStar: 1,
+        voidZodiacs: [],
+        lon: NAGOYA.lon,
+        tenchusatsuMode: DEFAULT_TENCHUSATSU_MODE,
+        involuntaryMove: false,
+      },
+      "daytrip",
+    );
+    for (const s of summaries) {
+      for (const d of s.days) {
+        expect(d.tier).toBe("S");
+      }
+    }
+  }, 120_000);
 });

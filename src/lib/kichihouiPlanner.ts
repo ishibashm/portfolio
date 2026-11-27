@@ -26,9 +26,10 @@ import {
   findAuspiciousDaysAllDirections,
   findPurposeDaysAllDirections,
   judgeDayAllDirections,
+  type DayVerdict,
   type PurposeDay,
 } from "@/utils/auspiciousDays";
-import { TIER_ORDER, type DayTier } from "@/utils/dayTier";
+import { TIER_LABELS, TIER_ORDER, type DayTier } from "@/utils/dayTier";
 import {
   bearingBetween,
   directionFromBearing,
@@ -120,6 +121,30 @@ export function parsePlannerQuery(query: Query): PlannerQuery {
     months,
     from: rawFrom ? rawFrom : undefined,
   };
+}
+
+export function plannerPeriodInput(q: Pick<PlannerQuery, "weeks" | "months">): {
+  weeks: PlannerWeeks;
+  months: PlannerMonths;
+} {
+  return { weeks: q.weeks, months: q.months };
+}
+
+export function plannerTierLabel(
+  purpose: PlannerPurpose,
+  tier: DayTier,
+): string {
+  if (purpose === "long_stay") return LONG_STAY_TIER_LABELS[tier];
+  if (purpose === "daytrip") {
+    if (tier === "S") return "日盤が吉";
+    if (tier === "C") return "凶なし（平）";
+    return TIER_LABELS[tier];
+  }
+  if (tier === "S") return "月盤・日盤とも吉";
+  if (tier === "A") return "吉2盤・凶なし";
+  if (tier === "B") return "吉1盤・凶なし";
+  if (tier === "C") return "凶なし（平）";
+  return TIER_LABELS[tier];
 }
 
 export function plannerHref(params: {
@@ -306,6 +331,14 @@ export interface PlannerSpot {
   distanceKm: number;
 }
 
+export interface PlannerNoBadDay {
+  date: string;
+  tier: DayTier;
+  rokuyo: string;
+  tags: string[];
+  inTenchusatsu: boolean;
+}
+
 export interface PlannerTerm {
   year: number;
   month: number;
@@ -321,6 +354,10 @@ export interface PlannerTerm {
   days: PurposeDay[];
   /** その節の、三盤吉の出発日 */
   departureDays: PurposeDay[];
+  /** その節の、三盤で凶の入らない日数 */
+  noBadAvailable: number;
+  /** その節の、三盤吉以外の三盤で凶の入らない出発日（段階順・日付順、先頭 cap 件） */
+  noBadDays: PlannerNoBadDay[];
 }
 
 export interface PlannerDirection {
@@ -329,6 +366,9 @@ export interface PlannerDirection {
   totalAvailable: number;
   nextDate: string | null;
   days: PurposeDay[];
+  noBadAvailable: number;
+  nextNoBadDate: string | null;
+  noBadDays: PurposeDay[];
   /** 長期だけ。節入り月ごとのまとめ。短期は空。 */
   terms: PlannerTerm[];
   /** 長期だけ。三盤吉の出発日（先頭 cap 件）。短期は空。 */
@@ -351,6 +391,12 @@ export interface KichihouiPlan {
     label: string;
     /** 三盤吉の出発日なら true。長期で年盤・月盤のみの日なら false。 */
     triple: boolean;
+  } | null;
+  soonestNoBad: {
+    date: string;
+    direction: CompassDirection;
+    label: string;
+    tier: DayTier;
   } | null;
   directions: PlannerDirection[];
 }
@@ -402,6 +448,7 @@ function buildLongStayTerms(
   base: Parameters<typeof judgeDayAllDirections>[1],
   days: PurposeDay[],
   departureDates: Set<string>,
+  noBadTripleDays: DayVerdict[],
   cap: number,
   direction: CompassDirection,
 ): PlannerTerm[] {
@@ -410,6 +457,25 @@ function buildLongStayTerms(
     const verdict = judgeDayAllDirections(rep, base)[direction];
     const inTerm = days.filter((d) => d.date >= t.start && d.date <= t.end);
     const departures = inTerm.filter((d) => departureDates.has(d.date));
+    const inTermNoBad = noBadTripleDays.filter(
+      (d) => d.date >= t.start && d.date <= t.end,
+    );
+    const nonSTriple = inTermNoBad
+      .filter((d) => (d.tier ?? "C") !== "S")
+      .sort(
+        (a, b) =>
+          TIER_ORDER.indexOf(a.tier ?? "C") -
+            TIER_ORDER.indexOf(b.tier ?? "C") || a.date.localeCompare(b.date),
+      )
+      .slice(0, cap)
+      .map((d) => ({
+        date: d.date,
+        tier: d.tier ?? "C",
+        rokuyo: d.rokuyo,
+        tags: d.tags,
+        inTenchusatsu:
+          d.voidScopes.year || d.voidScopes.month || d.voidScopes.day,
+      }));
     return {
       ...t,
       tier: gradeForPurpose(verdict, "relocation"),
@@ -418,6 +484,8 @@ function buildLongStayTerms(
       available: inTerm.length,
       days: inTerm.slice(0, cap),
       departureDays: departures.slice(0, cap),
+      noBadAvailable: inTermNoBad.length,
+      noBadDays: nonSTriple,
     };
   });
 }
@@ -450,46 +518,65 @@ export function buildKichihouiPlan(input: {
     tenchusatsuMode: DEFAULT_TENCHUSATSU_MODE,
     involuntaryMove: false as const,
   };
-  const summaries = findPurposeDaysAllDirections(input.start, end, base, trip);
+  const summaries = findPurposeDaysAllDirections(
+    input.start,
+    end,
+    base,
+    trip,
+    "noBad",
+  );
   const cap = input.maxDaysPerDirection ?? DEFAULT_DAYS_PER_DIRECTION;
   const tripleByDirection = new Map<string, Set<string>>();
+  const noBadTripleByDirection = new Map<string, DayVerdict[]>();
   if (input.purpose === "long_stay") {
     for (const s of findAuspiciousDaysAllDirections(
       input.start,
       end,
       base,
-      "triple",
+      "noBad",
     )) {
+      const nonBlocked = s.days.filter((d) => !d.blockedByTenchusatsu);
+      noBadTripleByDirection.set(s.direction, nonBlocked);
       tripleByDirection.set(
         s.direction,
-        new Set(
-          s.days.filter((d) => !d.blockedByTenchusatsu).map((d) => d.date),
-        ),
+        new Set(nonBlocked.filter((d) => d.tier === "S").map((d) => d.date)),
       );
     }
   }
   const areas = place(input.origin, input.areas, DESTINATION_MAX_KM);
   const spots = place(input.origin, input.spots, SPOT_MAX_KM);
 
+  const earliestNoBadByDirection = new Map<string, PurposeDay>();
   const directions: PlannerDirection[] = summaries.map((s) => {
     const direction = s.direction as CompassDirection;
-    const available = s.days.filter((d) => !d.blockedByTenchusatsu);
+    const all = s.days.filter((d) => !d.blockedByTenchusatsu);
+    const good = all.filter((d) => d.tier === "S");
+    if (all[0]) earliestNoBadByDirection.set(direction, all[0]);
+    const sortedNoBad = [...all].sort(
+      (a, b) =>
+        TIER_ORDER.indexOf(a.tier) - TIER_ORDER.indexOf(b.tier) ||
+        a.date.localeCompare(b.date),
+    );
     const departureDates = tripleByDirection.get(s.direction) ?? new Set();
-    const departureDays = available.filter((d) => departureDates.has(d.date));
+    const departureDays = good.filter((d) => departureDates.has(d.date));
     return {
       direction,
       label: s.directionLabel,
-      totalAvailable: available.length,
-      nextDate: available[0]?.date ?? null,
-      days: available.slice(0, cap),
+      totalAvailable: good.length,
+      nextDate: good[0]?.date ?? null,
+      days: good.slice(0, cap),
+      noBadAvailable: all.length,
+      nextNoBadDate: all[0]?.date ?? null,
+      noBadDays: sortedNoBad.slice(0, cap),
       terms:
         input.purpose === "long_stay"
           ? buildLongStayTerms(
               toJapanDateString(input.start),
               toJapanDateString(end),
               base,
-              available,
+              good,
               departureDates,
+              noBadTripleByDirection.get(s.direction) ?? [],
               cap,
               direction,
             )
@@ -532,6 +619,14 @@ export function buildKichihouiPlan(input: {
     }
     if (a.nextDate) return -1;
     if (b.nextDate) return 1;
+    if (a.nextNoBadDate && b.nextNoBadDate) {
+      return (
+        a.nextNoBadDate.localeCompare(b.nextNoBadDate) ||
+        b.noBadAvailable - a.noBadAvailable
+      );
+    }
+    if (a.nextNoBadDate) return -1;
+    if (b.nextNoBadDate) return 1;
     return 0;
   });
 
@@ -549,6 +644,21 @@ export function buildKichihouiPlan(input: {
   const soonestDate = firstTriple
     ? firstTriple.departureDays[0].date
     : first?.nextDate;
+
+  let soonestNoBad: KichihouiPlan["soonestNoBad"] = null;
+  for (const d of directions) {
+    const earliest = earliestNoBadByDirection.get(d.direction);
+    if (!earliest) continue;
+    if (!soonestNoBad || earliest.date < soonestNoBad.date) {
+      soonestNoBad = {
+        date: earliest.date,
+        direction: d.direction,
+        label: d.label,
+        tier: earliest.tier,
+      };
+    }
+  }
+
   return {
     from: toJapanDateString(input.start),
     to: toJapanDateString(end),
@@ -565,6 +675,7 @@ export function buildKichihouiPlan(input: {
             triple: Boolean(firstTriple),
           }
         : null,
+    soonestNoBad,
     directions,
   };
 }
