@@ -46,6 +46,8 @@ import {
 import { getAuspiciousDayErrorMessage } from "@/lib/auspiciousDayErrors";
 import { directionLabelName } from "@/lib/directionLabels";
 import { TIER_LABELS, type DayTier } from "@/utils/dayTier";
+import { DayTierChip } from "@/components/houi/DayTierChip";
+import { DirectionCountCompass } from "@/components/houi/DirectionCountCompass";
 import { CountUp } from "@/components/motion/CountUp";
 import { Burst } from "@/components/motion/Burst";
 import {
@@ -78,7 +80,7 @@ const WEEKDAYS = ["日", "月", "火", "水", "木", "金", "土"];
  * 99 行を一度に出すと、次の方位まで画面を延々とめくることになる。
  * ただし**黙って切らない。**残りの件数をボタンに書いて、押せば全部出す。
  */
-const INITIAL_ROWS = 20;
+const INITIAL_ROWS = 8;
 
 /*
   状態の呼び名は @/lib/directionLabels に集約。**ここに表を戻さないこと。**
@@ -777,257 +779,400 @@ export function AuspiciousDayFinder() {
             </div>
           )}
 
+          {summaries.some((s) => s.days.length > 0) &&
+            (() => {
+              const allOpen = summaries.flatMap((s) =>
+                s.days
+                  .filter((d) => !d.blockedByTenchusatsu)
+                  .map((d) => ({
+                    ...d,
+                    directionLabel: s.directionLabel,
+                  })),
+              );
+              const soonestS = allOpen
+                .filter((d) => (d.tier ?? "S") === "S")
+                .sort((a, b) => a.date.localeCompare(b.date))[0];
+              const soonestAny =
+                soonestS ??
+                allOpen.sort((a, b) => a.date.localeCompare(b.date))[0];
+              return (
+                <div className="grid grid-cols-1 gap-4 rounded-2xl border border-accent/30 bg-theme-subtle/60 p-4 sm:grid-cols-[1fr_auto] sm:items-center sm:p-5">
+                  <div className="space-y-1.5">
+                    <p className="text-xs font-semibold tracking-wide text-ink-muted">
+                      いちばん近い候補
+                    </p>
+                    {soonestS ? (
+                      <>
+                        <p className="text-lg font-bold text-accent sm:text-xl">
+                          {soonestS.date}（{WEEKDAYS[soonestS.weekday]}）・
+                          {soonestS.directionLabel}
+                        </p>
+                        <p className="text-xs text-ink-muted">
+                          年盤・月盤・日盤がすべて吉で、天中殺に当たらない最も近い日です。
+                        </p>
+                      </>
+                    ) : soonestAny ? (
+                      <>
+                        <div className="flex flex-wrap items-center gap-2">
+                          <p className="text-lg font-bold text-accent sm:text-xl">
+                            {soonestAny.date}（{WEEKDAYS[soonestAny.weekday]}
+                            ）・{soonestAny.directionLabel}
+                          </p>
+                          {soonestAny.tier && (
+                            <DayTierChip tier={soonestAny.tier} />
+                          )}
+                        </div>
+                        <p className="text-xs text-ink-muted">
+                          三盤吉はありませんが、凶が入らない最も近い日です。
+                        </p>
+                      </>
+                    ) : (
+                      <p className="text-sm text-ink-muted">
+                        天中殺に当たらない候補日はありませんでした。下の一覧で天中殺の日を確認できます。
+                      </p>
+                    )}
+                  </div>
+                  <div className="flex justify-center">
+                    <DirectionCountCompass
+                      items={summaries.map((s) => ({
+                        direction: s.direction,
+                        label: s.directionLabel,
+                        primary: s.tripleAuspiciousDays,
+                        secondary: s.noBadDays,
+                      }))}
+                      primaryName="三盤吉"
+                      secondaryName="凶なし"
+                      caption="方位ごとの三盤吉（件数）"
+                    />
+                  </div>
+                </div>
+              );
+            })()}
+
           {summaries
             .filter((s) => s.days.length > 0)
-            .map((s) => (
-              <div
-                key={s.direction}
-                className="rounded-2xl border border-theme-border bg-theme-surface overflow-hidden"
-              >
-                <div className="px-4 py-3 bg-theme-subtle border-b border-theme-border flex flex-wrap items-center justify-between gap-2">
-                  <div className="flex items-baseline gap-3">
-                    <span className="text-base font-bold text-ink">
-                      {s.directionLabel}
-                    </span>
-                    <span className="text-sm text-ink-muted">
-                      三盤吉{" "}
-                      <b className="text-theme-good">
-                        <CountUp value={s.tripleAuspiciousDays} />
-                      </b>{" "}
-                      日
-                      {isFiltering(filter) && (
-                        <>
-                          {" "}
-                          ／ 絞り込み後{" "}
-                          <b className="text-ink">
-                            {view(s).matched.length}
-                          </b>{" "}
-                          日
-                        </>
-                      )}
-                      {s.blockedByTenchusatsuDays > 0 && (
-                        <>
-                          {" "}
-                          ／ 天中殺で不可{" "}
-                          <b className="text-theme-gold">
-                            {s.blockedByTenchusatsuDays}
-                          </b>{" "}
-                          日 ／ 実質{" "}
+            .map((s) => {
+              const v = view(s);
+              const mainRows = v.shown.filter(
+                (d) => d.blockedByTenchusatsu || d.tier !== "C",
+              );
+              const mutedRows = v.shown.filter(
+                (d) => !d.blockedByTenchusatsu && d.tier === "C",
+              );
+              return (
+                <div
+                  key={s.direction}
+                  className="rounded-2xl border border-theme-border bg-theme-surface overflow-hidden"
+                >
+                  <div className="px-4 py-3 bg-theme-subtle border-b border-theme-border flex flex-wrap items-center justify-between gap-2">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span className="text-base font-bold text-ink">
+                        {s.directionLabel}
+                      </span>
+                      <div className="flex flex-wrap items-center gap-1.5 text-xs text-ink-muted">
+                        <span className="inline-flex items-center gap-1 rounded-full border border-theme-border bg-theme-surface px-2.5 py-0.5">
+                          三盤吉{" "}
                           <b className="text-theme-good">
-                            <CountUp value={s.availableDays} />
+                            <CountUp value={s.tripleAuspiciousDays} />
                           </b>{" "}
                           日
-                        </>
-                      )}
-                      {/* 天中殺の数と実質は三盤吉のうちの数。凶なしはその後に置く
-                          （並べ替えると「凶なしのうち天中殺で不可」と読める） */}
-                      {s.noBadDays !== undefined && (
-                        <>
-                          {" "}
-                          ／ 凶なし（吉2盤・吉1盤・平を含む）{" "}
-                          <b className="text-ink">{s.noBadDays}</b> 日
-                        </>
-                      )}
-                    </span>
+                        </span>
+                        {isFiltering(filter) && (
+                          <span className="inline-flex items-center gap-1 rounded-full border border-theme-border bg-theme-surface px-2.5 py-0.5">
+                            絞り込み後{" "}
+                            <b className="text-ink">{v.matched.length}</b> 日
+                          </span>
+                        )}
+                        {s.blockedByTenchusatsuDays > 0 && (
+                          <span className="inline-flex items-center gap-1 rounded-full border border-theme-border bg-theme-surface px-2.5 py-0.5">
+                            天中殺で不可{" "}
+                            <b className="text-theme-gold">
+                              {s.blockedByTenchusatsuDays}
+                            </b>{" "}
+                            日 ／ 実質{" "}
+                            <b className="text-theme-good">
+                              <CountUp value={s.availableDays} />
+                            </b>{" "}
+                            日
+                          </span>
+                        )}
+                        {/* 天中殺の数と実質は三盤吉のうちの数。凶なしはその後に置く
+                            （並べ替えると「凶なしのうち天中殺で不可」と読める） */}
+                        {s.noBadDays !== undefined && (
+                          <span className="inline-flex items-center gap-1 rounded-full border border-theme-border bg-theme-surface px-2.5 py-0.5">
+                            凶なし（吉2盤・吉1盤・平を含む）{" "}
+                            <b className="text-ink">{s.noBadDays}</b> 日
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                    {s.window.yearBoardValidUntil && (
+                      <span className="text-xs text-ink-muted">
+                        年盤の期限:{" "}
+                        <b className="text-ink">
+                          {s.window.yearBoardValidUntil}
+                        </b>
+                        {s.window.afterYearBoardStatus && (
+                          <>
+                            {" "}
+                            まで（翌日から「
+                            {label(s.window.afterYearBoardStatus)}
+                            」に変わる）
+                          </>
+                        )}
+                      </span>
+                    )}
                   </div>
-                  {s.window.yearBoardValidUntil && (
-                    <span className="text-xs text-ink-muted">
-                      年盤の期限:{" "}
-                      <b className="text-ink">{s.window.yearBoardValidUntil}</b>
-                      {s.window.afterYearBoardStatus && (
-                        <>
-                          {" "}
-                          まで（翌日から「{label(s.window.afterYearBoardStatus)}
-                          」に変わる）
-                        </>
-                      )}
-                    </span>
-                  )}
-                </div>
 
-                <div className="overflow-x-auto">
-                  <table className="w-full text-sm">
-                    <thead className="bg-theme-surface text-xs text-ink-muted border-b border-theme-border">
-                      <tr>
-                        <th className="px-3 py-2 text-left font-semibold">
-                          日付
-                        </th>
-                        <th className="px-3 py-2 text-left font-semibold">
-                          年盤
-                        </th>
-                        <th className="px-3 py-2 text-left font-semibold">
-                          月盤
-                        </th>
-                        <th className="px-3 py-2 text-left font-semibold">
-                          日盤
-                        </th>
-                        <th className="px-3 py-2 text-left font-semibold">
-                          暦
-                        </th>
-                        <th className="px-3 py-2 text-left font-semibold">
-                          天中殺
-                        </th>
-                        <th className="px-3 py-2 text-left font-semibold">
-                          物件
-                        </th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {view(s).shown.map((d) => (
-                        <tr
-                          key={d.date}
-                          className={`border-b border-theme-border ${
-                            d.blockedByTenchusatsu ? "bg-theme-gold-soft" : ""
-                          }`}
-                        >
-                          <td className="px-3 py-2 font-mono whitespace-nowrap">
-                            {(() => {
-                              const on = favoriteKeys.has(
-                                favoriteDayKey(d.date, s.direction),
-                              );
-                              return (
-                                <button
-                                  type="button"
-                                  aria-pressed={on}
-                                  aria-label={`${d.date} ${s.directionLabel} を${on ? "お気に入りから外す" : "お気に入りに追加"}`}
-                                  title={
-                                    on
-                                      ? "お気に入りから外す"
-                                      : "お気に入りに追加"
-                                  }
-                                  onClick={() => {
-                                    if (!on && (d.tier ?? "S") === "S")
-                                      setBurst((b) => ({
-                                        key: favoriteDayKey(
-                                          d.date,
-                                          s.direction,
-                                        ),
-                                        n: (b?.n ?? 0) + 1,
-                                      }));
-                                    toggleFavoriteDay({
-                                      date: d.date,
-                                      direction: s.direction,
-                                      directionLabel: s.directionLabel,
-                                      yearLabel: label(d.yearLayer),
-                                      monthLabel: label(d.monthLayer),
-                                      dayLabel: label(d.dayLayer),
-                                      tags: d.tags,
-                                      blockedByTenchusatsu:
-                                        d.blockedByTenchusatsu,
-                                    });
-                                  }}
-                                  className="relative mr-1.5 -my-1 rounded p-1 align-middle text-ink-muted hover:text-theme-gold"
-                                >
-                                  {burst?.key ===
-                                    favoriteDayKey(d.date, s.direction) && (
-                                    <Burst key={burst.n} />
-                                  )}
-                                  <Star
-                                    className={`h-4 w-4 ${on ? "fill-theme-gold text-theme-gold" : ""}`}
-                                  />
-                                </button>
-                              );
-                            })()}
-                            {d.date}
-                            <span className="text-ink-muted">
-                              （{WEEKDAYS[d.weekday]}）
-                            </span>
-                            <button
-                              type="button"
-                              aria-label={`${d.date} の三盤を方位盤で見る`}
-                              title="この日の三盤を方位盤で見る"
-                              onClick={() => showBoard(d.date)}
-                              className="ml-1.5 -my-1 rounded p-1 align-middle text-ink-muted hover:text-accent"
+                  <div>
+                    <table className="w-full text-sm">
+                      <thead className="bg-theme-surface text-xs text-ink-muted border-b border-theme-border">
+                        <tr>
+                          <th className="px-3 py-2 text-left font-semibold">
+                            日付
+                          </th>
+                          <th className="hidden md:table-cell px-3 py-2 text-left font-semibold">
+                            年盤
+                          </th>
+                          <th className="hidden md:table-cell px-3 py-2 text-left font-semibold">
+                            月盤
+                          </th>
+                          <th className="hidden md:table-cell px-3 py-2 text-left font-semibold">
+                            日盤
+                          </th>
+                          <th className="px-3 py-2 text-left font-semibold">
+                            暦
+                          </th>
+                          <th className="hidden md:table-cell px-3 py-2 text-left font-semibold">
+                            天中殺
+                          </th>
+                          <th className="px-3 py-2 text-left font-semibold">
+                            物件
+                          </th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {mainRows.map((d) => {
+                          const rowTone = d.blockedByTenchusatsu
+                            ? "bg-theme-gold-soft"
+                            : (d.tier ?? "S") === "S"
+                              ? "bg-theme-good-soft/40"
+                              : d.tier === "C"
+                                ? "text-ink-muted"
+                                : "";
+                          const strongLink =
+                            (d.tier ?? "S") === "S" || d.tier === "A";
+                          return (
+                            <tr
+                              key={d.date}
+                              className={`border-b border-theme-border ${rowTone}`}
                             >
-                              <Layers className="h-4 w-4" />
-                            </button>
-                            {d.tier && (
-                              <span
-                                className={`mt-0.5 ml-7 block w-fit rounded px-1.5 py-0.5 font-sans text-xs font-semibold ${
-                                  d.tier === "S"
-                                    ? "bg-theme-good-soft text-theme-good"
-                                    : "bg-theme-subtle text-ink-muted"
-                                }`}
-                              >
-                                {d.tier} {TIER_LABELS[d.tier]}
-                              </span>
-                            )}
-                          </td>
-                          <td className="px-3 py-2">{label(d.yearLayer)}</td>
-                          <td className="px-3 py-2">{label(d.monthLayer)}</td>
-                          <td className="px-3 py-2">{label(d.dayLayer)}</td>
-                          <td className="px-3 py-2">
-                            <span className="flex flex-wrap gap-1">
-                              {d.tags.map((t) => (
-                                <span
-                                  key={t}
-                                  className="px-1.5 py-0.5 rounded bg-theme-gold-soft text-theme-gold text-[11px] font-semibold"
-                                >
-                                  {t}
+                              <td className="px-3 py-2.5 align-top">
+                                <div className="flex flex-wrap items-center gap-x-1 font-mono">
+                                  {(() => {
+                                    const on = favoriteKeys.has(
+                                      favoriteDayKey(d.date, s.direction),
+                                    );
+                                    return (
+                                      <button
+                                        type="button"
+                                        aria-pressed={on}
+                                        aria-label={`${d.date} ${s.directionLabel} を${on ? "お気に入りから外す" : "お気に入りに追加"}`}
+                                        title={
+                                          on
+                                            ? "お気に入りから外す"
+                                            : "お気に入りに追加"
+                                        }
+                                        onClick={() => {
+                                          if (!on && (d.tier ?? "S") === "S")
+                                            setBurst((b) => ({
+                                              key: favoriteDayKey(
+                                                d.date,
+                                                s.direction,
+                                              ),
+                                              n: (b?.n ?? 0) + 1,
+                                            }));
+                                          toggleFavoriteDay({
+                                            date: d.date,
+                                            direction: s.direction,
+                                            directionLabel: s.directionLabel,
+                                            yearLabel: label(d.yearLayer),
+                                            monthLabel: label(d.monthLayer),
+                                            dayLabel: label(d.dayLayer),
+                                            tags: d.tags,
+                                            blockedByTenchusatsu:
+                                              d.blockedByTenchusatsu,
+                                          });
+                                        }}
+                                        className="relative mr-0.5 -my-1 rounded p-1 align-middle text-ink-muted hover:text-theme-gold"
+                                      >
+                                        {burst?.key ===
+                                          favoriteDayKey(
+                                            d.date,
+                                            s.direction,
+                                          ) && <Burst key={burst.n} />}
+                                        <Star
+                                          className={`h-4 w-4 ${on ? "fill-theme-gold text-theme-gold" : ""}`}
+                                        />
+                                      </button>
+                                    );
+                                  })()}
+                                  <span className="whitespace-nowrap">
+                                    {d.date}
+                                  </span>
+                                  <span className="text-ink-muted">
+                                    （{WEEKDAYS[d.weekday]}）
+                                  </span>
+                                  <button
+                                    type="button"
+                                    aria-label={`${d.date} の三盤を方位盤で見る`}
+                                    title="この日の三盤を方位盤で見る"
+                                    onClick={() => showBoard(d.date)}
+                                    className="ml-0.5 -my-1 rounded p-1 align-middle text-ink-muted hover:text-accent"
+                                  >
+                                    <Layers className="h-4 w-4" />
+                                  </button>
+                                </div>
+                                {d.tier && (
+                                  <div className="mt-1 ml-7">
+                                    <DayTierChip tier={d.tier} />
+                                  </div>
+                                )}
+                                <p className="mt-1 ml-7 text-xs text-ink-muted md:hidden">
+                                  年{label(d.yearLayer)}／月
+                                  {label(d.monthLayer)}／日{label(d.dayLayer)}
+                                  {d.blockedByTenchusatsu && (
+                                    <span className="ml-1.5 font-semibold text-theme-gold">
+                                      天中殺不可（
+                                      {[
+                                        d.voidScopes.year && "年",
+                                        d.voidScopes.month && "月",
+                                        d.voidScopes.day && "日",
+                                      ]
+                                        .filter(Boolean)
+                                        .join("・")}
+                                      ）
+                                    </span>
+                                  )}
+                                </p>
+                              </td>
+                              <td className="hidden md:table-cell px-3 py-2.5">
+                                {label(d.yearLayer)}
+                              </td>
+                              <td className="hidden md:table-cell px-3 py-2.5">
+                                {label(d.monthLayer)}
+                              </td>
+                              <td className="hidden md:table-cell px-3 py-2.5">
+                                {label(d.dayLayer)}
+                              </td>
+                              <td className="px-3 py-2.5 align-top">
+                                <span className="flex flex-wrap gap-1">
+                                  {d.tags.map((t) => (
+                                    <span
+                                      key={t}
+                                      className="px-1.5 py-0.5 rounded bg-theme-gold-soft text-theme-gold text-[11px] font-semibold"
+                                    >
+                                      {t}
+                                    </span>
+                                  ))}
                                 </span>
-                              ))}
+                              </td>
+                              <td className="hidden md:table-cell px-3 py-2.5 text-xs">
+                                {d.blockedByTenchusatsu ? (
+                                  <span className="text-theme-gold font-semibold">
+                                    不可（
+                                    {[
+                                      d.voidScopes.year && "年",
+                                      d.voidScopes.month && "月",
+                                      d.voidScopes.day && "日",
+                                    ]
+                                      .filter(Boolean)
+                                      .join("・")}
+                                    ）
+                                  </span>
+                                ) : (
+                                  <span className="text-ink-muted">—</span>
+                                )}
+                              </td>
+                              <td className="px-3 py-2.5 align-top text-xs">
+                                {/* この日・この方位のまま物件一覧へ渡す。
+                                    日と方位が決まってから物件を選ぶのが実際の順序で、
+                                    条件を入れ直させると前提がずれる。 */}
+                                {/* 押した時点で残す。クエリでも渡しているが、
+                                    戻ってから別の経路でスキャナーへ入っても
+                                    同じ日で始められるようにする（利用者報告）。 */}
+                                <Link
+                                  href={scannerHref(d.date, s.direction)}
+                                  onClick={() => saveWorkingDate(d.date)}
+                                  className={`inline-flex items-center gap-0.5 underline-offset-2 hover:underline ${
+                                    strongLink
+                                      ? "font-semibold text-accent"
+                                      : "text-ink-muted hover:text-accent"
+                                  }`}
+                                  title={`${d.date} に ${s.directionLabel} へ移る前提で物件を探す`}
+                                >
+                                  この条件で探す
+                                  <ArrowRight className="w-3 h-3 shrink-0" />
+                                </Link>
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+
+                  {mutedRows.length > 0 && (
+                    <details className="border-t border-theme-border px-4 py-2">
+                      <summary className="cursor-pointer text-xs font-semibold text-ink-muted hover:text-ink">
+                        平穏などの日 {mutedRows.length}日
+                      </summary>
+                      <ul className="mt-2 space-y-1.5 text-xs text-ink-muted">
+                        {mutedRows.map((d) => (
+                          <li
+                            key={d.date}
+                            className="flex flex-wrap items-center gap-x-2 gap-y-1"
+                          >
+                            <span className="font-mono text-ink">
+                              {d.date}（{WEEKDAYS[d.weekday]}）
                             </span>
-                          </td>
-                          <td className="px-3 py-2 text-xs">
-                            {d.blockedByTenchusatsu ? (
-                              <span className="text-theme-gold font-semibold">
-                                不可（
-                                {[
-                                  d.voidScopes.year && "年",
-                                  d.voidScopes.month && "月",
-                                  d.voidScopes.day && "日",
-                                ]
-                                  .filter(Boolean)
-                                  .join("・")}
-                                ）
-                              </span>
-                            ) : (
-                              <span className="text-ink-muted">—</span>
-                            )}
-                          </td>
-                          <td className="px-3 py-2 text-xs whitespace-nowrap">
-                            {/* この日・この方位のまま物件一覧へ渡す。
-                                日と方位が決まってから物件を選ぶのが実際の順序で、
-                                条件を入れ直させると前提がずれる。 */}
-                            {/* 押した時点で残す。クエリでも渡しているが、
-                                戻ってから別の経路でスキャナーへ入っても
-                                同じ日で始められるようにする（利用者報告）。 */}
+                            {d.tier && <DayTierChip tier={d.tier} />}
                             <Link
                               href={scannerHref(d.date, s.direction)}
                               onClick={() => saveWorkingDate(d.date)}
-                              className="inline-flex items-center gap-1 px-2 py-1 rounded-lg border border-theme-border bg-theme-accent-soft text-accent font-semibold hover:border-accent"
+                              className="ml-auto inline-flex items-center gap-0.5 text-ink-muted underline-offset-2 hover:text-accent hover:underline"
                               title={`${d.date} に ${s.directionLabel} へ移る前提で物件を探す`}
                             >
                               この条件で探す
-                              <ArrowRight className="w-3 h-3" />
+                              <ArrowRight className="w-3 h-3 shrink-0" />
                             </Link>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
+                          </li>
+                        ))}
+                      </ul>
+                    </details>
+                  )}
+
+                  {/* 黙って切らない。残りの件数を書いて、押せば全部出す。 */}
+                  {v.hidden > 0 && (
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setExpanded({ ...expanded, [s.direction]: true })
+                      }
+                      className="w-full px-4 py-2.5 border-t border-theme-border bg-theme-subtle text-xs font-bold text-ink hover:bg-theme-accent-soft"
+                    >
+                      残り {v.hidden} 日を表示
+                    </button>
+                  )}
+
+                  {v.matched.length === 0 && (
+                    <p className="px-4 py-3 text-xs text-ink-muted">
+                      この絞り込みに当てはまる日がありません。条件をゆるめてください。
+                    </p>
+                  )}
                 </div>
-
-                {/* 黙って切らない。残りの件数を書いて、押せば全部出す。 */}
-                {view(s).hidden > 0 && (
-                  <button
-                    type="button"
-                    onClick={() =>
-                      setExpanded({ ...expanded, [s.direction]: true })
-                    }
-                    className="w-full px-4 py-2.5 border-t border-theme-border bg-theme-subtle text-xs font-bold text-ink hover:bg-theme-accent-soft"
-                  >
-                    残り {view(s).hidden} 日を表示
-                  </button>
-                )}
-
-                {view(s).matched.length === 0 && (
-                  <p className="px-4 py-3 text-xs text-ink-muted">
-                    この絞り込みに当てはまる日がありません。条件をゆるめてください。
-                  </p>
-                )}
-              </div>
-            ))}
+              );
+            })}
 
           {/*
             分析を残す・AI に渡す（利用者の依頼、2026-09-26「どちらも引越し
