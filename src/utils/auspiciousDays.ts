@@ -25,6 +25,7 @@ import {
   type StarFrequency,
 } from "@/utils/ephemerisEngine";
 import { getRokuyo, getLuckyDays } from "@/utils/lunar";
+import { Lru } from "@/utils/lru";
 import { DIRECTION_LABELS as GEO_DIRECTION_LABELS } from "@/utils/directionGeo";
 import { directionBoardInstant, jstNoonOf } from "@/utils/boardInstant";
 import { getZonedDateTimeFields } from "@/utils/solarTime";
@@ -221,12 +222,72 @@ interface DayLayers {
   isIchiryumanbai: boolean;
 }
 
+interface DayEnvBase {
+  env: ReturnType<typeof getCurrentEnvironmentalFrequencies>;
+  zodiacs: ReturnType<typeof getCurrentZodiac>;
+  lucky: ReturnType<typeof getLuckyDays>;
+  rokuyo: string;
+}
+
+// 2026-11-28 利用者「クリックしてから表示されるのにタイムラグがある」。
+// 同じ日の盤を長期 12 か月で何度も計算していた（findPurposeDaysAllDirections・
+// findAuspiciousDaysAllDirections・節代表日・年盤境界走査で重複）。
+// キーの全要素に対する純粋関数の結果をキャッシュするだけなので、判定結果は完全に同一。
+const dayLayersCache = new Lru<string, DayLayers>(6000);
+const dayEnvCache = new Lru<string, DayEnvBase>(6000);
+const yearStarCache = new Lru<string, StarFrequency>(4000);
+
+/** テスト用。日盤・環境・年星キャッシュを空にする。 */
+export function clearAuspiciousDayCaches(): void {
+  dayLayersCache.clear();
+  dayEnvCache.clear();
+  yearStarCache.clear();
+}
+
+function getDayEnvBase(date: Date, instant: Date, lon: number): DayEnvBase {
+  const key = `${date.toISOString()}|${instant.toISOString()}|${lon}`;
+  const hit = dayEnvCache.get(key);
+  if (hit) return hit;
+  const computed: DayEnvBase = {
+    env: getCurrentEnvironmentalFrequencies(instant, lon, "independent"),
+    zodiacs: getCurrentZodiac(instant, lon),
+    lucky: getLuckyDays(date),
+    rokuyo: getRokuyo(date) ?? "",
+  };
+  dayEnvCache.set(key, computed);
+  return computed;
+}
+
 function computeDayLayers(
   date: Date,
   p: Omit<AuspiciousDayParams, "direction">,
 ): DayLayers {
   const instant = directionBoardInstant(date, 0, p.lon);
-  const env = getCurrentEnvironmentalFrequencies(instant, p.lon, "independent");
+  // getRokuyo / getLuckyDays は生の date から計算するため、キーには正確な瞬間
+  // （date.toISOString()）を入れる。走査ループは常に JST 正午を渡すのでキャッシュヒットは変わらない。
+  const key = [
+    date.toISOString(),
+    instant.toISOString(),
+    p.lon,
+    p.honmeiStar,
+    p.voidZodiacs.join(","),
+    p.directionFilterMode ?? "composite",
+    p.tenchusatsuMode,
+    p.involuntaryMove ?? false,
+  ].join("|");
+  const hit = dayLayersCache.get(key);
+  if (hit) return hit;
+  const computed = computeDayLayersUncached(date, p, instant);
+  dayLayersCache.set(key, computed);
+  return computed;
+}
+
+function computeDayLayersUncached(
+  date: Date,
+  p: Omit<AuspiciousDayParams, "direction">,
+  instant: Date,
+): DayLayers {
+  const { env, zodiacs, lucky, rokuyo } = getDayEnvBase(date, instant, p.lon);
 
   const yB = generateBoard(env.classicalYearStar);
   const mB = generateBoard(env.classicalMonthStar);
@@ -273,7 +334,6 @@ function computeDayLayers(
   // 「その日の代表点は正午」が全体の方針（`boardInstant.ts`）なので、
   // 9 時側が誤り。`instant` をそのまま渡して 1 か所に寄せる。
   // getCurrentZodiac の呼び出しが 1 日 2 回から 1 回に減る副次効果もある。
-  const zodiacs = getCurrentZodiac(instant, p.lon);
   const voidScopes: VoidScopes = {
     year: p.voidZodiacs.includes(zodiacs.yearZodiac),
     month: p.voidZodiacs.includes(zodiacs.monthZodiac),
@@ -295,9 +355,6 @@ function computeDayLayers(
       : "off",
     p.involuntaryMove ?? false,
   );
-
-  const lucky = getLuckyDays(date);
-  const rokuyo = getRokuyo(date) ?? "";
 
   return {
     layers,
@@ -453,12 +510,21 @@ function findYearBoardBoundary(
   lon: number,
   maxDays: number,
 ): { lastDay: Date; nextDay: Date } | null {
-  const yearStarAt = (d: Date) =>
-    getCurrentEnvironmentalFrequencies(
-      directionBoardInstant(d, 0, lon),
-      lon,
-      "independent",
-    ).classicalYearStar;
+  const yearStarAt = (d: Date): StarFrequency => {
+    const instant = directionBoardInstant(d, 0, lon);
+    const key = `${instant.toISOString()}|${lon}`;
+    const hit = yearStarCache.get(key);
+    if (hit !== undefined) return hit;
+    const envHit = dayEnvCache.get(
+      `${d.toISOString()}|${instant.toISOString()}|${lon}`,
+    );
+    const star = envHit
+      ? envHit.env.classicalYearStar
+      : getCurrentEnvironmentalFrequencies(instant, lon, "independent")
+          .classicalYearStar;
+    yearStarCache.set(key, star);
+    return star;
+  };
 
   // ここだけ走査ループの正規化を通していなかった。生の `from` から
   // 1 日ずつ進めて `formatDate` に渡すので、`from` が時刻を持つと
