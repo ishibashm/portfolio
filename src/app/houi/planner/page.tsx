@@ -727,7 +727,7 @@ function DayList({
       {rest.length > 0 && (
         <details className="pt-0.5">
           <summary className="cursor-pointer text-xs font-semibold text-ink-muted hover:text-ink">
-            ほか{rest.length}日
+            ほか{rest.length}日を表示
           </summary>
           <ul className="mt-1.5 space-y-1.5">
             {rest.map((day) => (
@@ -745,7 +745,13 @@ function DayList({
         </details>
       )}
       {remaining > 0 && (
-        <p className="text-xs text-ink-muted">ほか{remaining}日</p>
+        <p className="text-xs text-ink-muted">
+          このほか{remaining}日は
+          <Link href="/calendar" className="underline hover:text-accent">
+            日取りカレンダー
+          </Link>
+          で
+        </p>
       )}
     </div>
   );

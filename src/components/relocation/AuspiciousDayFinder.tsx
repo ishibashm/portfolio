@@ -946,7 +946,7 @@ export function AuspiciousDayFinder() {
                           <th className="hidden md:table-cell px-3 py-2 text-left font-semibold">
                             天中殺
                           </th>
-                          <th className="px-3 py-2 text-left font-semibold">
+                          <th className="hidden md:table-cell px-3 py-2 text-left font-semibold">
                             物件
                           </th>
                         </tr>
@@ -1055,6 +1055,21 @@ export function AuspiciousDayFinder() {
                                     </span>
                                   )}
                                 </p>
+                                <p className="mt-1.5 ml-7 md:hidden">
+                                  <Link
+                                    href={scannerHref(d.date, s.direction)}
+                                    onClick={() => saveWorkingDate(d.date)}
+                                    className={`inline-flex items-center gap-0.5 whitespace-nowrap underline-offset-2 hover:underline ${
+                                      strongLink
+                                        ? "font-semibold text-accent"
+                                        : "text-ink-muted hover:text-accent"
+                                    }`}
+                                    title={`${d.date} に ${s.directionLabel} へ移る前提で物件を探す`}
+                                  >
+                                    この条件で探す
+                                    <ArrowRight className="w-3 h-3 shrink-0" />
+                                  </Link>
+                                </p>
                               </td>
                               <td className="hidden md:table-cell px-3 py-2.5">
                                 {label(d.yearLayer)}
@@ -1094,7 +1109,7 @@ export function AuspiciousDayFinder() {
                                   <span className="text-ink-muted">—</span>
                                 )}
                               </td>
-                              <td className="px-3 py-2.5 align-top text-xs">
+                              <td className="hidden md:table-cell px-3 py-2.5 align-top text-xs">
                                 {/* この日・この方位のまま物件一覧へ渡す。
                                     日と方位が決まってから物件を選ぶのが実際の順序で、
                                     条件を入れ直させると前提がずれる。 */}
@@ -1104,7 +1119,7 @@ export function AuspiciousDayFinder() {
                                 <Link
                                   href={scannerHref(d.date, s.direction)}
                                   onClick={() => saveWorkingDate(d.date)}
-                                  className={`inline-flex items-center gap-0.5 underline-offset-2 hover:underline ${
+                                  className={`inline-flex items-center gap-0.5 whitespace-nowrap underline-offset-2 hover:underline ${
                                     strongLink
                                       ? "font-semibold text-accent"
                                       : "text-ink-muted hover:text-accent"
@@ -1140,7 +1155,7 @@ export function AuspiciousDayFinder() {
                             <Link
                               href={scannerHref(d.date, s.direction)}
                               onClick={() => saveWorkingDate(d.date)}
-                              className="ml-auto inline-flex items-center gap-0.5 text-ink-muted underline-offset-2 hover:text-accent hover:underline"
+                              className="basis-full sm:ml-auto sm:basis-auto inline-flex items-center gap-0.5 whitespace-nowrap text-ink-muted underline-offset-2 hover:text-accent hover:underline"
                               title={`${d.date} に ${s.directionLabel} へ移る前提で物件を探す`}
                             >
                               この条件で探す
